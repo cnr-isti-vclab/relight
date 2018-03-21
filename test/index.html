@@ -1,0 +1,352 @@
+<!doctype html>
+<html>
+<head>
+<link  rel="stylesheet" href="css/bootstrap.min.css">
+<style>
+@media (min-width: 512px) {
+	.container { max-width: 1536px; }
+}
+
+body {
+  font-family: Arial, serif;
+  font-size:13px;
+  color: #555;
+}
+h1, .h1, h2,.h2, h3,.h3, h4, .h4, h5, .h5, h6, .h6 {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  color: #333;
+}
+
+.type {
+	position:absolute;
+	bottom:0px;
+	width:100%;
+	margin:5px 0px;
+	padding:4px 20px;
+	color:black;
+	background-color:rgba(255, 255, 255, 0.3);
+	font-size:16px;
+	font-weight:bold;
+	font-family: Georgia;
+}
+.rticanvas {
+	cursor:pointer;
+}
+
+.rticanvas + img {
+	position:absolute;
+	top:0px;
+	display:none;
+}
+
+.rticanvas + img.show {
+	display:block;
+}
+img, canvas { width:25vw; height:25vw; }
+
+</style>
+</head>
+
+<body>
+  <div class="container-fluid blog-header">
+   <h1 class="blog-title">Relight: <small>an efficient and versatile RTI compression format</small></h1>
+
+   <div class="row">
+     <div class="col-sm-12">
+       <p>
+          <a class="btn btn-warning btn-lg " href="javascript:loadRti('data/coin10')">Gold coin</a>
+          <a class="btn btn-secondary btn-lg " href="javascript:loadRti('data/12783')">Lead tag</a>
+          <a class="btn btn-success btn-lg " href="javascript:loadRti('data/coin16')">Bronze coin</a>
+          <a class="btn btn-secondary btn-lg " href="javascript:loadRti('data/statue')">Statue</a>
+          <a class="btn btn-warning btn-lg " href="javascript:loadRti('data/fatt')">Painting</a>&nbsp;&nbsp;&nbsp;
+          <a class="btn btn-danger btn-lg "href="javascript:toggleErrors()">Errors 0-25 mse</a></p>
+      <h3>Legend:</h3>
+      <p>Click and drag over the images.
+        <ul class="list-group">
+        <li>LPTM: PTM in LRGB, 9 planes (encoded as 3jpg)</li>
+        <li>PTM: 18 planes (encoded as 6jpg)</li>
+        <li>HSH: 27 planes (encoded as 9jpg)</li>
+        <li>RBF: radial basis function interpolation and PCA dimensional reduction (number of planes specified and saved as jpg)</li>
+        <li>YCC: same as RBF but using YCbCr color space and each component is separated, number of planes per component listed</li>
+        <li>Image: closest original image.</li>
+     </ul></p>
+     </div>
+
+    </div>
+    <div class="row" style="user-select:none">
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="lptm" width="512" height="512"></canvas>
+     </div> 
+
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="ptm" width="512" height="512"></canvas>
+     </div>
+
+
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="hsh" width="512" height="512"></canvas>
+     </div>
+
+     <div class="col-sm-3">
+       <img class="reference" id="refid" src="data/coin10/512/photo_00000_0.jpg"/>
+       <p class="type refid"></p>
+     </div>
+  </div>
+
+  <div class="row">
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="rbf9" width="512" height="512"></canvas>
+     </div>
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="rbf18" width="512" height="512"></canvas>
+     </div>
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="rbf27" width="512" height="512"></canvas>
+     </div>
+     <div class="col-sm-3">
+       <img class="reference" id="refid" src="data/coin10/512/photo_00000_0.jpg"/>
+       <p class="type refid"></p>
+     </div>
+
+  </div>
+
+ 
+   <div class="row">
+
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="ycc711" width="512" height="512"></canvas>
+     </div>
+
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="ycc822" width="512" height="512"></canvas>
+     </div>
+
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="ycc1044" width="512" height="512"></canvas>
+     </div>
+     <div class="col-sm-3">
+       <img class="reference" id="refid" src="data/coin10/512/photo_00000_0.jpg"/>
+       <p class="type refid"></p>
+     </div>
+  </div>
+
+<!--
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="yhsh" width="512" height="512"></canvas>
+     </div> -->
+
+<!--  <div class="row">
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="ycc633" width="512" height="512"></canvas>
+       <p class="type">YCC P633 <small>201Kb 14.68e</small></p>
+     </div>
+
+
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="ycc1011" width="512" height="512"></canvas>
+       <p class="type">YCC P1011 <small>271Kb 13.00e</small></p>
+     </div>
+  </div> -->
+
+<!--   <div class="row">
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="ycc744" width="512" height="512"></canvas>
+       <p class="type">YCC P744 <small>201Kb 14.68e</small></p>
+     </div>
+
+
+
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="ycc1122" width="512" height="512"></canvas>
+       <p class="type">YCC P1122 <small>271Kb 13.00e</small></p>
+     </div>
+  </div> 
+
+   <div class="row">
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="ycc855" width="512" height="512"></canvas>
+       <p class="type">YCC P855 <small>201Kb 14.68e</small></p>
+     </div>
+
+
+
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="ycc1233" width="512" height="512"></canvas>
+       <p class="type">YCC P1233 <small>271Kb 13.00e</small></p>
+     </div>
+
+  </div> -->
+
+<!-- <div class="col-sm-4">
+       <canvas class="rticanvas" id="bilinear" width="512" height="512"></canvas>
+       <p class="type">BILINEAR </p>
+     </div>
+
+     <div class="col-sm-4">
+       <canvas class="rticanvas" id="bilinearm3" width="512" height="512"></canvas>
+       <p class="type">BILINEAR M4</p>
+     </div>
+  </div> -->
+
+
+
+<!--
+   <div class="row">
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="rbf6m4" width="512" height="512"></canvas>
+       <p class="type">RBF P6 M4 <small>228Kb 13.75e</small></p>
+     </div>
+
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="rbf9m4" width="512" height="512"></canvas>
+       <p class="type">RBF P9 M4 <small>300Kb 12.32e</small></p>
+     </div>
+
+     <div class="col-sm-3">
+       <canvas class="rticanvas" id="rbf12m4" width="512" height="512"></canvas>
+       <p class="type">RBF P12 M4 <small>358Kb 11.60e</small></p>
+     </div>
+  </div>
+-->
+
+
+<script src="js/jquery-3.2.1.min.js"></script>
+<script src="js/ldrrti.js"></script>
+<script>
+var rti = {'lptm':null, 'ptm':null,  'hsh':null,
+			'rbf9':null, 'rbf18':null, 'rbf27':null, 
+//			'ycc333':null, 	'ycc522':null, 'yhsh':null,
+			'ycc711':null, 'ycc822':null, 'ycc1044':null
+//			'ycc633':null, 'ycc1011':null,
+//			'ycc744':null,  'ycc1122':null, 
+//			'ycc855':null, 'ycc1233':null 
+};
+ 
+//, 'bilinear':null, 'bilinearm3':null}; //, 'hsh':null, 'lrgb9':null, 'lrgb18':null }
+var url = 'data/coin10';
+var scrolling = null;
+
+var zoom = 1.0;
+
+function toggleErrors() {
+	$('.rticanvas + img').toggleClass('show');
+}
+for(var type in rti) {
+	var canvas = $('#' + type);
+	canvas.after("<p class='type'></p>");
+	canvas.after("<img/>");
+}
+
+loadRti('data/coin10');
+
+function loadRti(baseurl) {
+	url = baseurl;
+	for(var type in rti) {
+		var canvas = $('#' + type);
+		canvas = canvas[0];
+		var glopt = { antialias: false, depth: false };
+		var gl = canvas.getContext("webgl2", glopt) || canvas.getContext("webgl", glopt) || canvas.getContext("experimental-webgl", glopt) ;
+		rti[type] = new LdrRti('#' + type, {gl:gl});
+		rti[type].setUrl(baseurl + '/' + type);
+		rti[type].onLoad = onLoad;
+
+		$(canvas).next().attr('src', baseurl + "/" + type + "/error.png");
+//		$(canvas).after("<img src='" + baseurl + "/" + type + "/error.png'>");
+
+	}
+	$.ajax({ type: "GET", url: url + ".txt", dataType: "text",
+		success: function (e) {
+			var lines = e.split('\n');
+			lines.shift();
+			while(lines.length) {
+				var line = lines.shift();
+				var fields = line.split(',');
+				if(fields.length != 9) continue;
+				var e = Number(fields[7]);
+				var str = fields[0] + " " + Math.floor(fields[6]/1024) + "Kb " + e.toFixed(1) + "psnr";
+				$('#' + fields[0] + " + img + p").html(str);
+			}
+			console.log(lines);
+		}
+	});
+}
+
+$('.rticanvas').mousedown(function(e) {
+	if(e.button != 0) return;
+	scrolling = { 
+		x: e.pageX - $(this).offset().left, 
+		y: e.pageY - $(this).offset().top
+	};
+});
+
+function loadClosest(x, y, z) {
+	if(!rti['lptm'].lights) 
+		return;
+
+	var closest = rti['lptm'].closestLight([-x, y, z]);
+	function pad(num, size) {
+		var s = num+"";
+		while (s.length < size) s = "0" + s;
+		return s;
+	}
+
+	if(/.*statue/.test(url) || /.fatt/.test(url))
+		var u = url + "/512/cropped" + closest + ".jpg";
+	else
+		var u = url + "/512/photo_" + pad(closest, 5) + "_" + closest + ".jpg";
+	$('.reference').attr('src', u);
+
+	var obj = new XMLHttpRequest();
+	obj.open('HEAD', u, true);
+	obj.onreadystatechange = function() {
+		if ( obj.readyState == 4  && obj.status == 200 ) {
+			var size = (obj.getResponseHeader('Content-Length')/1000.0).toFixed(0);
+			console.log('Size in bytes: ' + obj.getResponseHeader('Content-Length'));
+			$('.refid').html("Original Image (" + closest + ") " + size + "KB");
+		}
+	};
+	obj.send(null);
+
+}
+
+function onLoad(t) {
+	loadClosest(0, 0, 1);
+	t.computeLightWeights([0, 0, 1]);
+	t.draw(zoom);
+}
+
+$('.rticanvas').mousemove(function(e) {
+	if(!scrolling) return;
+	var c = $('.rticanvas');
+
+	var w = c.width();
+	var h = c.height();
+	var x = e.pageX - $(this).offset().left;
+	var y = e.pageY - $(this).offset().top; 
+	x = (w - x)/w*2 - 1;
+	y = (h - y)/h*2 - 1;
+	var r = Math.sqrt(x*x + y*y);
+	if(r > 1.0) {
+		x /= r;
+		y /= r;
+		r = 1.0;
+	}
+	var z = Math.sqrt(1 - r);
+
+	for(var i in rti) {
+		rti[i].computeLightWeights([-x, y, z]);
+		rti[i].draw(zoom);
+	}
+	loadClosest(x, y, z);
+});
+
+$('.rticanvas').mouseup(function(event) { scrolling = null; });
+
+
+</script>
+
+</body>
+</html>
+
+
