@@ -1,25 +1,60 @@
-function Rti(canvas, _options) {
-	canvas = $(canvas);
-	if(!canvas) return null;
-	this.canvas = canvas[0];
+/*
 
-	this.options = Object.assign({}, _options);
+Position is given with x, y, z, t
+
+where 
+  x and y are the coords of the center of the screen in full scale image.
+  z is the zoom level with 0 being the 1 tile level.
+  t is for interpolation
+*/
+
+function MRti(canvas, o) {
+	canvas = $(canvas);
+	if(!canvas)
+		return null;
+	canvas = canvas[0];
+
+
+	this.options = Object.assign({}, o);
+
 	var glopt = { antialias: false, depth: false };
 	this.gl = this.options.gl || this.canvas.getContext("webgl2", glopt) || 
 			canvas.getContext("webgl", glopt) || canvas.getContext("experimental-webgl", glopt) ;
 	if (!this.gl) return null;
 
+	this.gl = gl;
+	this.canvas = canvas;
+	this.visible = true;
 	this.light = [0, 0, 1];
 	this.lweights = [];
-	this.waiting = 1;
+	this.pos = { x: 0, y:0, z:0, t:0 };         //t is in the future.
+	this.previous = { x:0, y:0, z:0, t:0 };
+
 	this.update = true;
+	this.nodes = [];
+
+	this.cache = {};           //priority [index, level, x, y] //is really needed? probably not.
+	this.queued = [];          //array of things to load
+	this.requested = {};       //things being actually requested
+	this.requestedCount = 0;
+	this.maxPrefetched = o.maxPrefetched ? o.maxPrefetched : 4;
+
+	this.previousbox = [1, 1, -1, -1];
+	this.animaterequest = null;
+
+	if(o.width)  canvas.width  = o.width;
+	if(o.height) canvas.height = o.height;
+	this.suffix = o.suffix? o.suffix : ".jpg";
 
 	this.initGL();
 
 	return this;
 }
 
-Rti.prototype = {
+//coordinate system: we have origin 0,0 at the center of the image x goes from 0 to 1.(level z = 0). in the original size scale. Z = 0 highest level
+//animation on this stuff is separated from position
+
+MRti.prototype = {
 
 get: function(url, type, callback) {
 	var r=new XMLHttpRequest();
@@ -41,20 +76,17 @@ get: function(url, type, callback) {
 	r.send();
 },
 
+
 setUrl: function(url) {
 	var t = this;
 	t.url = url;
 	t.ready = false;
 
-	t.waiting = 1;
 	t.get(url + '/info.json', 'json', function(d) { t.loadInfo(d); });
-
-
 },
 
 loadInfo: function(info) {
 	var t = this;
-	t.waiting--;
 	t.type = info.type;
 	t.colorspace = info.colorspace;
 	t.nmaterials = info.materials.length;
@@ -75,21 +107,18 @@ loadInfo: function(info) {
 		t.ndimensions = t.resolution*t.resolution;
 	}
 
-	if(t.nmaterials > 1) {
-		t.waiting++;
-		t.segments = new Image;
-		t.segments.src = t.url + '/segments.png';
-		t.segments.onload = function() { t.loadSegments(); }
-	}
-
 	if(t.colorspace == 'mycc') {
 		t.yccplanes = info.yccplanes;
 		t.nplanes = t.yccplanes[0] + t.yccplanes[1] + t.yccplanes[2];
 	} else
 		t.yccplanes = [0, 0, 0];
 
-	t.width = info.width;
-	t.height = info.height;
+	t.width = parseInt(info.width);
+	t.height = parseInt(info.height);
+	t.tilesize = info.tilesize ? info.tilesize : 0;
+	t.overlap = info.overlap ? info.overlap : 0;
+	t.layout = info.layout ? info.layout : "image";
+
 	t.planes = [];
 	t.scale = new Float32Array((t.nplanes+1)*t.nmaterials);
 	t.bias = new Float32Array((t.nplanes+1)*t.nmaterials);
@@ -101,23 +130,140 @@ loadInfo: function(info) {
 		}
 	}
 
-	if(t.colorspace == 'mrgb' || t.colorspace == 'mycc') {
-		t.get(t.url + '/materials.bin', 'arraybuffer', function(d) { t.loadBasis(d); });
-		t.waiting++;
-	}
-
 	t.njpegs = 0;
 	while(t.njpegs*3 < t.nplanes)
 		t.njpegs++;
-	t.waiting += t.njpegs;
 
-	for(var i = 0; i < t.njpegs; i++) {
-		t.planes[i] = new Image;
-		t.planes[i].src = t.url + '/plane_' + i + '.jpg';
-		t.planes[i].onload = function(k) { return function() { t.loadPlane(k); } }(i);
-	}
+	t.initTree();
 	t.loadProgram();
+
+	function loaded() {
+		if(t.onLoad)
+			t.onLoad(t);
+		t.prefetch();
+		t.preload();
+	}
+
+	if(t.colorspace == 'mrgb' || t.colorspace == 'mycc') {
+		t.get(t.url + '/materials.bin', 'arraybuffer', function(d) { t.loadBasis(d); loaded(); });
+	} else {
+		loaded();
+	}
 },
+
+initTree: function() {
+
+	var t = this;
+	t.nodes = [];
+
+	switch(t.layout) {
+		case "image":
+			t.resolutions = 1;
+			t.qbbox = [0, 0, 1, 1];
+			t.bbox = [0, 0, t.width, t.height];
+			return;
+			break;
+		case "deepzoom":
+			var max = Math.max(t.width, t.height)/t.tilesize;
+			t.resolutions = Math.ceil(Math.log(max) / Math.LN2) + 1;
+			t.suffix = ".jpeg";
+			t.getTileURL = function (image, x, y, resolution) {
+				var prefix = image.substr(0, image.lastIndexOf("."));
+				var base = t.url + '/' + prefix + '_files/';
+				return base + (resolution + 0) + '/' + x + '_' + y + t.suffix;
+			};
+			break;
+		default:
+			console.log("OOOPPpppps");
+	}
+	if(!t.tilesize) {
+		console.log("TILESIZE!", t.tilesize);
+		return;
+	}
+
+	t.qbox = [];
+	t.bbox = [];
+	var w = t.width;
+	var h = t.height;
+	for(var i = t.resolutions - 1; i >= 0; i--) {
+		t.qbox[i] = [0, 0, 0, 0]; //TODO replace with correct formula
+		t.bbox[i] = [0, 0, w, h];
+		for(var y = 0; y*t.tilesize < h; y++) {
+			t.qbox[i][3] = y+1;
+			for(var x = 0; x*t.tilesize < w; x ++) {
+				var index = t.index(i, x, y);
+				t.nodes[index] = { tex: [], missing: t.njpegs };
+				t.qbox[i][2] = x+1;
+			}
+		}
+		w >>>= 1;
+		h >>>= 1;
+	}
+	console.log(t.qbox);
+	console.log(t.bbox);
+},
+
+
+resize: function(width, height) {
+	this.canvas.width = width;
+	this.canvas.height = height;
+	gl.viewport(0, 0, width, height);
+	this.redraw();
+},
+
+zoom: function(dz, dt) {
+	var p = this.pos;
+	this.setPosition(p.x, p.y, p.z+dz, dt);
+},
+
+pan: function(dx, dy, dt) { //dx and dy expressed as pixels in the current size!
+	//remap pixels to [0,1] space.
+	var p = this.pos;
+	var scale = Math.pow(2, p.z);
+	var side = this.tilesize*scale/2; //this is the side of the whole picture in pixels
+	this.setPosition(p.x - dx/side, p.y - dy/side, p.z, dt);
+},
+
+setPosition: function(x, y, z, dt) {
+	if(z >= this.levels) z = this.levels;
+	if(z <= 0) z = 0;
+	if(!dt) dt = 0;
+	var t = performance.now();
+	this.previous = this.pos;
+	this.previous.t = t;
+	this.pos = { x: x, y:y, z:z, t:t + dt };
+	this.update = true;
+	this.prefetch();
+	this.redraw();
+},
+
+getCurrent: function(time) {
+	var t = this;
+	if(time > t.pos.t) 
+		return t.pos;
+	var dt = t.pos.t - t.previous.t;
+	if(dt < 1) return t.pos;
+
+	var dt = (t.pos.t - time)/(t.pos.t - t.previous.t); //how much is missing to pos
+	var ft = 1 - dt;
+	return { 
+		x:t.pos.x*ft + t.previous.x*dt, 
+		y:t.pos.y*ft + t.previous.y*dt, 
+		z:t.pos.z*ft + t.previous.z*dt, 
+		t:time };
+},
+
+
+initGL: function() {
+	var gl = this.gl;
+	gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+	gl.clearColor(0.0, 0.0, 0.0, 1.0);
+	gl.disable(gl.DEPTH_TEST);
+	gl.clear(gl.COLOR_BUFFER_BIT);
+	gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+},
+
+
 
 // p from 0 to nplanes,
 basePixelOffset(m, p, x, y, k) {
@@ -150,53 +296,64 @@ loadBasis: function(data) {
 			}
 		}
 	}
-	t.updateWaiting(-1);
 },
 
-loadSegments: function() {
-	var gl = this.gl;
-	var tex = gl.createTexture();
-	gl.bindTexture(gl.TEXTURE_2D, tex);
-
-	if(gl instanceof WebGL2RenderingContext)
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, this.segments);
-	else
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, this.segments);
-
-//	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-//	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-	this.segments.tex = tex;
-	this.updateWaiting(-1);
+index: function(resolution, x, y) {
+	var startindex = ((1<<(resolution*2))-1)/3;
+	var side = 1<<resolution;
+	return startindex + y*side + x;
 },
 
-loadPlane: function(i) {
-	var gl = this.gl;
-	var tex = gl.createTexture();
-	gl.bindTexture(gl.TEXTURE_2D, tex);
+loadTile: function(resolution, x, y) {
+	var t = this;
+	var index = t.index(resolution, x, y);
 
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, this.planes[i]);
+	if(t.requested[index]) {
+		console.log("AAARRGGHHH double request!");
+		return;
+	}
+	t.requested[index] = true;
+	t.requestedCount++;
 
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-//	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-//	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-	this.planes[i].tex = tex;
-	this.updateWaiting(-1);
+	for(var p = 0; p < t.njpegs; p++)
+		t.loadComponent(p, index, resolution, x, y);
 },
 
-initGL: function() {
-	var gl = this.gl;
-	gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
-	gl.clearColor(0.0, 0.0, 0.0, 1.0);
-	gl.disable(gl.DEPTH_TEST);
-	gl.clear(gl.COLOR_BUFFER_BIT);
-	gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+
+
+loadComponent: function(plane, index, resolution, x, y) {
+	var t = this;
+	var gl = t.gl;
+	var name = "plane_" + plane + ".jpg";
+
+	//TODO use a cache of images to avoid memory allocation waste
+	var image = new Image();
+	image.crossOrigin = "Anonymous";
+	image.src = t.getTileURL(name, resolution, x, y);
+	image.addEventListener('load', function() {
+		var tex = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, tex);
+		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+
+		t.nodes[index].tex[plane] = tex;
+		t.nodes[index].missing--;
+		if(t.nodes[index].missing == 0) {
+			delete t.requested[index];
+			t.requestedCount--;
+			t.preload();
+			t.redraw();
+		}
+	});
+	image.onerror = function() {
+		t.nodes[index].missing = -1;
+		delete t.requested[index];
+		t.requestedCount--;
+		t.preload();
+	}
 },
 
 computeLightWeights: function(lpos) {
@@ -216,24 +373,6 @@ computeLightWeights: function(lpos) {
 		else
 			t.gl.uniform3fv(t.baseLocation, t.lweights);
 	}
-},
-
-closestLight: function(lpos) {
-	var t = this;
-	var best = 0;
-	var bestd = 1e20;
-	for(var i = 0; i < t.lights.length; i += 3) {
-		var dx = t.lights[i+0] - lpos[0];
-		var dy = t.lights[i+1] - lpos[1];
-		var dz = t.lights[i+2] - lpos[2];
-
-		var d2 = dx*dx + dy*dy + dz*dz;
-		if(d2 < bestd) {
-			best = i;
-			bestd = d2;
-		}
-	}
-	return best/3;
 },
 
 computeLightWeightsPtm: function(v) {
@@ -385,6 +524,7 @@ setLight: function(x, y, z) {
 	if(t.ready)
 		this.redraw();
 },
+
 
 loadProgram: function() {
 
@@ -708,54 +848,161 @@ createBaseBuffer: function() {
 	t.weighttex = tex;
 },
 
-updateWaiting: function(n) {
-	this.waiting += n;
-	if(this.waiting != 0)
+
+draw: function(timestamp) {
+	var t = this;
+	t.animaterequest = null;
+
+	t.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+	t.gl.clear(t.gl.COLOR_BUFFER_BIT);
+	t.gl.enable(t.gl.SCISSOR_TEST);
+
+	if(!t.visible)
 		return;
-	if(this.onLoad)
-		this.onLoad(this);
+
+	var pos = this.getCurrent(performance.now());
+
+	//compute image bbox
+	//we start from
+	var mag = Math.pow(2, pos.z);
+	var side = Math.pow(2, t.levels-1)*t.tilesize;
+	var mx = t.img_width/side;
+	var my = t.img_height/side;
+	var w = Math.floor(mx*mag*t.tilesize);
+	var h = Math.floor(my*mag*t.tilesize);
+	var x = Math.ceil(t.canvas.width/2 - w/2 - pos.x*t.tilesize*mag/2) + 1;
+	var y = Math.ceil(t.canvas.height/2 - h/2 + pos.y*t.tilesize*mag/2) + 1;
+	t.gl.scissor(x, y, w-2, h-2);
+
+	//compute position using current and pos
+
+	var needed = this.neededBox(pos);
+	var level = Math.floor(pos.z);
+	var startindex = ((1<<(level*2))-1)/3;
+	var side = Math.pow(2, level);
+	var backup = {};
+	for(var y = needed[1]; y < needed[3]; y++) {
+		for(var x = needed[0]; x < needed[2]; x++) {
+			var index = startindex + y*side + x;
+
+			//TODO if parent is present let's these checks pass.
+			if(this.nodes[index].missing == -1) {
+				continue; //missing image
+			}
+			if(this.nodes[index].missing != 0) {
+				continue;
+			}
+			var l = level;
+			var s = side;
+			var px =x;
+			var py = y;
+			//TODO: This doesn't work? why?
+			while(l >= 1 && this.nodes[index].missing != 0) {
+				l--;
+				s /= 2;
+				py = py>>1;
+				px = px>>1;
+				index = ((1<<(l*2))-1)/3 + py*s + px;
+			}
+			this.renderNode(index, pos, px, py, l);
+		}
+	}
+	if(timestamp < this.pos.t)
+		this.redraw();
+
+	t.gl.disable(t.gl.SCISSOR_TEST);
+}, 
+
+redraw: function() {
+	var t = this;
+	if(t.animaterequest) return;
+	t.animaterequest = requestAnimationFrame(function (time) { t.draw(time); });
 },
 
-draw: function(zoom) {
-	if(!zoom) zoom = 1.0;
-	var t = this;
+renderNode: function(index, pos, x, y, level) {
+	if(this.nodes[index].missing != 0) return;
 
-//	console.log("Drawing", t);
-	t.gl.clearColor(1.0, 0.0, 0.0, 1.0);
-	t.gl.clear(t.gl.COLOR_BUFFER_BIT);
-
-	if(t.waiting)
-		return;
-
-	var nside = t.width;
-
-	var sx = 2*zoom;
-	var sy = 2*zoom;
-	var dx = -1;
-	var dy = -1;
+	//we need to determine how big is a tile in ortho coordinates.
+	//vert coord [0-1] needs to be scaled to 2*tilesize/canvas.width (ortho coords goes from [-1,1]). is
+	var mag = Math.pow(2, pos.z - level);
+	var nside = Math.pow(2, level);
+	var sx = mag*2*this.tilesize/this.canvas.width;
+	var sy = mag*2*this.tilesize/this.canvas.height;
+	var dx = sx*((x - nside/2) - (nside/2)*pos.x);
+	var dy = sy*((y - nside/2) - (nside/2)*pos.y);
 	var matrix = [sx, 0,  0,  0,  0, -sy,  0,  0,  0,  0,  1,  0,  dx,  -dy,  0,  1];
 
 	var gl = this.gl;
-	var texn = gl.TEXTURE0;
-	if(t.nmaterials > 1) {
-		gl.activeTexture(texn++);
-		gl.bindTexture(gl.TEXTURE_2D, this.segments.tex);
-	}
-
-	for(var i = 0; i < t.njpegs; i++) {
-		gl.activeTexture(texn++);
-		gl.bindTexture(gl.TEXTURE_2D, this.planes[i].tex);
+	for(var i = 0; i < this.ordlen; i++) {
+		gl.activeTexture(gl.TEXTURE0 + i);
+		gl.bindTexture(gl.TEXTURE_2D, this.nodes[index].tex[i]);
 	}
 	gl.uniformMatrix4fv(this.matrixLocation, false, matrix);
 	gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
-}, 
+},
 
-cleanup: function() {
+prefetch: function() {
 	var t = this;
-	for(var i = 0; i < t.planes.lenght; i++)
-		gl.deleteTexture(t.planes[i].tex);
+	if(!t.visible)
+		return;
+	var needed = t.neededBox(t.pos);
+	var level = Math.floor(t.pos.z);
+	//TODO check level also (unlikely, but let's be exact)
+	if(t.previouslevel == level && needed[0] == t.previousbox[0] && needed[1] == t.previousbox[1] &&
+		needed[2] == t.previousbox[2] && needed[3] == t.previousbox[3])
+		return;
+
+	t.previouslevel = level;
+	t.previousbox = needed;
+	t.queued = [];
+
+	//look for needed nodes and prefetched nodes (on the pos destination
+
+	for(var y = needed[1]; y <= needed[3]; y++) {
+		for(var x = needed[0]; x <= needed[2]; x++) {
+			var index = t.index(level, x, y);
+			if(t.nodes[index].missing != 0 && !t.requested[index])
+				t.queued.push([level, x, y]);
+		}
+	}
+	t.preload();
+},
+
+preload: function() {
+	while(this.requestedCount < this.maxPrefetched && this.queued.length > 0) {
+		var tile = this.queued.shift();
+		this.loadTile(tile[0], tile[1], tile[2]);
+	}
+},
+
+neededBox: function(pos) {
+	var t = this;
+	var resolution = Math.floor(pos.z);
+	//size of a rendering pixel in original image pixels.
+	var scale = Math.pow(2, t.resolutions-1 - pos.z);
+	//find coordinates in original size image
+	var bbox = [
+		pos.x - scale*canvas.width()/2,
+		pos.y - scale*canvas.height()/2,
+		pos.x + scale*canvas.width()/2,
+		pos.y + scale*canvas.height()/2,
+	];
+	var side = t.tilesize*Math.pow(2, (t.resolutions-1) - resolution);
+	//quantized bbox
+	var qbox = [
+		Math.floor((bbox[0])/side),
+		Math.floor((bbox[1])/side),
+		Math.floor((bbox[2]-1)/side) + 1,
+		Math.floor((bbox[3]-1)/side) + 1];
+
+	//clamp!
+	qbox[0] = Math.max(qbox[0], t.qbox[resolution][0]);
+	qbox[1] = Math.max(qbox[1], t.qbox[resolution][1]);
+	qbox[2] = Math.min(qbox[2], t.qbox[resolution][2]);
+	qbox[3] = Math.min(qbox[3], t.qbox[resolution][3]);
+	return qbox;
 }
 
-} //prototype
+};
 
 

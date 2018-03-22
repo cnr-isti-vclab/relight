@@ -36,7 +36,7 @@ canvas {
 </body>
 
 <script src="https://code.jquery.com/jquery-3.3.1.min.js" crossorigin="anonymous"></script>
-<script src="relight.js"></script>
+<script src="mrelight.js"></script>
 <script>
 
 //Change this to your dataset
@@ -49,7 +49,7 @@ var canvas = $('#rticanvas');
 
 var glopt = { antialias: false, depth: false };
 var gl = canvas[0].getContext("webgl2", glopt) || canvas.getContext("webgl", glopt) || canvas.getContext("experimental-webgl", glopt) ;
-var rti = new Rti('#rticanvas', {gl:gl});
+var rti = new MRti('#rticanvas', {gl:gl});
 rti.setUrl(url);
 rti.onLoad = function(t) {
 	t.computeLightWeights([0, 0, 1]);
