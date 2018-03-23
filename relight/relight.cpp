@@ -180,7 +180,7 @@ void RtiBuilder::pickMaterials(PixelArray &sample) {
 	materialindex = new flann::Index<flann::L2<float>>(centers, params);
 	materialindex->buildIndex();
 #else
-	cerr << "Materials not in use unless compiled using USE_MATERIALS define\n";
+	cerr << "Materials not in use unless compiled using USE_MATERIALS define\n" << "NM: " << nmaterials << endl;
 	exit(0);
 #endif
 }
@@ -235,6 +235,8 @@ void RtiBuilder::getPixelBestMaterial(PixelArray &pixels, vector<size_t> &indice
 void RtiBuilder::getPixelMaterial(PixelArray &pixels, vector<size_t> &indices) {
 	indices.resize(pixels.npixels(), 0);
 
+	if(nmaterials <= 1)
+		return;
 #ifdef USE_MATERIALS
 	if(!materialindex)
 		return;
