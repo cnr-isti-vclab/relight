@@ -32,7 +32,7 @@ canvas {
 		<h1>Relight!</h1>
 		<p>Click and drag on the image to test the RTI dataset</p>
 		<!-- Change width and height to match your dataset -->
-		<canvas id="rticanvas" width="512" height="512"></canvas>
+		<canvas id="rticanvas" width="1024" height="800"></canvas>
 	</div>
 </body>
 
@@ -70,6 +70,7 @@ canvas.mousedown(function(e) {
 		y: e.pageY - $(this).offset().top,
 		pos: rti.pos
 	};
+	e.preventDefault();
 });
 
 $(window).mousemove(function(e) {
@@ -101,19 +102,21 @@ $(window).mousemove(function(e) {
 
 		rti.setLight(-x, y, z);
 	}
+	e.preventDefault();
 });
 
 $(window).mouseup(function(e) { scrolling = null; });
 
-$(window).bind('mousewheel DOMMouseScroll', function(event) {
+$(window).bind('mousewheel DOMMouseScroll', function(e) {
 	var dz = 0;
-    if (event.originalEvent.wheelDelta > 0 || event.originalEvent.detail < 0) { // scroll up
+    if (e.originalEvent.wheelDelta > 0 || e.originalEvent.detail < 0) { // scroll up
 		dz = 0.25;
     }
     else { // scroll down
 		dz = -0.25;
     }
 	rti.zoom(dz, 100);
+	e.preventDefault();
 });
 
 
