@@ -8,6 +8,16 @@ where
   x and y are the coords of the center of the screen in full scale image.
   z is the zoom level with 0 being the original image. (in the code level)
   t is for interpolation
+
+Tiles follow deepzoom convention:
+
+the corner is top-left
+"ilevel" has 0 as the single tile level
+while "level" has 0 as the original resolution in this code.
+
+Tile size divides the original image.
+Overlay enlarges the tiles but not the side on the border of the image (need to know when rendering!)
+
 */
 
 function RtiViewer(canvas, o) {
@@ -37,6 +47,7 @@ function RtiViewer(canvas, o) {
 	this.queued = [];          //array of things to load
 	this.requested = {};       //things being actually requested
 	this.requestedCount = 0;
+	this.border = 1;
 	this.maxPrefetched = o.maxPrefetched ? o.maxPrefetched : 4;
 
 	this.previousbox = [1, 1, -1, -1];
@@ -336,8 +347,11 @@ loadTile: function(level, x, y) {
 	t.requested[index] = true;
 	t.requestedCount++;
 
-	for(var p = 0; p < t.njpegs; p++)
+	setTimeout(function() {
+	for(var p = 0; p < t.njpegs; p++) {
 		t.loadComponent(p, index, level, x, y);
+	}
+	}, 500);
 },
 
 
@@ -855,6 +869,59 @@ void main(void) {
 	gl.uniform1iv(sampler, samplerArray);
 },
 
+//minlevel is the level of the tiles at the current zoom, level is the (level, x, y) is the tile to be rendered
+
+drawNode: function(pos, minlevel, level, x, y) {
+	var t = this;
+	var index = t.index(level, x, y);
+
+	//TODO if parent is present let's these checks pass.
+	if(this.nodes[index].missing != 0)
+		return; //missing image
+
+
+//	var d = level - minlevel;
+
+	var scale = Math.pow(2, pos.z);
+	var tilesizeinimgspace = t.tilesize*(1<<(level));
+	var tilesizeincanvasspace = tilesizeinimgspace/scale;
+	var tx = tilesizeinimgspace;
+	var ty = tilesizeinimgspace;
+
+	var over = t.overlap*(1<<level)/scale; //in canvas space
+
+	var o = [x==0?0:over, y==0?0:over, over, over];
+
+	if(tx*(x+1) > t.width) {
+		tx = (t.width  - tx*x);
+		o[2] = 0;
+	}
+	if(ty*(y+1) > t.height) {
+		ty = (t.height - ty*y);
+		o[3] = 0;
+	} //in imagespace
+	tx /= scale;
+	ty /= scale;
+		//now in canvas space;
+
+	var sx = 2.0*(tx + o[0] + o[2])/canvas.width();
+	var sy = 2.0*(ty + o[1] + o[3])/canvas.height();
+	var dx = -2.0*(pos.x/scale - x*tilesizeincanvasspace + o[0])/canvas.width();
+	var dy = -2.0*(pos.y/scale - y*tilesizeincanvasspace + o[1])/canvas.height();
+	var matrix = [sx, 0,  0,  0,  0, -sy,  0,  0,  0,  0,  1,  0,  dx,  -dy,  0,  1];
+
+
+	for(var i = 0; i < t.njpegs; i++) {
+		t.gl.activeTexture(gl.TEXTURE0 + i);
+		t.gl.bindTexture(gl.TEXTURE_2D, t.nodes[index].tex[i]);
+	}
+
+
+
+	gl.uniformMatrix4fv(t.matrixLocation, false, matrix);
+	gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
+},
+
 draw: function(timestamp) {
 	var t = this;
 	t.animaterequest = null;
@@ -868,7 +935,7 @@ draw: function(timestamp) {
 
 	var pos = t.getCurrent(performance.now());
 
-	var needed = t.neededBox(pos);
+	var needed = t.neededBox(pos, 0);
 
 	var minlevel = needed.level; //this is the minimum level;
 	var ilevel = t.nlevels - 1 - minlevel;
@@ -884,44 +951,37 @@ draw: function(timestamp) {
 	];
 	t.gl.scissor(box[0], box[1], box[2], box[3]);
 
-	var tilesizeinimgspace = t.tilesize*(1<<(minlevel));
+
 
 	//TODO render upper nodes if something is missing!
+
+	var torender = {}; //array of minlevel, actual level, x, y (referred to minlevel)
 
 	var box = needed.box[minlevel];
 	for(var y = box[1]; y < box[3]; y++) {
 		for(var x = box[0]; x < box[2]; x++) {
-
-			var index = t.index(minlevel, x, y);
-
-			//TODO if parent is present let's these checks pass.
-			if(this.nodes[index].missing != 0)
-				continue; //missing image
-
-			var tilesizeincanvasspace = tilesizeinimgspace/scale;
-			var tx = tilesizeinimgspace;
-			var ty = tilesizeinimgspace;
-			if(tx*(x+1) > t.width)  
-				tx = (t.width  - tx*x);
-			if(ty*(y+1) > t.height) 
-				ty = (t.height - ty*y);
-			tx /= scale;
-			ty /= scale;
-
-			var sx = 2.0*tx/canvas.width();
-			var sy = 2.0*ty/canvas.height();
-			var dx = -2.0*(pos.x/scale - x*tilesizeincanvasspace)/canvas.width();
-			var dy = -2.0*(pos.y/scale - y*tilesizeincanvasspace)/canvas.height();
-			var matrix = [sx, 0,  0,  0,  0, -sy,  0,  0,  0,  0,  1,  0,  dx,  -dy,  0,  1];
-
-			for(var i = 0; i < t.njpegs; i++) {
-				t.gl.activeTexture(gl.TEXTURE0 + i);
-				t.gl.bindTexture(gl.TEXTURE_2D, t.nodes[index].tex[i]);
+			var level = minlevel;
+			while(level < t.nlevels) {
+				var d = level -minlevel;
+				var index = t.index(level, x>>d, y>>d);
+				if(t.nodes[index].missing == 0) {
+					torender[index] = [level, x>>d, y>>d];
+					break;
+				}
+				level++;
 			}
-			gl.uniformMatrix4fv(t.matrixLocation, false, matrix);
-			gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
 		}
 	}
+
+	for(var index in torender) {
+		var id = torender[index];
+
+		var level = id[0];
+		var x = id[1];
+		var y = id[2];
+		t.drawNode(pos, minlevel, level, x, y);
+	}
+
 	if(timestamp < this.pos.t)
 		this.redraw();
 
@@ -938,7 +998,7 @@ prefetch: function() {
 	var t = this;
 	if(!t.visible)
 		return;
-	var needed = t.neededBox(t.pos);
+	var needed = t.neededBox(t.pos, t.border);
 	var minlevel = needed.level;
 	//TODO check level also (unlikely, but let's be exact)
 	var box = needed.box[minlevel];
@@ -950,28 +1010,36 @@ prefetch: function() {
 	t.previousbox = box;
 	t.queued = [];
 
+	//
+
 	//look for needed nodes and prefetched nodes (on the pos destination
 	for(var level = t.nlevels-1; level >= minlevel; level--) {
 		var box = needed.box[level];
+		var tmp = [];
 		for(var y = box[1]; y < box[3]; y++) {
 			for(var x = box[0]; x < box[2]; x++) {
 				var index = t.index(level, x, y);
 				if(t.nodes[index].missing != 0 && !t.requested[index])
-					t.queued.push([level, x, y]);
+					tmp.push({level:level, x:x, y:y});
 			}
 		}
+		var cx = (box[0] + box[2]-1)/2;
+		var cy = (box[1] + box[3]-1)/2;
+		tmp.sort(function(a, b) { return Math.abs(a.x - cx) + Math.abs(a.y - cy) - Math.abs(b.x - cx) - Math.abs(b.y - cy); });
+		t.queued = t.queued.concat(tmp);
 	}
+	//sort queued by level and distance from center
 	t.preload();
 },
 
 preload: function() {
 	while(this.requestedCount < this.maxPrefetched && this.queued.length > 0) {
 		var tile = this.queued.shift();
-		this.loadTile(tile[0], tile[1], tile[2]);
+		this.loadTile(tile.level, tile.x, tile.y);
 	}
 },
 
-neededBox: function(pos) {
+neededBox: function(pos, border) {
 	var t = this;
 	var minlevel = Math.max(0, Math.floor(pos.z));
 
@@ -996,10 +1064,10 @@ neededBox: function(pos) {
 			Math.floor((bbox[3]-1)/side) + 1];
 	
 		//clamp!
-		qbox[0] = Math.max(qbox[0], t.qbox[level][0]);
-		qbox[1] = Math.max(qbox[1], t.qbox[level][1]);
-		qbox[2] = Math.min(qbox[2], t.qbox[level][2]);
-		qbox[3] = Math.min(qbox[3], t.qbox[level][3]);
+		qbox[0] = Math.max(qbox[0]-border, t.qbox[level][0]);
+		qbox[1] = Math.max(qbox[1]-border, t.qbox[level][1]);
+		qbox[2] = Math.min(qbox[2]+border, t.qbox[level][2]);
+		qbox[3] = Math.min(qbox[3]+border, t.qbox[level][3]);
 		box[level] = qbox;
 	}
 	return { level:minlevel, box: box };
