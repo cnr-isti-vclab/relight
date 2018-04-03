@@ -55,12 +55,9 @@ var canvas = $('#rticanvas');
 
 var glopt = { antialias: false, depth: false };
 var gl = canvas[0].getContext("webgl2", glopt) || canvas.getContext("webgl", glopt) || canvas.getContext("experimental-webgl", glopt) ;
-var rti = new RtiViewer('#rticanvas', {gl:gl});
+var rti = new RtiViewer('#rticanvas', { gl:gl });
 rti.setUrl(url);
-rti.onLoad = function(t) {
-	t.computeLightWeights([0, 0, 1]);
-	t.draw(zoom);
-}
+rti.onLoad = function(t) { /* not needed t.centerAndScale(0); */ }
 
 var scrolling = null;
 
