@@ -34,18 +34,17 @@ function RtiViewer(canvas, o) {
 			canvas.getContext("experimental-webgl", glopt) ;
 	if (!t.gl) return null;
 
-	t.options = Object.assign({}, o);
-
-	var options = Object.assign({
+	t.options = Object.assign({
 		visible: true,
 		light: [0, 0, 1],
 		pos: { x: 0, y:0, z:0, t:0 },
 		border: 1,                   //prefetching tiles out of view
 		maxPrefetched: 4,
-		suffix: ".jpg",
+		scale: true                  //scale on load.
 	}, o);
-	for(var i in options)
-		t[i] = options[i];
+
+	for(var i in t.options)
+		t[i] = t.options[i];
 
 	t.previous = { x:0, y:0, z:0, t:0 };
 	t.previousbox = [1, 1, -1, -1];
@@ -124,9 +123,12 @@ loadInfo: function(info) {
 
 	t.width = parseInt(info.width);
 	t.height = parseInt(info.height);
-	t.tilesize = info.tilesize ? info.tilesize : 0;
-	t.overlap = info.overlap ? info.overlap : 0;
-	t.layout = info.layout ? info.layout : "image";
+
+	t.tilesize = 'tilesize' in info ? info.tilesize : 0;
+	t.overlap  = 'overlap'  in info ? info.overlap  : 0;
+	t.layout   = 'layout'   in info ? info.layout   : "image";
+	t.bounded  = 'bounded'  in info ? info.bounded  : false;
+	t.suffix   = 'suffix'   in info ? info.suffix   : ".jpg";
 
 	t.planes = [];
 	t.scale = new Float32Array((t.nplanes+1)*t.nmaterials);
@@ -154,10 +156,13 @@ loadInfo: function(info) {
 	}
 	t.currImgCache = 0;
 
+
 	t.initTree();
 	t.loadProgram();
 
 	function loaded() {
+		if(t.scale)
+			t.centerAndScale();
 		if(t.onLoad)
 			t.onLoad(t);
 		t.prefetch();
@@ -179,14 +184,17 @@ initTree: function() {
 	switch(t.layout) {
 		case "image":
 			t.nlevels = 1;
-			t.qbbox = [[0, 0, 1, 1]];
+			t.qbox = [[0, 0, 1, 1]];
 			t.bbox = [[0, 0, t.width, t.height]];
+			t.getTileURL = function(image, x, y, level) {
+				return t.url + '/' + image;
+			};
+			t.nodes[0] = { tex: [], missing:t.njpegs };
 			return;
 			break;
 		case "deepzoom":
 			var max = Math.max(t.width, t.height)/t.tilesize;
 			t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
-			t.suffix = ".jpeg";
 
 			t.getTileURL = function (image, x, y, level) {
 				var prefix = image.substr(0, image.lastIndexOf("."));
@@ -195,6 +203,36 @@ initTree: function() {
 				return base + ilevel + '/' + x + '_' + y + t.suffix;
 			};
 			break;
+		case "zoomify":
+			var max = Math.max(t.width, t.height)/t.tilesize;
+			t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
+
+			t.getTileURL = function(image, x, y, level) {
+
+				var prefix = image.substr(0, image.lastIndexOf("."));
+				var base = t.url + '/' + prefix;
+				var ilevel = parseInt(t.nlevels - 1 - level);
+				var index = t.index(level, x, y)>>>0;
+				var group = index >> 8;
+				return base + "/TileGroup" + group + "/" + ilevel + "-" + x + "-" + y + t.suffix;
+			};
+			break;
+
+		case "google":
+			var max = Math.max(t.width, t.height)/t.tilesize;
+			t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
+
+			t.getTileURL = function(image, x, y, level) {
+
+				var prefix = image.substr(0, image.lastIndexOf("."));
+				var base = t.url + '/' + prefix;
+				var ilevel = parseInt(t.nlevels - 1 - level);
+				var index = t.index(level, x, y)>>>0;
+				var group = index >> 8;
+				return base + "/" + ilevel + "/" + y + "/" + x + t.suffix;
+			};
+			break;
+
 		default:
 			console.log("OOOPPpppps");
 	}
@@ -207,6 +245,7 @@ initTree: function() {
 	t.bbox = [];
 	var w = t.width;
 	var h = t.height;
+	var count = 0;
 	for(var level = t.nlevels - 1; level >= 0; level--) {
 		var ilevel = t.nlevels -1 - level;
 		t.qbox[ilevel] = [0, 0, 0, 0]; //TODO replace with correct formula
@@ -214,8 +253,8 @@ initTree: function() {
 		for(var y = 0; y*t.tilesize < h; y++) {
 			t.qbox[ilevel][3] = y+1;
 			for(var x = 0; x*t.tilesize < w; x ++) {
-				var index = t.index(ilevel, x, y);
-				t.nodes[index] = { tex: [], missing: t.njpegs };
+//				var index = t.index(ilevel, x, y);
+				t.nodes[count++] = { tex: [], missing: t.njpegs };
 				t.qbox[ilevel][2] = x+1;
 			}
 		}
@@ -258,15 +297,21 @@ pan: function(dx, dy, dt) { //dx and dy expressed as pixels in the current size!
 setPosition: function(x, y, z, dt) {
 	var t = this;
 	var scale = Math.pow(2, z);
-	if(z >= this.nlevels - 1) z = this.nlevels -1;
-	if(z <= 0) z = 0;
 
-	if(0 || t.bounds) {
-		x = Math.min(scale*canvas.width()/2, x);
-		y = Math.min(scale*canvas.height()/2, y);
-		x = Math.max(t.width - scale*canvas.width()/2, x);
-		y = Math.max(t.height - scale*canvas.height()/2, y);
+	if(t.bounded && t.width) {
+		var zx = Math.min(z, Math.log(t.width/canvas.width())/Math.log(2.0));
+		var zy = Math.min(z, Math.log(t.height/canvas.height())/Math.log(2.0));
+		z = Math.max(zx, zy);
+		scale = Math.pow(2, z);
+
+		var ix = [scale*canvas.width()/2, t.width - scale*canvas.width()/2].sort(function(a, b) { return a-b; });
+		x = Math.max(ix[0], Math.min(ix[1], x));
+		var iy = [scale*canvas.height()/2, t.height - scale*canvas.height()/2].sort(function(a, b) { return a-b; });
+		y = Math.max(iy[0], Math.min(iy[1], y));
+
+		if(z <= 0) z = 0;
 	}
+
 	if(!dt) dt = 0;
 	var time = performance.now();
 	t.previous = t.pos;
@@ -338,13 +383,20 @@ loadBasis: function(data) {
 			}
 		}
 	}
+	t.computeLightWeights(t.light);
 },
 
 index: function(level, x, y) {
-	var ilevel = this.nlevels -1 - level;
-	var startindex = ((1<<(ilevel*2))-1)/3;
+	var t = this;
+	var startindex = 0;
+	for(var i = t.nlevels-1; i > level; i--) {
+		startindex += t.qbox[i][2]*t.qbox[i][3];
+	}
+	return startindex + y*t.qbox[level][2] + x;
+
+/*	var startindex = ((1<<(ilevel*2))-1)/3;
 	var side = 1<<ilevel;
-	return startindex + y*side + x;
+	return startindex + y*side + x; */
 },
 
 loadTile: function(level, x, y) {
@@ -894,32 +946,43 @@ drawNode: function(pos, minlevel, level, x, y) {
 
 //	var d = level - minlevel;
 
-	var scale = Math.pow(2, pos.z);
-	var tilesizeinimgspace = t.tilesize*(1<<(level));
-	var tilesizeincanvasspace = tilesizeinimgspace/scale;
-	var tx = tilesizeinimgspace;
-	var ty = tilesizeinimgspace;
+	if(t.layout == "image") {
+		sx = 2.0*(t.width/scale)/t.canvas.width;
+		sy = 2.0*(t.height/scale)/t.canvas.height;
+		dx = -2.0*(pos.x/scale)/t.canvas.width;
+		dy = -2.0*(pos.y/scale)/t.canvas.height;
+	} else {
 
-	var over = t.overlap*(1<<level)/scale; //in canvas space
+		var scale = Math.pow(2, pos.z);
+		var tilesizeinimgspace = t.tilesize*(1<<(level));
+		var tilesizeincanvasspace = tilesizeinimgspace/scale;
+		var tx = tilesizeinimgspace;
+		var ty = tilesizeinimgspace;
 
-	var o = [x==0?0:over, y==0?0:over, over, over];
+		var over = t.overlap*(1<<level)/scale; //in canvas space
 
-	if(tx*(x+1) > t.width) {
-		tx = (t.width  - tx*x);
-		o[2] = 0;
+		var o = [x==0?0:over, y==0?0:over, over, over];
+
+		if(t.layout != "google") {
+		if(tx*(x+1) > t.width) {
+			tx = (t.width  - tx*x);
+			o[2] = 0;
+		}
+		if(ty*(y+1) > t.height) {
+			ty = (t.height - ty*y);
+			o[3] = 0;
+		} //in imagespace
+		}
+		tx /= scale;
+		ty /= scale;
+			//now in canvas space;
+
+		var sx = 2.0*(tx + o[0] + o[2])/t.canvas.width;
+		var sy = 2.0*(ty + o[1] + o[3])/t.canvas.height;
+		var dx = -2.0*(pos.x/scale - x*tilesizeincanvasspace + o[0])/t.canvas.width;
+		var dy = -2.0*(pos.y/scale - y*tilesizeincanvasspace + o[1])/t.canvas.height;
 	}
-	if(ty*(y+1) > t.height) {
-		ty = (t.height - ty*y);
-		o[3] = 0;
-	} //in imagespace
-	tx /= scale;
-	ty /= scale;
-		//now in canvas space;
 
-	var sx = 2.0*(tx + o[0] + o[2])/t.canvas.width;
-	var sy = 2.0*(ty + o[1] + o[3])/t.canvas.height;
-	var dx = -2.0*(pos.x/scale - x*tilesizeincanvasspace + o[0])/t.canvas.width;
-	var dy = -2.0*(pos.y/scale - y*tilesizeincanvasspace + o[1])/t.canvas.height;
 	var matrix = [sx, 0,  0,  0,  0, -sy,  0,  0,  0,  0,  1,  0,  dx,  -dy,  0,  1];
 
 
@@ -938,7 +1001,7 @@ draw: function(timestamp) {
 
 	t.gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	t.gl.clear(t.gl.COLOR_BUFFER_BIT);
-//	t.gl.enable(t.gl.SCISSOR_TEST);
+	t.gl.enable(t.gl.SCISSOR_TEST);
 
 	if(!t.visible)
 		return;
@@ -955,10 +1018,13 @@ draw: function(timestamp) {
 	//find coordinates of the image in the canvas
 	var box = [
 		t.canvas.width/2 - pos.x/scale,
-		t.canvas.height/2 - pos.y/scale,
-		pos.x/scale + (t.width - pos.x)/scale,
-		pos.y/scale + (t.height - pos.y)/scale
+		t.canvas.height/2 - (t.height - pos.y)/scale,
+		t.width/scale,
+		t.height/scale
 	];
+	if(t.layout == "google") {
+		box[0] += 1; box[1] += 1; box[2] -= 2; box[3] -= 2;
+	}
 	t.gl.scissor(box[0], box[1], box[2], box[3]);
 
 
@@ -1051,6 +1117,9 @@ preload: function() {
 
 neededBox: function(pos, border) {
 	var t = this;
+	if(t.layout == "image") {
+		return { level:0, box: [[0, 0, 1, 1]] };
+	}
 	var w = this.canvas.width;
 	var h = this.canvas.height;
 	var minlevel = Math.max(0, Math.floor(pos.z));
