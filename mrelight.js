@@ -57,7 +57,15 @@ function RtiViewer(canvas, o) {
 	t.requestedCount = 0;
 	t.animaterequest = null;
 
+//events
+	t.onload = null;
+	t.onposchange = null;
+	t.onlightchange = null;
+
 	t.initGL();
+
+	if(t.url)
+		t.setUrl(t.url);
 
 	return this;
 }
@@ -127,7 +135,7 @@ loadInfo: function(info) {
 	t.tilesize = 'tilesize' in info ? info.tilesize : 0;
 	t.overlap  = 'overlap'  in info ? info.overlap  : 0;
 	t.layout   = 'layout'   in info ? info.layout   : "image";
-	t.bounded  = 'bounded'  in info ? info.bounded  : false;
+	t.bounded  = 'bounded'  in info ? info.bounded  : true;
 	t.suffix   = 'suffix'   in info ? info.suffix   : ".jpg";
 
 	t.planes = [];
@@ -227,9 +235,19 @@ initTree: function() {
 				var prefix = image.substr(0, image.lastIndexOf("."));
 				var base = t.url + '/' + prefix;
 				var ilevel = parseInt(t.nlevels - 1 - level);
-				var index = t.index(level, x, y)>>>0;
-				var group = index >> 8;
 				return base + "/" + ilevel + "/" + y + "/" + x + t.suffix;
+			};
+			break;
+		case "iip":
+			var max = Math.max(t.width, t.height)/t.tilesize;
+			t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
+			t.getTileURL = function(image, x, y, level) {
+				var server = "/iipsrv/iipsrv.fcgi";
+				var prefix = image.substr(0, image.lastIndexOf("."));
+				var img = t.path + "/" + prefix + t.suffix;
+				var index = y*t.qbox[level][2] + x;
+				var ilevel = parseInt(t.nlevels - 1 - level);
+				return server+"?FIF=" + img + "&JTL=" + ilevel + "," + index;
 			};
 			break;
 
