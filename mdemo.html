@@ -56,8 +56,10 @@ var canvas = $('#rticanvas');
 
 var glopt = { antialias: false, depth: false };
 var gl = canvas[0].getContext("webgl2", glopt) || canvas.getContext("webgl", glopt) || canvas.getContext("experimental-webgl", glopt) ;
-var rti = new RtiViewer('#rticanvas', { gl:gl, server:"/iipsrv/iipsrv.fcgi", path:"/var/www/html/relighttest/front1044", url:url });
-//rti.setUrl(url);
+/*var rti = new RtiViewer(canvas[0], { gl:gl, server:"/iipsrv/iipsrv.fcgi", path:"/var/www/html/relighttest/front1044", url:url }); */
+
+var rti = new RtiViewer(canvas[0], { gl:gl, url:url, layout:"zoomify" });
+
 rti.onLoad = function(t) { /* not needed t.centerAndScale(0); */ }
 
 var scrolling = null;
