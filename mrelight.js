@@ -18,14 +18,31 @@ while "level" has 0 as the original resolution in this code.
 Tile size divides the original image.
 Overlay enlarges the tiles but not the side on the border of the image (need to know when rendering!)
 
+
+Options:
+
+	gl: if provided will use an already created context
+
+//TODO This should be per image!
+	url: path of the directory where the json (and the images) resides
+	path: for iip absolute path of the same directory
+	layout: pick between image, deepzoom, google, iip, iiif, zoomify
+	visible: rendering active or not, (default: true)
+	light: initial light (default [0, 0, 1]
+	pos: initial view (default { x:0, y:0, z:0, t:0 })
+	border: amount of prefetching around borders (default 1)
+	maxRequested: max amount of requested tiles *tiles* (default 4)
+	fit: scale and center the model (default true)
+
+Methods:
+
+
 */
 
 function RtiViewer(canvas, o) {
 	var t = this;
-	canvas = $(canvas);
 	if(!canvas)
 		return null;
-	canvas = canvas[0];
 	t.canvas = canvas;
 
 	var glopt = { antialias: false, depth: false };
@@ -35,13 +52,19 @@ function RtiViewer(canvas, o) {
 	if (!t.gl) return null;
 
 	t.options = Object.assign({
+		layout: "image",
 		visible: true,
 		light: [0, 0, 1],
 		pos: { x: 0, y:0, z:0, t:0 },
+		bounded: true,
 		border: 1,                   //prefetching tiles out of view
-		maxPrefetched: 4,
-		scale: true                  //scale on load.
+		maxRequested: 4,
+		fit: true,                   //scale on load.
+		suffix: ".jpg"
 	}, o);
+
+	if(t.url && t.url.endsWidth("/"))
+		t.url = r.url.slice(0, -1);
 
 	for(var i in t.options)
 		t[i] = t.options[i];
@@ -132,11 +155,9 @@ loadInfo: function(info) {
 	t.width = parseInt(info.width);
 	t.height = parseInt(info.height);
 
-	t.tilesize = 'tilesize' in info ? info.tilesize : 0;
-	t.overlap  = 'overlap'  in info ? info.overlap  : 0;
-	t.layout   = 'layout'   in info ? info.layout   : "image";
-	t.bounded  = 'bounded'  in info ? info.bounded  : true;
-	t.suffix   = 'suffix'   in info ? info.suffix   : ".jpg";
+//	t.tilesize = 'tilesize' in info ? info.tilesize : 0;
+//	t.overlap  = 'overlap'  in info ? info.overlap  : 0;
+//	t.layout   = 'layout'   in info ? info.layout   : "image";
 
 	t.planes = [];
 	t.scale = new Float32Array((t.nplanes+1)*t.nmaterials);
@@ -157,7 +178,7 @@ loadInfo: function(info) {
 	t.pos.y = t.height/2;
 
 	t.imgCache = [];
-	for(var i = 0; i < t.maxPrefetched*t.njpegs; i++) {
+	for(var i = 0; i < t.maxRequested*t.njpegs; i++) {
 		var image = new Image();
 		image.crossOrigin = "Anonymous";
 		t.imgCache[i] = image;
@@ -169,7 +190,7 @@ loadInfo: function(info) {
 	t.loadProgram();
 
 	function loaded() {
-		if(t.scale)
+		if(t.fit)
 			t.centerAndScale();
 		if(t.onLoad)
 			t.onLoad(t);
@@ -192,31 +213,53 @@ initTree: function() {
 	switch(t.layout) {
 		case "image":
 			t.nlevels = 1;
+			t.tilesize = 0;
 			t.qbox = [[0, 0, 1, 1]];
 			t.bbox = [[0, 0, t.width, t.height]];
+
 			t.getTileURL = function(image, x, y, level) {
 				return t.url + '/' + image;
 			};
 			t.nodes[0] = { tex: [], missing:t.njpegs };
 			return;
-			break;
-		case "deepzoom":
+
+		case "google":
+			t.tilesize = 256;
+			t.overlap = 0;
 			var max = Math.max(t.width, t.height)/t.tilesize;
 			t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
 
+			t.getTileURL = function(image, x, y, level) {
+				var prefix = image.substr(0, image.lastIndexOf("."));
+				var base = t.url + '/' + prefix;
+				var ilevel = parseInt(t.nlevels - 1 - level);
+				return base + "/" + ilevel + "/" + y + "/" + x + t.suffix;
+			};
+			break;
+
+		case "deepzoom":
+			t.getMetaDataURL = function() { return t.url + "/plane_0.dzi"; }
 			t.getTileURL = function (image, x, y, level) {
 				var prefix = image.substr(0, image.lastIndexOf("."));
 				var base = t.url + '/' + prefix + '_files/';
 				var ilevel = parseInt(t.nlevels - 1 - level);
 				return base + ilevel + '/' + x + '_' + y + t.suffix;
 			};
+
+			t.parseMetaData = function (response) {
+				t.suffix = "." + /Format="(\w+)/.exec(response)[1];
+				t.tilesize = parseInt(/TileSize="(\d+)/.exec(response)[1]);
+				t.overlap = parseInt(/Overlap="(\d+)/.exec(response)[1]);
+
+				var max = Math.max(t.width, t.height)/t.tilesize;
+				t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
+			};
+
 			break;
 		case "zoomify":
-			var max = Math.max(t.width, t.height)/t.tilesize;
-			t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
 
+			t.getMetaDataURL = function() { return t.url + "/plane_0/ImageProperties.xml"; };
 			t.getTileURL = function(image, x, y, level) {
-
 				var prefix = image.substr(0, image.lastIndexOf("."));
 				var base = t.url + '/' + prefix;
 				var ilevel = parseInt(t.nlevels - 1 - level);
@@ -224,23 +267,21 @@ initTree: function() {
 				var group = index >> 8;
 				return base + "/TileGroup" + group + "/" + ilevel + "-" + x + "-" + y + t.suffix;
 			};
+
+			t.parseMetaData = function(response) {
+				var tmp = response.split('"');
+				t.tilesize = parseInt(tmp[11]);
+				t.overlap = 0; //overlap is not specified!
+				var max = Math.max(t.width, t.height)/t.tilesize;
+				t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
+			}
 			break;
 
-		case "google":
-			var max = Math.max(t.width, t.height)/t.tilesize;
-			t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
 
-			t.getTileURL = function(image, x, y, level) {
-
-				var prefix = image.substr(0, image.lastIndexOf("."));
-				var base = t.url + '/' + prefix;
-				var ilevel = parseInt(t.nlevels - 1 - level);
-				return base + "/" + ilevel + "/" + y + "/" + x + t.suffix;
-			};
-			break;
 		case "iip":
 			var max = Math.max(t.width, t.height)/t.tilesize;
 			t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
+
 			t.getTileURL = function(image, x, y, level) {
 				var server = "/iipsrv/iipsrv.fcgi";
 				var prefix = image.substr(0, image.lastIndexOf("."));
@@ -254,11 +295,13 @@ initTree: function() {
 		default:
 			console.log("OOOPPpppps");
 	}
-	if(!t.tilesize) {
-		console.log("TILESIZE!", t.tilesize);
-		return;
-	}
 
+	if(t.getMetaDataURL) {
+		t.get(t.getMetaDataURL(), 'text', function(r) { t.parseMetaData(r); initBoxes(); });
+	} else 
+		initBoxes();
+
+	function initBoxes() {
 	t.qbox = []; //by level (0 is the bottom)
 	t.bbox = [];
 	var w = t.width;
@@ -278,6 +321,7 @@ initTree: function() {
 		}
 		w >>>= 1;
 		h >>>= 1;
+	}
 	}
 },
 
@@ -964,14 +1008,16 @@ drawNode: function(pos, minlevel, level, x, y) {
 
 //	var d = level - minlevel;
 
+	var scale = Math.pow(2, pos.z);
 	if(t.layout == "image") {
 		sx = 2.0*(t.width/scale)/t.canvas.width;
 		sy = 2.0*(t.height/scale)/t.canvas.height;
 		dx = -2.0*(pos.x/scale)/t.canvas.width;
 		dy = -2.0*(pos.y/scale)/t.canvas.height;
+
 	} else {
 
-		var scale = Math.pow(2, pos.z);
+
 		var tilesizeinimgspace = t.tilesize*(1<<(level));
 		var tilesizeincanvasspace = tilesizeinimgspace/scale;
 		var tx = tilesizeinimgspace;
@@ -981,15 +1027,15 @@ drawNode: function(pos, minlevel, level, x, y) {
 
 		var o = [x==0?0:over, y==0?0:over, over, over];
 
-		if(t.layout != "google") {
-		if(tx*(x+1) > t.width) {
-			tx = (t.width  - tx*x);
-			o[2] = 0;
-		}
-		if(ty*(y+1) > t.height) {
-			ty = (t.height - ty*y);
-			o[3] = 0;
-		} //in imagespace
+		if(t.layout != "google") { //google does not clip images.
+			if(tx*(x+1) > t.width) {
+				tx = (t.width  - tx*x);
+				o[2] = 0;
+			}
+			if(ty*(y+1) > t.height) {
+				ty = (t.height - ty*y);
+				o[3] = 0;
+			} //in imagespace
 		}
 		tx /= scale;
 		ty /= scale;
@@ -1127,7 +1173,7 @@ prefetch: function() {
 },
 
 preload: function() {
-	while(this.requestedCount < this.maxPrefetched && this.queued.length > 0) {
+	while(this.requestedCount < this.maxRequested && this.queued.length > 0) {
 		var tile = this.queued.shift();
 		this.loadTile(tile.level, tile.x, tile.y);
 	}
