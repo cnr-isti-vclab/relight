@@ -55,10 +55,10 @@ var canvas = $('#rticanvas');
 
 
 var glopt = { antialias: false, depth: false };
-//var gl = canvas[0].getContext("webgl2", glopt) || canvas.getContext("webgl", glopt) || canvas.getContext("experimental-webgl", glopt) ;
-var rti = new RtiViewer(canvas[0], { layout:"iip", server:"/iipsrv/iipsrv.fcgi", path:"/var/www/html/relight1/test/front1044", url:url }); 
 
-//var rti = new RtiViewer(canvas[0], { gl:gl, url:url, layout:"zoomify" });
+//var rti = new RtiViewer(canvas[0], { layout:"iip", server:"/iipsrv/iipsrv.fcgi", path:"/var/www/html/relight1/test/front1044", url:url }); 
+
+var rti = new RtiViewer(canvas[0], { url:url, layout:"zoomify" });
 
 rti.onLoad = function(t) { /* not needed t.centerAndScale(0); */ }
 

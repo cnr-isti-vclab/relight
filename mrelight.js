@@ -238,7 +238,7 @@ initTree: function() {
 			break;
 
 		case "deepzoom":
-			t.getMetaDataURL = function() { return t.url + "/plane_0.dzi"; }
+			t.metaDataURL = t.url + "/plane_0.dzi";
 			t.getTileURL = function (image, x, y, level) {
 				var prefix = image.substr(0, image.lastIndexOf("."));
 				var base = t.url + '/' + prefix + '_files/';
@@ -258,7 +258,8 @@ initTree: function() {
 			break;
 
 		case "zoomify":
-			t.getMetaDataURL = function() { return t.url + "/plane_0/ImageProperties.xml"; };
+			t.overlap = 0; //overlap is not specified!
+			t.metaDataURL = t.url + "/plane_0/ImageProperties.xml";
 			t.getTileURL = function(image, x, y, level) {
 				var prefix = image.substr(0, image.lastIndexOf("."));
 				var base = t.url + '/' + prefix;
@@ -271,7 +272,7 @@ initTree: function() {
 			t.parseMetaData = function(response) {
 				var tmp = response.split('"');
 				t.tilesize = parseInt(tmp[11]);
-				t.overlap = 0; //overlap is not specified!
+
 				var max = Math.max(t.width, t.height)/t.tilesize;
 				t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
 			}
@@ -279,15 +280,9 @@ initTree: function() {
 
 
 		case "iip":
-
 			t.suffix = ".tif";
 			t.overlap = 0;
-
-			t.getMetaDataURL = function() {
-				var url = t.server + "?FIF=" + t.path + "/plane_0.tif&obj=IIP,1.0&obj=Max-size&obj=Tile-size&obj=Resolution-number";
-//				if( this.ask_resolutions ) url += '&obj=Resolutions';
-				return url;
-			};
+			t.metaDataURL = t.server + "?FIF=" + t.path + "/plane_0" + t.suffix + "&obj=IIP,1.0&obj=Max-size&obj=Tile-size&obj=Resolution-number";
 
 			t.parseMetaData = function(response) {
 				var tmp = response.split( "Tile-size:" );
@@ -296,11 +291,7 @@ initTree: function() {
 				t.nlevels  = parseInt(response.split( "Resolution-number:" )[1]);
 			}
 
-			var max = Math.max(t.width, t.height)/t.tilesize;
-			t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
-
 			t.getTileURL = function(image, x, y, level) {
-//				var server = "/iipsrv/iipsrv.fcgi";
 				var prefix = image.substr(0, image.lastIndexOf("."));
 				var img = t.path + "/" + prefix + t.suffix;
 				var index = y*t.qbox[level][2] + x;
@@ -309,26 +300,12 @@ initTree: function() {
 			};
 			break;
 
-/*		case "iiif":
-			var max = Math.max(t.width, t.height)/t.tilesize;
-			t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
-
-			t.getTileURL = function(image, x, y, level) {
-				var server = "/iipsrv/iipsrv.fcgi";
-				var prefix = image.substr(0, image.lastIndexOf("."));
-				var img = t.path + "/" + prefix + t.suffix;
-				var index = y*t.qbox[level][2] + x;
-				var ilevel = parseInt(t.nlevels - 1 - level);
-				return server+"?FIF=" + img + "&JTL=" + ilevel + "," + index;
-			};
-			break; */
-
 		default:
 			console.log("OOOPPpppps");
 	}
 
-	if(t.getMetaDataURL) {
-		t.get(t.getMetaDataURL(), 'text', function(r) { t.parseMetaData(r); initBoxes(); });
+	if(t.metaDataURL) {
+		t.get(t.metaDataURL, 'text', function(r) { t.parseMetaData(r); initBoxes(); });
 	} else 
 		initBoxes();
 
@@ -340,12 +317,11 @@ initTree: function() {
 		var count = 0;
 		for(var level = t.nlevels - 1; level >= 0; level--) {
 			var ilevel = t.nlevels -1 - level;
-			t.qbox[ilevel] = [0, 0, 0, 0]; //TODO replace with correct formula
+			t.qbox[ilevel] = [0, 0, 0, 0];
 			t.bbox[ilevel] = [0, 0, w, h];
 			for(var y = 0; y*t.tilesize < h; y++) {
 				t.qbox[ilevel][3] = y+1;
 				for(var x = 0; x*t.tilesize < w; x ++) {
-	//				var index = t.index(ilevel, x, y);
 					t.nodes[count++] = { tex: [], missing: t.njpegs };
 					t.qbox[ilevel][2] = x+1;
 				}
