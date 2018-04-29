@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
 		case '?':
 			cerr << "Option " << (char)optopt << " requires an argument" << endl;
 			if (isprint (optopt))
-				cerr << "Unknown option " << optopt << endl;
+				cerr << "Unknown option " << (char)optopt << endl;
 			else
 				cerr << "Unknown option character" << endl;
 			return 1;
