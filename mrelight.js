@@ -79,6 +79,7 @@ function RtiViewer(canvas, o) {
 	t.requested = {};       //things being actually requested
 	t.requestedCount = 0;
 	t.animaterequest = null;
+	t.waiting = 1;
 
 //events
 	t.onload = null;
@@ -119,9 +120,9 @@ get: function(url, type, callback) {
 setUrl: function(url) {
 	var t = this;
 	t.url = url;
-	t.ready = false;
 
-	t.get(url + '/info.json', 'json', function(d) { t.loadInfo(d); });
+	t.waiting = 1;
+	t.get(url + '/info.json', 'json', function(d) { t.waiting--; t.loadInfo(d); });
 },
 
 loadInfo: function(info) {
@@ -189,20 +190,24 @@ loadInfo: function(info) {
 	t.initTree();
 	t.loadProgram();
 
-	function loaded() {
-		if(t.fit)
-			t.centerAndScale();
-		if(t.onLoad)
-			t.onLoad(t);
-		t.prefetch();
-		t.preload();
-	}
-
 	if(t.colorspace == 'mrgb' || t.colorspace == 'mycc') {
-		t.get(t.url + '/materials.bin', 'arraybuffer', function(d) { t.loadBasis(d); loaded(); });
-	} else {
-		loaded();
+		t.waiting++;
+		t.get(t.url + '/materials.bin', 'arraybuffer', function(d) { t.waiting--; t.loadBasis(d); t.loaded(); });
 	}
+	t.loaded();
+},
+
+loaded: function() {
+	var t = this;
+	if(t.waiting) return;
+	if(t.fit)
+		t.centerAndScale();
+	if(t.onLoad)
+		t.onLoad(t);
+	t.computeLightWeights(t.light);
+	t.prefetch();
+	t.preload();
+	t.redraw();
 },
 
 initTree: function() {
@@ -305,7 +310,8 @@ initTree: function() {
 	}
 
 	if(t.metaDataURL) {
-		t.get(t.metaDataURL, 'text', function(r) { t.parseMetaData(r); initBoxes(); });
+		t.waiting++;
+		t.get(t.metaDataURL, 'text', function(r) { t.waiting--; t.parseMetaData(r); initBoxes(); t.loaded(); });
 	} else 
 		initBoxes();
 
@@ -378,7 +384,7 @@ setPosition: function(x, y, z, dt) {
 		var iy = [scale*canvas.height()/2, t.height - scale*canvas.height()/2].sort(function(a, b) { return a-b; });
 		y = Math.max(iy[0], Math.min(iy[1], y));
 
-		if(z <= 0) z = 0;
+		if(z <= -1) z = -1;
 	}
 
 	if(!dt) dt = 0;
@@ -452,7 +458,6 @@ loadBasis: function(data) {
 			}
 		}
 	}
-	t.computeLightWeights(t.light);
 },
 
 index: function(level, x, y) {
@@ -1075,7 +1080,7 @@ draw: function(timestamp) {
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	gl.enable(gl.SCISSOR_TEST);
 
-	if(!t.visible)
+	if(t.waiting || !t.visible)
 		return;
 
 	var pos = t.getCurrent(performance.now());
@@ -1144,7 +1149,7 @@ redraw: function() {
 
 prefetch: function() {
 	var t = this;
-	if(!t.visible)
+	if(t.waiting || !t.visible)
 		return;
 	var needed = t.neededBox(t.pos, t.border);
 	var minlevel = needed.level;
