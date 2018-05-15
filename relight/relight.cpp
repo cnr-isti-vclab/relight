@@ -725,8 +725,8 @@ void RtiBuilder::pickBase(PixelArray &sample) {
 		}
 
 		for(auto &plane: mat.planes) {
-			//plane.scale = plane.max - plane.min;
-			plane.scale = maxscale;
+			plane.scale = plane.max - plane.min;
+			//plane.scale = maxscale;
 			/*if(plane.scale > 0.50*maxscale)
 				plane.scale = maxscale;
 			else plane.scale = 2*plane.scale; */

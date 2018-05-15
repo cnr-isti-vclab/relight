@@ -18,7 +18,7 @@ void help() {
 	cout << "\tinput folder containing a .lp with number of photos and light directions\n";
 	cout << "\toptional output folder (default ./)\n\n";
 	cout << "\t-f <format>: flat";
-	cout << "\t-b <basis>: pca(default), ptm, lptm, hsh\n";
+	cout << "\t-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear, dmd\n";
 	cout << "\t-m <int>  : number of materials (default 8)\n";
 	cout << "\t-r <int>  : side of the basis function (default 8, 0 means rbf interpolation)\n";
 	cout << "\t-q <int>  : jpeg quality (default: 90)\n";
@@ -100,9 +100,11 @@ int main(int argc, char *argv[]) {
 			} else if(b == "yhsh") {
 				builder.colorspace = RtiBuilder::YCC;
 				builder.type = RtiBuilder::HSH;
-				
+			} else if(b == "dmd") {
+				builder.colorspace = RtiBuilder::RGB;
+				builder.type = RtiBuilder::DMD;
 			} else {
-				cerr << "Unknown basis type: " << optarg << " (pick yrbf, rbf, bilinear, hsh or ptm)\n";
+				cerr << "Unknown basis type: " << optarg << " (pick yrbf, rbf, bilinear, hsh, dmd or ptm)\n";
 				return -1;
 			}
 		}

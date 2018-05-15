@@ -97,6 +97,7 @@ function RtiViewer(canvas, o) {
 RtiViewer.prototype = {
 
 get: function(url, type, callback) {
+	if(!url) throw "Missing url!";
 	var r=new XMLHttpRequest();
 	r.open('GET', url);
 	if(type != 'xml')
@@ -342,7 +343,6 @@ initTree: function() {
 resize: function(width, height) {
 	this.canvas.width = width;
 	this.canvas.height = height;
-	t.gl.viewport(0, 0, width, height);
 	this.prefetch();
 	this.redraw();
 },
@@ -357,9 +357,10 @@ center: function(dt) {
 },
 
 centerAndScale: function(dt) {
-	var scale = Math.max(this.width/canvas.width(), this.height/canvas.height());
+	var t = this;
+	var scale = Math.max(t.width/t.canvas.width, t.height/t.canvas.height);
 	var z = Math.log(scale)/Math.LN2;
-	this.setPosition(this.width/2, this.height/2, z, dt);
+	this.setPosition(t.width/2, t.height/2, z, dt);
 },
 
 pan: function(dx, dy, dt) { //dx and dy expressed as pixels in the current size!
@@ -374,14 +375,14 @@ setPosition: function(x, y, z, dt) {
 	var scale = Math.pow(2, z);
 
 	if(t.bounded && t.width) {
-		var zx = Math.min(z, Math.log(t.width/canvas.width())/Math.log(2.0));
-		var zy = Math.min(z, Math.log(t.height/canvas.height())/Math.log(2.0));
+		var zx = Math.min(z, Math.log(t.width/t.canvas.width)/Math.log(2.0));
+		var zy = Math.min(z, Math.log(t.height/t.canvas.height)/Math.log(2.0));
 		z = Math.max(zx, zy);
 		scale = Math.pow(2, z);
 
-		var ix = [scale*canvas.width()/2, t.width - scale*canvas.width()/2].sort(function(a, b) { return a-b; });
+		var ix = [scale*t.canvas.width/2, t.width - scale*t.canvas.width/2].sort(function(a, b) { return a-b; });
 		x = Math.max(ix[0], Math.min(ix[1], x));
-		var iy = [scale*canvas.height()/2, t.height - scale*canvas.height()/2].sort(function(a, b) { return a-b; });
+		var iy = [scale*t.canvas.height/2, t.height - scale*t.canvas.height/2].sort(function(a, b) { return a-b; });
 		y = Math.max(iy[0], Math.min(iy[1], y));
 
 		if(z <= -1) z = -1;
@@ -1076,6 +1077,7 @@ draw: function(timestamp) {
 	var gl = t.gl;
 	t.animaterequest = null;
 
+	t.gl.viewport(0, 0, t.canvas.width, t.canvas.height);
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	gl.enable(gl.SCISSOR_TEST);
@@ -1153,6 +1155,7 @@ prefetch: function() {
 		return;
 	var needed = t.neededBox(t.pos, t.border);
 	var minlevel = needed.level;
+
 	//TODO check level also (unlikely, but let's be exact)
 	var box = needed.box[minlevel];
 	if(t.previouslevel == minlevel && box[0] == t.previousbox[0] && box[1] == t.previousbox[1] &&
@@ -1199,7 +1202,7 @@ neededBox: function(pos, border) {
 	}
 	var w = this.canvas.width;
 	var h = this.canvas.height;
-	var minlevel = Math.max(0, Math.floor(pos.z));
+	var minlevel = Math.max(0, Math.min(Math.floor(pos.z), t.nlevels-1));
 
 	//size of a rendering pixel in original image pixels.
 	var scale = Math.pow(2, pos.z);
