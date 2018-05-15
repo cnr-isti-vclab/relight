@@ -80,12 +80,12 @@ int main(int argc, char *argv[]) {
 	dir.setNameFilters(QStringList()<<"*.jpg"<<"*.JPG");
 	QStringList images = dir.entryList();
 
-	int reference = 10;
-	int max = 18;
-	int width = 110; //40;
-	int height = 80; //40;
-	int offx = 467;//51; //100;
-	int offy = 281;//157; //100;
+	int reference = 0;
+	int max = 20;
+	int width = 190; //40;
+	int height = 190; //40;
+	int offx = 3017;//51; //100;
+	int offy = 3837;//157; //100;
 	vector<QImage> samples;
 	for(int i = 0; i < images.size(); i++) {
 		cout << qPrintable(images[i]) << endl;
@@ -107,8 +107,8 @@ int main(int argc, char *argv[]) {
 	dir.mkdir("aligned");
 	for(int i = 0; i < images.size(); i++) {
 		QPoint &o = offsets[i];
-		QImage img(images[i]);
-		//QImage img = samples[i];
+	//	QImage img(images[i]);
+		QImage img = samples[i];
 		QImage tmp = img.copy(max + o.x(), max + o.y(), img.width() - 2*max, img.height() - 2*max);
 		tmp.save("aligned/A_" + images[i]);
 	}

@@ -23,20 +23,13 @@ ImageSet::~ImageSet() {
 bool ImageSet::init(const char *_path) {
 
 	QDir dir(_path);
-	QStringList filters;
-	filters << "*.lp";
-	QStringList lps = dir.entryList(filters);
+	QStringList lps = dir.entryList(QStringList() << "*.lp");
 	if(lps.size() == 0) {
 		cerr << "Could not find .lp file\n";
 		return false;
 	}
 	QString sphere_path = dir.filePath(lps[0]);
 	QFile sphere(sphere_path);
-	if(!sphere.exists()) {
-		cerr << "Could not find: " << qPrintable(sphere_path) << endl;
-		return false;
-	}
-
 	if(!sphere.open(QFile::ReadOnly)) {
 		cerr << "Could not open: " << qPrintable(sphere_path) << endl;
 		return false;

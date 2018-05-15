@@ -48,7 +48,7 @@ bool Rti::load(const char *filename) {
 	width = obj["width"].toInt();
 	height = obj["height"].toInt();
 
-	map<string, Type> types = {{"ptm", PTM}, {"hsh", HSH}, {"rbf", RBF}, {"bilinear", BILINEAR }};
+	map<string, Type> types = {{"ptm", PTM}, {"hsh", HSH}, {"dmd", DMD}, {"rbf", RBF}, {"bilinear", BILINEAR }};
 	QString t = obj["type"].toString();
 	if(!types.count(qPrintable(t))) {
 		error = "Unknown basis type: " + t.toStdString();
@@ -371,6 +371,7 @@ std::vector<float> Rti::lightWeights(float lx, float ly) {
 	switch(type) {
 	case PTM: return lightWeightsPtm(lx, ly);
 	case HSH: return lightWeightsHsh(lx, ly);
+	case DMD: return lightWeightsDmd(lx, ly);
 	case RBF: return lightWeightsRbf(lx, ly);
 	case BILINEAR: return lightWeightsBilinear(lx, ly);
 	default: return vector<float>();
@@ -402,6 +403,20 @@ std::vector<float> Rti::lightWeightsPtm(float lx, float ly) {
 	}
 
 done:
+
+	return coeffs;
+}
+
+std::vector<float> Rti::lightWeightsDmd(float lx, float ly) {
+	cerr << "NOt implemented!" << endl;
+	if(colorspace == RGB)
+		assert(nplanes %3 == 0);
+
+	uint32_t nweights = (colorspace == LRGB)? (nplanes-3) : nplanes/3;
+
+	uint32_t count = 0;
+	int degree = 0;
+	vector<float> coeffs(nweights);
 
 	return coeffs;
 }
