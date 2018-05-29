@@ -20,7 +20,7 @@ ImageSet::~ImageSet() {
 		delete dec;
 }
 
-bool ImageSet::init(const char *_path) {
+bool ImageSet::init(const char *_path, bool ignore_filenames) {
 
 	QDir dir(_path);
 	QStringList lps = dir.entryList(QStringList() << "*.lp");
@@ -42,17 +42,29 @@ bool ImageSet::init(const char *_path) {
 	lights.resize(n);
 	decoders.resize(n);
 
+	QStringList img_ext;
+	img_ext << "*.jpg" << "*.JPG";
+	QStringList images = dir.entryList(img_ext);
+
 	for(size_t i = 0; i < n; i++) {
 		Vector3f &light = lights[i];
 		QString s;
 		stream >> s >> light[0] >> light[1] >> light[2];
 		QString filepath = dir.filePath(s);
 
-		//often path are absolute. TODO cleanup HERE!
-		QFileInfo info(filepath);
-		if(!info.exists()) {
-			cerr << "Could not find image: " << qPrintable(s) << endl;
-			return false;
+		if(ignore_filenames) {
+			if(images.size() != n) {
+				cerr << "Lp number of lights (" << n << ") different from the number of images found (" << images.size() << ")\n";
+				return false;
+			}
+			filepath = dir.filePath(images[i]);
+		} else {
+			//often path are absolute. TODO cleanup HERE!
+			QFileInfo info(filepath);
+			if(!info.exists()) {
+				cerr << "Could not find image: " << qPrintable(s) << endl;
+				return false;
+			}
 		}
 		int w, h;
 		JpegDecoder *dec = new JpegDecoder;

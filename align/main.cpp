@@ -6,6 +6,9 @@
 #include <QImage>
 #include <QPoint>
 #include <QDir>
+#include <QApplication>
+
+#include "aligndialog.h"
 
 using namespace std;
 
@@ -76,6 +79,15 @@ QPoint align(QImage a, QImage b, int max) {
 }
 
 int main(int argc, char *argv[]) {
+
+	const auto &app = QApplication(argc, argv);
+
+	auto dialog = new AlignDialog;
+	dialog->show();
+	int res = dialog->exec();
+
+
+/*
 	QDir dir("./");
 	dir.setNameFilters(QStringList()<<"*.jpg"<<"*.JPG");
 	QStringList images = dir.entryList();
@@ -111,7 +123,8 @@ int main(int argc, char *argv[]) {
 		QImage img = samples[i];
 		QImage tmp = img.copy(max + o.x(), max + o.y(), img.width() - 2*max, img.height() - 2*max);
 		tmp.save("aligned/A_" + images[i]);
-	}
+	} */
+
 	return 0;
 }
 
