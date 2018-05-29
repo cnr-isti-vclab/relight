@@ -14,6 +14,21 @@ Relight supports:
 
 Relight new formats provide better accuracy and smaller size (see demo)
 
+#TODO
+
+white balance and other conversion from RAW features (dcraw)
+use color tablet to calibrate raw images
+contrast and other image processing.
+measure to be added to the images from tag
+align images using mutual information (or better an edge detector?
+remove lens distortion
+find spheres (very optional)
+find highlight
+mask artifact
+crop
+normals
+join pieces
+
 # Relight
 
 

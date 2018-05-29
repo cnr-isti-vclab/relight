@@ -33,11 +33,6 @@ void calibrateColors(QString dir) {
 
 
 int main(int argc, char *argv[]) {
-	if(argc < 2 || argc > 3) {
-		cerr << "Usage: dome_calibration <balls folder> [<color table folder>]\n\n";
-		return 0;
-	}
-
 	const auto &app = QApplication(argc, argv);
 
 
