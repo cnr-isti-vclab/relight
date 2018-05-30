@@ -13,6 +13,8 @@
 
 #include <armadillo>
 
+class QDir;
+
 
 class RtiBuilder: public Rti {
 public:
@@ -26,6 +28,7 @@ public:
 	bool init(const std::string &folder);
 	bool init();
 	size_t save(const std::string &output, int quality = 95);
+	bool saveJSON(QDir &dir, int quality);
 
 protected:
 	//for each resample pos get coeffs from the origina lights.
@@ -55,7 +58,9 @@ protected:
 	void pickBasePTM();
 	void pickBaseHSH();
 
+	
 //DEBUG
+	
 	void saveLightPixel(Color3f *p, int side, const QString &file);
 	void savePixel(Color3f *p, int side, const QString &file);
 	void debugMaterials();

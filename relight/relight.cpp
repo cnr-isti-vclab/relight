@@ -3,6 +3,7 @@
 #include "rtibuilder.h"
 
 #include <QDir>
+#include <QFile>
 #include <QStringList>
 #include <QTextStream>
 #include <QImage>
@@ -838,18 +839,11 @@ struct SwitchCost {
 	bool operator<(const SwitchCost &c) { return fabs(cost) > fabs(c.cost); }
 };
 
-size_t RtiBuilder::save(const string &output, int quality) {
+
+bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 
 	uint32_t dim = ndimensions*3;
 	
-	QDir dir(output.c_str());
-	if(!dir.exists()) {
-		QDir here("./");
-		if(!here.mkdir(output.c_str())) {
-			error = "Could not create output dir.";
-			return 0;
-		}
-	}
 	//save info.json
 	QFile info(dir.filePath("info.json"));
 	info.open(QFile::WriteOnly);
@@ -862,7 +856,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	case HSH: stream << "hsh"; break;
 	case RBF: stream << "rbf"; break;
 	case BILINEAR: stream << "bilinear"; break;
-	default: return false;
+	default: error = "Unknown RTI type"; return false;
 	}
 	stream << "\",\n";
 	if(type == BILINEAR)
@@ -875,12 +869,13 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	case YCC: stream << "ycc"; break;
 	case MRGB: stream << "mrgb"; break;
 	case MYCC: stream << "mycc"; break;
-	default: return false;
+	default: error = "Unknown RTI colorspace."; return false;
 	}
 	stream << "\",\n";
 
-	if(1 || type == RBF) {
-		stream << "\"sigma\": " << sigma << ",\n";
+	if(lights.size()) {
+		if(type == RBF)
+			stream << "\"sigma\": " << sigma << ",\n";
 		stream << "\"lights\": [";
 		for(uint32_t i = 0; i < lights.size(); i++) {
 			Vector3f &l = lights[i];
@@ -894,7 +889,34 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		stream << "\"yccplanes\": [" << yccplanes[0] << ", " << yccplanes[1] << ", " << yccplanes[2] << "],\n";
 	else
 		stream << "\"nplanes\": " << nplanes << ",\n";
+	
+	stream << "\"quality\": " << quality << ",\n";
 
+	if(type == RBF || type == BILINEAR) {
+		stream << "\"basis:\": [\n";
+	
+		for(uint32_t m = 0; m < nmaterials; m++) {
+			Material &mat = materials[m];
+			MaterialBuilder &matb = materialbuilders[m];
+
+			for(uint32_t k = 0; k < ndimensions*3; k++) {
+				if(k != 0) stream << ",";
+				stream << (int)(matb.mean[k]);
+			}
+			stream << "\n";
+
+			for(uint32_t p = 0; p < nplanes; p++) {
+				Material::Plane &plane = mat.planes[p];
+				float *eigen = matb.proj.data() + p*dim;
+				for(uint32_t k = 0; k < ndimensions*3; k++) {
+					stream << "," << (int)(127 + plane.range*eigen[k]);
+				}
+				stream << "\n";
+			}
+		}
+		stream << "],\n";
+	}
+	
 	stream << "\"materials\": [\n";
 	for(size_t i = 0; i < materials.size(); i++) {
 		Material &mat = materials[i];
@@ -926,33 +948,30 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			stream << ", ";
 		stream << "\n";
 	}
-	stream << "],\n";
-	stream << "\"basis:\": [\n";
-	
-	for(uint32_t m = 0; m < nmaterials; m++) {
-		Material &mat = materials[m];
-		MaterialBuilder &matb = materialbuilders[m];
-
-		for(uint32_t k = 0; k < ndimensions*3; k++) {
-			if(k != 0) stream << ",";
-			stream << (int)(matb.mean[k]);
-		}
-		stream << "\n";
-
-		for(uint32_t p = 0; p < nplanes; p++) {
-			Material::Plane &plane = mat.planes[p];
-			float *eigen = matb.proj.data() + p*dim;
-			for(uint32_t k = 0; k < ndimensions*3; k++) {
-				stream << "," << (int)(127 + plane.range*eigen[k]);
-			}
-			stream << "\n";
-		}
-	}
 	
 	stream << "]\n";
 	stream << "}\n";
 	info.close();
+	return true;
+}
 
+size_t RtiBuilder::save(const string &output, int quality) {
+
+	uint32_t dim = ndimensions*3;
+	
+	QDir dir(output.c_str());
+	if(!dir.exists()) {
+		QDir here("./");
+		if(!here.mkdir(output.c_str())) {
+			error = "Could not create output dir.";
+			return 0;
+		}
+	}
+
+	//TODO error control
+	bool ok = saveJSON(dir, quality);
+	if(!ok) return 0;
+	
 	//save materials as a single png
 
 	if(type == RBF || type == BILINEAR) {

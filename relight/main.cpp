@@ -1,4 +1,5 @@
 #include "rtibuilder.h"
+#include "../src/legacy_rti.h"
 
 #include "../src/getopt.h"
 
@@ -30,6 +31,8 @@ void help() {
 	cout << "\t-e        : evaluate reconstruction error (default: false)\n";
 	cout << "\t-y <int>  : number of Y planes in YCC";
 }
+
+int convertRTI(const char *file, const char *output, int quality);
 
 int main(int argc, char *argv[]) {
 
@@ -177,6 +180,11 @@ int main(int argc, char *argv[]) {
 	if(optind < argc)
 		output = argv[optind++];
 	
+	QFileInfo info(input.c_str());
+	if(info.isFile())
+		return convertRTI(input.c_str(), output.c_str(), quality);
+	
+	
 	if(!builder.init(input)) {
 		cerr << builder.error << endl;
 		return 1;
@@ -208,5 +216,60 @@ int main(int argc, char *argv[]) {
 		cout << output << "," << types[builder.type] << "," << colorspaces[builder.colorspace] << ","
 			<< builder.nplanes << ","<< builder.nmaterials << "," << builder.yccplanes[0] << "," << size << "," << psnr << "," << mse << endl;
 	}
+	return 0;
+}
+
+int convertRTI(const char *file, const char *output, int quality) {
+	LRti lrti;
+	if(!lrti.load(file))
+		return 1;
+
+	RtiBuilder rti;
+	rti.width = lrti.width;
+	rti.height = lrti.height;
+	rti.chromasubsampling = lrti.chromasubsampled;
+	switch(lrti.type) {
+	case LRti::UNKNOWN:
+		cerr << "Unknown RTI type!\n";
+		return 1;
+	case LRti::PTM_LRGB:
+		rti.type = Rti::PTM;
+		rti.colorspace = Rti::LRGB;
+		rti.nplanes = 9;
+		break;
+	case LRti::PTM_RGB:
+		rti.type = Rti::PTM;
+		rti.colorspace = Rti::RGB;
+		rti.nplanes = 18;
+		break;
+	case LRti::HSH:
+		rti.type = Rti::HSH;
+		rti.colorspace = Rti::RGB;
+		rti.nplanes = 27;
+		break;
+	}
+	//CHECK CONVERSION in HSH or PTM!!!
+	rti.scale = lrti.scale;
+	for(int &v: lrti.bias)
+		rti.bias.push_back((float)v);
+	
+	QDir dir(output);
+	if(!dir.exists()) {
+		QDir here("./");
+		if(!here.mkdir(output)) {
+			cerr << "Could not create output dir.\n";
+			return 0;
+		}
+	}
+	/* scale and bhias needs to be asaved in json. so have the materialbuilder to copy bias and scale in the rti vector
+	 * and saveJson will use those instead! */
+	
+	rti.saveJSON(dir, quality);
+	for(int p = 0; p < rti.nplanes; p += 3) {
+		lrti.encodeJPEG(p, quality, dir.filePath("plane_%1.jpg").arg(p/3).toStdString().c_str());
+	}
+	//time to save the JPG
+	
+	
 	return 0;
 }
