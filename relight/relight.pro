@@ -25,7 +25,8 @@ SOURCES += main.cpp \
     relight.cpp \
     ../src/rti.cpp \
     ../src/pca.cpp \
-    ../src/utils.cpp
+    ../src/utils.cpp \
+    ../src/legacy_rti.cpp
 
 HEADERS += \
     ../src/getopt.h \
@@ -35,7 +36,9 @@ HEADERS += \
     ../src/material.h \
     ../src/vector.h \
     relight.h \
-    ../src/rti.h
+    ../src/rti.h \
+    ../src/legacy_rti.h \
+    rtibuilder.h
 
 DISTFILES += \
     plan.txt

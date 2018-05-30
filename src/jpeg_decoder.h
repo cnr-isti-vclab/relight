@@ -33,6 +33,7 @@ public:
 	size_t readRows(int rows, uint8_t *buffer); //return false on end.
 	bool finish();
 	bool restart();
+	bool chromaSubsampled() { return subsampled; }
 
 private:
 	FILE *file = nullptr;
@@ -45,6 +46,7 @@ private:
 	J_COLOR_SPACE colorSpace = JCS_RGB;
 	J_COLOR_SPACE jpegColorSpace = JCS_YCbCr;
 
+	bool subsampled = false;
 };
 
 #endif // JPEGDECODER_H_

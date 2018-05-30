@@ -80,6 +80,9 @@ bool JpegDecoder::init(int &width, int &height) {
 	decInfo.out_color_space = colorSpace;
 	decInfo.jpeg_color_space = jpegColorSpace;
 	decInfo.raw_data_out = false;
+	
+	if(decInfo.num_components > 1) 
+		subsampled =  decInfo.comp_info[1].h_samp_factor != 1;
 
 	jpeg_start_decompress(&decInfo);
 
@@ -120,4 +123,5 @@ bool JpegDecoder::restart() {
 	int w, h;
 	return init(w, h);
 }
+
 
