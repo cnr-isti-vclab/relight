@@ -192,8 +192,12 @@ loadInfo: function(info) {
 	t.loadProgram();
 
 	if(t.colorspace == 'mrgb' || t.colorspace == 'mycc') {
-		t.waiting++;
-		t.get(t.url + '/materials.bin', 'arraybuffer', function(d) { t.waiting--; t.loadBasis(d); t.loaded(); });
+		if(info.basis) {
+			t.loadBasis(info.basis);
+		} else { //backward compatible with binary materials
+			t.waiting++;
+			t.get(t.url + '/materials.bin', 'arraybuffer', function(d) { t.waiting--; t.loadBasis(d); t.loaded(); });
+		}
 	}
 	t.loaded();
 },

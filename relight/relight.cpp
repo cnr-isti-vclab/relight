@@ -840,8 +840,8 @@ struct SwitchCost {
 
 size_t RtiBuilder::save(const string &output, int quality) {
 
-	//cout << "Saving output to: " << output << endl;
-
+	uint32_t dim = ndimensions*3;
+	
 	QDir dir(output.c_str());
 	if(!dir.exists()) {
 		QDir here("./");
@@ -884,7 +884,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		stream << "\"lights\": [";
 		for(uint32_t i = 0; i < lights.size(); i++) {
 			Vector3f &l = lights[i];
-			stream << l[0] << ", " << l[1] << ", " << l[2];
+			stream << QString::number(l[0], 'f', 3) << ", " << QString::number(l[1], 'f', 3) << ", " << QString::number(l[2], 'f', 3);
 			if(i != lights.size()-1)
 				stream << ", ";
 		}
@@ -926,12 +926,32 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			stream << ", ";
 		stream << "\n";
 	}
+	stream << "],\n";
+	stream << "\"basis:\": [\n";
+	
+	for(uint32_t m = 0; m < nmaterials; m++) {
+		Material &mat = materials[m];
+		MaterialBuilder &matb = materialbuilders[m];
+
+		for(uint32_t k = 0; k < ndimensions*3; k++) {
+			if(k != 0) stream << ",";
+			stream << (int)(matb.mean[k]);
+		}
+		stream << "\n";
+
+		for(uint32_t p = 0; p < nplanes; p++) {
+			Material::Plane &plane = mat.planes[p];
+			float *eigen = matb.proj.data() + p*dim;
+			for(uint32_t k = 0; k < ndimensions*3; k++) {
+				stream << "," << (int)(127 + plane.range*eigen[k]);
+			}
+			stream << "\n";
+		}
+	}
+	
 	stream << "]\n";
 	stream << "}\n";
 	info.close();
-
-
-	uint32_t dim = ndimensions*3;
 
 	//save materials as a single png
 
@@ -1007,7 +1027,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			}
 			img.save(dir.filePath("materials.png"));
 		}
-
+/*		//saving binary materials
 		basis.resize(3*ndimensions*(nplanes+1)*nmaterials, 0);
 		uint8_t *ubasis = new uint8_t[3*ndimensions*(nplanes+1)*nmaterials];
 
@@ -1035,7 +1055,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		bmaterials.open(QFile::WriteOnly);
 		bmaterials.write((const char *)ubasis, 3*ndimensions*(nplanes+1)*nmaterials);
 		delete []ubasis;
-		bmaterials.close();
+		bmaterials.close(); */
 	}
 
 	//the image is processed one row at a time
