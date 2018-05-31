@@ -24,7 +24,7 @@ bool getLine(FILE *file, string &str) {
 	if(fgets(buffer, 1024, file) == NULL)
 		return false;
 	buffer[1023] = 0;
-
+	
 	char *t = buffer;
 	while(*t != '\n')
 		str.push_back(*t++);
@@ -85,7 +85,7 @@ bool LRti::load(const char *filename) {
 		cerr << "Could not open file: " << filename << endl;
 		return false;
 	}
-
+	
 	string version;
 	getLine(file, version);
 	bool status = true;
@@ -97,23 +97,23 @@ bool LRti::load(const char *filename) {
 		cerr << "Not a PTM or HSH file." << endl;
 		return false;
 	}
-
+	
 	fclose(file);
-
+	
 	return status;
 }
 
 bool LRti::loadPTM(FILE* file) {
 	rewind(file);
-
+	
 	string version, format;
-
+	
 	if(!getLine(file, version))
 		return false;
-
+	
 	if(!getLine(file, format))
 		return false;
-
+	
 	/*	PTM_FORMAT_RGB
 	PTM_FORMAT_LUM
 	PTM_FORMAT_LRGB
@@ -123,30 +123,30 @@ bool LRti::loadPTM(FILE* file) {
 	PTM_FORMAT_JPEG_LRGB
 	PTM_FORMAT_JPEGLS_RGB
 	PTM_FORMAT_JPEGLS_LRGB */
-
+	
 	bool compressed = false;
 	if(format == "PTM_FORMAT_RGB") {
 		type = PTM_RGB;
 		data.resize(18);
-
+		
 	} else if (format == "PTM_FORMAT_LRGB") {
 		type = PTM_LRGB;
 		data.resize(9);
-
+		
 	} else if (format == "PTM_FORMAT_JPEG_RGB") {
 		type = PTM_RGB, compressed = true;
 		data.resize(18);
-
+		
 	} else if (format == "PTM_FORMAT_JPEG_LRGB") {
 		type = PTM_LRGB, compressed = true;
 		data.resize(9);
-
+		
 	} else {
 		type = UNKNOWN;
 		cerr << "Unsupported format: " << format << endl;
 		return false;
 	}
-
+	
 	if(!getInteger(file, width) ||
 			!getInteger(file, height) ||
 			!getFloats(file, scale, 6) ||
@@ -154,49 +154,66 @@ bool LRti::loadPTM(FILE* file) {
 		cerr << "File format invalid\n";
 		return false;
 	}
-
+	
 	for(auto &d: data)
 		d.resize(width*height);
-
+	
 	if(type != PTM_LRGB && type != PTM_RGB) {
 		cerr << "Unsupported RGB (for now)" << endl;
 		return false;
 	}
 	if(!compressed)
 		decodeRAW(version, file);
-
+	
 	else
 		decodeJPEG(file);
-
+	
 	return true;
 }
 
 bool LRti::decodeRAW(const string &version, FILE *file) {
-	//stored as interleaved abcdefRGB before 1.2
-	//stored as interleaved abcdef then planes R, G, B.
-	bool ptm12 = (version == "PTM_1.2");
-	int multiplexed = ptm12? 6 : 9;
-	uint32_t line_size = width*multiplexed;
-
-	vector<unsigned char> line(line_size);
-	for(int y = 0; y < height; y++) {
-		if(fread(line.data(), 1, line_size, file) != line_size)
-			return false;
-		int c = 0;
-		for(int x = 0; x < width; x++)
-			for(int k = 0; k < multiplexed; k++)
-				data[k][x + y*width] = line[c++];
-	}
-
-	if(ptm12) {
+	if(type == PTM_LRGB) {
+		//stored as interleaved abcdefRGB before 1.2
+		//stored as interleaved abcdef then planes R, G, B.
+		bool ptm12 = (version == "PTM_1.2");
+		int multiplexed = ptm12? 6 : 9;
+		uint32_t line_size = width*multiplexed;
+		
+		vector<unsigned char> line(line_size);
 		for(int y = 0; y < height; y++) {
-			if(fread(line.data(), 1, width*3, file) != (uint32_t)width*3)
+			if(fread(line.data(), 1, line_size, file) != line_size)
 				return false;
-
 			int c = 0;
 			for(int x = 0; x < width; x++)
-				for(int k = 6; k < 9; k++)
+				for(int k = 0; k < multiplexed; k++)
 					data[k][x + y*width] = line[c++];
+		}
+		
+		if(ptm12) {
+			for(int y = 0; y < height; y++) {
+				if(fread(line.data(), 1, width*3, file) != (uint32_t)width*3)
+					return false;
+				
+				int c = 0;
+				for(int x = 0; x < width; x++)
+					for(int k = 6; k < 9; k++)
+						data[k][x + y*width] = line[c++];
+			}
+		}
+	} else {
+		uint32_t line_size = width*6;
+		vector<unsigned char> line(line_size);
+		
+		for(int k = 0; k < 3; k++) {
+		
+			for(int y = 0; y < height; y++) {
+				if(fread(line.data(), 1, line_size, file) != line_size)
+					return false;
+				int c = 0;
+				for(int x = 0; x < width; x++)
+					for(int j = 0; j < 6; j++)
+						data[j*3 + k][x + y*width] = line[c++];
+			}
 		}
 	}
 	return true;
@@ -214,13 +231,13 @@ bool LRti::loadHSH(FILE* file) {
 void LRti::clip(int left, int bottom, int right, int top) {
 	assert(left >= 0 && right > left && right  <= width);
 	assert(bottom >= 0 && top > bottom && top  <= height);
-
+	
 	int w = right - left;
 	int h = top - bottom;
 	vector<vector<uint8_t>> tmp(9);
 	for(auto &d: tmp)
 		d.resize(w*h);
-
+	
 	for(int k = 0; k < 9; k++) {
 		for(int y = bottom, dy = 0; y < top; y++, dy++) {
 			memcpy(tmp[k].data() + dy*w, data[k].data() + y*width + left, w);
@@ -237,10 +254,10 @@ LRti LRti::clipped(int left, int bottom, int right, int top) {
 	//NRO optimization avoid copying this object in return.
 	LRti tmp;
 	tmp.type = type;
-
+	
 	assert(left >= 0 && right > left && right  <= width);
 	assert(bottom >= 0 && top > bottom && top  <= height);
-
+	
 	int w = tmp.width = right - left;
 	int h = tmp.height = top - bottom;
 	tmp.bias = bias;
@@ -248,7 +265,7 @@ LRti LRti::clipped(int left, int bottom, int right, int top) {
 	tmp.data.resize(data.size());
 	for(auto &d: tmp.data)
 		d.resize(w*h);
-
+	
 	for(int k = 0; k < 9; k++)
 		for(int y = bottom, dy = 0; y < top; y++, dy++)
 			memcpy(tmp.data[k].data() + dy*w, data[k].data() + y*width + left, w);
@@ -283,13 +300,13 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 		cerr << "Unsupported or incompatible save format" << endl;
 		return false;
 	}
-
+	
 	int bsize = 0;  //binary size
-
+	
 	vector<uint8_t *> buffers(9, NULL);
 	vector<int> sizes(9, 0);
 	vector<float> pca;
-
+	
 	switch(format) {
 	case RAW:
 		//no need to allocate buffer
@@ -304,14 +321,14 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 	default:
 		break;
 	}
-
+	
 	std::ostringstream stream;
 	stream << "PTM_1.2\n";
 	stream << f << "\n";
 	stream << width << "\n" << height << "\n";
 	join(scale, stream) << "\n";
 	join(bias, stream) << "\n";
-
+	
 	switch(format) {
 	case RAW:
 		break;
@@ -328,13 +345,13 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 	default:
 		break;
 	}
-
+	
 	int pos = stream.str().size();
 	size = bsize + pos;
 	buffer = new uint8_t[size];
-
+	
 	memcpy(buffer, stream.str().c_str(), pos);
-
+	
 	uint8_t *start = buffer + pos;
 	switch(format) {
 	case RAW:
@@ -349,14 +366,14 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 				start[i*3 + k] = data[6+k][i];
 		}
 		break;
-
+		
 	case JPEG:
 		for(int k = 0; k < 9; k++) {
 			memcpy(start, buffers[k], sizes[k]);
 			start += sizes[k];
 		}
 		break;
-
+		
 	default:
 		break;
 	}
@@ -386,23 +403,37 @@ bool LRti::encode(PTMFormat format, const char *filename, int quality) {
 bool LRti::encodeJPEG(int startplane, int quality, const char *filename) {
 	vector<int> order;
 	if(type == PTM_LRGB) {
-		order = {6,7,8,0,1,2,3,4,5 };
-	}
+		//lrgb ptm order is: x^2, y^2, xy, x, y, 1, r, g, b
+		//while we use r, g, b, 1, x, y, x2 xy y2
+		order = {6,7,8, 5,3,4, 0,2,1};
+	} else
+		order = {5, 3, 4, 0, 2, 1};
+	
 	JpegEncoder enc;
 	enc.setQuality(quality);
+	
 	enc.setColorSpace(JCS_RGB, 3);
-	enc.setJpegColorSpace(JCS_YCbCr);
+	
+	//enc.setJpegColorSpace(JCS_YCbCr);
+	enc.setJpegColorSpace(JCS_RGB);
+	
 	//lets avoid make another copy in memory.
-
+	
 	enc.init(filename, width, height);
 	
 	vector<uint8_t> line(width*3);
-	for(uint32_t y = 0; y < height; y++) {
+	for(int y = height-1; y >= 0; y--) {
 		for(uint32_t x = 0; x < width; x++) {
 			uint32_t p = y*width + x;
-			line[x*3 + 0] = data[order[startplane + 0]][p];
-			line[x*3 + 1] = data[order[startplane + 1]][p];
-			line[x*3 + 2] = data[order[startplane + 2]][p];
+			if(type == PTM_LRGB) {
+				line[x*3 + 0] = data[order[startplane + 0]][p];
+				line[x*3 + 1] = data[order[startplane + 1]][p];
+				line[x*3 + 2] = data[order[startplane + 2]][p];
+			} else {
+				line[x*3 + 0] = data[order[startplane/3]*3 +  0][p];
+				line[x*3 + 1] = data[order[startplane/3]*3 +  1][p];
+				line[x*3 + 2] = data[order[startplane/3]*3 +  2][p];
+			}
 		}
 		enc.writeRows(line.data(), 1);
 	}
@@ -416,16 +447,16 @@ bool LRti::encodeJPEG(vector<int> &sizes, vector<uint8_t *> &buffers, int qualit
 		enc.setQuality(quality);
 		enc.setColorSpace(JCS_GRAYSCALE, 1);
 		enc.setJpegColorSpace(JCS_GRAYSCALE);
-
+		
 		bool ok = enc.encode(data[k].data(), width, height, buffers[k], sizes[k]);
 		if(!ok) {
 			for(int i = 0; i < k; i++)
 				delete []buffers[i];
 			return false;
 		}
-/*		std::ostringstream filename;
+		/*		std::ostringstream filename;
 		 filename << "coeff_" << k << ".jpg";
-
+		 
 		FILE *file = fopen(filename.str().c_str(), "wb");
 		fwrite(buffers[k], 1, sizes[k], file);
 		fclose(file); */
@@ -435,7 +466,7 @@ bool LRti::encodeJPEG(vector<int> &sizes, vector<uint8_t *> &buffers, int qualit
 
 bool LRti::decodeJPEG(FILE *file) {
 	int quality;
-
+	
 	vector<int> transform;
 	vector<int> motionx;
 	vector<int> motiony;
@@ -443,20 +474,27 @@ bool LRti::decodeJPEG(FILE *file) {
 	vector<int> reference; //again integers
 	vector<int> sizes;
 	vector<int> overflows;
-
+	
+	int ncoeffs = 9;
+	switch(type) {
+	case PTM_LRGB: ncoeffs = 9; break;
+	case PTM_RGB: ncoeffs = 18; break;
+	default: cerr << "Not supported!\n"; exit(0);
+	}
+	
 	if(!getInteger(file, quality) ||
-			!getIntegers(file, transform, 9) ||
-			!getIntegers(file, motionx, 9) ||
-			!getIntegers(file, motiony, 9) ||
-			!getIntegers(file, order, 9) ||
-			!getIntegers(file, reference, 9) ||
-			!getIntegers(file, sizes, 9) ||
-			!getIntegers(file, overflows, 9)) {
+			!getIntegers(file, transform, ncoeffs) ||
+			!getIntegers(file, motionx, ncoeffs) ||
+			!getIntegers(file, motiony, ncoeffs) ||
+			!getIntegers(file, order, ncoeffs) ||
+			!getIntegers(file, reference, ncoeffs) ||
+			!getIntegers(file, sizes, ncoeffs) ||
+			!getIntegers(file, overflows, ncoeffs)) {
 		cerr << "File format invalid\n";
 		return false;
 	}
 	//check transform and motions are 0
-	for(int k = 0; k < 9; k++) {
+	for(int k = 0; k < ncoeffs; k++) {
 		if(transform[k] != 0 || motionx[k] != 0 || motiony[k] != 0) {
 			cerr << "Transform and motion array unsupported." << endl;
 			return false;
@@ -466,38 +504,38 @@ bool LRti::decodeJPEG(FILE *file) {
 	vector<uint32_t> sequence(order.size());
 	for(uint32_t i = 0; i < order.size(); i++)
 		sequence[order[i]] = i;
-//		sequence[order[i]-1] = i; ???
-
+	//		sequence[order[i]-1] = i; ???
+	
 	//precompute start of planes
-	vector<int> pos(10);
+	vector<int> pos(ncoeffs+1);
 	pos[0] = ftell(file);
-	for(int k = 1; k < 10; k++) {
+	for(int k = 1; k < ncoeffs+1; k++) {
 		pos[k] = pos[k-1] + sizes[k-1] + overflows[k-1];
 	}
-
+	
 	//check size
 	fseek(file, 0L, SEEK_END);
 	int tot_size = ftell(file);
-	if(tot_size < pos[9]) {
+	if(tot_size < pos[ncoeffs]) {
 		cerr << "File is truncated." << endl;
 		return false;
 	}
-
-	for(int k = 0; k < 9; k++) {
+	
+	for(int k = 0; k < ncoeffs; k++) {
 		int s = sequence[k];
 		int r = reference[s];
-
+		
 		//read jpeg
 		fseek(file, pos[s], SEEK_SET);
 		vector<uint8_t> buffer(sizes[s]);
 		fread(buffer.data(), 1, sizes[s], file);
-
+		
 		uint8_t *img = NULL;
 		int w, h;
 		JpegDecoder dec;
 		dec.setColorSpace(JCS_GRAYSCALE);
 		dec.setJpegColorSpace(JCS_GRAYSCALE);
-
+		
 		if(!dec.decode(buffer.data(), buffer.size(), img, w, h) || w != width || h != height) {
 			cerr << "Failed decoding jpeg." << endl;
 			return false;
@@ -506,13 +544,13 @@ bool LRti::decodeJPEG(FILE *file) {
 		chromasubsampled = dec.chromaSubsampled();
 		memcpy(data[s].data(), img, w*h);
 		delete []img;
-
+		
 		if(r != -1) {
 			for(int i = 0; i < w*h; i++) {
 				data[s][i] = data[s][i] - 128 + data[r][i];
 			}
 		}
-
+		
 		if(overflows[s] > 0) {
 			vector<uint8_t> overs(overflows[s]);
 			fread(overs.data(), 1, overs.size(), file);
@@ -524,5 +562,6 @@ bool LRti::decodeJPEG(FILE *file) {
 			}
 		}
 	}
+	
 	return true;
 }

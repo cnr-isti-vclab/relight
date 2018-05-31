@@ -248,10 +248,25 @@ int convertRTI(const char *file, const char *output, int quality) {
 		rti.nplanes = 27;
 		break;
 	}
-	//CHECK CONVERSION in HSH or PTM!!!
-	rti.scale = lrti.scale;
-	for(int &v: lrti.bias)
-		rti.bias.push_back((float)v);
+
+	vector<int> order = { 5,3,4, 0,2,1};
+	
+	if(lrti.type == LRti::PTM_LRGB) {
+		rti.scale = {1, 1, 1}; //rgb coeff in lptm have no scale or bias;
+		rti.bias = {0, 0, 0};
+		for(int i = 0; i < 6; i++) {
+			rti.scale.push_back(lrti.scale[order[i]]);
+			rti.bias.push_back((float)lrti.bias[order[i]]/255.0f);
+		}
+
+	} else {
+		for(int i = 0; i < 6; i++) {
+			for(int k = 0; k < 3; k++) {
+				rti.scale.push_back(lrti.scale[order[i]]);
+				rti.bias.push_back((float)lrti.bias[order[i]]/255.0f);
+			}
+		}
+	}
 	
 	QDir dir(output);
 	if(!dir.exists()) {
@@ -261,8 +276,6 @@ int convertRTI(const char *file, const char *output, int quality) {
 			return 0;
 		}
 	}
-	/* scale and bhias needs to be asaved in json. so have the materialbuilder to copy bias and scale in the rti vector
-	 * and saveJson will use those instead! */
 	
 	rti.saveJSON(dir, quality);
 	for(int p = 0; p < rti.nplanes; p += 3) {
