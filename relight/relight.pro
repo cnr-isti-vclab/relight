@@ -10,7 +10,7 @@ TEMPLATE = app
 QMAKE_CXXFLAGS += -std=c++11
 
 
-INCLUDEPATH += ../libpca-1.3.3/src/lib
+#INCLUDEPATH += ../libpca-1.3.3/src/lib
 
 LIBS += -larmadillo -ljpeg 
 
