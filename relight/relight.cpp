@@ -1146,7 +1146,6 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	imageset.restart();
 	
 	for(uint32_t y = 0; y < height; y++) {
-		
 		imageset.readLine(sample);
 		for(uint32_t x = 0; x < width; x++)
 			resamplePixel(sample(x), resample(x));

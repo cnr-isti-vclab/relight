@@ -18,7 +18,7 @@ void help() {
 	cout << "Usage: img2abr [-mrdqp]<input folder> [output folder]\n\n";
 	cout << "\tinput folder containing a .lp with number of photos and light directions\n";
 	cout << "\toptional output folder (default ./)\n\n";
-	cout << "\t-f <format>: flat";
+	cout << "\t-f <format>: flat\n";
 	cout << "\t-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear, dmd\n";
 	cout << "\t-m <int>  : number of materials (default 8)\n";
 	cout << "\t-r <int>  : side of the basis function (default 8, 0 means rbf interpolation)\n";
