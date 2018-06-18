@@ -893,7 +893,7 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 	stream << "\"quality\": " << quality << ",\n";
 	
 	if(type == RBF || type == BILINEAR) {
-		stream << "\"basis:\": [\n";
+		stream << "\"basis\": [\n";
 		for(int i = 0; i < basis.size(); i++) {
 			if(i != 0) {
 				stream << ",";
