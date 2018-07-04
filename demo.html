@@ -1,7 +1,8 @@
 <!doctype html>
 <html>
 <head>
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" crossorigin="anonymous">
+<!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" crossorigin="anonymous">-->
+<link rel="stylesheet" href="css/bootstrap.min.css">
 
 <style>
 /*@media (min-width: 512px) {
@@ -31,16 +32,22 @@ canvas {
 		<h1>Relight!</h1>
 		<p>Click and drag on the image to test the RTI dataset</p>
 		<!-- Change width and height to match your dataset -->
-		<canvas id="rticanvas" width="512" height="512"></canvas>
+		<canvas id="rticanvas" width="1024" height="800"></canvas>
 	</div>
 </body>
 
-<script src="https://code.jquery.com/jquery-3.3.1.min.js" crossorigin="anonymous"></script>
-<script src="relight.js"></script>
+<!--<script src="https://code.jquery.com/jquery-3.3.1.min.js" crossorigin="anonymous"></script>-->
+
+<script src="js/jquery-3.2.1.min.js" crossorigin="anonymous"></script>
+<script src="mrelight.js"></script>
 <script>
 
 //Change this to your dataset
-var url = 'test/coin10.ycc1044';
+//var url = 'test/coin10.ycc1044';
+//var url = 'test/12563_front';
+var url = 'test/front1044';
+//var url = 'test/frontHSH';
+
 
 var zoom = 1;
 
@@ -48,13 +55,12 @@ var canvas = $('#rticanvas');
 
 
 var glopt = { antialias: false, depth: false };
-var gl = canvas[0].getContext("webgl2", glopt) || canvas.getContext("webgl", glopt) || canvas.getContext("experimental-webgl", glopt) ;
-var rti = new Rti('#rticanvas', {gl:gl});
-rti.setUrl(url);
-rti.onLoad = function(t) {
-	t.computeLightWeights([0, 0, 1]);
-	t.draw(zoom);
-}
+
+//var rti = new RtiViewer(canvas[0], { layout:"iip", server:"/iipsrv/iipsrv.fcgi", path:"/var/www/html/relight1/test/front1044", url:url }); 
+
+var rti = new RtiViewer(canvas[0], { url:url, layout:"zoomify" });
+
+rti.onLoad = function(t) { /* not needed t.centerAndScale(0); */ }
 
 var scrolling = null;
 
@@ -62,33 +68,57 @@ canvas.mousedown(function(e) {
 	if(e.button != 0) return;
 	scrolling = { 
 		x: e.pageX - $(this).offset().left, 
-		y: e.pageY - $(this).offset().top
+		y: e.pageY - $(this).offset().top,
+		pos: rti.pos
 	};
+	e.preventDefault();
 });
 
-canvas.mousemove(function(e) {
+$(window).mousemove(function(e) {
 	if(!scrolling) return;
-	var c = $(e.target);
 
-	var w = c.width();
-	var h = c.height();
-	var x = e.pageX - $(this).offset().left;
-	var y = e.pageY - $(this).offset().top; 
-	x = (w - x)/w*2 - 1;
-	y = (h - y)/h*2 - 1;
-	var r = Math.sqrt(x*x + y*y);
-	if(r > 1.0) {
-		x /= r;
-		y /= r;
-		r = 1.0;
+	var x = e.pageX - canvas.offset().left;
+	var y = e.pageY - canvas.offset().top; 
+
+	if(!e.shiftKey && !e.ctrlKey) {
+		var p = scrolling.pos;
+		var scale = Math.pow(2, p.z);
+
+		var dx = (x - scrolling.x)*scale;
+		var dy = (y - scrolling.y)*scale;
+		rti.setPosition(p.x - dx, p.y - dy, p.z, 100);
+	} else {
+
+		var w = canvas.width();
+		var h = canvas.height();
+		x = (w - x)/w*2 - 1;
+		y = (h - y)/h*2 - 1;
+		var r = Math.sqrt(x*x + y*y);
+		if(r > 1.0) {
+			x /= r;
+			y /= r;
+			r = 1.0;
+		}
+		var z = Math.sqrt(1 - r);
+
+		rti.setLight(-x, y, z);
 	}
-	var z = Math.sqrt(1 - r);
-
-	rti.computeLightWeights([-x, y, z]);
-	rti.draw(zoom);
+	e.preventDefault();
 });
 
-canvas.mouseup(function(e) { scrolling = null; });
+$(window).mouseup(function(e) { scrolling = null; });
+
+$(window).bind('mousewheel DOMMouseScroll', function(e) {
+	var dz = 0;
+    if (e.originalEvent.wheelDelta > 0 || e.originalEvent.detail < 0) { // scroll up
+		dz = 0.25;
+    }
+    else { // scroll down
+		dz = -0.25;
+    }
+	rti.zoom(dz, 100);
+	e.preventDefault();
+});
 
 
 </script>
