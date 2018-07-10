@@ -127,6 +127,11 @@ bool RtiBuilder::init() {
 	} else
 		ndimensions = lights.size();
 	
+	if(samplingrate == 0) {
+		cerr << "Sampling rate must be > 0\n";
+		return false;
+	}
+
 	
 	//collect a set of samples resampled
 	PixelArray sample;
