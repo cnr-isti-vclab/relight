@@ -1,8 +1,8 @@
 <!doctype html>
 <html>
 <head>
-<!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" crossorigin="anonymous">-->
-<link rel="stylesheet" href="css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" crossorigin="anonymous">
+<!-- <link rel="stylesheet" href="css/bootstrap.min.css"> -->
 
 <style>
 /*@media (min-width: 512px) {
@@ -30,23 +30,21 @@ canvas {
 <body>
 	<div class="container">
 		<h1>Relight!</h1>
-		<p>Click and drag on the image to test the RTI dataset</p>
+		<p>Click and drag on the image to test the RTI dataset. Shift drag for light.</p>
 		<!-- Change width and height to match your dataset -->
 		<canvas id="rticanvas" width="1024" height="800"></canvas>
 	</div>
 </body>
 
-<!--<script src="https://code.jquery.com/jquery-3.3.1.min.js" crossorigin="anonymous"></script>-->
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" crossorigin="anonymous"></script>
 
-<script src="js/jquery-3.2.1.min.js" crossorigin="anonymous"></script>
-<script src="mrelight.js"></script>
+<!-- <script src="js/jquery-3.2.1.min.js"></script> -->
+<script src="relight.js"></script>
+
 <script>
 
 //Change this to your dataset
-//var url = 'test/coin10.ycc1044';
-//var url = 'test/12563_front';
-var url = 'test/front1044';
-//var url = 'test/frontHSH';
+var url = 'test/bilinear18';
 
 
 var zoom = 1;
@@ -56,9 +54,11 @@ var canvas = $('#rticanvas');
 
 var glopt = { antialias: false, depth: false };
 
-//var rti = new RtiViewer(canvas[0], { layout:"iip", server:"/iipsrv/iipsrv.fcgi", path:"/var/www/html/relight1/test/front1044", url:url }); 
 
-var rti = new RtiViewer(canvas[0], { url:url, layout:"zoomify" });
+var rti = new Relight(canvas[0], { url:url, layout:"deepzoom" });
+
+//iip server test configuration, still not working.
+//var rti = new RtiViewer(canvas[0], { layout:"iip", server:"/iipsrv/iipsrv.fcgi", path:"/var/www/html/relight1/test/front1044", url:url }); 
 
 rti.onLoad = function(t) { /* not needed t.centerAndScale(0); */ }
 
