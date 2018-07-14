@@ -1,0 +1,21 @@
+.relight { position:relative; touch-action: none; width:100%; height:100%; background-color:red;}
+.relight canvas { width:100%; height:100%; }
+.relight-toolbox { position: absolute; top:0px; left:0px; padding:5px; }
+.relight-toolbox > div { background-size:cover; cursor:pointer; margin:5px; opacity:0.7 }
+.relight-toolbox > div:hover { opacity:0.9; }
+.relight-home     { background-image: url(skins/dark/home.png); }
+.relight-zoomin   { background-image: url(skins/dark/zoomin.png); }
+.relight-zoomout  { background-image: url(skins/dark/zoomout.png); }
+.relight-light    { background-image: url(skins/dark/light.png); }
+.relight-light_on { background-image: url(skins/dark/light_on.png); }
+.relight-full     { background-image: url(skins/dark/full.png); }
+.relight-full_on  { background-image: url(skins/dark/full_on.png); }
+.relight-help     { background-image: url(skins/dark/help.png); }
+
+.relight-help-dialog { display:none; position:absolute; }
+
+@media screen and (max-width: 576px) {.relight-toolbox > div { width: 9vmin; height: 9vmin; }}
+@media screen and (min-width: 576px) { .relight-toolbox > div {width: 9vmin; height: 9vmin; }}
+@media screen and (min-width: 768px) { .relight-toolbox > div {width: 7vmin; height: 7vmin; }}
+@media screen and (min-width: 992px) { .relight-toolbox > div {width: 6vmin; height: 6vmin; }}
+
