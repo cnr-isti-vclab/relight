@@ -1,5 +1,5 @@
 
-With **Relight** tools you can create and view relightable images (RTI).
+**Relight** is a library to create and view relightable images (RTI).
 
 ## [Demo](http://vcg.isti.cnr.it/relight/index.html)
 
@@ -7,14 +7,12 @@ With **Relight** tools you can create and view relightable images (RTI).
 
 Relight supports:
 
-* [Relight](#Relight fitter) a PCA based formats (see paper)
+* [Relight](#Relight fitter) a PCA based format (see paper)
 * [PTM, HSH](#PTM) 
 * [Web viewer](#viewer)
 * [Zoomify, deepzoom, google, IIP, IIIF](#lod)
 
-Relight new formats provide better accuracy and smaller size (see demo)
-
-
+Relight new formats provide better accuracy and smaller size.
 
 # Relight fitter
 
@@ -25,7 +23,7 @@ Relight new formats provide better accuracy and smaller size (see demo)
 	input folder containing a .lp with number of photos and light directions
 	optional output folder (default is ./)
 
-	-f <format>: flat	-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear, dmd
+	-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear
 	-p <int>  : number of planes (default: 9)
 	-y <int>  : number of Y planes in YCC
 	-r <int>  : side of the basis bilinear grid (default 8)
@@ -133,17 +131,16 @@ Using qt:
 
 #TODO
 
-white balance and other conversion from RAW features (dcraw)
-use color tablet to calibrate raw images
-contrast and other image processing
-measure to be added to the images from tag
-remove lens distortion
-find spheres (very optional)
-mask artifact
-crop
-normals
-join pieces
-
-align images using mutual information (or better an edge detector?
-find highlight
+* White balance and other conversion from RAW features (dcraw)
+* use color tablet to calibrate raw images
+* contrast and other image processing
+* measure to be added to the images from tag
+* remove lens distortion
+* find spheres (very optional)
+* mask artifact
+* crop
+* normals estimate
+* join pieces
+* align images using mutual information (or better an edge detector?
+* find highlight
 

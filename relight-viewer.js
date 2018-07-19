@@ -4,18 +4,49 @@ function RelightViewer(div, options) {
 	var t = this;
 	if(typeof(div) == "string")
 		div = document.querySelector(div);
+	t.div = div;
 
-	div.innerHTML = 
+	t.nav = {
+		action:null, lighting: false, fullscreen:false, 
+		pandelay: 50, zoomdelay:200, zoomstep: 0.25, lightsize:200,
+		pointers: {}, 
+		support: support,
+		actions: {
+			home:    { title: 'Home',       task: function(event) { t.centerAndScale(t.nav.zoomdelay); }        },
+			zoomin:  { title: 'Zoom In',    task: function(event) { t.zoom(-t.nav.zoomstep, t.nav.zoomdelay); } },
+			zoomout: { title: 'Zoom Out',   task: function(event) { t.zoom(+t.nav.zoomstep, t.nav.zoomdelay); } },
+			light:   { title: 'Light',      task: function(event) { t.toggleLight(event); }                      },
+			full:    { title: 'Fullscreen', task: function(event) { t.toggleFullscreen(event); }                 },
+			help:    { title: 'Help',       task: function(event) { t.showHelp(); }                             }
+		}
+	};
+
+
+	for(var i in t.nav)
+		if(options.hasOwnProperty(i))
+			t.nav[i] = options[i];
+
+	var html = 
 '	<canvas id="rticanvas"></canvas>\n' +
-'	<div class="relight-toolbox">\n' +
-'		<div class="relight-home" title="Home"></div>\n' +
-'		<div class="relight-zoomin" title="Zoom In"></div>\n' +
-'		<div class="relight-zoomout" title="Zoom Out"></div>\n' +
-'		<div class="relight-light" title="Light On"></div>\n' +
-'		<div class="relight-full" title="Fullscreen"></div>\n' +
-'		<div class="relight-help" title="Help"></div>\n' +
-'	</div>\n';
-'	<div class="relight-help-dialog"></div>\n';
+'	<div class="relight-toolbox">\n';
+	for(var i in t.nav.actions) {
+		var action = t.nav.actions[i];
+		html += '		<div class="relight-' + i + '" title="' + action.title + '"></div>\n';
+	}
+//'		<div class="relight-home" title="Home"></div>\n' +
+//'		<div class="relight-zoomin" title="Zoom In"></div>\n' +
+//'		<div class="relight-zoomout" title="Zoom Out"></div>\n' +
+//'		<div class="relight-light" title="Light On"></div>\n' +
+//'		<div class="relight-full" title="Fullscreen"></div>\n' +
+//'		<div class="relight-help" title="Help"></div>\n' +
+	html += 
+		'	</div>\n' +
+		'	<div class="relight-help-dialog"></div>\n';
+
+	div.innerHTML = html;
+
+	for(var i in t.nav.actions)
+		t.addAction('.relight-' + i, t.nav.actions[i].task);
 
 	var canvas = document.querySelector('#rticanvas');
 
@@ -38,21 +69,15 @@ function RelightViewer(div, options) {
 	mc.on('pinchmove',            function(ev) { t.mousemove(ev); });
 	mc.on('pinchend pinchcancel', function(ev) { t.mouseup(ev); });
 
-	mc.add( new Hammer.Tap({taps:2}) );
+	mc.add( new Hammer.Tap({ taps:2 }) );
 	mc.on('tap', function(ev) { t.zoom(-2*t.nav.zoomstep, t.nav.zoomdelay); });
 
-	t.nav = { action:null, lighting: false, pandelay: 50, zoomdelay:200, zoomstep: 0.25, lightsize:200, pointers: {}, support: support, fullscreen:false };
+/*
+	t.addAction('.relight-home',        function(event) { t.centerAndScale(t.nav.zoomdelay); });
 
-	for(var i in t.nav)
-		if(t.options[i])
-			t.nav[i] = t.options[i];
-
-
-	this.addAction('.relight-home',        function(event) { t.centerAndScale(t.nav.zoomdelay); });
-
-	this.addAction('.relight-zoomin',      function(event) { t.zoom(-t.nav.zoomstep, t.nav.zoomdelay); });
-	this.addAction('.relight-zoomout',     function(event) { t.zoom(+t.nav.zoomstep, t.nav.zoomdelay); });
-	this.addAction('.relight-light',       function(event) {
+	t.addAction('.relight-zoomin',      function(event) { t.zoom(-t.nav.zoomstep, t.nav.zoomdelay); });
+	t.addAction('.relight-zoomout',     function(event) { t.zoom(+t.nav.zoomstep, t.nav.zoomdelay); });
+	t.addAction('.relight-light',       function(event) {
 		if(t.nav.lighting)
 			event.target.classList.remove('relight-light_on');
 		else
@@ -60,7 +85,7 @@ function RelightViewer(div, options) {
 
 		t.nav.lighting = !t.nav.lighting; 
 	});
-	this.addAction('.relight-full', function(event) {
+	t.addAction('.relight-full', function(event) {
 		if(t.nav.fullscreen) {
 			var request = document.exitFullscreen || document.webkitExitFullscreen ||
 				document.mozCancelFullScreen || document.msExitFullscreen;
@@ -80,7 +105,7 @@ function RelightViewer(div, options) {
 
 		t.nav.fullscreen = !t.nav.fullscreen; 
 	});
-	this.addAction('.relight-help', function(event) { t.showHelp(); });
+	t.addAction('.relight-help', function(event) { t.showHelp(); });*/
 
 	t.resize(div.offsetWidth, div.offsetHeight);
 
@@ -93,7 +118,41 @@ RelightViewer.prototype.addAction = function(selector, action) {
 	var tap = new Hammer.Manager(document.querySelector(selector));
 	tap.add(new Hammer.Tap());
 	tap.on('tap', action);
-}
+};
+
+RelightViewer.prototype.toggleLight = function(event) {
+	var t = this;
+	if(t.nav.lighting)
+		event.target.classList.remove('relight-light_on');
+	else
+		event.target.classList.add('relight-light_on');
+
+	t.nav.lighting = !t.nav.lighting; 
+};
+
+RelightViewer.prototype.toggleFullscreen = function(event) {
+	var t = this;
+	var div = t.div;
+	if(t.nav.fullscreen) {
+		var request = document.exitFullscreen || document.webkitExitFullscreen ||
+			document.mozCancelFullScreen || document.msExitFullscreen;
+		request.call(document);
+		event.target.classList.remove('relight-full_on');
+
+		div.style.height = "100%";
+		t.resize(div.offsetWidth, div.offsetHeight);
+	} else {
+		var request = div.requestFullscreen || div.webkitRequestFullscreen ||
+			div.mozRequestFullScreen || div.msRequestFullscreen;
+		request.call(div);
+		event.target.classList.add('relight-full_on');
+	}
+	div.style.height = window.offsetHeight + "px";
+	t.resize(div.offsetWidth, div.offsetHeight);
+
+	t.nav.fullscreen = !t.nav.fullscreen; 
+};
+
 
 RelightViewer.prototype.mousedown = function(event) {
 	var t = this;
@@ -107,7 +166,7 @@ RelightViewer.prototype.mousedown = function(event) {
 
 	t.nav.pos = this.pos;
 	t.nav.light = this.light;
-}
+};
 
 RelightViewer.prototype.mousemove = function(event) {
 	var t = this;
@@ -147,14 +206,14 @@ RelightViewer.prototype.mousemove = function(event) {
 		t.setLight(-x, y, z);
 		break;
 	}
-}
+};
 
 RelightViewer.prototype.mouseup = function(event) {
 	if(this.nav.action) {
 		this.nav.action = null;
 		event.preventDefault();
 	}
-}
+};
 
 RelightViewer.prototype.mousewheel = function(event) {
 	if ( this.nav.support == "mousewheel" ) {
@@ -166,4 +225,39 @@ RelightViewer.prototype.mousewheel = function(event) {
 	var dz = event.deltaY > 0? this.nav.zoomstep : -this.nav.zoomstep;
 	this.zoom(-dz, this.nav.zoomdelay);
 	event.preventDefault();
-}
+};
+
+RelightViewer.prototype.setInfo = function(info) {
+	var dialog = document.querySelector('.relight-info-dialog');
+	if(typeof(info) == "string")
+		dialog.innerHTML = info;
+	else
+		dialog.append(info);
+};
+
+RelightViewer.prototype.showInfo = function() {
+};
+
+RelightViewer.prototype.hideInfo = function() {
+};
+
+
+RelightViewer.prototype.setHelp = function(help) {
+	var dialog = document.querySelector('.relight-help-dialog');
+	if(typeof(help) == "string")
+		dialog.innerHTML = help;
+	else
+		dialog.append(help);
+};
+
+RelightViewer.prototype.showHelp = function() {
+	var dialog = document.querySelector('.relight-help-dialog');
+	dialog.style.display = 'block';
+};
+
+RelightViewer.prototype.hideHelp = function() {
+	var dialog = document.querySelector('.relight-help-dialog');
+	dialog.style.display = 'none';
+};
+
+
