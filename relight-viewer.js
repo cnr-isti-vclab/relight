@@ -72,40 +72,7 @@ function RelightViewer(div, options) {
 	mc.add( new Hammer.Tap({ taps:2 }) );
 	mc.on('tap', function(ev) { t.zoom(-2*t.nav.zoomstep, t.nav.zoomdelay); });
 
-/*
-	t.addAction('.relight-home',        function(event) { t.centerAndScale(t.nav.zoomdelay); });
 
-	t.addAction('.relight-zoomin',      function(event) { t.zoom(-t.nav.zoomstep, t.nav.zoomdelay); });
-	t.addAction('.relight-zoomout',     function(event) { t.zoom(+t.nav.zoomstep, t.nav.zoomdelay); });
-	t.addAction('.relight-light',       function(event) {
-		if(t.nav.lighting)
-			event.target.classList.remove('relight-light_on');
-		else
-			event.target.classList.add('relight-light_on');
-
-		t.nav.lighting = !t.nav.lighting; 
-	});
-	t.addAction('.relight-full', function(event) {
-		if(t.nav.fullscreen) {
-			var request = document.exitFullscreen || document.webkitExitFullscreen ||
-				document.mozCancelFullScreen || document.msExitFullscreen;
-			request.call(document);
-			event.target.classList.remove('relight-full_on');
-
-			div.style.height = "100%";
-			t.resize(div.offsetWidth, div.offsetHeight);
-		} else {
-			var request = div.requestFullscreen || div.webkitRequestFullscreen ||
-				div.mozRequestFullScreen || div.msRequestFullscreen;
-			request.call(div);
-			event.target.classList.add('relight-full_on');
-		}
-		div.style.height = window.offsetHeight + "px";
-		t.resize(div.offsetWidth, div.offsetHeight);
-
-		t.nav.fullscreen = !t.nav.fullscreen; 
-	});
-	t.addAction('.relight-help', function(event) { t.showHelp(); });*/
 
 	t.resize(div.offsetWidth, div.offsetHeight);
 

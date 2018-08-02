@@ -85,7 +85,7 @@ function Relight(item, o) {
 	t.requested = {};       //things being actually requested
 	t.requestedCount = 0;
 	t.animaterequest = null;
-	t.waiting = 1;
+	t.waiting = 0;
 
 //events
 	t.onload = null;
@@ -96,6 +96,10 @@ function Relight(item, o) {
 
 	if(t.url)
 		t.setUrl(t.url);
+
+	if(t.img) {
+		t.loadInfo({type: 'img', colorspace: null, width: 0, height: 0, nplanes: 1 });
+	}
 
 	return this;
 }
@@ -133,11 +137,38 @@ setUrl: function(url) {
 },
 
 loadInfo: function(info) {
+
 	var t = this;
+
 	t.type = info.type;
 	t.colorspace = info.colorspace;
-	t.nmaterials = info.materials.length;
+
+	t.width = parseInt(info.width);
+	t.height = parseInt(info.height);
+
 	t.nplanes = info.nplanes;
+	t.planes = [];
+	t.njpegs = 0;
+	while(t.njpegs*3 < t.nplanes)
+		t.njpegs++;
+
+	t.imgCache = [];
+	for(var i = 0; i < t.maxRequested*t.njpegs; i++) {
+		var image = new Image();
+		image.crossOrigin = "Anonymous";
+		t.imgCache[i] = image;
+	}
+	t.currImgCache = 0;
+
+	if(t.type == 'img') {
+
+		t.initTree();
+		t.loadProgram();
+		t.loaded();
+		return;
+	}
+
+	t.nmaterials = info.materials.length;
 	t.materials = info.materials;
 	if(info.lights) {
 		t.lights = new Float32Array(info.lights.length);
@@ -160,14 +191,13 @@ loadInfo: function(info) {
 	} else
 		t.yccplanes = [0, 0, 0];
 
-	t.width = parseInt(info.width);
-	t.height = parseInt(info.height);
+
 
 //	t.tilesize = 'tilesize' in info ? info.tilesize : 0;
 //	t.overlap  = 'overlap'  in info ? info.overlap  : 0;
 //	t.layout   = 'layout'   in info ? info.layout   : "image";
 
-	t.planes = [];
+
 	t.scale = new Float32Array((t.nplanes+1)*t.nmaterials);
 	t.bias = new Float32Array((t.nplanes+1)*t.nmaterials);
 
@@ -177,21 +207,6 @@ loadInfo: function(info) {
 			t.bias [m*(t.nplanes+1) + p] = t.materials[m].bias [p-1];
 		}
 	}
-
-	t.njpegs = 0;
-	while(t.njpegs*3 < t.nplanes)
-		t.njpegs++;
-
-	t.pos.x = t.width/2;
-	t.pos.y = t.height/2;
-
-	t.imgCache = [];
-	for(var i = 0; i < t.maxRequested*t.njpegs; i++) {
-		var image = new Image();
-		image.crossOrigin = "Anonymous";
-		t.imgCache[i] = image;
-	}
-	t.currImgCache = 0;
 
 
 	t.initTree();
@@ -213,6 +228,10 @@ loaded: function() {
 	if(t.waiting) return;
 	if(t.fit)
 		t.centerAndScale();
+//else
+//	t.pos.x = t.width/2;
+//	t.pos.y = t.height/2;
+
 	if(t.onLoad)
 		t.onLoad(t);
 	t.computeLightWeights(t.light);
@@ -254,7 +273,7 @@ initTree: function() {
 			break;
 
 		case "deepzoom":
-			t.metaDataURL = t.url + "/plane_0.dzi";
+			t.metaDataURL = t.url + "/" + t.img + ".dzi";
 			t.getTileURL = function (image, x, y, level) {
 				var prefix = image.substr(0, image.lastIndexOf("."));
 				var base = t.url + '/' + prefix + '_files/';
@@ -267,6 +286,9 @@ initTree: function() {
 				t.tilesize = parseInt(/TileSize="(\d+)/.exec(response)[1]);
 				t.overlap = parseInt(/Overlap="(\d+)/.exec(response)[1]);
 
+				if(!t.width) t.width = parseInt(/Width="(\d+)/.exec(response)[1]);
+				if(!t.height) t.height = parseInt(/Height="(\d+)/.exec(response)[1]);
+
 				var max = Math.max(t.width, t.height)/t.tilesize;
 				t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
 			};
@@ -275,7 +297,7 @@ initTree: function() {
 
 		case "zoomify":
 			t.overlap = 0; //overlap is not specified!
-			t.metaDataURL = t.url + "/plane_0/ImageProperties.xml";
+			t.metaDataURL = t.url + "/" + t.img + "/ImageProperties.xml";
 			t.getTileURL = function(image, x, y, level) {
 				var prefix = image.substr(0, image.lastIndexOf("."));
 				var base = t.url + '/' + prefix;
@@ -298,7 +320,7 @@ initTree: function() {
 		case "iip":
 			t.suffix = ".tif";
 			t.overlap = 0;
-			t.metaDataURL = t.server + "?FIF=" + t.path + "/plane_0" + t.suffix + "&obj=IIP,1.0&obj=Max-size&obj=Tile-size&obj=Resolution-number";
+			t.metaDataURL = t.server + "?FIF=" + t.path + "/" + t.img + t.suffix + "&obj=IIP,1.0&obj=Max-size&obj=Tile-size&obj=Resolution-number";
 
 			t.parseMetaData = function(response) {
 				var tmp = response.split( "Tile-size:" );
@@ -508,7 +530,10 @@ loadTile: function(level, x, y) {
 loadComponent: function(plane, index, level, x, y) {
 	var t = this;
 	var gl = t.gl;
-	var name = "plane_" + plane + ".jpg";
+	if(t.type == 'img')
+		var name = t.img + ".jpg";
+	else
+		var name = "plane_" + plane + ".jpg";
 
 	//TODO use a cache of images to avoid memory allocation waste
 	var image = t.imgCache[t.currImgCache++]; //new Image();
@@ -550,6 +575,7 @@ computeLightWeights: function(lpos) {
 	var t = this;
 	if(t.waiting) return;
 	switch(t.type) {
+	case 'img':                                       return;
 	case 'rbf':      t.computeLightWeightsRbf(lpos);  break;
 	case 'bilinear': t.computeLightWeightsOcta(lpos); break;
 	case 'ptm':      t.computeLightWeightsPtm(lpos);  break;
@@ -732,7 +758,9 @@ loadProgram: function() {
 '}';
 
 
-	var mrgbCode =
+	switch(t.colorspace) {
+
+	case 'mrgb': t.fragCode =
 '#ifdef GL_ES\n' +
 'precision highp float;\n' +
 '#endif\n' +
@@ -751,7 +779,7 @@ loadProgram: function() {
 '	vec3 color = vec3(0);\n';
 
 	if(t.nmaterials == 1) {
-		mrgbCode += 
+		t.fragCode += 
 '\n' +
 '	color += base[0];\n' +
 '	for(int j = 1; j < nj1; j++) {\n' +
@@ -762,7 +790,7 @@ loadProgram: function() {
 '	};\n';
 
 	} else {
-		mrgbCode += 
+		t.fragCode += 
 '\n' +
 '	int mat = int(texture2D(planes[0], v_texcoord).x*256.0)/8;\n' +
 '	for(int m = 0; m < nm; m++)\n' +
@@ -777,16 +805,17 @@ loadProgram: function() {
 '		}';
 	}
 
-	mrgbCode +=
+	t.fragCode +=
 '	/* gamma fix\n' +
 '	color.x *= color.x;\n' +
 '	color.y *= color.y;\n' +
 '	color.z *= color.z;*/\n' +
 '	gl_FragColor = vec4(color, 1.0);\n' +
 '}\n';
+	break;
 
 
-	var myccCode = 
+	case 'mycc': t.fragCode = 
 '#ifdef GL_ES\n' +
 'precision highp float;\n' +
 '#endif\n' +
@@ -808,7 +837,7 @@ loadProgram: function() {
 '	vec3 color = vec3(0);\n';
 
 	if(t.nmaterials == 1) {
-		myccCode += 
+		t.fragCode += 
 '\n' +
 '	color += base[0];\n' +
 '	for(int j = 1; j < nj1; j++) {\n' +
@@ -833,7 +862,7 @@ loadProgram: function() {
 '	color = rgb;\n';
 
 	} else {
-		myccCode += 
+		t.fragCode += 
 '\n' +
 '	int mat = int(texture2D(planes[0], v_texcoord).x*256.0)/8;\n' +
 '	for(int m = 0; m < nm; m++)\n' +
@@ -848,12 +877,13 @@ loadProgram: function() {
 '		}';
 	}
 
-	myccCode +=
+	t.fragCode +=
 '	gl_FragColor = vec4(color, 1.0);\n' +
 '}';
+	 break;
 
-
-	var rgbCode = 
+	case 'rgb': 
+	t.fragCode = 
 '#ifdef GL_ES\n' +
 'precision highp float;\n' +
 '#endif\n' +
@@ -877,9 +907,9 @@ loadProgram: function() {
 '	}\n' +
 '	gl_FragColor = vec4(color, 1.0);\n' +
 '}';
+	break;
 
-
-	var yccCode = 
+	case 'ycc': t.fragCode = 
 '#ifdef GL_ES\n' +
 'precision highp float;\n' +
 '#endif\n' +
@@ -926,10 +956,11 @@ loadProgram: function() {
 '	color = toRgb(vec4(color, 1.0));\n' +
 '	gl_FragColor = vec4(color, 1.0);\n' +
 '}';
+	break;
 
 
-
-	var lrgbCode = 
+	case 'lrgb': 
+	t.fragCode = 
 '#ifdef GL_ES\n' +
 'precision highp float;\n' +
 '#endif\n' +
@@ -955,14 +986,22 @@ loadProgram: function() {
 '\n' +
 '	gl_FragColor = vec4(color.x*l, color.y*l, color.z*l, 1.0);\n' +
 '}';
+	break;
 
-
-	switch(t.colorspace) {
-	case 'ycc': t.fragCode = yccCode; break;
-	case 'mycc':  t.fragCode = myccCode; break;
-	case 'mrgb': t.fragCode = mrgbCode; break;
-	case 'rgb':  t.fragCode = rgbCode; break;
-	case 'lrgb': t.fragCode = lrgbCode; break;
+	default:
+	t.fragCode = 
+'#ifdef GL_ES\n' +
+'precision highp float;\n' +
+'#endif\n' +
+'\n' +
+'uniform sampler2D planes[1];      //0 is segments\n' +
+'\n' +
+'varying vec2 v_texcoord;\n' +
+'\n' +
+'void main(void) {\n' +
+'	gl_FragColor = texture2D(planes[0], v_texcoord);\n' +
+'}';
+	break;
 	}
 
 	var gl = this.gl;
@@ -1001,11 +1040,14 @@ loadProgram: function() {
 	gl.enableVertexAttribArray(coord);
 
 	t.matrixLocation = gl.getUniformLocation(t.program, "u_matrix");
-	t.baseLocation = gl.getUniformLocation(t.program, "base");
-	t.planesLocations = gl.getUniformLocation(t.program, "planes");
 
-	gl.uniform1fv(gl.getUniformLocation(t.program, "scale"), t.scale);
-	gl.uniform1fv(gl.getUniformLocation(t.program, "bias"), t.bias);
+	if(t.colorspace) {
+		t.baseLocation = gl.getUniformLocation(t.program, "base");
+		t.planesLocations = gl.getUniformLocation(t.program, "planes");
+
+		gl.uniform1fv(gl.getUniformLocation(t.program, "scale"), t.scale);
+		gl.uniform1fv(gl.getUniformLocation(t.program, "bias"), t.bias);
+	}
 
 	var sampler = gl.getUniformLocation(t.program, "planes");
 	var samplerArray = new Int32Array(t.njpegs);
