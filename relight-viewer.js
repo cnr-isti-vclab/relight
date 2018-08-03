@@ -21,6 +21,10 @@ function RelightViewer(div, options) {
 		}
 	};
 
+	if(options.hasOwnProperty('notool'))
+		for(var i = 0; i < options.notool.length; i++)
+			delete t.nav.actions[options.notool[i]];
+
 
 	for(var i in t.nav)
 		if(options.hasOwnProperty(i))
