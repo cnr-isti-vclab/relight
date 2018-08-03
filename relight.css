@@ -10,9 +10,38 @@
 .relight-light_on { background-image: url(skins/dark/light_on.png); }
 .relight-full     { background-image: url(skins/dark/full.png); }
 .relight-full_on  { background-image: url(skins/dark/full_on.png); }
-.relight-help     { background-image: url(skins/dark/help.png); }
+.relight-info     { background-image: url(skins/dark/help.png); }
 
-.relight-help-dialog { display:none; position:absolute; }
+/*.relight-info-dialog { display:none; position:absolute; }
+.relight-info-content { display:none; } */
+
+.relight {
+	position:relative;
+}
+
+.relight-info-dialog {
+	display:none;
+	position:absolute;
+	top:0px;
+	left:0px;
+	width:100%;
+	height:100%;
+	background-color:rgb(0, 0, 0, 0.5);
+}
+.relight-info-content {
+	display:none;
+	background-color:white;
+	padding:20px;
+	max-height: calc(100% - 100px);
+	width: 80vw;
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	border-radius: 5px;
+}
+
+
 
 @media screen and (max-width: 576px) {.relight-toolbox > div { width: 9vmin; height: 9vmin; }}
 @media screen and (min-width: 576px) { .relight-toolbox > div {width: 9vmin; height: 9vmin; }}

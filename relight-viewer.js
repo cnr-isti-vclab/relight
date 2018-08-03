@@ -17,7 +17,7 @@ function RelightViewer(div, options) {
 			zoomout: { title: 'Zoom Out',   task: function(event) { t.zoom(+t.nav.zoomstep, t.nav.zoomdelay); } },
 			light:   { title: 'Light',      task: function(event) { t.toggleLight(event); }                      },
 			full:    { title: 'Fullscreen', task: function(event) { t.toggleFullscreen(event); }                 },
-			help:    { title: 'Help',       task: function(event) { t.showHelp(); }                             }
+			info:    { title: 'info',       task: function(event) { t.showInfo(); }                             }
 		}
 	};
 
@@ -37,17 +37,23 @@ function RelightViewer(div, options) {
 		var action = t.nav.actions[i];
 		html += '		<div class="relight-' + i + '" title="' + action.title + '"></div>\n';
 	}
-//'		<div class="relight-home" title="Home"></div>\n' +
-//'		<div class="relight-zoomin" title="Zoom In"></div>\n' +
-//'		<div class="relight-zoomout" title="Zoom Out"></div>\n' +
-//'		<div class="relight-light" title="Light On"></div>\n' +
-//'		<div class="relight-full" title="Fullscreen"></div>\n' +
-//'		<div class="relight-help" title="Help"></div>\n' +
 	html += 
 		'	</div>\n' +
-		'	<div class="relight-help-dialog"></div>\n';
+		'	<div class="relight-info-dialog"></div>\n';
+
+	var info = document.querySelector(".relight-info-content");
+	if(info)
+		info.remove();
 
 	div.innerHTML = html;
+
+	t.dialog = div.querySelector(".relight-info-dialog");
+
+	if(info) {
+		t.dialog.appendChild(info);
+		info.style.display = 'block';
+		t.dialog.onclick = function() { t.hideInfo(); };
+	}
 
 	for(var i in t.nav.actions)
 		t.addAction('.relight-' + i, t.nav.actions[i].task);
@@ -75,7 +81,6 @@ function RelightViewer(div, options) {
 
 	mc.add( new Hammer.Tap({ taps:2 }) );
 	mc.on('tap', function(ev) { t.zoom(-2*t.nav.zoomstep, t.nav.zoomdelay); });
-
 
 
 	t.resize(div.offsetWidth, div.offsetHeight);
@@ -198,37 +203,20 @@ RelightViewer.prototype.mousewheel = function(event) {
 	event.preventDefault();
 };
 
+
 RelightViewer.prototype.setInfo = function(info) {
-	var dialog = document.querySelector('.relight-info-dialog');
 	if(typeof(info) == "string")
-		dialog.innerHTML = info;
+		this.dialog.innerHTML = info;
 	else
-		dialog.append(info);
+		this.dialog.append(info);
 };
 
 RelightViewer.prototype.showInfo = function() {
+	this.dialog.style.display = 'block';
 };
 
 RelightViewer.prototype.hideInfo = function() {
-};
-
-
-RelightViewer.prototype.setHelp = function(help) {
-	var dialog = document.querySelector('.relight-help-dialog');
-	if(typeof(help) == "string")
-		dialog.innerHTML = help;
-	else
-		dialog.append(help);
-};
-
-RelightViewer.prototype.showHelp = function() {
-	var dialog = document.querySelector('.relight-help-dialog');
-	dialog.style.display = 'block';
-};
-
-RelightViewer.prototype.hideHelp = function() {
-	var dialog = document.querySelector('.relight-help-dialog');
-	dialog.style.display = 'none';
+	this.dialog.style.display = 'none';
 };
 
 
