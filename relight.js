@@ -52,7 +52,8 @@ function Relight(item, o) {
 		border: 1,                   //prefetching tiles out of view
 		maxRequested: 4,
 		fit: true,                   //scale on load.
-		suffix: ".jpg"
+		suffix: ".jpg",
+		preserveDrawingBuffer: false
 	}, o);
 
 	if(typeof(item) == 'string')
@@ -60,8 +61,9 @@ function Relight(item, o) {
 	if(item.tagName != "CANVAS")
 		return null;
 	t.canvas = item;
-	
-	var glopt = { antialias: false, depth: false };
+
+
+	var glopt = { antialias: false, depth: false, preserveDrawingBuffer: t.options.preserveDrawingBuffer };
 	t.gl = o.gl || t.canvas.getContext("webgl2", glopt) || 
 			t.canvas.getContext("webgl", glopt) || 
 			t.canvas.getContext("experimental-webgl", glopt) ;
@@ -94,11 +96,10 @@ function Relight(item, o) {
 
 	t.initGL();
 
-	if(t.url)
-		t.setUrl(t.url);
-
-	if(t.img) {
+	if(t.img) { //this meas we are loading an image
 		t.loadInfo({type: 'img', colorspace: null, width: 0, height: 0, nplanes: 1 });
+	} else if(t.url) {
+		t.setUrl(t.url);
 	}
 
 	return this;
@@ -131,6 +132,7 @@ get: function(url, type, callback) {
 setUrl: function(url) {
 	var t = this;
 	t.url = url;
+	t.img = 'plane_0';
 
 	t.waiting = 1;
 	t.get(url + '/info.json', 'json', function(d) { t.waiting--; t.loadInfo(d); });

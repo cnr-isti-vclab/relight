@@ -15,10 +15,11 @@ using namespace std;
 
 //adaptive base reflectance
 void help() {
+	//cout << "\t-f <format>: flat\n";
 	cout << "Usage: img2abr [-mrdqp]<input folder> [output folder]\n\n";
 	cout << "\tinput folder containing a .lp with number of photos and light directions\n";
 	cout << "\toptional output folder (default ./)\n\n";
-	cout << "\t-f <format>: flat\n";
+
 	cout << "\t-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear, dmd\n";
 	cout << "\t-m <int>  : number of materials (default 8)\n";
 	cout << "\t-r <int>  : side of the basis function (default 8, 0 means rbf interpolation)\n";
@@ -62,7 +63,7 @@ int main(int argc, char *argv[]) {
 				builder.resolution = res = atoi(optarg);
 				if(res < 0 || res == 1 || res == 2 || res > 10) {
 					cerr << "Invalid resolution (must be 0 or >= 2 && <= 10)\n";
-					return -1;
+					return 1;
 				}
 			}
 			break;
@@ -108,7 +109,7 @@ int main(int argc, char *argv[]) {
 				builder.type = RtiBuilder::DMD;
 			} else {
 				cerr << "Unknown basis type: " << optarg << " (pick yrbf, rbf, bilinear, hsh, dmd or ptm)\n";
-				return -1;
+				return 1;
 			}
 		}
 			break;
@@ -193,13 +194,13 @@ int main(int argc, char *argv[]) {
 	int size = builder.save(output, quality);
 	if(size == 0) {
 		cerr << "Failed saving: " << builder.error << endl;
-		return 0;
+		return 1;
 	}
 	if(evaluate_error) {
 		Rti rti;
 		if(!rti.load(output.c_str())) {
 			cerr << "Failed loading rti: " << output << endl;
-			return -1;
+			return 1;
 		}
 		QDir out(output.c_str());
 		double mse = Rti::evaluateError(builder.imageset, rti, out.filePath("error.png"));
@@ -273,12 +274,12 @@ int convertRTI(const char *file, const char *output, int quality) {
 		QDir here("./");
 		if(!here.mkdir(output)) {
 			cerr << "Could not create output dir.\n";
-			return 0;
+			return 1;
 		}
 	}
 	
 	rti.saveJSON(dir, quality);
-	for(int p = 0; p < rti.nplanes; p += 3) {
+	for(uint32_t p = 0; p < rti.nplanes; p += 3) {
 		lrti.encodeJPEG(p, quality, dir.filePath("plane_%1.jpg").arg(p/3).toStdString().c_str());
 	}
 	//time to save the JPG
