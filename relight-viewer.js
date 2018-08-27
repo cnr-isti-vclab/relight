@@ -1,3 +1,13 @@
+function formatMm(val) {
+	if(val < 20)
+		return val.toFixed(1) + " mm";
+	if(val < 500)
+		return (val/10).toFixed(1) + " cm";
+	if(val < 100000)
+		return (val/1000).toFixed(1) + " m";
+	else
+		return (val/1000000).toFixed(2) + " km";
+}
 
 function RelightViewer(div, options) {
 
@@ -18,7 +28,8 @@ function RelightViewer(div, options) {
 			light:   { title: 'Light',      task: function(event) { t.toggleLight(event); }                      },
 			full:    { title: 'Fullscreen', task: function(event) { t.toggleFullscreen(event); }                 },
 			info:    { title: 'info',       task: function(event) { t.showInfo(); }                             }
-		}
+		},
+		scale: 0                     //size of a pixel in mm.
 	};
 
 	if(options.hasOwnProperty('notool'))
@@ -37,9 +48,13 @@ function RelightViewer(div, options) {
 		var action = t.nav.actions[i];
 		html += '		<div class="relight-' + i + '" title="' + action.title + '"></div>\n';
 	}
-	html += 
-		'	</div>\n' +
-		'	<div class="relight-info-dialog"></div>\n';
+
+	html += '	</div>\n';
+	if(t.nav.scale)
+		html += '	<div class="relight-scale"><hr/><span></span></div>\n';
+
+
+	html += '	<div class="relight-info-dialog"></div>\n';
 
 	var info = document.querySelector(".relight-info-content");
 	if(info)
@@ -66,7 +81,7 @@ function RelightViewer(div, options) {
 		document.onmousewheel !== undefined ? "mousewheel" : // Webkit and IE support at least "mousewheel"
 		"DOMMouseScroll"; // older Firefox
 	t.canvas.addEventListener(support,   function(e) { t.mousewheel(e); },   false);
-	window.addEventListener('resize', function(e) { t.resize(div.offsetWidth, div.offsetHeight); });
+	window.addEventListener('resize', function(e) { t.resize(canvas.offsetWidth, canvas.offsetHeight); });
 
 	var mc = new Hammer.Manager(t.canvas);
 	mc.add( new Hammer.Pan({ direction: Hammer.DIRECTION_ALL, threshold: 0 }) );
@@ -82,11 +97,12 @@ function RelightViewer(div, options) {
 	mc.add( new Hammer.Tap({ taps:2 }) );
 	mc.on('tap', function(ev) { t.zoom(-2*t.nav.zoomstep, t.nav.zoomdelay); });
 
-
-	t.resize(div.offsetWidth, div.offsetHeight);
-
+	t.resize(canvas.offsetWidth, canvas.offsetHeight);
+	if(options.scale)
+		t.onposchange = function() { t.updateScale(); };
 	//remember size (add exif into json!)
 }
+
 
 RelightViewer.prototype = Relight.prototype;
 
@@ -116,7 +132,7 @@ RelightViewer.prototype.toggleFullscreen = function(event) {
 		event.target.classList.remove('relight-full_on');
 
 		div.style.height = "100%";
-		t.resize(div.offsetWidth, div.offsetHeight);
+		t.resize(t.canvas.offsetWidth, t.canvas.offsetHeight);
 	} else {
 		var request = div.requestFullscreen || div.webkitRequestFullscreen ||
 			div.mozRequestFullScreen || div.msRequestFullscreen;
@@ -124,9 +140,17 @@ RelightViewer.prototype.toggleFullscreen = function(event) {
 		event.target.classList.add('relight-full_on');
 	}
 	div.style.height = window.offsetHeight + "px";
-	t.resize(div.offsetWidth, div.offsetHeight);
+	t.resize(t.canvas.offsetWidth, t.canvas.offsetHeight);
 
 	t.nav.fullscreen = !t.nav.fullscreen; 
+};
+
+RelightViewer.prototype.updateScale = function() {
+	var t = this;
+	var span = t.div.querySelector('.relight-scale > span');
+	var scale = Math.pow(2, t.pos.z);
+	var scalesize = t.options.scale*100*scale; //size of a pixel
+	span.innerHTML = formatMm(scalesize); 
 };
 
 
