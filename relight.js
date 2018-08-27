@@ -245,6 +245,7 @@ loaded: function() {
 initTree: function() {
 
 	var t = this;
+	t.flush();
 	t.nodes = [];
 
 	switch(t.layout) {
@@ -430,6 +431,7 @@ setPosition: function(x, y, z, dt) {
 		return;
 
 	t.pos = { x:x, y:y, z:z, t:time + dt };
+	if(t.onposchange) t.onposchange();
 	t.prefetch();
 	t.redraw();
 },
@@ -570,6 +572,17 @@ loadComponent: function(plane, index, level, x, y) {
 		delete t.requested[index];
 		t.requestedCount--;
 		t.preload();
+	}
+},
+
+flush: function() {
+	var t = this;
+	if(!t.nodes) return;
+	for(var i = 0; i < t.nodes.length; i++) {
+		var node = t.nodes[i];
+		//abort calls TODO
+		for(var j = 0; j < node.tex.length; j++)
+			t.gl.deleteTexture(node.tex[j]);
 	}
 },
 

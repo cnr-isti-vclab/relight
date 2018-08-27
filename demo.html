@@ -24,8 +24,8 @@ html, body { width:100%; height:100%; padding:0px; margin:0px; }
 <script>
 
 var url = 'test/bilinear18';
-var relight = new RelightViewer('.relight', { url:url, layout:"deepzoom", background: [0.7, 0.7, 0.7, 1] });
-relight.removeAction('fullscreen');
+var relight = new RelightViewer('.relight', { url:url, layout:"deepzoom", background: [0.7, 0.7, 0.7, 1], scale: 0.01*10/3 });
+//relight.removeAction('fullscreen');
 //relight.addAction('info', 'ski/info.svg', function());
 </script>
 
