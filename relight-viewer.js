@@ -18,7 +18,7 @@ function RelightViewer(div, options) {
 
 	t.nav = {
 		action:null, lighting: false, fullscreen:false, 
-		pandelay: 50, zoomdelay:200, zoomstep: 0.25, lightsize:200,
+		pandelay: 50, zoomdelay:200, zoomstep: 0.25, lightsize:0.8,
 		pointers: {}, 
 		support: support,
 		actions: {
@@ -172,8 +172,8 @@ RelightViewer.prototype.mousedown = function(event) {
 RelightViewer.prototype.lightDirection = function(event) {
 	var t = this;
 	var e = event.srcEvent;
-	var w = t.nav.lightsize && t.nav.lightsize < t.canvas.width/2? t.nav.lightsize : t.canvas.width/2;
-	var h = t.nav.lightsize && t.nav.lightsize < t.canvas.height/2? t.nav.lightsize : t.canvas.height/2;
+	var w = t.nav.lightsize*t.canvas.width/2;
+	var h = t.nav.lightsize*t.canvas.height/2;
 
 	var x = (e.offsetX - t.canvas.width/2)/w;
 	var y = (e.offsetY - t.canvas.height/2)/h;
