@@ -159,14 +159,34 @@ RelightViewer.prototype.mousedown = function(event) {
 	var src = event.srcEvent
 	if(event.type == 'pinchstart')
 		t.nav.action = 'zoom';
-	else if(t.nav.lighting || src.shiftKey || src.ctrlKey || src.button > 0)
+	else if(t.nav.lighting || src.shiftKey || src.ctrlKey || src.button > 0) {
 		t.nav.action = 'light';
-	else
+		t.lightDirection(event);
+	} else
 		t.nav.action = 'pan';
 
 	t.nav.pos = this.pos;
 	t.nav.light = this.light;
 };
+
+RelightViewer.prototype.lightDirection = function(event) {
+	var t = this;
+	var e = event.srcEvent;
+	var w = t.nav.lightsize && t.nav.lightsize < t.canvas.width/2? t.nav.lightsize : t.canvas.width/2;
+	var h = t.nav.lightsize && t.nav.lightsize < t.canvas.height/2? t.nav.lightsize : t.canvas.height/2;
+
+	var x = (e.offsetX - t.canvas.width/2)/w;
+	var y = (e.offsetY - t.canvas.height/2)/h;
+
+	var r = Math.sqrt(x*x + y*y);
+	if(r > 1.0) {
+		x /= r;
+		y /= r;
+		r = 1.0;
+	}
+	var z = Math.sqrt(1 - r);
+	t.setLight(-x, y, z);
+}
 
 RelightViewer.prototype.mousemove = function(event) {
 	var t = this;
@@ -190,20 +210,7 @@ RelightViewer.prototype.mousemove = function(event) {
 		break;
 
 	case 'light':
-		var dx = x/t.nav.lightsize;
-		var dy = y/t.nav.lightsize;
-		var x = t.nav.light[0] + dx;
-		var y = t.nav.light[1] + dy;
-
-		var r = Math.sqrt(x*x + y*y);
-		if(r > 1.0) {
-			x /= r;
-			y /= r;
-			r = 1.0;
-		}
-		var z = Math.sqrt(1 - r);
-
-		t.setLight(-x, y, z);
+		t.lightDirection(event);
 		break;
 	}
 };
