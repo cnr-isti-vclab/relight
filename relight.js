@@ -148,7 +148,14 @@ loadInfo: function(info) {
 	t.width = parseInt(info.width);
 	t.height = parseInt(info.height);
 
-	t.nplanes = info.nplanes;
+	if(t.colorspace == 'mycc') {
+		t.yccplanes = info.yccplanes;
+		t.nplanes = t.yccplanes[0] + t.yccplanes[1] + t.yccplanes[2];
+	} else {
+		t.yccplanes = [0, 0, 0];
+		t.nplanes = info.nplanes;
+	}
+
 	t.planes = [];
 	t.njpegs = 0;
 	while(t.njpegs*3 < t.nplanes)
@@ -187,11 +194,7 @@ loadInfo: function(info) {
 		t.ndimensions = t.resolution*t.resolution;
 	}
 
-	if(t.colorspace == 'mycc') {
-		t.yccplanes = info.yccplanes;
-		t.nplanes = t.yccplanes[0] + t.yccplanes[1] + t.yccplanes[2];
-	} else
-		t.yccplanes = [0, 0, 0];
+
 
 
 
