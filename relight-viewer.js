@@ -41,6 +41,12 @@ function RelightViewer(div, options) {
 		if(options.hasOwnProperty(i))
 			t.nav[i] = options[i];
 
+	var info = document.querySelector(".relight-info-content");
+	if(info)
+		info.remove();
+	else
+		delete t.nav.actions['info'];
+
 	var html = 
 '	<canvas id="rticanvas"></canvas>\n' +
 '	<div class="relight-toolbox">\n';
@@ -56,9 +62,8 @@ function RelightViewer(div, options) {
 
 	html += '	<div class="relight-info-dialog"></div>\n';
 
-	var info = document.querySelector(".relight-info-content");
-	if(info)
-		info.remove();
+
+
 
 	div.innerHTML = html;
 
