@@ -21,6 +21,7 @@ function RelightViewer(div, options) {
 		pandelay: 50, zoomdelay:200, zoomstep: 0.25, lightsize:0.8,
 		pointers: {}, 
 		support: support,
+		pagemap: { size: 200 },
 		actions: {
 			home:    { title: 'Home',       task: function(event) { t.centerAndScale(t.nav.zoomdelay); }        },
 			zoomin:  { title: 'Zoom In',    task: function(event) { t.zoom(-t.nav.zoomstep, t.nav.zoomdelay); } },
@@ -53,6 +54,8 @@ function RelightViewer(div, options) {
 	if(t.nav.scale)
 		html += '	<div class="relight-scale"><hr/><span></span></div>\n';
 
+	if(t.nav.pagemap)
+		html += '	<div class="relight-pagemap"><div class="relight-pagemap-area"></div>\n';
 
 	html += '	<div class="relight-info-dialog"></div>\n';
 
@@ -68,6 +71,11 @@ function RelightViewer(div, options) {
 		t.dialog.appendChild(info);
 		info.style.display = 'block';
 		t.dialog.onclick = function() { t.hideInfo(); };
+	}
+
+	if(t.nav.pagemap) {
+		t.nav.pagemap.div  = document.querySelector(".relight-pagemap");
+		t.nav.pagemap.area = document.querySelector(".relight-pagemap-area");
 	}
 
 	for(var i in t.nav.actions)
@@ -99,8 +107,12 @@ function RelightViewer(div, options) {
 
 	t.resize(canvas.offsetWidth, canvas.offsetHeight);
 	if(options.scale)
-		t.onposchange = function() { t.updateScale(); };
+		t.onPosChange(function() { t.updateScale(); });
 	//remember size (add exif into json!)
+	if(t.nav.pagemap) {
+		t.onLoad(function() { t.initPagemap(); });
+		t.onPosChange(function() { t.updatePagemap(); });
+	}
 }
 
 
@@ -152,6 +164,49 @@ RelightViewer.prototype.updateScale = function() {
 	var scalesize = t.options.scale*100*scale; //size of a pixel
 	span.innerHTML = formatMm(scalesize); 
 };
+
+RelightViewer.prototype.initPagemap = function() {
+	var t = this;
+	var page = t.nav.pagemap;
+	var w = t.width;
+	var h = t.height;
+	if(w > h) {
+		page.w = page.size;
+		page.h = page.size * h/w;
+	} else {
+		page.w = page.size * w/h
+		page.h = page.size;
+	}
+	page.div.style.width =  page.w+  'px';
+	page.div.style.height = page.h + 'px';
+	
+	page.area.style.width =  page.w/2+  'px';
+	page.area.style.height = page.h/2 + 'px';
+	t.updatePagemap();
+}
+
+RelightViewer.prototype.updatePagemap = function() {
+	var t = this;
+	var page = t.nav.pagemap;
+	var a = page.area;
+	if(!page.w) return;
+
+	var w = t.canvas.width;
+	var h = t.canvas.height;
+
+	var scale = Math.pow(2, t.pos.z);
+	var bbox = [
+		Math.max(0, parseInt((t.pos.x - scale*w/2)/t.width* page.w)),
+		Math.max(0, parseInt((t.pos.y - scale*h/2)/t.height*page.h)),
+		Math.min(page.w, parseInt((t.pos.x + scale*w/2)/t.width* page.w)),
+		Math.min(page.h, parseInt((t.pos.y + scale*h/2)/t.height*page.h))
+	];
+
+	page.area.style.left = bbox[0] + 'px';
+	page.area.style.top =  bbox[1] + 'px';
+	page.area.style.width = (bbox[2] - bbox[0]) + 'px';
+	page.area.style.height = (bbox[3] - bbox[1]) + 'px';
+}
 
 
 RelightViewer.prototype.mousedown = function(event) {
