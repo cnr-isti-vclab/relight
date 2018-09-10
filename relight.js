@@ -90,9 +90,9 @@ function Relight(item, o) {
 	t.waiting = 0;
 
 //events
-	t.onload = null;
-	t.onposchange = null;
-	t.onlightchange = null;
+	t._onload = [];
+	t._onposchange = [];
+	t._onlightchange = [];
 
 	t.initGL();
 
@@ -228,6 +228,19 @@ loadInfo: function(info) {
 	t.loaded();
 },
 
+onPosChange: function(f) {
+	this._onposchange.push(f);
+},
+
+onLightChange: function(f) {
+	this._onlightchange.push(f);
+},
+
+onLoad: function(f) {
+	this._onload.push(f);
+},
+
+
 loaded: function() {
 	var t = this;
 	if(t.waiting) return;
@@ -237,8 +250,10 @@ loaded: function() {
 //	t.pos.x = t.width/2;
 //	t.pos.y = t.height/2;
 
-	if(t.onLoad)
-		t.onLoad(t);
+
+	for(var i = 0; i < t._onload.length; i++)
+		t._onload[i]();
+
 	t.computeLightWeights(t.light);
 	t.prefetch();
 	t.preload();
@@ -434,9 +449,12 @@ setPosition: function(x, y, z, dt) {
 		return;
 
 	t.pos = { x:x, y:y, z:z, t:time + dt };
-	if(t.onposchange) t.onposchange();
+
 	t.prefetch();
 	t.redraw();
+
+	for(var i = 0; i < t._onposchange.length; i++)
+		t._onposchange[i]();
 },
 
 getCurrent: function(time) {
@@ -756,6 +774,10 @@ setLight: function(x, y, z) {
 	t.light = [x/r, y/r, z/r];
 	t.computeLightWeights(t.light);
 	this.redraw();
+
+	for(var i = 0; i < t._onlightchange.length; i++)
+		t._onlightchange[i]();
+
 },
 
 
