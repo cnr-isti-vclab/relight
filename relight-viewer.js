@@ -17,7 +17,7 @@ function RelightViewer(div, options) {
 	t.div = div;
 
 	t.nav = {
-		action:null, lighting: false, fullscreen:false, 
+		action:null, lighting: true, fullscreen:false, 
 		pandelay: 50, zoomdelay:200, zoomstep: 0.25, lightsize:0.8,
 		pointers: {}, 
 		support: support,
@@ -52,6 +52,8 @@ function RelightViewer(div, options) {
 '	<div class="relight-toolbox">\n';
 	for(var i in t.nav.actions) {
 		var action = t.nav.actions[i];
+		if(i == 'light' && t.nav.lighting)
+			i += ' relight-light_on';
 		html += '		<div class="relight-' + i + '" title="' + action.title + '"></div>\n';
 	}
 
@@ -87,6 +89,8 @@ function RelightViewer(div, options) {
 		"DOMMouseScroll"; // older Firefox
 	t.canvas.addEventListener(support,   function(e) { t.mousewheel(e); },   false);
 	window.addEventListener('resize', function(e) { t.resize(canvas.offsetWidth, canvas.offsetHeight); });
+	t.canvas.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
+
 
 	var mc = new Hammer.Manager(t.canvas);
 	mc.add( new Hammer.Pan({ direction: Hammer.DIRECTION_ALL, threshold: 0 }) );
@@ -161,14 +165,17 @@ RelightViewer.prototype.updateScale = function() {
 
 RelightViewer.prototype.mousedown = function(event) {
 	var t = this;
+
 	var src = event.srcEvent
+	//src.buttons is a mask 1 -> left, 2 -> right, 4 -> center
 	if(event.type == 'pinchstart')
 		t.nav.action = 'zoom';
-	else if(t.nav.lighting || src.shiftKey || src.ctrlKey || src.button > 0) {
+	if(!t.nav.lighting || src.shiftKey || src.ctrlKey || (src.buttons & 0x2)) {
+		t.nav.action = 'pan';
+	} else {
 		t.nav.action = 'light';
 		t.lightDirection(event);
-	} else
-		t.nav.action = 'pan';
+	}
 
 	t.nav.pos = this.pos;
 	t.nav.light = this.light;
