@@ -35,7 +35,6 @@ HEADERS += \
     ../src/jpeg_encoder.h \
     ../src/material.h \
     ../src/vector.h \
-    relight.h \
     ../src/rti.h \
     ../src/legacy_rti.h \
     rtibuilder.h
