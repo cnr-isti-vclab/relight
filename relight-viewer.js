@@ -101,10 +101,10 @@ function RelightViewer(div, options) {
 
 
 	var mc = new Hammer.Manager(t.canvas);
-	mc.add( new Hammer.Pan({ direction: Hammer.DIRECTION_ALL, threshold: 0 }) );
+	mc.add( new Hammer.Pan({ pointers:1, direction: Hammer.DIRECTION_ALL, threshold: 0 }) );
 	mc.on('panstart',         function(ev) { t.mousedown(ev); });
 	mc.on('panmove',          function(ev) { t.mousemove(ev); });
-	mc.on('panend pancancel', function(ev) { t.mouseup(ev); });
+	mc.on('panend pancancel', function(ev) { t.mouseup(ev);   });
 
 	mc.add( new Hammer.Pinch() );
 	mc.on('pinchstart',           function(ev) { t.mousedown(ev); });
@@ -223,9 +223,9 @@ RelightViewer.prototype.mousedown = function(event) {
 
 	var src = event.srcEvent
 	//src.buttons is a mask 1 -> left, 2 -> right, 4 -> center
-	if(event.type == 'pinchstart')
+	if(event.type == 'pinchstart') {
 		t.nav.action = 'zoom';
-	if(!t.nav.lighting || src.shiftKey || src.ctrlKey || (src.buttons & 0x2)) {
+	} else if(!t.nav.lighting || src.shiftKey || src.ctrlKey || (src.buttons & 0x2)) {
 		t.nav.action = 'pan';
 	} else {
 		t.nav.action = 'light';
