@@ -21,13 +21,13 @@ function RelightViewer(div, options) {
 		pandelay: 50, zoomdelay:200, zoomstep: 0.25, lightsize:0.8,
 		pointers: {}, 
 		support: support,
-		pagemap: { size: 200 },
+//		pagemap: { size: 200 },
 		actions: {
 			home:    { title: 'Home',       task: function(event) { t.centerAndScale(t.nav.zoomdelay); }        },
 			zoomin:  { title: 'Zoom In',    task: function(event) { t.zoom(-t.nav.zoomstep, t.nav.zoomdelay); } },
 			zoomout: { title: 'Zoom Out',   task: function(event) { t.zoom(+t.nav.zoomstep, t.nav.zoomdelay); } },
-			light:   { title: 'Light',      task: function(event) { t.toggleLight(event); }                      },
-			full:    { title: 'Fullscreen', task: function(event) { t.toggleFullscreen(event); }                 },
+			light:   { title: 'Light',      task: function(event) { t.toggleLight(event); }                     },
+			full:    { title: 'Fullscreen', task: function(event) { t.toggleFullscreen(event); }                },
 			info:    { title: 'info',       task: function(event) { t.showInfo(); }                             }
 		},
 		scale: 0                     //size of a pixel in mm.
@@ -177,14 +177,15 @@ RelightViewer.prototype.updateScale = function() {
 RelightViewer.prototype.initPagemap = function() {
 	var t = this;
 	var page = t.nav.pagemap;
+	var size = page.size || page.div.offsetWidth;
 	var w = t.width;
 	var h = t.height;
 	if(w > h) {
-		page.w = page.size;
-		page.h = page.size * h/w;
+		page.w = size;
+		page.h = size * h/w;
 	} else {
-		page.w = page.size * w/h
-		page.h = page.size;
+		page.w = size * w/h
+		page.h = size;
 	}
 	page.div.style.width =  page.w+  'px';
 	page.div.style.height = page.h + 'px';
