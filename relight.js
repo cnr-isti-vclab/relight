@@ -161,16 +161,7 @@ loadInfo: function(info) {
 	while(t.njpegs*3 < t.nplanes)
 		t.njpegs++;
 
-	t.imgCache = [];
-	for(var i = 0; i < t.maxRequested*t.njpegs; i++) {
-		var image = new Image();
-		image.crossOrigin = "Anonymous";
-		t.imgCache[i] = image;
-	}
-	t.currImgCache = 0;
-
 	if(t.type == 'img') {
-
 		t.initTree();
 		t.loadProgram();
 		t.loaded();
@@ -263,6 +254,15 @@ loaded: function() {
 initTree: function() {
 
 	var t = this;
+
+	t.imgCache = [];
+	for(var i = 0; i < t.maxRequested*t.njpegs; i++) {
+		var image = new Image();
+		image.crossOrigin = "Anonymous";
+		t.imgCache[i] = image;
+	}
+	t.currImgCache = 0;
+
 	t.flush();
 	t.nodes = [];
 
@@ -604,6 +604,13 @@ flush: function() {
 		//abort calls TODO
 		for(var j = 0; j < node.tex.length; j++)
 			t.gl.deleteTexture(node.tex[j]);
+	}
+	//clean up cache events
+	t.previouslevel = null;
+	for(var i = 0; i < t.imgCache.length; i++) {
+		var img = t.imgCache[i];
+		img.onload = null;
+		img.onerror = null;
 	}
 },
 

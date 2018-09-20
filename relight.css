@@ -61,9 +61,20 @@
 	background-color:rgb(255, 255, 255, 0.7);
 }
 
-
-@media screen and (max-width: 576px) {.relight-toolbox > div { width: 9vmin; height: 9vmin; }}
-@media screen and (min-width: 576px) { .relight-toolbox > div {width: 9vmin; height: 9vmin; }}
-@media screen and (min-width: 768px) { .relight-toolbox > div {width: 7vmin; height: 7vmin; }}
-@media screen and (min-width: 992px) { .relight-toolbox > div {width: 6vmin; height: 6vmin; }}
+@media screen and (max-width: 576px) {
+	.relight-toolbox > div { width: 9vmin; height: 9vmin; }
+	.relight-pagemap { display:none; }
+}
+@media screen and (min-width: 576px) {
+	.relight-toolbox > div {width: 9vmin; height: 9vmin; }
+	.relight-pagemap { display:none; }
+}
+@media screen and (min-width: 768px) {
+	.relight-toolbox > div {width: 7vmin; height: 7vmin; }
+	.relight-pagemap { display:block; width:200px; }
+}
+@media screen and (min-width: 992px) {
+	.relight-toolbox > div {width: 6vmin; height: 6vmin; }
+	.relight-pagemap { display:block; width:200px; }
+}
 
