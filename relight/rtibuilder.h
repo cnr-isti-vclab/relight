@@ -19,7 +19,7 @@ class QDir;
 class RtiBuilder: public Rti {
 public:
 	ImageSet imageset;
-	uint32_t samplingrate = 4;
+	uint32_t samplingrate = 40;
 	uint32_t nsamples = 1<<16; //TODO change to rate
 	float rangescale = 1.5;
 
