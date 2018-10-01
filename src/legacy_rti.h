@@ -15,9 +15,9 @@ public:
 
 	int width;
 	int height;
-	std::vector<std::vector<unsigned char>> data;
+	std::vector<std::vector<unsigned char>> data; //organized as planes where for PTM is r g b ... r g b (18 planes)
 	std::vector<float> scale;
-	std::vector<int> bias;
+	std::vector<float> bias;
 	bool chromasubsampled = false;
 
 	LRti():  type(UNKNOWN), width(0), height(0) {}

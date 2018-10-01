@@ -19,6 +19,20 @@ template <class C> void dump(const char *header, std::vector<C> &data) {
 	cout << endl;
 }
 
+bool skipComments(FILE *file, char head = '#') {
+	char buffer[1024];
+	while(1) {
+		long pos = ftell(file);
+		if(fgets(buffer, 1024, file) == NULL)
+			return false;
+		if(buffer[0] != head) {
+			fseek(file, pos, SEEK_SET);
+			return true;
+		}
+	}
+	return true;
+}
+
 bool getLine(FILE *file, string &str) {
 	char buffer[1024];
 	if(fgets(buffer, 1024, file) == NULL)
@@ -91,7 +105,7 @@ bool LRti::load(const char *filename) {
 	bool status = true;
 	if(version.compare(0, 3, "PTM", 3) == 0)
 		status = loadPTM(file);
-	else  if(version.compare(0, 3, "HSH", 3) == 0)
+	else  if(version.compare(0, 7, "#HSH1.2", 7) == 0)
 		status = loadHSH(file);
 	else {
 		cerr << "Not a PTM or HSH file." << endl;
@@ -150,10 +164,12 @@ bool LRti::loadPTM(FILE* file) {
 	if(!getInteger(file, width) ||
 			!getInteger(file, height) ||
 			!getFloats(file, scale, 6) ||
-			!getIntegers(file, bias, 6)) {
+			!getFloats(file, bias, 6)) {
 		cerr << "File format invalid\n";
 		return false;
 	}
+	for(auto &b: bias)
+		b /= 255.0;
 	
 	for(auto &d: data)
 		d.resize(width*height);
@@ -225,6 +241,73 @@ bool LRti::decodeRAW(const string &version, FILE *file) {
 
 bool LRti::loadHSH(FILE* file) {
 	rewind(file);
+	
+	skipComments(file);
+	
+	int rti_type = 0;
+	if(!getInteger(file, rti_type))
+		return false;
+	
+	vector<int> tmp;
+	if(!getIntegers(file, tmp, 3))
+		return false;
+	
+	width = tmp[0];
+	height = tmp[1];
+	int ncomponents = tmp[2];
+	if(ncomponents != 3) {
+		cerr << "Unsupported components != 3" << endl;
+		return false;
+	}
+	
+	vector<int> basis;
+	if(!getIntegers(file, basis, 3))
+		return false;
+	
+	int basis_terms = basis[0]; //number of terms in the basis
+	int basis_type = basis[1]; //ignored
+	int basis_size = basis[2]; //ignored
+	
+	if(rti_type != 3 || basis_terms != 9) {
+		cerr << "Unsupported .rti if not HSH with 9 terms" << endl;
+		return false;
+	}
+	type = HSH;
+	
+	data.resize(basis_terms*3);
+	for(auto &a: data)
+		a.resize(width*height);
+	//now load HSH
+	
+	vector<float> gmax(basis_terms);
+	vector<float> gmin(basis_terms);
+	
+	bias.resize(basis_terms);
+	scale.resize(basis_terms);
+	
+	fread(scale.data(), sizeof(float), basis_terms, file);  //max
+	fread(bias.data(), sizeof(float), basis_terms, file); //min
+
+	//in OUR system we want to write (c - bias)*scale
+	//in .rti system HSH its c*scale + bias
+	//we need to convert the coefficients to the uniform standard.
+	
+	for(size_t i = 0; i < basis_terms; i++) 
+		bias[i] = -bias[i]/scale[i];
+
+	int line_size = width * basis_terms * 3;
+	vector<unsigned char> line(line_size);
+
+	//for each pixel is 9 for red... 9 for green, 9 for blue
+	for(int y = 0; y < height; y++)	{
+		if(fread(line.data(), 1, line_size, file) != line_size)
+			return false;
+		int c = 0; //line position;
+		for(int x = 0; x < width; x++)
+			for(int k = 0; k < 3; k++)
+				for(int j = 0; j < basis_terms; j++)
+					data[j*3 + k][(y*width + x)] = line[c++];
+	}
 	return true;
 }
 
@@ -406,9 +489,11 @@ bool LRti::encodeJPEG(int startplane, int quality, const char *filename) {
 		//lrgb ptm order is: x^2, y^2, xy, x, y, 1, r, g, b
 		//while we use r, g, b, 1, x, y, x2 xy y2
 		order = {6,7,8, 5,3,4, 0,2,1};
-	} else
+	} else if(type == PTM_RGB) {
 		order = {5, 3, 4, 0, 2, 1};
-	
+	} else
+		order = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+
 	JpegEncoder enc;
 	enc.setQuality(quality);
 	
