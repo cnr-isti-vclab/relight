@@ -268,8 +268,8 @@ bool LRti::loadHSH(FILE* file) {
 	int basis_type = basis[1]; //ignored
 	int basis_size = basis[2]; //ignored
 	
-	if(rti_type != 3 || basis_terms != 9) {
-		cerr << "Unsupported .rti if not HSH with 9 terms" << endl;
+	if(rti_type != 3) {
+		cerr << "Unsupported .rti if not HSH (for the moment)" << endl;
 		return false;
 	}
 	type = HSH;
