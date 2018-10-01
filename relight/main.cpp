@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 			help();
 			break;
 		case 'm':
-			builder.nmaterials = atoi(optarg);
+			builder.nmaterials = (uint32_t)atoi(optarg);
 			break;
 		case 'r': {
 				int res = atoi(optarg);
@@ -123,16 +123,16 @@ int main(int argc, char *argv[]) {
 			quality = atoi(optarg);
 			break;
 		case 'p':
-			builder.nplanes = atoi(optarg);
+			builder.nplanes = (uint32_t)atoi(optarg);
 			break;
 		case 'y':
-			builder.yccplanes[0] = atoi(optarg);
+			builder.yccplanes[0] = (uint32_t)atoi(optarg);
 			break;
 		case 's':
-			builder.samplingrate = atoi(optarg);
+			builder.samplingrate = (uint32_t)atoi(optarg);
 			break;
 		case 'S': {
-			float sigma = atof(optarg);
+			float sigma = (float)atof(optarg);
 			if(sigma > 0)
 				builder.sigma = sigma;
 			break;
@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
 			break;
 
 		case 'c':
-			builder.rangescale = atof(optarg);
+			builder.rangescale = (float)atof(optarg);
 			break;
 
 		case '?':
@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
 		double psnr = 20*log10(255.0) - 10*log10(mse);
 		mse = sqrt(mse);
 		
-		if(psnr == 0) {
+		if(psnr == 0.0f) {
 			cerr << "Failed reloading rti: " << builder.error << endl;
 		}
 		//type, colorspace, nplanes, nmaterials, ny
@@ -246,7 +246,7 @@ int convertRTI(const char *file, const char *output, int quality) {
 	case LRti::HSH:
 		rti.type = Rti::HSH;
 		rti.colorspace = Rti::RGB;
-		rti.nplanes = 27;
+		rti.nplanes = lrti.scale.size()*3;
 		break;
 	}
 
