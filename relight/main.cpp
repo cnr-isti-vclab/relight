@@ -257,15 +257,23 @@ int convertRTI(const char *file, const char *output, int quality) {
 		rti.bias = {0, 0, 0};
 		for(int i = 0; i < 6; i++) {
 			rti.scale.push_back(lrti.scale[order[i]]);
-			rti.bias.push_back((float)lrti.bias[order[i]]/255.0f);
+			rti.bias.push_back((float)lrti.bias[order[i]]);
 		}
 
-	} else {
+	} else if(lrti.type == LRti::PTM_RGB){
 		for(int i = 0; i < 6; i++) {
 			for(int k = 0; k < 3; k++) {
 				rti.scale.push_back(lrti.scale[order[i]]);
-				rti.bias.push_back((float)lrti.bias[order[i]]/255.0f);
+				rti.bias.push_back(lrti.bias[order[i]]);
 			}
+		}
+	} else {
+		rti.scale.resize(lrti.scale.size()*3);
+		rti.bias.resize(lrti.scale.size()*3);
+		for(int i = 0; i < lrti.scale.size(); i++) {
+			rti.scale[i*3] = rti.scale[i*3+1] = rti.scale[i*3+2] = lrti.scale[i];
+			rti.bias[i*3] = rti.bias[i*3+1] = rti.bias[i*3+2] = lrti.bias[i];
+			
 		}
 	}
 	
