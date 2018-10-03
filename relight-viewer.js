@@ -21,7 +21,8 @@ function RelightViewer(div, options) {
 		pandelay: 50, zoomdelay:200, zoomstep: 0.25, lightsize:0.8,
 		pointers: {}, 
 		support: support,
-//		pagemap: { size: 200 },
+		pagemap: { size: 200 },
+//		pagemap: false,
 		actions: {
 			home:    { title: 'Home',       task: function(event) { t.centerAndScale(t.nav.zoomdelay); }        },
 			zoomin:  { title: 'Zoom In',    task: function(event) { t.zoom(-t.nav.zoomstep, t.nav.zoomdelay); } },
@@ -62,8 +63,12 @@ function RelightViewer(div, options) {
 	if(t.nav.scale)
 		html += '	<div class="relight-scale"><hr/><span></span></div>\n';
 
-	if(t.nav.pagemap)
-		html += '	<div class="relight-pagemap"><div class="relight-pagemap-area"></div>\n';
+	if(t.nav.pagemap) {
+		html += '	<div';
+		if(t.nav.pagemap.thumb)
+			html += ' style="background-image:url(' + options.url + '/' + t.nav.pagemap.thumb + '); background-size:cover"';
+		html += ' class="relight-pagemap"><div class="relight-pagemap-area"></div>\n';
+	}
 
 	html += '	<div class="relight-info-dialog"></div>\n';
 
@@ -172,8 +177,20 @@ RelightViewer.prototype.updateScale = function() {
 	var scale = Math.pow(2, t.pos.z);
 	var scalesize = t.options.scale*100*scale; //size of a pixel
 	span.innerHTML = formatMm(scalesize); 
-};
 
+	var box = t.div.querySelector('.relight-scale');
+	box.style.opacity = 1.0;
+
+	if(t.nav.scaletimeout)
+		clearTimeout(t.nav.scaletimeout);
+	t.nav.scaletimeout = setTimeout(
+		function() {
+			t.nav.scaletimeout = null;
+			box.style.opacity = 0.1;
+		}, 
+		1000);
+};
+	
 RelightViewer.prototype.initPagemap = function() {
 	var t = this;
 	var page = t.nav.pagemap;
@@ -216,8 +233,24 @@ RelightViewer.prototype.updatePagemap = function() {
 	page.area.style.top =  bbox[1] + 'px';
 	page.area.style.width = (bbox[2] - bbox[0]) + 'px';
 	page.area.style.height = (bbox[3] - bbox[1]) + 'px';
+
+	t.nav.pagemap.div.style.opacity = 1.0;
+
+	if(t.nav.pagemaptimeout)
+		clearTimeout(t.nav.pagemaptimeout);
+	t.nav.pagemaptimeout = setTimeout(
+		function() {
+			t.nav.pagemaptimeout = null;
+			t.nav.pagemap.div.style.opacity = 0.1;
+		}, 
+		1000);
 }
 
+RelightViewer.prototype.pagemapHide = function() {
+	var t = this;
+	t.nav.pagemaptimeout = null;
+	t.nav.pagemap.div.style.opacity = 0.1;
+}
 
 RelightViewer.prototype.mousedown = function(event) {
 	var t = this;
