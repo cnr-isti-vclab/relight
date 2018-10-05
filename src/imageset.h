@@ -14,7 +14,7 @@ public:
 
 	ImageSet(const char *path = NULL);
 	~ImageSet();
-	bool init(const char *path, bool ignore_filenames = true);
+	bool init(const char *path, bool ignore_filenames = true, int skip_image = -1);
 
 	void decode(size_t img, unsigned char *buffer);
 	void readLine(PixelArray &line);
