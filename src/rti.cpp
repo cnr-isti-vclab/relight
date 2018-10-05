@@ -595,7 +595,7 @@ QRgb ramp(float v, float min, float max) {
 	return ramp((int8_t)(255*v));
 }
 
-double Rti::evaluateError(ImageSet &imageset, Rti &rti, QString output) {
+double Rti::evaluateError(ImageSet &imageset, Rti &rti, QString output, int reference) {
 
 	uint32_t size = rti.width*rti.height*3;
 	vector<uint8_t> original(size);
@@ -605,7 +605,13 @@ double Rti::evaluateError(ImageSet &imageset, Rti &rti, QString output) {
 	vector<float> errors(rti.width*rti.height, 0.0f);
 	double tot = 0.0;
 
+	int count = 0;
 	for(uint32_t nl = 0; nl < nlights; nl++) {
+		if(reference >= 0 && nl != reference) {
+			continue;
+		}
+
+		count++;
 		Vector3f &light = imageset.lights[nl];
 
 		rti.render(light[0], light[1], buffer.data());
@@ -627,7 +633,7 @@ double Rti::evaluateError(ImageSet &imageset, Rti &rti, QString output) {
 
 		tot += e/size;
 	}
-	tot /= nlights;
+	tot /= count;
 
 	//double psnr = 20*log10(255.0) - 10*log10(tot);
 

@@ -25,7 +25,7 @@ public:
 
 	RtiBuilder();
 	~RtiBuilder();
-	bool init(const std::string &folder);
+	bool init(const std::string &folder, int skip_image = -1);
 	bool init();
 	size_t save(const std::string &output, int quality = 95);
 	bool saveJSON(QDir &dir, int quality);

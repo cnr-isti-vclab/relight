@@ -20,7 +20,7 @@ ImageSet::~ImageSet() {
 		delete dec;
 }
 
-bool ImageSet::init(const char *_path, bool ignore_filenames) {
+bool ImageSet::init(const char *_path, bool ignore_filenames, int skip_image) {
 
 	QDir dir(_path);
 	QStringList lps = dir.entryList(QStringList() << "*.lp");
@@ -39,17 +39,20 @@ bool ImageSet::init(const char *_path, bool ignore_filenames) {
 	size_t n;
 	stream >> n;
 
-	lights.resize(n);
-	decoders.resize(n);
 
 	QStringList img_ext;
 	img_ext << "*.jpg" << "*.JPG";
 	QStringList images = dir.entryList(img_ext);
 
 	for(size_t i = 0; i < n; i++) {
-		Vector3f &light = lights[i];
 		QString s;
+		Vector3f light;
 		stream >> s >> light[0] >> light[1] >> light[2];
+
+		if(i == skip_image)
+			continue;
+
+		lights.push_back(light);
 		QString filepath = dir.filePath(s);
 
 		if(ignore_filenames) {
@@ -78,7 +81,7 @@ bool ImageSet::init(const char *_path, bool ignore_filenames) {
 		}
 		width = (size_t)w;
 		height = (size_t)h;
-		decoders[i] = dec;
+		decoders.push_back(dec);
 	}
 	return true;
 }
