@@ -72,7 +72,7 @@ RtiBuilder::~RtiBuilder() {
 #endif
 }
 
-bool RtiBuilder::init(const string &folder) {
+bool RtiBuilder::init(const string &folder, int skip_image) {
 	
 	if((type == PTM || type == HSH) && colorspace == MRGB) {
 		error = "PTM and HSH do not support MRGB";
@@ -84,7 +84,7 @@ bool RtiBuilder::init(const string &folder) {
 		return false;
 	}
 	
-	if(!imageset.init(folder.c_str())) {
+	if(!imageset.init(folder.c_str(), true, skip_image)) {
 		error = "Failed imageset init.";
 		return false;
 	}

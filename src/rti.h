@@ -71,7 +71,7 @@ public:
 	void render(float lx, float ly, uint8_t *img, uint32_t renderplanes = 0);
 	void clip(int left, int bottom, int right, int top); //right and top pixel excluded
 	Rti clipped(int left, int bottom, int right, int top);
-	static double evaluateError(ImageSet &imageset, Rti &rti, QString output);
+	static double evaluateError(ImageSet &imageset, Rti &rti, QString output, int reference = -1);
 
 
 	std::vector<float> lightWeights(float lx, float ly);
