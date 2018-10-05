@@ -16,7 +16,7 @@ using namespace std;
 //adaptive base reflectance
 void help() {
 	//cout << "\t-f <format>: flat\n";
-	cout << "Usage: img2abr [-mrdqp]<input folder> [output folder]\n\n";
+	cout << "Usage: relight [-mrdqp]<input folder> [output folder]\n\n";
 	cout << "\tinput folder containing a .lp with number of photos and light directions\n";
 	cout << "\toptional output folder (default ./)\n\n";
 
@@ -30,7 +30,8 @@ void help() {
 	cout << "\t-c <float>: coeff quantization (to test!) default 1.5\n";
 	cout << "\t-C        : apply chroma subsampling \n";
 	cout << "\t-e        : evaluate reconstruction error (default: false)\n";
-	cout << "\t-y <int>  : number of Y planes in YCC";
+	cout << "\t-E <int>  : evaluate error on a single image (but remove it for fitting)\n";
+	cout << "\t-y <int>  : number of Y planes in YCC\n\n";
 }
 
 int convertRTI(const char *file, const char *output, int quality);
@@ -46,10 +47,11 @@ int main(int argc, char *argv[]) {
 	RtiBuilder builder;
 	int quality = 95;
 	bool evaluate_error = false;
+	int reference_image = -1; //image used for error reference
 
 	opterr = 0;
 	char c;
-	while ((c  = getopt (argc, argv, "hm:r:d:q:p:s:c:reb:y:S:C")) != -1)
+	while ((c  = getopt (argc, argv, "hm:r:d:q:p:s:c:reE:b:y:S:C")) != -1)
 		switch (c)
 		{
 		case 'h':
@@ -119,6 +121,9 @@ int main(int argc, char *argv[]) {
 		case 'e':
 			evaluate_error = true;
 			break;
+		case 'E':
+			reference_image = atoi(optarg);
+			break;
 		case 'q':
 			quality = atoi(optarg);
 			break;
@@ -186,7 +191,7 @@ int main(int argc, char *argv[]) {
 		return convertRTI(input.c_str(), output.c_str(), quality);
 	
 	
-	if(!builder.init(input)) {
+	if(!builder.init(input, reference_image)) {
 		cerr << builder.error << endl;
 		return 1;
 	}
@@ -196,6 +201,7 @@ int main(int argc, char *argv[]) {
 		cerr << "Failed saving: " << builder.error << endl;
 		return 1;
 	}
+
 	if(evaluate_error) {
 		Rti rti;
 		if(!rti.load(output.c_str())) {
@@ -203,7 +209,7 @@ int main(int argc, char *argv[]) {
 			return 1;
 		}
 		QDir out(output.c_str());
-		double mse = Rti::evaluateError(builder.imageset, rti, out.filePath("error.png"));
+		double mse = Rti::evaluateError(builder.imageset, rti, out.filePath("error.png"), reference_image);
 		double psnr = 20*log10(255.0) - 10*log10(mse);
 		mse = sqrt(mse);
 		
@@ -270,7 +276,7 @@ int convertRTI(const char *file, const char *output, int quality) {
 	} else {
 		rti.scale.resize(lrti.scale.size()*3);
 		rti.bias.resize(lrti.scale.size()*3);
-		for(int i = 0; i < lrti.scale.size(); i++) {
+		for(size_t i = 0; i < lrti.scale.size(); i++) {
 			rti.scale[i*3] = rti.scale[i*3+1] = rti.scale[i*3+2] = lrti.scale[i];
 			rti.bias[i*3] = rti.bias[i*3+1] = rti.bias[i*3+2] = lrti.bias[i];
 			
