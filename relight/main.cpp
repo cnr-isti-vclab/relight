@@ -26,7 +26,8 @@ void help() {
 	cout << "\t-q <int>  : jpeg quality (default: 90)\n";
 	cout << "\t-p <int>  : number of planes (default: 9)\n";
 	cout << "\t-s <int>  : sampling rate for pca (default 4)\n";
-	cout << "\t-S <int>  : sigma in rgf gaussian interpolation default 0.125 (~100 img)\n";
+	cout << "\t-S <float>: sigma in rgf gaussian interpolation default 0.125 (~100 img)\n";
+	cout << "\t-R <float>: regularization coeff for bilinear default 0.1\n";
 	cout << "\t-c <float>: coeff quantization (to test!) default 1.5\n";
 	cout << "\t-C        : apply chroma subsampling \n";
 	cout << "\t-e        : evaluate reconstruction error (default: false)\n";
@@ -47,11 +48,10 @@ int main(int argc, char *argv[]) {
 	RtiBuilder builder;
 	int quality = 95;
 	bool evaluate_error = false;
-	int reference_image = -1; //image used for error reference
 
 	opterr = 0;
 	char c;
-	while ((c  = getopt (argc, argv, "hm:r:d:q:p:s:c:reE:b:y:S:C")) != -1)
+	while ((c  = getopt (argc, argv, "hm:r:d:q:p:s:c:reE:b:y:S:R:C")) != -1)
 		switch (c)
 		{
 		case 'h':
@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
 				builder.type = RtiBuilder::RBF;
 				builder.colorspace = RtiBuilder::MRGB;
 
-			} else if(b == "bilinear") {
+			} else if(b == "bilinear" || b == "bln") {
 				builder.type = RtiBuilder::BILINEAR;
 				builder.colorspace = RtiBuilder::MRGB;
 
@@ -99,6 +99,10 @@ int main(int argc, char *argv[]) {
 				builder.type = RtiBuilder::RBF;
 				builder.colorspace = RtiBuilder::MYCC;
 
+			} else if(b == "ybilinear" || b == "ybln") {
+				builder.type = RtiBuilder::BILINEAR;
+				builder.colorspace = RtiBuilder::MYCC;
+
 			} else if(b == "yptm") {
 				builder.type = RtiBuilder::PTM;
 				builder.colorspace = RtiBuilder::YCC;
@@ -106,11 +110,13 @@ int main(int argc, char *argv[]) {
 			} else if(b == "yhsh") {
 				builder.colorspace = RtiBuilder::YCC;
 				builder.type = RtiBuilder::HSH;
+
 			} else if(b == "dmd") {
 				builder.colorspace = RtiBuilder::RGB;
 				builder.type = RtiBuilder::DMD;
+
 			} else {
-				cerr << "Unknown basis type: " << optarg << " (pick yrbf, rbf, bilinear, hsh, dmd or ptm)\n";
+				cerr << "Unknown basis type: " << optarg << " (pick yrbf, rbf, bilinear, ybilinear, hsh, dmd or ptm)\n";
 				return 1;
 			}
 		}
@@ -122,7 +128,7 @@ int main(int argc, char *argv[]) {
 			evaluate_error = true;
 			break;
 		case 'E':
-			reference_image = atoi(optarg);
+			builder.skip_image = atoi(optarg);
 			break;
 		case 'q':
 			quality = atoi(optarg);
@@ -140,6 +146,12 @@ int main(int argc, char *argv[]) {
 			float sigma = (float)atof(optarg);
 			if(sigma > 0)
 				builder.sigma = sigma;
+			break;
+		}
+		case 'R': {
+			float reg = (float)atof(optarg);
+			if(reg > 0)
+				builder.regularization = reg;
 			break;
 		}
 		case 'C':
@@ -191,7 +203,7 @@ int main(int argc, char *argv[]) {
 		return convertRTI(input.c_str(), output.c_str(), quality);
 	
 	
-	if(!builder.init(input, reference_image)) {
+	if(!builder.init(input)) {
 		cerr << builder.error << endl;
 		return 1;
 	}
@@ -208,8 +220,47 @@ int main(int argc, char *argv[]) {
 			cerr << "Failed loading rti: " << output << endl;
 			return 1;
 		}
+
+		map<Rti::Type, string> types = { { Rti::PTM, "ptm" }, {Rti::HSH, "hsh"}, {Rti::RBF, "rbf"}, { Rti::BILINEAR, "bilinear"} };
+		map<Rti::ColorSpace, string> colorspaces = { { Rti::RGB, "rgb"}, { Rti::LRGB, "lrgb" }, { Rti::YCC, "ycc"}, { Rti::MRGB, "mrgb"}, { Rti::MYCC, "mycc" } };
+
+
+		if(builder.skip_image == -1) {
+			double totmse = 0.0;
+			for(int i = 0; i < builder.lights.size(); i++) {
+				double mse = Rti::evaluateError(builder.imageset, rti, QString(), i);
+				totmse += mse;
+				double psnr = 20*log10(255.0) - 10*log10(mse);
+				mse = sqrt(mse);
+
+				Vector3f light = builder.imageset.lights[i];
+				float r = sqrt(light[0]*light[0] + light[1]*light[1]);
+				float elevation = asin(r);
+//				cout << output << "," << types[builder.type] << "," << colorspaces[builder.colorspace] << ","
+//					<< builder.nplanes << ","<< builder.nmaterials << "," << builder.yccplanes[0] << ","
+//					<< size << "," << psnr << "," << mse << "," << azimut << "," << builder.sigma << "," << light[0] << "," << light[1] << endl;
+			}
+			totmse /= builder.lights.size();
+			double totpsnr = 20*log10(255.0) - 10*log10(totmse);
+			totmse = sqrt(totmse);
+
+			cout << output << "," << types[builder.type] << "," << colorspaces[builder.colorspace] << ","
+				<< builder.nplanes << ","<< builder.nmaterials << "," << builder.yccplanes[0] << ","
+				<< size << "," << totpsnr << "," << totmse << endl;
+
+
+			//cout << "PSNR: " << totpsnr << endl;
+			return 0;
+		}
+
+
+
 		QDir out(output.c_str());
-		double mse = Rti::evaluateError(builder.imageset, rti, out.filePath("error.png"), reference_image);
+		ImageSet imgset;
+		imgset.init(input.c_str(), true);
+		double mse = 0;
+			mse = Rti::evaluateError(imgset, rti, out.filePath("error.png"), builder.skip_image);
+
 		double psnr = 20*log10(255.0) - 10*log10(mse);
 		mse = sqrt(mse);
 		
@@ -217,11 +268,13 @@ int main(int argc, char *argv[]) {
 			cerr << "Failed reloading rti: " << builder.error << endl;
 		}
 		//type, colorspace, nplanes, nmaterials, ny
-		map<Rti::Type, string> types = { { Rti::PTM, "ptm" }, {Rti::HSH, "hsh"}, {Rti::RBF, "rbf"}, { Rti::BILINEAR, "bilinear"} };
-		map<Rti::ColorSpace, string> colorspaces = { { Rti::RGB, "rgb"}, { Rti::LRGB, "lrgb" }, { Rti::YCC, "ycc"}, { Rti::MRGB, "mrgb"}, { Rti::MYCC, "mycc" } };
 
+		Vector3f light = imgset.lights[builder.skip_image];
+		float r = sqrt(light[0]*light[0] + light[1]*light[1]);
+		float azimut = asin(r);
 		cout << output << "," << types[builder.type] << "," << colorspaces[builder.colorspace] << ","
-			<< builder.nplanes << ","<< builder.nmaterials << "," << builder.yccplanes[0] << "," << size << "," << psnr << "," << mse << endl;
+			<< builder.nplanes << ","<< builder.nmaterials << "," << builder.yccplanes[0] << ","
+			<< size << "," << psnr << "," << mse << "," << azimut << "," << builder.sigma << "," << builder.regularization << "," << light[0] << "," << light[1] << endl;
 	}
 	return 0;
 }
