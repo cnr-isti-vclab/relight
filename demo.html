@@ -24,7 +24,7 @@ html, body { width:100%; height:100%; padding:0px; margin:0px; }
 <script>
 
 var url = 'test/12563_front';
-var relight = new RelightViewer('.relight', { url:url, layout:"deepzoom", pagemap: { thumb: 'thumb.jpg' },  background: [0.7, 0.7, 0.7, 1], scale: 0.01*10/3 });
+var relight = new RelightViewer('.relight', { rotate: 90, url:url, layout:"deepzoom", pagemap: { thumb: 'thumb.jpg', size:200, autohide:1000 },  background: [0.7, 0.7, 0.7, 1], scale: 0.01*10/3 });
 //relight.removeAction('fullscreen');
 //relight.addAction('info', 'ski/info.svg', function());
 </script>

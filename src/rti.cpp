@@ -619,11 +619,11 @@ double Rti::evaluateError(ImageSet &imageset, Rti &rti, QString output, int refe
 
 		imageset.decode(nl, original.data());
 		
-//		if(nl == reference) {
+/*		if(nl == reference) {
 			QImage img(rti.width, rti.height, QImage::Format_RGB888);
 			rti.render(light[0], light[1], img.bits());
 			img.save(QString("%1.png").arg(nl));
-//		}
+		}*/
 
 		double e = 0.0;
 		for(uint32_t i = 0; i < size; i++) {

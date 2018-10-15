@@ -21,8 +21,8 @@ function RelightViewer(div, options) {
 		pandelay: 50, zoomdelay:200, zoomstep: 0.25, lightsize:0.8,
 		pointers: {}, 
 		support: support,
-		pagemap: { size: 200 },
-//		pagemap: false,
+//		pagemap: { size: 200, autohide: 1000 },
+		pagemap: false,
 		actions: {
 			home:    { title: 'Home',       task: function(event) { t.centerAndScale(t.nav.zoomdelay); }        },
 			zoomin:  { title: 'Zoom In',    task: function(event) { t.zoom(-t.nav.zoomstep, t.nav.zoomdelay); } },
@@ -234,23 +234,22 @@ RelightViewer.prototype.updatePagemap = function() {
 	page.area.style.width = (bbox[2] - bbox[0]) + 'px';
 	page.area.style.height = (bbox[3] - bbox[1]) + 'px';
 
-	t.nav.pagemap.div.style.opacity = 1.0;
+	page.div.style.opacity = 1.0;
 
-	if(t.nav.pagemaptimeout)
-		clearTimeout(t.nav.pagemaptimeout);
-	t.nav.pagemaptimeout = setTimeout(
-		function() {
-			t.nav.pagemaptimeout = null;
-			t.nav.pagemap.div.style.opacity = 0.1;
-		}, 
-		1000);
+	if(page.autohide) {
+
+		if(page.timeout)
+			clearTimeout(page.timeout);
+		page.timeout = setTimeout(
+			function() {
+				page.timeout = null;
+				page.div.style.opacity = 0.1;
+			}, 
+			page.autohide
+		);
+	}
 }
 
-RelightViewer.prototype.pagemapHide = function() {
-	var t = this;
-	t.nav.pagemaptimeout = null;
-	t.nav.pagemap.div.style.opacity = 0.1;
-}
 
 RelightViewer.prototype.mousedown = function(event) {
 	var t = this;
