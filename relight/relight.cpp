@@ -72,7 +72,7 @@ RtiBuilder::~RtiBuilder() {
 #endif
 }
 
-bool RtiBuilder::init(const string &folder, int skip_image) {
+bool RtiBuilder::init(const string &folder) {
 	
 	if((type == PTM || type == HSH) && colorspace == MRGB) {
 		error = "PTM and HSH do not support MRGB";
@@ -676,8 +676,8 @@ void RtiBuilder::pickBase(PixelArray &sample) {
 	switch(type) {
 	case RBF:
 	case BILINEAR: pickBasePCA(sample, indices); break;
-	case PTM: pickBasePTM(); break;
-	case HSH: pickBaseHSH(); break;
+	case PTM:      pickBasePTM(); break;
+	case HSH:      pickBaseHSH(); break;
 	default: cerr << "Unknown basis" << endl; exit(0);
 	}
 	
@@ -724,24 +724,21 @@ void RtiBuilder::pickBase(PixelArray &sample) {
 	for(auto &mat: materials) {
 		float maxscale = 0.0f;
 		//ensure scale is the same for all materials
-		//and
-		for(auto &plane: mat.planes) {
-			plane.scale = plane.max - plane.min;
-			maxscale = std::max(plane.scale, maxscale);
-		}
-		
-		for(auto &plane: mat.planes) {
-			plane.scale = plane.max - plane.min;
-			//plane.scale = maxscale;
-			/*if(plane.scale > 0.50*maxscale)
-				plane.scale = maxscale;
-			else plane.scale = 2*plane.scale; */
-			
+		for(auto &plane: mat.planes)
+			maxscale = std::max(plane.max - plane.min, maxscale);
+
+		//tested different scales for different coefficients (taking into account quantization for instance)
+		// for all datasets the quality/space is worse.
+
+		for(Material::Plane &plane: mat.planes) {
+			plane.scale = maxscale;
 			plane.bias = -plane.min/plane.scale;
-			plane.scale /= 255;
+			plane.scale /= 255.0f;
 		}
 	}
 	
+	//basis coefficients can be negative, usually centered in zero
+	//so quantization formula is 127 + range*eigen,  hence scaling range (which is based on fabs)
 	for(auto &m: materials) {
 		for(uint32_t p = 0; p < nplanes; p++) {
 			auto &plane = m.planes[p];
@@ -993,8 +990,6 @@ size_t RtiBuilder::save(const string &output, int quality) {
 				}
 			}
 		}
-		if(colorspace == MYCC) {
-		}
 	}
 	
 	//TODO error control
@@ -1207,10 +1202,10 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	}
 	
 	
-	if(type == RBF || type == BILINEAR) {
+	/*if(type == RBF || type == BILINEAR) {
 		QFileInfo matinfo(dir.filePath("materials.bin"));
 		total += matinfo.size();
-	}
+	}*/
 	
 	QFileInfo infoinfo(dir.filePath("info.json"));
 	total += infoinfo.size();
@@ -1337,9 +1332,9 @@ void RtiBuilder::resamplePixel(Color3f *sample, Color3f *pixel) {
 			pixel[i].r += sample[w.first].r*w.second;
 			pixel[i].g += sample[w.first].g*w.second;
 			pixel[i].b += sample[w.first].b*w.second;
-			if(colorspace == MYCC)
-				pixel[i] = pixel[i].toYcc();
 		}
+		if(colorspace == MYCC)
+			pixel[i] = pixel[i].toYcc();
 	}
 }
 
@@ -1444,12 +1439,13 @@ void RtiBuilder::buildResampleMap() {
 		
 	}
 	
-	//	 x = (B + (AtA + kI)^-1 * At*(I - AB))*b
-	
+	//	 x = (B + (AtA + kI)^-1 * At*(I - AB))*b]
+	//  original regularization coefficient was 0.1
+
 	arma::Mat<double> I(ndimensions, ndimensions, arma::fill::eye);
 	arma::Mat<double> At = A.t();
 	arma::Mat<double> AtA = At*A;
-	arma::Mat<double> iAtA = inv_sympd(AtA + 0.1*I);
+	arma::Mat<double> iAtA = inv_sympd(AtA + regularization*I);
 	
 	arma::Mat<double> tI(lights.size(), lights.size(), arma::fill::eye);
 	
