@@ -118,23 +118,25 @@ bool Rti::load(const char *filename) {
 	if(colorspace == MRGB || colorspace == MYCC) {
 		size_t basesize = nmaterials * (nplanes+1)*3*ndimensions;
 		basis.resize(basesize);
-		QFile matfile(dir.filePath("materials.bin"));
+
+		/*QFile matfile(dir.filePath("materials.bin"));
 		if(!matfile.open(QFile::ReadOnly)) {
 			cerr << "Could not open materials.bin\n";
 			return false;
-		}
+		}*/
 
-		vector<uint8_t> tmp(basesize);
-		matfile.read((char *)tmp.data(), basesize);
+		QJsonArray jbasis = obj["basis"].toArray();
+
 		for(uint32_t m = 0; m < nmaterials; m++) {
 			for(uint32_t p = 0; p < nplanes+1; p++) {
 				for(uint32_t c = 0; c < ndimensions; c++) {
 					for(int k = 0; k < 3; k++) {
 						uint32_t o = ((m*(nplanes+1) + p)*ndimensions + c)*3 + k;
+						float c = jbasis[o].toDouble();
 						if(p == 0)
-							basis[o] = tmp[o];
+							basis[o] = c;
 						else
-							basis[o] = ((tmp[o] - 127.0f)/materials[m].planes[p-1].range);
+							basis[o] = ((c - 127.0f)/materials[m].planes[p-1].range);
 					}
 				}
 			}
@@ -345,7 +347,7 @@ void Rti::render(float lx, float ly, uint8_t *buffer, uint32_t renderplanes) {
 						c.r += val*lweights[off + 3*(p+1) + 0];
 					}
 				}
-
+				//ToDO cleanup
 				if(colorspace == MYCC)
 					c = c.toRgb();
 
@@ -369,10 +371,10 @@ void Rti::render(float lx, float ly, uint8_t *buffer, uint32_t renderplanes) {
 
 std::vector<float> Rti::lightWeights(float lx, float ly) {
 	switch(type) {
-	case PTM: return lightWeightsPtm(lx, ly);
-	case HSH: return lightWeightsHsh(lx, ly);
-	case DMD: return lightWeightsDmd(lx, ly);
-	case RBF: return lightWeightsRbf(lx, ly);
+	case PTM:      return lightWeightsPtm(lx, ly);
+	case HSH:      return lightWeightsHsh(lx, ly);
+	case DMD:      return lightWeightsDmd(lx, ly);
+	case RBF:      return lightWeightsRbf(lx, ly);
 	case BILINEAR: return lightWeightsBilinear(lx, ly);
 	default: return vector<float>();
 	}
@@ -414,8 +416,6 @@ std::vector<float> Rti::lightWeightsDmd(float lx, float ly) {
 
 	uint32_t nweights = (colorspace == LRGB)? (nplanes-3) : nplanes/3;
 
-	uint32_t count = 0;
-	int degree = 0;
 	vector<float> coeffs(nweights);
 
 	return coeffs;
@@ -486,6 +486,7 @@ std::vector<float> Rti::lightWeightsRbf(float lx, float ly) {
 	for(size_t i = 0; i < lights.size(); i++) {
 		float d2 = (n - lights[i]).squaredNorm();
 		float w = exp(-radius * d2);
+		//float w = sqrt(sigma*sigma + d2);
 
 		weights[i] = std::make_pair(i, w);
 		totw += w;
@@ -618,11 +619,11 @@ double Rti::evaluateError(ImageSet &imageset, Rti &rti, QString output, int refe
 
 		imageset.decode(nl, original.data());
 		
-		if(nl == 0) {
+//		if(nl == reference) {
 			QImage img(rti.width, rti.height, QImage::Format_RGB888);
 			rti.render(light[0], light[1], img.bits());
-			img.save(QString("%1.ppm").arg(nl));
-		}
+			img.save(QString("%1.png").arg(nl));
+//		}
 
 		double e = 0.0;
 		for(uint32_t i = 0; i < size; i++) {

@@ -22,10 +22,11 @@ public:
 	uint32_t samplingrate = 40;
 	uint32_t nsamples = 1<<16; //TODO change to rate
 	float rangescale = 1.5;
+	int skip_image = -1;
 
 	RtiBuilder();
 	~RtiBuilder();
-	bool init(const std::string &folder, int skip_image = -1);
+	bool init(const std::string &folder);
 	bool init();
 	size_t save(const std::string &output, int quality = 95);
 	bool saveJSON(QDir &dir, int quality);
