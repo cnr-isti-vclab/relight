@@ -57,8 +57,6 @@
 	top:10px;
 	right:10px;
 	background-color:rgb(255, 255, 255, 0.1);
-/*	border: 1px solid white; */
-
 	transition: opacity 1s ease;
 	opacity:1.0;
 }
@@ -71,8 +69,9 @@
 .relight-pagemap-area {
 	position:absolute;
 	top:0px; left:0px;
-/*	background-color:rgb(255, 255, 255, 0.2); */
 	border: 1px solid white;
+	box-shadow: 0 0 0 1px #ccc;
+	opacity:0.5;
 }
 
 @media screen and (max-width: 576px) {
