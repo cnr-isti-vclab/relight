@@ -36,6 +36,7 @@ public:
 	uint32_t nmaterials = 1;
 	uint32_t yccplanes[3] = {0, 0, 0}; //for ycc format (nplanes- yplanes)/2 = cplanes
 	float sigma = 0.125; //rbf interpolation parameter default for ~100 images
+	float regularization = 0.1; //bilinear regularization coeff.
 	bool chromasubsampling = false;
 	bool gammaFix = false;
 
