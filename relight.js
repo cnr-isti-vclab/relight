@@ -255,11 +255,16 @@ initTree: function() {
 
 	var t = this;
 
-	t.imgCache = [];
-	for(var i = 0; i < t.maxRequested*t.njpegs; i++) {
-		var image = new Image();
-		image.crossOrigin = "Anonymous";
-		t.imgCache[i] = image;
+	if(t.imgCache) {
+		for(var i = 0; i < t.imgCache.length; i++)
+			t.imgCache[i].src = '';
+	} else {
+		t.imgCache = [];
+		for(var i = 0; i < t.maxRequested*t.njpegs; i++) {
+			var image = new Image();
+			image.crossOrigin = "Anonymous";
+			t.imgCache[i] = image;
+		}
 	}
 	t.currImgCache = 0;
 

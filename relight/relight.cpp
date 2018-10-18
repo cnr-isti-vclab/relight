@@ -729,9 +729,9 @@ void RtiBuilder::pickBase(PixelArray &sample) {
 
 		//tested different scales for different coefficients (taking into account quantization for instance)
 		// for all datasets the quality/space is worse.
-
+		//rangecompress allows better quality at a large cost.
 		for(Material::Plane &plane: mat.planes) {
-			plane.scale = maxscale;
+			plane.scale = rangecompress*(plane.max - plane.min) + (1 - rangecompress)*maxscale;
 			plane.bias = -plane.min/plane.scale;
 			plane.scale /= 255.0f;
 		}

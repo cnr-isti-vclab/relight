@@ -5,12 +5,15 @@
 #include <string>
 #include "vector.h"
 
+#include <QStringList>
+
 class JpegDecoder;
 
 class ImageSet {
 public:
 	size_t width, height;
 	std::vector<Vector3f> lights;
+	QStringList images;
 
 	ImageSet(const char *path = NULL);
 	~ImageSet();
