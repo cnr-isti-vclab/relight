@@ -53,7 +53,8 @@ function Relight(item, o) {
 		maxRequested: 4,
 		fit: true,                   //scale on load.
 		suffix: ".jpg",
-		preserveDrawingBuffer: false
+		preserveDrawingBuffer: false,
+		rotate: 0
 	}, o);
 
 	if(typeof(item) == 'string')
