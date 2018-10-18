@@ -42,7 +42,7 @@ bool ImageSet::init(const char *_path, bool ignore_filenames, int skip_image) {
 
 	QStringList img_ext;
 	img_ext << "*.jpg" << "*.JPG";
-	QStringList images = dir.entryList(img_ext);
+	images = dir.entryList(img_ext);
 
 	for(size_t i = 0; i < n; i++) {
 		QString s;

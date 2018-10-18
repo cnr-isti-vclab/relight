@@ -4,6 +4,7 @@
 #include "../src/getopt.h"
 
 #include <QDir>
+#include <QImage>
 
 #include <iostream>
 #include <string>
@@ -25,14 +26,16 @@ void help() {
 	cout << "\t-r <int>  : side of the basis function (default 8, 0 means rbf interpolation)\n";
 	cout << "\t-q <int>  : jpeg quality (default: 90)\n";
 	cout << "\t-p <int>  : number of planes (default: 9)\n";
+	cout << "\t-y <int>  : number of Y planes in YCC\n\n";
 	cout << "\t-s <int>  : sampling rate for pca (default 4)\n";
 	cout << "\t-S <float>: sigma in rgf gaussian interpolation default 0.125 (~100 img)\n";
 	cout << "\t-R <float>: regularization coeff for bilinear default 0.1\n";
+	cout << "\t-B <float>: range compress bits for planes (default 0.0) 1.0 means compress\n";
 	cout << "\t-c <float>: coeff quantization (to test!) default 1.5\n";
 	cout << "\t-C        : apply chroma subsampling \n";
 	cout << "\t-e        : evaluate reconstruction error (default: false)\n";
 	cout << "\t-E <int>  : evaluate error on a single image (but remove it for fitting)\n";
-	cout << "\t-y <int>  : number of Y planes in YCC\n\n";
+	cout << "\t-D <path> : directory to store rebuilt images\n";
 }
 
 int convertRTI(const char *file, const char *output, int quality);
@@ -48,10 +51,11 @@ int main(int argc, char *argv[]) {
 	RtiBuilder builder;
 	int quality = 95;
 	bool evaluate_error = false;
-
+	QString redrawdir;
+	
 	opterr = 0;
 	char c;
-	while ((c  = getopt (argc, argv, "hm:r:d:q:p:s:c:reE:b:y:S:R:C")) != -1)
+	while ((c  = getopt (argc, argv, "hm:r:d:q:p:s:c:reE:b:y:S:R:CD:B:")) != -1)
 		switch (c)
 		{
 		case 'h':
@@ -154,12 +158,25 @@ int main(int argc, char *argv[]) {
 				builder.regularization = reg;
 			break;
 		}
+		case 'B': {
+			float compress = (float)atof(optarg);
+			if(compress >= 0.0f && compress <= 1.0f)
+				builder.rangecompress = compress;
+			else {
+				cerr << "rangecompress must be between 0 and 1\n";
+				exit(1);
+			}
+			break;
+		}
 		case 'C':
 			builder.chromasubsampling = true;
 			break;
 
 		case 'c':
 			builder.rangescale = (float)atof(optarg);
+			break;
+		case 'D':
+			redrawdir = optarg;
 			break;
 
 		case '?':
@@ -214,6 +231,29 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	if(redrawdir.size()) {
+		QDir dir(redrawdir);
+		if(!dir.exists()) {
+			cerr << "Directory for redraw not found\n";
+			return 1;
+		}
+		Rti rti;
+		if(!rti.load(output.c_str())) {
+			cerr << "Failed loading rti: " << output << endl;
+			return 1;
+		}
+		
+		uint32_t size = rti.width*rti.height*3;
+		vector<uint8_t> buffer(size);
+		for(int i = 0; i < builder.lights.size(); i++) {
+			Vector3f &light = builder.lights[i];
+			rti.render(light[0], light[1], buffer.data());
+			
+			QImage img(rti.width, rti.height, QImage::Format_RGB888);
+			rti.render(light[0], light[1], img.bits());
+			img.save(dir.filePath( builder.imageset.images[i]));
+		}
+	}
 	if(evaluate_error) {
 		Rti rti;
 		if(!rti.load(output.c_str())) {
@@ -236,9 +276,11 @@ int main(int argc, char *argv[]) {
 				Vector3f light = builder.imageset.lights[i];
 				float r = sqrt(light[0]*light[0] + light[1]*light[1]);
 				float elevation = asin(r);
-//				cout << output << "," << types[builder.type] << "," << colorspaces[builder.colorspace] << ","
-//					<< builder.nplanes << ","<< builder.nmaterials << "," << builder.yccplanes[0] << ","
-//					<< size << "," << psnr << "," << mse << "," << azimut << "," << builder.sigma << "," << light[0] << "," << light[1] << endl;
+/*				cout << output << "," << types[builder.type] << "," << colorspaces[builder.colorspace] << ","
+					<< builder.nplanes << ","<< builder.nmaterials << "," << builder.yccplanes[0] << ","
+					<< size << "," << psnr << "," << mse << "," 
+					<< elevation << "," << builder.sigma << "," << builder.regularization << "," 
+					<< light[0] << "," << light[1] << endl; */
 			}
 			totmse /= builder.lights.size();
 			double totpsnr = 20*log10(255.0) - 10*log10(totmse);

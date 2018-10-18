@@ -23,6 +23,7 @@ public:
 	uint32_t nsamples = 1<<16; //TODO change to rate
 	float rangescale = 1.5;
 	int skip_image = -1;
+	float rangecompress = 0.0f; //betwee 0 and 1, where 1 is maximally compressed
 
 	RtiBuilder();
 	~RtiBuilder();

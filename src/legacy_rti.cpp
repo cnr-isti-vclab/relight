@@ -299,7 +299,7 @@ bool LRti::loadHSH(FILE* file) {
 	vector<unsigned char> line(line_size);
 
 	//for each pixel is 9 for red... 9 for green, 9 for blue
-	for(int y = 0; y < height; y++)	{
+	for(int y = height-1; y >= 0; y--)	{
 		if(fread(line.data(), 1, line_size, file) != line_size)
 			return false;
 		int c = 0; //line position;
