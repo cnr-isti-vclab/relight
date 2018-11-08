@@ -2,11 +2,12 @@
 
 Relight
 
-Position is given with x, y, z, t
+Position is given with x, y, z, a, t
 
 where 
-  x and y are the coords of the center of the screen in full scale image.
+  x and y are the coords of the center of the screen in full scale image. (0, 0 beingg in top left of image)
   z is the zoom level with 0 being the original image. (in the code level)
+  a is the rotation angle (counterclockwise) in degrees
   t is for interpolation
 
 Tiles follow deepzoom convention:
@@ -46,7 +47,7 @@ function Relight(item, o) {
 		layout: "image",
 		visible: true,
 		light: [0, 0, 1],
-		pos: { x: 0, y:0, z:0, t:0 },
+		pos: { x: 0, y:0, z:0, a: 0, t:0 },
 		background: [0, 0, 0, 0],
 		bounded: true,
 		border: 1,                   //prefetching tiles out of view
@@ -54,9 +55,12 @@ function Relight(item, o) {
 		fit: true,                   //scale on load.
 		suffix: ".jpg",
 		preserveDrawingBuffer: false,
-		rotate: 0
+		rotation: 0
 	}, o);
 
+	t.pos = t.options.pos;
+	if(t.options.rotation)
+		t.pos.a = t.options.rotation;
 	if(typeof(item) == 'string')
 		item = document.querySelector(item);
 	if(item.tagName != "CANVAS")
@@ -406,34 +410,101 @@ resize: function(width, height) {
 	this.redraw();
 },
 
+rot: function(dx, dy, a) {
+	var a = Math.PI*(a/180);
+	var x =  Math.cos(a)*dx + Math.sin(a)*dy;
+	var y = -Math.sin(a)*dx + Math.cos(a)*dy;
+	return [x, y];
+},
+
+project: function(pos, x, y) { //convert image coords to canvas coords.
+	var t = this;
+	var r = t.rot(x - pos.x,  y - pos.y, pos.a);
+	var z = Math.pow(2, pos.z);
+	return [r[0]/z + t.canvas.width/2, r[1]/z + t.canvas.height/2]
+},
+
+iproject: function(pos, x, y) {
+	var t = this;
+	var z = Math.pow(2, pos.z);
+	x = (x - t.canvas.width/2)*z;
+	y = (y - t.canvas.height/2)*z;
+	[x, y] = t.rot(x, y, -pos.a);
+	return [x + pos.x, y + pos.y];
+},
+
+getBox: function(pos) {
+	var t = this;
+	var corners = [0, 0, 0, 1, 1, 1, 1, 0];
+	var box = [ 1e20, 1e20, -1e20, -1e20];
+	for(var i = 0; i < 8; i+= 2) {
+		var p = t.project(pos, corners[i]*t.width, corners[i+1]*t.height);
+		box[0] = Math.min(p[0], box[0]);
+		box[1] = Math.min(p[1], box[1]);
+		box[2] = Math.max(p[0], box[2]);
+		box[3] = Math.max(p[1], box[3]);
+	}
+	return box;
+},
+
+getIBox: function(pos) {
+	var t = this;
+	var corners = [0, 0, 0, 1, 1, 1, 1, 0];
+	var box = [ 1e20, 1e20, -1e20, -1e20];
+	for(var i = 0; i < 8; i+= 2) {
+		var p = t.iproject(pos, corners[i]*t.canvas.width, corners[i+1]*t.canvas.height);
+		box[0] = Math.min(p[0], box[0]);
+		box[1] = Math.min(p[1], box[1]);
+		box[2] = Math.max(p[0], box[2]);
+		box[3] = Math.max(p[1], box[3]);
+	}
+	return box;
+},
+
+
 zoom: function(dz, dt) {
 	var p = this.pos;
-	this.setPosition(p.x, p.y, p.z+dz, dt);
+	this.setPosition(dt, p.x, p.y, p.z+dz, p.a);
 },
 
 center: function(dt) {
-	this.setPosition(this.width/2, this.height/2, this.pos.z, dt);
+	var p = this.pos;
+	this.setPosition(dt, this.width/2, this.height/2, p.z, p.a);
 },
 
 centerAndScale: function(dt) {
 	var t = this;
-	var scale = Math.max(t.width/t.canvas.width, t.height/t.canvas.height);
+	t.pos.x = t.width/2;
+	t.pos.y = t.height/2;
+	t.pos.z = 0;
+	var box = t.getBox(t.pos);
+	var scale = Math.max((box[2]-box[0])/t.canvas.width, (box[3]-box[1])/t.canvas.height);
 	var z = Math.log(scale)/Math.LN2;
-	this.setPosition(t.width/2, t.height/2, z, dt);
+	this.setPosition(dt, t.pos.x, t.pos.y, z, t.pos.a);
 },
 
-pan: function(dx, dy, dt) { //dx and dy expressed as pixels in the current size!
+pan: function(dt, dx, dy) { //dx and dy expressed as pixels in the current size!
 	var p = this.pos;
 	//size of a rendering pixel in original image pixels.
 	var scale = Math.pow(2, p.z);
-	this.setPosition(p.x - dx*scale, p.y - dy*scale, p.z, dt);
+	var r = this.rot(dx, dy, p.a);
+	this.setPosition(dt, p.x - r[0]*scale, p.y - r[1]*scale, p.z, p.a);
 },
 
-setPosition: function(x, y, z, dt) {
+rotate: function(dt, angle) {
+	var p = this.pos;
+	var a = p.a + angle;
+	while(a > 360) a -= 360;
+	while(a <   0) a += 360;
+	this.setPosition(dt, p.x, p.y, p.z, a);
+},
+
+setPosition: function(dt, x, y, z, a) {
+
 	var t = this;
 	var scale = Math.pow(2, z);
 
-	if(t.bounded && t.width) {
+	if(0 && t.bounded && t.width) {
 		var zx = Math.min(z, Math.log(t.width/t.canvas.width)/Math.log(2.0));
 		var zy = Math.min(z, Math.log(t.height/t.canvas.height)/Math.log(2.0));
 		z = Math.max(zx, zy);
@@ -451,10 +522,10 @@ setPosition: function(x, y, z, dt) {
 	var time = performance.now();
 	t.previous = t.getCurrent(time);
 
-	if(x == t.previous.x && y == t.previous.y && z == t.previous.z)
+	if(x == t.previous.x && y == t.previous.y && z == t.previous.z && a == t.previous.a)
 		return;
 
-	t.pos = { x:x, y:y, z:z, t:time + dt };
+	t.pos = { x:x, y:y, z:z, a:a, t:time + dt };
 
 	t.prefetch();
 	t.redraw();
@@ -467,7 +538,7 @@ getCurrent: function(time) {
 	var t = this;
 
 	if(time > t.pos.t)
-		return { x: t.pos.x, y: t.pos.y, z: t.pos.z, t: time };
+		return { x: t.pos.x, y: t.pos.y, z: t.pos.z, a: t.pos.a, t: time };
 
 	var dt = t.pos.t - t.previous.t;
 	if(dt < 1) return t.pos;
@@ -479,6 +550,7 @@ getCurrent: function(time) {
 		x:t.pos.x*ft + t.previous.x*dt, 
 		y:t.pos.y*ft + t.previous.y*dt, 
 		z:t.pos.z*ft + t.previous.z*dt, 
+		a:t.pos.a*ft + t.previous.a*dt,
 		t:time };
 },
 
@@ -802,12 +874,14 @@ loadProgram: function() {
 'uniform mat4 u_matrix;\n' +
 '\n' +
 'attribute vec4 a_position;\n' +
+'attribute vec2 a_texcoord;\n' +
+
 'varying vec2 v_texcoord;\n'+
 '\n' +
 'void main() {\n' +
-'	gl_Position = u_matrix * a_position;\n' +
-'	v_texcoord.x = a_position.x;\n' +
-'	v_texcoord.y = a_position.y;\n' +
+//'	gl_Position = u_matrix * a_position;\n' +
+'gl_Position = a_position;\n' + 
+'v_texcoord = a_texcoord;\n' +
 '}';
 
 
@@ -1092,6 +1166,14 @@ loadProgram: function() {
 	gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);
 	gl.enableVertexAttribArray(coord);
 
+	t.tbuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, t.tbuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0,  0, 1,  1, 1,  1, 0]), gl.STATIC_DRAW);
+
+	var tex = gl.getAttribLocation(t.program, "a_texcoord");
+	gl.vertexAttribPointer(tex, 2, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(tex);
+
 	t.matrixLocation = gl.getUniformLocation(t.program, "u_matrix");
 
 	if(t.colorspace) {
@@ -1122,56 +1204,56 @@ drawNode: function(pos, minlevel, level, x, y) {
 		return; //missing image
 
 
-//	var d = level - minlevel;
+	//compute coords of the corners
+	var z = Math.pow(2, pos.z);
+	var a = Math.PI*pos.a/180;
+	var c = Math.cos(a);
+	var s = Math.sin(a);
 
-	var scale = Math.pow(2, pos.z);
+//TODO use a static buffer
+	var coords = new Float32Array([0, 0, 0,  0, 1, 0,   1, 1, 0,   1,  0, 0]);
+
+	var sx = 2.0/t.canvas.width;
+	var sy = 2.0/t.canvas.height;
+
 	if(t.layout == "image") {
-		sx = 2.0*(t.width/scale)/t.canvas.width;
-		sy = 2.0*(t.height/scale)/t.canvas.height;
-		dx = -2.0*(pos.x/scale)/t.canvas.width;
-		dy = -2.0*(pos.y/scale)/t.canvas.height;
-
+		for(var i = 0; i < coords.length; i+=3) {
+			var r = t.rot(coords[i]*t.width - pos.x, -coords[i+1]*t.height + pos.y, pos.a);
+			coords[i]   = r[0]*sx/z;
+			coords[i+1] = r[1]*sy/z;
+		}
 	} else {
+		var side = tilesizeinimgspace = t.tilesize*(1<<(level));
 
-
-		var tilesizeinimgspace = t.tilesize*(1<<(level));
-		var tilesizeincanvasspace = tilesizeinimgspace/scale;
-		var tx = tilesizeinimgspace;
-		var ty = tilesizeinimgspace;
-
-		var over = t.overlap*(1<<level)/scale; //in canvas space
-
-		var o = [x==0?0:over, y==0?0:over, over, over];
-
+		var tx = side;
+		var ty = side;
 		if(t.layout != "google") { //google does not clip images.
-			if(tx*(x+1) > t.width) {
-				tx = (t.width  - tx*x);
-				o[2] = 0;
+			if(side*(x+1) > t.width) {
+				tx = (t.width  - side*x);
 			}
 			if(ty*(y+1) > t.height) {
-				ty = (t.height - ty*y);
-				o[3] = 0;
+				ty = (t.height - side*y);
 			} //in imagespace
 		}
-		tx /= scale;
-		ty /= scale;
-			//now in canvas space;
 
-		var sx = 2.0*(tx + o[0] + o[2])/t.canvas.width;
-		var sy = 2.0*(ty + o[1] + o[3])/t.canvas.height;
-		var dx = -2.0*(pos.x/scale - x*tilesizeincanvasspace + o[0])/t.canvas.width;
-		var dy = -2.0*(pos.y/scale - y*tilesizeincanvasspace + o[1])/t.canvas.height;
+
+		for(var i = 0; i < coords.length; i+=3) {
+			var r = t.rot(coords[i]*tx - pos.x + side*x,  -coords[i+1]*ty + pos.y - side*y, pos.a);
+			coords[i]   = r[0]*sx/z;
+			coords[i+1] = r[1]*sy/z;
+		}
 	}
 
-	var matrix = [sx, 0,  0,  0,  0, -sy,  0,  0,  0,  0,  1,  0,  dx,  -dy,  0,  1];
-
+//0.0 is in the center of the screen, 
 	var gl = t.gl;
+	gl.bindBuffer(gl.ARRAY_BUFFER, t.vbuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, coords, gl.STATIC_DRAW);
+
+
 	for(var i = 0; i < t.njpegs; i++) {
 		gl.activeTexture(gl.TEXTURE0 + i);
 		gl.bindTexture(gl.TEXTURE_2D, t.nodes[index].tex[i]);
 	}
-
-	gl.uniformMatrix4fv(t.matrixLocation, false, matrix);
 	gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
 },
 
@@ -1184,13 +1266,12 @@ draw: function(timestamp) {
 	var b = this.options.background;
 	gl.clearColor(b[0], b[1], b[2], b[3], b[4]);
 	gl.clear(gl.COLOR_BUFFER_BIT);
-	gl.enable(gl.SCISSOR_TEST);
+	//gl.enable(gl.SCISSOR_TEST);
 
 	if(t.waiting || !t.visible)
 		return;
 
 	var pos = t.getCurrent(performance.now());
-
 	var needed = t.neededBox(pos, 0);
 
 	var minlevel = needed.level; //this is the minimum level;
@@ -1208,7 +1289,7 @@ draw: function(timestamp) {
 	if(t.layout == "google") {
 		box[0] += 1; box[1] += 1; box[2] -= 2; box[3] -= 2;
 	}
-	gl.scissor(box[0], box[1], box[2], box[3]);
+	//gl.scissor(box[0], box[1], box[2], box[3]);
 
 
 
@@ -1312,7 +1393,6 @@ neededBox: function(pos, border) {
 	var scale = Math.pow(2, pos.z);
 	var box = [];
 	for(var level = t.nlevels-1; level >= minlevel; level--) {
-
 		//find coordinates in original size image
 		var bbox = [
 			pos.x - scale*w/2,
@@ -1320,6 +1400,7 @@ neededBox: function(pos, border) {
 			pos.x + scale*w/2,
 			pos.y + scale*h/2
 		];
+		var bbox = t.getIBox(pos); //thats the reverse.
 		var side = t.tilesize*Math.pow(2, level);
 		//quantized bbox
 		var qbox = [
