@@ -1203,7 +1203,6 @@ drawNode: function(pos, minlevel, level, x, y) {
 	if(this.nodes[index].missing != 0)
 		return; //missing image
 
-
 	//compute coords of the corners
 	var z = Math.pow(2, pos.z);
 	var a = Math.PI*pos.a/180;
@@ -1212,6 +1211,8 @@ drawNode: function(pos, minlevel, level, x, y) {
 
 //TODO use a static buffer
 	var coords = new Float32Array([0, 0, 0,  0, 1, 0,   1, 1, 0,   1,  0, 0]);
+	var tcoords = new Float32Array([0, 0,   0, 1,    1, 1,    1, 0]);
+
 
 	var sx = 2.0/t.canvas.width;
 	var sy = 2.0/t.canvas.height;
@@ -1222,6 +1223,7 @@ drawNode: function(pos, minlevel, level, x, y) {
 			coords[i]   = r[0]*sx/z;
 			coords[i+1] = r[1]*sy/z;
 		}
+
 	} else {
 		var side = tilesizeinimgspace = t.tilesize*(1<<(level));
 
@@ -1231,11 +1233,25 @@ drawNode: function(pos, minlevel, level, x, y) {
 			if(side*(x+1) > t.width) {
 				tx = (t.width  - side*x);
 			}
-			if(ty*(y+1) > t.height) {
+			if(side*(y+1) > t.height) {
 				ty = (t.height - side*y);
 			} //in imagespace
 		}
 
+		var over = t.overlap;
+		var lx  = t.qbox[level][2]-1;
+		var ly  = t.qbox[level][3]-1;
+
+		if(over) {
+			var dtx = over / (tx/(1<<level) + (x==0?0:over) + (x==lx?0:over));
+			var dty = over / (ty/(1<<level) + (y==0?0:over) + (y==ly?0:over));
+
+			tcoords[0] = tcoords[2] = (x==0? 0: dtx);
+			tcoords[1] = tcoords[7] = (y==0? 0: dty);
+
+			tcoords[4] = tcoords[6] = (x==lx? 1: 1 - dtx);
+			tcoords[3] = tcoords[5] = (y==ly? 1: 1 - dty);
+		}
 
 		for(var i = 0; i < coords.length; i+=3) {
 			var r = t.rot(coords[i]*tx - pos.x + side*x,  -coords[i+1]*ty + pos.y - side*y, pos.a);
@@ -1249,6 +1265,9 @@ drawNode: function(pos, minlevel, level, x, y) {
 	gl.bindBuffer(gl.ARRAY_BUFFER, t.vbuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, coords, gl.STATIC_DRAW);
 
+
+	gl.bindBuffer(gl.ARRAY_BUFFER, t.tbuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, tcoords, gl.STATIC_DRAW);
 
 	for(var i = 0; i < t.njpegs; i++) {
 		gl.activeTexture(gl.TEXTURE0 + i);
