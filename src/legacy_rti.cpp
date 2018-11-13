@@ -286,7 +286,7 @@ bool LRti::loadHSH(FILE* file) {
 	scale.resize(basis_terms);
 	
 	fread(scale.data(), sizeof(float), basis_terms, file);  //max
-	fread(bias.data(), sizeof(float), basis_terms, file); //min
+	fread(bias.data(),  sizeof(float), basis_terms, file); //min
 
 	//in OUR system we want to write (c - bias)*scale
 	//in .rti system HSH its c*scale + bias
@@ -300,7 +300,7 @@ bool LRti::loadHSH(FILE* file) {
 
 	//for each pixel is 9 for red... 9 for green, 9 for blue
 	for(int y = 0; y < height; y++)	{
-	  int Y = height -1 -y;
+		int Y = height -1 -y;
 		if(fread(line.data(), 1, line_size, file) != line_size)
 			return false;
 		int c = 0; //line position;
