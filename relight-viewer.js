@@ -27,6 +27,7 @@ function RelightViewer(div, options) {
 			home:    { title: 'Home',       task: function(event) { t.centerAndScale(t.nav.zoomdelay); }        },
 			zoomin:  { title: 'Zoom In',    task: function(event) { t.zoom(-t.nav.zoomstep, t.nav.zoomdelay); } },
 			zoomout: { title: 'Zoom Out',   task: function(event) { t.zoom(+t.nav.zoomstep, t.nav.zoomdelay); } },
+			rotate:  { title: 'Rotate',     task: function(event) { t.rotate(t.nav.zoomstep, 45); } },
 			light:   { title: 'Light',      task: function(event) { t.toggleLight(event); }                     },
 			full:    { title: 'Fullscreen', task: function(event) { t.toggleFullscreen(event); }                },
 			info:    { title: 'info',       task: function(event) { t.showInfo(); }                             }
@@ -265,6 +266,7 @@ RelightViewer.prototype.mousedown = function(event) {
 		t.lightDirection(event);
 	}
 
+	//save initial position.
 	t.nav.pos = this.pos;
 	t.nav.light = this.light;
 };
@@ -301,12 +303,13 @@ RelightViewer.prototype.mousemove = function(event) {
 		var scale = Math.pow(2, p.z);
 		x *= scale;
 		y *= scale;
-		t.setPosition(p.x - x, p.y - y, p.z, t.nav.pandelay);
+		[x, y] = t.rot(x, y, p.a);
+		t.setPosition(t.nav.pandelay, p.x - x, p.y - y, p.z, p.a);
 		break;
 
 	case 'zoom':
 		var z = p.z/Math.pow(event.scale, 1.5);
-		t.setPosition(p.x, p.y, z, t.nav.zoomdelay);
+		t.setPosition(t.nav.zoomdelay, p.x, p.y, z, p.a);
 		break;
 
 	case 'light':
