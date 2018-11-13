@@ -144,7 +144,6 @@ setUrl: function(url) {
 },
 
 loadInfo: function(info) {
-
 	var t = this;
 
 	t.type = info.type;
@@ -685,22 +684,28 @@ flush: function() {
 	}
 	//clean up cache events
 	t.previouslevel = null;
+	t.previousbox = [1, 1, -1, -1];
 	for(var i = 0; i < t.imgCache.length; i++) {
 		var img = t.imgCache[i];
 		img.onload = null;
 		img.onerror = null;
 	}
+	t.requested = {};
+	t.requestedCount = 0;
 },
 
 computeLightWeights: function(lpos) {
 	var t = this;
+	var l = t.rot(lpos[0], lpos[1], t.pos.a);
+	l[2] = lpos[2];
+
 	if(t.waiting) return;
 	switch(t.type) {
 	case 'img':                                       return;
-	case 'rbf':      t.computeLightWeightsRbf(lpos);  break;
-	case 'bilinear': t.computeLightWeightsOcta(lpos); break;
-	case 'ptm':      t.computeLightWeightsPtm(lpos);  break;
-	case 'hsh':      t.computeLightWeightsHsh(lpos);  break;
+	case 'rbf':      t.computeLightWeightsRbf(l);  break;
+	case 'bilinear': t.computeLightWeightsOcta(l); break;
+	case 'ptm':      t.computeLightWeightsPtm(l);  break;
+	case 'hsh':      t.computeLightWeightsHsh(l);  break;
 	default: console.log("Unknown basis", t.type);
 	}
 
