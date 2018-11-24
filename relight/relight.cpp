@@ -615,13 +615,11 @@ void RtiBuilder::pickBasePTM() {
 					proj[off+0] = 0.2125*iA(p-3, k);
 					proj[off+1] = 0.7154*iA(p-3, k);
 					proj[off+2] = 0.0721*iA(p-3, k);
-					//proj[off+0] = proj[off+1] = proj[off+2] = iA(p-3, k)/3.0;
 				} else {
 					proj[off + p] = 1.0/lights.size();
 				}
 			}
 		}
-		
 	} else {
 		assert(colorspace == RGB && nplanes == 18);
 		
@@ -634,7 +632,6 @@ void RtiBuilder::pickBasePTM() {
 			}
 		}
 	}
-	
 }
 
 void RtiBuilder::pickBaseHSH() {
@@ -941,6 +938,69 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 	return true;
 }
 
+Vector3f RtiBuilder::getNormal(Color3f *pixel) {
+/*	uint32_t m = -1;
+	float max = 0.0f;
+	for(uint32_t i = 0; i < ndimensions; i++) {
+		Color3f &c = pixel[i];
+		float b = 0.2126f*c.r + 0.7152f*c.g + 0.0722f*c.b;
+		if(b > max) {
+			m = i;
+			max = b;
+		}
+	}
+	return imageset.lights[m]; */
+
+
+	static std::vector<float> proj;
+
+	static bool init = true;
+	int dim = lights.size()*3;
+	if(init) {
+		//DREW
+		init = false;
+		arma::Mat<double> A(lights.size(), 6);
+		for(uint32_t l = 0; l < lights.size(); l++) {
+			Vector3f &light = lights[l];
+
+
+			A(l, 0) = (double)light[0];
+			A(l, 1) = (double)light[1];
+			A(l, 2) = (double)light[2];
+
+			A(l, 3) = (double)light[0]*light[0];
+			A(l, 4) = (double)light[0]*light[1];
+			A(l, 5) = 1.0;
+		}
+		arma::Mat<double> iA = inv_sympd(A.t()*A)*A.t();
+
+		proj.resize(dim* 6, 0.0);
+		for(uint32_t p = 0; p < 6; p++) {
+			for(uint32_t k = 0; k < lights.size(); k ++) {
+				uint32_t off = k*3 + p*dim;
+				proj[off+0] = 0.2125f*iA(p, k);
+				proj[off+1] = 0.7154f*iA(p, k);
+				proj[off+2] = 0.0721f*iA(p, k);
+			}
+		}
+	}
+
+
+//	vector<float> res(6, 0.0f);
+	float *v = (float *)pixel;
+	Vector3f n(0, 0, 0);
+	for(size_t p = 0; p < 3; p++)
+		for(size_t k = 0; k < dim; k++)
+			n[p] += v[k] * proj[k + p*dim];
+	//if(n[2] < 0) n[2] = 0;
+	n = n/n.norm();
+	n[0] = (n[0] + 1.0f)/2.0f;
+	n[2] = (n[1] + 1.0f)/2.0f;
+	n[1] = 0; //n[2] = (n[2] + 1.0f)/2.0f;
+
+	return n;
+}
+
 size_t RtiBuilder::save(const string &output, int quality) {
 	
 	uint32_t dim = ndimensions*3;
@@ -1144,9 +1204,19 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	
 	//second reading.
 	imageset.restart();
-	
+
+	QImage normals(width, height, QImage::Format_RGB32);
+
 	for(uint32_t y = 0; y < height; y++) {
 		imageset.readLine(sample);
+
+		if(savenormals) {
+			for(uint32_t x = 0; x < width; x++) {
+				Vector3f n = getNormal(sample(x));
+				normals.setPixel(x, y, qRgb(255*n[0], 255*n[1], 255*n[2]));
+			}
+		}
+
 		for(uint32_t x = 0; x < width; x++)
 			resamplePixel(sample(x), resample(x));
 		
@@ -1162,7 +1232,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			segments.setPixel(x, y, m);
 			
 			vector<float> pri = toPrincipal(m, (float *)(resample(x)));
-			
+
 			if(colorspace == LRGB){
 				
 				for(uint32_t j = 0; j < nplanes/3; j++) {
@@ -1194,6 +1264,9 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		size_t s = encoders[p]->finish();
 		total += s;
 	}
+
+	if(savenormals)
+		normals.save(dir.filePath("normals.png"));
 	
 	if(nmaterials > 1) {
 		segments.save(dir.filePath("segments.png"));
