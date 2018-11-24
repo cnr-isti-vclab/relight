@@ -24,6 +24,7 @@ public:
 	float rangescale = 1.5;
 	int skip_image = -1;
 	float rangecompress = 0.0f; //betwee 0 and 1, where 1 is maximally compressed
+	bool savenormals = false;
 
 	RtiBuilder();
 	~RtiBuilder();
@@ -46,6 +47,8 @@ protected:
 
 	PixelArray resamplePixels(PixelArray &samples);
 	void resamplePixel(Color3f *sample, Color3f *pixel);
+	Vector3f getNormal(Color3f *pixel);
+
 	void buildResampleMap();
 	void pickMaterials(PixelArray &sample);
 	void pickBase(PixelArray &sample);

@@ -23,6 +23,7 @@ void help() {
 
 	cout << "\t-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear, dmd\n";
 	cout << "\t-m <int>  : number of materials (default 8)\n";
+	cout << "\t-n <int>  : extract normals\n";
 	cout << "\t-r <int>  : side of the basis function (default 8, 0 means rbf interpolation)\n";
 	cout << "\t-q <int>  : jpeg quality (default: 90)\n";
 	cout << "\t-p <int>  : number of planes (default: 9)\n";
@@ -55,11 +56,14 @@ int main(int argc, char *argv[]) {
 	
 	opterr = 0;
 	char c;
-	while ((c  = getopt (argc, argv, "hm:r:d:q:p:s:c:reE:b:y:S:R:CD:B:")) != -1)
+	while ((c  = getopt (argc, argv, "hm:nr:d:q:p:s:c:reE:b:y:S:R:CD:B:")) != -1)
 		switch (c)
 		{
 		case 'h':
 			help();
+			break;
+		case 'n':
+			builder.savenormals = true;
 			break;
 		case 'm':
 			builder.nmaterials = (uint32_t)atoi(optarg);
