@@ -48,6 +48,8 @@ protected:
 	PixelArray resamplePixels(PixelArray &samples);
 	void resamplePixel(Color3f *sample, Color3f *pixel);
 	Vector3f getNormal(Color3f *pixel);
+	Vector3f getNormalThreeLights(std::vector<float> &pri); //use 3 virtual lights at 45 degs.
+
 
 	void buildResampleMap();
 	void pickMaterials(PixelArray &sample);

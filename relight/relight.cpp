@@ -641,18 +641,17 @@ void RtiBuilder::pickBaseHSH() {
 	MaterialBuilder &mat = materialbuilders[0];
 	mat.mean.resize(dim, 0.0);
 	
-	arma::Mat<double> A(lights.size(), 9);
+	arma::Mat<double> A(lights.size(), nplanes/3);
 	for(uint32_t l = 0; l < lights.size(); l++) {
 		Vector3f &light = lights[l];
 		vector<float> lweights = lightWeightsHsh(light[0], light[1]);
-		for(uint32_t p = 0; p < lweights.size(); p++)
+		for(uint32_t p = 0; p < nplanes/3; p++)
 			A(l, p) = (double)lweights[p];
 	}
 	arma::Mat<double> iA = inv_sympd(A.t()*A)*A.t();
 	
-	assert(nplanes == 27);
+	assert(nplanes == 27 || nplanes == 12);
 	
-	//nplanes should be 18 here!
 	std::vector<float> &proj = mat.proj;
 	proj.resize(nplanes*dim, 0.0);
 	for(uint32_t p = 0; p < nplanes; p += 3) {
@@ -938,8 +937,125 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 	return true;
 }
 
+Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
+	static bool init = true;
+
+	static arma::Mat<float> T;
+
+	static std::vector<float> w0, w1, w2;
+
+	if(init) {
+		init = false;
+
+		float a = M_PI/4.0f;
+		float b = M_PI/6.0f;
+		Vector3f l0(sin(a)*cos(1*b), sin(a)*sin(1*b), cos(a));
+		Vector3f l1(sin(a)*cos(5*b), sin(a)*sin(5*b), cos(a));
+		Vector3f l2(sin(a)*cos(9*b), sin(a)*sin(9*b), cos(a));
+		T = {
+			{ l0[0], l0[1], l0[2] },
+			{ l1[0], l1[1], l1[2] },
+			{ l2[0], l2[1], l2[2] } };
+		T = inv(T);
+
+		w0 = lightWeights(l0[0], l0[1]);
+		w1 = lightWeights(l1[0], l1[1]);
+		w2 = lightWeights(l2[0], l2[1]);
+
+		cout << "W: " << w0[0] << " " << w0[1] << " " << w0[2] << " " << w0[3] << " " << w0[4] << endl;
+	}
+
+	//if(colorspace != RGB) throw "NO NORMALS if not RGB, for the moment";
+
+	//MaterialBuilder &mat = this->materialbuilders[0];
+	Material &mat = this->materials[0];
+
+	arma::Col<float> bright(3); //3 lights
+	bright.fill(0.0f);
+
+	static int count = 0;
+
+	if(count++ == 10) {
+		cout << "P: " << pri[0] << " " << pri[1] << " " << pri[2] << endl;
+	}
+	if(colorspace == RGB) {
+		for(uint32_t p = 0; p < nplanes; p += 3) {
+
+//#define TEST_COLOR 1
+#ifdef TEST_COLOR
+			bright[0] += w1[p/3]*pri[p+0];
+			bright[1] += w1[p/3]*pri[p+1];
+			bright[2] += w1[p/3]*pri[p+2];
+#else
+	//		bright[0] += 0.2125f*w0[p/3]*pri[p] + 0.7154f*w0[p/3]*pri[p+1] + 0.0721f*w0[p/3]*pri[p+2];
+	//		bright[1] += 0.2125f*w1[p/3]*pri[p] + 0.7154f*w1[p/3]*pri[p+1] + 0.0721f*w1[p/3]*pri[p+2];
+	//		bright[2] += 0.2125f*w2[p/3]*pri[p] + 0.7154f*w2[p/3]*pri[p+1] + 0.0721f*w2[p/3]*pri[p+2];
+
+			bright[0] += w0[p/3]*pri[p] + w0[p/3]*pri[p+1] + w0[p/3]*pri[p+2];
+			bright[1] += w1[p/3]*pri[p] + w1[p/3]*pri[p+1] + w1[p/3]*pri[p+2];
+			bright[2] += w2[p/3]*pri[p] + w2[p/3]*pri[p+1] + w2[p/3]*pri[p+2];
+#endif
+		}
+
+	} else if(colorspace == MRGB) { //seems like weights are multiplied by 255 in rbf!
+		MaterialBuilder &matb = materialbuilders[0];
+
+#ifdef TEST_COLOR
+		bright[0] = w1[0];
+		bright[1] = w1[1];
+		bright[2] = w1[2];
+
+		for(uint32_t p = 0; p < nplanes; p++) {
+			Material::Plane &plane = mat.planes[p];
+
+			float val = pri[p];
+			bright[0] += val*(w1[3*(p+1) + 0] - 127)/plane.range;
+			bright[1] += val*(w1[3*(p+1) + 1] - 127)/plane.range;
+			bright[2] += val*(w1[3*(p+1) + 2] - 127)/plane.range;
+		}
+#else
+		bright[0] = w0[0] + w0[1] + w0[2];
+		bright[1] = w1[0] + w1[1] + w1[2];
+		bright[2] = w2[0] + w2[1] + w2[2];
+
+		for(uint32_t p = 0; p < nplanes; p++) {
+			Material::Plane &plane = mat.planes[p];
+			float val = pri[p];
+			bright[0] += val*(w0[3*(p+1) + 0] + w0[3*(p+1) + 1] + w0[3*(p+1) + 2] -3*127)/plane.range;
+			bright[1] += val*(w1[3*(p+1) + 0] + w1[3*(p+1) + 1] + w1[3*(p+1) + 2] -3*127)/plane.range;
+			bright[2] += val*(w2[3*(p+1) + 0] + w2[3*(p+1) + 1] + w2[3*(p+1) + 2] -3*127)/plane.range;
+		}
+#endif
+	} else
+		throw QString("Unsupported colorspace (RGB and MRGB only supported");
+
+	//bright /= 3;
+	arma::Col<float> N = T*bright;
+	Vector3f n(N[0], N[1], N[2]);
+	//Vector3f n(bright[0], bright[1], bright[2]);
+
+	n = n/n.norm();
+	n[0] = (n[0] + 1.0f)/2.0f;
+	n[1] = (n[1] + 1.0f)/2.0f;
+	n[2] = (n[2] + 1.0f)/2.0f; //n[2] = (n[2] + 1.0f)/2.0f */
+
+#ifdef TEST_COLOR
+	n[0] = bright[0]/255;
+	n[1] = bright[1]/255;
+	n[2] = bright[2]/255;
+#endif
+
+	if(count % 100 == 1) {
+		cout << "n: " << n[0] << " " << n[1] << " " << n[2] << endl;
+	}
+	return n;
+}
+
 Vector3f RtiBuilder::getNormal(Color3f *pixel) {
-/*	uint32_t m = -1;
+
+
+/*	 //MAX direction
+ *  uint32_t m = -1;
 	float max = 0.0f;
 	for(uint32_t i = 0; i < ndimensions; i++) {
 		Color3f &c = pixel[i];
@@ -956,9 +1072,11 @@ Vector3f RtiBuilder::getNormal(Color3f *pixel) {
 
 	static bool init = true;
 	int dim = lights.size()*3;
+
 	if(init) {
 		//DREW
 		init = false;
+
 		arma::Mat<double> A(lights.size(), 6);
 		for(uint32_t l = 0; l < lights.size(); l++) {
 			Vector3f &light = lights[l];
@@ -986,17 +1104,21 @@ Vector3f RtiBuilder::getNormal(Color3f *pixel) {
 	}
 
 
+
+
 //	vector<float> res(6, 0.0f);
 	float *v = (float *)pixel;
 	Vector3f n(0, 0, 0);
-	for(size_t p = 0; p < 3; p++)
+
+	/* DREW */
+/*	for(size_t p = 0; p < 3; p++)
 		for(size_t k = 0; k < dim; k++)
 			n[p] += v[k] * proj[k + p*dim];
 	//if(n[2] < 0) n[2] = 0;
 	n = n/n.norm();
 	n[0] = (n[0] + 1.0f)/2.0f;
 	n[2] = (n[1] + 1.0f)/2.0f;
-	n[1] = 0; //n[2] = (n[2] + 1.0f)/2.0f;
+	n[1] = 0; //n[2] = (n[2] + 1.0f)/2.0f; */
 
 	return n;
 }
@@ -1210,7 +1332,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	for(uint32_t y = 0; y < height; y++) {
 		imageset.readLine(sample);
 
-		if(savenormals) {
+		if(0 && savenormals) {
 			for(uint32_t x = 0; x < width; x++) {
 				Vector3f n = getNormal(sample(x));
 				normals.setPixel(x, y, qRgb(255*n[0], 255*n[1], 255*n[2]));
@@ -1232,6 +1354,11 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			segments.setPixel(x, y, m);
 			
 			vector<float> pri = toPrincipal(m, (float *)(resample(x)));
+
+			if(savenormals) {
+				Vector3f n = getNormalThreeLights(pri);
+				normals.setPixel(x, y, qRgb(255*n[0], 255*n[1], 255*n[2]));
+			}
 
 			if(colorspace == LRGB){
 				
