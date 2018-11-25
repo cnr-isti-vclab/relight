@@ -441,7 +441,7 @@ std::vector<float> Rti::lightWeightsHsh(float lx, float ly) {
 
 	lweights[4] = sqrt(30.0f / M_PI) * (cos(2.0f * phi) * (-cosT + cosT2));
 	lweights[5] = sqrt(30.0f / M_PI) * (cosP*(-1.0f + 2.0f * cosT) * sqrt(cosT - cosT2));
-	lweights[6] = sqrt(5.0f / (2.0 * M_PI)) * (1.0f - 6.0f * cosT + 6.0 * cosT2);
+	lweights[6] = sqrt(5.0f / (2.0f * M_PI)) * (1.0f - 6.0f * cosT + 6.0f * cosT2);
 	lweights[7] = sqrt(30.0f / M_PI) * ((-1.0f + 2.0f * cosT) * sqrt(cosT - cosT2) * sin(phi));
 	lweights[8] = sqrt(30.0f / M_PI) * ((-cosT + cosT2) * sin(2.0f*phi));
 
