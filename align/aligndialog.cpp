@@ -8,6 +8,7 @@
 #include "ui_aligndialog.h"
 #include "aligninspector.h"
 
+#include <math.h>
 #include <assert.h>
 
 #include <iostream>
