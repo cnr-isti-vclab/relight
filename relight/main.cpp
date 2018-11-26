@@ -20,15 +20,20 @@ void help() {
 	cout << "Usage: relight [-mrdqp]<input folder> [output folder]\n\n";
 	cout << "\tinput folder containing a .lp with number of photos and light directions\n";
 	cout << "\toptional output folder (default ./)\n\n";
-
 	cout << "\t-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear, dmd\n";
-	cout << "\t-m <int>  : number of materials (default 8)\n";
-	cout << "\t-n <int>  : extract normals\n";
-	cout << "\t-r <int>  : side of the basis function (default 8, 0 means rbf interpolation)\n";
-	cout << "\t-q <int>  : jpeg quality (default: 90)\n";
 	cout << "\t-p <int>  : number of planes (default: 9)\n";
+	cout << "\t-q <int>  : jpeg quality (default: 90)\n";
 	cout << "\t-y <int>  : number of Y planes in YCC\n\n";
-	cout << "\t-s <int>  : sampling rate for pca (default 4)\n";
+
+//	cout << "\t-m <int>  : number of materials (default 8)\n";
+	cout << "\t-n <int>  : extract normals\n";
+	cout << "\t-m <int>  : extract mean image\n";
+	cout << "\t-M <int>  : extract median image (7/8th quantile) \n";
+
+
+	cout << "\nIgnore exotic parameters below here\n\n";
+	cout << "\t-r <int>  : side of the basis function (default 8, 0 means rbf interpolation)\n";
+	cout << "\t-s <int>  : sampling rate for pca (default 40)\n";
 	cout << "\t-S <float>: sigma in rgf gaussian interpolation default 0.125 (~100 img)\n";
 	cout << "\t-R <float>: regularization coeff for bilinear default 0.1\n";
 	cout << "\t-B <float>: range compress bits for planes (default 0.0) 1.0 means compress\n";
@@ -56,7 +61,7 @@ int main(int argc, char *argv[]) {
 	
 	opterr = 0;
 	char c;
-	while ((c  = getopt (argc, argv, "hm:nr:d:q:p:s:c:reE:b:y:S:R:CD:B:")) != -1)
+	while ((c  = getopt (argc, argv, "hmMnr:d:q:p:s:c:reE:b:y:S:R:CD:B:")) != -1)
 		switch (c)
 		{
 		case 'h':
@@ -66,8 +71,14 @@ int main(int argc, char *argv[]) {
 			builder.savenormals = true;
 			break;
 		case 'm':
-			builder.nmaterials = (uint32_t)atoi(optarg);
+			builder.savemeans = true;
 			break;
+		case 'M':
+			builder.savemedians = true;
+			break;
+
+		//	builder.nmaterials = (uint32_t)atoi(optarg);
+		//	break;
 		case 'r': {
 				int res = atoi(optarg);
 				builder.resolution = res = atoi(optarg);
