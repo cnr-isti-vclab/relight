@@ -1,5 +1,7 @@
 #include <assert.h>
 
+#include <algorithm>
+
 #include "rtibuilder.h"
 
 #include <QDir>
@@ -937,6 +939,37 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 	return true;
 }
 
+Vector3f extractMean(Color3f *pixels, int n) {
+	double m[3] = { 0.0, 0.0, 0.0 };
+	for(int i = 0; i < n; i++) {
+		Color3f &c = pixels[i];
+		m[0] += c[0];
+		m[1] += c[1];
+		m[2] += c[2];
+	}
+	return Vector3f(2*m[0]/n, 2*m[1]/n, 2*m[2]/n);
+}
+
+
+Vector3f extractMedian(Color3f *pixels, int n) {
+
+	Vector3f m;
+	std::vector<float> a(n);
+	for(int k = 0; k < 3; k++) {
+		for(int i = 0; i < n; i++)
+			a[i] = pixels[i][k];
+
+		auto first = a.begin();
+		auto last = a.end();
+		auto middle = first + 7*(last - first)/8;
+		std::nth_element(first, middle, last); // can specify comparator as optional 4th arg
+		m[k] = *middle;
+	}
+
+	return m;
+}
+
+
 Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 	static bool init = true;
 
@@ -961,8 +994,6 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 		w0 = lightWeights(l0[0], l0[1]);
 		w1 = lightWeights(l1[0], l1[1]);
 		w2 = lightWeights(l2[0], l2[1]);
-
-		cout << "W: " << w0[0] << " " << w0[1] << " " << w0[2] << " " << w0[3] << " " << w0[4] << endl;
 	}
 
 	//if(colorspace != RGB) throw "NO NORMALS if not RGB, for the moment";
@@ -975,9 +1006,6 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 
 	static int count = 0;
 
-	if(count++ == 10) {
-		cout << "P: " << pri[0] << " " << pri[1] << " " << pri[2] << endl;
-	}
 	if(colorspace == RGB) {
 		for(uint32_t p = 0; p < nplanes; p += 3) {
 
@@ -1045,11 +1073,9 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 	n[2] = bright[2]/255;
 #endif
 
-	if(count % 100 == 1) {
-		cout << "n: " << n[0] << " " << n[1] << " " << n[2] << endl;
-	}
 	return n;
 }
+
 
 Vector3f RtiBuilder::getNormal(Color3f *pixel) {
 
@@ -1327,17 +1353,14 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	//second reading.
 	imageset.restart();
 
+	//TODO
 	QImage normals(width, height, QImage::Format_RGB32);
+	QImage means  (width, height, QImage::Format_RGB32);
+	QImage medians(width, height, QImage::Format_RGB32);
+
 
 	for(uint32_t y = 0; y < height; y++) {
 		imageset.readLine(sample);
-
-		if(0 && savenormals) {
-			for(uint32_t x = 0; x < width; x++) {
-				Vector3f n = getNormal(sample(x));
-				normals.setPixel(x, y, qRgb(255*n[0], 255*n[1], 255*n[2]));
-			}
-		}
 
 		for(uint32_t x = 0; x < width; x++)
 			resamplePixel(sample(x), resample(x));
@@ -1358,6 +1381,16 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			if(savenormals) {
 				Vector3f n = getNormalThreeLights(pri);
 				normals.setPixel(x, y, qRgb(255*n[0], 255*n[1], 255*n[2]));
+			}
+
+			if(savemeans) {
+				Vector3f n = extractMean(sample(x), lights.size());
+				means.setPixel(x, y, qRgb(n[0], n[1], n[2]));
+			}
+
+			if(savemedians) {
+				Vector3f n = extractMedian(sample(x), lights.size());
+				medians.setPixel(x, y, qRgb(n[0], n[1], n[2]));
 			}
 
 			if(colorspace == LRGB){
@@ -1394,6 +1427,12 @@ size_t RtiBuilder::save(const string &output, int quality) {
 
 	if(savenormals)
 		normals.save(dir.filePath("normals.png"));
+
+	if(savemeans)
+		means.save(dir.filePath("means.png"));
+
+	if(savemedians)
+		medians.save(dir.filePath("medians.png"));
 	
 	if(nmaterials > 1) {
 		segments.save(dir.filePath("segments.png"));
