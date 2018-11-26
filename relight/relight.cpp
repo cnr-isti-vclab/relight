@@ -952,11 +952,14 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 		Vector3f l0(sin(a)*cos(1*b), sin(a)*sin(1*b), cos(a));
 		Vector3f l1(sin(a)*cos(5*b), sin(a)*sin(5*b), cos(a));
 		Vector3f l2(sin(a)*cos(9*b), sin(a)*sin(9*b), cos(a));
+
 		T = {
 			{ l0[0], l0[1], l0[2] },
 			{ l1[0], l1[1], l1[2] },
 			{ l2[0], l2[1], l2[2] } };
 		T = inv(T);
+
+		cout << T << endl;
 
 		w0 = lightWeights(l0[0], l0[1]);
 		w1 = lightWeights(l1[0], l1[1]);
@@ -1045,9 +1048,6 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 	n[2] = bright[2]/255;
 #endif
 
-	if(count % 100 == 1) {
-		cout << "n: " << n[0] << " " << n[1] << " " << n[2] << endl;
-	}
 	return n;
 }
 
