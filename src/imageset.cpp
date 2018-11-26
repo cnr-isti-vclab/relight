@@ -22,6 +22,7 @@ ImageSet::~ImageSet() {
 
 bool ImageSet::init(const char *_path, bool ignore_filenames, int skip_image) {
 
+
 	QDir dir(_path);
 	QStringList lps = dir.entryList(QStringList() << "*.lp");
 	if(lps.size() == 0) {
