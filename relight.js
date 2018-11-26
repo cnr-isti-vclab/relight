@@ -102,7 +102,7 @@ function Relight(item, o) {
 	t.initGL();
 
 	if(t.img) { //this meas we are loading an image
-		t.loadInfo({type: 'img', colorspace: null, width: 0, height: 0, nplanes: 1 });
+		t.loadInfo({type: 'img', colorspace: null, width: 0, height: 0, nplanes: 3 });
 	} else if(t.url) {
 		t.setUrl(t.url);
 	}
@@ -700,6 +700,7 @@ computeLightWeights: function(lpos) {
 	l[2] = lpos[2];
 
 	if(t.waiting) return;
+
 	switch(t.type) {
 	case 'img':                                       return;
 	case 'rbf':      t.computeLightWeightsRbf(l);  break;
@@ -715,6 +716,14 @@ computeLightWeights: function(lpos) {
 		else
 			t.gl.uniform3fv(t.baseLocation, t.lweights);
 	}
+/*
+	t.computeLightWeightsHsh([0.612,  0.354, 0.707]);
+	t.gl.uniform1fv(t.baseLocation0, t.lweights);
+	t.computeLightWeightsHsh([-0.612,  0.354, 0.707]);
+	t.gl.uniform1fv(t.baseLocation1, t.lweights);
+	t.computeLightWeightsHsh([     0, -0.707, 0.707]);
+	t.gl.uniform1fv(t.baseLocation2, t.lweights); */
+
 },
 
 computeLightWeightsPtm: function(v) {
@@ -874,267 +883,8 @@ setLight: function(x, y, z) {
 loadProgram: function() {
 
 	var t = this;
+	this.setupShaders();
 
-	t.vertCode =
-'uniform mat4 u_matrix;\n' +
-'\n' +
-'attribute vec4 a_position;\n' +
-'attribute vec2 a_texcoord;\n' +
-
-'varying vec2 v_texcoord;\n'+
-'\n' +
-'void main() {\n' +
-//'	gl_Position = u_matrix * a_position;\n' +
-'gl_Position = a_position;\n' + 
-'v_texcoord = a_texcoord;\n' +
-'}';
-
-
-	switch(t.colorspace) {
-
-	case 'mrgb': t.fragCode =
-'#ifdef GL_ES\n' +
-'precision highp float;\n' +
-'#endif\n' +
-'\n' +
-'const int np1 = ' + (t.nplanes + 1) + ';\n' +
-'const int nj1 = ' + (t.njpegs + 1) + ';\n' +
-'const int nm = ' + t.nmaterials + ';\n' +
-'const int nmp1 = np1*nm;\n' +
-'uniform sampler2D planes[nj1];      //0 is segments\n' +
-'uniform vec3 base[nmp1];\n' +
-'uniform float bias[nmp1];\n' +
-'uniform float scale[nmp1];\n' +
-'\n' +
-'varying vec2 v_texcoord;\n' +
-'void main(void) {\n' +
-'	vec3 color = vec3(0);\n';
-
-	if(t.nmaterials == 1) {
-		t.fragCode += 
-'\n' +
-'	color += base[0];\n' +
-'	for(int j = 1; j < nj1; j++) {\n' +
-'		vec4 c = texture2D(planes[j-1], v_texcoord);\n' +
-'		color += base[j*3-2]*(c.x - bias[j*3-2])*scale[j*3-2];\n' +
-'		color += base[j*3-1]*(c.y - bias[j*3-1])*scale[j*3-1];\n' +
-'		color += base[j*3-0]*(c.z - bias[j*3-0])*scale[j*3-0];\n' +
-'	};\n';
-
-	} else {
-		t.fragCode += 
-'\n' +
-'	int mat = int(texture2D(planes[0], v_texcoord).x*256.0)/8;\n' +
-'	for(int m = 0; m < nm; m++)\n' +
-'		if(m == mat) {\n' +
-'			color += base[m*np1];\n' +
-'			for(int j = 1; j < nj1; j++) {\n' +
-'				vec4 c = texture2D(planes[j], v_texcoord);\n' +
-'				color += base[m*np1 + j*3-2]*(c.x - bias[m*np1 + j*3-2])*scale[m*np1 + j*3-2];\n' +
-'				color += base[m*np1 + j*3-1]*(c.y - bias[m*np1 + j*3-1])*scale[m*np1 + j*3-1];\n' +
-'				color += base[m*np1 + j*3-0]*(c.z - bias[m*np1 + j*3-0])*scale[m*np1 + j*3-0];\n' +
-'			}\n' +
-'		}';
-	}
-
-	t.fragCode +=
-'	/* gamma fix\n' +
-'	color.x *= color.x;\n' +
-'	color.y *= color.y;\n' +
-'	color.z *= color.z;*/\n' +
-'	gl_FragColor = vec4(color, 1.0);\n' +
-'}\n';
-	break;
-
-
-	case 'mycc': t.fragCode = 
-'#ifdef GL_ES\n' +
-'precision highp float;\n' +
-'#endif\n' +
-'\n' +
-'const int ny0 = '+ (t.yccplanes[0]) + ';\n' +
-'const int ny1 = ' + (t.yccplanes[1]) + ';\n' +
-'\n' +
-'const int np1 = ' + (t.nplanes + 1) + ';\n' +
-'const int nj1 = ' + (t.njpegs  + 1) + ';\n' +
-'const int nm  = ' + t.nmaterials + ';\n' +
-'const int nmp1 = np1*nm;\n' +
-'uniform sampler2D planes[nj1];      //0 is segments\n' +
-'uniform vec3  base[nmp1];\n' +
-'uniform float bias[nmp1];\n' +
-'uniform float scale[nmp1];\n' +
-'\n' +
-'varying vec2 v_texcoord;\n' +
-'void main(void) { \n' +
-'	vec3 color = vec3(0);\n';
-
-	if(t.nmaterials == 1) {
-		t.fragCode += 
-'\n' +
-'	color += base[0];\n' +
-'	for(int j = 1; j < nj1; j++) {\n' +
-'		vec4 c = texture2D(planes[j-1], v_texcoord);\n' +
-'\n' +
-'		if(j-1 < ny1) {\n' +
-'			color.x += base[j*3-2].x*(c.x - bias[j*3-2])*scale[j*3-2];\n' +
-'			color.y += base[j*3-1].y*(c.y - bias[j*3-1])*scale[j*3-1];\n' +
-'			color.z += base[j*3-0].z*(c.z - bias[j*3-0])*scale[j*3-0];\n' +
-'		} else {\n' +
-'			color.x += base[j*3-2].x*(c.x - bias[j*3-2])*scale[j*3-2];\n' +
-'			color.x += base[j*3-1].x*(c.y - bias[j*3-1])*scale[j*3-1];\n' +
-'			color.x += base[j*3-0].x*(c.z - bias[j*3-0])*scale[j*3-0];\n' +
-'		}\n' +
-'	};\n' +
-'\n' +
-'	float tmp = color.r - color.b/2.0;\n' +
-'	vec3 rgb;\n' +
-'	rgb.g = color.b + tmp;\n' +
-'	rgb.b = tmp - color.g/2.0;\n' +
-'	rgb.r = rgb.b + color.g;\n' +
-'	color = rgb;\n';
-
-	} else {
-		t.fragCode += 
-'\n' +
-'	int mat = int(texture2D(planes[0], v_texcoord).x*256.0)/8;\n' +
-'	for(int m = 0; m < nm; m++)\n' +
-'		if(m == mat) {\n' +
-'			color += base[m*np1];\n' +
-'			for(int j = 1; j < nj1; j++) {\n' +
-'				vec4 c = texture2D(planes[j], v_texcoord);\n' +
-'				color += base[m*np1 + j*3-2]*(c.x - bias[m*np1 + j*3-2])*scale[m*np1 + j*3-2];\n' +
-'				color += base[m*np1 + j*3-1]*(c.y - bias[m*np1 + j*3-1])*scale[m*np1 + j*3-1];\n' +
-'				color += base[m*np1 + j*3-0]*(c.z - bias[m*np1 + j*3-0])*scale[m*np1 + j*3-0];\n' +
-'			}\n' +
-'		}';
-	}
-
-	t.fragCode +=
-'	gl_FragColor = vec4(color, 1.0);\n' +
-'}';
-	 break;
-
-	case 'rgb': 
-	t.fragCode = 
-'#ifdef GL_ES\n' +
-'precision highp float;\n' +
-'#endif\n' +
-'\n' +
-'const int np1 = ' + (t.nplanes + 1) + ';\n' +
-'const int nj = ' + (t.njpegs) + ';\n' +
-'uniform sampler2D planes[nj];      //0 is segments\n' +
-'uniform float base[np1-3];\n' +
-'uniform float bias[np1];\n' +
-'uniform float scale[np1];\n' +
-'\n' +
-'varying vec2 v_texcoord;\n' +
-'\n' +
-'void main(void) {\n' +
-'	vec3 color = vec3(0);\n' +
-'	for(int j = 0; j < nj; j++) {\n' +
-'		vec4 c = texture2D(planes[j], v_texcoord);\n' +
-'		color.x += base[j]*(c.x - bias[j*3+1])*scale[j*3+1];\n' +
-'		color.y += base[j]*(c.y - bias[j*3+2])*scale[j*3+2];\n' +
-'		color.z += base[j]*(c.z - bias[j*3+3])*scale[j*3+3];\n' +
-'	}\n' +
-'	gl_FragColor = vec4(color, 1.0);\n' +
-'}';
-	break;
-
-	case 'ycc': t.fragCode = 
-'#ifdef GL_ES\n' +
-'precision highp float;\n' +
-'#endif\n' +
-'\n' +
-'const int np1 = ' + (t.nplanes + 1) + ';\n' +
-'const int nj = ' + (t.njpegs) + ';\n' +
-'uniform sampler2D planes[nj];      //0 is segments\n' +
-'uniform float base[np1-3];\n' +
-'uniform float bias[np1];\n' +
-'uniform float scale[np1];\n' +
-'\n' +
-'varying vec2 v_texcoord;\n' +
-'\n' +
-'vec3 toYcc(vec4 rgb) {\n' +
-'	vec3 c;\n' +
-'	c.x =       0.299   * rgb.x + 0.587   * rgb.y + 0.114   * rgb.z;\n' +
-'	c.y = 0.5 - 0.16874 * rgb.x - 0.33126 * rgb.y + 0.50000 * rgb.z;\n' +
-'	c.z = 0.5 + 0.50000 * rgb.x - 0.41869 * rgb.y - 0.08131 * rgb.z;\n' +
-'	return c;\n' +
-'}\n' +
-'\n' +
-'vec3 toRgb(vec4 ycc) {\n' +
-'	ycc.y -= 0.5;\n' +
-'	ycc.z -= 0.5;\n' +
-'	vec3 c;\n' +
-'	c.x = ycc.x +                   1.402   *ycc.z;\n' +
-'	c.y = ycc.x + -0.344136*ycc.y - 0.714136*ycc.z;\n' +
-'	c.z = ycc.x +  1.772   *ycc.y;\n' +
-'	return c;\n' +
-'}\n' +
-'\n' +
-'void main(void) {\n' +
-'	vec3 color = vec3(0);\n' +
-'	for(int j = 0; j < nj; j++) {\n' +
-'		vec4 c = texture2D(planes[j], v_texcoord);\n' +
-'		color.x += base[j]*(c.x - bias[j*3+1])*scale[j*3+1];\n' +
-'\n' +
-'		if(j == 0) {\n' +
-'			color.y = (c.y - bias[j*3+2])*scale[j*3+2];\n' +
-'			color.z = (c.z - bias[j*3+3])*scale[j*3+3];\n' +
-'		}\n' +
-'	}\n' +
-'\n' +
-'	color = toRgb(vec4(color, 1.0));\n' +
-'	gl_FragColor = vec4(color, 1.0);\n' +
-'}';
-	break;
-
-
-	case 'lrgb': 
-	t.fragCode = 
-'#ifdef GL_ES\n' +
-'precision highp float;\n' +
-'#endif\n' +
-'\n' +
-'const int np1 = ' + (t.nplanes+1) + ';\n' +
-'const int nj = ' + (t.njpegs) + ';\n' +
-'uniform sampler2D planes[nj];      //0 is segments\n' +
-'uniform float base[np1]; //lrgb ptm the weights starts from 0 (while bias and scale start from 3\n' +
-'uniform float bias[np1];\n' +
-'uniform float scale[np1];\n' +
-'\n' +
-'varying vec2 v_texcoord;\n' +
-'\n' +
-'void main(void) {\n' +
-'	vec4 color = texture2D(planes[0], v_texcoord);\n' +
-'	float l = 0.0;\n' +
-'	for(int j = 1; j < nj; j++) {\n' +
-'		vec4 c = texture2D(planes[j], v_texcoord);\n' +
-'		l += base[j*3-3]*(c.x - bias[j*3+1])*scale[j*3+1];\n' +
-'		l += base[j*3-2]*(c.y - bias[j*3+2])*scale[j*3+2];\n' +
-'		l += base[j*3-1]*(c.z - bias[j*3+3])*scale[j*3+3];\n' +
-'	}\n' +
-'\n' +
-'	gl_FragColor = vec4(color.x*l, color.y*l, color.z*l, 1.0);\n' +
-'}';
-	break;
-
-	default:
-	t.fragCode = 
-'#ifdef GL_ES\n' +
-'precision highp float;\n' +
-'#endif\n' +
-'\n' +
-'uniform sampler2D planes[1];      //0 is segments\n' +
-'\n' +
-'varying vec2 v_texcoord;\n' +
-'\n' +
-'void main(void) {\n' +
-'	gl_FragColor = texture2D(planes[0], v_texcoord);\n' +
-'}';
-	break;
-	}
 
 	var gl = this.gl;
 	var vertShader = gl.createShader(gl.VERTEX_SHADER);
@@ -1182,6 +932,11 @@ loadProgram: function() {
 	t.matrixLocation = gl.getUniformLocation(t.program, "u_matrix");
 
 	if(t.colorspace) {
+		//used for normal viewing.
+		t.baseLocation0 = gl.getUniformLocation(t.program, "base0");
+		t.baseLocation1 = gl.getUniformLocation(t.program, "base1");
+		t.baseLocation2 = gl.getUniformLocation(t.program, "base2");
+
 		t.baseLocation = gl.getUniformLocation(t.program, "base");
 		t.planesLocations = gl.getUniformLocation(t.program, "planes");
 
