@@ -31,7 +31,7 @@ void help() {
 	cout << "\t-M <int>  : extract median image (7/8th quantile) \n";
 
 
-	cout << "\nIgnore exotic parameters below here\n\n"l
+	cout << "\nIgnore exotic parameters below here\n\n";
 	cout << "\t-r <int>  : side of the basis function (default 8, 0 means rbf interpolation)\n";
 	cout << "\t-s <int>  : sampling rate for pca (default 40)\n";
 	cout << "\t-S <float>: sigma in rgf gaussian interpolation default 0.125 (~100 img)\n";
