@@ -295,8 +295,7 @@ void main(void) {
 		l += base[j*3-1]*(c.z - bias[j*3+3])*scale[j*3+3];
 	}
 
-	gl_FragColor = vec4(l, l, l, 1.0);
-//	gl_FragColor = vec4(color.x*l, color.y*l, color.z*l, 1.0);
+	gl_FragColor = vec4(color.x*l, color.y*l, color.z*l, 1.0);
 }`;
 
 	else
