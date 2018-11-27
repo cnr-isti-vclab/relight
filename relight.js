@@ -55,12 +55,15 @@ function Relight(item, o) {
 		fit: true,                   //scale on load.
 		suffix: ".jpg",
 		preserveDrawingBuffer: false,
-		rotation: 0
+		rotation: 0,
+		normals: false
 	}, o);
 
 	t.pos = t.options.pos;
 	if(t.options.rotation)
 		t.pos.a = t.options.rotation;
+	t.normals = t.options.normals;
+
 	if(typeof(item) == 'string')
 		item = document.querySelector(item);
 	if(item.tagName != "CANVAS")
@@ -73,7 +76,6 @@ function Relight(item, o) {
 			t.canvas.getContext("webgl", glopt) || 
 			t.canvas.getContext("experimental-webgl", glopt) ;
 	if (!t.gl) return null;
-
 
 
 	if(t.url && t.url.endsWidth("/"))
@@ -694,35 +696,50 @@ flush: function() {
 	t.requestedCount = 0;
 },
 
+toggleNormals: function(on) {
+	var t = this;
+	if(on === undefined)
+		t.normals = !t.normals;
+	else
+		t.normals = on?true:false;
+	t.loadProgram();
+	t.computeLightWeights(t.light);
+	t.redraw();
+},
+
 computeLightWeights: function(lpos) {
 	var t = this;
-	var l = t.rot(lpos[0], lpos[1], t.pos.a);
+	var l = t.rot(lpos[0], lpos[1], -t.pos.a);
 	l[2] = lpos[2];
 
 	if(t.waiting) return;
 
+	var lightFun;
 	switch(t.type) {
-	case 'img':                                       return;
-	case 'rbf':      t.computeLightWeightsRbf(l);  break;
-	case 'bilinear': t.computeLightWeightsOcta(l); break;
-	case 'ptm':      t.computeLightWeightsPtm(l);  break;
-	case 'hsh':      t.computeLightWeightsHsh(l);  break;
+	case 'img':                                     return;
+	case 'rbf':      lightFun = t.computeLightWeightsRbf;  break;
+	case 'bilinear': lightFun = t.computeLightWeightsOcta; break;
+	case 'ptm':      lightFun = t.computeLightWeightsPtm;  break;
+	case 'hsh':      lightFun = t.computeLightWeightsHsh;  break;
 	default: console.log("Unknown basis", t.type);
+	}
+	lightFun.call(this, l);
+
+	var uniformer = (t.colorspace == 'mrgb' || t.colorspace == 'mycc') ? t.gl.uniform3fv : t.gl.uniform1fv;
+	if(t.baseLocation0) {
+		lightFun.call(this, [0.612,  0.354, 0.707]);
+		uniformer.call(t.gl, t.baseLocation0, t.lweights);
+		
+		lightFun.call(this, [-0.612,  0.354, 0.707]);
+		uniformer.call(t.gl, t.baseLocation1, t.lweights);
+
+		lightFun.call(this, [     0, -0.707, 0.707]);
+		uniformer.call(t.gl, t.baseLocation2, t.lweights);
 	}
 
 	if(t.baseLocation) {
-		if(t.colorspace != 'mrgb' && t.colorspace != 'mycc')
-			t.gl.uniform1fv(t.baseLocation, t.lweights);
-		else
-			t.gl.uniform3fv(t.baseLocation, t.lweights);
+		uniformer.call(t.gl, t.baseLocation, t.lweights);
 	}
-/*
-	t.computeLightWeightsHsh([0.612,  0.354, 0.707]);
-	t.gl.uniform1fv(t.baseLocation0, t.lweights);
-	t.computeLightWeightsHsh([-0.612,  0.354, 0.707]);
-	t.gl.uniform1fv(t.baseLocation1, t.lweights);
-	t.computeLightWeightsHsh([     0, -0.707, 0.707]);
-	t.gl.uniform1fv(t.baseLocation2, t.lweights); */
 
 },
 
@@ -879,33 +896,46 @@ setLight: function(x, y, z) {
 
 },
 
-
 loadProgram: function() {
 
 	var t = this;
-	this.setupShaders();
+	t.setupShaders();
 
 
-	var gl = this.gl;
-	var vertShader = gl.createShader(gl.VERTEX_SHADER);
-	gl.shaderSource(vertShader, this.vertCode);
-	gl.compileShader(vertShader);
-	console.log(gl.getShaderInfoLog(vertShader));
+	var gl = t.gl;
+	t.vertShader = gl.createShader(gl.VERTEX_SHADER);
+	gl.shaderSource(t.vertShader, t.vertCode);
+	var compiled = gl.compileShader(t.vertShader);
+	if(!compiled)
+		console.log(gl.getShaderInfoLog(t.vertShader));
 
-	var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-	gl.shaderSource(fragShader, t.fragCode);
-	gl.compileShader(fragShader);
+	t.fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+	gl.shaderSource(t.fragShader, t.fragCode);
+	gl.compileShader(t.fragShader);
 	t.program = gl.createProgram();
-	var compiled = gl.getShaderParameter(fragShader, gl.COMPILE_STATUS);
+	compiled = gl.getShaderParameter(t.fragShader, gl.COMPILE_STATUS);
 	if(!compiled) {
 		console.log(t.fragCode);
-		console.log(gl.getShaderInfoLog(fragShader));
+		console.log(gl.getShaderInfoLog(t.fragShader));
 	}
 
-	gl.attachShader(this.program, vertShader);
-	gl.attachShader(this.program, fragShader);
-	gl.linkProgram(this.program);
-	gl.useProgram(this.program);
+	gl.attachShader(t.program, t.vertShader);
+	gl.attachShader(t.program, t.fragShader);
+	gl.linkProgram(t.program);
+	gl.useProgram(t.program);
+
+	if(t.colorspace) {
+		//used for normal viewing.
+		t.baseLocation0 = gl.getUniformLocation(t.program, "base0");
+		t.baseLocation1 = gl.getUniformLocation(t.program, "base1");
+		t.baseLocation2 = gl.getUniformLocation(t.program, "base2");
+
+		t.baseLocation = gl.getUniformLocation(t.program, "base");
+		t.planesLocations = gl.getUniformLocation(t.program, "planes");
+
+		gl.uniform1fv(gl.getUniformLocation(t.program, "scale"), t.scale);
+		gl.uniform1fv(gl.getUniformLocation(t.program, "bias"), t.bias);
+	}
 
 //BUFFERS
 
@@ -931,18 +961,7 @@ loadProgram: function() {
 
 	t.matrixLocation = gl.getUniformLocation(t.program, "u_matrix");
 
-	if(t.colorspace) {
-		//used for normal viewing.
-		t.baseLocation0 = gl.getUniformLocation(t.program, "base0");
-		t.baseLocation1 = gl.getUniformLocation(t.program, "base1");
-		t.baseLocation2 = gl.getUniformLocation(t.program, "base2");
 
-		t.baseLocation = gl.getUniformLocation(t.program, "base");
-		t.planesLocations = gl.getUniformLocation(t.program, "planes");
-
-		gl.uniform1fv(gl.getUniformLocation(t.program, "scale"), t.scale);
-		gl.uniform1fv(gl.getUniformLocation(t.program, "bias"), t.bias);
-	}
 
 	var sampler = gl.getUniformLocation(t.program, "planes");
 	var samplerArray = new Int32Array(t.njpegs);
