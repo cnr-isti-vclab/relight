@@ -55,12 +55,15 @@ function Relight(item, o) {
 		fit: true,                   //scale on load.
 		suffix: ".jpg",
 		preserveDrawingBuffer: false,
-		rotation: 0
+		rotation: 0,
+		normals: false
 	}, o);
 
 	t.pos = t.options.pos;
 	if(t.options.rotation)
 		t.pos.a = t.options.rotation;
+	t.normals = t.options.normals;
+
 	if(typeof(item) == 'string')
 		item = document.querySelector(item);
 	if(item.tagName != "CANVAS")
@@ -73,7 +76,6 @@ function Relight(item, o) {
 			t.canvas.getContext("webgl", glopt) || 
 			t.canvas.getContext("experimental-webgl", glopt) ;
 	if (!t.gl) return null;
-
 
 
 	if(t.url && t.url.endsWidth("/"))
@@ -102,7 +104,7 @@ function Relight(item, o) {
 	t.initGL();
 
 	if(t.img) { //this meas we are loading an image
-		t.loadInfo({type: 'img', colorspace: null, width: 0, height: 0, nplanes: 1 });
+		t.loadInfo({type: 'img', colorspace: null, width: 0, height: 0, nplanes: 3 });
 	} else if(t.url) {
 		t.setUrl(t.url);
 	}
@@ -694,36 +696,67 @@ flush: function() {
 	t.requestedCount = 0;
 },
 
+toggleNormals: function(on) {
+	var t = this;
+	if(on === undefined)
+		t.normals = !t.normals;
+	else
+		t.normals = on?true:false;
+	t.loadProgram();
+	t.computeLightWeights(t.light);
+	t.redraw();
+},
+
 computeLightWeights: function(lpos) {
 	var t = this;
-	var l = t.rot(lpos[0], lpos[1], t.pos.a);
+	var l = t.rot(lpos[0], lpos[1], -t.pos.a);
 	l[2] = lpos[2];
 
 	if(t.waiting) return;
+
+	var lightFun;
 	switch(t.type) {
-	case 'img':                                       return;
-	case 'rbf':      t.computeLightWeightsRbf(l);  break;
-	case 'bilinear': t.computeLightWeightsOcta(l); break;
-	case 'ptm':      t.computeLightWeightsPtm(l);  break;
-	case 'hsh':      t.computeLightWeightsHsh(l);  break;
+	case 'img':                                     return;
+	case 'rbf':      lightFun = t.computeLightWeightsRbf;  break;
+	case 'bilinear': lightFun = t.computeLightWeightsOcta; break;
+	case 'ptm':      lightFun = t.computeLightWeightsPtm;  break;
+	case 'hsh':      lightFun = t.computeLightWeightsHsh;  break;
 	default: console.log("Unknown basis", t.type);
 	}
+	lightFun.call(this, l);
+
+	var uniformer = (t.colorspace == 'mrgb' || t.colorspace == 'mycc') ? t.gl.uniform3fv : t.gl.uniform1fv;
+
+
+	if(t.baseLocation0) {
+		lightFun.call(this, [0.612,  0.354, 0.707]);
+		uniformer.call(t.gl, t.baseLocation0, t.lweights);
+	}
+
+	if(t.baseLocation1) {
+		lightFun.call(this, [-0.612,  0.354, 0.707]);
+		uniformer.call(t.gl, t.baseLocation1, t.lweights);
+	}
+
+	if(t.baseLocation2) {
+		lightFun.call(this, [     0, -0.707, 0.707]);
+		uniformer.call(t.gl, t.baseLocation2, t.lweights);
+	}
+
 
 	if(t.baseLocation) {
-		if(t.colorspace != 'mrgb' && t.colorspace != 'mycc')
-			t.gl.uniform1fv(t.baseLocation, t.lweights);
-		else
-			t.gl.uniform3fv(t.baseLocation, t.lweights);
+		uniformer.call(t.gl, t.baseLocation, t.lweights);
 	}
+
 },
 
 computeLightWeightsPtm: function(v) {
 	var t = this;
-	var w = [1.0, v[0], v[1], v[0]*v[0], v[0]*v[1], v[1]*v[1]];
+	var w = [1.0, v[0], v[1], v[0]*v[0], v[0]*v[1], v[1]*v[1], 0, 0, 0];
 
 
-		t.lweights = new Float32Array(t.nplanes);
-		for(var p = 0; p < w.length; p++)
+	t.lweights = new Float32Array(t.nplanes);
+	for(var p = 0; p < w.length; p++)
 		t.lweights[p] = w[p];
 },
 
@@ -870,292 +903,46 @@ setLight: function(x, y, z) {
 
 },
 
-
 loadProgram: function() {
 
 	var t = this;
-
-	t.vertCode =
-'uniform mat4 u_matrix;\n' +
-'\n' +
-'attribute vec4 a_position;\n' +
-'attribute vec2 a_texcoord;\n' +
-
-'varying vec2 v_texcoord;\n'+
-'\n' +
-'void main() {\n' +
-//'	gl_Position = u_matrix * a_position;\n' +
-'gl_Position = a_position;\n' + 
-'v_texcoord = a_texcoord;\n' +
-'}';
+	t.setupShaders();
 
 
-	switch(t.colorspace) {
+	var gl = t.gl;
+	t.vertShader = gl.createShader(gl.VERTEX_SHADER);
+	gl.shaderSource(t.vertShader, t.vertCode);
+	var compiled = gl.compileShader(t.vertShader);
+	if(!compiled)
+		console.log(gl.getShaderInfoLog(t.vertShader));
 
-	case 'mrgb': t.fragCode =
-'#ifdef GL_ES\n' +
-'precision highp float;\n' +
-'#endif\n' +
-'\n' +
-'const int np1 = ' + (t.nplanes + 1) + ';\n' +
-'const int nj1 = ' + (t.njpegs + 1) + ';\n' +
-'const int nm = ' + t.nmaterials + ';\n' +
-'const int nmp1 = np1*nm;\n' +
-'uniform sampler2D planes[nj1];      //0 is segments\n' +
-'uniform vec3 base[nmp1];\n' +
-'uniform float bias[nmp1];\n' +
-'uniform float scale[nmp1];\n' +
-'\n' +
-'varying vec2 v_texcoord;\n' +
-'void main(void) {\n' +
-'	vec3 color = vec3(0);\n';
-
-	if(t.nmaterials == 1) {
-		t.fragCode += 
-'\n' +
-'	color += base[0];\n' +
-'	for(int j = 1; j < nj1; j++) {\n' +
-'		vec4 c = texture2D(planes[j-1], v_texcoord);\n' +
-'		color += base[j*3-2]*(c.x - bias[j*3-2])*scale[j*3-2];\n' +
-'		color += base[j*3-1]*(c.y - bias[j*3-1])*scale[j*3-1];\n' +
-'		color += base[j*3-0]*(c.z - bias[j*3-0])*scale[j*3-0];\n' +
-'	};\n';
-
-	} else {
-		t.fragCode += 
-'\n' +
-'	int mat = int(texture2D(planes[0], v_texcoord).x*256.0)/8;\n' +
-'	for(int m = 0; m < nm; m++)\n' +
-'		if(m == mat) {\n' +
-'			color += base[m*np1];\n' +
-'			for(int j = 1; j < nj1; j++) {\n' +
-'				vec4 c = texture2D(planes[j], v_texcoord);\n' +
-'				color += base[m*np1 + j*3-2]*(c.x - bias[m*np1 + j*3-2])*scale[m*np1 + j*3-2];\n' +
-'				color += base[m*np1 + j*3-1]*(c.y - bias[m*np1 + j*3-1])*scale[m*np1 + j*3-1];\n' +
-'				color += base[m*np1 + j*3-0]*(c.z - bias[m*np1 + j*3-0])*scale[m*np1 + j*3-0];\n' +
-'			}\n' +
-'		}';
-	}
-
-	t.fragCode +=
-'	/* gamma fix\n' +
-'	color.x *= color.x;\n' +
-'	color.y *= color.y;\n' +
-'	color.z *= color.z;*/\n' +
-'	gl_FragColor = vec4(color, 1.0);\n' +
-'}\n';
-	break;
-
-
-	case 'mycc': t.fragCode = 
-'#ifdef GL_ES\n' +
-'precision highp float;\n' +
-'#endif\n' +
-'\n' +
-'const int ny0 = '+ (t.yccplanes[0]) + ';\n' +
-'const int ny1 = ' + (t.yccplanes[1]) + ';\n' +
-'\n' +
-'const int np1 = ' + (t.nplanes + 1) + ';\n' +
-'const int nj1 = ' + (t.njpegs  + 1) + ';\n' +
-'const int nm  = ' + t.nmaterials + ';\n' +
-'const int nmp1 = np1*nm;\n' +
-'uniform sampler2D planes[nj1];      //0 is segments\n' +
-'uniform vec3  base[nmp1];\n' +
-'uniform float bias[nmp1];\n' +
-'uniform float scale[nmp1];\n' +
-'\n' +
-'varying vec2 v_texcoord;\n' +
-'void main(void) { \n' +
-'	vec3 color = vec3(0);\n';
-
-	if(t.nmaterials == 1) {
-		t.fragCode += 
-'\n' +
-'	color += base[0];\n' +
-'	for(int j = 1; j < nj1; j++) {\n' +
-'		vec4 c = texture2D(planes[j-1], v_texcoord);\n' +
-'\n' +
-'		if(j-1 < ny1) {\n' +
-'			color.x += base[j*3-2].x*(c.x - bias[j*3-2])*scale[j*3-2];\n' +
-'			color.y += base[j*3-1].y*(c.y - bias[j*3-1])*scale[j*3-1];\n' +
-'			color.z += base[j*3-0].z*(c.z - bias[j*3-0])*scale[j*3-0];\n' +
-'		} else {\n' +
-'			color.x += base[j*3-2].x*(c.x - bias[j*3-2])*scale[j*3-2];\n' +
-'			color.x += base[j*3-1].x*(c.y - bias[j*3-1])*scale[j*3-1];\n' +
-'			color.x += base[j*3-0].x*(c.z - bias[j*3-0])*scale[j*3-0];\n' +
-'		}\n' +
-'	};\n' +
-'\n' +
-'	float tmp = color.r - color.b/2.0;\n' +
-'	vec3 rgb;\n' +
-'	rgb.g = color.b + tmp;\n' +
-'	rgb.b = tmp - color.g/2.0;\n' +
-'	rgb.r = rgb.b + color.g;\n' +
-'	color = rgb;\n';
-
-	} else {
-		t.fragCode += 
-'\n' +
-'	int mat = int(texture2D(planes[0], v_texcoord).x*256.0)/8;\n' +
-'	for(int m = 0; m < nm; m++)\n' +
-'		if(m == mat) {\n' +
-'			color += base[m*np1];\n' +
-'			for(int j = 1; j < nj1; j++) {\n' +
-'				vec4 c = texture2D(planes[j], v_texcoord);\n' +
-'				color += base[m*np1 + j*3-2]*(c.x - bias[m*np1 + j*3-2])*scale[m*np1 + j*3-2];\n' +
-'				color += base[m*np1 + j*3-1]*(c.y - bias[m*np1 + j*3-1])*scale[m*np1 + j*3-1];\n' +
-'				color += base[m*np1 + j*3-0]*(c.z - bias[m*np1 + j*3-0])*scale[m*np1 + j*3-0];\n' +
-'			}\n' +
-'		}';
-	}
-
-	t.fragCode +=
-'	gl_FragColor = vec4(color, 1.0);\n' +
-'}';
-	 break;
-
-	case 'rgb': 
-	t.fragCode = 
-'#ifdef GL_ES\n' +
-'precision highp float;\n' +
-'#endif\n' +
-'\n' +
-'const int np1 = ' + (t.nplanes + 1) + ';\n' +
-'const int nj = ' + (t.njpegs) + ';\n' +
-'uniform sampler2D planes[nj];      //0 is segments\n' +
-'uniform float base[np1-3];\n' +
-'uniform float bias[np1];\n' +
-'uniform float scale[np1];\n' +
-'\n' +
-'varying vec2 v_texcoord;\n' +
-'\n' +
-'void main(void) {\n' +
-'	vec3 color = vec3(0);\n' +
-'	for(int j = 0; j < nj; j++) {\n' +
-'		vec4 c = texture2D(planes[j], v_texcoord);\n' +
-'		color.x += base[j]*(c.x - bias[j*3+1])*scale[j*3+1];\n' +
-'		color.y += base[j]*(c.y - bias[j*3+2])*scale[j*3+2];\n' +
-'		color.z += base[j]*(c.z - bias[j*3+3])*scale[j*3+3];\n' +
-'	}\n' +
-'	gl_FragColor = vec4(color, 1.0);\n' +
-'}';
-	break;
-
-	case 'ycc': t.fragCode = 
-'#ifdef GL_ES\n' +
-'precision highp float;\n' +
-'#endif\n' +
-'\n' +
-'const int np1 = ' + (t.nplanes + 1) + ';\n' +
-'const int nj = ' + (t.njpegs) + ';\n' +
-'uniform sampler2D planes[nj];      //0 is segments\n' +
-'uniform float base[np1-3];\n' +
-'uniform float bias[np1];\n' +
-'uniform float scale[np1];\n' +
-'\n' +
-'varying vec2 v_texcoord;\n' +
-'\n' +
-'vec3 toYcc(vec4 rgb) {\n' +
-'	vec3 c;\n' +
-'	c.x =       0.299   * rgb.x + 0.587   * rgb.y + 0.114   * rgb.z;\n' +
-'	c.y = 0.5 - 0.16874 * rgb.x - 0.33126 * rgb.y + 0.50000 * rgb.z;\n' +
-'	c.z = 0.5 + 0.50000 * rgb.x - 0.41869 * rgb.y - 0.08131 * rgb.z;\n' +
-'	return c;\n' +
-'}\n' +
-'\n' +
-'vec3 toRgb(vec4 ycc) {\n' +
-'	ycc.y -= 0.5;\n' +
-'	ycc.z -= 0.5;\n' +
-'	vec3 c;\n' +
-'	c.x = ycc.x +                   1.402   *ycc.z;\n' +
-'	c.y = ycc.x + -0.344136*ycc.y - 0.714136*ycc.z;\n' +
-'	c.z = ycc.x +  1.772   *ycc.y;\n' +
-'	return c;\n' +
-'}\n' +
-'\n' +
-'void main(void) {\n' +
-'	vec3 color = vec3(0);\n' +
-'	for(int j = 0; j < nj; j++) {\n' +
-'		vec4 c = texture2D(planes[j], v_texcoord);\n' +
-'		color.x += base[j]*(c.x - bias[j*3+1])*scale[j*3+1];\n' +
-'\n' +
-'		if(j == 0) {\n' +
-'			color.y = (c.y - bias[j*3+2])*scale[j*3+2];\n' +
-'			color.z = (c.z - bias[j*3+3])*scale[j*3+3];\n' +
-'		}\n' +
-'	}\n' +
-'\n' +
-'	color = toRgb(vec4(color, 1.0));\n' +
-'	gl_FragColor = vec4(color, 1.0);\n' +
-'}';
-	break;
-
-
-	case 'lrgb': 
-	t.fragCode = 
-'#ifdef GL_ES\n' +
-'precision highp float;\n' +
-'#endif\n' +
-'\n' +
-'const int np1 = ' + (t.nplanes+1) + ';\n' +
-'const int nj = ' + (t.njpegs) + ';\n' +
-'uniform sampler2D planes[nj];      //0 is segments\n' +
-'uniform float base[np1]; //lrgb ptm the weights starts from 0 (while bias and scale start from 3\n' +
-'uniform float bias[np1];\n' +
-'uniform float scale[np1];\n' +
-'\n' +
-'varying vec2 v_texcoord;\n' +
-'\n' +
-'void main(void) {\n' +
-'	vec4 color = texture2D(planes[0], v_texcoord);\n' +
-'	float l = 0.0;\n' +
-'	for(int j = 1; j < nj; j++) {\n' +
-'		vec4 c = texture2D(planes[j], v_texcoord);\n' +
-'		l += base[j*3-3]*(c.x - bias[j*3+1])*scale[j*3+1];\n' +
-'		l += base[j*3-2]*(c.y - bias[j*3+2])*scale[j*3+2];\n' +
-'		l += base[j*3-1]*(c.z - bias[j*3+3])*scale[j*3+3];\n' +
-'	}\n' +
-'\n' +
-'	gl_FragColor = vec4(color.x*l, color.y*l, color.z*l, 1.0);\n' +
-'}';
-	break;
-
-	default:
-	t.fragCode = 
-'#ifdef GL_ES\n' +
-'precision highp float;\n' +
-'#endif\n' +
-'\n' +
-'uniform sampler2D planes[1];      //0 is segments\n' +
-'\n' +
-'varying vec2 v_texcoord;\n' +
-'\n' +
-'void main(void) {\n' +
-'	gl_FragColor = texture2D(planes[0], v_texcoord);\n' +
-'}';
-	break;
-	}
-
-	var gl = this.gl;
-	var vertShader = gl.createShader(gl.VERTEX_SHADER);
-	gl.shaderSource(vertShader, this.vertCode);
-	gl.compileShader(vertShader);
-	console.log(gl.getShaderInfoLog(vertShader));
-
-	var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-	gl.shaderSource(fragShader, t.fragCode);
-	gl.compileShader(fragShader);
+	t.fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+	gl.shaderSource(t.fragShader, t.fragCode);
+	gl.compileShader(t.fragShader);
 	t.program = gl.createProgram();
-	var compiled = gl.getShaderParameter(fragShader, gl.COMPILE_STATUS);
+	compiled = gl.getShaderParameter(t.fragShader, gl.COMPILE_STATUS);
 	if(!compiled) {
 		console.log(t.fragCode);
-		console.log(gl.getShaderInfoLog(fragShader));
+		console.log(gl.getShaderInfoLog(t.fragShader));
 	}
 
-	gl.attachShader(this.program, vertShader);
-	gl.attachShader(this.program, fragShader);
-	gl.linkProgram(this.program);
-	gl.useProgram(this.program);
+	gl.attachShader(t.program, t.vertShader);
+	gl.attachShader(t.program, t.fragShader);
+	gl.linkProgram(t.program);
+	gl.useProgram(t.program);
+
+	if(t.colorspace) {
+		//used for normal viewing.
+		t.baseLocation0 = gl.getUniformLocation(t.program, "base0");
+		t.baseLocation1 = gl.getUniformLocation(t.program, "base1");
+		t.baseLocation2 = gl.getUniformLocation(t.program, "base2");
+
+		t.baseLocation = gl.getUniformLocation(t.program, "base");
+		t.planesLocations = gl.getUniformLocation(t.program, "planes");
+
+		gl.uniform1fv(gl.getUniformLocation(t.program, "scale"), t.scale);
+		gl.uniform1fv(gl.getUniformLocation(t.program, "bias"), t.bias);
+	}
 
 //BUFFERS
 
@@ -1181,13 +968,7 @@ loadProgram: function() {
 
 	t.matrixLocation = gl.getUniformLocation(t.program, "u_matrix");
 
-	if(t.colorspace) {
-		t.baseLocation = gl.getUniformLocation(t.program, "base");
-		t.planesLocations = gl.getUniformLocation(t.program, "planes");
 
-		gl.uniform1fv(gl.getUniformLocation(t.program, "scale"), t.scale);
-		gl.uniform1fv(gl.getUniformLocation(t.program, "bias"), t.bias);
-	}
 
 	var sampler = gl.getUniformLocation(t.program, "planes");
 	var samplerArray = new Int32Array(t.njpegs);

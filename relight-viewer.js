@@ -8,7 +8,6 @@ function formatMm(val) {
 	else
 		return (val/1000000).toFixed(2) + " km";
 }
-
 function RelightViewer(div, options) {
 
 	var t = this;
@@ -28,6 +27,7 @@ function RelightViewer(div, options) {
 			zoomin:  { title: 'Zoom In',    task: function(event) { t.zoom(-t.nav.zoomstep, t.nav.zoomdelay); } },
 			zoomout: { title: 'Zoom Out',   task: function(event) { t.zoom(+t.nav.zoomstep, t.nav.zoomdelay); } },
 			rotate:  { title: 'Rotate',     task: function(event) { t.rotate(t.nav.zoomstep, 45); } },
+			normals: { title: 'Normals',    task: function(event) { t.toggleNormals(); } },
 			light:   { title: 'Light',      task: function(event) { t.toggleLight(event); }                     },
 			full:    { title: 'Fullscreen', task: function(event) { t.toggleFullscreen(event); }                },
 			info:    { title: 'info',       task: function(event) { t.showInfo(); }                             }
@@ -287,7 +287,7 @@ RelightViewer.prototype.lightDirection = function(event) {
 		r = 1.0;
 	}
 	var z = Math.sqrt(1 - r);
-	t.setLight(-x, y, z);
+	t.setLight(x, -y, z);
 }
 
 RelightViewer.prototype.mousemove = function(event) {
