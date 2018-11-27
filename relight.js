@@ -726,16 +726,23 @@ computeLightWeights: function(lpos) {
 	lightFun.call(this, l);
 
 	var uniformer = (t.colorspace == 'mrgb' || t.colorspace == 'mycc') ? t.gl.uniform3fv : t.gl.uniform1fv;
+
+
 	if(t.baseLocation0) {
 		lightFun.call(this, [0.612,  0.354, 0.707]);
 		uniformer.call(t.gl, t.baseLocation0, t.lweights);
-		
+	}
+
+	if(t.baseLocation1) {
 		lightFun.call(this, [-0.612,  0.354, 0.707]);
 		uniformer.call(t.gl, t.baseLocation1, t.lweights);
+	}
 
+	if(t.baseLocation2) {
 		lightFun.call(this, [     0, -0.707, 0.707]);
 		uniformer.call(t.gl, t.baseLocation2, t.lweights);
 	}
+
 
 	if(t.baseLocation) {
 		uniformer.call(t.gl, t.baseLocation, t.lweights);
@@ -745,11 +752,11 @@ computeLightWeights: function(lpos) {
 
 computeLightWeightsPtm: function(v) {
 	var t = this;
-	var w = [1.0, v[0], v[1], v[0]*v[0], v[0]*v[1], v[1]*v[1]];
+	var w = [1.0, v[0], v[1], v[0]*v[0], v[0]*v[1], v[1]*v[1], 0, 0, 0];
 
 
-		t.lweights = new Float32Array(t.nplanes);
-		for(var p = 0; p < w.length; p++)
+	t.lweights = new Float32Array(t.nplanes);
+	for(var p = 0; p < w.length; p++)
 		t.lweights[p] = w[p];
 },
 
