@@ -27,8 +27,8 @@ function RelightViewer(div, options) {
 			zoomin:  { title: 'Zoom In',    task: function(event) { t.zoom(-t.nav.zoomstep, t.nav.zoomdelay); } },
 			zoomout: { title: 'Zoom Out',   task: function(event) { t.zoom(+t.nav.zoomstep, t.nav.zoomdelay); } },
 			rotate:  { title: 'Rotate',     task: function(event) { t.rotate(t.nav.zoomstep, 45); } },
-			normals: { title: 'Normals',     task: function(event) { t.toggleNormals(event); } },
 			light:   { title: 'Light',      task: function(event) { t.toggleLight(event); }                     },
+			normals: { title: 'Normals',     task: function(event) { t.toggleNormals(event); } },
 			full:    { title: 'Fullscreen', task: function(event) { t.toggleFullscreen(event); }                },
 			info:    { title: 'info',       task: function(event) { t.showInfo(); }                             }
 		},
