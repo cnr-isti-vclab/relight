@@ -27,7 +27,7 @@ function RelightViewer(div, options) {
 			zoomin:  { title: 'Zoom In',    task: function(event) { t.zoom(-t.nav.zoomstep, t.nav.zoomdelay); } },
 			zoomout: { title: 'Zoom Out',   task: function(event) { t.zoom(+t.nav.zoomstep, t.nav.zoomdelay); } },
 			rotate:  { title: 'Rotate',     task: function(event) { t.rotate(t.nav.zoomstep, 45); } },
-			normals: { title: 'Normals',    task: function(event) { t.toggleNormals(); } },
+			normals: { title: 'Normals',     task: function(event) { t.toggleNormals(event); } },
 			light:   { title: 'Light',      task: function(event) { t.toggleLight(event); }                     },
 			full:    { title: 'Fullscreen', task: function(event) { t.toggleFullscreen(event); }                },
 			info:    { title: 'info',       task: function(event) { t.showInfo(); }                             }
@@ -57,6 +57,8 @@ function RelightViewer(div, options) {
 		var action = t.nav.actions[i];
 		if(i == 'light' && t.nav.lighting)
 			i += ' relight-light_on';
+		if(i == 'normal' && t.nav.normals)
+			i += ' relight-normals_on';
 		html += '		<div class="relight-' + i + '" title="' + action.title + '"></div>\n';
 	}
 
@@ -147,6 +149,17 @@ RelightViewer.prototype.toggleLight = function(event) {
 		event.target.classList.add('relight-light_on');
 
 	t.nav.lighting = !t.nav.lighting; 
+};
+
+RelightViewer.prototype.toggleNormals = function(event) {
+	var t = this;
+	if(t.normals)
+		event.target.classList.remove('relight-normals_on');
+	else
+		event.target.classList.add('relight-normals_on');
+
+	t.normals = !t.normals; 
+	t.setNormals(t.normals);
 };
 
 RelightViewer.prototype.toggleFullscreen = function(event) {

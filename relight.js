@@ -696,7 +696,7 @@ flush: function() {
 	t.requestedCount = 0;
 },
 
-toggleNormals: function(on) {
+setNormals: function(on) {
 	var t = this;
 	if(on === undefined)
 		t.normals = !t.normals;
