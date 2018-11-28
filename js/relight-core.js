@@ -913,8 +913,8 @@ loadProgram: function() {
 	t.vertShader = gl.createShader(gl.VERTEX_SHADER);
 	gl.shaderSource(t.vertShader, t.vertCode);
 	var compiled = gl.compileShader(t.vertShader);
-	if(!compiled)
-		console.log(gl.getShaderInfoLog(t.vertShader));
+//	if(!compiled)
+//		console.log(gl.getShaderInfoLog(t.vertShader));
 
 	t.fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 	gl.shaderSource(t.fragShader, t.fragCode);

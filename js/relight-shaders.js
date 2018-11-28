@@ -374,7 +374,6 @@ void main() {
 	default:     frag = t.imgFrag();  break;
 	}
 	t.fragCode = frag;
-	console.log(frag);
 }
 
 /* RGB normals
