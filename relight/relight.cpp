@@ -947,7 +947,7 @@ Vector3f extractMean(Color3f *pixels, int n) {
 		m[1] += c[1];
 		m[2] += c[2];
 	}
-	return Vector3f(2*m[0]/n, 2*m[1]/n, 2*m[2]/n);
+	return Vector3f(m[0]/n, m[1]/n, m[2]/n);
 }
 
 
