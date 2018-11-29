@@ -85,7 +85,7 @@ Scale and bias will be applied to the texture coefficients (from [0, 1]) as:
 
 # Web Viewer
 
-*relight.js* is a small Javascript library to render the RTI on a WebGL canvas.
+*relight.min.js* is a small Javascript library to render the RTI on a WebGL canvas.
 
 	var relight = new Relight(canvas, options);
 
@@ -139,8 +139,7 @@ Using qt:
 * find spheres (very optional)
 * mask artifact
 * crop
-* normals estimate
 * join pieces
-* align images using mutual information (or better an edge detector?
+* align images using mutual information (or better an edge detector?)
 * find highlight
 
