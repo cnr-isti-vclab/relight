@@ -98,7 +98,7 @@ function RelightViewer(div, options) {
 
 	var canvas = document.querySelector('#rticanvas');
 
-	Relight.call(this, canvas, options);
+	RelightCanvas.call(this, canvas, options);
 
 	var support = "onwheel" in document.createElement("div") ? "wheel" : // Modern browsers 
 		document.onmousewheel !== undefined ? "mousewheel" : // Webkit and IE support at least "mousewheel"
@@ -133,7 +133,7 @@ function RelightViewer(div, options) {
 }
 
 
-RelightViewer.prototype = Relight.prototype;
+RelightViewer.prototype = RelightCanvas.prototype;
 
 RelightViewer.prototype.addAction = function(selector, action) {
 	var tap = new Hammer.Manager(document.querySelector(selector));
