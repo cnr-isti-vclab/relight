@@ -127,7 +127,7 @@ function RelightViewer(div, options) {
 		t.onPosChange(function() { t.updateScale(); });
 	//remember size (add exif into json!)
 	if(t.nav.pagemap) {
-		t.onLoad(function() { t.initPagemap(); });
+		t.onReady(function() { t.initPagemap(); });
 		t.onPosChange(function() { t.updatePagemap(); });
 	}
 }
@@ -316,7 +316,7 @@ RelightViewer.prototype.mousemove = function(event) {
 		var scale = Math.pow(2, p.z);
 		x *= scale;
 		y *= scale;
-		[x, y] = t.rot(x, y, p.a);
+		[x, y] = Relight.prototype.rot(x, y, p.a);
 		t.setPosition(t.nav.pandelay, p.x - x, p.y - y, p.z, p.a);
 		break;
 

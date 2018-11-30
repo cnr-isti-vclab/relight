@@ -48,7 +48,7 @@ function Relight(gl, options) {
 		layout: "image",
 
 		suffix: ".jpg",
-		position: [ 0, 0, 0 ],
+		position: [ 0, 0],
 		scale: 1,
 		rotation: 0,
 
@@ -60,6 +60,7 @@ function Relight(gl, options) {
 
 	}, options);
 
+	t.pos = { x: 0, y:0, z: 0, a: 0 };
 	t.normals = t.options.normals;
 
 	if(t.url && t.url.endsWidth("/"))
@@ -82,10 +83,6 @@ function Relight(gl, options) {
 
 //events
 	t._onload = [];
-	t._onposchange = [];
-	t._onlightchange = [];
-
-
 
 	if(t.img) { //this meas we are loading an image
 		t.loadInfo({type: 'img', colorspace: null, width: 0, height: 0, nplanes: 3 });
@@ -183,12 +180,12 @@ loadInfo: function(info) {
 //	t.layout   = 'layout'   in info ? info.layout   : "image";
 
 
-	t.scale = new Float32Array((t.nplanes+1)*t.nmaterials);
+	t.factor = new Float32Array((t.nplanes+1)*t.nmaterials);
 	t.bias = new Float32Array((t.nplanes+1)*t.nmaterials);
 
 	for(var m = 0;  m < t.nmaterials; m++) {
 		for(var p = 1; p < t.nplanes+1; p++) {
-			t.scale[m*(t.nplanes+1) + p] = t.materials[m].scale[p-1];
+			t.factor[m*(t.nplanes+1) + p] = t.materials[m].scale[p-1];
 			t.bias [m*(t.nplanes+1) + p] = t.materials[m].bias [p-1];
 		}
 	}
@@ -217,20 +214,19 @@ onLoad: function(f) {
 loaded: function() {
 	var t = this;
 	if(t.waiting) return;
-	if(t.fit)
-		t.centerAndScale();
+
+
+
+
 //else
 //	t.pos.x = t.width/2;
 //	t.pos.y = t.height/2;
 
+//	t.prefetch(); //TODO PROBLEM! thees need to be called everytime a node has been loaded (it will do by itself) or position has changed
+	t._onload.forEach( (f) => { f(); });
 
-	for(var i = 0; i < t._onload.length; i++)
-		t._onload[i]();
-
+	//this needs to know it's orientation.
 	t.computeLightWeights(t.light);
-	t.prefetch();
-	t.preload();
-	t.redraw();
 },
 
 initTree: function() {
@@ -388,8 +384,26 @@ rot: function(dx, dy, a) {
 },
 
 
+//convert image coords to canvas coords
+project: function(pos, x, y) { 
+	var t = this;
+	var r = t.rot(x - pos.x,  y - pos.y, pos.a);
+	var z = Math.pow(2, pos.z);
+	return [r[0]/z + t.canvas.width/2, r[1]/z + t.canvas.height/2]
+},
 
-getBox: function(pos) {
+//TODO fully support rect
+iproject: function(pos, x, y) {
+	var t = this;
+	var z = Math.pow(2, pos.z);
+	x = (x - t.canvas.width/2)*z;
+	y = (y - t.canvas.height/2)*z;
+	[x, y] = t.rot(x, y, -pos.a);
+	return [x + pos.x, y + pos.y];
+},
+
+//return the box of the image in the canvas coords
+getBox: function(pos, width) {
 	var t = this;
 	var corners = [0, 0, 0, 1, 1, 1, 1, 0];
 	var box = [ 1e20, 1e20, -1e20, -1e20];
@@ -747,10 +761,6 @@ setLight: function(x, y, z) {
 	t.light = [x/r, y/r, z/r];
 	t.computeLightWeights(t.light);
 	this.redraw();
-
-	for(var i = 0; i < t._onlightchange.length; i++)
-		t._onlightchange[i]();
-
 },
 
 loadProgram: function() {
@@ -790,7 +800,7 @@ loadProgram: function() {
 		t.baseLocation = gl.getUniformLocation(t.program, "base");
 		t.planesLocations = gl.getUniformLocation(t.program, "planes");
 
-		gl.uniform1fv(gl.getUniformLocation(t.program, "scale"), t.scale);
+		gl.uniform1fv(gl.getUniformLocation(t.program, "scale"), t.factor);
 		gl.uniform1fv(gl.getUniformLocation(t.program, "bias"), t.bias);
 	}
 
@@ -912,21 +922,13 @@ drawNode: function(pos, minlevel, level, x, y) {
 	gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
 },
 
-draw: function(timestamp) {
+draw: function(pos) {
 	var t = this;
 	var gl = t.gl;
-	t.animaterequest = null;
-
-	t.gl.viewport(0, 0, t.canvas.width, t.canvas.height);
-	var b = this.options.background;
-	gl.clearColor(b[0], b[1], b[2], b[3], b[4]);
-	gl.clear(gl.COLOR_BUFFER_BIT);
-	//gl.enable(gl.SCISSOR_TEST);
 
 	if(t.waiting || !t.visible)
 		return;
 
-	var pos = t.getCurrent(performance.now());
 	var needed = t.neededBox(pos, 0);
 
 	var minlevel = needed.level; //this is the minimum level;
@@ -944,11 +946,8 @@ draw: function(timestamp) {
 	if(t.layout == "google") {
 		box[0] += 1; box[1] += 1; box[2] -= 2; box[3] -= 2;
 	}
+	//gl.enable(gl.SCISSOR_TEST);
 	//gl.scissor(box[0], box[1], box[2], box[3]);
-
-
-
-	//TODO render upper nodes if something is missing!
 
 	var torender = {}; //array of minlevel, actual level, x, y (referred to minlevel)
 
@@ -977,10 +976,7 @@ draw: function(timestamp) {
 		t.drawNode(pos, minlevel, level, x, y);
 	}
 
-	if(timestamp < this.pos.t)
-		this.redraw();
-
-	gl.disable(gl.SCISSOR_TEST);
+	//gl.disable(gl.SCISSOR_TEST);
 }, 
 
 redraw: function() {}, //placeholder for other to replace the draw code.
@@ -1031,7 +1027,7 @@ preload: function() {
 	}
 },
 
-neededBox: function(pos, border) {
+neededBox: function(pos, border, canvas) {
 	var t = this;
 	if(t.layout == "image") {
 		return { level:0, box: [[0, 0, 1, 1]] };
