@@ -32,7 +32,7 @@ var relight = new RelightViewer('.relight',
 	{ 
 	  layers: [ 
 		{
-			position: [-2000, 0],
+			position: [0, 0],
 			rotation: 0, 
 			scale: 1,
 			url:url2, 
@@ -41,17 +41,21 @@ var relight = new RelightViewer('.relight',
 			scale: 0.01*10/3,
 		},
 		{
-			position: [250, 0],
+			position: [0, 2000],
 			rotation: 0, 
 			url:url1, 
-			layout:"deepzoom",
+			layout:"image",
 			scale: 0.01*10/3,
-			opacity: 0.5
+			opacity: 0.5,
+			visible: true
 		}
 
+
 	  ],
+	  fit: true,
+	  pos: { x:0, y:0, z:0, a:0 },
 	  rotation: 0,
-	  pagemap: { thumb: 'thumb.jpg', size:200, autohide:1000 },  
+	  pagemap: { /*thumb: 'thumb.jpg', */size:200, autohide:1000 },  
 	  background: [0.7, 0.7, 0.7, 1]
 	});
 	  

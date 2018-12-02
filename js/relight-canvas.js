@@ -74,7 +74,7 @@ RelightCanvas = function(item, options) {
 
 	if(t.options.rotation)
 		t.pos.a = t.options.rotation;
-	t.previous = { x:0, y:0, z:0, t:0 };
+	t.previous = { x:0, y:0, z:0, a:0, t:0 };
 
 	if(t.options.layers) {
 		t.layers = t.options.layers.map( (layer) => {
@@ -98,7 +98,9 @@ RelightCanvas = function(item, options) {
 }
 
 
-RelightCanvas.prototype.initGL = function() {
+RelightCanvas.prototype = {
+
+initGL: function() {
 	var gl = this.gl;
 	gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
 	var b = this.options.background;
@@ -106,15 +108,67 @@ RelightCanvas.prototype.initGL = function() {
 	gl.disable(gl.DEPTH_TEST);
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-};
+},
 
-RelightCanvas.prototype.redraw = function() {
+redraw: function() {
 	var t = this;
 	if(t.animaterequest) return;
 	t.animaterequest = requestAnimationFrame(function (time) { t.draw(time); });
-};
+},
 
-RelightCanvas.prototype.draw = function(timestamp) {
+rot: function(dx, dy, a) {
+	var a = Math.PI*(a/180);
+	var x =  Math.cos(a)*dx + Math.sin(a)*dy;
+	var y = -Math.sin(a)*dx + Math.cos(a)*dy;
+	return [x, y];
+},
+
+project: function(layer, pos) {
+	var z = Math.pow(2, pos.z);
+	var p = this.rot(layer.position[0], layer.position[1], -pos.a);
+	var lpos = { 
+		x: pos.x - p[0]/z,
+		y: pos.y - p[1]/z, 
+		z: pos.z + layer.scale, 
+		a: pos.a + layer.rotation
+	};
+	return lpos;
+},
+
+boundingBox: function() {
+	var t = this;
+	var box = [1e20, 1e20, -1e20, -1e20];
+	t.layers.forEach((layer) => {
+
+		var pos = t.project(layer, t.pos); 
+		var b = layer.getBox(pos);
+		box[0] = Math.min(b[0], box[0]);
+		box[1] = Math.min(b[1], box[1]);
+		box[2] = Math.max(b[2], box[2]);
+		box[3] = Math.max(b[3], box[3]);
+
+	});
+	return box;
+},
+
+boundingIBox: function() {
+	var t = this;
+	var box = [1e20, 1e20, -1e20, -1e20];
+	t.layers.forEach((layer) => {
+
+		var pos = t.iproject(layer, t.pos); 
+		var b = layer.getBox(pos);
+		box[0] = Math.min(b[0], box[0]);
+		box[1] = Math.min(b[1], box[1]);
+		box[2] = Math.max(b[2], box[2]);
+		box[3] = Math.max(b[3], box[3]);
+
+	});
+	return box;
+},
+
+
+draw: function(timestamp) {
 	var t = this;
 	var gl = t.gl;
 	t.animaterequest = null;
@@ -128,28 +182,28 @@ RelightCanvas.prototype.draw = function(timestamp) {
 	var pos = t.getCurrent(performance.now());
 
 	t.layers.forEach((layer) =>  {
-		var pos = { 
-			x: t.pos.x - layer.position[0],
-			y: t.pos.y - layer.position[1], 
-			z: t.pos.z + layer.scale, 
-			a: t.pos.a + layer.rotation
-		};
-		layer.draw(pos); 
+		var lpos = t.project(layer, pos);
+		layer.draw(lpos); 
 	});
 
 	if(timestamp < t.pos.t)
 		t.redraw();
-}
+},
 
-RelightCanvas.prototype.prefetch = function() {
+prefetch: function() {
 	this.layers.forEach((layer) => { layer.prefetch(); });
-}
+},
 
-RelightCanvas.prototype.ready = function() {
+ready: function() {
 	var t = this;
 	//wait for all layers headers
 	for(var i = 0; i < t.layers.length; i++)
 		if(t.layers[i].waiting) return;
+
+
+	var box = t.boundingBox();
+	t.width = (box[2] - box[0]);
+	t.height = (box[3] - box[1]);
 
 
 	if(t.fit)
@@ -160,87 +214,65 @@ RelightCanvas.prototype.ready = function() {
 
 	t.layers.forEach((layer) => { layer.prefetch(); });
 	t.redraw();
-};
+},
 
-RelightCanvas.prototype.onReady = function(f) {
+onReady: function(f) {
 	this._onready.push(f);
-};
-RelightCanvas.prototype.onPosChange = function(f) {
+},
+
+onPosChange: function(f) {
 	this._onposchange.push(f);
-};
+},
 
-RelightCanvas.prototype.onLightChange = function(f) {
+onLightChange: function(f) {
 	this._onlightchange.push(f);
-};
+},
 
-RelightCanvas.prototype.resize = function(width, height) {
+resize: function(width, height) {
 	this.canvas.width = width;
 	this.canvas.height = height;
 
 	this.layers.forEach((layer) => { layer.prefetch(); });
 	this.redraw();
-};
+},
 
-
-
-RelightCanvas.prototype.zoom = function(dz, dt) {
+zoom: function(dz, dt) {
 	var p = this.pos;
 	this.setPosition(dt, p.x, p.y, p.z+dz, p.a);
-};
+},
 
-RelightCanvas.prototype.center = function(dt) {
+center: function(dt) {
 	var p = this.pos;
 	this.setPosition(dt, this.width/2, this.height/2, p.z, p.a);
-};
+},
 
-RelightCanvas.prototype.centerAndScale = function(dt) {
+centerAndScale: function(dt) {
 	var t = this;
-	var box = [1e20, 1e20, -1e20, -1e20];
-	t.layers.forEach((layer) => {
-
-		var pos = { 
-			x: 0 -.vc sxd  layer.position[0],
-			y: 0 - layer.position[1], 
-			z: 0 + layer.scale, 
-			a: t.pos.a + layer.rotation
-		};
-
-//		t.pos.x = layer.width/2;
-//		t.pos.y = layer.height/2;
-//		t.pos.z = 0;
-	
-		var b = layer.getBox(pos);
-		box[0] = Math.min(b[0], box[0]);
-		box[1] = Math.min(b[1], box[1]);
-		box[2] = Math.max(b[2], box[2]);
-		box[3] = Math.max(b[3], box[3]);
-
-	});
+	var box = t.boundingBox();
 	var scale = Math.max((box[2]-box[0])/t.canvas.width, (box[3]-box[1])/t.canvas.height);
 	var z = Math.log(scale)/Math.LN2;
-	t.pos.x = (box[2] - box[0])/2;
-	t.pos.y = (box[3] - box[1])/2;
 
-	t.setPosition(dt, t.pos.x, t.pos.y, z, t.pos.a);
-};
+	console.log(box);
+	t.setPosition(dt, (box[2] + box[0])/(2*scale), (box[3] + box[1])/(2*scale), z, t.pos.a);
+},
 
-RelightCanvas.prototype.pan = function(dt, dx, dy) { //dx and dy expressed as pixels in the current size!
+pan: function(dt, dx, dy) { //dx and dy expressed as pixels in the current size!
 	var p = this.pos;
 	//size of a rendering pixel in original image pixels.
 	var scale = Math.pow(2, p.z);
 	var r = this.rot(dx, dy, p.a);
 	this.setPosition(dt, p.x - r[0]*scale, p.y - r[1]*scale, p.z, p.a);
-};
+},
 
-RelightCanvas.prototype.rotate = function(dt, angle) {
+rotate: function(dt, angle) {
 	var p = this.pos;
 	var a = p.a + angle;
 	while(a > 360) a -= 360;
 	while(a <   0) a += 360;
 	this.setPosition(dt, p.x, p.y, p.z, a);
-};
+},
 
-RelightCanvas.prototype.setPosition = function(dt, x, y, z, a) {
+setPosition: function(dt, x, y, z, a) {
 
 	var t = this;
 	var scale = Math.pow(2, z);
@@ -268,6 +300,7 @@ RelightCanvas.prototype.setPosition = function(dt, x, y, z, a) {
 
 	t.pos = { x:x, y:y, z:z, a:a, t:time + dt };
 	t.layers.forEach((layer) => {
+		layer.pos = t.project(layer, t.pos); 
 		if(a != t.previous.a)
 			layer.computeLightWeights(layer.light);
 	});
@@ -277,22 +310,22 @@ RelightCanvas.prototype.setPosition = function(dt, x, y, z, a) {
 
 	for(var i = 0; i < t._onposchange.length; i++)
 		t._onposchange[i]();
-};
+},
 
-RelightCanvas.prototype.setLight = function(x, y, z) {
+setLight: function(x, y, z) {
 	this.layers.forEach((layer) => { layer.setLight(x, y, z); });
 	this._onlightchange.forEach((f) => { f(); });
-}
+},
 
-RelightCanvas.prototype.setNormals = function(on) {
+setNormals: function(on) {
 	this.layers.forEach((layer) => { layer.setNormals(on); });
 	this.redraw();
-}
+},
 
-RelightCanvas.prototype.getCurrent = function(time) {
+getCurrent: function(time) {
 	var t = this;
 
-	if(time > t.pos.t)
+	if(!t.pos.t || time > t.pos.t)
 		return { x: t.pos.x, y: t.pos.y, z: t.pos.z, a: t.pos.a, t: time };
 
 	var dt = t.pos.t - t.previous.t;
@@ -307,5 +340,7 @@ RelightCanvas.prototype.getCurrent = function(time) {
 		z:t.pos.z*ft + t.previous.z*dt, 
 		a:t.pos.a*ft + t.previous.a*dt,
 		t:time };
+}
+
 };
 
