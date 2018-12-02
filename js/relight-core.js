@@ -171,14 +171,9 @@ loadInfo: function(info) {
 		t.ndimensions = t.resolution*t.resolution;
 	}
 
-
-
-
-
 //	t.tilesize = 'tilesize' in info ? info.tilesize : 0;
 //	t.overlap  = 'overlap'  in info ? info.overlap  : 0;
 //	t.layout   = 'layout'   in info ? info.layout   : "image";
-
 
 	t.factor = new Float32Array((t.nplanes+1)*t.nmaterials);
 	t.bias = new Float32Array((t.nplanes+1)*t.nmaterials);
@@ -189,7 +184,6 @@ loadInfo: function(info) {
 			t.bias [m*(t.nplanes+1) + p] = t.materials[m].bias [p-1];
 		}
 	}
-
 
 	t.initTree();
 	t.loadProgram();
@@ -214,9 +208,6 @@ onLoad: function(f) {
 loaded: function() {
 	var t = this;
 	if(t.waiting) return;
-
-
-
 
 //else
 //	t.pos.x = t.width/2;
@@ -375,7 +366,6 @@ initTree: function() {
 	}
 },
 
-
 rot: function(dx, dy, a) {
 	var a = Math.PI*(a/180);
 	var x =  Math.cos(a)*dx + Math.sin(a)*dy;
@@ -434,7 +424,6 @@ getIBox: function(pos) {
 	return box;
 },
 
-
 // p from 0 to nplanes,
 basePixelOffset: function(m, p, x, y, k) {
 	var t = this;
@@ -445,7 +434,6 @@ baseLightOffset: function(m, p, l, k) {
 	var t = this;
 	return ((m*(t.nplanes+1) + p)*t.ndimensions + l)*3 + k;
 },
-
 
 loadBasis: function(data) {
 	var t = this;
@@ -496,8 +484,6 @@ loadTile: function(level, x, y) {
 		t.loadComponent(p, index, level, x, y);
 },
 
-
-
 loadComponent: function(plane, index, level, x, y) {
 	var t = this;
 	var gl = t.gl;
@@ -523,7 +509,6 @@ loadComponent: function(plane, index, level, x, y) {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
 //		gl.generateMipmap(gl.TEXTURE_2D);
-
 
 		t.nodes[index].tex[plane] = tex;
 		t.nodes[index].missing--;
@@ -621,7 +606,6 @@ computeLightWeights: function(lpos) {
 computeLightWeightsPtm: function(v) {
 	var t = this;
 	var w = [1.0, v[0], v[1], v[0]*v[0], v[0]*v[1], v[1]*v[1], 0, 0, 0];
-
 
 	t.lweights = new Float32Array(t.nplanes);
 	for(var p = 0; p < w.length; p++)
@@ -737,7 +721,6 @@ computeLightWeightsOcta: function(lpos) {
 
 	t.lweights = new Float32Array(nm * (np + 1) * 3);
 
-
 //TODO optimize away basePixel
 	for(var m = 0; m < nm; m++) {
 		for(var p = 0; p < np+1; p++) {
@@ -768,10 +751,8 @@ setLight: function(x, y, z) {
 },
 
 loadProgram: function() {
-
 	var t = this;
 	t.setupShaders();
-
 
 	var gl = t.gl;
 	t.vertShader = gl.createShader(gl.VERTEX_SHADER);
@@ -785,10 +766,10 @@ loadProgram: function() {
 	gl.compileShader(t.fragShader);
 	t.program = gl.createProgram();
 	compiled = gl.getShaderParameter(t.fragShader, gl.COMPILE_STATUS);
-	if(!compiled) {
-		console.log(t.fragCode);
-		console.log(gl.getShaderInfoLog(t.fragShader));
-	}
+//	if(!compiled) {
+//		console.log(t.fragCode);
+//		console.log(gl.getShaderInfoLog(t.fragShader));
+//	}
 
 	gl.attachShader(t.program, t.vertShader);
 	gl.attachShader(t.program, t.fragShader);
