@@ -235,12 +235,15 @@ RelightViewer.prototype.updatePagemap = function() {
 	var w = t.canvas.width;
 	var h = t.canvas.height;
 
+	var box = t.boundingBox();
+	var offset = [(box[0] + box[2])/2, (box[1] + box[3])/2];
+
 	var scale = Math.pow(2, t.pos.z);
 	var bbox = [
-		Math.max(0, parseInt((t.pos.x - scale*w/2)/t.width* page.w)),
-		Math.max(0, parseInt((t.pos.y - scale*h/2)/t.height*page.h)),
-		Math.min(page.w, parseInt((t.pos.x - scale*w/2)/t.width* page.w)),
-		Math.min(page.h, parseInt((t.pos.y + scale*h/2)/t.height*page.h))
+		Math.max(0,      parseInt(((t.pos.x*0 - offset[0])*scale - scale*w/2)/t.width* page.w + page.w/2)),
+		Math.max(0,      parseInt(((t.pos.y*0 - offset[1])*scale - scale*h/2)/t.height*page.h  + page.h/2)),
+		Math.min(page.w, parseInt(((t.pos.x*0 - offset[0])*scale + scale*w/2)/t.width* page.w + page.w/2)),
+		Math.min(page.h, parseInt(((t.pos.y*0 - offset[1])*scale + scale*h/2)/t.height*page.h + page.h/2))
 	];
 
 	page.area.style.left = bbox[0] + 'px';
