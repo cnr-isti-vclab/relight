@@ -385,27 +385,29 @@ rot: function(dx, dy, a) {
 
 
 //convert image coords to canvas coords
-project: function(pos, x, y) { 
+project: function(pos, x, y) {
 	var t = this;
-	var r = t.rot(x - pos.x,  y - pos.y, pos.a);
 	var z = Math.pow(2, pos.z);
-	return [r[0]/z + t.canvas.width/2, r[1]/z + t.canvas.height/2]
+	var r = t.rot(x - t.width/2,  y - t.height/2, pos.a);
+	r[0] = r[0]/z - pos.x;
+	r[1] = r[1]/z - pos.y;
+	return r;
 },
 
 //TODO fully support rect
 iproject: function(pos, x, y) {
 	var t = this;
 	var z = Math.pow(2, pos.z);
-	x = (x - t.canvas.width/2)*z;
-	y = (y - t.canvas.height/2)*z;
-	[x, y] = t.rot(x, y, -pos.a);
-	return [x + pos.x, y + pos.y];
+	var r = t.rot((x + pos.x)*z, (y + pos.y)*z, -pos.a);
+	r[0] += t.width/2;
+	r[1] += t.height/2;
+	return r;
 },
 
-//return the box of the image in the canvas coords
-getBox: function(pos, width) {
+//return the box of the image in the canvas coords (remember the center at 0,0)
+getBox: function(pos) {
 	var t = this;
-	var corners = [0, 0, 0, 1, 1, 1, 1, 0];
+	var corners = [0, 0,  0, 1,  1, 1,  1, 0];
 	var box = [ 1e20, 1e20, -1e20, -1e20];
 	for(var i = 0; i < 8; i+= 2) {
 		var p = t.project(pos, corners[i]*t.width, corners[i+1]*t.height);
@@ -417,9 +419,10 @@ getBox: function(pos, width) {
 	return box;
 },
 
+//sreturn the coordinates of the canvas in image space
 getIBox: function(pos) {
 	var t = this;
-	var corners = [0, 0, 0, 1, 1, 1, 1, 0];
+	var corners = [-0.5, -0.5,  -0.5, 0.5,  0.5, 0.5,  0.5, 0];
 	var box = [ 1e20, 1e20, -1e20, -1e20];
 	for(var i = 0; i < 8; i+= 2) {
 		var p = t.iproject(pos, corners[i]*t.canvas.width, corners[i+1]*t.canvas.height);
@@ -865,10 +868,10 @@ drawNode: function(pos, minlevel, level, x, y) {
 	var sy = 2.0/t.canvas.height;
 
 	if(t.layout == "image") {
-		for(var i = 0; i < coords.length; i+=3) {
-			var r = t.rot(coords[i]*t.width - pos.x, -coords[i+1]*t.height + pos.y, pos.a);
-			coords[i]   = r[0]*sx/z;
-			coords[i+1] = r[1]*sy/z;
+		for(var i = 0; i < coords.length; i += 3) {
+			var r = t.rot(coords[i]*t.width - t.width/2, -coords[i+1]*t.height + t.height/2, pos.a);
+			coords[i]   = (r[0]/z - pos.x)*sx;
+			coords[i+1] = (r[1]/z + pos.y)*sy;
 		}
 
 	} else {
@@ -901,9 +904,9 @@ drawNode: function(pos, minlevel, level, x, y) {
 		}
 
 		for(var i = 0; i < coords.length; i+=3) {
-			var r = t.rot(coords[i]*tx - pos.x + side*x,  -coords[i+1]*ty + pos.y - side*y, pos.a);
-			coords[i]   = r[0]*sx/z;
-			coords[i+1] = r[1]*sy/z;
+			var r = t.rot(coords[i]*tx + side*x - t.width/2,  -coords[i+1]*ty - side*y + t.height/2, pos.a);
+			coords[i]   = (r[0]/z - pos.x)*sx;
+			coords[i+1] = (r[1]/z + pos.y)*sy;
 		}
 	}
 

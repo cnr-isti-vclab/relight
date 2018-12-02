@@ -239,7 +239,7 @@ RelightViewer.prototype.updatePagemap = function() {
 	var bbox = [
 		Math.max(0, parseInt((t.pos.x - scale*w/2)/t.width* page.w)),
 		Math.max(0, parseInt((t.pos.y - scale*h/2)/t.height*page.h)),
-		Math.min(page.w, parseInt((t.pos.x + scale*w/2)/t.width* page.w)),
+		Math.min(page.w, parseInt((t.pos.x - scale*w/2)/t.width* page.w)),
 		Math.min(page.h, parseInt((t.pos.y + scale*h/2)/t.height*page.h))
 	];
 
@@ -313,10 +313,10 @@ RelightViewer.prototype.mousemove = function(event) {
 
 	switch(t.nav.action) {
 	case 'pan':
-		var scale = Math.pow(2, p.z);
-		x *= scale;
-		y *= scale;
-		[x, y] = Relight.prototype.rot(x, y, p.a);
+//		var scale = Math.pow(2, p.z);
+//		x *= scale;
+//		y *= scale;
+//		[x, y] = Relight.prototype.rot(x, y, p.a);
 		t.setPosition(t.nav.pandelay, p.x - x, p.y - y, p.z, p.a);
 		break;
 
