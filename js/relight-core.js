@@ -44,7 +44,7 @@ function Relight(gl, options) {
 
 	t.options = Object.assign({
 		visible: true,
-		transparency: 1,
+		opacity: 1,
 		layout: "image",
 
 		suffix: ".jpg",
@@ -591,6 +591,7 @@ computeLightWeights: function(lpos) {
 
 	var uniformer = (t.colorspace == 'mrgb' || t.colorspace == 'mycc') ? t.gl.uniform3fv : t.gl.uniform1fv;
 
+	t.gl.useProgram(t.program);
 
 	if(t.baseLocation0) {
 		lightFun.call(this, [0.612,  0.354, 0.707]);
@@ -806,29 +807,29 @@ loadProgram: function() {
 
 //BUFFERS
 
-	t.vbuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, t.vbuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0,  0, 1, 0,  1, 1, 0,  1, 0, 0]), gl.STATIC_DRAW);
-
 	t.ibuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, t.ibuffer);
 	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([3,2,1,3,1,0]), gl.STATIC_DRAW);
 
-	var coord = gl.getAttribLocation(t.program, "a_position");
-	gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);
-	gl.enableVertexAttribArray(coord);
+	t.vbuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, t.vbuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0,  0, 1, 0,  1, 1, 0,  1, 0, 0]), gl.STATIC_DRAW);
+
+	t.coordattrib = gl.getAttribLocation(t.program, "a_position");
+	gl.vertexAttribPointer(t.coordattrib, 3, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(t.coordattrib);
 
 	t.tbuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, t.tbuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0,  0, 1,  1, 1,  1, 0]), gl.STATIC_DRAW);
 
-	var tex = gl.getAttribLocation(t.program, "a_texcoord");
-	gl.vertexAttribPointer(tex, 2, gl.FLOAT, false, 0, 0);
-	gl.enableVertexAttribArray(tex);
+	t.texattrib = gl.getAttribLocation(t.program, "a_texcoord");
+	gl.vertexAttribPointer(t.texattrib, 2, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(t.texattrib);
 
-	t.matrixLocation = gl.getUniformLocation(t.program, "u_matrix");
+	t.opacitylocation = gl.getUniformLocation(t.program, "opacity");
 
-
+//	t.matrixLocation = gl.getUniformLocation(t.program, "u_matrix");
 
 	var sampler = gl.getUniformLocation(t.program, "planes");
 	var samplerArray = new Int32Array(t.njpegs);
@@ -908,12 +909,18 @@ drawNode: function(pos, minlevel, level, x, y) {
 
 //0.0 is in the center of the screen, 
 	var gl = t.gl;
+	//TODO join buffers, and just make one call per draw! (except the bufferData, which is per node)
 	gl.bindBuffer(gl.ARRAY_BUFFER, t.vbuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, coords, gl.STATIC_DRAW);
 
+	gl.vertexAttribPointer(t.coordattrib, 3, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(t.coordattrib);
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, t.tbuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, tcoords, gl.STATIC_DRAW);
+
+	gl.vertexAttribPointer(t.texattrib, 2, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(t.texattrib);
 
 	for(var i = 0; i < t.njpegs; i++) {
 		gl.activeTexture(gl.TEXTURE0 + i);
@@ -949,8 +956,14 @@ draw: function(pos) {
 	//gl.enable(gl.SCISSOR_TEST);
 	//gl.scissor(box[0], box[1], box[2], box[3]);
 
-	var torender = {}; //array of minlevel, actual level, x, y (referred to minlevel)
+	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+	gl.enable(gl.BLEND);
 
+	gl.useProgram(t.program);
+	gl.uniform1f(t.opacitylocation, t.opacity);
+
+	var torender = {}; //array of minlevel, actual level, x, y (referred to minlevel)
+	var brothers = {};
 	var box = needed.box[minlevel];
 	for(var y = box[1]; y < box[3]; y++) {
 		for(var x = box[0]; x < box[2]; x++) {
@@ -961,6 +974,13 @@ draw: function(pos) {
 				if(t.nodes[index].missing == 0) {
 					torender[index] = [level, x>>d, y>>d];
 					break;
+				} else {
+					var sx = (x>>(d+1))<<1;
+					var sy = (y>>(d+1))<<1;
+					brothers[t.index(level, sx, sy)] = 1;
+					brothers[t.index(level, sx+1, sy)] = 1;
+					brothers[t.index(level, sx+1, sy+1)] = 1;
+					brothers[t.index(level, sx, sy+1)] = 1;
 				}
 				level++;
 			}
@@ -969,6 +989,7 @@ draw: function(pos) {
 
 	for(var index in torender) {
 		var id = torender[index];
+		if(t.opacity != 1.0 && brothers[index]) continue;
 
 		var level = id[0];
 		var x = id[1];
@@ -977,6 +998,7 @@ draw: function(pos) {
 	}
 
 	//gl.disable(gl.SCISSOR_TEST);
+	gl.disable(gl.BLEND);
 }, 
 
 redraw: function() {}, //placeholder for other to replace the draw code.

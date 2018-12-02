@@ -46,6 +46,7 @@ const mat3 T = mat3(8.1650e-01, 4.7140e-01, 4.7140e-01,
 uniform ${basetype} base[np1];
 uniform float bias[np1];
 uniform float scale[np1];
+uniform float opacity;
 
 uniform sampler2D planes[nj];
 
@@ -75,7 +76,7 @@ Relight.prototype.mrgbFrag = function() {
 		color += base[j*3+2]*(c.y - bias[j*3+2])*scale[j*3+2];
 		color += base[j*3+3]*(c.z - bias[j*3+3])*scale[j*3+3];
 	}
-	gl_FragColor = vec4(color, 1.0);
+	gl_FragColor = vec4(color, opacity);
 }
 `;
 
@@ -103,7 +104,7 @@ Relight.prototype.mrgbFrag = function() {
 		color.z += dot(b2, r);
 	}
 	color = (normalize(T * color) + 1.0)/2.0;
-	gl_FragColor = vec4(color, 1.0);
+	gl_FragColor = vec4(color, opacity);
 }
 `;
 	return src;
@@ -143,7 +144,7 @@ void main(void) {
 	rgb.b = tmp - color.g/2.0;
 	rgb.r = rgb.b + color.g;
 
-	gl_FragColor = vec4(rgb, 1.0);
+	gl_FragColor = vec4(rgb, opacity);
 }
 `;
 
@@ -182,7 +183,7 @@ void main(void) {
 	vec3 color = vec3(color0.r, color1.r, color2.r);
 	color = (normalize(T * color) + 1.0)/2.0;
 
-	gl_FragColor = vec4(color, 1.0);
+	gl_FragColor = vec4(color, opacity);
 }
 `;
 
@@ -225,7 +226,7 @@ void main(void) {
 
 	src +=
 `
-	gl_FragColor = vec4(color, 1.0);
+	gl_FragColor = vec4(color, opacity);
 }`;
 
 	return src;
@@ -271,7 +272,7 @@ void main(void) {
 	}
 
 	color = toRgb(vec4(color, 1.0));
-	gl_FragColor = vec4(color, 1.0);
+	gl_FragColor = vec4(color, opacity);
 }`;
 
 }
@@ -295,7 +296,7 @@ void main(void) {
 		l += base[j*3-1]*(c.z - bias[j*3+3])*scale[j*3+3];
 	}
 
-	gl_FragColor = vec4(color.x*l, color.y*l, color.z*l, 1.0);
+	gl_FragColor = vec4(color.x*l, color.y*l, color.z*l, opacity);
 }`;
 
 	else
@@ -317,7 +318,7 @@ void main(void) {
 	}
 
 	color = (normalize(T * color) + 1.0)/2.0;
-	gl_FragColor = vec4(color, 1.0);
+	gl_FragColor = vec4(color, opacity);
 }`;
 
 	return src;
@@ -338,7 +339,8 @@ uniform sampler2D planes[1];      //0 is segments
 varying vec2 v_texcoord;
 
 void main(void) {
-	gl_FragColor = texture2D(planes[0], v_texcoord);
+	vec4 c = texture2D(planes[0], v_texcoord);
+	gl_FragColor = vec4(c.rgb, opacity);
 }`;
 
 	return src;
