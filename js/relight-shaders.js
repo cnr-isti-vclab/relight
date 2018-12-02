@@ -335,6 +335,7 @@ precision highp float;
 #endif
 
 uniform sampler2D planes[1];      //0 is segments
+uniform float opacity;
 
 varying vec2 v_texcoord;
 
