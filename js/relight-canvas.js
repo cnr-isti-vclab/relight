@@ -18,8 +18,22 @@ scale
 
 
 Coordinate system:
+We deal with 3 coordinate systems:
+
+1) the screen coordinates: the origin is in the center of the screen.
+2) the canvas (virtual) coordinates: the origin is in the center.
+   pos defined by:
+    x, y: che position of the centter of the canvas in screen coordinates
+    z: the log2 scal
+    a: the rotation (degrees).
+    to know the screen coords of a point p:
+    rot(p*z, a) + (x, y);
+
+3) the layer coordinates: the origin is again in the center
+	rot(p*z, a) + (x, y) (and the composed.
+
 A canvas is defined like an image: with, height.
-  x and y are the coords of the center of the screen the canvas. (0, 0 beingg in top left of image)
+  x and y are the coords of the center
   z is the zoom level with 0 being canvas width and height
   a is the rotation angle (counterclockwise) in degrees
 
@@ -113,7 +127,15 @@ RelightCanvas.prototype.draw = function(timestamp) {
 
 	var pos = t.getCurrent(performance.now());
 
-	t.layers.forEach((layer) =>  { layer.draw(pos); });
+	t.layers.forEach((layer) =>  {
+		var pos = { 
+			x: t.pos.x - layer.position[0],
+			y: t.pos.y - layer.position[1], 
+			z: t.pos.z + layer.scale, 
+			a: t.pos.a + layer.rotation
+		};
+		layer.draw(pos); 
+	});
 
 	if(timestamp < t.pos.t)
 		t.redraw();
@@ -173,17 +195,33 @@ RelightCanvas.prototype.center = function(dt) {
 
 RelightCanvas.prototype.centerAndScale = function(dt) {
 	var t = this;
+	var box = [1e20, 1e20, -1e20, -1e20];
 	t.layers.forEach((layer) => {
 
-		t.pos.x = layer.width/2;
-		t.pos.y = layer.height/2;
-		t.pos.z = 0;
+		var pos = { 
+			x: 0 -.vc sxd  layer.position[0],
+			y: 0 - layer.position[1], 
+			z: 0 + layer.scale, 
+			a: t.pos.a + layer.rotation
+		};
+
+//		t.pos.x = layer.width/2;
+//		t.pos.y = layer.height/2;
+//		t.pos.z = 0;
 	
-		var box = layer.getBox(t.pos);
-		var scale = Math.max((box[2]-box[0])/t.canvas.width, (box[3]-box[1])/t.canvas.height);
-		var z = Math.log(scale)/Math.LN2;
-		t.setPosition(dt, t.pos.x, t.pos.y, z, t.pos.a);
+		var b = layer.getBox(pos);
+		box[0] = Math.min(b[0], box[0]);
+		box[1] = Math.min(b[1], box[1]);
+		box[2] = Math.max(b[2], box[2]);
+		box[3] = Math.max(b[3], box[3]);
+
 	});
+	var scale = Math.max((box[2]-box[0])/t.canvas.width, (box[3]-box[1])/t.canvas.height);
+	var z = Math.log(scale)/Math.LN2;
+	t.pos.x = (box[2] - box[0])/2;
+	t.pos.y = (box[3] - box[1])/2;
+
+	t.setPosition(dt, t.pos.x, t.pos.y, z, t.pos.a);
 };
 
 RelightCanvas.prototype.pan = function(dt, dx, dy) { //dx and dy expressed as pixels in the current size!
@@ -230,12 +268,6 @@ RelightCanvas.prototype.setPosition = function(dt, x, y, z, a) {
 
 	t.pos = { x:x, y:y, z:z, a:a, t:time + dt };
 	t.layers.forEach((layer) => {
-		layer.pos = { 
-			x: t.pos.x + layer.position[0],
-			y: t.pos.y + layer.position[1], 
-			z: t.pos.z + layer.scale, 
-			a: t.pos.a + layer.rotation
-		};
 		if(a != t.previous.a)
 			layer.computeLightWeights(layer.light);
 	});

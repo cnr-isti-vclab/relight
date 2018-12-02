@@ -27,24 +27,30 @@ html, body { width:100%; height:100%; padding:0px; margin:0px; }
 <script>
 
 var url1 = 'test/bilinear18';
-var url2 = 'test/12563_front';
+var url2 = 'test/small/bilinear';
 var relight = new RelightViewer('.relight', 
 	{ 
-	  layers: [ {
-			position: [100, 0],
-			rotation: 90, 
-			url:url1, 
-			layout:"deepzoom",
-			scale: 0.01*10/3
-		},
+	  layers: [ 
 		{
-			rotation: 90, 
+			position: [-2000, 0],
+			rotation: 0, 
 			scale: 1,
 			url:url2, 
 			layout:"deepzoom", 
-			scale: 0.01*10/3
+			visible: true,
+			scale: 0.01*10/3,
+		},
+		{
+			position: [250, 0],
+			rotation: 0, 
+			url:url1, 
+			layout:"deepzoom",
+			scale: 0.01*10/3,
+			opacity: 0.5
 		}
+
 	  ],
+	  rotation: 0,
 	  pagemap: { thumb: 'thumb.jpg', size:200, autohide:1000 },  
 	  background: [0.7, 0.7, 0.7, 1]
 	});
