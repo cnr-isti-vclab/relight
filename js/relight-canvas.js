@@ -345,7 +345,6 @@ getCurrent: function(time) {
 	var before = Math.pow(2, t.previous.z);
 	var after = Math.pow(2, t.pos.z);
 	var current = Math.pow(2, z);
-	console.log(before, after, current);
 	var x = (t.pos.x*after*ft + t.previous.x*before*dt)/current;
 	var y = (t.pos.y*after*ft + t.previous.y*before*dt)/current;
 
