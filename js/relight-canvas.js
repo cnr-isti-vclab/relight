@@ -135,6 +135,7 @@ project: function(layer, pos) {
 	return lpos;
 },
 
+//return the current bounding box (but takes scale into account.
 boundingBox: function() {
 	var t = this;
 	var box = [1e20, 1e20, -1e20, -1e20];
@@ -249,10 +250,11 @@ center: function(dt) {
 centerAndScale: function(dt) {
 	var t = this;
 	var box = t.boundingBox();
-	var scale = Math.max((box[2]-box[0])/t.canvas.width, (box[3]-box[1])/t.canvas.height);
+	var zoom = Math.pow(2, t.pos.z);
+	var scale = Math.max(zoom*(box[2]-box[0])/t.canvas.width, zoom*(box[3]-box[1])/t.canvas.height);
 	var z = Math.log(scale)/Math.LN2;
 
-	console.log(box);
+	console.log(box, zoom);
 	t.setPosition(dt, (box[2] + box[0])/(2*scale), (box[3] + box[1])/(2*scale), z, t.pos.a);
 },
 
