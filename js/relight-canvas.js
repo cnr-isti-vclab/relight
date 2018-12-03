@@ -239,7 +239,12 @@ resize: function(width, height) {
 
 zoom: function(dz, dt) {
 	var p = this.pos;
-	this.setPosition(dt, p.x, p.y, p.z+dz, p.a);
+	var before = Math.pow(2, p.z);
+	var after = Math.pow(2, p.z + dz);
+	var x = p.x*before/after;
+	var y = p.y*before/after;
+	
+	this.setPosition(dt, x, y, p.z+dz, p.a);
 },
 
 center: function(dt) {
@@ -336,10 +341,18 @@ getCurrent: function(time) {
 	var dt = (t.pos.t - time)/(t.pos.t - t.previous.t); //how much is missing to pos
 	var ft = 1 - dt;
 
+	var z = t.pos.z*ft + t.previous.z*dt;
+	var before = Math.pow(2, t.previous.z);
+	var after = Math.pow(2, t.pos.z);
+	var current = Math.pow(2, z);
+	console.log(before, after, current);
+	var x = (t.pos.x*after*ft + t.previous.x*before*dt)/current;
+	var y = (t.pos.y*after*ft + t.previous.y*before*dt)/current;
+
 	return { 
-		x:t.pos.x*ft + t.previous.x*dt, 
-		y:t.pos.y*ft + t.previous.y*dt, 
-		z:t.pos.z*ft + t.previous.z*dt, 
+		x:x, 
+		y:y, 
+		z:z, 
 		a:t.pos.a*ft + t.previous.a*dt,
 		t:time };
 }
