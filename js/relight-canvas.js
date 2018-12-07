@@ -126,9 +126,13 @@ rot: function(dx, dy, a) {
 project: function(layer, pos) {
 	var z = Math.pow(2, pos.z);
 	var p = this.rot(layer.position[0], layer.position[1], -pos.a);
-	var lpos = { 
-		x: pos.x - p[0]/z,
-		y: pos.y - p[1]/z, 
+	var lpos = {
+// PREVIOUS
+//		x: pos.x - p[0]/z, 
+//		y: pos.y - p[1]/z,  
+
+		x: pos.x - p[0],
+		y: pos.y - p[1],
 		z: pos.z + layer.scale, 
 		a: pos.a + layer.rotation
 	};
@@ -142,22 +146,6 @@ boundingBox: function() {
 	t.layers.forEach((layer) => {
 
 		var pos = t.project(layer, t.pos); 
-		var b = layer.getBox(pos);
-		box[0] = Math.min(b[0], box[0]);
-		box[1] = Math.min(b[1], box[1]);
-		box[2] = Math.max(b[2], box[2]);
-		box[3] = Math.max(b[3], box[3]);
-
-	});
-	return box;
-},
-
-boundingIBox: function() {
-	var t = this;
-	var box = [1e20, 1e20, -1e20, -1e20];
-	t.layers.forEach((layer) => {
-
-		var pos = t.iproject(layer, t.pos); 
 		var b = layer.getBox(pos);
 		box[0] = Math.min(b[0], box[0]);
 		box[1] = Math.min(b[1], box[1]);
@@ -239,12 +227,13 @@ resize: function(width, height) {
 
 zoom: function(dz, dt) {
 	var p = this.pos;
-	var before = Math.pow(2, p.z);
-	var after = Math.pow(2, p.z + dz);
-	var x = p.x*before/after;
-	var y = p.y*before/after;
+//PREVIOUS
+//	var before = Math.pow(2, p.z);
+//	var after = Math.pow(2, p.z + dz);
+//	var x = p.x*before/after;
+//	var y = p.y*before/after;
 	
-	this.setPosition(dt, x, y, p.z+dz, p.a);
+	this.setPosition(dt, p.x, p.y, p.z+dz, p.a);
 },
 
 center: function(dt) {
@@ -259,16 +248,18 @@ centerAndScale: function(dt) {
 	var scale = Math.max(zoom*(box[2]-box[0])/t.canvas.width, zoom*(box[3]-box[1])/t.canvas.height);
 	var z = Math.log(scale)/Math.LN2;
 
-	console.log(box, zoom);
-	t.setPosition(dt, (box[2] + box[0])/(2*scale), (box[3] + box[1])/(2*scale), z, t.pos.a);
+// PREVIOUS	
+//	t.setPosition(dt, (box[2] + box[0])/(2*scale), (box[3] + box[1])/(2*scale), z, t.pos.a);
+	t.setPosition(dt, (box[2] + box[0])/2, (box[3] + box[1])/2, z, t.pos.a);
+
 },
 
 pan: function(dt, dx, dy) { //dx and dy expressed as pixels in the current size!
 	var p = this.pos;
 	//size of a rendering pixel in original image pixels.
-	var scale = Math.pow(2, p.z);
-	var r = this.rot(dx, dy, p.a);
-	this.setPosition(dt, p.x - r[0]*scale, p.y - r[1]*scale, p.z, p.a);
+//	var scale = Math.pow(2, p.z);
+	//var r = this.rot(dx, dy, p.a);
+	this.setPosition(dt, p.x - dx, p.y - dy, p.z, p.a);
 },
 
 rotate: function(dt, angle) {
@@ -342,11 +333,14 @@ getCurrent: function(time) {
 	var ft = 1 - dt;
 
 	var z = t.pos.z*ft + t.previous.z*dt;
-	var before = Math.pow(2, t.previous.z);
-	var after = Math.pow(2, t.pos.z);
-	var current = Math.pow(2, z);
-	var x = (t.pos.x*after*ft + t.previous.x*before*dt)/current;
-	var y = (t.pos.y*after*ft + t.previous.y*before*dt)/current;
+//PREVIOUS
+//	var before = Math.pow(2, t.previous.z);
+//	var after = Math.pow(2, t.pos.z);
+//	var current = Math.pow(2, z);
+//	var x = (t.pos.x*after*ft + t.previous.x*before*dt)/current;
+//	var y = (t.pos.y*after*ft + t.previous.y*before*dt)/current;
+	var x = (t.pos.x*ft + t.previous.x*dt);
+	var y = (t.pos.y*ft + t.previous.y*dt);
 
 	return { 
 		x:x, 
