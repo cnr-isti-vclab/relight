@@ -393,8 +393,8 @@ iproject: function(pos, x, y) {
 	var z = Math.pow(2, pos.z);
 //PREVIOUS
 //	var r = t.rot((x + pos.x)*z, (y + pos.y)*z, -pos.a);
-	var r = t.rot(x*z + pos.x, y*z + pos.y, -pos.a);
-	
+
+	var r = t.rot(x*z + pos.x, y*z + pos.y, pos.a);
 	r[0] += t.width/2;
 	r[1] += t.height/2;
 	return r;
@@ -418,7 +418,7 @@ getBox: function(pos) {
 //sreturn the coordinates of the canvas in image space
 getIBox: function(pos) {
 	var t = this;
-	var corners = [-0.5, -0.5,  -0.5, 0.5,  0.5, 0.5,  0.5, 0];
+	var corners = [-0.5, -0.5,  -0.5, 0.5,  0.5, 0.5,  0.5, -0.5];
 	var box = [ 1e20, 1e20, -1e20, -1e20];
 	for(var i = 0; i < 8; i+= 2) {
 		var p = t.iproject(pos, corners[i]*t.canvas.width, corners[i+1]*t.canvas.height);

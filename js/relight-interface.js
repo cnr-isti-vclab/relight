@@ -238,7 +238,7 @@ RelightViewer.prototype.updatePagemap = function() {
 	var box = t.boundingBox();
 	var offset = [(box[0] + box[2])/2, (box[1] + box[3])/2];
 
-	console.log(box);
+
 	var scale = Math.pow(2, t.pos.z);
 	var bbox = [
 //PREVIOUS
