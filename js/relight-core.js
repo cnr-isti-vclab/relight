@@ -209,9 +209,6 @@ loaded: function() {
 	var t = this;
 	if(t.waiting) return;
 
-//else
-//	t.pos.x = t.width/2;
-//	t.pos.y = t.height/2;
 
 //	t.prefetch(); //TODO PROBLEM! thees need to be called everytime a node has been loaded (it will do by itself) or position has changed
 	t._onload.forEach( (f) => { f(); });
@@ -378,9 +375,15 @@ rot: function(dx, dy, a) {
 project: function(pos, x, y) {
 	var t = this;
 	var z = Math.pow(2, pos.z);
+
+//PREVIOUS
+//	var r = t.rot(x - t.width/2,  y - t.height/2, pos.a);
+//	r[0] = r[0]/z - pos.x;
+//	r[1] = r[1]/z - pos.y;
+
 	var r = t.rot(x - t.width/2,  y - t.height/2, pos.a);
-	r[0] = r[0]/z - pos.x;
-	r[1] = r[1]/z - pos.y;
+	r[0] = (r[0] - pos.x)/z;
+	r[1] = (r[1] - pos.y)/z;
 	return r;
 },
 
@@ -388,7 +391,10 @@ project: function(pos, x, y) {
 iproject: function(pos, x, y) {
 	var t = this;
 	var z = Math.pow(2, pos.z);
-	var r = t.rot((x + pos.x)*z, (y + pos.y)*z, -pos.a);
+//PREVIOUS
+//	var r = t.rot((x + pos.x)*z, (y + pos.y)*z, -pos.a);
+	var r = t.rot(x*z + pos.x, y*z + pos.y, -pos.a);
+	
 	r[0] += t.width/2;
 	r[1] += t.height/2;
 	return r;
@@ -851,8 +857,12 @@ drawNode: function(pos, minlevel, level, x, y) {
 	if(t.layout == "image") {
 		for(var i = 0; i < coords.length; i += 3) {
 			var r = t.rot(coords[i]*t.width - t.width/2, -coords[i+1]*t.height + t.height/2, pos.a);
-			coords[i]   = (r[0]/z - pos.x)*sx;
-			coords[i+1] = (r[1]/z + pos.y)*sy;
+//PREVIOUS
+//			coords[i]   = (r[0]/z - pos.x)*sx;
+//			coords[i+1] = (r[1]/z + pos.y)*sy;
+			coords[i]   = (r[0] - pos.x)*sx/z;
+			coords[i+1] = (r[1] + pos.y)*sy/z;
+
 		}
 
 	} else {
@@ -886,8 +896,11 @@ drawNode: function(pos, minlevel, level, x, y) {
 
 		for(var i = 0; i < coords.length; i+=3) {
 			var r = t.rot(coords[i]*tx + side*x - t.width/2,  -coords[i+1]*ty - side*y + t.height/2, pos.a);
-			coords[i]   = (r[0]/z - pos.x)*sx;
-			coords[i+1] = (r[1]/z + pos.y)*sy;
+//PREVIOUS
+//			coords[i]   = (r[0]/z - pos.x)*sx;
+//			coords[i+1] = (r[1]/z + pos.y)*sy;
+			coords[i]   = (r[0] - pos.x)*sx/z;
+			coords[i+1] = (r[1] + pos.y)*sy/z;
 		}
 	}
 
@@ -929,8 +942,11 @@ draw: function(pos) {
 
 	//find coordinates of the image in the canvas
 	var box = [
-		t.canvas.width/2 - pos.x/scale,
-		t.canvas.height/2 - (t.height - pos.y)/scale,
+//PREVIOUS
+//		t.canvas.width/2 - pos.x/scale,
+//		t.canvas.height/2 - (t.height - pos.y)/scale,
+		t.canvas.width/2 - pos.x,
+		t.canvas.height/2 - (t.height/scale - pos.y),
 		t.width/scale,
 		t.height/scale
 	];
@@ -1047,12 +1063,12 @@ neededBox: function(pos, border, canvas) {
 	var box = [];
 	for(var level = t.nlevels-1; level >= minlevel; level--) {
 		//find coordinates in original size image
-		var bbox = [
-			pos.x - scale*w/2,
-			pos.y - scale*h/2,
-			pos.x + scale*w/2,
-			pos.y + scale*h/2
-		];
+//		var bbox = [
+//			pos.x - scale*w/2,
+//			pos.y - scale*h/2,
+//			pos.x + scale*w/2,
+//			pos.y + scale*h/2
+//		];
 		var bbox = t.getIBox(pos); //thats the reverse.
 		var side = t.tilesize*Math.pow(2, level);
 		//quantized bbox
