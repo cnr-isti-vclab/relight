@@ -86,7 +86,7 @@ function Relight(gl, options) {
 
 	if(t.img) { //this meas we are loading an image
 		t.loadInfo({type: 'img', colorspace: null, width: 0, height: 0, nplanes: 3 });
-	} else if(t.url) {
+	} else if(t.url !== null) {
 		t.setUrl(t.url);
 	}
 	return this;
