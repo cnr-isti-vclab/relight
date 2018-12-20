@@ -237,21 +237,16 @@ RelightViewer.prototype.updatePagemap = function() {
 
 	var box = t.boundingBox();
 	var offset = [(box[0] + box[2])/2, (box[1] + box[3])/2];
-
-
 	var scale = Math.pow(2, t.pos.z);
+
+	var center = [-offset[0]/scale/t.canvas.width  + 0.5, -offset[1]/scale/t.canvas.height  + 0.5];
+	var width  = t.canvas.width*scale /t.width;
+	var height = t.canvas.height*scale/t.height;
 	var bbox = [
-//PREVIOUS
-//		Math.max(0,      parseInt(((t.pos.x*0 - offset[0])*scale - scale*w/2)/t.width* page.w + page.w/2)),
-//		Math.max(0,      parseInt(((t.pos.y*0 - offset[1])*scale - scale*h/2)/t.height*page.h  + page.h/2)),
-//		Math.min(page.w, parseInt(((t.pos.x*0 - offset[0])*scale + scale*w/2)/t.width* page.w + page.w/2)),
-//		Math.min(page.h, parseInt(((t.pos.y*0 - offset[1])*scale + scale*h/2)/t.height*page.h + page.h/2))
-
-		Math.max(0,      parseInt(( - offset[0] - scale*w/2)/t.width* page.w + page.w/2)),
-		Math.max(0,      parseInt(( - offset[1] - scale*h/2)/t.height*page.h  + page.h/2)),
-		Math.min(page.w, parseInt(( - offset[0] + scale*w/2)/t.width* page.w + page.w/2)),
-		Math.min(page.h, parseInt(( - offset[1] + scale*h/2)/t.height*page.h + page.h/2))
-
+		Math.max(0,      parseInt(page.w*(center[0] - width /2))),
+		Math.max(0,      parseInt(page.h*(center[1] - height/2))),
+		Math.min(page.w, parseInt(page.w*(center[0] + width /2))),
+		Math.min(page.h, parseInt(page.h*(center[1] + height/2)))
 	];
 
 	page.area.style.left = bbox[0] + 'px';
@@ -325,15 +320,11 @@ RelightViewer.prototype.mousemove = function(event) {
 	switch(t.nav.action) {
 	case 'pan':
 		var scale = Math.pow(2, p.z);
-//		x *= scale;
-//		y *= scale;
-//		[x, y] = Relight.prototype.rot(x, y, p.a);
 		t.setPosition(t.nav.pandelay, p.x - x*scale, p.y - y*scale, p.z, p.a);
 		break;
 
 	case 'zoom':
 		var z = p.z/Math.pow(event.scale, 1.5);
-		console.log(p.x, p.y);
 		t.setPosition(t.nav.zoomdelay, p.x, p.y, z, p.a);
 		break;
 

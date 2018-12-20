@@ -6,24 +6,32 @@
 #include <math.h>
 #include <vector>
 
-class Vector3f {
-public:
-	float v[3];
 
-	Vector3f() {}
-	Vector3f(float x, float y, float z) {
+template <class T> class Vector3 {
+public:
+	T v[3];
+
+	Vector3() {}
+	Vector3(T x, T y, T z) {
 		v[0] = x; v[1] = y; v[2] = z;
 	}
 
-	float &operator[](int i) { return v[i]; }
-	const float &operator[](int i) const { return v[i]; }
+	T &operator[](int i) { return v[i]; }
+	const T &operator[](int i) const { return v[i]; }
 
-	Vector3f operator-(const Vector3f &b) const { return Vector3f(v[0]-b[0], v[1]-b[1], v[2]-b[2]);	}
-	Vector3f operator*(float d) { return Vector3f(v[0]*d, v[1]*d, v[2]*d); }
-	Vector3f operator/(float d) { return Vector3f(v[0]/d, v[1]/d, v[2]/d); }
-	float squaredNorm() { return v[0]*v[0] + v[1]*v[1] + v[2]*v[2]; }
-	float norm() { return sqrt(squaredNorm()); }
+	Vector3 operator+(const Vector3 &b) const { return Vector3(v[0]+b[0], v[1]+b[1], v[2]+b[2]);	}
+	Vector3 operator-(const Vector3 &b) const { return Vector3(v[0]-b[0], v[1]-b[1], v[2]-b[2]);	}
+	Vector3 operator*(float d) { return Vector3(v[0]*d, v[1]*d, v[2]*d); }
+	T operator*(const Vector3 &b) { return v[0]*b[0] + v[1]*b[1] + v[2]*b[2]; }
+	Vector3 operator/(float d) { return Vector3(v[0]/d, v[1]/d, v[2]/d); }
+	double squaredNorm() { return v[0]*(double)v[0] + v[1]*(double)v[1] + v[2]*(double)v[2]; }
+	double norm() { return sqrt(squaredNorm()); }
 };
+
+typedef Vector3<uint16_t> Vector3us;
+typedef Vector3<float> Vector3f;
+typedef Vector3<double> Vector3d;
+
 
 template <class T> struct Color3 {
 	T r, g, b;
@@ -74,7 +82,10 @@ template <class T> struct Color3 {
 	}
 };
 typedef Color3<uint8_t>  Color3b;
+typedef Color3<uint16_t>  Color3us;
 typedef Color3<float>  Color3f;
+typedef Color3<double>  Color3d;
+
 
 //a Pixel is the collection of N lights intensity.
 
