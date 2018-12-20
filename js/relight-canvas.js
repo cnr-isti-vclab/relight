@@ -123,23 +123,21 @@ rot: function(dx, dy, a) {
 	return [x, y];
 },
 
+//computes the position of the layer starting from the canvas pos + relative layer pos.
 project: function(layer, pos) {
+	var lz = Math.pow(2, layer.scale);
 	var z = Math.pow(2, pos.z);
 	var p = this.rot(layer.position[0], layer.position[1], -pos.a);
 	var lpos = {
-// PREVIOUS
-//		x: pos.x - p[0]/z, 
-//		y: pos.y - p[1]/z,  
-
-		x: pos.x - p[0],
-		y: pos.y - p[1],
+		x: pos.x*lz - p[0],
+		y: pos.y*lz - p[1],
 		z: pos.z + layer.scale, 
 		a: pos.a + layer.rotation
 	};
 	return lpos;
 },
 
-//return the current bounding box (but takes scale into account.
+//return the current bounding box in canvas coordinates (but takes scale into account.
 boundingBox: function() {
 	var t = this;
 	var box = [1e20, 1e20, -1e20, -1e20];
@@ -227,12 +225,6 @@ resize: function(width, height) {
 
 zoom: function(dz, dt) {
 	var p = this.pos;
-//PREVIOUS
-//	var before = Math.pow(2, p.z);
-//	var after = Math.pow(2, p.z + dz);
-//	var x = p.x*before/after;
-//	var y = p.y*before/after;
-	
 	this.setPosition(dt, p.x, p.y, p.z+dz, p.a);
 },
 
@@ -247,18 +239,12 @@ centerAndScale: function(dt) {
 	var zoom = Math.pow(2, t.pos.z);
 	var scale = Math.max(zoom*(box[2]-box[0])/t.canvas.width, zoom*(box[3]-box[1])/t.canvas.height);
 	var z = Math.log(scale)/Math.LN2;
-
-// PREVIOUS	
-//	t.setPosition(dt, (box[2] + box[0])/(2*scale), (box[3] + box[1])/(2*scale), z, t.pos.a);
 	t.setPosition(dt, (box[2] + box[0])/2, (box[3] + box[1])/2, z, t.pos.a);
-
 },
 
 pan: function(dt, dx, dy) { //dx and dy expressed as pixels in the current size!
 	var p = this.pos;
 	//size of a rendering pixel in original image pixels.
-//	var scale = Math.pow(2, p.z);
-	//var r = this.rot(dx, dy, p.a);
 	this.setPosition(dt, p.x - dx, p.y - dy, p.z, p.a);
 },
 
@@ -333,14 +319,8 @@ getCurrent: function(time) {
 	var ft = 1 - dt;
 
 	var z = t.pos.z*ft + t.previous.z*dt;
-//PREVIOUS
-//	var before = Math.pow(2, t.previous.z);
-//	var after = Math.pow(2, t.pos.z);
-//	var current = Math.pow(2, z);
-//	var x = (t.pos.x*after*ft + t.previous.x*before*dt)/current;
-//	var y = (t.pos.y*after*ft + t.previous.y*before*dt)/current;
-	var x = (t.pos.x*ft + t.previous.x*dt);
-	var y = (t.pos.y*ft + t.previous.y*dt);
+	var x = t.pos.x*ft + t.previous.x*dt;
+	var y = t.pos.y*ft + t.previous.y*dt;
 
 	return { 
 		x:x, 
