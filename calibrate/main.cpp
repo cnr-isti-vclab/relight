@@ -21,6 +21,28 @@ void help() {
 	cout << "Usage: calibrate <file.lp>\n" << endl;
 }
 
+
+class Histogram: public vector<int> {
+public:
+	int nbins = 20;
+	int step = (1<<16)/nbins +1;
+	void compute(libraw_data_t &img) {
+		resize(3*nbins, 0);
+
+		auto &image = img.image;
+
+		//compute histogram
+		for(int y = 0; y < img.sizes.height; y++) {
+			for(int x = 0; x < img.sizes.width; x++) {
+				ushort *c = image[x + y*img.sizes.width];
+				(*this)[3*(c[0]/step) + 0]++;
+				(*this)[3*(c[1]/step) + 1]++;
+				(*this)[3*(c[2]/step) + 2]++;
+			}
+		}
+	}
+};
+
 struct Range {
 	int r[4] = { 0, 0, -1, -1 };
 	int &operator[](int i) { return r[i]; }
@@ -33,8 +55,8 @@ struct Range {
 	}
 };
 
-Vector3d white(libraw_data_t &img, float topfraction, Range range = Range()) {
-	int nbins = 100;
+Vector3d white(libraw_data_t &img, Range range = Range()) {
+	int nbins = 50;
 	int step = (1<<16)/nbins +1;
 	int width = img.sizes.iwidth;
 	int height = img.sizes.iheight;
@@ -54,23 +76,32 @@ Vector3d white(libraw_data_t &img, float topfraction, Range range = Range()) {
 			histo[3*(c[2]/step) + 2]++;
 		}
 	}
-
-	int target = (range[2] - range[0])*(range[3] - range[1])*topfraction;
+	//pick max (at least 10% readed)
+	int maxtarget = (range[2] - range[0])*(range[3] - range[1])*0.1;
 	int tot = 0;
-	uint16_t whitetreshold = 0;
-	for(int i = 0; i < nbins; i ++) {
-		tot += histo[i*3+1];
-		if(tot > target) {
-			whitetreshold = i*step;
-			break;
+	int max = 0;
+	uint16_t whitethreshold = nbins -1;
+	for(int i = nbins-1; i > 0 ; i--) {
+		int &size = histo[i*3+1];
+
+		tot += size;
+		if(tot < maxtarget) continue;
+		if(size > max) {
+			max = histo[i*3+1];
+		} else {
+			if(size < 0.1*max) {
+				whitethreshold = i;
+				break;
+			}
 		}
 	}
+
 	Vector3d avg(0, 0, 0);
 	int count = 0;
 	for(int x = range[0]; x < range[2]; x++) {
 		for(int y = range[1]; y < range[3]; y++) {
 			ushort *c = image[x + y*width];
-			if(c[1] > whitetreshold) {
+			if(c[1] > whitethreshold) {
 				count++;
 				avg[0] += c[0];
 				avg[1] += c[1];
@@ -93,7 +124,7 @@ public:
 	//histogram.
 
 
-	void process(libraw_data_t &img, double topfraction) {
+	void process(libraw_data_t &img, double minfraction, double maxfraction = 1.0) {
 		width = img.sizes.iwidth;
 		height = img.sizes.iheight;
 
@@ -103,7 +134,7 @@ public:
 
 		for(int y = 0; y < nrows; y++)
 			for(int x = 0; x < ncols; x++)
-				(*this)[x + y*ncols] = white(img, topfraction, Range(x*wstep, y*hstep, (x+1)*wstep, (y+1)*hstep));
+				(*this)[x + y*ncols] = white(img, Range(x*wstep, y*hstep, (x+1)*wstep, (y+1)*hstep));
 	}
 	Vector3d middle() {
 		return (*this)[nrows/2 + ncols/2*nrows];
@@ -242,7 +273,7 @@ int main(int argc, char *argv[]) {
 
 	vector<ImageStats> stats(images.size());
 
-/*	for(int i = 0; i < images.size(); i++) {
+	for(int i = 0; i < images.size(); i++) {
 		cout << qPrintable(images[i]) << endl;
 		QString &imgpath = images[i];
 
@@ -266,19 +297,26 @@ int main(int argc, char *argv[]) {
 		}
 		auto &params = raw.imgdata.params;
 
-		params.output_color = 0; //raw
+		params.output_color = 0; //raw9
 		params.half_size = 1;
 		params.use_camera_wb = 1;
 		raw.dcraw_process();
 
 		auto &img = raw.imgdata;
 
-		stats[i].process(img, 0.9);
+//		Histogram histo;
+//		histo.compute(img);
+//		for(int v = 1; v < histo.size()*3; v += 3)
+//			cout << histo[v] << "\t";
+//		cout << endl;
+
+
+		stats[i].process(img, 0.0, 1.0);
 		filestats.write((char *)stats[i].data(), stats[i].size()*sizeof(Vector3d));
 		raw.recycle();
 	}
 	filestats.close();
-	return 0;*/
+	return 0;
 
 
 
@@ -295,14 +333,54 @@ int main(int argc, char *argv[]) {
 	//graph angle/luminosity. //here we just have the intrinsic luminosity of the leds
 	std::vector<double> material;
 
+	QFile mat("mat.csv");
+	mat.open(QFile::WriteOnly);
+	QTextStream str(&mat);
 
 	for(int i = 0; i < stats.size(); i++) {
 		ImageStats &stat = stats[i];
 		Vector3d light = lights[i];
+
+		int width = stat.width;
+		int height = stat.height;
+//#define CENTRAL
+#ifdef CENTRAL
 		double angle = acos(light[2]);
 		double brightness = stat[stat.ncols/2 + (stat.nrows/2)*stat.ncols][1];
 		material.push_back(angle);
 		material.push_back(brightness);
+#else
+
+		double h = 201; //mm //real height
+		double w = (width/(double)height)*h; //real width
+		double domeradius = 400; //mm
+		Vector3d pos = lights[i]*domeradius + Vector3d(0, 0, 70);
+
+		for(int y = 0; y < stat.nrows; y++) {
+//			if(y != stat.nrows/2) continue;
+			for(int x = 0; x < stat.ncols; x++) {
+
+//				if(x != stat.ncols/2) continue;
+
+				Vector3d p;
+				p[0] = (x + 0.5 - stat.ncols/2.0)/stat.ncols * w;
+				p[1] = -(y + 0.5 - stat.nrows/2.0)/stat.nrows * h;
+				p[2] = 0;
+				double d2 = pow((p - pos).norm()/pos.norm(), 2.0);
+
+				p = pos - p;
+				p = p/p.norm();
+
+				double angle = acos(p[2]);
+				double brightness = (stat[x + y*stat.ncols][1])*d2;
+
+				material.push_back(angle);
+				material.push_back(brightness);
+				str << angle << "," << brightness << "," << i << "\n";
+			}
+		}
+
+#endif
 	}
 	double p[2] = { 15000, 5000 }; //parameters
 	double opts[5] = { 1.2, 0.0001, 0.0001, 0.0001, -10 };
@@ -313,26 +391,26 @@ int main(int argc, char *argv[]) {
 	vector<double> factor(stats[0].ncols, stats[0].nrows);
 
 	dlevmar_dif(
-		[](double *p, double *hx, int m, int n, void *adata) {
-			double *data = (double *)adata;
-			for(int i = 0; i < n; i++) {
-				double v = p[0]*cos(data[2*i]) + p[1];
-				hx[i] = pow(v - data[2*i+1], 2);
-			}
-		},
-		p,                  /* I/O: initial parameter estimates. On output contains the estimated solution */
-		NULL,               /* I: measurement vector. NULL implies a zero vector */
-		2,                  /* I: parameter vector dimension (i.e. #unknowns) */
-		material.size()/2,  /* I: measurement vector dimension */
-		100,                /* I: maximum number of iterations */
-		opts,           /* I: opts[0-4] = minim. options [\tau, \epsilon1, \epsilon2, \epsilon3, \delta]. Respectively the
+				[](double *p, double *hx, int m, int n, void *adata) {
+		double *data = (double *)adata;
+		for(int i = 0; i < n; i++) {
+			double v = p[0]*cos(data[2*i]) + p[1];
+			hx[i] = pow(v - data[2*i+1], 2);
+		}
+	},
+	p,                  /* I/O: initial parameter estimates. On output contains the estimated solution */
+	NULL,               /* I: measurement vector. NULL implies a zero vector */
+	2,                  /* I: parameter vector dimension (i.e. #unknowns) */
+	material.size()/2,  /* I: measurement vector dimension */
+	100,                /* I: maximum number of iterations */
+	opts,           /* I: opts[0-4] = minim. options [\tau, \epsilon1, \epsilon2, \epsilon3, \delta]. Respectively the
 						* scale factor for initial \mu, stopping thresholds for ||J^T e||_inf, ||Dp||_2 and ||e||_2 and the
 						* step used in difference approximation to the Jacobian. If \delta<0, the Jacobian is approximated
 						* with central differences which are more accurate (but slower!) compared to the forward differences
 						* employed by default. Set to NULL for defaults to be used.
 						*/
-		info,
-						/* O: information regarding the minimization. Set to NULL if don't care
+	info,
+	/* O: information regarding the minimization. Set to NULL if don't care
 						 * info[0]= ||e||_2 at initial p.
 						 * info[1-4]=[ ||e||_2, ||J^T e||_inf,  ||Dp||_2, \mu/max[J^T J]_ii ], all computed at estimated p.
 						 * info[5]= # iterations,
@@ -347,23 +425,24 @@ int main(int argc, char *argv[]) {
 						 * info[8]= # Jacobian evaluations
 						 * info[9]= # linear systems solved, i.e. # attempts for reducing error
 						 */
-		NULL,      /* I: working memory, allocated internally if NULL. If !=NULL, it is assumed to point to
+	NULL,      /* I: working memory, allocated internally if NULL. If !=NULL, it is assumed to point to
 						* a memory chunk at least LM_DIF_WORKSZ(m, n)*sizeof(double) bytes long
 						*/
-		NULL,     /* O: Covariance matrix corresponding to LS solution; Assumed to point to a mxm matrix.
+	NULL,     /* O: Covariance matrix corresponding to LS solution; Assumed to point to a mxm matrix.
 						* Set to NULL if not needed.
 						*/
-		adata);       /* I: pointer to possibly needed additional data, passed uninterpreted to func.
+	adata);       /* I: pointer to possibly needed additional data, passed uninterpreted to func.
 						* Set to NULL if not needed
 						*/
-	//cout << "Info E: " << info[0] << ", Reason: " << info[6] << endl;
-	//cout << "Info: e1: " << info[1] << " e2: " << info[2] << " e3: " << info[3] << endl;
+	cout << "Info E: " << info[0] << ", Reason: " << info[6] << endl;
+	cout << "Info: e1: " << info[1] << " e2: " << info[2] << " e3: " << info[3] << endl;
 	//cout << "P: " << p[0] << " " << p[1] << endl;
 	double diffuse = p[0];
 	double ambient = p[1];
 
 	cout << "Diffuse: " << diffuse << " ambient: " << ambient << endl;
 
+	//return 0;
 	vector<Adjust> adjust(images.size());
 
 	for(int i = 0; i < stats.size(); i++) {
@@ -379,7 +458,7 @@ int main(int argc, char *argv[]) {
 		Vector3d pos = lights[i]*domeradius + Vector3d(0, 0, 0);
 
 		cout << qPrintable(images[i]) << ": " << lights[i][2] << endl;
-/*		for(int y = 0; y < stat.nrows; y++) {
+		/*		for(int y = 0; y < stat.nrows; y++) {
 			for(int x = 0; x < stat.ncols; x++) {
 				//approx spatial pos
 				cout << (int)((stat[x + y*stat.ncols][1]/255)) << "\t";
@@ -429,12 +508,13 @@ int main(int argc, char *argv[]) {
 				//diffuse + ambiend should correspond to max.(90%)
 				m = m * 0.8*65535.0/(diffuse + ambient);
 				ad[x + y*stat.ncols] = m;
-//				cout << v/o << "\t";
+				//				cout << v/o << "\t";
 			}
 		}
 
 	}
 
+	//return 0;
 	for(int i = 0; i < images.size(); i++) {
 
 		QString &imgpath = images[i];
@@ -477,7 +557,13 @@ int main(int argc, char *argv[]) {
 			for(int x = 0; x < width; x++) {
 				int i =  x + y*width;
 				Vector3us c(img.image[i][0], img.image[i][1], img.image[i][2]);
+
 				Vector3us v = ad.fix(x, y, c);
+				if(c[0] < 5000 || c[1] < 5000 || c[2] < 5000) {
+					v[0] = 65535;
+					v[1] = 0;
+					v[2] = 0;
+				}
 				image.bits()[i*4 + 0] = v[0]/255;
 				image.bits()[i*4 + 1] = v[1]/255;
 				image.bits()[i*4 + 2] = v[2]/255;
