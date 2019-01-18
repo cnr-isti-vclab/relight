@@ -98,7 +98,7 @@ function RelightViewer(div, options) {
 
 	var canvas = document.querySelector('#rticanvas');
 
-	Relight.call(this, canvas, options);
+	RelightCanvas.call(this, canvas, options);
 
 	var support = "onwheel" in document.createElement("div") ? "wheel" : // Modern browsers 
 		document.onmousewheel !== undefined ? "mousewheel" : // Webkit and IE support at least "mousewheel"
@@ -127,13 +127,13 @@ function RelightViewer(div, options) {
 		t.onPosChange(function() { t.updateScale(); });
 	//remember size (add exif into json!)
 	if(t.nav.pagemap) {
-		t.onLoad(function() { t.initPagemap(); });
+		t.onReady(function() { t.initPagemap(); });
 		t.onPosChange(function() { t.updatePagemap(); });
 	}
 }
 
 
-RelightViewer.prototype = Relight.prototype;
+RelightViewer.prototype = RelightCanvas.prototype;
 
 RelightViewer.prototype.addAction = function(selector, action) {
 	var tap = new Hammer.Manager(document.querySelector(selector));
@@ -235,12 +235,18 @@ RelightViewer.prototype.updatePagemap = function() {
 	var w = t.canvas.width;
 	var h = t.canvas.height;
 
+	var box = t.boundingBox();
+	var offset = [(box[0] + box[2])/2, (box[1] + box[3])/2];
 	var scale = Math.pow(2, t.pos.z);
+
+	var center = [-offset[0]/scale/t.canvas.width  + 0.5, -offset[1]/scale/t.canvas.height  + 0.5];
+	var width  = t.canvas.width*scale /t.width;
+	var height = t.canvas.height*scale/t.height;
 	var bbox = [
-		Math.max(0, parseInt((t.pos.x - scale*w/2)/t.width* page.w)),
-		Math.max(0, parseInt((t.pos.y - scale*h/2)/t.height*page.h)),
-		Math.min(page.w, parseInt((t.pos.x + scale*w/2)/t.width* page.w)),
-		Math.min(page.h, parseInt((t.pos.y + scale*h/2)/t.height*page.h))
+		Math.max(0,      parseInt(page.w*(center[0] - width /2))),
+		Math.max(0,      parseInt(page.h*(center[1] - height/2))),
+		Math.min(page.w, parseInt(page.w*(center[0] + width /2))),
+		Math.min(page.h, parseInt(page.h*(center[1] + height/2)))
 	];
 
 	page.area.style.left = bbox[0] + 'px';
@@ -314,10 +320,7 @@ RelightViewer.prototype.mousemove = function(event) {
 	switch(t.nav.action) {
 	case 'pan':
 		var scale = Math.pow(2, p.z);
-		x *= scale;
-		y *= scale;
-		[x, y] = t.rot(x, y, p.a);
-		t.setPosition(t.nav.pandelay, p.x - x, p.y - y, p.z, p.a);
+		t.setPosition(t.nav.pandelay, p.x - x*scale, p.y - y*scale, p.z, p.a);
 		break;
 
 	case 'zoom':

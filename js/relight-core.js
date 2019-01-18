@@ -23,8 +23,6 @@ Overlay enlarges the tiles but not the side on the border of the image (need to 
 Options:
 
 	gl: if provided will use an already created context
-
-//TODO This should be per image!
 	url: path of the directory where the json (and the images) resides
 	path: for iip absolute path of the same directory
 	layout: pick between image, deepzoom, google, iip, iiif, zoomify
@@ -38,45 +36,32 @@ Options:
 Methods:
 */
 
-function Relight(item, o) {
+function Relight(gl, options) {
 	var t = this;
-	if(!item)
+	if(!gl)
 		return null;
+	t.gl = gl;
 
 	t.options = Object.assign({
-		layout: "image",
 		visible: true,
-		light: [0, 0, 1],
-		pos: { x: 0, y:0, z:0, a: 0, t:0 },
-		background: [0, 0, 0, 0],
-		bounded: true,
-		border: 1,                   //prefetching tiles out of view
-		maxRequested: 4,
-		fit: true,                   //scale on load.
+		opacity: 1,
+		layout: "image",
+
 		suffix: ".jpg",
-		preserveDrawingBuffer: false,
+		position: [ 0, 0],
+		scale: 1,
 		rotation: 0,
-		normals: false
-	}, o);
 
-	t.pos = t.options.pos;
-	if(t.options.rotation)
-		t.pos.a = t.options.rotation;
+		light: [0, 0, 1],
+		normals: false,
+
+		border: 1,                   //prefetching tiles out of view
+		maxRequested: 4
+
+	}, options);
+
+	t.pos = { x: 0, y:0, z: 0, a: 0 };
 	t.normals = t.options.normals;
-
-	if(typeof(item) == 'string')
-		item = document.querySelector(item);
-	if(item.tagName != "CANVAS")
-		return null;
-	t.canvas = item;
-
-
-	var glopt = { antialias: false, depth: false, preserveDrawingBuffer: t.options.preserveDrawingBuffer };
-	t.gl = o.gl || t.canvas.getContext("webgl2", glopt) || 
-			t.canvas.getContext("webgl", glopt) || 
-			t.canvas.getContext("experimental-webgl", glopt) ;
-	if (!t.gl) return null;
-
 
 	if(t.url && t.url.endsWidth("/"))
 		t.url = r.url.slice(0, -1);
@@ -84,7 +69,7 @@ function Relight(item, o) {
 	for(var i in t.options)
 		t[i] = t.options[i];
 
-	t.previous = { x:0, y:0, z:0, t:0 };
+
 	t.previousbox = [1, 1, -1, -1];
 
 	t.nodes = [];
@@ -98,17 +83,12 @@ function Relight(item, o) {
 
 //events
 	t._onload = [];
-	t._onposchange = [];
-	t._onlightchange = [];
-
-	t.initGL();
 
 	if(t.img) { //this meas we are loading an image
 		t.loadInfo({type: 'img', colorspace: null, width: 0, height: 0, nplanes: 3 });
-	} else if(t.url) {
+	} else if(t.url !== null) {
 		t.setUrl(t.url);
 	}
-
 	return this;
 }
 
@@ -191,25 +171,19 @@ loadInfo: function(info) {
 		t.ndimensions = t.resolution*t.resolution;
 	}
 
-
-
-
-
 //	t.tilesize = 'tilesize' in info ? info.tilesize : 0;
 //	t.overlap  = 'overlap'  in info ? info.overlap  : 0;
 //	t.layout   = 'layout'   in info ? info.layout   : "image";
 
-
-	t.scale = new Float32Array((t.nplanes+1)*t.nmaterials);
+	t.factor = new Float32Array((t.nplanes+1)*t.nmaterials);
 	t.bias = new Float32Array((t.nplanes+1)*t.nmaterials);
 
 	for(var m = 0;  m < t.nmaterials; m++) {
 		for(var p = 1; p < t.nplanes+1; p++) {
-			t.scale[m*(t.nplanes+1) + p] = t.materials[m].scale[p-1];
+			t.factor[m*(t.nplanes+1) + p] = t.materials[m].scale[p-1];
 			t.bias [m*(t.nplanes+1) + p] = t.materials[m].bias [p-1];
 		}
 	}
-
 
 	t.initTree();
 	t.loadProgram();
@@ -225,13 +199,6 @@ loadInfo: function(info) {
 	t.loaded();
 },
 
-onPosChange: function(f) {
-	this._onposchange.push(f);
-},
-
-onLightChange: function(f) {
-	this._onlightchange.push(f);
-},
 
 onLoad: function(f) {
 	this._onload.push(f);
@@ -241,20 +208,13 @@ onLoad: function(f) {
 loaded: function() {
 	var t = this;
 	if(t.waiting) return;
-	if(t.fit)
-		t.centerAndScale();
-//else
-//	t.pos.x = t.width/2;
-//	t.pos.y = t.height/2;
 
 
-	for(var i = 0; i < t._onload.length; i++)
-		t._onload[i]();
+//	t.prefetch(); //TODO PROBLEM! thees need to be called everytime a node has been loaded (it will do by itself) or position has changed
+	t._onload.forEach( (f) => { f(); });
 
+	//this needs to know it's orientation.
 	t.computeLightWeights(t.light);
-	t.prefetch();
-	t.preload();
-	t.redraw();
 },
 
 initTree: function() {
@@ -403,14 +363,6 @@ initTree: function() {
 	}
 },
 
-
-resize: function(width, height) {
-	this.canvas.width = width;
-	this.canvas.height = height;
-	this.prefetch();
-	this.redraw();
-},
-
 rot: function(dx, dy, a) {
 	var a = Math.PI*(a/180);
 	var x =  Math.cos(a)*dx + Math.sin(a)*dy;
@@ -418,25 +370,33 @@ rot: function(dx, dy, a) {
 	return [x, y];
 },
 
-project: function(pos, x, y) { //convert image coords to canvas coords.
+
+//convert image coords to canvas coords
+project: function(pos, x, y) {
 	var t = this;
-	var r = t.rot(x - pos.x,  y - pos.y, pos.a);
 	var z = Math.pow(2, pos.z);
-	return [r[0]/z + t.canvas.width/2, r[1]/z + t.canvas.height/2]
+
+	var r = t.rot(x - t.width/2,  y - t.height/2, pos.a);
+	r[0] = (r[0] - pos.x)/z;
+	r[1] = (r[1] - pos.y)/z;
+
+	return r;
 },
 
+//TODO fully support rect
 iproject: function(pos, x, y) {
 	var t = this;
 	var z = Math.pow(2, pos.z);
-	x = (x - t.canvas.width/2)*z;
-	y = (y - t.canvas.height/2)*z;
-	[x, y] = t.rot(x, y, -pos.a);
-	return [x + pos.x, y + pos.y];
+	var r = t.rot(x*z + pos.x, y*z + pos.y, pos.a);
+	r[0] += t.width/2;
+	r[1] += t.height/2;
+	return r;
 },
 
+//return the box of the image in the canvas coords (remember the center at 0,0)
 getBox: function(pos) {
 	var t = this;
-	var corners = [0, 0, 0, 1, 1, 1, 1, 0];
+	var corners = [0, 0,  0, 1,  1, 1,  1, 0];
 	var box = [ 1e20, 1e20, -1e20, -1e20];
 	for(var i = 0; i < 8; i+= 2) {
 		var p = t.project(pos, corners[i]*t.width, corners[i+1]*t.height);
@@ -448,9 +408,10 @@ getBox: function(pos) {
 	return box;
 },
 
+//sreturn the coordinates of the canvas in image space
 getIBox: function(pos) {
 	var t = this;
-	var corners = [0, 0, 0, 1, 1, 1, 1, 0];
+	var corners = [-0.5, -0.5,  -0.5, 0.5,  0.5, 0.5,  0.5, -0.5];
 	var box = [ 1e20, 1e20, -1e20, -1e20];
 	for(var i = 0; i < 8; i+= 2) {
 		var p = t.iproject(pos, corners[i]*t.canvas.width, corners[i+1]*t.canvas.height);
@@ -462,112 +423,6 @@ getIBox: function(pos) {
 	return box;
 },
 
-
-zoom: function(dz, dt) {
-	var p = this.pos;
-	this.setPosition(dt, p.x, p.y, p.z+dz, p.a);
-},
-
-center: function(dt) {
-	var p = this.pos;
-	this.setPosition(dt, this.width/2, this.height/2, p.z, p.a);
-},
-
-centerAndScale: function(dt) {
-	var t = this;
-	t.pos.x = t.width/2;
-	t.pos.y = t.height/2;
-	t.pos.z = 0;
-	var box = t.getBox(t.pos);
-	var scale = Math.max((box[2]-box[0])/t.canvas.width, (box[3]-box[1])/t.canvas.height);
-	var z = Math.log(scale)/Math.LN2;
-	this.setPosition(dt, t.pos.x, t.pos.y, z, t.pos.a);
-},
-
-pan: function(dt, dx, dy) { //dx and dy expressed as pixels in the current size!
-	var p = this.pos;
-	//size of a rendering pixel in original image pixels.
-	var scale = Math.pow(2, p.z);
-	var r = this.rot(dx, dy, p.a);
-	this.setPosition(dt, p.x - r[0]*scale, p.y - r[1]*scale, p.z, p.a);
-},
-
-rotate: function(dt, angle) {
-	var p = this.pos;
-	var a = p.a + angle;
-	while(a > 360) a -= 360;
-	while(a <   0) a += 360;
-	this.setPosition(dt, p.x, p.y, p.z, a);
-},
-
-setPosition: function(dt, x, y, z, a) {
-
-	var t = this;
-	var scale = Math.pow(2, z);
-
-	if(0 && t.bounded && t.width) {
-		var zx = Math.min(z, Math.log(t.width/t.canvas.width)/Math.log(2.0));
-		var zy = Math.min(z, Math.log(t.height/t.canvas.height)/Math.log(2.0));
-		z = Math.max(zx, zy);
-		scale = Math.pow(2, z);
-
-		var ix = [scale*t.canvas.width/2, t.width - scale*t.canvas.width/2].sort(function(a, b) { return a-b; });
-		x = Math.max(ix[0], Math.min(ix[1], x));
-		var iy = [scale*t.canvas.height/2, t.height - scale*t.canvas.height/2].sort(function(a, b) { return a-b; });
-		y = Math.max(iy[0], Math.min(iy[1], y));
-
-		if(z <= -1) z = -1;
-	}
-
-	if(!dt) dt = 0;
-	var time = performance.now();
-	t.previous = t.getCurrent(time);
-
-	if(x == t.previous.x && y == t.previous.y && z == t.previous.z && a == t.previous.a)
-		return;
-
-	t.pos = { x:x, y:y, z:z, a:a, t:time + dt };
-
-	t.prefetch();
-	t.redraw();
-
-	for(var i = 0; i < t._onposchange.length; i++)
-		t._onposchange[i]();
-},
-
-getCurrent: function(time) {
-	var t = this;
-
-	if(time > t.pos.t)
-		return { x: t.pos.x, y: t.pos.y, z: t.pos.z, a: t.pos.a, t: time };
-
-	var dt = t.pos.t - t.previous.t;
-	if(dt < 1) return t.pos;
-
-	var dt = (t.pos.t - time)/(t.pos.t - t.previous.t); //how much is missing to pos
-	var ft = 1 - dt;
-
-	return { 
-		x:t.pos.x*ft + t.previous.x*dt, 
-		y:t.pos.y*ft + t.previous.y*dt, 
-		z:t.pos.z*ft + t.previous.z*dt, 
-		a:t.pos.a*ft + t.previous.a*dt,
-		t:time };
-},
-
-
-initGL: function() {
-	var gl = this.gl;
-	gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
-	var b = this.options.background;
-	gl.clearColor(b[0], b[1], b[2], b[3], b[4]);
-	gl.disable(gl.DEPTH_TEST);
-	gl.clear(gl.COLOR_BUFFER_BIT);
-	gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-},
-
-
-
 // p from 0 to nplanes,
 basePixelOffset: function(m, p, x, y, k) {
 	var t = this;
@@ -578,7 +433,6 @@ baseLightOffset: function(m, p, l, k) {
 	var t = this;
 	return ((m*(t.nplanes+1) + p)*t.ndimensions + l)*3 + k;
 },
-
 
 loadBasis: function(data) {
 	var t = this;
@@ -629,8 +483,6 @@ loadTile: function(level, x, y) {
 		t.loadComponent(p, index, level, x, y);
 },
 
-
-
 loadComponent: function(plane, index, level, x, y) {
 	var t = this;
 	var gl = t.gl;
@@ -656,7 +508,6 @@ loadComponent: function(plane, index, level, x, y) {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
 //		gl.generateMipmap(gl.TEXTURE_2D);
-
 
 		t.nodes[index].tex[plane] = tex;
 		t.nodes[index].missing--;
@@ -727,6 +578,7 @@ computeLightWeights: function(lpos) {
 
 	var uniformer = (t.colorspace == 'mrgb' || t.colorspace == 'mycc') ? t.gl.uniform3fv : t.gl.uniform1fv;
 
+	t.gl.useProgram(t.program);
 
 	if(t.baseLocation0) {
 		lightFun.call(this, [0.612,  0.354, 0.707]);
@@ -753,7 +605,6 @@ computeLightWeights: function(lpos) {
 computeLightWeightsPtm: function(v) {
 	var t = this;
 	var w = [1.0, v[0], v[1], v[0]*v[0], v[0]*v[1], v[1]*v[1], 0, 0, 0];
-
 
 	t.lweights = new Float32Array(t.nplanes);
 	for(var p = 0; p < w.length; p++)
@@ -869,7 +720,6 @@ computeLightWeightsOcta: function(lpos) {
 
 	t.lweights = new Float32Array(nm * (np + 1) * 3);
 
-
 //TODO optimize away basePixel
 	for(var m = 0; m < nm; m++) {
 		for(var p = 0; p < np+1; p++) {
@@ -897,17 +747,11 @@ setLight: function(x, y, z) {
 	t.light = [x/r, y/r, z/r];
 	t.computeLightWeights(t.light);
 	this.redraw();
-
-	for(var i = 0; i < t._onlightchange.length; i++)
-		t._onlightchange[i]();
-
 },
 
 loadProgram: function() {
-
 	var t = this;
 	t.setupShaders();
-
 
 	var gl = t.gl;
 	t.vertShader = gl.createShader(gl.VERTEX_SHADER);
@@ -921,10 +765,10 @@ loadProgram: function() {
 	gl.compileShader(t.fragShader);
 	t.program = gl.createProgram();
 	compiled = gl.getShaderParameter(t.fragShader, gl.COMPILE_STATUS);
-	if(!compiled) {
-		console.log(t.fragCode);
-		console.log(gl.getShaderInfoLog(t.fragShader));
-	}
+//	if(!compiled) {
+//		console.log(t.fragCode);
+//		console.log(gl.getShaderInfoLog(t.fragShader));
+//	}
 
 	gl.attachShader(t.program, t.vertShader);
 	gl.attachShader(t.program, t.fragShader);
@@ -940,35 +784,35 @@ loadProgram: function() {
 		t.baseLocation = gl.getUniformLocation(t.program, "base");
 		t.planesLocations = gl.getUniformLocation(t.program, "planes");
 
-		gl.uniform1fv(gl.getUniformLocation(t.program, "scale"), t.scale);
+		gl.uniform1fv(gl.getUniformLocation(t.program, "scale"), t.factor);
 		gl.uniform1fv(gl.getUniformLocation(t.program, "bias"), t.bias);
 	}
 
 //BUFFERS
 
-	t.vbuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, t.vbuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0,  0, 1, 0,  1, 1, 0,  1, 0, 0]), gl.STATIC_DRAW);
-
 	t.ibuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, t.ibuffer);
 	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([3,2,1,3,1,0]), gl.STATIC_DRAW);
 
-	var coord = gl.getAttribLocation(t.program, "a_position");
-	gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);
-	gl.enableVertexAttribArray(coord);
+	t.vbuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, t.vbuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0,  0, 1, 0,  1, 1, 0,  1, 0, 0]), gl.STATIC_DRAW);
+
+	t.coordattrib = gl.getAttribLocation(t.program, "a_position");
+	gl.vertexAttribPointer(t.coordattrib, 3, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(t.coordattrib);
 
 	t.tbuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, t.tbuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0,  0, 1,  1, 1,  1, 0]), gl.STATIC_DRAW);
 
-	var tex = gl.getAttribLocation(t.program, "a_texcoord");
-	gl.vertexAttribPointer(tex, 2, gl.FLOAT, false, 0, 0);
-	gl.enableVertexAttribArray(tex);
+	t.texattrib = gl.getAttribLocation(t.program, "a_texcoord");
+	gl.vertexAttribPointer(t.texattrib, 2, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(t.texattrib);
 
-	t.matrixLocation = gl.getUniformLocation(t.program, "u_matrix");
+	t.opacitylocation = gl.getUniformLocation(t.program, "opacity");
 
-
+//	t.matrixLocation = gl.getUniformLocation(t.program, "u_matrix");
 
 	var sampler = gl.getUniformLocation(t.program, "planes");
 	var samplerArray = new Int32Array(t.njpegs);
@@ -1004,10 +848,11 @@ drawNode: function(pos, minlevel, level, x, y) {
 	var sy = 2.0/t.canvas.height;
 
 	if(t.layout == "image") {
-		for(var i = 0; i < coords.length; i+=3) {
-			var r = t.rot(coords[i]*t.width - pos.x, -coords[i+1]*t.height + pos.y, pos.a);
-			coords[i]   = r[0]*sx/z;
-			coords[i+1] = r[1]*sy/z;
+		for(var i = 0; i < coords.length; i += 3) {
+			var r = t.rot(coords[i]*t.width - t.width/2, -coords[i+1]*t.height + t.height/2, pos.a);
+			coords[i]   = (r[0] - pos.x)*sx/z;
+			coords[i+1] = (r[1] + pos.y)*sy/z;
+
 		}
 
 	} else {
@@ -1040,20 +885,26 @@ drawNode: function(pos, minlevel, level, x, y) {
 		}
 
 		for(var i = 0; i < coords.length; i+=3) {
-			var r = t.rot(coords[i]*tx - pos.x + side*x,  -coords[i+1]*ty + pos.y - side*y, pos.a);
-			coords[i]   = r[0]*sx/z;
-			coords[i+1] = r[1]*sy/z;
+			var r = t.rot(coords[i]*tx + side*x - t.width/2,  -coords[i+1]*ty - side*y + t.height/2, pos.a);
+			coords[i]   = (r[0] - pos.x)*sx/z;
+			coords[i+1] = (r[1] + pos.y)*sy/z;
 		}
 	}
 
 //0.0 is in the center of the screen, 
 	var gl = t.gl;
+	//TODO join buffers, and just make one call per draw! (except the bufferData, which is per node)
 	gl.bindBuffer(gl.ARRAY_BUFFER, t.vbuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, coords, gl.STATIC_DRAW);
 
+	gl.vertexAttribPointer(t.coordattrib, 3, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(t.coordattrib);
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, t.tbuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, tcoords, gl.STATIC_DRAW);
+
+	gl.vertexAttribPointer(t.texattrib, 2, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(t.texattrib);
 
 	for(var i = 0; i < t.njpegs; i++) {
 		gl.activeTexture(gl.TEXTURE0 + i);
@@ -1062,21 +913,13 @@ drawNode: function(pos, minlevel, level, x, y) {
 	gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
 },
 
-draw: function(timestamp) {
+draw: function(pos) {
 	var t = this;
 	var gl = t.gl;
-	t.animaterequest = null;
-
-	t.gl.viewport(0, 0, t.canvas.width, t.canvas.height);
-	var b = this.options.background;
-	gl.clearColor(b[0], b[1], b[2], b[3], b[4]);
-	gl.clear(gl.COLOR_BUFFER_BIT);
-	//gl.enable(gl.SCISSOR_TEST);
 
 	if(t.waiting || !t.visible)
 		return;
 
-	var pos = t.getCurrent(performance.now());
 	var needed = t.neededBox(pos, 0);
 
 	var minlevel = needed.level; //this is the minimum level;
@@ -1086,22 +929,25 @@ draw: function(timestamp) {
 
 	//find coordinates of the image in the canvas
 	var box = [
-		t.canvas.width/2 - pos.x/scale,
-		t.canvas.height/2 - (t.height - pos.y)/scale,
+		t.canvas.width/2 - pos.x,
+		t.canvas.height/2 - (t.height/scale - pos.y),
 		t.width/scale,
 		t.height/scale
 	];
 	if(t.layout == "google") {
 		box[0] += 1; box[1] += 1; box[2] -= 2; box[3] -= 2;
 	}
+	//gl.enable(gl.SCISSOR_TEST);
 	//gl.scissor(box[0], box[1], box[2], box[3]);
 
+	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+	gl.enable(gl.BLEND);
 
-
-	//TODO render upper nodes if something is missing!
+	gl.useProgram(t.program);
+	gl.uniform1f(t.opacitylocation, t.opacity);
 
 	var torender = {}; //array of minlevel, actual level, x, y (referred to minlevel)
-
+	var brothers = {};
 	var box = needed.box[minlevel];
 	for(var y = box[1]; y < box[3]; y++) {
 		for(var x = box[0]; x < box[2]; x++) {
@@ -1112,6 +958,13 @@ draw: function(timestamp) {
 				if(t.nodes[index].missing == 0) {
 					torender[index] = [level, x>>d, y>>d];
 					break;
+				} else {
+					var sx = (x>>(d+1))<<1;
+					var sy = (y>>(d+1))<<1;
+					brothers[t.index(level, sx, sy)] = 1;
+					brothers[t.index(level, sx+1, sy)] = 1;
+					brothers[t.index(level, sx+1, sy+1)] = 1;
+					brothers[t.index(level, sx, sy+1)] = 1;
 				}
 				level++;
 			}
@@ -1120,6 +973,7 @@ draw: function(timestamp) {
 
 	for(var index in torender) {
 		var id = torender[index];
+		if(t.opacity != 1.0 && brothers[index]) continue;
 
 		var level = id[0];
 		var x = id[1];
@@ -1127,17 +981,11 @@ draw: function(timestamp) {
 		t.drawNode(pos, minlevel, level, x, y);
 	}
 
-	if(timestamp < this.pos.t)
-		this.redraw();
-
-	gl.disable(gl.SCISSOR_TEST);
+	//gl.disable(gl.SCISSOR_TEST);
+	gl.disable(gl.BLEND);
 }, 
 
-redraw: function() {
-	var t = this;
-	if(t.animaterequest) return;
-	t.animaterequest = requestAnimationFrame(function (time) { t.draw(time); });
-},
+redraw: function() {}, //placeholder for other to replace the draw code.
 
 prefetch: function() {
 	var t = this;
@@ -1155,8 +1003,6 @@ prefetch: function() {
 	t.previouslevel = minlevel;
 	t.previousbox = box;
 	t.queued = [];
-
-	//
 
 	//look for needed nodes and prefetched nodes (on the pos destination
 	for(var level = t.nlevels-1; level >= minlevel; level--) {
@@ -1185,7 +1031,7 @@ preload: function() {
 	}
 },
 
-neededBox: function(pos, border) {
+neededBox: function(pos, border, canvas) {
 	var t = this;
 	if(t.layout == "image") {
 		return { level:0, box: [[0, 0, 1, 1]] };
@@ -1199,12 +1045,12 @@ neededBox: function(pos, border) {
 	var box = [];
 	for(var level = t.nlevels-1; level >= minlevel; level--) {
 		//find coordinates in original size image
-		var bbox = [
-			pos.x - scale*w/2,
-			pos.y - scale*h/2,
-			pos.x + scale*w/2,
-			pos.y + scale*h/2
-		];
+//		var bbox = [
+//			pos.x - scale*w/2,
+//			pos.y - scale*h/2,
+//			pos.x + scale*w/2,
+//			pos.y + scale*h/2
+//		];
 		var bbox = t.getIBox(pos); //thats the reverse.
 		var side = t.tilesize*Math.pow(2, level);
 		//quantized bbox
