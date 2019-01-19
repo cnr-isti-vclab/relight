@@ -1,5 +1,5 @@
 
-Relight.prototype.headFrag = function() {
+Relight.prototype.fragHead = function() {
 	var t = this;
 
 	var basetype = (t.colorspace == 'mrgb' || t.colorspace == 'mycc')?'vec3':'float';
@@ -19,9 +19,13 @@ const int nj = ${t.njpegs};
 `
 const int ny0 = ${t.yccplanes[0]};
 const int ny1 = ${t.yccplanes[1]};
-`
+`;
 
 	if(t.normals) {
+
+		if(t.normals == 2)
+			str += 'uniform vec3 light;\n';
+
 		str += 
 `
 const mat3 T = mat3(8.1650e-01, 4.7140e-01, 4.7140e-01,
@@ -38,11 +42,11 @@ const mat3 T = mat3(8.1650e-01, 4.7140e-01, 4.7140e-01,
 			uniform ${basetype} base0[nj];
 			uniform ${basetype} base1[nj];
 			uniform ${basetype} base2[nj];`;
-
 	}
 
 	str +=
 `
+
 uniform ${basetype} base[np1];
 uniform float bias[np1];
 uniform float scale[np1];
@@ -56,13 +60,31 @@ varying vec2 v_texcoord;
 	return str;
 }
 
+Relight.prototype.fragTail = function() {
+	var str = '';
+	switch(this.normals) {
+	case 1: str = '	color = (normalize(T * color) + 1.0)/2.0;\n'; break;
+	case 2: str = 
+`	color = normalize(T * color);
+	float c = dot(light, color);
+	color = vec3(c, c, c);
+`;
+	}
+
+	str +=
+`	gl_FragColor = vec4(color, opacity);
+}`;
+
+	return str;
+}
+
 
 /*    MRGB    */
 
 Relight.prototype.mrgbFrag = function() {
 	var t = this;
 
-	var src = t.headFrag();
+	var src = t.fragHead();
 
 	if(!t.normals)
 		src +=
@@ -76,11 +98,9 @@ Relight.prototype.mrgbFrag = function() {
 		color += base[j*3+2]*(c.y - bias[j*3+2])*scale[j*3+2];
 		color += base[j*3+3]*(c.z - bias[j*3+3])*scale[j*3+3];
 	}
-	gl_FragColor = vec4(color, opacity);
-}
 `;
 
-	else
+	else {
 		src +=
 `void main(void) {
 	vec3 one = vec3(1.0 ,1.0, 1.0);
@@ -103,10 +123,10 @@ Relight.prototype.mrgbFrag = function() {
 		color.y += dot(b1, r);
 		color.z += dot(b2, r);
 	}
-	color = (normalize(T * color) + 1.0)/2.0;
-	gl_FragColor = vec4(color, opacity);
-}
 `;
+	}
+
+	src += t.fragTail();
 	return src;
 }
 
@@ -116,36 +136,31 @@ Relight.prototype.mrgbFrag = function() {
 
 Relight.prototype.myccFrag = function() {
 	var t = this;
-	var src = t.headFrag();
+	var src = t.fragHead();
 
 	if(!t.normals)
 		src +=
-
-`
-void main(void) { 
-	vec3 color = base[0];
+`void main(void) { 
+	vec3 ycc = base[0];
 
 	for(int j = 0; j < nj; j++) {
 		vec4 c = texture2D(planes[j], v_texcoord);
 
 		if(j < ny1) {
-			color.x += base[j*3+1].x*(c.x - bias[j*3+1])*scale[j*3+1];
-			color.y += base[j*3+2].y*(c.y - bias[j*3+2])*scale[j*3+2];
-			color.z += base[j*3+3].z*(c.z - bias[j*3+3])*scale[j*3+3];
+			ycc.x += base[j*3+1].x*(c.x - bias[j*3+1])*scale[j*3+1];
+			ycc.y += base[j*3+2].y*(c.y - bias[j*3+2])*scale[j*3+2];
+			ycc.z += base[j*3+3].z*(c.z - bias[j*3+3])*scale[j*3+3];
 		} else {
-			color.x += base[j*3+1].x*(c.x - bias[j*3+1])*scale[j*3+1];
-			color.x += base[j*3+2].x*(c.y - bias[j*3+2])*scale[j*3+2];
-			color.x += base[j*3+3].x*(c.z - bias[j*3+3])*scale[j*3+3];
+			ycc.x += base[j*3+1].x*(c.x - bias[j*3+1])*scale[j*3+1];
+			ycc.x += base[j*3+2].x*(c.y - bias[j*3+2])*scale[j*3+2];
+			ycc.x += base[j*3+3].x*(c.z - bias[j*3+3])*scale[j*3+3];
 		}
 	}
-	float tmp = color.r - color.b/2.0;
-	vec3 rgb;
-	rgb.g = color.b + tmp;
-	rgb.b = tmp - color.g/2.0;
-	rgb.r = rgb.b + color.g;
-
-	gl_FragColor = vec4(rgb, opacity);
-}
+	float tmp = ycc.r - ycc.b/2.0;
+	vec3 color;
+	color.g = ycc.b + tmp;
+	color.b = tmp - ycc.g/2.0;
+	color.r = rgb.b + ycc.g;
 `;
 
 	else
@@ -181,12 +196,9 @@ void main(void) {
 		}
 	}
 	vec3 color = vec3(color0.r, color1.r, color2.r);
-	color = (normalize(T * color) + 1.0)/2.0;
-
-	gl_FragColor = vec4(color, opacity);
-}
 `;
 
+	src += t.fragTail();
 	return src;
 }
 
@@ -196,7 +208,7 @@ void main(void) {
 
 Relight.prototype.rgbFrag = function() {
 	var t = this;
-	var src = t.headFrag() + 
+	var src = t.fragHead() + 
 `
 void main(void) {
 	vec3 color = vec3(0);
@@ -221,14 +233,9 @@ void main(void) {
 		color.y += base1[j]*r;
 		color.z += base2[j]*r;
 	}
-	color = (normalize(T * color) + 1.0)/2.0;
 `;
 
-	src +=
-`
-	gl_FragColor = vec4(color, opacity);
-}`;
-
+	src += t.fragTail();
 	return src;
 }
 
@@ -239,7 +246,7 @@ void main(void) {
 
 Relight.prototype.yccFrag = function() {
 	var t = this;
-	var src = t.headFrag() + 
+	var src = t.fragHead() + 
 `
 vec3 toYcc(vec4 rgb) {
 	vec3 c;
@@ -274,7 +281,7 @@ void main(void) {
 	color = toRgb(vec4(color, 1.0));
 	gl_FragColor = vec4(color, opacity);
 }`;
-
+ /* TODO NORMALS & fragTail */
 }
 
 
@@ -282,12 +289,12 @@ void main(void) {
 
 Relight.prototype.lrgbFrag = function() {
 	var t= this;
-	var src = t.headFrag();
+	var src = t.fragHead();
 	if(!t.normals)
 		src +=
 `
 void main(void) {
-	vec4 color = texture2D(planes[0], v_texcoord);
+	vec4 rgb = texture2D(planes[0], v_texcoord);
 	float l = 0.0;
 	for(int j = 1; j < nj; j++) {
 		vec4 c = texture2D(planes[j], v_texcoord);
@@ -296,7 +303,7 @@ void main(void) {
 		l += base[j*3-1]*(c.z - bias[j*3+3])*scale[j*3+3];
 	}
 
-	gl_FragColor = vec4(color.x*l, color.y*l, color.z*l, opacity);
+	vec3 color = vec3(rgb.x*l, rgb.y*l, rgb.z*l);
 }`;
 
 	else
@@ -316,11 +323,9 @@ void main(void) {
 		color.y += base1[j*3-3]*r.x + base1[j*3-2]*r.y + base1[j*3-1]*r.z;
 		color.z += base2[j*3-3]*r.x + base2[j*3-2]*r.y + base2[j*3-1]*r.z;
 	}
+`;
 
-	color = (normalize(T * color) + 1.0)/2.0;
-	gl_FragColor = vec4(color, opacity);
-}`;
-
+	src += t.fragTail();
 	return src;
 }
 

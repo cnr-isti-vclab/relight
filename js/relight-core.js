@@ -53,7 +53,7 @@ function Relight(gl, options) {
 		rotation: 0,
 
 		light: [0, 0, 1],
-		normals: false,
+		normals: 0,
 
 		border: 1,                   //prefetching tiles out of view
 		maxRequested: 4
@@ -550,9 +550,9 @@ flush: function() {
 setNormals: function(on) {
 	var t = this;
 	if(on === undefined)
-		t.normals = !t.normals;
+		t.normals = (t.normals + 1)%3;
 	else
-		t.normals = on?true:false;
+		t.normals = Number(on);
 	t.loadProgram();
 	t.computeLightWeights(t.light);
 	t.redraw();
@@ -599,7 +599,7 @@ computeLightWeights: function(lpos) {
 	if(t.baseLocation) {
 		uniformer.call(t.gl, t.baseLocation, t.lweights);
 	}
-
+	t.gl.uniform3fv(t.lightLocation, l);
 },
 
 computeLightWeightsPtm: function(v) {
@@ -757,18 +757,18 @@ loadProgram: function() {
 	t.vertShader = gl.createShader(gl.VERTEX_SHADER);
 	gl.shaderSource(t.vertShader, t.vertCode);
 	var compiled = gl.compileShader(t.vertShader);
-//	if(!compiled)
-//		console.log(gl.getShaderInfoLog(t.vertShader));
+	if(!compiled)
+		console.log(gl.getShaderInfoLog(t.vertShader));
 
 	t.fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 	gl.shaderSource(t.fragShader, t.fragCode);
 	gl.compileShader(t.fragShader);
 	t.program = gl.createProgram();
 	compiled = gl.getShaderParameter(t.fragShader, gl.COMPILE_STATUS);
-//	if(!compiled) {
-//		console.log(t.fragCode);
-//		console.log(gl.getShaderInfoLog(t.fragShader));
-//	}
+	if(!compiled) {
+		console.log(t.fragCode);
+		console.log(gl.getShaderInfoLog(t.fragShader));
+	}
 
 	gl.attachShader(t.program, t.vertShader);
 	gl.attachShader(t.program, t.fragShader);
@@ -786,6 +786,8 @@ loadProgram: function() {
 
 		gl.uniform1fv(gl.getUniformLocation(t.program, "scale"), t.factor);
 		gl.uniform1fv(gl.getUniformLocation(t.program, "bias"), t.bias);
+
+		t.lightLocation = gl.getUniformLocation(t.program, "light");
 	}
 
 //BUFFERS

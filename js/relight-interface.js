@@ -22,15 +22,16 @@ function RelightViewer(div, options) {
 		support: support,
 //		pagemap: { size: 200, autohide: 1000 },
 		pagemap: false,
+		normals: 0,
 		actions: {
-			home:    { title: 'Home',       task: function(event) { t.centerAndScale(t.nav.zoomdelay); }        },
+			home:    { title: 'Home',       task: function(event) { t.centerAndScale(t.nav.zoomdelay);        } },
 			zoomin:  { title: 'Zoom In',    task: function(event) { t.zoom(-t.nav.zoomstep, t.nav.zoomdelay); } },
 			zoomout: { title: 'Zoom Out',   task: function(event) { t.zoom(+t.nav.zoomstep, t.nav.zoomdelay); } },
-			rotate:  { title: 'Rotate',     task: function(event) { t.rotate(t.nav.zoomstep, 45); } },
-			light:   { title: 'Light',      task: function(event) { t.toggleLight(event); }                     },
-			normals: { title: 'Normals',     task: function(event) { t.toggleNormals(event); } },
-			full:    { title: 'Fullscreen', task: function(event) { t.toggleFullscreen(event); }                },
-			info:    { title: 'info',       task: function(event) { t.showInfo(); }                             }
+			rotate:  { title: 'Rotate',     task: function(event) { t.rotate(t.nav.zoomstep, 45);             } },
+			light:   { title: 'Light',      task: function(event) { t.toggleLight(event);                     } },
+			normals: { title: 'Normals',    task: function(event) { t.toggleNormals(event);                   } },
+			full:    { title: 'Fullscreen', task: function(event) { t.toggleFullscreen(event);                } },
+			info:    { title: 'info',       task: function(event) { t.showInfo();                             } }
 		},
 		scale: 0                     //size of a pixel in mm.
 	};
@@ -153,13 +154,16 @@ RelightViewer.prototype.toggleLight = function(event) {
 
 RelightViewer.prototype.toggleNormals = function(event) {
 	var t = this;
-	if(t.normals)
+
+	t.nav.normals = (t.nav.normals + 1)%3;
+	t.setNormals(t.nav.normals);
+
+	if(!t.nav.normals)
 		event.target.classList.remove('relight-normals_on');
 	else
 		event.target.classList.add('relight-normals_on');
 
-	t.normals = !t.normals; 
-	t.setNormals(t.normals);
+
 };
 
 RelightViewer.prototype.toggleFullscreen = function(event) {
