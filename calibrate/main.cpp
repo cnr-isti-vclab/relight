@@ -24,8 +24,8 @@ void help() {
 
 class Histogram: public vector<int> {
 public:
-	int nbins = 20;
-	int step = (1<<16)/nbins +1;
+	unsigned int nbins = 20;
+	unsigned int step = (1<<16)/nbins +1;
 	void compute(libraw_data_t &img) {
 		resize(3*nbins, 0);
 
@@ -124,7 +124,7 @@ public:
 	//histogram.
 
 
-	void process(libraw_data_t &img, double minfraction, double maxfraction = 1.0) {
+	void process(libraw_data_t &img) {
 		width = img.sizes.iwidth;
 		height = img.sizes.iheight;
 
@@ -158,8 +158,8 @@ public:
 	Vector3us fix(int x, int y, Vector3us v) {
 		float dx = ncols*x/(float)width;
 		float dy = nrows*y/(float)height;
-		int sx = floor(dx);
-		int sy = floor(dy);
+		int sx = (int)floor(dx);
+		int sy = (int)floor(dy);
 		dx -= sx;
 		dy -= sy;
 		if(sx < 0)
@@ -219,13 +219,13 @@ int main(int argc, char *argv[]) {
 	QStringList lps = dir.entryList(QStringList() << "*.lp");
 	if(lps.size() == 0) {
 		cerr << "Could not find .lp file in folder: " << qPrintable(path) << "\n";
-		return false;
+		return 1;
 	}
 	QString sphere_path = dir.filePath(lps[0]);
 	QFile sphere(sphere_path);
 	if(!sphere.open(QFile::ReadOnly)) {
 		cerr << "Could not open: " << qPrintable(sphere_path) << endl;
-		return false;
+		return 1;
 	}
 
 	QTextStream stream(&sphere);
@@ -272,7 +272,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	vector<ImageStats> stats(images.size());
-
+#define SAVETOFILE
+#ifdef SAVETOFILE
+	
 	for(int i = 0; i < images.size(); i++) {
 		cout << qPrintable(images[i]) << endl;
 		QString &imgpath = images[i];
@@ -311,15 +313,16 @@ int main(int argc, char *argv[]) {
 //		cout << endl;
 
 
-		stats[i].process(img, 0.0, 1.0);
+		stats[i].process(img);
 		filestats.write((char *)stats[i].data(), stats[i].size()*sizeof(Vector3d));
 		raw.recycle();
 	}
 	filestats.close();
-	return 0;
+	
+#endif
 
-
-
+	filestats.reset();
+	
 	for(int i = 0; i < stats.size(); i++) {
 		ImageStats &stat = stats[i];
 

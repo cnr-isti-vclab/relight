@@ -1,0 +1,20 @@
+Features
+
+
+White balance
+
+Dome calibration
+
+Alignment
+
+Ball fitting
+
+Normal fitter
+
+//Scaling
+
+Builder (Export RTI)
+
+Export Multires
+
+Viewer
