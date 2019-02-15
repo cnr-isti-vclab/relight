@@ -986,15 +986,11 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 		Vector3f l1(sin(a)*cos(5*b), sin(a)*sin(5*b), cos(a));
 		Vector3f l2(sin(a)*cos(9*b), sin(a)*sin(9*b), cos(a));
 
-		T = {
-			{ l0[0], l0[1], l0[2] },
-			{ l1[0], l1[1], l1[2] },
-			{ l2[0], l2[1], l2[2] } };
-		cout << T << endl;
+		T << l0[0] << l0[1] << l0[2] << arma::endr
+		  << l1[0] << l1[1] << l1[2] << arma::endr
+		  << l2[0] << l2[1] << l2[2] << arma::endr;
 
 		T = inv(T);
-
-		cout << T << endl;
 
 		w0 = lightWeights(l0[0], l0[1]);
 		w1 = lightWeights(l1[0], l1[1]);
@@ -1030,7 +1026,8 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 #endif
 		}
 
-	} else if(colorspace == MRGB) { //seems like weights are multiplied by 255 in rbf!
+	}
+	else if (colorspace == MRGB) { //seems like weights are multiplied by 255 in rbf!
 		MaterialBuilder &matb = materialbuilders[0];
 
 #ifdef TEST_COLOR
@@ -1038,29 +1035,30 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 		bright[1] = w1[1];
 		bright[2] = w1[2];
 
-		for(uint32_t p = 0; p < nplanes; p++) {
+		for (uint32_t p = 0; p < nplanes; p++) {
 			Material::Plane &plane = mat.planes[p];
 
 			float val = pri[p];
-			bright[0] += val*(w1[3*(p+1) + 0] - 127)/plane.range;
-			bright[1] += val*(w1[3*(p+1) + 1] - 127)/plane.range;
-			bright[2] += val*(w1[3*(p+1) + 2] - 127)/plane.range;
+			bright[0] += val*(w1[3 * (p + 1) + 0] - 127) / plane.range;
+			bright[1] += val*(w1[3 * (p + 1) + 1] - 127) / plane.range;
+			bright[2] += val*(w1[3 * (p + 1) + 2] - 127) / plane.range;
 		}
 #else
 		bright[0] = w0[0] + w0[1] + w0[2];
 		bright[1] = w1[0] + w1[1] + w1[2];
 		bright[2] = w2[0] + w2[1] + w2[2];
 
-		for(uint32_t p = 0; p < nplanes; p++) {
+		for (uint32_t p = 0; p < nplanes; p++) {
 			Material::Plane &plane = mat.planes[p];
 			float val = pri[p];
-			bright[0] += val*(w0[3*(p+1) + 0] + w0[3*(p+1) + 1] + w0[3*(p+1) + 2] -3*127)/plane.range;
-			bright[1] += val*(w1[3*(p+1) + 0] + w1[3*(p+1) + 1] + w1[3*(p+1) + 2] -3*127)/plane.range;
-			bright[2] += val*(w2[3*(p+1) + 0] + w2[3*(p+1) + 1] + w2[3*(p+1) + 2] -3*127)/plane.range;
+			bright[0] += val*(w0[3 * (p + 1) + 0] + w0[3 * (p + 1) + 1] + w0[3 * (p + 1) + 2] - 3 * 127) / plane.range;
+			bright[1] += val*(w1[3 * (p + 1) + 0] + w1[3 * (p + 1) + 1] + w1[3 * (p + 1) + 2] - 3 * 127) / plane.range;
+			bright[2] += val*(w2[3 * (p + 1) + 0] + w2[3 * (p + 1) + 1] + w2[3 * (p + 1) + 2] - 3 * 127) / plane.range;
 		}
 #endif
-	} else
-		throw QString("Unsupported colorspace (RGB and MRGB only supported");
+	}
+//	else 
+//				throw QString("Unsupported colorspace (RGB and MRGB only supported!)");
 
 	//bright /= 3;
 	arma::Col<float> N = T*bright;
@@ -1364,6 +1362,14 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	QImage medians(width, height, QImage::Format_RGB32);
 
 
+	//colorspace check
+	if (savenormals) {
+		if (colorspace != RGB && colorspace != MRGB) {
+			cerr << "NO NORMALS (unsupported colorspace: RGB and MRGB only supported!)" << endl;
+			savenormals = false;
+		}
+	}
+
 	for(uint32_t y = 0; y < height; y++) {
 		imageset.readLine(sample);
 
@@ -1383,9 +1389,9 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			
 			vector<float> pri = toPrincipal(m, (float *)(resample(x)));
 
-			if(savenormals) {
+			if (savenormals) {
 				Vector3f n = getNormalThreeLights(pri);
-				normals.setPixel(x, y, qRgb(255*n[0], 255*n[1], 255*n[2]));
+				normals.setPixel(x, y, qRgb(255 * n[0], 255 * n[1], 255 * n[2]));
 			}
 
 			if(savemeans) {
