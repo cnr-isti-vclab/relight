@@ -410,7 +410,7 @@ done:
 }
 
 std::vector<float> Rti::lightWeightsDmd(float lx, float ly) {
-	cerr << "NOt implemented!" << endl;
+	cerr << "Not implemented!" << endl;
 	if(colorspace == RGB)
 		assert(nplanes %3 == 0);
 
