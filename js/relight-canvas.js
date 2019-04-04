@@ -261,16 +261,16 @@ setPosition: function(dt, x, y, z, a) {
 	var t = this;
 	var scale = Math.pow(2, z);
 
-	if(0 && t.bounded && t.width) {
+	if(t.bounded && t.width) {
 		var zx = Math.min(z, Math.log(t.width/t.canvas.width)/Math.log(2.0));
 		var zy = Math.min(z, Math.log(t.height/t.canvas.height)/Math.log(2.0));
 		z = Math.max(zx, zy);
 		scale = Math.pow(2, z);
 
-		var ix = [scale*t.canvas.width/2, t.width - scale*t.canvas.width/2].sort(function(a, b) { return a-b; });
+/*		var ix = [scale*t.canvas.width/2, t.width - scale*t.canvas.width/2].sort(function(a, b) { return a-b; });
 		x = Math.max(ix[0], Math.min(ix[1], x));
 		var iy = [scale*t.canvas.height/2, t.height - scale*t.canvas.height/2].sort(function(a, b) { return a-b; });
-		y = Math.max(iy[0], Math.min(iy[1], y));
+		y = Math.max(iy[0], Math.min(iy[1], y)); */
 
 		if(z <= -1) z = -1;
 	}

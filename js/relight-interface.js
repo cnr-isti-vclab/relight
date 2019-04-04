@@ -70,7 +70,7 @@ function RelightViewer(div, options) {
 		html += '	<div';
 		if(t.nav.pagemap.thumb)
 			html += ' style="background-image:url(' + options.url + '/' + t.nav.pagemap.thumb + '); background-size:cover"';
-		html += ' class="relight-pagemap"><div class="relight-pagemap-area"></div>\n';
+		html += ' class="relight-pagemap"><div class="relight-pagemap-area"></div></div>\n';
 	}
 
 	html += '	<div class="relight-info-dialog"></div>\n';
