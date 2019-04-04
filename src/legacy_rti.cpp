@@ -494,19 +494,18 @@ bool LRti::encodeJPEG(int startplane, int quality, const char *filename) {
 		order = {5, 3, 4, 0, 2, 1};
 	} else
 		order = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-
 	JpegEncoder enc;
 	enc.setQuality(quality);
-	
+
 	enc.setColorSpace(JCS_RGB, 3);
 	
 	//enc.setJpegColorSpace(JCS_YCbCr);
 	enc.setJpegColorSpace(JCS_RGB);
 	
 	//lets avoid make another copy in memory.
-	
+
 	enc.init(filename, width, height);
-	
+
 	vector<uint8_t> line(width*3);
 	for(int y = height-1; y >= 0; y--) {
 		for(uint32_t x = 0; x < width; x++) {
@@ -523,7 +522,9 @@ bool LRti::encodeJPEG(int startplane, int quality, const char *filename) {
 		}
 		enc.writeRows(line.data(), 1);
 	}
+
 	size_t s = enc.finish();
+
 	return true;
 }
 
