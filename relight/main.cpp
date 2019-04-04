@@ -20,9 +20,9 @@ void help() {
 	cout << "Usage: relight [-mrdqp]<input folder> [output folder]\n\n";
 	cout << "\tinput folder containing a .lp with number of photos and light directions\n";
 	cout << "\toptional output folder (default ./)\n\n";
-	cout << "\t-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear, dmd\n";
+	cout << "\t-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear\n";
 	cout << "\t-p <int>  : number of planes (default: 9)\n";
-	cout << "\t-q <int>  : jpeg quality (default: 90)\n";
+	cout << "\t-q <int>  : jpeg quality (default: 95)\n";
 	cout << "\t-y <int>  : number of Y planes in YCC\n\n";
 
 //	cout << "\t-m <int>  : number of materials (default 8)\n";
@@ -53,7 +53,6 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 
-
 	RtiBuilder builder;
 	int quality = 95;
 	bool evaluate_error = false;
@@ -83,7 +82,7 @@ int main(int argc, char *argv[]) {
 				int res = atoi(optarg);
 				builder.resolution = res = atoi(optarg);
 				if(res < 0 || res == 1 || res == 2 || res > 10) {
-					cerr << "Invalid resolution (must be 0 or >= 2 && <= 10)\n";
+					cerr << "Invalid resolution (must be 0 or >= 2 && <= 10)!\n" << endl;
 					return 1;
 				}
 			}
@@ -135,7 +134,7 @@ int main(int argc, char *argv[]) {
 				builder.type = RtiBuilder::DMD;
 
 			} else {
-				cerr << "Unknown basis type: " << optarg << " (pick yrbf, rbf, bilinear, ybilinear, hsh, dmd or ptm)\n";
+				cerr << "Unknown basis type: " << optarg << " (pick rbf, ptm, lptm, hsh, yrbf or bilinear!)\n" << endl;
 				return 1;
 			}
 		}
@@ -178,8 +177,8 @@ int main(int argc, char *argv[]) {
 			if(compress >= 0.0f && compress <= 1.0f)
 				builder.rangecompress = compress;
 			else {
-				cerr << "rangecompress must be between 0 and 1\n";
-				exit(1);
+				cerr << "Range compression must be between 0 and 1!\n" << endl;
+				return 1;
 			}
 			break;
 		}
@@ -195,30 +194,30 @@ int main(int argc, char *argv[]) {
 			break;
 
 		case '?':
-			cerr << "Option " << (char)optopt << " requires an argument" << endl;
+			cerr << "Option " << (char)optopt << " requires an argument!\n" << endl;
 			if (isprint (optopt))
-				cerr << "Unknown option " << (char)optopt << endl;
+				cerr << "Unknown option " << (char)optopt << " !\n" << endl;
 			else
-				cerr << "Unknown option character" << endl;
+				cerr << "Unknown option character!\n" << endl;
 			return 1;
 		default:
-			cerr << "Unknown error" << endl;
+			cerr << "Unknown error!\n" << endl;
 			return 1;
 		}
 
 	if(optind == argc) {
-		cerr << "Too few arguments" << endl;
+		cerr << "Too few arguments!\n" << endl;
 		help();
 		return 1;
 	}
 	if(optind + 2 < argc) {
-		cerr << "Too many arguments" << endl;
+		cerr << "Too many arguments!\n" << endl;
 		help();
 		return 1;
 	}
 	if( builder.colorspace == Rti::MYCC) {
 		if(builder.yccplanes[0] == 0) {
-			cerr << "Y nplanes in mycc must be specified (-y)" << endl;
+			cerr << "Y nplanes in mycc must be specified (-y)!\n" << endl;
 			return 1;
 		}
 		builder.yccplanes[1] = builder.yccplanes[2] = (builder.nplanes - builder.yccplanes[0])/2;
@@ -236,25 +235,25 @@ int main(int argc, char *argv[]) {
 	
 	
 	if(!builder.init(input)) {
-		cerr << builder.error << endl;
+		cerr << builder.error << " !\n" << endl;
 		return 1;
 	}
 
 	int size = builder.save(output, quality);
 	if(size == 0) {
-		cerr << "Failed saving: " << builder.error << endl;
+		cerr << "Failed saving: " << builder.error << " !\n" << endl;
 		return 1;
 	}
 
 	if(redrawdir.size()) {
 		QDir dir(redrawdir);
 		if(!dir.exists()) {
-			cerr << "Directory for redraw not found\n";
+			cerr << "Directory for redraw not found!\n" << endl;
 			return 1;
 		}
 		Rti rti;
 		if(!rti.load(output.c_str())) {
-			cerr << "Failed loading rti: " << output << endl;
+			cerr << "Failed loading rti: " << output << " !\n" << endl;
 			return 1;
 		}
 		
@@ -272,7 +271,7 @@ int main(int argc, char *argv[]) {
 	if(evaluate_error) {
 		Rti rti;
 		if(!rti.load(output.c_str())) {
-			cerr << "Failed loading rti: " << output << endl;
+			cerr << "Failed loading rti: " << output << " !\n" << endl;
 			return 1;
 		}
 
@@ -322,7 +321,7 @@ int main(int argc, char *argv[]) {
 		mse = sqrt(mse);
 		
 		if(psnr == 0.0f) {
-			cerr << "Failed reloading rti: " << builder.error << endl;
+			cerr << "Failed reloading rti: " << builder.error << " !\n" << endl;
 		}
 		//type, colorspace, nplanes, nmaterials, ny
 
@@ -333,6 +332,7 @@ int main(int argc, char *argv[]) {
 			<< builder.nplanes << ","<< builder.nmaterials << "," << builder.yccplanes[0] << ","
 			<< size << "," << psnr << "," << mse << "," << azimut << "," << builder.sigma << "," << builder.regularization << "," << light[0] << "," << light[1] << endl;
 	}
+
 	return 0;
 }
 
@@ -347,7 +347,7 @@ int convertRTI(const char *file, const char *output, int quality) {
 	rti.chromasubsampling = lrti.chromasubsampled;
 	switch(lrti.type) {
 	case LRti::UNKNOWN:
-		cerr << "Unknown RTI type!\n";
+		cerr << "Unknown RTI type!\n" << endl;
 		return 1;
 	case LRti::PTM_LRGB:
 		rti.type = Rti::PTM;
@@ -397,7 +397,7 @@ int convertRTI(const char *file, const char *output, int quality) {
 	if(!dir.exists()) {
 		QDir here("./");
 		if(!here.mkdir(output)) {
-			cerr << "Could not create output dir.\n";
+			cerr << "Could not create output dir!\n" << endl;
 			return 1;
 		}
 	}
@@ -407,7 +407,6 @@ int convertRTI(const char *file, const char *output, int quality) {
 		lrti.encodeJPEG(p, quality, dir.filePath("plane_%1.jpg").arg(p/3).toStdString().c_str());
 	}
 	//time to save the JPG
-	
 	
 	return 0;
 }

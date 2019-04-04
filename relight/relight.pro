@@ -1,5 +1,4 @@
 QT += core
-#QT -= gui
 
 TARGET = relight
 CONFIG += console
@@ -9,10 +8,13 @@ TEMPLATE = app
 
 QMAKE_CXXFLAGS += -std=c++11
 
+DEFINES += _USE_MATH_DEFINES
+DEFINES += NOMINMAX
 
-#INCLUDEPATH += ../libpca-1.3.3/src/lib
+win32:INCLUDEPATH += ../libjpeg/include ../armadillo-9.200.7/include
+win32:LIBS += ../libjpeg/lib/jpeg.lib ../armadillo-9.200.7/lib/blas_win64_MT.lib ../armadillo-9.200.7/lib/lapack_win64_MT.lib
 
-LIBS += -larmadillo -ljpeg 
+unix:LIBS += -larmadillo -ljpeg 
 
 DESTDIR = "../bin"
 

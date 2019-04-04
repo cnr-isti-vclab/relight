@@ -32,7 +32,7 @@ public:
 	ColorSpace colorspace = MRGB;
 	uint32_t width = 0;
 	uint32_t height = 0;
-	uint32_t nplanes = 0;
+	uint32_t nplanes = 9;
 	uint32_t nmaterials = 1;
 	uint32_t yccplanes[3] = {0, 0, 0}; //for ycc format (nplanes- yplanes)/2 = cplanes
 	float sigma = 0.125; //rbf interpolation parameter default for ~100 images
