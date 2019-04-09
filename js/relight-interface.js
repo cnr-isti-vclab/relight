@@ -188,8 +188,9 @@ RelightViewer.prototype.toggleFullscreen = function(event) {
 RelightViewer.prototype.updateScale = function() {
 	var t = this;
 	var span = t.div.querySelector('.relight-scale > span');
+	var hr = t.div.querySelector('.relight-scale > hr');
 	var scale = Math.pow(2, t.pos.z);
-	var scalesize = t.options.scale*100*scale; //size of a pixel
+	var scalesize = t.options.scale*hr.offsetWidth*scale; //size of a pixel
 	span.innerHTML = formatMm(scalesize); 
 
 	var box = t.div.querySelector('.relight-scale');
