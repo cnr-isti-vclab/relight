@@ -80,17 +80,21 @@
 @media screen and (max-width: 576px) {
 	.relight-toolbox > div { width: 9vmin; height: 9vmin; }
 	.relight-pagemap { display:none; }
+	.relight-scale { width:15%; }
 }
 @media screen and (min-width: 576px) {
 	.relight-toolbox > div {width: 9vmin; height: 9vmin; }
 	.relight-pagemap { display:none; }
+	.relight-scale { width:10%; }
 }
 @media screen and (min-width: 768px) {
 	.relight-toolbox > div {width: 7vmin; height: 7vmin; }
 	.relight-pagemap { display:block; width:200px; }
+	.relight-scale { width:7%; }
 }
 @media screen and (min-width: 992px) {
 	.relight-toolbox > div {width: 6vmin; height: 6vmin; }
 	.relight-pagemap { display:block; width:200px; }
+	.relight-scale { width:5%; }
 }
 

@@ -27,7 +27,7 @@ html, body { width:100%; height:100%; padding:0px; margin:0px; }
 <script>
 
 var url1 = 'test/bilinear18';
-var url2 = 'test/12563_front';
+//var url2 = 'test/12563_front';
 var relight = new RelightViewer('.relight', 
 	{ 
 	  layers: [ 
@@ -40,7 +40,7 @@ var relight = new RelightViewer('.relight',
 			visible: true,
 			scale: 0,
 		}
-		,{
+/*		,{
 			position: [0, 3000],
 			rotation: 0, 
 			url:url1, 
@@ -48,7 +48,7 @@ var relight = new RelightViewer('.relight',
 			scale: 1,
 			opacity: 0.5,
 			visible: true
-		}
+		} */
 
 
 	  ],
@@ -56,6 +56,7 @@ var relight = new RelightViewer('.relight',
 	  pos: { x:0, y:0, z:0, a:0 },
 	  rotation: 0,
 	  pagemap: { /*thumb: 'thumb.jpg', */size:200, autohide:1000 },  
+	  scale: 1.0,
 	  background: [0.7, 0.7, 0.7, 1]
 	});
 	  
