@@ -47,6 +47,9 @@ RelightCanvas = function(item, options) {
 		pos: { x: 0, y:0, z:0, a: 0, t:0 },
 		background: [0, 0, 0, 0],
 		bounded: true,
+		zbounded: true,
+		maxzoom: -1,
+		minzoom: 100,
 		border: 1,                   //prefetching tiles out of view
 		maxRequested: 4,
 		fit: true,                   //scale on load.
@@ -188,7 +191,11 @@ ready: function() {
 		if(t.layers[i].waiting) return;
 
 
+	//we are looking for width and height at 0 zoom, but zoom could be currently different
+	var z = t.pos.z;
+	t.pos.z = 0;
 	var box = t.boundingBox();
+	t.pos.z = z;
 	t.width = (box[2] - box[0]);
 	t.height = (box[3] - box[1]);
 
@@ -259,20 +266,22 @@ rotate: function(dt, angle) {
 setPosition: function(dt, x, y, z, a) {
 
 	var t = this;
-	var scale = Math.pow(2, z);
+	
 
+	if(t.zbounded && t.width) {
+		var zx = Math.log(t.width/t.canvas.width)/Math.log(2.0);
+		var zy = Math.log(t.height/t.canvas.height)/Math.log(2.0);
+		var maxz = Math.max(zx, zy);
+		if(z > maxz) z = maxz;
+		if(z <= t.maxzoom) z = t.maxzoom;
+		if(z >= t.minzoom) z = t.minzoom;
+	}
 	if(t.bounded && t.width) {
-		var zx = Math.min(z, Math.log(t.width/t.canvas.width)/Math.log(2.0));
-		var zy = Math.min(z, Math.log(t.height/t.canvas.height)/Math.log(2.0));
-		z = Math.max(zx, zy);
-		scale = Math.pow(2, z);
-
-/*		var ix = [scale*t.canvas.width/2, t.width - scale*t.canvas.width/2].sort(function(a, b) { return a-b; });
-		x = Math.max(ix[0], Math.min(ix[1], x));
-		var iy = [scale*t.canvas.height/2, t.height - scale*t.canvas.height/2].sort(function(a, b) { return a-b; });
-		y = Math.max(iy[0], Math.min(iy[1], y)); */
-
-		if(z <= -1) z = -1;
+		var scale = Math.pow(2, z);
+		var boundx = Math.abs((t.width - scale*t.canvas.width)/2);
+		x = Math.max(-boundx, Math.min(boundx, x));
+		var boundy = Math.abs((t.height - scale*t.canvas.height)/2);
+		y = Math.max(-boundy, Math.min(boundy, y));
 	}
 
 	if(!dt) dt = 0;

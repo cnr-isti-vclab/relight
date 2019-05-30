@@ -85,7 +85,7 @@ function RelightViewer(div, options) {
 	if(info) {
 		t.dialog.appendChild(info);
 		info.style.display = 'block';
-		t.dialog.onclick = function() { t.hideInfo(); };
+		t.addAction(".relight-info-dialog", function() { t.hideInfo(); });
 	}
 
 	if(t.nav.pagemap) {
@@ -104,7 +104,7 @@ function RelightViewer(div, options) {
 		document.onmousewheel !== undefined ? "mousewheel" : // Webkit and IE support at least "mousewheel"
 		"DOMMouseScroll"; // older Firefox
 	t.canvas.addEventListener(support,   function(e) { t.mousewheel(e); },   false);
-	window.addEventListener('resize', function(e) { t.resize(canvas.offsetWidth, canvas.offsetHeight); });
+	window.addEventListener('resize', function(e) { t.resize(canvas.offsetWidth, canvas.offsetHeight); t.updateScale(); t.updatePagemap(); });
 	t.canvas.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
 
 

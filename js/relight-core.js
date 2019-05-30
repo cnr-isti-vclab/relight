@@ -56,6 +56,7 @@ function Relight(gl, options) {
 		normals: false,
 
 		border: 1,                   //prefetching tiles out of view
+		mipmapbias: 0.5,
 		maxRequested: 4
 
 	}, options);
@@ -1038,7 +1039,7 @@ neededBox: function(pos, border, canvas) {
 	}
 	var w = this.canvas.width;
 	var h = this.canvas.height;
-	var minlevel = Math.max(0, Math.min(Math.floor(pos.z), t.nlevels-1));
+	var minlevel = Math.max(0, Math.min(Math.floor(pos.z + t.mipmapbias), t.nlevels-1));
 
 	//size of a rendering pixel in original image pixels.
 	var scale = Math.pow(2, pos.z);
