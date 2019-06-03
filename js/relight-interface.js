@@ -317,15 +317,15 @@ RelightViewer.prototype.mousemove = function(event) {
 	var p = t.nav.pos;
 	var x = event.deltaX;
 	var y = event.deltaY;
+	var scale = Math.pow(2, p.z);
 
 	switch(t.nav.action) {
 	case 'pan':
-		var scale = Math.pow(2, p.z);
 		t.setPosition(t.nav.pandelay, p.x - x*scale, p.y - y*scale, p.z, p.a);
 		break;
 
 	case 'zoom':
-		var z = p.z/Math.pow(event.scale, 1.5);
+		z = p.z - Math.log(event.scale)/Math.log(2)
 		t.setPosition(t.nav.zoomdelay, p.x, p.y, z, p.a);
 		break;
 

@@ -190,7 +190,6 @@ ready: function() {
 	for(var i = 0; i < t.layers.length; i++)
 		if(t.layers[i].waiting) return;
 
-
 	//we are looking for width and height at 0 zoom, but zoom could be currently different
 	var z = t.pos.z;
 	t.pos.z = 0;
@@ -198,7 +197,6 @@ ready: function() {
 	t.pos.z = z;
 	t.width = (box[2] - box[0]);
 	t.height = (box[3] - box[1]);
-
 
 	if(t.fit)
 		t.centerAndScale();
@@ -268,7 +266,7 @@ rotate: function(dt, angle) {
 setPosition: function(dt, x, y, z, a) {
 
 	var t = this;
-	
+
 
 	if(t.zbounded && t.width) {
 		var zx = Math.log(t.width/t.canvas.width)/Math.log(2.0);
