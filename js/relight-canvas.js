@@ -202,6 +202,8 @@ ready: function() {
 
 	if(t.fit)
 		t.centerAndScale();
+	else
+		t.layers.forEach((layer) => { layer.pos = t.project(layer, t.pos); }); //needed for light recomputation.
 
 	for(var i = 0; i < t._onready.length; i++)
 		t._onready[i]();
