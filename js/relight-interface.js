@@ -104,7 +104,7 @@ function RelightViewer(div, options) {
 		document.onmousewheel !== undefined ? "mousewheel" : // Webkit and IE support at least "mousewheel"
 		"DOMMouseScroll"; // older Firefox
 	t.canvas.addEventListener(support,   function(e) { t.mousewheel(e); },   false);
-	window.addEventListener('resize', function(e) { t.resize(canvas.offsetWidth, canvas.offsetHeight); t.updateScale(); t.updatePagemap(); });
+	window.addEventListener('resize', function(e) { t.resize(canvas.offsetWidth, canvas.offsetHeight); if(options.scale) t.updateScale(); t.updatePagemap(); });
 	t.canvas.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
 
 
