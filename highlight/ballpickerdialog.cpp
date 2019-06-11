@@ -9,6 +9,7 @@
 #include <QFileDialog>
 
 #include <assert.h>
+#include <math.h>
 
 #include <iostream>
 using namespace std;

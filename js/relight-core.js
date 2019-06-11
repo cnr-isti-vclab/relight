@@ -86,6 +86,8 @@ function Relight(gl, options) {
 
 	if(t.img) { //this meas we are loading an image
 		t.loadInfo({type: 'img', colorspace: null, width: 0, height: 0, nplanes: 3 });
+	} else if(t.dem) { //this meas we are loading an image
+		t.loadInfo({type: 'dem', colorspace: null, width: 0, height: 0, nplanes: 3 });
 	} else if(t.url !== null) {
 		t.setUrl(t.url);
 	}
@@ -147,7 +149,8 @@ loadInfo: function(info) {
 	while(t.njpegs*3 < t.nplanes)
 		t.njpegs++;
 
-	if(t.type == 'img') {
+	//TODO: is this the right position?
+	if(t.type == 'img' || t.type == 'dem') {
 		t.initTree();
 		t.loadProgram();
 		t.loaded();
@@ -487,7 +490,9 @@ loadComponent: function(plane, index, level, x, y) {
 	var t = this;
 	var gl = t.gl;
 	if(t.type == 'img')
-		var name = t.img + ".jpg";
+		var name = t.img;
+	else if(t.type == 'dem')
+		var name = t.dem;
 	else
 		var name = "plane_" + plane + ".jpg";
 
@@ -516,6 +521,10 @@ loadComponent: function(plane, index, level, x, y) {
 			t.requestedCount--;
 			t.preload();
 			t.redraw();
+		}
+		if(t.type == 'img' || t.type == 'dem') {
+			t.width = image.width;
+			t.height = image.height;
 		}
 	};
 	image.onerror = function() {
@@ -567,7 +576,8 @@ computeLightWeights: function(lpos) {
 
 	var lightFun;
 	switch(t.type) {
-	case 'img':                                     return;
+	case 'img': return;
+	case 'dem': t.gl.uniform3f(t.lightLocation, l[0], l[1], l[2]); return;
 	case 'rbf':      lightFun = t.computeLightWeightsRbf;  break;
 	case 'bilinear': lightFun = t.computeLightWeightsOcta; break;
 	case 'ptm':      lightFun = t.computeLightWeightsPtm;  break;
@@ -787,8 +797,22 @@ loadProgram: function() {
 		gl.uniform1fv(gl.getUniformLocation(t.program, "scale"), t.factor);
 		gl.uniform1fv(gl.getUniformLocation(t.program, "bias"), t.bias);
 
-		t.lightLocation = gl.getUniformLocation(t.program, "light");
 	}
+
+	t.lightLocation = gl.getUniformLocation(t.program, "light");
+	t.azimuthLocation = gl.getUniformLocation(t.program, "azimuth");
+	t.opacitylocation = gl.getUniformLocation(t.program, "opacity");
+
+//	t.matrixLocation = gl.getUniformLocation(t.program, "u_matrix");
+
+	var sampler = gl.getUniformLocation(t.program, "planes");
+	var samplerArray = new Int32Array(t.njpegs);
+	var len = samplerArray.length;
+	while (len--)
+		samplerArray[len] = len;
+
+	gl.uniform1iv(sampler, samplerArray);
+
 
 //BUFFERS
 
@@ -812,17 +836,7 @@ loadProgram: function() {
 	gl.vertexAttribPointer(t.texattrib, 2, gl.FLOAT, false, 0, 0);
 	gl.enableVertexAttribArray(t.texattrib);
 
-	t.opacitylocation = gl.getUniformLocation(t.program, "opacity");
 
-//	t.matrixLocation = gl.getUniformLocation(t.program, "u_matrix");
-
-	var sampler = gl.getUniformLocation(t.program, "planes");
-	var samplerArray = new Int32Array(t.njpegs);
-	var len = samplerArray.length;
-	while (len--)
-		samplerArray[len] = len;
-
-	gl.uniform1iv(sampler, samplerArray);
 },
 
 //minlevel is the level of the tiles at the current zoom, level is the (level, x, y) is the tile to be rendered

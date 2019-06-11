@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
 				builder.type = RtiBuilder::BILINEAR;
 				builder.colorspace = RtiBuilder::MRGB;
 
-			} else if(b == "hsh") {
+            } else if(b == "hsh") {
 				builder.type = RtiBuilder::HSH;
 				builder.colorspace = RtiBuilder::RGB;
 
@@ -287,6 +287,9 @@ int main(int argc, char *argv[]) {
 				totmse += mse;
 				double psnr = 20*log10(255.0) - 10*log10(mse);
 				mse = sqrt(mse);
+
+                cout << "Mse: " << mse << endl;
+
 
 				Vector3f light = builder.imageset.lights[i];
 				float r = sqrt(light[0]*light[0] + light[1]*light[1]);

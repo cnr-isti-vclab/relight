@@ -142,6 +142,9 @@ bool RtiBuilder::init() {
 	
 	PixelArray resample = resamplePixels(sample);
 	
+
+
+
 #ifdef DEBUG
 	if(resolution > 0) {
 		saveLightPixel(sample(0), resolution*4, "sample0.png");

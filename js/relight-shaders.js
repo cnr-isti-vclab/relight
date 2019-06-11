@@ -361,6 +361,56 @@ void main(void) {
 	return src;
 }
 
+/* DEM */
+
+Relight.prototype.demFrag = function() {
+
+ 	var src =  
+`#ifdef GL_ES
+precision highp float;
+#endif
+
+uniform vec3 light;
+uniform sampler2D planes[1];      //0 is segments
+uniform float opacity;
+uniform float azimuth;
+
+varying vec2 v_texcoord;
+
+void main(void) {
+	vec4 a = texture2D(planes[0], v_texcoord + vec2(-0.001, -0.001));
+	vec4 b = texture2D(planes[0], v_texcoord + vec2( 0.000, -0.001));
+	vec4 c = texture2D(planes[0], v_texcoord + vec2(+0.001, -0.001));
+	vec4 d = texture2D(planes[0], v_texcoord + vec2(-0.001,  0.000));
+	vec4 e = texture2D(planes[0], v_texcoord + vec2( 0.000,  0.000));
+	vec4 f = texture2D(planes[0], v_texcoord + vec2(+0.001,  0.000));
+	vec4 g = texture2D(planes[0], v_texcoord + vec2(-0.001, +0.001));
+	vec4 h = texture2D(planes[0], v_texcoord + vec2( 0.000, +0.001));
+	vec4 i = texture2D(planes[0], v_texcoord + vec2(+0.001, +0.001));
+
+	float cellsize = 0.1;
+	float dx = -((c.r + (2.0*f.r) + i.r) - (a.r + (2.0*d.r) + g.r)) / (8.0 * cellsize);
+	float dy = ((g.r + (2.0*h.r) + i.r) - (a.r + (2.0*b.r) + c.r)) / (8.0 * cellsize);
+
+	vec3 normal = vec3(-dx, -dy, 1.0);
+	normal /= sqrt(1.0 + dx*dx + dy*dy);
+
+	float hillshade = dot(normal, light);
+/*	float slope = atan(sqrt(pow(rateOfChangeX,2.0) + pow(rateOfChangeY,2.0)));
+	float aspect = atan(rateOfChangeY, -(rateOfChangeX));
+//	float zenith = light.z;
+//	float azimuth = light.x;
+	float cosz = sqrt(light.x*light.x + light.y*light.y);
+	float azimuth = atan(light.x, -light.y);
+//	float hillshade = (cos(zenith) * cos(slope)) + (sin(zenith) * sin(slope) * cos(azimuth - aspect));
+	float hillshade = (cosz * cos(slope)) + (light.z * sin(slope) * cos(azimuth - aspect));
+*/
+	gl_FragColor = vec4(hillshade, hillshade, hillshade, opacity);
+}`;
+
+	return src;
+}
+
 
 
 Relight.prototype.setupShaders = function() {
@@ -382,13 +432,17 @@ void main() {
 
 
 	var frag;
-	switch(t.colorspace) {
-	case 'mrgb': frag = t.mrgbFrag(); break;
-	case 'mycc': frag = t.myccFrag(); break;
-	case  'ycc': frag = t.yccFrag();  break;
-	case  'rgb': frag = t.rgbFrag();  break;
-	case 'lrgb': frag = t.lrgbFrag(); break;
-	default:     frag = t.imgFrag();  break;
+	switch(t.type) {
+	case 'img': frag = t.imgFrag();  break;
+	case 'dem': frag = t.demFrag(); break;
+	default:
+		switch(t.colorspace) {
+		case 'mrgb': frag = t.mrgbFrag(); break;
+		case 'mycc': frag = t.myccFrag(); break;
+		case  'ycc': frag = t.yccFrag();  break;
+		case  'rgb': frag = t.rgbFrag();  break;
+		case 'lrgb': frag = t.lrgbFrag(); break;
+		}
 	}
 	t.fragCode = frag;
 }

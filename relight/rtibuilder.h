@@ -23,7 +23,7 @@ public:
 	uint32_t nsamples = 1<<16; //TODO change to rate
 	float rangescale = 1.5;
 	int skip_image = -1;
-	float rangecompress = 0.0f; //betwee 0 and 1, where 1 is maximally compressed
+	float rangecompress = 1.0f; //betwee 0 and 1, where 1 is minimally compressed
 	bool savenormals = false;
 	bool savemeans = false;
 	bool savemedians = false;
