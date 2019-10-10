@@ -250,8 +250,11 @@ Rti Rti::clipped(int left, int bottom, int right, int top) {
 	return tmp;
 }
 
-void Rti::render(float lx, float ly, uint8_t *buffer, uint32_t renderplanes) {
-	if(renderplanes == 0)
+void Rti::render(float lx, float ly, uint8_t *buffer, int stride, uint32_t renderplanes ) {
+    if(stride == 4)
+        for(size_t i = 0; i < width*height; i++)
+            buffer[i*4+3] = 255;
+    if(renderplanes == 0)
 		renderplanes = nplanes;
 
 	vector<float> lweights = lightWeights(lx, ly);
@@ -268,9 +271,9 @@ void Rti::render(float lx, float ly, uint8_t *buffer, uint32_t renderplanes) {
 					l += lweights[p-3]*m.planes[p].dequantize(planes[p][i]);
 				l /= 255.0;
 				//this should be in the range [0-255];
-				buffer[i*3+0] = std::max(0, std::min(255, (int)(l*planes[0][i])));
-				buffer[i*3+1] = std::max(0, std::min(255, (int)(l*planes[1][i])));
-				buffer[i*3+2] = std::max(0, std::min(255, (int)(l*planes[2][i])));
+                buffer[i*stride+0] = std::max(0, std::min(255, (int)(l*planes[0][i])));
+                buffer[i*stride+1] = std::max(0, std::min(255, (int)(l*planes[1][i])));
+                buffer[i*stride+2] = std::max(0, std::min(255, (int)(l*planes[2][i])));
 			}
 		}
 		break;
@@ -283,7 +286,7 @@ void Rti::render(float lx, float ly, uint8_t *buffer, uint32_t renderplanes) {
 				float l = 0.0f;
 				for(uint32_t p = c; p < nplanes; p += 3)
 					l += lweights[p/3]*m.planes[p].dequantize(planes[p][i]);
-				buffer[i*3+c] = std::max(0, std::min(255, (int)(l)));
+                buffer[i*stride+c] = std::max(0, std::min(255, (int)(l)));
 			}
 		}
 		break;
@@ -303,7 +306,7 @@ void Rti::render(float lx, float ly, uint8_t *buffer, uint32_t renderplanes) {
 			color = color.YCbCrToRgb();
 			color *= 255.0f;
 			for(int c = 0; c < 3; c++)
-				buffer[i*3+c] = std::max(0, std::min(255, (int)(color[c])));
+                buffer[i*stride+c] = std::max(0, std::min(255, (int)(color[c])));
 		} 
 		break;
 	} 
@@ -360,9 +363,9 @@ void Rti::render(float lx, float ly, uint8_t *buffer, uint32_t renderplanes) {
 					c.b *= c.b;
 				}
 
-				buffer[(x + y*width)*3 + 0] = std::max(0, std::min(255, (int)c.r));
-				buffer[(x + y*width)*3 + 1] = std::max(0, std::min(255, (int)c.g));
-				buffer[(x + y*width)*3 + 2] = std::max(0, std::min(255, (int)c.b));
+                buffer[(x + y*width)*stride + 0] = std::max(0, std::min(255, (int)c.r));
+                buffer[(x + y*width)*stride + 1] = std::max(0, std::min(255, (int)c.g));
+                buffer[(x + y*width)*stride + 2] = std::max(0, std::min(255, (int)c.b));
 			}
 		}
 		break;
