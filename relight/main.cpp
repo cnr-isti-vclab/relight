@@ -50,43 +50,21 @@ void help() {
 
 int convertRTI(const char *file, const char *output, int quality);
 
-void test(std::string input, std::string output, QString redrawdir, bool relighted, Vector3f light) {
+void test(std::string input, std::string output,  Vector3f light) {
 
-    if(redrawdir.size() || relighted) {
-
-        Rti rti;
-        if(!rti.load(input.c_str())) {
-            cerr << "Failed loading rti: " << input << " !\n" << endl;
-            return;
-        }
-
-        uint32_t size = rti.width*rti.height*3;
-        vector<uint8_t> buffer(size);
-
-        if(redrawdir.size()) {
-            QDir dir(redrawdir);
-            if(!dir.exists()) {
-                cerr << "Directory for redraw not found!\n" << endl;
-                return;
-            }
-
-            for(int i = 0; i < rti.lights.size(); i++) {
-                Vector3f &rlight = rti.lights[i];
-                rti.render(rlight[0], rlight[1], buffer.data());
-
-                QImage img(rti.width, rti.height, QImage::Format_RGB888);
-                rti.render(rlight[0], rlight[1], img.bits());
-                img.save(dir.filePath( QString::number(i) + ".png"));
-            }
-        }
-        if(relighted) {
-            light = light / light.norm();
-            rti.render(light[0], light[1], buffer.data());
-            QImage img(rti.width, rti.height, QImage::Format_RGB888);
-            rti.render(light[0], light[1], img.bits());
-            img.save(output.c_str());
-        }
+    Rti rti;
+    if(!rti.load(input.c_str())) {
+        cerr << "Failed loading rti: " << input << " !\n" << endl;
+        return;
     }
+
+    uint32_t size = rti.width*rti.height*3;
+//    vector<uint8_t> buffer(size);
+    light = light / light.norm();
+ //   rti.render(light[0], light[1], buffer.data());
+    QImage img(rti.width, rti.height, QImage::Format_RGBA8888);
+    rti.render(light[0], light[1], img.bits(), 4);
+    img.save(output.c_str());
 }
 
 int main(int argc, char *argv[]) {
@@ -285,8 +263,8 @@ int main(int argc, char *argv[]) {
     if(optind < argc)
         output = argv[optind++];
 
-    if(redrawdir.size() || relighted) {
-        test(input, output, redrawdir, relighted, light);
+    if(relighted) {
+        test(input, output, light);
         return 1;
     }
 
@@ -307,6 +285,31 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    if(redrawdir.size()) {
+        Rti rti;
+        if(!rti.load(output.c_str())) {
+            cerr << "Failed loading rti: " << output << " !\n" << endl;
+            return 1;
+        }
+
+        uint32_t size = rti.width*rti.height*3;
+        //vector<uint8_t> buffer(size);
+
+        QDir dir(redrawdir);
+        if(!dir.exists()) {
+            cerr << "Directory for redraw not found!\n" << endl;
+            return 1;
+        }
+
+        for(int i = 0; i < rti.lights.size(); i++) {
+            Vector3f &rlight = rti.lights[i];
+          //  rti.render(rlight[0], rlight[1], buffer.data());
+
+            QImage img(rti.width, rti.height, QImage::Format_RGBA8888);
+            rti.render(rlight[0], rlight[1], img.bits(), 4);
+            img.save(dir.filePath( builder.imageset.images[i]));
+        }
+    }
 
     if(evaluate_error) {
         Rti rti;
