@@ -224,6 +224,7 @@ int main(int argc, char *argv[]) {
             light[0] = par[0].toFloat();
             light[1] = par[1].toFloat();
             light[2] = par[2].toFloat();
+			light = light/light.norm();
             relighted = true;
             break;
         }
