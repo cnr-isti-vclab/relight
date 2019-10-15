@@ -169,6 +169,7 @@ int main(int argc, char *argv[]) {
             evaluate_error = true;
             break;
         case 'E':
+            evaluate_error = true;
             builder.skip_image = atoi(optarg);
             break;
         case 'q':
@@ -352,8 +353,6 @@ int main(int argc, char *argv[]) {
             //cout << "PSNR: " << totpsnr << endl;
             return 0;
         }
-
-
 
         QDir out(output.c_str());
         ImageSet imgset;
