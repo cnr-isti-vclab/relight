@@ -229,7 +229,7 @@ initTree: function() {
 		t.imgCache = [];
 		for(var i = 0; i < t.maxRequested*t.njpegs; i++) {
 			var image = new Image();
-			image.crossOrigin = "Anonymous";
+			image.crossOrigin = "";
 			t.imgCache[i] = image;
 		}
 	}
@@ -319,6 +319,11 @@ initTree: function() {
 				var tmp = response.split( "Tile-size:" );
 				if(!tmp[1]) return null;
 				t.tilesize = parseInt(tmp[1].split(" ")[0]);
+				tmp = response.split( "Max-size:" );
+				if(!tmp[1]) return null;
+				tmp = tmp[1].split('\n')[0].split(' ');
+				t.width = parseInt(tmp[0]);
+				t.height= parseInt(tmp[1]);
 				t.nlevels  = parseInt(response.split( "Resolution-number:" )[1]);
 			}
 
@@ -331,6 +336,36 @@ initTree: function() {
 			};
 			break;
 
+		case "iiif":
+			t.metaDataURL = t.server + "?IIIF=" + t.path + "/" + t.img + "/info.json";
+			t.parseMetaData = function(response) {
+				var info = JSON.parse(response);
+				t.width = info.width;
+				t.height = info.height;
+				t.nlevels = info.tiles[0].scaleFactors.length;
+				t.tilesize = info.tiles[0].width;
+			}
+			t.getTileURL = function(image, x, y, level) {
+				let tw = t.tilesize;
+				let ilevel = parseInt(t.nlevels - 1 - level);
+				let s = Math.pow(2, level);
+				//region parameters
+				let xr = x * tw * s;
+				let yr = y * tw * s;
+				let wr = Math.min(tw * s, t.width - xr)
+				let hr = Math.min(tw * s, t.height - yr);
+
+				// pixel size parameters /ws,hs/
+				let ws = tw
+				if (xr + tw*s > t.width)
+					ws = (t.width - xr + s - 1) / s  
+				let hs = tw
+				if (yr + tw*s > t.height)
+					hs = (t.height - yr + s - 1) / s
+
+				return t.server + `?IIIF=${t.path}/${t.img}/${xr},${yr},${wr},${hr}/${ws},${hs}/0/default.jpg`;
+			};
+			break;
 		default:
 			console.log("OOOPPpppps");
 	}
