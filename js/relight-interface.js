@@ -51,7 +51,7 @@ function RelightViewer(div, options) {
 		delete t.nav.actions['info'];
 
 	var html = 
-'	<canvas id="rticanvas"></canvas>\n' +
+'	<canvas></canvas>\n' +
 '	<div class="relight-toolbox">\n';
 	for(var i in t.nav.actions) {
 		var action = t.nav.actions[i];
@@ -96,7 +96,7 @@ function RelightViewer(div, options) {
 	for(var i in t.nav.actions)
 		t.addAction('.relight-' + i, t.nav.actions[i].task);
 
-	var canvas = document.querySelector('#rticanvas');
+	var canvas = div.querySelector('canvas');
 
 	RelightCanvas.call(this, canvas, options);
 
