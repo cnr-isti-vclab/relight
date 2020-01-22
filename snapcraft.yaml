@@ -1,0 +1,31 @@
+name: relight
+version: "0.74-svn"
+summary: RTI builder and viewer
+description: |
+  A RTI library for creating and visualizing 
+  Reflectance Transformation Imaging
+confinement: devmode
+base: core18
+
+parts:
+  relight:
+    plugin: cmake
+    source-type: zip
+    source: http://pc-ponchio.isti.cnr.it/relight/relight.zip
+    build-packages:
+      - g++
+      - make
+      - qt5-default
+      - libjpeg-dev
+      - libarmadillo-dev
+    configflags:
+      - -DCMAKE_BUILD_TYPE=Release
+    stage-packages:
+      - libjpeg62
+
+
+apps:
+  relight:
+    command: relight
+    environment:
+      "DISABLE_WAYLAND": "1"
