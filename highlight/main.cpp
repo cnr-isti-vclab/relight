@@ -6,6 +6,8 @@
 #include <QTextStream>
 
 #include "ballpickerdialog.h"
+
+#include "mainwindow.h"
 #include <iostream>
 #include <vector>
 using namespace std;
@@ -34,6 +36,11 @@ void calibrateColors(QString dir) {
 
 int main(int argc, char *argv[]) {
 	const auto &app = QApplication(argc, argv);
+
+	auto mainwindow = new MainWindow();
+	mainwindow->show();
+	app.exec();
+	return 0;
 
 
 	auto dialog = new BallPickerDialog;
