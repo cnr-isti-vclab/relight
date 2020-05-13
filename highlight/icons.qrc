@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/custom-icons">
+        <file alias="document-open.png">icons/48x48/document-open.png</file>
+    </qresource>
+</RCC>

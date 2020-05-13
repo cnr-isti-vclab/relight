@@ -9,11 +9,24 @@ CONFIG -= app_bundle
 TEMPLATE = app
 
 SOURCES += main.cpp \
-    ballpickerdialog.cpp
+    ballpickerdialog.cpp \
+    mainwindow.cpp \
+    ball.cpp \
+    imagedialog.cpp \
+    graphics_view_zoom.cpp
 
 HEADERS += \
-    ballpickerdialog.h
+    ballpickerdialog.h \
+    mainwindow.h \
+    ball.h \
+    imagedialog.h \
+    graphics_view_zoom.h
 
 FORMS += \
-    ballpickerdialog.ui
+    ballpickerdialog.ui \
+    mainwindow.ui \
+    imagedialog.ui
+
+RESOURCES += \
+    icons.qrc
 

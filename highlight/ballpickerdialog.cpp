@@ -139,7 +139,7 @@ void BallPickerDialog::fit() {
 	radius = r;
 
 	//float max_angle = (52.0/180.0)*M_PI; //60 deg  respect to the vertical
-	float max_angle = (45.0/180.0)*M_PI;
+	float max_angle = (50.0/180.0)*M_PI; //slightly over 45. hoping not to spot reflexes
 	smallradius = radius*sin(max_angle);
 
 	int startx = (int)floor(center.x() - smallradius);
