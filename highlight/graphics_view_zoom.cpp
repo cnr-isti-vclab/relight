@@ -4,11 +4,14 @@
 #include <QScrollBar>
 #include <qmath.h>
 
+#include <iostream>
+using namespace std;
+
 Graphics_view_zoom::Graphics_view_zoom(QGraphicsView* view)
 	: QObject(view), _view(view) {
 	_view->viewport()->installEventFilter(this);
 	_view->setMouseTracking(true);
-	_modifiers = Qt::ControlModifier;
+	_modifiers = Qt::NoModifier; //Qt::ControlModifier;
 	_zoom_factor_base = 1.0015;
 }
 
@@ -49,7 +52,23 @@ bool Graphics_view_zoom::eventFilter(QObject *object, QEvent *event) {
 				return true;
 			}
 		}
+	} else if(event->type() == QEvent::MouseButtonDblClick) {
+		QMouseEvent* mouse_event = static_cast<QMouseEvent*>(event);
+		QPoint p = mouse_event->pos();
+
+		emit dblClicked(p);
+		return true;
 	}
+
 	Q_UNUSED(object)
 	return false;
 }
+
+void Graphics_view_zoom::zoomIn() {
+	gentle_zoom(1.19706);
+}
+
+void Graphics_view_zoom::zoomOut() {
+	gentle_zoom(0.835383);
+}
+
