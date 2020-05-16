@@ -20,8 +20,13 @@ private:
 	QPointF target_scene_pos, target_viewport_pos;
 	bool eventFilter(QObject* object, QEvent* event);
 
+public slots:
+	void zoomIn();
+	void zoomOut();
+
 signals:
 	void zoomed();
+	void dblClicked(QPoint);
 };
 
 
