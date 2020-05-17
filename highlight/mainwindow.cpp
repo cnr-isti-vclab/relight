@@ -3,6 +3,8 @@
 
 #include "imagedialog.h"
 #include "graphics_view_zoom.h"
+#include "ballwidget.h"
+//#include "ui_progress.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -10,8 +12,12 @@
 #include <QMouseEvent>
 #include <QSettings>
 
+#include <QtConcurrent/QtConcurrent>
+
 #include <set>
 #include <iostream>
+
+#include <assert.h>
 using namespace std;
 
 
@@ -27,17 +33,20 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionNext,     SIGNAL(triggered(bool)),              this, SLOT(next()));
 	connect(ui->addSphere,      SIGNAL(clicked(bool)),                this, SLOT(addSphere()));
 	connect(ui->removeSphere,   SIGNAL(clicked(bool)),                this, SLOT(removeSphere()));
-	connect(ui->process,   SIGNAL(clicked(bool)),                this, SLOT(process()));
+	connect(ui->process,        SIGNAL(clicked(bool)),                this, SLOT(process()));
 
 	//connect(ui->actionProcess,  SIGNAL(triggered(bool)),            this, SLOT(process()));
 	connect(ui->actionDelete_selected,     SIGNAL(triggered(bool)),   this, SLOT(deleteSelected()));
 
 
-	connect(ui->imageList,     SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(openImage(QListWidgetItem *)));
 	connect(ui->imageList,     SIGNAL(currentItemChanged(QListWidgetItem *, QListWidgetItem *)), this, SLOT(openImage(QListWidgetItem *)));
+	connect(ui->sphereList,     SIGNAL(currentItemChanged(QListWidgetItem *, QListWidgetItem *)), this, SLOT(changeSphere(QListWidgetItem *, QListWidgetItem *)));
+
 
 	scene = new RTIScene(this);
-	connect(scene, SIGNAL(borderPointMoved()), this, SLOT(updateBalls()));
+	connect(scene, SIGNAL(borderPointMoved()), this, SLOT(updateBorderPoints()));
+	connect(scene, SIGNAL(highlightMoved()), this, SLOT(updateHighlight()));
+
 	//	connect(scene, SIGNAL(changed(QList<QRectF>)), this, SLOT(updateBalls()));
 
 
@@ -48,6 +57,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(gvz, SIGNAL(dblClicked(QPoint)), this, SLOT(pointPicked(QPoint)));
 	connect(ui->actionZoom_in,  SIGNAL(triggered(bool)), gvz, SLOT(zoomIn()));
 	connect(ui->actionZoom_out, SIGNAL(triggered(bool)), gvz, SLOT(zoomOut()));
+
 }
 
 MainWindow::~MainWindow() {	delete ui; }
@@ -176,10 +186,10 @@ void MainWindow::pointPicked(QPoint p) {
 	Ball &ball = balls[id];
 	ball.border.push_back(borderPoint);
 
-	updateBalls();
+	updateBorderPoints();
 }
 
-void MainWindow::updateBalls() {
+void MainWindow::updateBorderPoints() {
 
 	for(auto &it: balls) {
 		Ball &ball = it.second;
@@ -197,10 +207,25 @@ void MainWindow::updateBalls() {
 				ball.circle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
 				ball.circle->setVisible(true);
 			}
-
 		}
 	}
 }
+
+
+void MainWindow::updateHighlight() {
+	cout << "Updating highlight" << endl;
+
+	//find WHICH ball and highlight is modeve.
+	for(auto &it: balls) {
+		Ball &ball = it.second;
+		if(!ball.highlight) continue;
+
+		cout << "ball pos: " << ball.highlight->pos().x() << endl;
+
+	}
+}
+
+
 
 void MainWindow::deleteSelected() {
 	for(auto &it: balls) {
@@ -213,7 +238,23 @@ void MainWindow::deleteSelected() {
 			return !remove;
 		});
 	}
-	updateBalls();
+	updateBorderPoints();
+}
+
+void MainWindow::changeSphere(QListWidgetItem *current, QListWidgetItem *previous) {
+	int current_id = current->data(Qt::UserRole).toInt();
+	Ball &ball = balls[current_id];
+	ball.setActive(true);
+
+	if(previous) {
+		int previous_id = previous->data(Qt::UserRole).toInt();
+		Ball &old = balls[previous_id];
+		old.setActive(false);
+	}
+
+
+
+
 }
 
 void MainWindow::addSphere() {
@@ -238,8 +279,14 @@ void MainWindow::addSphere() {
 	QPen highpen(Qt::red);
 	highpen.setWidth(3);
 	highpen.setCosmetic(true);
-	balls[id].highlight = scene->addEllipse(0, 0, 1, 1, highpen, Qt::red);
-	balls[id].highlight->setVisible(false);
+
+	auto high = new HighlightPoint(0, 0, 1, 1);
+	high->setVisible(false);
+	high->setFlag(QGraphicsItem::ItemIsMovable);
+	high->setFlag(QGraphicsItem::ItemIsSelectable);
+	high->setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
+	scene->addItem(high);
+	balls[id].highlight = high;
 }
 
 void MainWindow::removeSphere() {
@@ -250,6 +297,8 @@ void MainWindow::removeSphere() {
 			delete e;
 		if(ball.circle)
 			delete ball.circle;
+		if(ball.highlight)
+			delete ball.highlight;
 		balls.erase(id);
 	}
 	qDeleteAll(ui->sphereList->selectedItems());
@@ -257,66 +306,55 @@ void MainWindow::removeSphere() {
 
 
 void MainWindow::process() {
-	auto b = ui->sphereList->selectedItems();
-	int id = b[0]->data(Qt::UserRole).toInt();
-	Ball &ball = balls[id];
+	progress = new QProgressDialog("Looking for highlights...", "Cancel", 0, images.size(), this);
 
-	for(int i = 0; i < images.size(); i++) {
-		if(!valid[i]) continue;
-		QString filename = images[i];
-		QImage img(dir.filePath(filename));
-		if(img.isNull()) {
-			QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
-			return;
-		}
-		if(img.size() != imgsize) {
-			QMessageBox::critical(this, "Houston we have a problem!", "All images must be the same size! (" + filename + " doesn't...)");
-			return;
-		}
-		for(auto &it: balls) {
-			if(it.second.fitted)
-				it.second.findHighlight(img, i);
-		}
+	QThreadPool::globalInstance()->setMaxThreadCount(1);
+	progress_jobs.clear();
+	for(int i = 0; i < images.size(); i++)
+		progress_jobs.push_back(i);
+	QFuture<void> future = QtConcurrent::map(progress_jobs, [&](int i) -> int { return processImage(i); });
+	watcher.setFuture(future);
+	connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
+	connect(&watcher, SIGNAL(progressValueChanged(int)), progress, SLOT(setValue(int)));
+	connect(progress, SIGNAL(canceled()), this, SLOT(cancelProcess()));
+	progress->setWindowModality(Qt::WindowModal);
+}
+
+void MainWindow::cancelProcess() {
+	watcher.cancel();
+}
+
+void MainWindow::finishedProcess() {
+	auto selected = ui->imageList->selectedItems();
+	if(selected.size() == 0) {
+		cerr << "Porca paletta!" << endl;
+		return;
 	}
-	/*
-	for(auto &ball: balls) {
-		//TODO check for smallradius circle not going out of image.
-		//TODO process disabled until we have a center and radius
-		//TODO spherelights shown with lights positions...
-		QImage spherelights(ball.inner.width(), ball.inner.height(), QImage::Format_RGB32);
-		spherelights.fill(0);
+	openImage(selected[0]);
+}
 
-		//iterate over images, find center.
-		//TODO warn the user when light findingn failed. (and have him provide manually!
-	QStringList failed;
-	for(int i = 0; i < balls.size(); i++) {
-		QPointF light = findLightDir(spherelights, dir.filePath(balls[i]));
-		if(light == QPointF(0, 0))
-			failed.push_back(balls[i]);
-		cout << "light: " << light.x() << " " << light.y() << endl;
-
-		lights.push_back(light); //still image coordinates
+int MainWindow::processImage(int n) {
+	if(n < 0 || n >= valid.size()) {
+			cerr << "Failed!" << endl;
+			return 0;
 	}
+	if(!valid[n]) return 0;
 
-	if(failed.size()) {
-		QString str = failed.join('\n');
-		QMessageBox::critical(this, "Too bad we miss some light.", "Couldn't find the highlight in the following images:" + str);
+	QString filename = images[n];
+	QImage img(dir.filePath(filename));
+	if(img.isNull()) {
+		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
+		return 0;
 	}
-
-	for(size_t i = 0; i < lights.size(); i++) {
-		QPointF l = lights[i];
-		int x = l.x() -inner.left();
-		int y = l.y() - inner.top();
-		spherelights.setPixel(x, y, qRgb(255, 0, 0));
+	if(img.size() != imgsize) {
+		QMessageBox::critical(this, "Houston we have a problem!", "All images must be the same size! (" + filename + " doesn't...)");
+		return 0;
 	}
-	spherelights.save(dir.filePath("sphere.png"));
-
-	auto *item = new QGraphicsPixmapItem(QPixmap::fromImage(spherelights));
-	item->setPos(inner.topLeft());
-	scene->addItem(item);
-
-	cout << "Done!" << endl;
-	processed = failed.size() == 0; */
+	for(auto &it: balls) {
+		if(it.second.fitted)
+			it.second.findHighlight(img, n);
+	}
+	return 1;
 }
 
 void MainWindow::quit() {

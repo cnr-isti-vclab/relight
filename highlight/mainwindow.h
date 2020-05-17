@@ -4,8 +4,12 @@
 #include <QMainWindow>
 #include <QDir>
 #include "ball.h"
+//#include "progress.h"
+#include <QProgressDialog>
 
 #include <QGraphicsScene>
+#include <QThreadPool>
+#include <QFutureWatcher>
 
 #include <map>
 
@@ -27,6 +31,7 @@ public:
 
 signals:
 	void borderPointMoved();
+	void highlightMoved();
 };
 
 class MainWindow : public QMainWindow {
@@ -43,9 +48,14 @@ public:
 	int currentImage = -1;
 	std::map<int, Ball> balls;
 
+	std::vector<int> progress_jobs;
+	QProgressDialog *progress;
+	//Progress *progress;
+	QFutureWatcher<void> watcher;
+
 
 	bool init(QString folder);
-
+	int processImage(int n);
 public slots:
 
 	void open();
@@ -54,12 +64,18 @@ public slots:
 	void previous();
 	void pointPicked(QPoint p);
 	void deleteSelected();
-	void updateBalls();
+	void updateBorderPoints();
+	void updateHighlight();
 
+
+	void changeSphere(QListWidgetItem *current, QListWidgetItem *previous);
 	void addSphere();
 	void removeSphere();
 
 	void process();
+	void cancelProcess();
+	void finishedProcess();
+
 	void quit();
 
 private:

@@ -6,6 +6,7 @@
 #include <QRect>
 #include <QImage>
 #include <QGraphicsEllipseItem>
+#include <QRunnable>
 #include <vector>
 
 class BorderPoint: public QGraphicsEllipseItem {
@@ -18,12 +19,24 @@ protected:
 	QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 };
 
+class HighlightPoint: public QGraphicsEllipseItem {
+public:
+	HighlightPoint(qreal x, qreal y, qreal w, qreal h, QGraphicsItem *parent = Q_NULLPTR):
+		QGraphicsEllipseItem(x, y, w, h, parent) {}
+	virtual ~HighlightPoint();
+
+protected:
+	QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+};
+
+
 class Ball {
 public:
 	Ball(int n_lights) {
 		lights.resize(n_lights);
 		valid.resize(n_lights, false);
 	}
+	void run();
 
 	QPointF center;      //in pixel coordinates of the image
 	float radius;        //fitted radius
@@ -36,12 +49,14 @@ public:
 	std::vector<BorderPoint *> border;
 
 	QGraphicsEllipseItem *circle = nullptr;
-	QGraphicsEllipseItem *highlight = nullptr;
+	HighlightPoint *highlight = nullptr;
 	QImage sphere;
 
 	Ball();
 	bool fit(QSize imgsize);
 	void findHighlight(QImage im, int n);
+
+	void setActive(bool active);
 };
 
 #endif // BALL_H
