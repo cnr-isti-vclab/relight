@@ -222,7 +222,6 @@ QPointF BallPickerDialog::findLightDir(QImage &sphere, QString filename) {
 
 
 void BallPickerDialog::process() {
-	cout << "Processing" << endl;
 	//TODO check for smallradius circle not going out of image.
 	//TODO process disabled until we have a center and radius
 	//TODO spherelights shown with lights positions...
@@ -236,8 +235,6 @@ void BallPickerDialog::process() {
 		QPointF light = findLightDir(spherelights, dir.filePath(balls[i]));
 		if(light == QPointF(0, 0))
 			failed.push_back(balls[i]);
-		cout << "light: " << light.x() << " " << light.y() << endl;
-
 		lights.push_back(light); //still image coordinates
 	}
 
@@ -258,7 +255,6 @@ void BallPickerDialog::process() {
 	item->setPos(inner.topLeft());
 	scene->addItem(item);
 
-	cout << "Done!" << endl;
 	processed = failed.size() == 0;
 }
 
@@ -291,10 +287,8 @@ void BallPickerDialog::save() {
 		float d = sqrt(x*x + y*y);
 		float a = asin(d)*2;
 		float r = sin(a);
-		cout << x << " " << y  << " -> ";
 		x *= r/d;
 		y *= r/d;
-		cout << x << " " << y << endl;
 		y *= -1; //cooordinates inverted!
 
 		float z = sqrt(1.0 - x*x - y*y);

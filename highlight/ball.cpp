@@ -20,15 +20,32 @@ QVariant BorderPoint::itemChange(GraphicsItemChange change, const QVariant &valu
 	return QGraphicsItem::itemChange(change, value);
 }
 
+
+HighlightPoint::~HighlightPoint() {}
+
+QVariant HighlightPoint::itemChange(GraphicsItemChange change, const QVariant &value)	{
+	if (change == ItemPositionChange  && scene() || change == ItemScenePositionHasChanged) {
+		RTIScene *s = (RTIScene *)scene();
+		emit s->highlightMoved();
+	}
+	return QGraphicsItem::itemChange(change, value);
+}
+
+
 Ball::Ball() {}
+
+void Ball::setActive(bool active) {
+	QPen pen;
+	pen.setColor(active? Qt::yellow : Qt::white);
+	if(circle) circle->setPen(pen);
+	for(auto p: border) p->setPen(pen);
+}
 
 bool Ball::fit(QSize imgsize) {
 	vector<QPointF> centers;
 	for(QGraphicsEllipseItem *item: border) {
 		centers.push_back( item->rect().center() + QPointF(item->x(), item->y()));
-		cout << "center: " << item->x() << " " << item->y() << endl;
 		QPointF p = item->rect().center();
-		cout << "rect center: " << p.x() << " " << p.y() << endl << endl;
 	}
 
 
@@ -133,7 +150,6 @@ void Ball::findHighlight(QImage img, int n) {
 		}
 		threshold -= 10;
 	}
-	cout << "Bari: " << bari.x() << " " << bari.y() << endl;
 	lights[n] = bari;
 	valid[n] = !(bari == QPointF(0, 0));
 
