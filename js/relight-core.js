@@ -459,7 +459,8 @@ getIBox: function(pos) {
 	return box;
 },
 
-// p from 0 to nplanes,
+// p from 0 to nplan        compiled = gl.getShaderParameter(t.fragShader, gl.COMPILE_STATUS);
+es,
 basePixelOffset: function(m, p, x, y, k) {
 	var t = this;
 	return ((m*(t.nplanes+1) + p)*t.resolution*t.resolution + (x + y*t.resolution))*3 + k;
@@ -805,7 +806,7 @@ loadProgram: function() {
 	t.program = gl.createProgram();
 	compiled = gl.getShaderParameter(t.fragShader, gl.COMPILE_STATUS);
 	if(!compiled) {
-		alert("Failed fragment shader compilation: see console log and ask for support.
+		alert("Failed fragment shader compilation: see console log and ask for support.");
 		console.log(t.fragCode);
 		console.log(gl.getShaderInfoLog(t.fragShader));
 	}
