@@ -459,8 +459,7 @@ getIBox: function(pos) {
 	return box;
 },
 
-// p from 0 to nplan        compiled = gl.getShaderParameter(t.fragShader, gl.COMPILE_STATUS);
-es,
+// p from 0 to nplan
 basePixelOffset: function(m, p, x, y, k) {
 	var t = this;
 	return ((m*(t.nplanes+1) + p)*t.resolution*t.resolution + (x + y*t.resolution))*3 + k;
@@ -793,10 +792,11 @@ loadProgram: function() {
 	var gl = t.gl;
 	t.vertShader = gl.createShader(gl.VERTEX_SHADER);
 	gl.shaderSource(t.vertShader, t.vertCode);
-	var compiled = gl.compileShader(t.vertShader);
+	gl.compileShader(t.vertShader);
+	let compiled = gl.getShaderParameter(t.vertShader, gl.COMPILE_STATUS);
 	if(!compiled) {
-		alert("Failed vertex shader compilation: see console log and ask for support.");
-		console.log(t.vertShader);
+		alert("Failed vertex shader compilation: see console log.");
+		console.log(t.vertCode);
 		console.log(gl.getShaderInfoLog(t.vertShader));
 	}
 
@@ -806,7 +806,7 @@ loadProgram: function() {
 	t.program = gl.createProgram();
 	compiled = gl.getShaderParameter(t.fragShader, gl.COMPILE_STATUS);
 	if(!compiled) {
-		alert("Failed fragment shader compilation: see console log and ask for support.");
+		alert("Failed fragment shader compilation: see console log.");
 		console.log(t.fragCode);
 		console.log(gl.getShaderInfoLog(t.fragShader));
 	}
