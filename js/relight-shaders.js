@@ -60,12 +60,34 @@ varying vec2 v_texcoord;
 /*    MRGB    */
 
 Relight.prototype.mrgbFrag = function() {
-	var t = this;
+	let t = this;
 
-	var src = t.headFrag();
+	let src = t.headFrag();
 
-	if(!t.normals)
+/* Unrolling the loop to investigate a glsl probable bug */
+	if(!t.normals) {
 		src +=
+
+`void main(void) {
+	vec3 color = base[0];
+	vec4 c;
+`;
+	for(let j = 0; j < t.njpegs; j++) {
+		src +=
+`	c = texture2D(planes[${j}], v_texcoord);
+	color += base[${j}*3+1]*(c.x - bias[${j}*3+1])*scale[${j}*3+1];
+	color += base[${j}*3+2]*(c.y - bias[${j}*3+2])*scale[${j}*3+2];
+	color += base[${j}*3+3]*(c.z - bias[${j}*3+3])*scale[${j}*3+3];
+`;
+	}
+	src +=
+`	
+	gl_FragColor = vec4(color, opacity);
+}
+`;
+
+
+	let old_src = 
 
 `void main(void) {
 	vec3 color = base[0];
@@ -80,7 +102,7 @@ Relight.prototype.mrgbFrag = function() {
 }
 `;
 
-	else
+	} else
 		src +=
 `void main(void) {
 	vec3 one = vec3(1.0 ,1.0, 1.0);
