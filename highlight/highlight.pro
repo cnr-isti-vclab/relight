@@ -14,8 +14,7 @@ SOURCES += main.cpp \
     ball.cpp \
     imagedialog.cpp \
     graphics_view_zoom.cpp \
-    ballwidget.cpp \
-    progress.cpp
+    ballwidget.cpp
 
 HEADERS += \
     ballpickerdialog.h \
@@ -23,8 +22,7 @@ HEADERS += \
     ball.h \
     imagedialog.h \
     graphics_view_zoom.h \
-    ballwidget.h \
-    progress.h
+    ballwidget.h
 
 FORMS += \
     ballpickerdialog.ui \
