@@ -13,7 +13,7 @@ using namespace std;
 BorderPoint::~BorderPoint() {}
 
 QVariant BorderPoint::itemChange(GraphicsItemChange change, const QVariant &value)	{
-	if (change == ItemPositionChange  && scene() || change == ItemScenePositionHasChanged) {
+	if ((change == ItemPositionChange  && scene()) || change == ItemScenePositionHasChanged) {
 		RTIScene *s = (RTIScene *)scene();
 		emit s->borderPointMoved();
 	}
@@ -24,7 +24,7 @@ QVariant BorderPoint::itemChange(GraphicsItemChange change, const QVariant &valu
 HighlightPoint::~HighlightPoint() {}
 
 QVariant HighlightPoint::itemChange(GraphicsItemChange change, const QVariant &value)	{
-	if (change == ItemPositionChange  && scene() || change == ItemScenePositionHasChanged) {
+	if ((change == ItemPositionChange  && scene()) || change == ItemScenePositionHasChanged) {
 		RTIScene *s = (RTIScene *)scene();
 		emit s->highlightMoved();
 	}
@@ -34,7 +34,8 @@ QVariant HighlightPoint::itemChange(GraphicsItemChange change, const QVariant &v
 
 Ball::Ball() {}
 
-void Ball::setActive(bool active) {
+void Ball::setActive(bool _active) {
+	active = _active;
 	QPen pen;
 	pen.setColor(active? Qt::yellow : Qt::white);
 	if(circle) circle->setPen(pen);
@@ -45,7 +46,6 @@ bool Ball::fit(QSize imgsize) {
 	vector<QPointF> centers;
 	for(QGraphicsEllipseItem *item: border) {
 		centers.push_back( item->rect().center() + QPointF(item->x(), item->y()));
-		QPointF p = item->rect().center();
 	}
 
 
@@ -157,7 +157,7 @@ void Ball::findHighlight(QImage img, int n) {
 
 void Ball::computeDirections() {
 
-	for(int i = 0; i < lights.size(); i++) {
+	for(size_t i = 0; i < lights.size(); i++) {
 		if(!valid[i]) {
 			directions[i] = Vector3f(0, 0, 0);
 			continue;
@@ -192,7 +192,7 @@ void Ball::save(QString filename, QStringList images) {
 	int tot = count(valid.begin(), valid.end(), true);
 
 	stream << tot << "\n";
-	for(int i = 0; i < directions.size(); i++) {
+	for(size_t i = 0; i < directions.size(); i++) {
 		if(!valid[i])
 			continue;
 		Vector3f d = directions[i];

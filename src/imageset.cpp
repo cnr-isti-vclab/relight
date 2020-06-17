@@ -54,22 +54,31 @@ bool ImageSet::init(const char *_path, bool ignore_filenames, int skip_image) {
 			continue;
 
 		lights.push_back(light);
-		QString filepath = dir.filePath(s);
 
 		if(ignore_filenames) {
 			if(images.size() != n) {
 				cerr << "Lp number of lights (" << n << ") different from the number of images found (" << images.size() << ")\n";
 				return false;
 			}
-			filepath = dir.filePath(images[i]);
+
 		} else {
+			throw "TODO: remove absolute parth of the image.";
 			//often path are absolute. TODO cleanup HERE!
+			QString filepath = dir.filePath(images[i]);
 			QFileInfo info(filepath);
 			if(!info.exists()) {
 				cerr << "Could not find image: " << qPrintable(s) << endl;
 				return false;
 			}
 		}
+	}
+	return initImages(_path);
+}
+
+bool ImageSet::initImages(const char *_path) {
+	QDir dir(_path);
+	for(size_t i = 0; i < images.size(); i++) {
+		QString filepath = dir.filePath(images[i]);
 		int w, h;
 		JpegDecoder *dec = new JpegDecoder;
 		if(!dec->init(filepath.toStdString().c_str(), w, h)) {
@@ -86,6 +95,7 @@ bool ImageSet::init(const char *_path, bool ignore_filenames, int skip_image) {
 	}
 	return true;
 }
+
 void ImageSet::decode(size_t img, unsigned char *buffer) {
 	decoders[img]->readRows(height, buffer);
 }

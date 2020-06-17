@@ -43,6 +43,7 @@ public:
 	}
 	void run();
 
+	bool active = false;
 	QPointF center;      //in pixel coordinates of the image
 	float radius;        //fitted radius
 	float smallradius;   //innner radius where to look for reflections

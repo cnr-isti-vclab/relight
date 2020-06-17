@@ -1,10 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include "imagedialog.h"
 #include "graphics_view_zoom.h"
-#include "ballwidget.h"
-//#include "ui_progress.h"
+#include "rtiexport.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -61,7 +59,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionSave_LP, SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)), this, SLOT(exportRTI()));
 
-
+	rtiexport = new RtiExport(this);
 }
 
 MainWindow::~MainWindow() {	delete ui; }
@@ -145,7 +143,9 @@ void MainWindow::openImage(QListWidgetItem *item, bool fit) {
 	for(auto it: balls) {
 		Ball &ball = it.second;
 		if(ball.fitted && ball.valid[n]) {
-			ball.highlight->setRect(QRectF(ball.lights[n] - QPointF(1, 1), ball.lights[n] + QPointF(1, 1)));
+			QRectF mark(- QPointF(1, 1), QPointF(1, 1));
+			ball.highlight->setRect(mark);
+			ball.highlight->setPos(ball.lights[n]);
 			ball.highlight->setVisible(true);
 		} else
 			ball.highlight->setVisible(false);
@@ -197,9 +197,6 @@ void MainWindow::updateBorderPoints() {
 
 	for(auto &it: balls) {
 		Ball &ball = it.second;
-		//bool changed = false;
-		//for(auto b: ball.border)
-		//	if(b->)
 
 		ball.circle->setVisible(false);
 
@@ -215,21 +212,14 @@ void MainWindow::updateBorderPoints() {
 	}
 }
 
-
 void MainWindow::updateHighlight() {
-	cout << "Updating highlight" << endl;
-
-	//find WHICH ball and highlight is modeve.
 	for(auto &it: balls) {
 		Ball &ball = it.second;
 		if(!ball.highlight) continue;
 
-		cout << "ball pos: " << ball.highlight->pos().x() << endl;
-
+		ball.lights[currentImage] = ball.highlight->pos();
 	}
 }
-
-
 
 void MainWindow::deleteSelected() {
 	for(auto &it: balls) {
@@ -255,10 +245,6 @@ void MainWindow::changeSphere(QListWidgetItem *current, QListWidgetItem *previou
 		Ball &old = balls[previous_id];
 		old.setActive(false);
 	}
-
-
-
-
 }
 
 void MainWindow::addSphere() {
@@ -338,7 +324,7 @@ void MainWindow::finishedProcess() {
 }
 
 int MainWindow::processImage(int n) {
-	if(n < 0 || n >= valid.size()) {
+	if(n < 0 || n >= (int)valid.size()) {
 			cerr << "Failed!" << endl;
 			return 0;
 	}
@@ -381,5 +367,14 @@ void MainWindow::saveLPs() {
 }
 
 void MainWindow::exportRTI() {
-
+	//should init with saved preferences.
+	rtiexport->images = images;
+	Ball &ball = (*balls.begin()).second;
+	ball.computeDirections();
+	rtiexport->lights = ball.directions;
+	rtiexport->path = dir.path();
+	rtiexport->show();
+	rtiexport->exec();
 }
+
+

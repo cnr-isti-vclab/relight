@@ -2,6 +2,10 @@
 #define RTIEXPORT_H
 
 #include <QDialog>
+#include <map>
+
+#include "../src/rti.h"
+#include "../relight/rtibuilder.h"
 
 namespace Ui {
 class RtiExport;
@@ -12,14 +16,34 @@ class RtiExport : public QDialog
 	Q_OBJECT
 
 public:
+	QStringList images;
+	std::vector<Vector3f> lights;
+	QString path;
+
 	explicit RtiExport(QWidget *parent = 0);
 	~RtiExport();
+	Rti::Type basis();
+	Rti::ColorSpace colorSpace();
+
+	int quality();
+	int planes();
+	int chroma();
+	int top();
+	int left();
+	int width();
+	int height();
+
+	QVariant getOption(QString key);
+	void setOption(QString key, QVariant value);
 
 public slots:
 	void changeBasis(int n);
 	void changePlanes(int n);
+	void createRTI();
+
 private:
 	Ui::RtiExport *ui;
 };
 
 #endif // RTIEXPORT_H
+
