@@ -108,6 +108,9 @@
     <addaction name="actionOpen"/>
     <addaction name="separator"/>
     <addaction name="actionProcess"/>
+    <addaction name="actionSave_LP"/>
+    <addaction name="actionExport_RTI"/>
+    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
@@ -159,6 +162,8 @@
    <addaction name="separator"/>
    <addaction name="actionZoom_in"/>
    <addaction name="actionZoom_out"/>
+   <addaction name="separator"/>
+   <addaction name="actionExport_RTI"/>
   </widget>
   <action name="actionOpen">
    <property name="icon">
@@ -255,7 +260,20 @@
   </action>
   <action name="actionProcess">
    <property name="text">
-    <string>Process</string>
+    <string>Find highlights</string>
+   </property>
+  </action>
+  <action name="actionSave_LP">
+   <property name="text">
+    <string>Save LPs...</string>
+   </property>
+  </action>
+  <action name="actionExport_RTI">
+   <property name="icon">
+    <iconset theme="document-save"/>
+   </property>
+   <property name="text">
+    <string>Export RTI...</string>
    </property>
   </action>
  </widget>

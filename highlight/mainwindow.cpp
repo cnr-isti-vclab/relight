@@ -58,6 +58,10 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionZoom_in,  SIGNAL(triggered(bool)), gvz, SLOT(zoomIn()));
 	connect(ui->actionZoom_out, SIGNAL(triggered(bool)), gvz, SLOT(zoomOut()));
 
+	connect(ui->actionSave_LP, SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
+	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)), this, SLOT(exportRTI()));
+
+
 }
 
 MainWindow::~MainWindow() {	delete ui; }
@@ -358,5 +362,24 @@ int MainWindow::processImage(int n) {
 }
 
 void MainWindow::quit() {
+
+}
+
+void MainWindow::saveLPs() {
+	int count = 0;
+	QString basename = "sphere";
+	for(auto it: balls) {
+		QString filename = basename;
+		if(count > 0)
+			filename += QString::number(count++);
+		filename += ".lp";
+
+		Ball ball = it.second;
+		filename = dir.filePath(filename);
+		ball.save(filename, images);
+	}
+}
+
+void MainWindow::exportRTI() {
 
 }

@@ -9,6 +9,8 @@
 #include <QRunnable>
 #include <vector>
 
+#include "../src/vector.h"
+
 class BorderPoint: public QGraphicsEllipseItem {
 public:
 	BorderPoint(qreal x, qreal y, qreal w, qreal h, QGraphicsItem *parent = Q_NULLPTR):
@@ -30,10 +32,13 @@ protected:
 };
 
 
+
 class Ball {
 public:
 	Ball(int n_lights) {
 		lights.resize(n_lights);
+		directions.resize(n_lights);
+		positions.resize(n_lights);
 		valid.resize(n_lights, false);
 	}
 	void run();
@@ -45,6 +50,9 @@ public:
 	bool fitted;         //we have a valid fit
 
 	std::vector<QPointF> lights;
+	std::vector<Vector3f> directions;
+	std::vector<Vector3f> positions;  //3d positions if using more than 1 ball.
+
 	std::vector<bool> valid;
 	std::vector<BorderPoint *> border;
 
@@ -55,6 +63,8 @@ public:
 	Ball();
 	bool fit(QSize imgsize);
 	void findHighlight(QImage im, int n);
+	void computeDirections();
+	void save(QString filename, QStringList images);
 
 	void setActive(bool active);
 };

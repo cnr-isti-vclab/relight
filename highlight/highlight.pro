@@ -14,7 +14,8 @@ SOURCES += main.cpp \
     ball.cpp \
     imagedialog.cpp \
     graphics_view_zoom.cpp \
-    ballwidget.cpp
+    ballwidget.cpp \
+    rtiexport.cpp
 
 HEADERS += \
     ballpickerdialog.h \
@@ -22,14 +23,16 @@ HEADERS += \
     ball.h \
     imagedialog.h \
     graphics_view_zoom.h \
-    ballwidget.h
+    ballwidget.h \
+    rtiexport.h
 
 FORMS += \
     ballpickerdialog.ui \
     mainwindow.ui \
     imagedialog.ui \
     ballwidget.ui \
-    progress.ui
+    progress.ui \
+    rtiexport.ui
 
 RESOURCES += \
     icons.qrc
