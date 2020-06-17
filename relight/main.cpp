@@ -58,7 +58,7 @@ void test(std::string input, std::string output,  Vector3f light) {
         return;
     }
 
-    uint32_t size = rti.width*rti.height*3;
+	//uint32_t size = rti.width*rti.height*3;
 //    vector<uint8_t> buffer(size);
     light = light / light.norm();
  //   rti.render(light[0], light[1], buffer.data());

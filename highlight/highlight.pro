@@ -8,29 +8,45 @@ CONFIG -= app_bundle
 
 TEMPLATE = app
 
+DEFINES += _USE_MATH_DEFINES
+DEFINES += NOMINMAX
+
+win32:INCLUDEPATH += ../libjpeg/include ../armadillo-9.200.7/include
+win32:LIBS += ../libjpeg/lib/jpeg.lib ../armadillo-9.200.7/lib/blas_win64_MT.lib ../armadillo-9.200.7/lib/lapack_win64_MT.lib
+
+unix:LIBS += -larmadillo -ljpeg
+
 SOURCES += main.cpp \
-    ballpickerdialog.cpp \
     mainwindow.cpp \
     ball.cpp \
-    imagedialog.cpp \
     graphics_view_zoom.cpp \
     ballwidget.cpp \
-    rtiexport.cpp
+    rtiexport.cpp \
+    ../relight/relight.cpp \
+    ../src/imageset.cpp \
+    ../src/jpeg_decoder.cpp \
+    ../src/jpeg_encoder.cpp \
+    ../src/material.cpp \
+    ../src/pca.cpp \
+    ../src/rti.cpp \
+    ../src/utils.cpp
+
 
 HEADERS += \
-    ballpickerdialog.h \
     mainwindow.h \
     ball.h \
-    imagedialog.h \
     graphics_view_zoom.h \
     ballwidget.h \
-    rtiexport.h
+    rtiexport.h \
+    ../src/imageset.h \
+    ../src/jpeg_decoder.h \
+    ../src/jpeg_encoder.h \
+    ../src/material.h \
+    ../src/pca.h
 
 FORMS += \
-    ballpickerdialog.ui \
     mainwindow.ui \
     imagedialog.ui \
-    ballwidget.ui \
     progress.ui \
     rtiexport.ui
 

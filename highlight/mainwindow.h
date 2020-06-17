@@ -18,6 +18,7 @@ class QListWidgetItem;
 class QGraphicsEllipseItem;
 class QGraphicsPixmapItem;
 class QSettings;
+class RtiExport;
 
 
 namespace Ui {
@@ -79,12 +80,12 @@ public slots:
 	void saveLPs();
 	void exportRTI();
 
-
 	void quit();
 
 private:
 	Ui::MainWindow *ui;
-	QSettings *settings;
+	QSettings *settings = nullptr;
+	RtiExport *rtiexport = nullptr;
 	RTIScene *scene = nullptr;
 	QGraphicsPixmapItem *imagePixmap = nullptr;
 	bool ignore_scene_changes = false;

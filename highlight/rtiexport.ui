@@ -27,17 +27,17 @@
       <widget class="QComboBox" name="basis">
        <item>
         <property name="text">
-         <string>PTM 9 - Polinomial texture map, second degree</string>
+         <string>PTM 18 - Polinomial texture map, second degree</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>HSH - 12 - Hemispherical harmonics, second degree</string>
         </property>
        </item>
        <item>
         <property name="text">
          <string>HSH 27 - Hemispherical Harmonics, first degree</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>HSH - 9 - Hemispherical harmonics, second degree</string>
         </property>
        </item>
        <item>
@@ -52,9 +52,21 @@
        </item>
        <item>
         <property name="text">
+         <string>YBLN - Bilinear interpolation + PCA and chroma Preserving</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
          <string>YRBF - Radial basis functions + PCA and chroma preserving</string>
         </property>
        </item>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="help">
+       <property name="text">
+        <string>?</string>
+       </property>
       </widget>
      </item>
     </layout>
@@ -73,10 +85,16 @@
         <string>Quality</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>Jpeg quality:</string>
+        <item row="1" column="1">
+         <widget class="QSpinBox" name="planes">
+          <property name="minimum">
+           <number>9</number>
+          </property>
+          <property name="maximum">
+           <number>27</number>
+          </property>
+          <property name="value">
+           <number>18</number>
           </property>
          </widget>
         </item>
@@ -93,33 +111,6 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Number of planes:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QSpinBox" name="planes">
-          <property name="minimum">
-           <number>9</number>
-          </property>
-          <property name="maximum">
-           <number>27</number>
-          </property>
-          <property name="value">
-           <number>18</number>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_4">
-          <property name="text">
-           <string>Chroma planes:</string>
-          </property>
-         </widget>
-        </item>
         <item row="2" column="1">
          <widget class="QSpinBox" name="chroma">
           <property name="minimum">
@@ -130,6 +121,27 @@
           </property>
           <property name="value">
            <number>10</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Number of planes:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>Chroma planes:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Jpeg quality:</string>
           </property>
          </widget>
         </item>
@@ -148,96 +160,47 @@
         <string>Crop</string>
        </property>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_5">
-          <property name="text">
-           <string>Width</string>
-          </property>
-         </widget>
+        <item row="3" column="1">
+         <widget class="QSpinBox" name="left"/>
         </item>
-        <item row="0" column="1">
-         <widget class="QSpinBox" name="width"/>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_11">
-          <property name="text">
-           <string>Height</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QSpinBox" name="height"/>
-        </item>
-        <item row="2" column="0">
+        <item row="3" column="0">
          <widget class="QLabel" name="label_10">
           <property name="text">
            <string>Left</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
-         <widget class="QSpinBox" name="left"/>
-        </item>
-        <item row="3" column="0">
+        <item row="4" column="0">
          <widget class="QLabel" name="label_8">
           <property name="text">
            <string>Top</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
+        <item row="4" column="1">
          <widget class="QSpinBox" name="top"/>
         </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>Width</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_7">
+          <property name="text">
+           <string>Height</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QSpinBox" name="height"/>
+        </item>
+        <item row="1" column="1">
+         <widget class="QSpinBox" name="width"/>
+        </item>
        </layout>
-       <widget class="QLabel" name="label_6">
-        <property name="geometry">
-         <rect>
-          <x>50</x>
-          <y>70</y>
-          <width>39</width>
-          <height>17</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Basis:</string>
-        </property>
-       </widget>
-       <widget class="QLabel" name="label_7">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>50</y>
-          <width>67</width>
-          <height>17</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Height</string>
-        </property>
-       </widget>
-       <widget class="QLabel" name="label_9">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>70</y>
-          <width>67</width>
-          <height>17</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Left</string>
-        </property>
-       </widget>
-       <widget class="QLineEdit" name="lineEdit">
-        <property name="geometry">
-         <rect>
-          <x>60</x>
-          <y>30</y>
-          <width>81</width>
-          <height>25</height>
-         </rect>
-        </property>
-       </widget>
       </widget>
      </item>
     </layout>

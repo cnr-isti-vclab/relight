@@ -5,8 +5,6 @@
 #include <QPointF>
 #include <QTextStream>
 
-#include "ballpickerdialog.h"
-
 #include "mainwindow.h"
 #include <iostream>
 #include <vector>
@@ -40,22 +38,6 @@ int main(int argc, char *argv[]) {
 	auto mainwindow = new MainWindow();
 	mainwindow->show();
 	app.exec();
-	return 0;
-
-
-	auto dialog = new BallPickerDialog;
-	//bool ok = dialog->init(argv[1]);
-	//if(!ok) return -1;
-
-	dialog->show();
-	int res = dialog->exec();
-	vector<QPointF> lights =  dialog->lights;
-
-	//if(argc == 3)
-	//	calibrateColors(argv[2]);
-
-	//app.exec();
-
 	return 0;
 }
 
