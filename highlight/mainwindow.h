@@ -76,6 +76,10 @@ public slots:
 	void cancelProcess();
 	void finishedProcess();
 
+	void saveLPs();
+	void exportRTI();
+
+
 	void quit();
 
 private:

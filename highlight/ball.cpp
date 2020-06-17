@@ -155,3 +155,47 @@ void Ball::findHighlight(QImage img, int n) {
 
 }
 
+void Ball::computeDirections() {
+
+	for(int i = 0; i < lights.size(); i++) {
+		if(!valid[i]) {
+			directions[i] = Vector3f(0, 0, 0);
+			continue;
+		}
+
+		float x = lights[i].x();
+		float y = lights[i].y();
+		x = (x - inner.left() - smallradius)/radius;
+		y = (y - inner.top() - smallradius)/radius;
+
+		float d = sqrt(x*x + y*y);
+		float a = asin(d)*2;
+		float r = sin(a);
+		x *= r/d;
+		y *= r/d;
+		y *= -1; //cooordinates inverted!
+
+		float z = sqrt(1.0 - x*x - y*y);
+		directions[i] = Vector3f(x, y, z);
+	}
+
+}
+void Ball::save(QString filename, QStringList images) {
+	QFile file(filename);
+	if(!file.open(QFile::WriteOnly)) {
+		QString error = file.errorString();
+		throw error;
+	}
+	QTextStream stream(&file);
+
+	computeDirections();
+	int tot = count(valid.begin(), valid.end(), true);
+
+	stream << tot << "\n";
+	for(int i = 0; i < directions.size(); i++) {
+		if(!valid[i])
+			continue;
+		Vector3f d = directions[i];
+		stream << images[i] << " " << d[0] << " " << d[1] << " " << d[2] << "\n";
+	}
+}
