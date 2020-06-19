@@ -58,6 +58,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	connect(ui->actionSave_LP, SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)), this, SLOT(exportRTI()));
+	connect(ui->loadLP, SIGNAL(clicked(bool)), this, SLOT(loadLP()));
 
 	rtiexport = new RtiExport(this);
 }
@@ -105,6 +106,12 @@ bool MainWindow::init(QString dirname) {
 	//TODO: in background load and process the images
 
 	addSphere();
+
+	ui->addSphere->setEnabled(true);
+	ui->removeSphere->setEnabled(true);
+	ui->process->setEnabled(true);
+	ui->loadLP->setEnabled(true);
+	ui->saveLP->setEnabled(true);
 	return true;
 }
 
@@ -247,7 +254,7 @@ void MainWindow::changeSphere(QListWidgetItem *current, QListWidgetItem *previou
 	}
 }
 
-void MainWindow::addSphere() {
+int MainWindow::addSphere() {
 	ignore_scene_changes = true;
 	std::set<int> used;
 
@@ -277,6 +284,7 @@ void MainWindow::addSphere() {
 	high->setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
 	scene->addItem(high);
 	balls[id].highlight = high;
+	return id;
 }
 
 void MainWindow::removeSphere() {
@@ -351,6 +359,99 @@ void MainWindow::quit() {
 
 }
 
+/*load LP:
+   if no images:
+		   look for images in the directory of the LP,
+				 if no images found ask for directory with images.
+					 if wrong number: complain and ask for again/cancel.
+					 if image names not matching jwarn and -> use order or cancel.
+					 load images
+	if images:
+			wrong number: complain
+			wrong names ->use order or cancel
+*/
+
+
+void MainWindow::loadLP() {
+	QString lp = QFileDialog::getOpenFileName(this, "Select light direction file", QString(), "Light directions (*.lp)");
+	if(lp.isNull())
+		return;
+	QFile file(lp);
+	if(!file.open(QFile::ReadOnly)) {
+		QMessageBox::critical(this, "Could not load file", file.errorString());
+		return;
+	}
+	QTextStream stream(&file);
+	std::vector<Vector3f> directions;
+	size_t n;
+	stream >> n;
+	directions.resize(n);
+	vector<QString> filenames;
+
+	for(size_t i = 0; i < n; i++) {
+		QString s;
+		Vector3f light;
+		stream >> s >> light[0] >> light[1] >> light[2];
+		directions.push_back(light);
+		filenames.push_back(s);
+	}
+
+	if(images.size() == 0) {
+		QFileInfo info(lp);
+		QDir tmp_dir = info.dir();
+		QStringList img_ext;
+		img_ext << "*.jpg" << "*.JPG";
+		QStringList tmp_images = tmp_dir.entryList(img_ext);
+		while(tmp_images.size() != filenames.size()) {
+			QMessageBox::information(this, "Loading images", "Select a directory containing the image");
+			QString folder = QFileDialog::getExistingDirectory(this, "Select a directory for images", dir.path());
+			if(folder.isEmpty()) return;
+			dir = QDir(folder);
+			tmp_images = tmp_dir.entryList(img_ext);
+			if(tmp_images.size() != filenames.size()) {
+				auto response = QMessageBox::question(this, "Light directions and images",
+					QString("The folder contains %1 images, the .lp file specify %1 images.\n Select another folder.")
+							.arg(tmp_images.size()).arg(filenames.size()));
+				if(response == QMessageBox::Cancel || response == QMessageBox::No)
+					return;
+			}
+		}
+
+		bool names_match = true;
+		for(int i = 0; i < filenames.size(); i++) {
+			QFileInfo fileinfo(filenames[i]);
+			if(fileinfo.fileName() != tmp_images[i]) {
+				names_match = false;
+				break;
+			}
+		}
+		if(names_match == false) {
+			auto response = QMessageBox::question(this, "Light directions and images",
+				"Filenames in .lp do not match with images in the .lp directory. Do you want to just use the filename order?");
+			if(response == QMessageBox::Cancel || response == QMessageBox::No)
+				return;
+		}
+		init(info.dir().path());
+	} else {
+		if(filenames.size() != images.size()) {
+			QMessageBox::critical(this, "Cannot load .lp file:", QString("The folder contains %1 images, the .lp file specify %1 images. Select another lp").arg(images.size()).arg(filenames.size()));
+			return;
+		}
+	}
+
+
+
+	if(balls[0].border.size() == 0) {
+		balls[0].only_directions = true;
+		balls[0].directions = directions;
+	} else {
+		int id = addSphere();
+		balls[id].only_directions = true;
+		balls[id].directions = directions;
+	}
+
+
+}
 void MainWindow::saveLPs() {
 	int count = 0;
 	QString basename = "sphere";

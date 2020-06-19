@@ -64,8 +64,68 @@
      </item>
      <item>
       <widget class="QPushButton" name="help">
+       <property name="maximumSize">
+        <size>
+         <width>30</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="text">
-        <string>?</string>
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset theme="help"/>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QLabel" name="label_6">
+       <property name="text">
+        <string>Format:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioButton">
+       <property name="text">
+        <string>RTI</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioButton_2">
+       <property name="text">
+        <string>Relight</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioButton_3">
+       <property name="text">
+        <string>Relight + Deepzoom</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="formatHelp">
+       <property name="maximumSize">
+        <size>
+         <width>30</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset theme="help"/>
        </property>
       </widget>
      </item>
@@ -161,7 +221,11 @@
        </property>
        <layout class="QGridLayout" name="gridLayout">
         <item row="3" column="1">
-         <widget class="QSpinBox" name="left"/>
+         <widget class="QSpinBox" name="left">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+         </widget>
         </item>
         <item row="3" column="0">
          <widget class="QLabel" name="label_10">
@@ -178,7 +242,11 @@
          </widget>
         </item>
         <item row="4" column="1">
-         <widget class="QSpinBox" name="top"/>
+         <widget class="QSpinBox" name="top">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+         </widget>
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_5">
@@ -195,10 +263,18 @@
          </widget>
         </item>
         <item row="2" column="1">
-         <widget class="QSpinBox" name="height"/>
+         <widget class="QSpinBox" name="height">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+         </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QSpinBox" name="width"/>
+         <widget class="QSpinBox" name="width">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>

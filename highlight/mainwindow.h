@@ -70,7 +70,7 @@ public slots:
 
 
 	void changeSphere(QListWidgetItem *current, QListWidgetItem *previous);
-	void addSphere();
+	int addSphere();
 	void removeSphere();
 
 	void process();
@@ -78,6 +78,7 @@ public slots:
 	void finishedProcess();
 
 	void saveLPs();
+	void loadLP();
 	void exportRTI();
 
 	void quit();
