@@ -74,7 +74,7 @@ RtiBuilder::~RtiBuilder() {
 #endif
 }
 
-bool RtiBuilder::init(const string &folder) {
+bool RtiBuilder::init(const string &folder, std::function<void(std::string stage, int percent)> *_callback) {
 	
 	if((type == PTM || type == HSH) && colorspace == MRGB) {
 		error = "PTM and HSH do not support MRGB";
@@ -93,7 +93,7 @@ bool RtiBuilder::init(const string &folder) {
 	width = imageset.width;
 	height = imageset.height;
 	lights = imageset.lights;
-	return init();
+	return init(_callback);
 }
 
 
@@ -121,7 +121,8 @@ void RtiBuilder::savePixel(Color3f *p, int side, const QString &file) {
 	img.save(file);
 }
 
-bool RtiBuilder::init() {
+bool RtiBuilder::init(std::function<void(std::string stage, int percent)> *_callback) {
+	callback = _callback;
 	if(type == BILINEAR) {
 		ndimensions = resolution*resolution;
 		buildResampleMap();
@@ -137,7 +138,7 @@ bool RtiBuilder::init() {
 	
 	//collect a set of samples resampled
 	PixelArray sample;
-	imageset.sample(sample, samplingrate);
+	imageset.sample(sample, samplingrate, callback);
 	nsamples = sample.npixels();
 	
 	PixelArray resample = resamplePixels(sample);
@@ -1153,7 +1154,6 @@ Vector3f RtiBuilder::getNormal(Color3f *pixel) {
 }
 
 size_t RtiBuilder::save(const string &output, int quality) {
-	
 	uint32_t dim = ndimensions*3;
 	
 	QDir dir(output.c_str());
@@ -1370,7 +1370,13 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		}
 	}
 
+
+
+
 	for(uint32_t y = 0; y < height; y++) {
+		if(callback)
+			(*callback)("Saving...", 100*y/height);
+
 		imageset.readLine(sample);
 
 		for(uint32_t x = 0; x < width; x++)
@@ -1429,7 +1435,10 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		for(size_t j = 0; j < encoders.size(); j++)
 			encoders[j]->writeRows(line[j].data(), 1);
 	}
-	
+
+
+
+
 	size_t total = 0;
 	for(size_t p = 0; p < encoders.size(); p++) {
 		size_t s = encoders[p]->finish();
@@ -1616,11 +1625,16 @@ void RtiBuilder::buildResampleMap() {
 	 * x = B*b + (AtA + kI)^-1 * (At(I - AB)*b)
 	 * x = (B + (AtA + kI)^-1 * At*(I - AB))*b
 	 */
+
+
 	float radius = 1/(sigma*sigma);
 	arma::Mat<double> B(ndimensions, lights.size(), arma::fill::zeros);
 	
 	resamplemap.resize(ndimensions);
 	for(uint32_t y = 0; y < resolution; y++) {
+		if(callback)
+			(*callback)(std::string("Resampling light directions"), 100*y/resolution);
+
 		for(uint32_t x = 0; x < resolution; x++) {
 			Vector3f n = fromOcta(x, y, resolution);
 			

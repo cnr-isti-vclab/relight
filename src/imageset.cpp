@@ -129,7 +129,7 @@ public:
 	}
 };
 
-uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate) {
+uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate, std::function<void(std::string stage, int percent)> *callback) {
 	uint32_t nsamples = width*height/samplingrate;
 	if(nsamples > width*height)
 		nsamples = width*height;
@@ -143,6 +143,9 @@ uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate) {
 	int offset = 0;
 	vector<uint8_t> row(width*height*3);
 	for(uint32_t y = 0; y < height; y++) {
+		if(callback)
+			(*callback)(std::string("Sampling images"), 100*y/height);
+
 		auto &selection = sampler.result(samplexrow, width);
 		for(uint32_t i = 0; i < decoders.size(); i++) {
 			JpegDecoder *dec = decoders[i];

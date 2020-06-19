@@ -1,8 +1,13 @@
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QProgressDialog>
+#include <QFuture>
+#include <QtConcurrent/QtConcurrent>
 
 #include "rtiexport.h"
 #include "ui_rtiexport.h"
+
+#include <functional>
 
 RtiExport::RtiExport(QWidget *parent) :
 	QDialog(parent),
@@ -60,9 +65,15 @@ Rti::ColorSpace  RtiExport::colorSpace() {
 }
 
 
-void RtiExport::createRTI() {
-	QString output = QFileDialog::getSaveFileName(this, "Select an output directory");
-	if(output.isNull()) return;
+void RtiExport::callback(std::string s, int n) {
+	QString str(s.c_str());
+	emit progressText(str);
+	emit progress(n);
+
+	std::cout << s << " " << n << "%" << std::endl;
+}
+
+void RtiExport::makeRti(QString output) {
 
 	RtiBuilder builder;
 
@@ -84,10 +95,37 @@ void RtiExport::createRTI() {
 	builder.height = builder.imageset.height;
 	builder.lights = lights;
 
-	if(!builder.init()) {
+	std::function<void(std::string s, int n)> callback = [this](std::string s, int n) { this->callback(s, n); };
+
+	if(!builder.init(&callback)) {
 		QMessageBox::critical(this, "We have a problem!", QString(builder.error.c_str()));
 		return;
 	}
 	builder.save(output.toStdString(), ui->quality->value());
+}
+
+
+void RtiExport::createRTI() {
+	QString output = QFileDialog::getSaveFileName(this, "Select an output directory");
+	if(output.isNull()) return;
+
+
+	progressbar = new QProgressDialog("Building RTI...", "Cancel", 0, 100, this);
+	progressbar->setAutoClose(false);
+
+	QFuture<void> future = QtConcurrent::run([this, output]() { this->makeRti(output); } );
+	watcher.setFuture(future);
+	connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
+	connect(this, SIGNAL(progress(int)), progressbar, SLOT(setValue(int)));
+	connect(this, SIGNAL(progressText(const QString &)), progressbar, SLOT(setLabelText(const QString &)));
+
+
+	progressbar->setWindowModality(Qt::WindowModal);
+}
+
+void RtiExport::finishedProcess() {
+	progressbar->close();
+	delete progressbar;
+	progressbar = nullptr;
 }
 

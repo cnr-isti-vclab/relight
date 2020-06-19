@@ -3,13 +3,15 @@
 
 #include <QDialog>
 #include <map>
-
+#include <QFutureWatcher>
 #include "../src/rti.h"
 #include "../relight/rtibuilder.h"
 
 namespace Ui {
 class RtiExport;
 }
+
+class QProgressDialog;
 
 class RtiExport : public QDialog
 {
@@ -19,6 +21,10 @@ public:
 	QStringList images;
 	std::vector<Vector3f> lights;
 	QString path;
+
+	QProgressDialog *progressbar;
+	QFutureWatcher<void> watcher;
+
 
 	explicit RtiExport(QWidget *parent = 0);
 	~RtiExport();
@@ -35,12 +41,19 @@ public:
 
 	QVariant getOption(QString key);
 	void setOption(QString key, QVariant value);
+	void callback(std::string s, int n);
+
+	void makeRti(QString output);
 
 public slots:
 	void changeBasis(int n);
 	void changePlanes(int n);
 	void createRTI();
+	void finishedProcess();
 
+signals:
+	void progressText(const QString &str);
+	void progress(int n);
 private:
 	Ui::RtiExport *ui;
 };

@@ -1,6 +1,6 @@
 QT += core gui widgets concurrent
 
-QMAKE_CXXFLAGS += -std=c++14
+QMAKE_CXXFLAGS += -std=c++17
 
 TARGET = highlight
 CONFIG += console
@@ -46,8 +46,6 @@ HEADERS += \
 
 FORMS += \
     mainwindow.ui \
-    imagedialog.ui \
-    progress.ui \
     rtiexport.ui
 
 RESOURCES += \
