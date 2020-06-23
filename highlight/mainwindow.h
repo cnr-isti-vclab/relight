@@ -19,6 +19,7 @@ class QGraphicsEllipseItem;
 class QGraphicsPixmapItem;
 class QSettings;
 class RtiExport;
+class HelpDialog;
 
 
 namespace Ui {
@@ -81,12 +82,15 @@ public slots:
 	void loadLP();
 	void exportRTI();
 
+	void showHelp();
+
 	void quit();
 
 private:
 	Ui::MainWindow *ui;
 	QSettings *settings = nullptr;
 	RtiExport *rtiexport = nullptr;
+	HelpDialog *help = nullptr;
 	RTIScene *scene = nullptr;
 	QGraphicsPixmapItem *imagePixmap = nullptr;
 	bool ignore_scene_changes = false;

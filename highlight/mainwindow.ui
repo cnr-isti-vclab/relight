@@ -60,8 +60,8 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset theme="document-new">
-            <normaloff>.</normaloff>.</iconset>
+           <iconset resource="icons.qrc">
+            <normaloff>:/icons/gtango/list-add.svg</normaloff>:/icons/gtango/list-add.svg</iconset>
           </property>
          </widget>
         </item>
@@ -83,8 +83,8 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset theme="edit-cut">
-            <normaloff>.</normaloff>.</iconset>
+           <iconset resource="icons.qrc">
+            <normaloff>:/icons/gtango/list-remove.svg</normaloff>:/icons/gtango/list-remove.svg</iconset>
           </property>
          </widget>
         </item>
@@ -100,8 +100,8 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset theme="document-properties">
-            <normaloff>.</normaloff>.</iconset>
+           <iconset resource="icons.qrc">
+            <normaloff>:/icons/gtango/applications-system.svg</normaloff>:/icons/gtango/applications-system.svg</iconset>
           </property>
          </widget>
         </item>
@@ -117,8 +117,8 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset theme="system-software-install">
-            <normaloff>.</normaloff>.</iconset>
+           <iconset resource="icons.qrc">
+            <normaloff>:/icons/gtango/document-open.svg</normaloff>:/icons/gtango/document-open.svg</iconset>
           </property>
          </widget>
         </item>
@@ -134,8 +134,8 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset theme="media-floppy">
-            <normaloff>.</normaloff>.</iconset>
+           <iconset resource="icons.qrc">
+            <normaloff>:/icons/gtango/document-save.svg</normaloff>:/icons/gtango/document-save.svg</iconset>
           </property>
          </widget>
         </item>
@@ -254,11 +254,12 @@
    <addaction name="actionZoom_out"/>
    <addaction name="separator"/>
    <addaction name="actionExport_RTI"/>
+   <addaction name="actionHelp"/>
   </widget>
   <action name="actionOpen">
    <property name="icon">
-    <iconset theme="document-open">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/folder-open.svg</normaloff>:/icons/gtango/folder-open.svg</iconset>
    </property>
    <property name="text">
     <string>Open...</string>
@@ -268,18 +269,14 @@
    </property>
   </action>
   <action name="actionExit">
-   <property name="icon">
-    <iconset theme="application-exit">
-     <normaloff>.</normaloff>.</iconset>
-   </property>
    <property name="text">
     <string>Exit</string>
    </property>
   </action>
   <action name="actionNext">
    <property name="icon">
-    <iconset theme="go-next">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/go-previous.svg</normaloff>:/icons/gtango/go-previous.svg</iconset>
    </property>
    <property name="text">
     <string>Next image</string>
@@ -290,8 +287,8 @@
   </action>
   <action name="actionPrevious">
    <property name="icon">
-    <iconset theme="go-previous">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/go-next.svg</normaloff>:/icons/gtango/go-next.svg</iconset>
    </property>
    <property name="text">
     <string>Previous image</string>
@@ -302,8 +299,8 @@
   </action>
   <action name="actionZoom_in">
    <property name="icon">
-    <iconset theme="zoom-in">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/zoom-in.svg</normaloff>:/icons/gtango/zoom-in.svg</iconset>
    </property>
    <property name="text">
     <string>Zoom in</string>
@@ -314,8 +311,8 @@
   </action>
   <action name="actionZoom_out">
    <property name="icon">
-    <iconset theme="zoom-out">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/zoom-out.svg</normaloff>:/icons/gtango/zoom-out.svg</iconset>
    </property>
    <property name="text">
     <string>Zoom out</string>
@@ -358,8 +355,8 @@
   </action>
   <action name="actionProcess">
    <property name="icon">
-    <iconset theme="document-properties">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/system-run.svg</normaloff>:/icons/gtango/system-run.svg</iconset>
    </property>
    <property name="text">
     <string>Find highlights</string>
@@ -367,8 +364,8 @@
   </action>
   <action name="actionSave_LP">
    <property name="icon">
-    <iconset theme="document-save">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/document-save.svg</normaloff>:/icons/gtango/document-save.svg</iconset>
    </property>
    <property name="text">
     <string>Save LPs...</string>
@@ -376,8 +373,8 @@
   </action>
   <action name="actionExport_RTI">
    <property name="icon">
-    <iconset theme="document-save">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/document-save.svg</normaloff>:/icons/gtango/document-save.svg</iconset>
    </property>
    <property name="text">
     <string>Export RTI...</string>
@@ -385,14 +382,16 @@
   </action>
   <action name="actionLoad_LP">
    <property name="icon">
-    <iconset theme="system-software-install">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/document-open.svg</normaloff>:/icons/gtango/document-open.svg</iconset>
    </property>
    <property name="text">
     <string>Load LP...</string>
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="icons.qrc"/>
+ </resources>
  <connections/>
 </ui>
