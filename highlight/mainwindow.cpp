@@ -3,6 +3,7 @@
 
 #include "graphics_view_zoom.h"
 #include "rtiexport.h"
+#include "helpdialog.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -60,7 +61,10 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)), this, SLOT(exportRTI()));
 	connect(ui->loadLP, SIGNAL(clicked(bool)), this, SLOT(loadLP()));
 
+	connect(ui->actionHelp, SIGNAL(triggered(bool)), this, SLOT(showHelp()));
+
 	rtiexport = new RtiExport(this);
+	help = new HelpDialog(this);
 }
 
 MainWindow::~MainWindow() {	delete ui; }
@@ -150,7 +154,7 @@ void MainWindow::openImage(QListWidgetItem *item, bool fit) {
 	for(auto it: balls) {
 		Ball &ball = it.second;
 		if(ball.fitted && ball.valid[n]) {
-			QRectF mark(- QPointF(1, 1), QPointF(1, 1));
+			QRectF mark(- QPointF(2, 2), QPointF(2, 2));
 			ball.highlight->setRect(mark);
 			ball.highlight->setPos(ball.lights[n]);
 			ball.highlight->setVisible(true);
@@ -279,6 +283,8 @@ int MainWindow::addSphere() {
 
 	auto high = new HighlightPoint(0, 0, 1, 1);
 	high->setVisible(false);
+	high->setPen(highpen);
+	high->setBrush(Qt::red);
 	high->setFlag(QGraphicsItem::ItemIsMovable);
 	high->setFlag(QGraphicsItem::ItemIsSelectable);
 	high->setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
@@ -478,4 +484,7 @@ void MainWindow::exportRTI() {
 	rtiexport->exec();
 }
 
-
+void MainWindow::showHelp() {
+	help->show();
+//	help->setUrl(":/docs/help.html");
+}

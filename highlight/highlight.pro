@@ -20,7 +20,6 @@ SOURCES += main.cpp \
     mainwindow.cpp \
     ball.cpp \
     graphics_view_zoom.cpp \
-    ballwidget.cpp \
     rtiexport.cpp \
     ../relight/relight.cpp \
     ../src/imageset.cpp \
@@ -29,25 +28,30 @@ SOURCES += main.cpp \
     ../src/material.cpp \
     ../src/pca.cpp \
     ../src/rti.cpp \
-    ../src/utils.cpp
+    ../src/utils.cpp \
+    helpdialog.cpp
 
 
 HEADERS += \
     mainwindow.h \
     ball.h \
     graphics_view_zoom.h \
-    ballwidget.h \
     rtiexport.h \
     ../src/imageset.h \
     ../src/jpeg_decoder.h \
     ../src/jpeg_encoder.h \
     ../src/material.h \
-    ../src/pca.h
+    ../src/pca.h \
+    helpdialog.h
 
 FORMS += \
     mainwindow.ui \
-    rtiexport.ui
+    rtiexport.ui \
+    helpdialog.ui
 
 RESOURCES += \
     icons.qrc
+
+DISTFILES += \
+    docs/help.html
 
