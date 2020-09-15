@@ -89,28 +89,41 @@ bool ImageSet::initImages(const char *_path) {
 			cerr << "Inconsistent image size for " << qPrintable(filepath) << endl;
 			return false;
 		}
-		width = (size_t)w;
-		height = (size_t)h;
+		right = image_width = width = (size_t)w;
+		bottom = image_height = height = (size_t)h;
+
 		decoders.push_back(dec);
 	}
 	return true;
 }
+void ImageSet::crop(size_t _left, size_t _top, size_t _right, size_t _bottom) {
+	left = _left;
+	top = _top;
+	right = _right > 0 ? _right : width;
+	bottom = _bottom > 0 ? _bottom : height;
+	if(left < 0 || left >= right || top < 0 || top >= bottom || right > image_width || bottom > image_height)
+		throw "Invalid crop parameters";
+	width = right - left;
+	height = bottom - top;
+
+	skipToTop();
+}
 
 void ImageSet::decode(size_t img, unsigned char *buffer) {
+	throw "TO FIX!";
 	decoders[img]->readRows(height, buffer);
 }
 
 void ImageSet::readLine(PixelArray &pixels) {
 	pixels.resize(width, lights.size());
-	std::vector<uint8_t> row(width*3);
+	std::vector<uint8_t> row(image_width*3);
 
 	for(size_t i = 0; i < decoders.size(); i++) {
 		decoders[i]->readRows(1, row.data());
-
-		for(size_t x = 0; x < width; x++) {
-			pixels(x, i).r = row[x*3 + 0];
-			pixels(x, i).g = row[x*3 + 1];
-			pixels(x, i).b = row[x*3 + 2];
+		for(size_t x = left; x < right; x++) {
+			pixels(x - left, i).r = row[x*3 + 0];
+			pixels(x - left, i).g = row[x*3 + 1];
+			pixels(x - left, i).b = row[x*3 + 2];
 		}
 	}
 }
@@ -141,10 +154,10 @@ uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate, std::functi
 	StupidSampler sampler;
 
 	int offset = 0;
-	vector<uint8_t> row(width*height*3);
-	for(uint32_t y = 0; y < height; y++) {
+	vector<uint8_t> row(image_width*3);
+	for(uint32_t y = top; y < bottom; y++) {
 		if(callback)
-			(*callback)(std::string("Sampling images"), 100*y/height);
+			(*callback)(std::string("Sampling images"), 100*(y-top)/height);
 
 		auto &selection = sampler.result(samplexrow, width);
 		for(uint32_t i = 0; i < decoders.size(); i++) {
@@ -152,6 +165,7 @@ uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate, std::functi
 			dec->readRows(1, row.data());
 			int off = offset;
 			for(int k: selection) {
+				k += left;
 				sample(off, i).r = row[k*3 + 0];
 				sample(off, i).g = row[k*3 + 1];
 				sample(off, i).b = row[k*3 + 2];
@@ -164,10 +178,24 @@ uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate, std::functi
 	return nsamples;
 }
 
-
-
 void ImageSet::restart() {
+	cout << "Restarting\n" << endl;
+
 	for(uint32_t i = 0; i < decoders.size(); i++)
 		decoders[i]->restart();
+
+	skipToTop();
+	cout << "Restarted\n" << endl;
+}
+
+void ImageSet::skipToTop() {
+	cout << "Skipping\n" << endl;
+	std::vector<uint8_t> row(image_width*3);
+
+	for(uint32_t i = 0; i < decoders.size(); i++) {
+		for(size_t x = 0; x < top; x++)
+			decoders[i]->readRows(1, row.data());
+	}
+	cout << "Skipped\n" << endl;
 }
 
