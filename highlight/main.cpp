@@ -33,10 +33,15 @@ void calibrateColors(QString dir) {
 
 
 int main(int argc, char *argv[]) {
+	cout << "!) Cancel when saving!" << endl;
+	cout << "Do notlook for highlight if no sphere is selected!" << endl;
+	cout << "Do not export if no sphere selected" << endl;
+	cout << "autodetext sphere.lp in dir and ask for loading" << endl;
+	cout << "Status bar: show number of images, width, height, position of mouse," << endl;
 	const auto &app = QApplication(argc, argv);
 
 	auto mainwindow = new MainWindow();
-	mainwindow->show();
+	mainwindow->showMaximized();
 	app.exec();
 	return 0;
 }

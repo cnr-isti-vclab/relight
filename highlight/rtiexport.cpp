@@ -89,7 +89,10 @@ void RtiExport::makeRti(QString output) {
 	}
 	builder.imageset.images = images;
 	builder.imageset.lights = lights;
+
 	builder.imageset.initImages(path.toStdString().c_str());
+	//DEBUG!
+	//builder.imageset.crop(2000, 2000, 3000, 3000);
 
 	builder.width  = builder.imageset.width;
 	builder.height = builder.imageset.height;
