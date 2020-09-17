@@ -74,7 +74,8 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset theme="help"/>
+        <iconset theme="help">
+         <normaloff>.</normaloff>.</iconset>
        </property>
       </widget>
      </item>
@@ -125,7 +126,8 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset theme="help"/>
+        <iconset theme="help">
+         <normaloff>.</normaloff>.</iconset>
        </property>
       </widget>
      </item>
@@ -276,13 +278,20 @@
           </property>
          </widget>
         </item>
+        <item row="0" column="0">
+         <widget class="QCheckBox" name="cropCheck">
+          <property name="text">
+           <string>Crop</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </item>
     </layout>
    </item>
    <item>
-    <widget class="QGraphicsView" name="cropview"/>
+    <widget class="ImageCropper" name="cropview"/>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
@@ -296,6 +305,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ImageCropper</class>
+   <extends>QGraphicsView</extends>
+   <header>imagecropper.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

@@ -17,6 +17,7 @@ win32:LIBS += ../libjpeg/lib/jpeg.lib ../armadillo-9.200.7/lib/blas_win64_MT.lib
 unix:LIBS += -larmadillo -ljpeg
 
 SOURCES += main.cpp \
+    imagecropper.cpp \
     mainwindow.cpp \
     ball.cpp \
     graphics_view_zoom.cpp \
@@ -33,6 +34,9 @@ SOURCES += main.cpp \
 
 
 HEADERS += \
+    imagecropper.h \
+    imagecropper_e.h \
+    imagecropper_p.h \
     mainwindow.h \
     ball.h \
     graphics_view_zoom.h \
