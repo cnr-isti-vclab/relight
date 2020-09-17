@@ -8,10 +8,11 @@
 #include "../relight/rtibuilder.h"
 
 namespace Ui {
-class RtiExport;
+	class RtiExport;
 }
 
 class QProgressDialog;
+class QGraphicsPixmapItem;
 
 class RtiExport : public QDialog
 {
@@ -30,7 +31,10 @@ public:
 	~RtiExport();
 	Rti::Type basis();
 	Rti::ColorSpace colorSpace();
-
+	
+	void setImages(QStringList images);
+	void showImage(QPixmap pix);
+	
 	int quality();
 	int planes();
 	int chroma();

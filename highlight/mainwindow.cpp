@@ -475,7 +475,8 @@ void MainWindow::saveLPs() {
 
 void MainWindow::exportRTI() {
 	//should init with saved preferences.
-	rtiexport->images = images;
+	rtiexport->setImages(images);
+	rtiexport->showImage(imagePixmap->pixmap());
 	Ball &ball = (*balls.begin()).second;
 	ball.computeDirections();
 	rtiexport->lights = ball.directions;

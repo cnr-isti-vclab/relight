@@ -1,13 +1,18 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QProgressDialog>
+#include <QGraphicsPixmapItem>
+#include <QResizeEvent>
 #include <QFuture>
 #include <QtConcurrent/QtConcurrent>
 
 #include "rtiexport.h"
 #include "ui_rtiexport.h"
+#include "imagecropper.h"
 
 #include <functional>
+#include <iostream>
+using namespace std;
 
 RtiExport::RtiExport(QWidget *parent) :
 	QDialog(parent),
@@ -17,12 +22,26 @@ RtiExport::RtiExport(QWidget *parent) :
 	connect(ui->basis, SIGNAL(currentIndexChanged(int)), this, SLOT(changeBasis(int)));
 	connect(ui->planes, SIGNAL(valueChanged(int)), this, SLOT(changePlanes(int)));
 	connect(this, SIGNAL(accepted()), this, SLOT(createRTI()));
-
+	ui->cropview->setBackgroundColor( Qt::lightGray );
+	ui->cropview->setCroppingRectBorderColor( Qt::white);
+	
 }
 
-RtiExport::~RtiExport()
-{
+RtiExport::~RtiExport() {
 	delete ui;
+}
+
+void RtiExport::setImages(QStringList _images) {
+	images = _images;
+}
+
+ostream& operator<<(ostream& os, const QRectF& r) {
+	os << "top: " << r.top() << " left: " << r.left() << " bottom: " << r.bottom() << " right: " << r.right();
+	return os;
+}
+
+void RtiExport::showImage(QPixmap pix) {
+	ui->cropview->setImage(pix);	
 }
 
 void RtiExport::changeBasis(int n) {
