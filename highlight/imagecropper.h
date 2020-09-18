@@ -20,9 +20,16 @@ public slots:
 	void setCroppingRectBorderColor(const QColor& _borderColor);
 	void setProportion(const QSizeF& _proportion);
 	void setProportionFixed(const bool _isFixed);
+	void showHandle(bool _show = true);
+	void hideHandle();
+
+signals:
+	void areaChanged(QRectF rect);
 
 public:
 	const QPixmap cropImage();
+	bool handleShown() { return show_handle; }
+	QRectF rect();
 
 protected:
 	virtual void paintEvent(QPaintEvent* _event);
@@ -53,6 +60,7 @@ private:
 private:
 	// Private data implementation
 	ImageCropperPrivate* pimpl;
+	bool show_handle = true;
 };
 
 #endif // IMAGECROPPER_H

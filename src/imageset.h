@@ -25,7 +25,7 @@ public:
 
 	bool init(const char *path, bool ignore_filenames = true, int skip_image = -1);
 	bool initImages(const char *path); //require lights and images to be available, path points to the dir of the images.
-	void crop(size_t _left, size_t _top, size_t _right, size_t _bottom);
+	void crop(int _left, int _top, int _right, int _bottom);
 	//call AFTER initImages and BEFORE breadline, decode or sample.
 
 	void decode(size_t img, unsigned char *buffer);

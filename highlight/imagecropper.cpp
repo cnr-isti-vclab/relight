@@ -107,6 +107,20 @@ const QPixmap ImageCropper::cropImage()
 	return pimpl->imageForCropping.copy(realSizeRect.toRect());
 }
 
+void ImageCropper::showHandle(bool _show) {
+	show_handle = _show;
+	update();
+}
+void ImageCropper::hideHandle() {
+	show_handle = false;
+	update();
+}
+
+QRectF ImageCropper::rect() {
+	return pimpl->croppingRect;
+}
+
+
 // ********
 // Protected section
 
@@ -129,7 +143,7 @@ void ImageCropper::paintEvent(QPaintEvent* _event)
 		}
 	}
 
-	{
+	if(show_handle) {
 		if (pimpl->croppingRect.isNull()) {
 			const int width = WIDGET_MINIMUM_SIZE.width()/2;
 			const int height = WIDGET_MINIMUM_SIZE.height()/2;
@@ -240,7 +254,7 @@ void ImageCropper::mouseMoveEvent(QMouseEvent* _event)
 
 			pimpl->croppingRect.moveTo( pimpl->lastStaticCroppingRect.topLeft() + mouseDelta );
 		}
-
+		emit areaChanged(pimpl->croppingRect);
 		update();
 	}
 }

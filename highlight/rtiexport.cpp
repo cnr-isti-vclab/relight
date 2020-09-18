@@ -2,6 +2,7 @@
 #include <QMessageBox>
 #include <QProgressDialog>
 #include <QGraphicsPixmapItem>
+#include <QRect>
 #include <QResizeEvent>
 #include <QFuture>
 #include <QtConcurrent/QtConcurrent>
@@ -19,12 +20,19 @@ RtiExport::RtiExport(QWidget *parent) :
 	ui(new Ui::RtiExport) {
 	ui->setupUi(this);
 
+	ui->crop_frame->hide();
 	connect(ui->basis, SIGNAL(currentIndexChanged(int)), this, SLOT(changeBasis(int)));
 	connect(ui->planes, SIGNAL(valueChanged(int)), this, SLOT(changePlanes(int)));
 	connect(this, SIGNAL(accepted()), this, SLOT(createRTI()));
+
+	connect(ui->crop,          SIGNAL(clicked()),  this, SLOT(showCrop()));
+	connect(ui->cropbuttonbox, SIGNAL(accepted()), this, SLOT(acceptCrop()));
+	connect(ui->cropbuttonbox, SIGNAL(rejected()), this, SLOT(rejectCrop()));
+	connect(ui->cropview, SIGNAL(areaChanged(QRectF)), this, SLOT(cropChanged(QRectF)));
+
+	ui->cropview->hideHandle();
 	ui->cropview->setBackgroundColor( Qt::lightGray );
 	ui->cropview->setCroppingRectBorderColor( Qt::white);
-	
 }
 
 RtiExport::~RtiExport() {
@@ -92,7 +100,7 @@ void RtiExport::callback(std::string s, int n) {
 	std::cout << s << " " << n << "%" << std::endl;
 }
 
-void RtiExport::makeRti(QString output) {
+void RtiExport::makeRti(QString output, QRect rect) {
 
 	RtiBuilder builder;
 
@@ -111,7 +119,7 @@ void RtiExport::makeRti(QString output) {
 
 	builder.imageset.initImages(path.toStdString().c_str());
 	//DEBUG!
-	//builder.imageset.crop(2000, 2000, 3000, 3000);
+	builder.imageset.crop(rect.left(), rect.top(), rect.right(), rect.bottom());
 
 	builder.width  = builder.imageset.width;
 	builder.height = builder.imageset.height;
@@ -135,7 +143,14 @@ void RtiExport::createRTI() {
 	progressbar = new QProgressDialog("Building RTI...", "Cancel", 0, 100, this);
 	progressbar->setAutoClose(false);
 
-	QFuture<void> future = QtConcurrent::run([this, output]() { this->makeRti(output); } );
+	QRect rect = QRect(0, 0, 0, 0);
+	if(ui->cropview->handleShown()) {
+		rect = ui->cropview->rect().toRect();
+		cout << rect << endl << flush;
+	}
+	cout << rect << endl << flush;
+
+	QFuture<void> future = QtConcurrent::run([this, output, rect]() { this->makeRti(output, rect); } );
 	watcher.setFuture(future);
 	connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
 	connect(this, SIGNAL(progress(int)), progressbar, SLOT(setValue(int)));
@@ -151,3 +166,25 @@ void RtiExport::finishedProcess() {
 	progressbar = nullptr;
 }
 
+void RtiExport::showCrop() {
+	ui->cropview->showHandle();
+	ui->export_frame->hide();
+	ui->crop_frame->show();
+}
+
+void RtiExport::acceptCrop() {
+	ui->export_frame->show();
+	ui->crop_frame->hide();
+}
+void RtiExport::rejectCrop() {
+	ui->cropview->hideHandle();
+	ui->export_frame->show();
+	ui->crop_frame->hide();
+}
+
+void RtiExport::cropChanged(QRectF rect) {
+	ui->width->setValue((int)rect.width());
+	ui->height->setValue((int)rect.height());
+	ui->left->setValue((int)rect.left());
+	ui->top->setValue((int)rect.top());
+}
