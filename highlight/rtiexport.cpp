@@ -47,6 +47,10 @@ ostream& operator<<(ostream& os, const QRectF& r) {
 	os << "top: " << r.top() << " left: " << r.left() << " bottom: " << r.bottom() << " right: " << r.right();
 	return os;
 }
+ostream& operator<<(ostream& os, const QRect& r) {
+	os << "top: " << r.top() << " left: " << r.left() << " bottom: " << r.bottom() << " right: " << r.right();
+	return os;
+}
 
 void RtiExport::showImage(QPixmap pix) {
 	ui->cropview->setImage(pix);	
@@ -97,7 +101,7 @@ void RtiExport::callback(std::string s, int n) {
 	emit progressText(str);
 	emit progress(n);
 
-	std::cout << s << " " << n << "%" << std::endl;
+	//std::cout << s << " " << n << "%" << std::endl;
 }
 
 void RtiExport::makeRti(QString output, QRect rect) {
@@ -146,9 +150,10 @@ void RtiExport::createRTI() {
 	QRect rect = QRect(0, 0, 0, 0);
 	if(ui->cropview->handleShown()) {
 		rect = ui->cropview->rect().toRect();
-		cout << rect << endl << flush;
 	}
+	cout << "rectf: " << ui->cropview->rect() << endl;
 	cout << rect << endl << flush;
+
 
 	QFuture<void> future = QtConcurrent::run([this, output, rect]() { this->makeRti(output, rect); } );
 	watcher.setFuture(future);

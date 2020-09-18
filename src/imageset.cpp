@@ -101,11 +101,15 @@ void ImageSet::crop(int _left, int _top, int _right, int _bottom) {
 	top = _top;
 	right = _right > 0 ? _right : width;
 	bottom = _bottom > 0 ? _bottom : height;
-	if(left < 0 || left >= right || top < 0 || top >= bottom || right > image_width || bottom > image_height)
+	if(left < 0 || left >= right || top < 0 || top >= bottom || right > image_width || bottom > image_height) {
+		cout << "Invalid crop parameters: " << endl;
+		cout << "left: " << left << " top: " << top << " right: " << right << " bottom: " << bottom << " width: " << width << " height: " << height << endl;
 		throw "Invalid crop parameters";
+	}
 	width = right - left;
 	height = bottom - top;
 
+	cout << "left: " << left << " top: " << top << " right: " << right << " bottom: " << bottom << " width: " << width << " height: " << height << endl;
 	skipToTop();
 }
 
