@@ -47,13 +47,18 @@ public:
 	void setOption(QString key, QVariant value);
 	void callback(std::string s, int n);
 
-	void makeRti(QString output);
+	void makeRti(QString output, QRect rect = QRect(0, 0, 0, 0));
 
 public slots:
 	void changeBasis(int n);
 	void changePlanes(int n);
 	void createRTI();
 	void finishedProcess();
+
+	void showCrop();
+	void acceptCrop();
+	void rejectCrop();
+	void cropChanged(QRectF rect);
 
 signals:
 	void progressText(const QString &str);

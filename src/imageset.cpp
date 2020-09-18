@@ -96,7 +96,7 @@ bool ImageSet::initImages(const char *_path) {
 	}
 	return true;
 }
-void ImageSet::crop(size_t _left, size_t _top, size_t _right, size_t _bottom) {
+void ImageSet::crop(int _left, int _top, int _right, int _bottom) {
 	left = _left;
 	top = _top;
 	right = _right > 0 ? _right : width;
