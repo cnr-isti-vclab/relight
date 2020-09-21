@@ -28,6 +28,7 @@ public:
 	bool savenormals = false;
 	bool savemeans = false;
 	bool savemedians = false;
+	int crop[4] = { 0, 0, 0, 0 }; //left, top, width, height
 
 	std::function<void(std::string stage, int percent)> *callback = nullptr;
 

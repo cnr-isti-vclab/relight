@@ -48,11 +48,11 @@ void RtiExport::setImages(QStringList _images) {
 }
 
 ostream& operator<<(ostream& os, const QRectF& r) {
-	os << "top: " << r.top() << " left: " << r.left() << " bottom: " << r.bottom() << " right: " << r.right();
+	os << "top: " << r.top() << " left: " << r.left() << " width: " << r.width() << " height: " << r.height();
 	return os;
 }
 ostream& operator<<(ostream& os, const QRect& r) {
-	os << "top: " << r.top() << " left: " << r.left() << " bottom: " << r.bottom() << " right: " << r.right();
+	os << "top: " << r.top() << " left: " << r.left() << " width: " << r.width() << " height: " << r.height();
 	return os;
 }
 
@@ -122,30 +122,18 @@ void RtiExport::makeRti(QString output, QRect rect) {
 		builder.yccplanes[1] = builder.yccplanes[2] = (builder.nplanes - builder.yccplanes[0])/2;
 		builder.nplanes = builder.yccplanes[0] + 2*builder.yccplanes[1];
 	}
+	builder.crop[0] = rect.left();
+	builder.crop[1] = rect.top();
+	builder.crop[2] =  rect.width();
+	builder.crop[3] = rect.height();
 	builder.imageset.images = images;
-	builder.imageset.lights = lights;
-
+	builder.lights = builder.imageset.lights = lights;
 	builder.imageset.initImages(path.toStdString().c_str());
-	builder.imageset.crop(rect.left(), rect.top(), rect.right(), rect.bottom());
-
-	QImage image(rect.width(), rect.height(), QImage::Format_RGB32);
-	std::vector<uchar> row(rect.width()*3);
-	PixelArray line(rect.width(), builder.imageset.images.size());
-	for(int y = 0; y < rect.height(); y++) {
-		builder.imageset.readLine(line);
-
-		for(int x = 0; x < rect.width(); x++) {
-			Color3f *pixel = line.pixel(x);
-
-			image.setPixel(x, y, qRgb(pixel[0][0], pixel[0][1], pixel[0][2]));
-		}
-	}
-	image.save("test.png");
-	exit(0);
+	builder.imageset.crop(rect.left(), rect.top(), rect.width(), rect.height());
 
 	builder.width  = builder.imageset.width;
 	builder.height = builder.imageset.height;
-	builder.lights = lights;
+	builder.savemeans = true;
 
 	std::function<void(std::string s, int n)> callback = [this](std::string s, int n) { this->callback(s, n); };
 
@@ -164,12 +152,13 @@ void RtiExport::createRTI() {
 
 	progressbar = new QProgressDialog("Building RTI...", "Cancel", 0, 100, this);
 	progressbar->setAutoClose(false);
+	progressbar->setWindowModality(Qt::WindowModal);
+	progressbar->show();
 
 	QRect rect = QRect(0, 0, 0, 0);
 	if(ui->cropview->handleShown()) {
 		rect = ui->cropview->croppedRect();
 		cout << "Cropping! " << rect << endl << flush;
-
 	}
 
 
@@ -180,7 +169,6 @@ void RtiExport::createRTI() {
 	connect(this, SIGNAL(progressText(const QString &)), progressbar, SLOT(setLabelText(const QString &)));
 
 
-	progressbar->setWindowModality(Qt::WindowModal);
 }
 
 void RtiExport::finishedProcess() {

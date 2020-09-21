@@ -96,20 +96,20 @@ bool ImageSet::initImages(const char *_path) {
 	}
 	return true;
 }
-void ImageSet::crop(int _left, int _top, int _right, int _bottom) {
+void ImageSet::crop(int _left, int _top, int _width, int _height) {
 	left = _left;
 	top = _top;
-	right = _right > 0 ? _right : width;
-	bottom = _bottom > 0 ? _bottom : height;
+	if(_width > 0) {
+		width = _width;
+		height = _height;
+	}
+	right = left + width;
+	bottom = top + height;
 	if(left < 0 || left >= right || top < 0 || top >= bottom || right > image_width || bottom > image_height) {
 		cout << "Invalid crop parameters: " << endl;
 		cout << "left: " << left << " top: " << top << " right: " << right << " bottom: " << bottom << " width: " << width << " height: " << height << endl;
 		throw "Invalid crop parameters";
 	}
-	width = right - left;
-	height = bottom - top;
-
-	cout << "left: " << left << " top: " << top << " right: " << right << " bottom: " << bottom << " width: " << width << " height: " << height << endl;
 	skipToTop();
 }
 
@@ -131,6 +131,7 @@ void ImageSet::readLine(PixelArray &pixels) {
 			pixels(x - left, i).b = row[x*3 + 2];
 		}
 	}
+	current_line++;
 }
 
 //return a subset of k integers from 0 to n-1;
@@ -188,6 +189,7 @@ void ImageSet::restart() {
 	for(uint32_t i = 0; i < decoders.size(); i++) {
 		decoders[i]->restart();
 	}
+	current_line = 0;
 	skipToTop();
 	cout << "Restarted\n" << endl;
 }
@@ -200,6 +202,7 @@ void ImageSet::skipToTop() {
 		for(size_t y = 0; y < top; y++)
 			decoders[i]->readRows(1, row.data());
 	}
+	current_line += top;
 	cout << "Skipped\n" << endl;
 }
 
