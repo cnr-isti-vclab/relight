@@ -391,7 +391,6 @@ void MainWindow::loadLP() {
 	std::vector<Vector3f> directions;
 	size_t n;
 	stream >> n;
-	directions.resize(n);
 	vector<QString> filenames;
 
 	for(size_t i = 0; i < n; i++) {

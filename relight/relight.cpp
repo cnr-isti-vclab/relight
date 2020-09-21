@@ -90,6 +90,8 @@ bool RtiBuilder::init(const string &folder, std::function<void(std::string stage
 		error = "Failed imageset init.";
 		return false;
 	}
+	if(crop[2] != 0) //some width specified
+		imageset.crop(crop[0], crop[1], crop[2], crop[3]);
 	width = imageset.width;
 	height = imageset.height;
 	lights = imageset.lights;
@@ -947,6 +949,7 @@ Vector3f extractMean(Color3f *pixels, int n) {
 		m[0] += c[0];
 		m[1] += c[1];
 		m[2] += c[2];
+		break;
 	}
 	return Vector3f(m[0]/n, m[1]/n, m[2]/n);
 }

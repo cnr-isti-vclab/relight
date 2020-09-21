@@ -17,6 +17,7 @@ public:
 	int image_width, image_height;
 	//left, top is pixel [0, 0];
 	int left = 0, top = 0, right = 0, bottom = 0;
+	int current_line = 0;
 	std::vector<Vector3f> lights;
 	QStringList images;
 

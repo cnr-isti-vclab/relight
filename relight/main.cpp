@@ -30,6 +30,7 @@ void help() {
     cout << "\t-m <int>  : extract mean image\n";
     cout << "\t-M <int>  : extract median image (7/8th quantile) \n";
 
+	cout << "\t-k <int>x<int>+<int>+<int>: Kropping extracts only the widthxheight+offx+offy part\n";
 
     cout << "\nIgnore exotic parameters below here\n\n";
     cout << "\t-r <int>  : side of the basis function (default 8, 0 means rbf interpolation)\n";
@@ -81,9 +82,9 @@ int main(int argc, char *argv[]) {
     bool relighted = false;
     Vector3f light;
 
-    opterr = 0;
+	opterr = 0;
     char c;
-    while ((c  = getopt (argc, argv, "hmMnr:d:q:p:s:c:reE:b:y:S:R:CD:B:L:")) != -1)
+	while ((c  = getopt (argc, argv, "hmMnr:d:q:p:s:c:reE:b:y:S:R:CD:B:L:k:")) != -1)
         switch (c)
         {
         case 'h':
@@ -190,6 +191,19 @@ int main(int argc, char *argv[]) {
                 builder.sigma = sigma;
             break;
         }
+		case 'k': {
+			QString c(optarg);
+			QStringList c1 = c.split('x');
+			builder.crop[2] = c1[0].toInt();
+			QStringList c2 = c1[1].split('+');
+			builder.crop[3] = c2[0].toInt();
+			if(c2.size() > 1)
+				builder.crop[0] = c2[1].toInt();
+			if(c2.size() > 2)
+				builder.crop[1] = c2[2].toInt();
+			//cout << crop[0] << " " << crop[1] << " " << crop[2] << " " << crop[3] << endl;
+			break;
+		}
         case 'R': {
             float reg = (float)atof(optarg);
             if(reg > 0)
@@ -274,7 +288,6 @@ int main(int argc, char *argv[]) {
     QFileInfo info(input.c_str());
     if(info.isFile())
         return convertRTI(input.c_str(), output.c_str(), quality);
-
 
     if(!builder.init(input)) {
         cerr << builder.error << " !\n" << endl;
