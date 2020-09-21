@@ -13,10 +13,10 @@ class JpegDecoder;
 
 class ImageSet {
 public:
-	size_t width, height;
-	size_t image_width, image_height;
+	int width, height;
+	int image_width, image_height;
 	//left, top is pixel [0, 0];
-	size_t left = 0, top = 0, right = 0, bottom = 0;
+	int left = 0, top = 0, right = 0, bottom = 0;
 	std::vector<Vector3f> lights;
 	QStringList images;
 

@@ -28,7 +28,11 @@ RtiExport::RtiExport(QWidget *parent) :
 	connect(ui->crop,          SIGNAL(clicked()),  this, SLOT(showCrop()));
 	connect(ui->cropbuttonbox, SIGNAL(accepted()), this, SLOT(acceptCrop()));
 	connect(ui->cropbuttonbox, SIGNAL(rejected()), this, SLOT(rejectCrop()));
-	connect(ui->cropview, SIGNAL(areaChanged(QRectF)), this, SLOT(cropChanged(QRectF)));
+	connect(ui->cropview, SIGNAL(areaChanged(QRect)), this, SLOT(cropChanged(QRect)));
+	connect(ui->top, SIGNAL(valueChanged(int)), this, SLOT(updateCrop()));
+	connect(ui->left, SIGNAL(valueChanged(int)), this, SLOT(updateCrop()));
+	connect(ui->width, SIGNAL(valueChanged(int)), this, SLOT(updateCrop()));
+	connect(ui->height, SIGNAL(valueChanged(int)), this, SLOT(updateCrop()));
 
 	ui->cropview->hideHandle();
 	ui->cropview->setBackgroundColor( Qt::lightGray );
@@ -122,8 +126,22 @@ void RtiExport::makeRti(QString output, QRect rect) {
 	builder.imageset.lights = lights;
 
 	builder.imageset.initImages(path.toStdString().c_str());
-	//DEBUG!
 	builder.imageset.crop(rect.left(), rect.top(), rect.right(), rect.bottom());
+
+	QImage image(rect.width(), rect.height(), QImage::Format_RGB32);
+	std::vector<uchar> row(rect.width()*3);
+	PixelArray line(rect.width(), builder.imageset.images.size());
+	for(int y = 0; y < rect.height(); y++) {
+		builder.imageset.readLine(line);
+
+		for(int x = 0; x < rect.width(); x++) {
+			Color3f *pixel = line.pixel(x);
+
+			image.setPixel(x, y, qRgb(pixel[0][0], pixel[0][1], pixel[0][2]));
+		}
+	}
+	image.save("test.png");
+	exit(0);
 
 	builder.width  = builder.imageset.width;
 	builder.height = builder.imageset.height;
@@ -149,10 +167,10 @@ void RtiExport::createRTI() {
 
 	QRect rect = QRect(0, 0, 0, 0);
 	if(ui->cropview->handleShown()) {
-		rect = ui->cropview->rect().toRect();
+		rect = ui->cropview->croppedRect();
+		cout << "Cropping! " << rect << endl << flush;
+
 	}
-	cout << "rectf: " << ui->cropview->rect() << endl;
-	cout << rect << endl << flush;
 
 
 	QFuture<void> future = QtConcurrent::run([this, output, rect]() { this->makeRti(output, rect); } );
@@ -187,9 +205,15 @@ void RtiExport::rejectCrop() {
 	ui->crop_frame->hide();
 }
 
-void RtiExport::cropChanged(QRectF rect) {
-	ui->width->setValue((int)rect.width());
-	ui->height->setValue((int)rect.height());
-	ui->left->setValue((int)rect.left());
-	ui->top->setValue((int)rect.top());
+void RtiExport::cropChanged(QRect rect) {
+
+	ui->width->setValue(rect.width());
+	ui->height->setValue(rect.height());
+	ui->left->setValue(rect.left());
+	ui->top->setValue(rect.top());
+}
+
+void RtiExport::updateCrop() {
+	ui->cropview->setCrop(QRect(ui->left->value(), ui->top->value(),
+								ui->width->value(), ui->height->value()));
 }

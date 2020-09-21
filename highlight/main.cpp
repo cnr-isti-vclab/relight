@@ -38,6 +38,7 @@ int main(int argc, char *argv[]) {
 	cout << "Do not export if no sphere selected" << endl;
 	cout << "autodetext sphere.lp in dir and ask for loading" << endl;
 	cout << "Status bar: show number of images, width, height, position of mouse," << endl;
+	cout << "remember also .lp loading directory" << endl;
 	const auto &app = QApplication(argc, argv);
 
 	auto mainwindow = new MainWindow();

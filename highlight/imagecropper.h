@@ -22,16 +22,18 @@ public slots:
 	void setProportionFixed(const bool _isFixed);
 	void showHandle(bool _show = true);
 	void hideHandle();
+	void setCrop(QRect rect);
 
 signals:
-	void areaChanged(QRectF rect);
+	void areaChanged(QRect rect);
 
 public:
 	const QPixmap cropImage();
 	bool handleShown() { return show_handle; }
-	QRectF rect();
+	QRect croppedRect();
 
 protected:
+	virtual void resizeEvent(QResizeEvent *event);
 	virtual void paintEvent(QPaintEvent* _event);
 	virtual void mousePressEvent(QMouseEvent* _event);
 	virtual void mouseMoveEvent(QMouseEvent* _event);
@@ -51,16 +53,23 @@ private:
 			const CursorPosition _cursorPosition,
 			const QPointF& _mouseDelta
 			);
-	const QRectF calculateGeometryWithFixedProportions(const QRectF &_sourceGeometry,
-												 const CursorPosition _cursorPosition,
-												 const QPointF &_mouseDelta,
-												 const QSizeF &_deltas
-                                                 );
+	const QRectF calculateGeometryWithFixedProportions(
+			const QRectF &_sourceGeometry,
+			const CursorPosition _cursorPosition,
+			const QPointF &_mouseDelta,
+			const QSizeF &_deltas
+			);
+
+	void updateDeltaAndScale();
+
 
 private:
 	// Private data implementation
 	ImageCropperPrivate* pimpl;
 	bool show_handle = true;
+
+	float leftDelta, topDelta;
+	float xScale, yScale;
 };
 
 #endif // IMAGECROPPER_H
