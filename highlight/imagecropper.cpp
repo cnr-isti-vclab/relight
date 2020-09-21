@@ -77,35 +77,60 @@ void ImageCropper::setProportionFixed(const bool _isFixed)
 	}
 }
 
-const QPixmap ImageCropper::cropImage()
-{
+QRect ImageCropper::croppedRect() {
+	QRectF &r = pimpl->croppingRect;
+	QRectF realSizeRect(
+				QPointF(r.left() - leftDelta, r.top() - topDelta),
+				r.size());
+
+	realSizeRect.setLeft((r.left() - leftDelta) * xScale);
+	realSizeRect.setTop ((r.top() - topDelta) * yScale);
+
+	realSizeRect.setWidth(r.width() * xScale);
+	realSizeRect.setHeight(r.height() * yScale);
+
+	return realSizeRect.toRect();
+}
+
+void ImageCropper::setCrop(QRect rect) {
+	QRectF &r = pimpl->croppingRect;
+	r.setLeft(rect.left()/xScale + leftDelta);
+	r.setTop(rect.top()/yScale + topDelta);
+	r.setWidth(rect.width()/xScale);
+	r.setHeight(rect.height()/yScale);
+}
+
+void ImageCropper::updateDeltaAndScale() {
+	//TODO don't resize an image just to compute a proportion.
 	QSize scaledImageSize =
 			pimpl->imageForCropping.scaled(
 				this->size(), Qt::KeepAspectRatio, Qt::FastTransformation
 				).size();
-	float leftDelta = 0;
-	float topDelta = 0;
+	leftDelta = 0.0f;
+	topDelta = 0.0f;
 	const float HALF_COUNT = 2;
 	if (this->size().height() == scaledImageSize.height()) {
 		leftDelta = (this->width() - scaledImageSize.width()) / HALF_COUNT;
 	} else {
 		topDelta = (this->height() - scaledImageSize.height()) / HALF_COUNT;
 	}
-	float xScale = (float)pimpl->imageForCropping.width()  / scaledImageSize.width();
-	float yScale = (float)pimpl->imageForCropping.height() / scaledImageSize.height();
-
-	QRectF realSizeRect(
-				QPointF(pimpl->croppingRect.left() - leftDelta, pimpl->croppingRect.top() - topDelta),
-				pimpl->croppingRect.size());
-
-	realSizeRect.setLeft((pimpl->croppingRect.left() - leftDelta) * xScale);
-	realSizeRect.setTop ((pimpl->croppingRect.top() - topDelta) * yScale);
-
-	realSizeRect.setWidth(pimpl->croppingRect.width() * xScale);
-	realSizeRect.setHeight(pimpl->croppingRect.height() * yScale);
-
-	return pimpl->imageForCropping.copy(realSizeRect.toRect());
+	xScale = (float)pimpl->imageForCropping.width()  / scaledImageSize.width();
+	yScale = (float)pimpl->imageForCropping.height() / scaledImageSize.height();
 }
+
+const QPixmap ImageCropper::cropImage() {
+	QRect realRect = croppedRect();
+	return pimpl->imageForCropping.copy(realRect);
+}
+
+
+void ImageCropper::resizeEvent(QResizeEvent *event) {
+	QRect currentRealRect = croppedRect();
+	QWidget::resizeEvent(event);
+	updateDeltaAndScale();
+	setCrop(currentRealRect);
+}
+
 
 void ImageCropper::showHandle(bool _show) {
 	show_handle = _show;
@@ -115,11 +140,6 @@ void ImageCropper::hideHandle() {
 	show_handle = false;
 	update();
 }
-
-QRectF ImageCropper::rect() {
-	return pimpl->croppingRect;
-}
-
 
 // ********
 // Protected section
@@ -254,7 +274,7 @@ void ImageCropper::mouseMoveEvent(QMouseEvent* _event)
 
 			pimpl->croppingRect.moveTo( pimpl->lastStaticCroppingRect.topLeft() + mouseDelta );
 		}
-		emit areaChanged(pimpl->croppingRect);
+		emit areaChanged(croppedRect());
 		update();
 	}
 }

@@ -665,7 +665,7 @@ void RtiBuilder::pickBaseHSH() {
 	
 }
 
-void RtiBuilder::pickBase(PixelArray &sample) {
+void RtiBuilder::	pickBase(PixelArray &sample) {
 	
 	//index sample per material
 	vector<size_t> indices(sample.npixels(), 0);

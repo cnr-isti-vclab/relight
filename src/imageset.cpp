@@ -114,12 +114,13 @@ void ImageSet::crop(int _left, int _top, int _right, int _bottom) {
 }
 
 void ImageSet::decode(size_t img, unsigned char *buffer) {
-	throw "TO FIX!";
+	throw "TO FIX for crop!";
 	decoders[img]->readRows(height, buffer);
 }
 
 void ImageSet::readLine(PixelArray &pixels) {
 	pixels.resize(width, lights.size());
+	//TODO: no need to allocate EVERY time.
 	std::vector<uint8_t> row(image_width*3);
 
 	for(size_t i = 0; i < decoders.size(); i++) {
@@ -139,7 +140,7 @@ public:
 	StupidSampler() { srand(0); }
 	set<uint32_t> &result(uint32_t k, uint32_t n) {
 		res.clear();
-		res.insert(0);
+		//res.insert(0);
 		while (res.size() < k)
 			res.insert(rand()%n);
 		return res;
@@ -151,7 +152,7 @@ uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate, std::functi
 	if(nsamples > width*height)
 		nsamples = width*height;
 
-	uint32_t samplexrow = std::min(nsamples/height, width/4);
+	uint32_t samplexrow = std::min((int)(nsamples/height), (int)(width/4));
 	nsamples = samplexrow*height;
 	sample.resize(nsamples, lights.size());
 
@@ -169,10 +170,9 @@ uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate, std::functi
 			dec->readRows(1, row.data());
 			int off = offset;
 			for(int k: selection) {
-				k += left;
-				sample(off, i).r = row[k*3 + 0];
-				sample(off, i).g = row[k*3 + 1];
-				sample(off, i).b = row[k*3 + 2];
+				sample(off, i).r = row[(k+left)*3 + 0];
+				sample(off, i).g = row[(k+left)*3 + 1];
+				sample(off, i).b = row[(k+left)*3 + 2];
 
 				off++;
 			}
@@ -185,9 +185,9 @@ uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate, std::functi
 void ImageSet::restart() {
 	cout << "Restarting\n" << endl;
 
-	for(uint32_t i = 0; i < decoders.size(); i++)
+	for(uint32_t i = 0; i < decoders.size(); i++) {
 		decoders[i]->restart();
-
+	}
 	skipToTop();
 	cout << "Restarted\n" << endl;
 }
@@ -197,7 +197,7 @@ void ImageSet::skipToTop() {
 	std::vector<uint8_t> row(image_width*3);
 
 	for(uint32_t i = 0; i < decoders.size(); i++) {
-		for(size_t x = 0; x < top; x++)
+		for(size_t y = 0; y < top; y++)
 			decoders[i]->readRows(1, row.data());
 	}
 	cout << "Skipped\n" << endl;
