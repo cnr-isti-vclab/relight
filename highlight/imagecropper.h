@@ -8,11 +8,11 @@
 
 class ImageCropper : public QWidget
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    ImageCropper(QWidget *parent = 0);
-    ~ImageCropper();
+	ImageCropper(QWidget *parent = 0);
+	~ImageCropper();
 
 public slots:
 	void setImage(const QPixmap& _image);

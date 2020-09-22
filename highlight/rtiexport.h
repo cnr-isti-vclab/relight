@@ -60,6 +60,7 @@ public slots:
 	void rejectCrop();
 	void cropChanged(QRect rect); //someone moved the crop rectangle
 	void updateCrop(); //someone edited the spinboxs
+	void setAspectRatio(int);
 
 signals:
 	void progressText(const QString &str);
