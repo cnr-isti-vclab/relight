@@ -2,6 +2,7 @@
 
 #include <QMouseEvent>
 #include <QPainter>
+#include <math.h>
 
 namespace {
 	static const QSize WIDGET_MINIMUM_SIZE(300, 300);
@@ -54,7 +55,11 @@ void ImageCropper::setProportion(const QSizeF& _proportion)
 		float proportionSideRelation =
 				(float)pimpl->proportion.width() / pimpl->proportion.height();
 		if (croppintRectSideRelation != proportionSideRelation) {
-			bool widthShotrerThenHeight =
+
+			float area = pimpl->croppingRect.width() * pimpl->croppingRect.height();
+			pimpl->croppingRect.setWidth(sqrt(area /  pimpl->deltas.height()));
+			pimpl->croppingRect.setHeight(sqrt(area /  pimpl->deltas.width()));
+/*			bool widthShotrerThenHeight =
 					pimpl->croppingRect.width() < pimpl->croppingRect.height();
 			if (widthShotrerThenHeight) {
 				pimpl->croppingRect.setHeight(
@@ -62,7 +67,7 @@ void ImageCropper::setProportion(const QSizeF& _proportion)
 			} else {
 				pimpl->croppingRect.setWidth(
 							pimpl->croppingRect.height() * pimpl->deltas.width());
-			}
+			} */
 			update();
 		}
 	}
@@ -89,6 +94,10 @@ QRect ImageCropper::croppedRect() {
 	realSizeRect.setWidth(r.width() * xScale);
 	realSizeRect.setHeight(r.height() * yScale);
 
+	if(realSizeRect.left() < 0) realSizeRect.setLeft(0);
+	if(realSizeRect.top() < 0) realSizeRect.setTop(0);
+	if(realSizeRect.right() > pimpl->imageForCropping.width()) realSizeRect.setRight(pimpl->imageForCropping.width());
+	if(realSizeRect.bottom() > pimpl->imageForCropping.height()) realSizeRect.setBottom(pimpl->imageForCropping.height());
 	return realSizeRect.toRect();
 }
 
@@ -108,11 +117,10 @@ void ImageCropper::updateDeltaAndScale() {
 				).size();
 	leftDelta = 0.0f;
 	topDelta = 0.0f;
-	const float HALF_COUNT = 2;
 	if (this->size().height() == scaledImageSize.height()) {
-		leftDelta = (this->width() - scaledImageSize.width()) / HALF_COUNT;
+		leftDelta = (this->width() - scaledImageSize.width()) / 2.0f;
 	} else {
-		topDelta = (this->height() - scaledImageSize.height()) / HALF_COUNT;
+		topDelta = (this->height() - scaledImageSize.height()) /  2.0f;
 	}
 	xScale = (float)pimpl->imageForCropping.width()  / scaledImageSize.width();
 	yScale = (float)pimpl->imageForCropping.height() / scaledImageSize.height();
@@ -259,6 +267,8 @@ void ImageCropper::mouseMoveEvent(QMouseEvent* _event)
 		mouseDelta.setX( mousePos.x() - pimpl->startMousePos.x() );
 		mouseDelta.setY( mousePos.y() - pimpl->startMousePos.y() );
 		//
+		QRectF &r = pimpl->croppingRect;
+
 		if (pimpl->cursorPosition != CursorPositionMiddle) {
 		
 			QRectF newGeometry =
@@ -268,12 +278,30 @@ void ImageCropper::mouseMoveEvent(QMouseEvent* _event)
 						mouseDelta);
 
 			if (!newGeometry.isNull()) {
-				pimpl->croppingRect = newGeometry;
+				r = newGeometry;
+
+				if(r.left() < leftDelta) r.setLeft(leftDelta);
+				if(r.top() < topDelta) r.setTop(topDelta);
+				float rightEdge = pimpl->imageForCropping.width()/xScale + leftDelta;
+				if(r.right() > rightEdge) r.setRight(rightEdge);
+
+				float bottomEdge = pimpl->imageForCropping.height()/yScale + topDelta;
+				if(r.bottom() > bottomEdge) r.setBottom(bottomEdge);
 			}
 		} else {
 
-			pimpl->croppingRect.moveTo( pimpl->lastStaticCroppingRect.topLeft() + mouseDelta );
+			r.moveTo( pimpl->lastStaticCroppingRect.topLeft() + mouseDelta );
+
+			if(r.left() < leftDelta) r.moveLeft(leftDelta);
+			if(r.top() < topDelta) r.moveTop(topDelta);
+
+			float rightEdge = pimpl->imageForCropping.width()/xScale + leftDelta;
+			if(r.right() > rightEdge) r.moveRight(rightEdge);
+
+			float bottomEdge = pimpl->imageForCropping.height()/yScale + topDelta;
+			if(r.bottom() > bottomEdge) r.moveBottom(bottomEdge);
 		}
+
 		emit areaChanged(croppedRect());
 		update();
 	}
@@ -388,6 +416,11 @@ const QRectF ImageCropper::calculateGeometry(
 		(resultGeometry.top() >= resultGeometry.bottom())) {
 		resultGeometry = QRect();
 	}
+
+	//ensure geometry fits in the image.
+	if(resultGeometry.left() < 0) resultGeometry.setLeft(0);
+	if(resultGeometry.top() < 0) resultGeometry.setTop(0);
+
 	//
 	return resultGeometry;
 }
