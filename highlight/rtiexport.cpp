@@ -29,11 +29,23 @@ RtiExport::RtiExport(QWidget *parent) :
 	connect(ui->cropbuttonbox, SIGNAL(accepted()), this, SLOT(acceptCrop()));
 	connect(ui->cropbuttonbox, SIGNAL(rejected()), this, SLOT(rejectCrop()));
 	connect(ui->cropview, SIGNAL(areaChanged(QRect)), this, SLOT(cropChanged(QRect)));
+
 	connect(ui->top, SIGNAL(valueChanged(int)), this, SLOT(updateCrop()));
 	connect(ui->left, SIGNAL(valueChanged(int)), this, SLOT(updateCrop()));
 	connect(ui->width, SIGNAL(valueChanged(int)), this, SLOT(updateCrop()));
 	connect(ui->height, SIGNAL(valueChanged(int)), this, SLOT(updateCrop()));
-	
+
+	ui->aspect->addItem("None"); //0
+	ui->aspect->addItem("Custom"); //1
+	ui->aspect->addItem("Square"); //2
+	ui->aspect->addItem("4:3 Photo"); //3
+	ui->aspect->addItem("3:2 Postcard"); //4
+	ui->aspect->addItem("16:10 Widescreen"); //5
+	ui->aspect->addItem("16:9 Widescreen");    //6
+	ui->aspect->addItem("2:3 Postcard portrait"); //7
+	ui->aspect->addItem("3:4 Photo portrait"); //8
+	connect(ui->aspect, SIGNAL(currentIndexChanged(int)), this, SLOT(setAspectRatio(int)));
+
 	ui->cropview->hideHandle();
 	ui->cropview->setBackgroundColor( Qt::lightGray );
 	ui->cropview->setCroppingRectBorderColor( Qt::white);
@@ -104,9 +116,12 @@ bool RtiExport::callback(std::string s, int n) {
 	QString str(s.c_str());
 	emit progressText(str);
 	emit progress(n);
-	
-	//std::cout << s << " " << n << "%" << std::endl;
-	return !cancel;
+
+	if(cancel) {
+		cancel = false;
+		return false;
+	}
+	return true;
 }
 
 void RtiExport::makeRti(QString output, QRect rect) {
@@ -144,7 +159,11 @@ void RtiExport::makeRti(QString output, QRect rect) {
 			return;
 		}
 		builder.save(output.toStdString(), ui->quality->value());
-		
+	} catch(int status) {
+		if(status == 1) { //was canceled.
+			emit progressText("Canceling...");
+			emit progress(100);
+		}
 	} catch(char *str) {
 		cout << "Error while creating RTI: " << str << endl;
 	}
@@ -160,6 +179,7 @@ void RtiExport::createRTI() {
 	progressbar->setAutoClose(false);
 	progressbar->setWindowModality(Qt::WindowModal);
 	progressbar->show();
+	connect(progressbar, SIGNAL(canceled()), this, SLOT(cancelProcess()));
 	
 	QRect rect = QRect(0, 0, 0, 0);
 	if(ui->cropview->handleShown()) {
@@ -173,8 +193,10 @@ void RtiExport::createRTI() {
 	connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
 	connect(this, SIGNAL(progress(int)), progressbar, SLOT(setValue(int)));
 	connect(this, SIGNAL(progressText(const QString &)), progressbar, SLOT(setLabelText(const QString &)));
-	
-	
+}
+
+void RtiExport::cancelProcess() {
+	cancel = true;
 }
 
 void RtiExport::finishedProcess() {
@@ -210,4 +232,12 @@ void RtiExport::cropChanged(QRect rect) {
 void RtiExport::updateCrop() {
 	ui->cropview->setCrop(QRect(ui->left->value(), ui->top->value(),
 								ui->width->value(), ui->height->value()));
+}
+
+void RtiExport::setAspectRatio(int aspect) {
+	ui->cropview->setProportionFixed(aspect > 0);
+	if(aspect == 0) return;
+	float aspects[9][2] = { {1, 1}, {ui->aspect_width->value(), ui->aspect_height->value()}, {1, 1}, {4, 3} , {3, 2}, {16, 10}, {16, 9}, {2, 3}, {3, 4} };
+	float *s = aspects[aspect];
+	ui->cropview->setProportion(QSizeF(s[0], s[1]));
 }

@@ -46,7 +46,8 @@ HEADERS += \
     ../src/jpeg_encoder.h \
     ../src/material.h \
     ../src/pca.h \
-    helpdialog.h
+    helpdialog.h \
+    ../relight/rtibuilder.h
 
 FORMS += \
     mainwindow.ui \
