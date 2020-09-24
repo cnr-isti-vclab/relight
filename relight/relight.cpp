@@ -1377,8 +1377,13 @@ size_t RtiBuilder::save(const string &output, int quality) {
 
 
 	for(uint32_t y = 0; y < height; y++) {
-		if(callback)
-			(*callback)("Saving...", 100*y/height);
+		if(callback) {
+			bool keep_going = (*callback)("Saving...", 100*y/height);
+			if(!keep_going) {
+				cout << "TODO: clean up directory, we are already saving!" << endl;
+				throw 1;
+			}
+		}
 
 		imageset.readLine(sample);
 
@@ -1635,8 +1640,12 @@ void RtiBuilder::buildResampleMap() {
 	
 	resamplemap.resize(ndimensions);
 	for(uint32_t y = 0; y < resolution; y++) {
-		if(callback)
-			(*callback)(std::string("Resampling light directions"), 100*y/resolution);
+		if(callback) {
+			bool keep_going = (*callback)(std::string("Resampling light directions"), 100*y/resolution);
+			if(!keep_going) {
+				throw 1;
+			}
+		}
 
 		for(uint32_t x = 0; x < resolution; x++) {
 			Vector3f n = fromOcta(x, y, resolution);

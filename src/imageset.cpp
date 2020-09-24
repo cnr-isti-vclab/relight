@@ -162,8 +162,11 @@ uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate, std::functi
 	int offset = 0;
 	vector<uint8_t> row(image_width*3);
 	for(uint32_t y = top; y < bottom; y++) {
-		if(callback)
-			(*callback)(std::string("Sampling images"), 100*(y-top)/height);
+		if(callback) {
+			bool keep_going = (*callback)(std::string("Sampling images"), 100*(y-top)/height);
+			if(!keep_going)
+				throw 1;
+		}
 
 		auto &selection = sampler.result(samplexrow, width);
 		for(uint32_t i = 0; i < decoders.size(); i++) {

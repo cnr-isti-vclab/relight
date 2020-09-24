@@ -55,12 +55,14 @@ public slots:
 	void changePlanes(int n);
 	void createRTI();
 	void finishedProcess();
+	void cancelProcess();
 
 	void showCrop();
 	void acceptCrop();
 	void rejectCrop();
 	void cropChanged(QRect rect); //someone moved the crop rectangle
 	void updateCrop(); //someone edited the spinboxs
+	void setAspectRatio(int aspect);
 
 signals:
 	void progressText(const QString &str);
