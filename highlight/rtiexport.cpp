@@ -159,18 +159,19 @@ void RtiExport::makeRti(QString output, QRect rect) {
 			return;
 		}
 		builder.save(output.toStdString(), ui->quality->value());
+
 	} catch(int status) {
 		if(status == 1) { //was canceled.
 			emit progressText("Canceling...");
-			emit progress(100);
+			emit progress(0);
 		}
 	} catch(std::exception e) {
-		QMessageBox::critical(this, "We have a problem!", e.what());
+		QMessageBox::critical(this, "We have a problem 1!", e.what());
 	} catch(const char *str) {
-		QMessageBox::critical(this, "We have a problem!",str);
+		QMessageBox::critical(this, "We have a problem 2 !",str);
 	} catch(...) {
 		cout << "Something went wrong!" << endl;
-		QMessageBox::critical(this, "We have a problem!", "Unknown error!");
+		QMessageBox::critical(this, "We have a problem 3!", "Unknown error!");
 		
 	}
 }

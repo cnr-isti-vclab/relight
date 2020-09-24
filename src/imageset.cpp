@@ -110,7 +110,6 @@ void ImageSet::crop(int _left, int _top, int _width, int _height) {
 		cout << "left: " << left << " top: " << top << " right: " << right << " bottom: " << bottom << " width: " << width << " height: " << height << endl;
 		throw "Invalid crop parameters";
 	}
-	skipToTop();
 }
 
 void ImageSet::decode(size_t img, unsigned char *buffer) {
@@ -119,6 +118,8 @@ void ImageSet::decode(size_t img, unsigned char *buffer) {
 }
 
 void ImageSet::readLine(PixelArray &pixels) {
+	if(current_line == 0)
+		skipToTop();
 	pixels.resize(width, lights.size());
 	//TODO: no need to allocate EVERY time.
 	std::vector<uint8_t> row(image_width*3);
@@ -148,7 +149,10 @@ public:
 	}
 };
 
-uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate, std::function<bool(std::string stage, int percent)> *callback) {
+uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate) {
+	if(current_line == 0)
+		skipToTop();
+	
 	uint32_t nsamples = width*height/samplingrate;
 	if(nsamples > width*height)
 		nsamples = width*height;
@@ -193,7 +197,6 @@ void ImageSet::restart() {
 		decoders[i]->restart();
 	}
 	current_line = 0;
-	skipToTop();
 	cout << "Restarted\n" << endl;
 }
 
@@ -204,6 +207,12 @@ void ImageSet::skipToTop() {
 	for(uint32_t i = 0; i < decoders.size(); i++) {
 		for(size_t y = 0; y < top; y++)
 			decoders[i]->readRows(1, row.data());
+		
+		if(callback) {
+			bool keep_going = (*callback)(std::string("Skipping cropped part"), 100*i/decoders.size());
+			if(!keep_going)
+				throw 1;
+		}
 	}
 	current_line += top;
 	cout << "Skipped\n" << endl;
