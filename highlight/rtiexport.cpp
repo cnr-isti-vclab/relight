@@ -164,8 +164,14 @@ void RtiExport::makeRti(QString output, QRect rect) {
 			emit progressText("Canceling...");
 			emit progress(100);
 		}
-	} catch(char *str) {
-		cout << "Error while creating RTI: " << str << endl;
+	} catch(std::exception e) {
+		QMessageBox::critical(this, "We have a problem!", e.what());
+	} catch(const char *str) {
+		QMessageBox::critical(this, "We have a problem!",str);
+	} catch(...) {
+		cout << "Something went wrong!" << endl;
+		QMessageBox::critical(this, "We have a problem!", "Unknown error!");
+		
 	}
 }
 
@@ -177,6 +183,7 @@ void RtiExport::createRTI() {
 	
 	progressbar = new QProgressDialog("Building RTI...", "Cancel", 0, 100, this);
 	progressbar->setAutoClose(false);
+	progressbar->setAutoReset(false);
 	progressbar->setWindowModality(Qt::WindowModal);
 	progressbar->show();
 	connect(progressbar, SIGNAL(canceled()), this, SLOT(cancelProcess()));
@@ -200,6 +207,8 @@ void RtiExport::cancelProcess() {
 }
 
 void RtiExport::finishedProcess() {
+	if(progressbar == nullptr)
+		return;
 	progressbar->close();
 	delete progressbar;
 	progressbar = nullptr;
@@ -236,8 +245,17 @@ void RtiExport::updateCrop() {
 
 void RtiExport::setAspectRatio(int aspect) {
 	ui->cropview->setProportionFixed(aspect > 0);
-	if(aspect == 0) return;
-	float aspects[9][2] = { {1, 1}, {ui->aspect_width->value(), ui->aspect_height->value()}, {1, 1}, {4, 3} , {3, 2}, {16, 10}, {16, 9}, {2, 3}, {3, 4} };
-	float *s = aspects[aspect];
+	
+	double aspects[9][2] = { {1, 1}, {1, 1}, {1, 1}, {4, 3} , {3, 2}, {16, 10}, {16, 9}, {2, 3}, {3, 4} };
+	
+	switch(aspect) {
+	case 0: return; //none
+	case 1:
+		aspects[1][0] = ui->aspect_width->value();
+		aspects[1][1] =  ui->aspect_height->value();
+		break;
+	}
+
+	double *s = aspects[aspect];
 	ui->cropview->setProportion(QSizeF(s[0], s[1]));
 }
