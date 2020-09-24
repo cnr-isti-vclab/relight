@@ -107,6 +107,7 @@ void ImageCropper::setCrop(QRect rect) {
 	r.setTop(rect.top()/yScale + topDelta);
 	r.setWidth(rect.width()/xScale);
 	r.setHeight(rect.height()/yScale);
+	update();
 }
 
 void ImageCropper::updateDeltaAndScale() {

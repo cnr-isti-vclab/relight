@@ -160,7 +160,16 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 #endif
 	pickMaterials(resample);
 	
-	pickBase(resample);
+	try { 
+		pickBase(resample);
+	} catch(std::exception e) {
+		error = "Could not create a base.";
+		return false;
+	} catch(...) {
+		error = "Could not create a base.";
+		return false;
+	}
+
 	return true;
 }
 

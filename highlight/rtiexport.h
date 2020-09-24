@@ -28,7 +28,7 @@ public:
 	bool cancel = false;
 
 
-	explicit RtiExport(QWidget *parent = 0);
+	explicit RtiExport(QWidget *parent = nullptr);
 	~RtiExport();
 	Rti::Type basis();
 	Rti::ColorSpace colorSpace();
