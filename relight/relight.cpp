@@ -74,7 +74,7 @@ RtiBuilder::~RtiBuilder() {
 #endif
 }
 
-bool RtiBuilder::init(const string &folder, std::function<void(std::string stage, int percent)> *_callback) {
+bool RtiBuilder::init(const string &folder, std::function<bool(std::string stage, int percent)> *_callback) {
 	
 	if((type == PTM || type == HSH) && colorspace == MRGB) {
 		error = "PTM and HSH do not support MRGB";
@@ -123,7 +123,7 @@ void RtiBuilder::savePixel(Color3f *p, int side, const QString &file) {
 	img.save(file);
 }
 
-bool RtiBuilder::init(std::function<void(std::string stage, int percent)> *_callback) {
+bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_callback) {
 	callback = _callback;
 	if(type == BILINEAR) {
 		ndimensions = resolution*resolution;

@@ -25,6 +25,7 @@ public:
 
 	QProgressDialog *progressbar;
 	QFutureWatcher<void> watcher;
+	bool cancel = false;
 
 
 	explicit RtiExport(QWidget *parent = 0);
@@ -45,7 +46,7 @@ public:
 
 	QVariant getOption(QString key);
 	void setOption(QString key, QVariant value);
-	void callback(std::string s, int n);
+	bool callback(std::string s, int n);
 
 	void makeRti(QString output, QRect rect = QRect(0, 0, 0, 0));
 
@@ -60,7 +61,6 @@ public slots:
 	void rejectCrop();
 	void cropChanged(QRect rect); //someone moved the crop rectangle
 	void updateCrop(); //someone edited the spinboxs
-	void setAspectRatio(int);
 
 signals:
 	void progressText(const QString &str);
