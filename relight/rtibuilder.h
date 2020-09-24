@@ -30,14 +30,14 @@ public:
 	bool savemedians = false;
 	int crop[4] = { 0, 0, 0, 0 }; //left, top, width, height
 
-	std::function<void(std::string stage, int percent)> *callback = nullptr;
+	std::function<bool(std::string stage, int percent)> *callback = nullptr;
 
 
 
 	RtiBuilder();
 	~RtiBuilder();
-	bool init(const std::string &folder, std::function<void(std::string stage, int percent)> *callback = nullptr);
-	bool init(std::function<void(std::string stage, int percent)> *callback = nullptr);
+	bool init(const std::string &folder, std::function<bool(std::string stage, int percent)> *callback = nullptr);
+	bool init(std::function<bool(std::string stage, int percent)> *callback = nullptr);
 	size_t save(const std::string &output, int quality = 95);
 	bool saveJSON(QDir &dir, int quality);
 

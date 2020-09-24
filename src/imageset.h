@@ -31,7 +31,7 @@ public:
 
 	void decode(size_t img, unsigned char *buffer);
 	void readLine(PixelArray &line);
-	uint32_t sample(PixelArray &sample, uint32_t samplingrate,  std::function<void(std::string stage, int percent)> *callback = nullptr);
+	uint32_t sample(PixelArray &sample, uint32_t samplingrate,  std::function<bool(std::string stage, int percent)> *callback = nullptr);
 	void restart();
 	void skipToTop();
 

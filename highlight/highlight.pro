@@ -57,5 +57,6 @@ RESOURCES += \
     icons.qrc
 
 DISTFILES += \
+    README.txt \
     docs/help.html
 

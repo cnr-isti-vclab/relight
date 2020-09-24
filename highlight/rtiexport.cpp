@@ -19,12 +19,12 @@ RtiExport::RtiExport(QWidget *parent) :
 	QDialog(parent),
 	ui(new Ui::RtiExport) {
 	ui->setupUi(this);
-
+	
 	ui->crop_frame->hide();
 	connect(ui->basis, SIGNAL(currentIndexChanged(int)), this, SLOT(changeBasis(int)));
 	connect(ui->planes, SIGNAL(valueChanged(int)), this, SLOT(changePlanes(int)));
 	connect(this, SIGNAL(accepted()), this, SLOT(createRTI()));
-
+	
 	connect(ui->crop,          SIGNAL(clicked()),  this, SLOT(showCrop()));
 	connect(ui->cropbuttonbox, SIGNAL(accepted()), this, SLOT(acceptCrop()));
 	connect(ui->cropbuttonbox, SIGNAL(rejected()), this, SLOT(rejectCrop()));
@@ -33,7 +33,7 @@ RtiExport::RtiExport(QWidget *parent) :
 	connect(ui->left, SIGNAL(valueChanged(int)), this, SLOT(updateCrop()));
 	connect(ui->width, SIGNAL(valueChanged(int)), this, SLOT(updateCrop()));
 	connect(ui->height, SIGNAL(valueChanged(int)), this, SLOT(updateCrop()));
-
+	
 	ui->cropview->hideHandle();
 	ui->cropview->setBackgroundColor( Qt::lightGray );
 	ui->cropview->setCroppingRectBorderColor( Qt::white);
@@ -96,79 +96,85 @@ Rti::ColorSpace  RtiExport::colorSpace() {
 	int b =  ui->basis->currentIndex();
 	Rti::ColorSpace table[] = { Rti::RGB, Rti::RGB, Rti::RGB, Rti::MRGB,     Rti::MRGB, Rti::MYCC, Rti::MYCC };
 	return table[b];
-
+	
 }
 
 
-void RtiExport::callback(std::string s, int n) {
+bool RtiExport::callback(std::string s, int n) {
 	QString str(s.c_str());
 	emit progressText(str);
 	emit progress(n);
-
+	
 	//std::cout << s << " " << n << "%" << std::endl;
+	return !cancel;
 }
 
 void RtiExport::makeRti(QString output, QRect rect) {
-
-	RtiBuilder builder;
-
-	builder.type         = basis();
-	builder.colorspace   = colorSpace();
-	builder.nplanes      = ui->planes->value();
-	builder.yccplanes[0] = ui->chroma->value();
-	//builder.sigma =
-
-	if( builder.colorspace == Rti::MYCC) {
-		builder.yccplanes[1] = builder.yccplanes[2] = (builder.nplanes - builder.yccplanes[0])/2;
-		builder.nplanes = builder.yccplanes[0] + 2*builder.yccplanes[1];
+	
+	try {
+		RtiBuilder builder;
+		
+		builder.type         = basis();
+		builder.colorspace   = colorSpace();
+		builder.nplanes      = ui->planes->value();
+		builder.yccplanes[0] = ui->chroma->value();
+		//builder.sigma =
+		
+		if( builder.colorspace == Rti::MYCC) {
+			builder.yccplanes[1] = builder.yccplanes[2] = (builder.nplanes - builder.yccplanes[0])/2;
+			builder.nplanes = builder.yccplanes[0] + 2*builder.yccplanes[1];
+		}
+		builder.crop[0] = rect.left();
+		builder.crop[1] = rect.top();
+		builder.crop[2] =  rect.width();
+		builder.crop[3] = rect.height();
+		builder.imageset.images = images;
+		builder.lights = builder.imageset.lights = lights;
+		builder.imageset.initImages(path.toStdString().c_str());
+		builder.imageset.crop(rect.left(), rect.top(), rect.width(), rect.height());
+		
+		builder.width  = builder.imageset.width;
+		builder.height = builder.imageset.height;
+		builder.savemeans = true;
+		
+		std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->callback(s, n); };
+		
+		if(!builder.init(&callback)) {
+			QMessageBox::critical(this, "We have a problem!", QString(builder.error.c_str()));
+			return;
+		}
+		builder.save(output.toStdString(), ui->quality->value());
+		
+	} catch(char *str) {
+		cout << "Error while creating RTI: " << str << endl;
 	}
-	builder.crop[0] = rect.left();
-	builder.crop[1] = rect.top();
-	builder.crop[2] =  rect.width();
-	builder.crop[3] = rect.height();
-	builder.imageset.images = images;
-	builder.lights = builder.imageset.lights = lights;
-	builder.imageset.initImages(path.toStdString().c_str());
-	builder.imageset.crop(rect.left(), rect.top(), rect.width(), rect.height());
-
-	builder.width  = builder.imageset.width;
-	builder.height = builder.imageset.height;
-	builder.savemeans = true;
-
-	std::function<void(std::string s, int n)> callback = [this](std::string s, int n) { this->callback(s, n); };
-
-	if(!builder.init(&callback)) {
-		QMessageBox::critical(this, "We have a problem!", QString(builder.error.c_str()));
-		return;
-	}
-	builder.save(output.toStdString(), ui->quality->value());
 }
 
 
 void RtiExport::createRTI() {
 	QString output = QFileDialog::getSaveFileName(this, "Select an output directory");
 	if(output.isNull()) return;
-
-
+	
+	
 	progressbar = new QProgressDialog("Building RTI...", "Cancel", 0, 100, this);
 	progressbar->setAutoClose(false);
 	progressbar->setWindowModality(Qt::WindowModal);
 	progressbar->show();
-
+	
 	QRect rect = QRect(0, 0, 0, 0);
 	if(ui->cropview->handleShown()) {
 		rect = ui->cropview->croppedRect();
 		cout << "Cropping! " << rect << endl << flush;
 	}
-
-
+	
+	
 	QFuture<void> future = QtConcurrent::run([this, output, rect]() { this->makeRti(output, rect); } );
 	watcher.setFuture(future);
 	connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
 	connect(this, SIGNAL(progress(int)), progressbar, SLOT(setValue(int)));
 	connect(this, SIGNAL(progressText(const QString &)), progressbar, SLOT(setLabelText(const QString &)));
-
-
+	
+	
 }
 
 void RtiExport::finishedProcess() {
@@ -194,7 +200,7 @@ void RtiExport::rejectCrop() {
 }
 
 void RtiExport::cropChanged(QRect rect) {
-
+	
 	ui->width->setValue(rect.width());
 	ui->height->setValue(rect.height());
 	ui->left->setValue(rect.left());

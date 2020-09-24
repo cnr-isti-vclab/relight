@@ -148,7 +148,7 @@ public:
 	}
 };
 
-uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate, std::function<void(std::string stage, int percent)> *callback) {
+uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate, std::function<bool(std::string stage, int percent)> *callback) {
 	uint32_t nsamples = width*height/samplingrate;
 	if(nsamples > width*height)
 		nsamples = width*height;
