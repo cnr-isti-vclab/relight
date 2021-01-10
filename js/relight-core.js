@@ -53,7 +53,7 @@ function Relight(gl, options) {
 		rotation: 0,
 
 		light: [0, 0, 1],
-		normals: false,
+		normals: 0,
 
 		border: 1,                   //prefetching tiles out of view
 		mipmapbias: 0.5,
@@ -87,6 +87,8 @@ function Relight(gl, options) {
 
 	if(t.img) { //this meas we are loading an image
 		t.loadInfo({type: 'img', colorspace: null, width: 0, height: 0, nplanes: 3 });
+	} else if(t.dem) { //this meas we are loading an image
+		t.loadInfo({type: 'dem', colorspace: null, width: 0, height: 0, nplanes: 3 });
 	} else if(t.url !== null) {
 		t.setUrl(t.url);
 	}
@@ -148,7 +150,8 @@ loadInfo: function(info) {
 	while(t.njpegs*3 < t.nplanes)
 		t.njpegs++;
 
-	if(t.type == 'img') {
+	//TODO: is this the right position?
+	if(t.type == 'img' || t.type == 'dem') {
 		t.initTree();
 		t.loadProgram();
 		t.loaded();
@@ -246,7 +249,10 @@ initTree: function() {
 			t.bbox = [[0, 0, t.width, t.height]];
 
 			t.getTileURL = function(image, x, y, level) {
-				return t.url + '/' + image;
+				if(t.url)
+					return t.url + '/' + image;
+				else
+					return image;
 			};
 			t.nodes[0] = { tex: [], missing:t.njpegs };
 			return;
@@ -523,7 +529,9 @@ loadComponent: function(plane, index, level, x, y) {
 	var t = this;
 	var gl = t.gl;
 	if(t.type == 'img')
-		var name = t.img + ".jpg";
+		var name = t.img;
+	else if(t.type == 'dem')
+		var name = t.dem;
 	else
 		var name = "plane_" + plane + ".jpg";
 
@@ -552,6 +560,11 @@ loadComponent: function(plane, index, level, x, y) {
 			t.requestedCount--;
 			t.preload();
 			t.redraw();
+		}
+		if(t.img || t.dem) {
+			t.width = image.width;
+			t.height = image.height;
+			t.loaded();
 		}
 	};
 	image.onerror = function() {
@@ -586,9 +599,9 @@ flush: function() {
 setNormals: function(on) {
 	var t = this;
 	if(on === undefined)
-		t.normals = !t.normals;
+		t.normals = (t.normals + 1)%3;
 	else
-		t.normals = on?true:false;
+		t.normals = Number(on);
 	t.loadProgram();
 	t.computeLightWeights(t.light);
 	t.redraw();
@@ -604,6 +617,7 @@ computeLightWeights: function(lpos) {
 	var lightFun;
 	switch(t.type) {
 	case 'img':                                     return;
+	case 'dem':      t.gl.uniform3f(t.lightLocation, l[0], l[1], l[2]); return;
 	case 'rbf':      lightFun = t.computeLightWeightsRbf;  break;
 	case 'bilinear': lightFun = t.computeLightWeightsOcta; break;
 	case 'ptm':      lightFun = t.computeLightWeightsPtm;  break;
@@ -636,6 +650,9 @@ computeLightWeights: function(lpos) {
 		uniformer.call(t.gl, t.baseLocation, t.lweights);
 	}
 
+	if(t.lightLocation) {
+		t.gl.uniform3fv(t.lightLocation, l);
+	}
 },
 
 computeLightWeightsPtm: function(v) {
@@ -851,6 +868,7 @@ loadProgram: function() {
 	gl.vertexAttribPointer(t.texattrib, 2, gl.FLOAT, false, 0, 0);
 	gl.enableVertexAttribArray(t.texattrib);
 
+	t.lightLocation = gl.getUniformLocation(t.program, "light");
 	t.opacitylocation = gl.getUniformLocation(t.program, "opacity");
 
 //	t.matrixLocation = gl.getUniformLocation(t.program, "u_matrix");
