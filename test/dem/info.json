@@ -1,0 +1,8 @@
+{
+"width": 1000, "height": 1000,
+"format": "png",
+"type":"dem",
+"cellsize": 0.5,
+"min": 90,
+"max": 100
+}
