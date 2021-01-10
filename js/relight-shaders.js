@@ -1,4 +1,3 @@
-
 Relight.prototype.headFrag = function() {
 	var t = this;
 
@@ -22,6 +21,10 @@ const int ny1 = ${t.yccplanes[1]};
 `
 
 	if(t.normals) {
+
+		if(t.normals == 2)
+			str += 'uniform vec3 light;\n';
+
 		str += 
 `
 const mat3 T = mat3(8.1650e-01, 4.7140e-01, 4.7140e-01,
@@ -56,6 +59,25 @@ varying vec2 v_texcoord;
 	return str;
 }
 
+Relight.prototype.fragTail = function() {
+	var str = '';
+	switch(this.normals) {
+	case 1: str = '	color = (normalize(T * color) + 1.0)/2.0;\n'; break;
+	case 2: str = 
+`	color = normalize(T * color);
+	float c = dot(light, color);
+	color = vec3(c, c, c);
+`;
+	break;
+	}
+
+	str +=
+`	gl_FragColor = vec4(color, opacity);
+}`;
+
+	return str;
+}
+
 
 /*    MRGB    */
 
@@ -80,11 +102,6 @@ Relight.prototype.mrgbFrag = function() {
 	color += base[${j}*3+3]*(c.z - bias[${j}*3+3])*scale[${j}*3+3];
 `;
 	}
-	src +=
-`	
-	gl_FragColor = vec4(color, opacity);
-}
-`;
 
 
 	let old_src = 
@@ -98,11 +115,9 @@ Relight.prototype.mrgbFrag = function() {
 		color += base[j*3+2]*(c.y - bias[j*3+2])*scale[j*3+2];
 		color += base[j*3+3]*(c.z - bias[j*3+3])*scale[j*3+3];
 	}
-	gl_FragColor = vec4(color, opacity);
-}
 `;
 
-	} else
+	} else {
 		src +=
 `void main(void) {
 	vec3 one = vec3(1.0 ,1.0, 1.0);
@@ -125,10 +140,10 @@ Relight.prototype.mrgbFrag = function() {
 		color.y += dot(b1, r);
 		color.z += dot(b2, r);
 	}
-	color = (normalize(T * color) + 1.0)/2.0;
-	gl_FragColor = vec4(color, opacity);
-}
 `;
+	}
+
+	src += t.fragTail();
 	return src;
 }
 
@@ -140,7 +155,17 @@ Relight.prototype.myccFrag = function() {
 	var t = this;
 	var src = t.headFrag();
 
-	if(!t.normals)
+	src += `
+vec3 toRgb(vec3 ycc) {
+ 	vec3 rgb;
+	rgb.g = ycc.r + ycc.b/2.0;
+	rgb.b = ycc.r - ycc.b/2.0 - ycc.g/2.0;
+	rgb.r = rgb.b + ycc.g;
+	return rgb;
+}
+`;
+
+	if(!t.normals) {
 		src +=
 
 `
@@ -150,71 +175,81 @@ void main(void) {
 	for(int j = 0; j < nj; j++) {
 		vec4 c = texture2D(planes[j], v_texcoord);
 
+		vec3 r = vec3(
+			(c.x - bias[j*3+1])*scale[j*3+1],
+			(c.y - bias[j*3+2])*scale[j*3+2],
+			(c.z - bias[j*3+3])*scale[j*3+3]);
+
 		if(j < ny1) {
-			color.x += base[j*3+1].x*(c.x - bias[j*3+1])*scale[j*3+1];
-			color.y += base[j*3+2].y*(c.y - bias[j*3+2])*scale[j*3+2];
-			color.z += base[j*3+3].z*(c.z - bias[j*3+3])*scale[j*3+3];
+			color.x += base[j*3+1].x*r.x;
+			color.y += base[j*3+2].y*r.y;
+			color.z += base[j*3+3].z*r.z;
 		} else {
-			color.x += base[j*3+1].x*(c.x - bias[j*3+1])*scale[j*3+1];
-			color.x += base[j*3+2].x*(c.y - bias[j*3+2])*scale[j*3+2];
-			color.x += base[j*3+3].x*(c.z - bias[j*3+3])*scale[j*3+3];
+			color.x += base[j*3+1].x*r.x;
+			color.x += base[j*3+2].x*r.y;
+			color.x += base[j*3+3].x*r.z;
 		}
 	}
-	float tmp = color.r - color.b/2.0;
-	vec3 rgb;
-	rgb.g = color.b + tmp;
-	rgb.b = tmp - color.g/2.0;
-	rgb.r = rgb.b + color.g;
-
-	gl_FragColor = vec4(rgb, opacity);
-}
+	color = toRgb(color);
 `;
 
-	else
-		src +=
-`
+	} else {
+		src += `
+
 void main(void) { 
 	vec3 color0 = base0[0];
 	vec3 color1 = base1[0];
 	vec3 color2 = base2[0];
 
-	for(int j = 0; j < ny1; j++) {
+	for(int j = 0; j < nj; j++) {
 		vec4 c = texture2D(planes[j], v_texcoord);
 		vec3 r = vec3(
 			(c.x - bias[j*3+1])*scale[j*3+1],
 			(c.y - bias[j*3+2])*scale[j*3+2],
 			(c.z - bias[j*3+3])*scale[j*3+3]);
+
 		if(j < ny1) {
 			color0.x += base0[j*3+1].x*r.x;
+			color0.y += base0[j*3+2].y*r.y;
+			color0.z += base0[j*3+3].z*r.z;
+
 			color1.x += base1[j*3+1].x*r.x;
+			color1.y += base1[j*3+2].y*r.y;
+			color1.z += base1[j*3+3].z*r.z;
+
 			color2.x += base2[j*3+1].x*r.x;
+			color2.y += base2[j*3+2].y*r.y;
+			color2.z += base2[j*3+3].z*r.z;
+
 		} else {
 			color0.x += base0[j*3+1].x*r.x;
-			color0.x += base0[j*3+2].y*r.y;
-			color0.x += base0[j*3+3].z*r.z;
+			color0.x += base0[j*3+2].x*r.y;
+			color0.x += base0[j*3+3].x*r.z;
 
 			color1.x += base1[j*3+1].x*r.x;
-			color1.x += base1[j*3+2].y*r.y;
-			color1.x += base1[j*3+3].z*r.z;
+			color1.x += base1[j*3+2].x*r.y;
+			color1.x += base1[j*3+3].x*r.z;
 
 			color2.x += base2[j*3+1].x*r.x;
-			color2.x += base2[j*3+2].y*r.y;
-			color2.x += base2[j*3+3].z*r.z;
+			color2.x += base2[j*3+2].x*r.y;
+			color2.x += base2[j*3+3].x*r.z;
 		}
 	}
-	vec3 color = vec3(color0.r, color1.r, color2.r);
-	color = (normalize(T * color) + 1.0)/2.0;
 
-	gl_FragColor = vec4(color, opacity);
-}
+	color0 = toRgb(color0);
+	color1 = toRgb(color1);
+	color2 = toRgb(color2);
+
+	vec3 color = vec3(color0.x + color0.y + color0.z, color1.x + color1.y + color1.z, color2.x + color2.y + color2.z);
 `;
+	}
 
+	src += t.fragTail();
 	return src;
 }
 
 
 /* RGB */
-
 
 Relight.prototype.rgbFrag = function() {
 	var t = this;
@@ -243,14 +278,9 @@ void main(void) {
 		color.y += base1[j]*r;
 		color.z += base2[j]*r;
 	}
-	color = (normalize(T * color) + 1.0)/2.0;
 `;
 
-	src +=
-`
-	gl_FragColor = vec4(color, opacity);
-}`;
-
+	src += t.fragTail();
 	return src;
 }
 
@@ -294,9 +324,8 @@ void main(void) {
 	}
 
 	color = toRgb(vec4(color, 1.0));
-	gl_FragColor = vec4(color, opacity);
-}`;
-
+`;
+	src += t.fragTail();
 }
 
 
@@ -309,7 +338,7 @@ Relight.prototype.lrgbFrag = function() {
 		src +=
 `
 void main(void) {
-	vec4 color = texture2D(planes[0], v_texcoord);
+	vec4 rgb = texture2D(planes[0], v_texcoord);
 	float l = 0.0;
 	for(int j = 1; j < nj; j++) {
 		vec4 c = texture2D(planes[j], v_texcoord);
@@ -318,8 +347,8 @@ void main(void) {
 		l += base[j*3-1]*(c.z - bias[j*3+3])*scale[j*3+3];
 	}
 
-	gl_FragColor = vec4(color.x*l, color.y*l, color.z*l, opacity);
-}`;
+	vec3 color = vec3(rgb.x*l, rgb.y*l, rgb.z*l);
+`;
 
 	else
 		src += 
@@ -338,11 +367,9 @@ void main(void) {
 		color.y += base1[j*3-3]*r.x + base1[j*3-2]*r.y + base1[j*3-1]*r.z;
 		color.z += base2[j*3-3]*r.x + base2[j*3-2]*r.y + base2[j*3-1]*r.z;
 	}
+`;
 
-	color = (normalize(T * color) + 1.0)/2.0;
-	gl_FragColor = vec4(color, opacity);
-}`;
-
+	src += t.fragTail();
 	return src;
 }
 
@@ -369,6 +396,56 @@ void main(void) {
 	return src;
 }
 
+/* DEM */
+
+Relight.prototype.demFrag = function() {
+
+ 	var src =  
+`#ifdef GL_ES
+precision highp float;
+#endif
+
+uniform vec3 light;
+uniform sampler2D planes[1];      //0 is segments
+uniform float opacity;
+//uniform float azimuth;
+
+varying vec2 v_texcoord;
+
+void main(void) {
+	vec4 a = texture2D(planes[0], v_texcoord + vec2(-0.001, -0.001));
+	vec4 b = texture2D(planes[0], v_texcoord + vec2( 0.000, -0.001));
+	vec4 c = texture2D(planes[0], v_texcoord + vec2(+0.001, -0.001));
+	vec4 d = texture2D(planes[0], v_texcoord + vec2(-0.001,  0.000));
+	vec4 e = texture2D(planes[0], v_texcoord + vec2( 0.000,  0.000));
+	vec4 f = texture2D(planes[0], v_texcoord + vec2(+0.001,  0.000));
+	vec4 g = texture2D(planes[0], v_texcoord + vec2(-0.001, +0.001));
+	vec4 h = texture2D(planes[0], v_texcoord + vec2( 0.000, +0.001));
+	vec4 i = texture2D(planes[0], v_texcoord + vec2(+0.001, +0.001));
+
+	float cellsize = 0.1;
+	float dx = -((c.r + (2.0*f.r) + i.r) - (a.r + (2.0*d.r) + g.r)) / (8.0 * cellsize);
+	float dy = ((g.r + (2.0*h.r) + i.r) - (a.r + (2.0*b.r) + c.r)) / (8.0 * cellsize);
+
+	vec3 normal = vec3(-dx, -dy, 1.0);
+	normal /= sqrt(1.0 + dx*dx + dy*dy);
+
+	float hillshade = dot(normal, light);
+/*	float slope = atan(sqrt(pow(rateOfChangeX,2.0) + pow(rateOfChangeY,2.0)));
+	float aspect = atan(rateOfChangeY, -(rateOfChangeX));
+//	float zenith = light.z;
+//	float azimuth = light.x;
+	float cosz = sqrt(light.x*light.x + light.y*light.y);
+	float azimuth = atan(light.x, -light.y);
+//	float hillshade = (cos(zenith) * cos(slope)) + (sin(zenith) * sin(slope) * cos(azimuth - aspect));
+	float hillshade = (cosz * cos(slope)) + (light.z * sin(slope) * cos(azimuth - aspect));
+*/
+	gl_FragColor = vec4(hillshade, hillshade, hillshade, opacity);
+}`;
+
+	return src;
+}
+
 
 
 Relight.prototype.setupShaders = function() {
@@ -390,62 +467,17 @@ void main() {
 
 
 	var frag;
-	switch(t.colorspace) {
-	case 'mrgb': frag = t.mrgbFrag(); break;
-	case 'mycc': frag = t.myccFrag(); break;
-	case  'ycc': frag = t.yccFrag();  break;
-	case  'rgb': frag = t.rgbFrag();  break;
+	switch(t.type) {
+	case 'img': frag = t.imgFrag();  break;
+	case 'dem': frag = t.demFrag(); break;
+	default:
+		switch(t.colorspace) {
+		case 'mrgb': frag = t.mrgbFrag(); break;
+		case 'mycc': frag = t.myccFrag(); break;
+		case  'ycc': frag = t.yccFrag();  break;
+		case  'rgb': frag = t.rgbFrag();  break;
 	case 'lrgb': frag = t.lrgbFrag(); break;
-	default:     frag = t.imgFrag();  break;
+		}
 	}
 	t.fragCode = frag;
 }
-
-/* RGB normals
-	t.fragCode = `
-
-#ifdef GL_ES\n
-precision highp float;
-#endif
-
-const int np1 = ${12 + 1};
-const int nj = ${t.njpegs};
-
-//transposed matrix see code from relight.cpp getNormalsThreeLights()
-const mat3 T = mat3(8.1650e-01, 4.7140e-01, 4.7140e-01,
-	-8.1650e-01, 4.7140e-01,  4.7140e-01,
-	-1.6222e-08, -9.4281e-01, 4.7140e-01);
-
-uniform sampler2D planes[nj];
-uniform float base0[np1-3];
-uniform float base1[np1-3];
-uniform float base2[np1-3];
-
-uniform float bias[np1];
-uniform float scale[np1];
-
-varying vec2 v_texcoord;
-
-void main(void) {
-	vec3 color = vec3(0);
-	for(int j = 0; j < nj; j++) {
-
-		vec4 c = texture2D(planes[j], v_texcoord);
-
-		//TODO remove scale, it's useless.
-		float r = 
-			(c.x - bias[j*3+1])*scale[j*3+1] + 
-			(c.y - bias[j*3+2])*scale[j*3+2] +
-			(c.z - bias[j*3+3])*scale[j*3+3];
-
-		color.y += base0[j]*r;
-		color.z += base1[j]*r;
-		color.x += base2[j]*r;
-	}
-
-	color = (normalize(T * color) + 1.0)/2.0;
-	gl_FragColor = vec4(color, 1.0);
-}
-`;
-
- */

@@ -22,6 +22,7 @@ function RelightViewer(div, options) {
 		support: support,
 //		pagemap: { size: 200, autohide: 1000 },
 		pagemap: false,
+		normals: 0,
 		actions: {
 			home:    { title: 'Home',       task: function(event) { t.centerAndScale(t.nav.zoomdelay); }        },
 			zoomin:  { title: 'Zoom In',    task: function(event) { t.zoom(-t.nav.zoomstep, t.nav.zoomdelay); } },
@@ -153,13 +154,14 @@ RelightViewer.prototype.toggleLight = function(event) {
 
 RelightViewer.prototype.toggleNormals = function(event) {
 	var t = this;
-	if(t.normals)
+
+	t.nav.normals = (t.nav.normals + 1)%3;
+	t.setNormals(t.nav.normals);
+
+	if(!t.nav.normals)
 		event.target.classList.remove('relight-normals_on');
 	else
 		event.target.classList.add('relight-normals_on');
-
-	t.normals = !t.normals; 
-	t.setNormals(t.normals);
 };
 
 RelightViewer.prototype.toggleFullscreen = function(event) {
