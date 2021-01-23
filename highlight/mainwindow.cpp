@@ -407,13 +407,13 @@ void MainWindow::loadLP() {
 		QStringList img_ext;
 		img_ext << "*.jpg" << "*.JPG";
 		QStringList tmp_images = tmp_dir.entryList(img_ext);
-		while(tmp_images.size() != filenames.size()) {
+		while(tmp_images.size() != (int)filenames.size()) {
 			QMessageBox::information(this, "Loading images", "Select a directory containing the image");
 			QString folder = QFileDialog::getExistingDirectory(this, "Select a directory for images", dir.path());
 			if(folder.isEmpty()) return;
 			dir = QDir(folder);
 			tmp_images = tmp_dir.entryList(img_ext);
-			if(tmp_images.size() != filenames.size()) {
+			if(tmp_images.size() != (int)filenames.size()) {
 				auto response = QMessageBox::question(this, "Light directions and images",
 					QString("The folder contains %1 images, the .lp file specify %1 images.\n Select another folder.")
 							.arg(tmp_images.size()).arg(filenames.size()));
@@ -423,7 +423,7 @@ void MainWindow::loadLP() {
 		}
 
 		bool names_match = true;
-		for(int i = 0; i < filenames.size(); i++) {
+		for(uint i = 0; i < filenames.size(); i++) {
 			QFileInfo fileinfo(filenames[i]);
 			if(fileinfo.fileName() != tmp_images[i]) {
 				names_match = false;
@@ -438,7 +438,7 @@ void MainWindow::loadLP() {
 		}
 		init(info.dir().path());
 	} else {
-		if(filenames.size() != images.size()) {
+		if((int)filenames.size() != images.size()) {
 			QMessageBox::critical(this, "Cannot load .lp file:", QString("The folder contains %1 images, the .lp file specify %1 images. Select another lp").arg(images.size()).arg(filenames.size()));
 			return;
 		}

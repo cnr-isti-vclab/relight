@@ -150,6 +150,46 @@ void Ball::findHighlight(QImage img, int n) {
 		}
 		threshold -= 10;
 	}
+
+	//find biggest spot by removing outliers.
+	int radius = ceil(0.5*inner.width());
+	while(radius > ceil(0.02*inner.width())) {
+		QPointF newbari(0, 0); //in image coords
+		double weight = 0.0;
+		int starty = std::max(inner.top(),    int(floor(bari.ry())) - radius);
+		int endy   = std::min(inner.bottom(), int( ceil(bari.ry())) + radius);
+		int startx = std::max(inner.left(),   int(floor(bari.rx())) - radius);
+		int endx   = std::min(inner.right(),  int( ceil(bari.rx())) + radius);
+		for(int y = starty; y < endy; y++) {
+			for(int x = startx; x < endx; x++) {
+
+				float X = x - inner.left(); //coordinates in outer rect
+				float Y = y - inner.top();
+
+				float cx = X - smallradius;
+				float cy = Y - smallradius;
+				float d = sqrt(cx*cx + cy*cy);
+				if(d > smallradius) continue;
+
+				QRgb c = img.pixel(x, y);
+				int g = qGray(c);
+
+				int mg = qGray(sphere.pixel(X, Y));
+				assert(X < sphere.width());
+				assert(Y < sphere.height());
+				if(g > mg) sphere.setPixel(X, Y, qRgb(g, g, g));
+
+				if(g < threshold) continue;
+
+				newbari += QPointF(x*double(g), y*double(g));
+				weight += g;
+			}
+		}
+		if(!weight) break;
+		bari = newbari/weight;
+		radius *= 0.5;
+	}
+
 	lights[n] = bari;
 	valid[n] = !(bari == QPointF(0, 0));
 
