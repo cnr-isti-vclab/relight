@@ -13,6 +13,7 @@
 
 #include <armadillo>
 
+#include <functional>
 class QDir;
 
 
@@ -27,11 +28,16 @@ public:
 	bool savenormals = false;
 	bool savemeans = false;
 	bool savemedians = false;
+	int crop[4] = { 0, 0, 0, 0 }; //left, top, width, height
+
+	std::function<bool(std::string stage, int percent)> *callback = nullptr;
+
+
 
 	RtiBuilder();
 	~RtiBuilder();
-	bool init(const std::string &folder);
-	bool init();
+	bool init(const std::string &folder, std::function<bool(std::string stage, int percent)> *callback = nullptr);
+	bool init(std::function<bool(std::string stage, int percent)> *callback = nullptr);
 	size_t save(const std::string &output, int quality = 95);
 	bool saveJSON(QDir &dir, int quality);
 

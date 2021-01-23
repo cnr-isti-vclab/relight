@@ -74,7 +74,7 @@ RtiBuilder::~RtiBuilder() {
 #endif
 }
 
-bool RtiBuilder::init(const string &folder) {
+bool RtiBuilder::init(const string &folder, std::function<bool(std::string stage, int percent)> *_callback) {
 	
 	if((type == PTM || type == HSH) && colorspace == MRGB) {
 		error = "PTM and HSH do not support MRGB";
@@ -90,10 +90,12 @@ bool RtiBuilder::init(const string &folder) {
 		error = "Failed imageset init.";
 		return false;
 	}
+	if(crop[2] != 0) //some width specified
+		imageset.crop(crop[0], crop[1], crop[2], crop[3]);
 	width = imageset.width;
 	height = imageset.height;
 	lights = imageset.lights;
-	return init();
+	return init(_callback);
 }
 
 
@@ -121,7 +123,8 @@ void RtiBuilder::savePixel(Color3f *p, int side, const QString &file) {
 	img.save(file);
 }
 
-bool RtiBuilder::init() {
+bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_callback) {
+	callback = _callback;
 	if(type == BILINEAR) {
 		ndimensions = resolution*resolution;
 		buildResampleMap();
@@ -134,6 +137,7 @@ bool RtiBuilder::init() {
 		return false;
 	}
 
+	imageset.setCallback(callback);
 	
 	//collect a set of samples resampled
 	PixelArray sample;
@@ -157,7 +161,16 @@ bool RtiBuilder::init() {
 #endif
 	pickMaterials(resample);
 	
-	pickBase(resample);
+	try { 
+		pickBase(resample);
+	} catch(std::exception e) {
+		error = "Could not create a base.";
+		return false;
+	} catch(...) {
+		error = "Could not create a base.";
+		return false;
+	}
+
 	return true;
 }
 
@@ -664,7 +677,7 @@ void RtiBuilder::pickBaseHSH() {
 	
 }
 
-void RtiBuilder::pickBase(PixelArray &sample) {
+void RtiBuilder::	pickBase(PixelArray &sample) {
 	
 	//index sample per material
 	vector<size_t> indices(sample.npixels(), 0);
@@ -946,6 +959,7 @@ Vector3f extractMean(Color3f *pixels, int n) {
 		m[0] += c[0];
 		m[1] += c[1];
 		m[2] += c[2];
+		break;
 	}
 	return Vector3f(m[0]/n, m[1]/n, m[2]/n);
 }
@@ -1153,7 +1167,6 @@ Vector3f RtiBuilder::getNormal(Color3f *pixel) {
 }
 
 size_t RtiBuilder::save(const string &output, int quality) {
-	
 	uint32_t dim = ndimensions*3;
 	
 	QDir dir(output.c_str());
@@ -1370,7 +1383,18 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		}
 	}
 
+
+
+
 	for(uint32_t y = 0; y < height; y++) {
+		if(callback) {
+			bool keep_going = (*callback)("Saving...", 100*y/height);
+			if(!keep_going) {
+				cout << "TODO: clean up directory, we are already saving!" << endl;
+				throw 1;
+			}
+		}
+
 		imageset.readLine(sample);
 
 		for(uint32_t x = 0; x < width; x++)
@@ -1429,7 +1453,10 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		for(size_t j = 0; j < encoders.size(); j++)
 			encoders[j]->writeRows(line[j].data(), 1);
 	}
-	
+
+
+
+
 	size_t total = 0;
 	for(size_t p = 0; p < encoders.size(); p++) {
 		size_t s = encoders[p]->finish();
@@ -1616,11 +1643,20 @@ void RtiBuilder::buildResampleMap() {
 	 * x = B*b + (AtA + kI)^-1 * (At(I - AB)*b)
 	 * x = (B + (AtA + kI)^-1 * At*(I - AB))*b
 	 */
+
+
 	float radius = 1/(sigma*sigma);
 	arma::Mat<double> B(ndimensions, lights.size(), arma::fill::zeros);
 	
 	resamplemap.resize(ndimensions);
 	for(uint32_t y = 0; y < resolution; y++) {
+		if(callback) {
+			bool keep_going = (*callback)(std::string("Resampling light directions"), 100*y/resolution);
+			if(!keep_going) {
+				throw 1;
+			}
+		}
+
 		for(uint32_t x = 0; x < resolution; x++) {
 			Vector3f n = fromOcta(x, y, resolution);
 			

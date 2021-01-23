@@ -86,16 +86,16 @@ function RelightViewer(div, options) {
 	if(info) {
 		t.dialog.appendChild(info);
 		info.style.display = 'block';
-		t.addAction(".relight-info-dialog", function() { t.hideInfo(); });
+		t.addAction(div, ".relight-info-dialog", function() { t.hideInfo(); });
 	}
 
 	if(t.nav.pagemap) {
-		t.nav.pagemap.div  = document.querySelector(".relight-pagemap");
-		t.nav.pagemap.area = document.querySelector(".relight-pagemap-area");
+		t.nav.pagemap.div  = div.querySelector(".relight-pagemap");
+		t.nav.pagemap.area = div.querySelector(".relight-pagemap-area");
 	}
 
 	for(var i in t.nav.actions)
-		t.addAction('.relight-' + i, t.nav.actions[i].task);
+		t.addAction(div, '.relight-' + i, t.nav.actions[i].task);
 
 	var canvas = div.querySelector('canvas');
 
@@ -136,8 +136,8 @@ function RelightViewer(div, options) {
 
 RelightViewer.prototype = RelightCanvas.prototype;
 
-RelightViewer.prototype.addAction = function(selector, action) {
-	var tap = new Hammer.Manager(document.querySelector(selector));
+RelightViewer.prototype.addAction = function(div, selector, action) {
+	var tap = new Hammer.Manager(div.querySelector(selector));
 	tap.add(new Hammer.Tap());
 	tap.on('tap', action);
 };
