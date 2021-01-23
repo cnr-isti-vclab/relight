@@ -97,7 +97,7 @@ bool MainWindow::init(QString dirname) {
 	ui->imageList->clear();
 	imgsize = QSize();
 	valid.clear();
-	valid.resize(images.size(), true);
+	valid.resize(size_t(images.size()), bool(true));
 
 	//create the items (name and TODO thumbnail
 	int count = 0;
@@ -128,8 +128,8 @@ void MainWindow::openImage(QListWidgetItem *item, bool fit) {
 		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
 		return;
 	}
-	int n = item->data(Qt::UserRole).toInt();
-	currentImage = n;
+	currentImage = item->data(Qt::UserRole).toInt();
+	size_t n = size_t(currentImage);
 	if(imagePixmap)
 		delete imagePixmap;
 	imagePixmap = new QGraphicsPixmapItem(QPixmap::fromImage(img));
@@ -145,9 +145,9 @@ void MainWindow::openImage(QListWidgetItem *item, bool fit) {
 
 	if(fit) {
 		//find smallest problems
-		float sx =  float(ui->graphicsView->width()) / imgsize.width();
-		float sy = float(ui->graphicsView->height()) / imgsize.height();
-		float s = std::min(sx, sy);
+		double sx =  double(ui->graphicsView->width()) / imgsize.width();
+		double sy = double(ui->graphicsView->height()) / imgsize.height();
+		double s = std::min(sx, sy);
 		ui->graphicsView->scale(s, s);
 	}
 
@@ -215,7 +215,7 @@ void MainWindow::updateBorderPoints() {
 			bool fitted = ball.fit(imgsize);
 			if(fitted) {
 				QPointF c = ball.center;
-				float r = ball.radius;
+				double r = double(ball.radius);
 				ball.circle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
 				ball.circle->setVisible(true);
 			}
@@ -228,7 +228,7 @@ void MainWindow::updateHighlight() {
 		Ball &ball = it.second;
 		if(!ball.highlight) continue;
 
-		ball.lights[currentImage] = ball.highlight->pos();
+		ball.lights[size_t(currentImage)] = ball.highlight->pos();
 	}
 }
 
@@ -338,11 +338,11 @@ void MainWindow::finishedProcess() {
 }
 
 int MainWindow::processImage(int n) {
-	if(n < 0 || n >= (int)valid.size()) {
+	if(n < 0 || n >= int(valid.size())) {
 			cerr << "Failed!" << endl;
 			return 0;
 	}
-	if(!valid[n]) return 0;
+	if(!valid[size_t(n)]) return 0;
 
 	QString filename = images[n];
 	QImage img(dir.filePath(filename));
@@ -407,13 +407,13 @@ void MainWindow::loadLP() {
 		QStringList img_ext;
 		img_ext << "*.jpg" << "*.JPG";
 		QStringList tmp_images = tmp_dir.entryList(img_ext);
-		while(tmp_images.size() != (int)filenames.size()) {
+		while(tmp_images.size() != int(filenames.size())) {
 			QMessageBox::information(this, "Loading images", "Select a directory containing the image");
 			QString folder = QFileDialog::getExistingDirectory(this, "Select a directory for images", dir.path());
 			if(folder.isEmpty()) return;
 			dir = QDir(folder);
 			tmp_images = tmp_dir.entryList(img_ext);
-			if(tmp_images.size() != (int)filenames.size()) {
+			if(tmp_images.size() != int(filenames.size())) {
 				auto response = QMessageBox::question(this, "Light directions and images",
 					QString("The folder contains %1 images, the .lp file specify %1 images.\n Select another folder.")
 							.arg(tmp_images.size()).arg(filenames.size()));
@@ -423,9 +423,9 @@ void MainWindow::loadLP() {
 		}
 
 		bool names_match = true;
-		for(uint i = 0; i < filenames.size(); i++) {
+		for(size_t i = 0; i < filenames.size(); i++) {
 			QFileInfo fileinfo(filenames[i]);
-			if(fileinfo.fileName() != tmp_images[i]) {
+			if(fileinfo.fileName() != tmp_images[int(i)]) {
 				names_match = false;
 				break;
 			}
@@ -438,7 +438,7 @@ void MainWindow::loadLP() {
 		}
 		init(info.dir().path());
 	} else {
-		if((int)filenames.size() != images.size()) {
+		if(int(filenames.size()) != images.size()) {
 			QMessageBox::critical(this, "Cannot load .lp file:", QString("The folder contains %1 images, the .lp file specify %1 images. Select another lp").arg(images.size()).arg(filenames.size()));
 			return;
 		}

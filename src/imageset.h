@@ -27,15 +27,17 @@ public:
 	bool init(const char *path, bool ignore_filenames = true, int skip_image = -1);
 	bool initImages(const char *path); //require lights and images to be available, path points to the dir of the images.
 	void crop(int _left, int _top, int _right, int _bottom);
+	void setCallback(std::function<bool(std::string stage, int percent)> *_callback = nullptr) { callback = _callback; }
 	//call AFTER initImages and BEFORE breadline, decode or sample.
 
 	void decode(size_t img, unsigned char *buffer);
 	void readLine(PixelArray &line);
-	uint32_t sample(PixelArray &sample, uint32_t samplingrate,  std::function<bool(std::string stage, int percent)> *callback = nullptr);
+	uint32_t sample(PixelArray &sample, uint32_t samplingrate);
 	void restart();
 	void skipToTop();
 
 protected:
+	std::function<bool(std::string stage, int percent)> *callback;
 	std::vector<JpegDecoder *> decoders;
 };
 
