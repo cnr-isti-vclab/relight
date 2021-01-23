@@ -1,0 +1,25 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>gtango/applications-system.svg</file>
+        <file>gtango/camera-photo.svg</file>
+        <file>gtango/dialog-apply.svg</file>
+        <file>gtango/dialog-close.svg</file>
+        <file>gtango/document-open.svg</file>
+        <file>gtango/document-save.svg</file>
+        <file>gtango/edit-cut.svg</file>
+        <file>gtango/folder.svg</file>
+        <file>gtango/folder-open.svg</file>
+        <file>gtango/go-next.svg</file>
+        <file>gtango/go-previous.svg</file>
+        <file>gtango/list-add.svg</file>
+        <file>gtango/list-remove.svg</file>
+        <file>gtango/system-run.svg</file>
+        <file>gtango/zoom-best-fit.svg</file>
+        <file>gtango/zoom-in.svg</file>
+        <file>gtango/zoom-original.svg</file>
+        <file>gtango/zoom-out.svg</file>
+    </qresource>
+    <qresource prefix="/docs">
+        <file>docs/help.html</file>
+    </qresource>
+</RCC>

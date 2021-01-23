@@ -5,7 +5,7 @@
 #include <QPointF>
 #include <QTextStream>
 
-#include "ballpickerdialog.h"
+#include "mainwindow.h"
 #include <iostream>
 #include <vector>
 using namespace std;
@@ -33,22 +33,12 @@ void calibrateColors(QString dir) {
 
 
 int main(int argc, char *argv[]) {
+
 	const auto &app = QApplication(argc, argv);
 
-
-	auto dialog = new BallPickerDialog;
-	//bool ok = dialog->init(argv[1]);
-	//if(!ok) return -1;
-
-	dialog->show();
-	int res = dialog->exec();
-	vector<QPointF> lights =  dialog->lights;
-
-	//if(argc == 3)
-	//	calibrateColors(argv[2]);
-
-	//app.exec();
-
+	auto mainwindow = new MainWindow();
+	mainwindow->showMaximized();
+	app.exec();
 	return 0;
 }
 
