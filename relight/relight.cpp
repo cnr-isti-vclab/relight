@@ -137,10 +137,11 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 		return false;
 	}
 
+	imageset.setCallback(callback);
 	
 	//collect a set of samples resampled
 	PixelArray sample;
-	imageset.sample(sample, samplingrate, callback);
+	imageset.sample(sample, samplingrate);
 	nsamples = sample.npixels();
 	
 	PixelArray resample = resamplePixels(sample);
@@ -160,7 +161,16 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 #endif
 	pickMaterials(resample);
 	
-	pickBase(resample);
+	try { 
+		pickBase(resample);
+	} catch(std::exception e) {
+		error = "Could not create a base.";
+		return false;
+	} catch(...) {
+		error = "Could not create a base.";
+		return false;
+	}
+
 	return true;
 }
 
