@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>516</width>
+    <height>605</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Spheres</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QListWidget" name="sphereList">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>1</horstretch>
+          <verstretch>1</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QPushButton" name="addSphere">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>40</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Add a new sphere</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="icons.qrc">
+            <normaloff>:/icons/gtango/list-add.svg</normaloff>:/icons/gtango/list-add.svg</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="removeSphere">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>40</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Remove selected spheres...</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="icons.qrc">
+            <normaloff>:/icons/gtango/list-remove.svg</normaloff>:/icons/gtango/list-remove.svg</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="process">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="toolTip">
+           <string>Find highlights</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="icons.qrc">
+            <normaloff>:/icons/gtango/applications-system.svg</normaloff>:/icons/gtango/applications-system.svg</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="loadLP">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="toolTip">
+           <string>Load light directions .lp file</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="icons.qrc">
+            <normaloff>:/icons/gtango/document-open.svg</normaloff>:/icons/gtango/document-open.svg</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="saveLP">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="toolTip">
+           <string>Save light directions</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="icons.qrc">
+            <normaloff>:/icons/gtango/document-save.svg</normaloff>:/icons/gtango/document-save.svg</iconset>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Images</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QListWidget" name="imageList">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>1</horstretch>
+          <verstretch>4</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>300</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QGraphicsView" name="graphicsView">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>4</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>516</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionOpen"/>
+    <addaction name="separator"/>
+    <addaction name="actionProcess"/>
+    <addaction name="actionLoad_LP"/>
+    <addaction name="actionSave_LP"/>
+    <addaction name="actionExport_RTI"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionPrevious"/>
+    <addaction name="actionNext"/>
+    <addaction name="separator"/>
+    <addaction name="actionZoom_in"/>
+    <addaction name="actionZoom_out"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit_2">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+    <addaction name="actionAdd_sphere_point"/>
+    <addaction name="actionAdd_sphere_highlight"/>
+    <addaction name="separator"/>
+    <addaction name="actionDelete_selected"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionHelp"/>
+    <addaction name="separator"/>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuEdit_2"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <property name="toolTip">
+    <string/>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionOpen"/>
+   <addaction name="actionPrevious"/>
+   <addaction name="actionNext"/>
+   <addaction name="separator"/>
+   <addaction name="actionZoom_in"/>
+   <addaction name="actionZoom_out"/>
+   <addaction name="separator"/>
+   <addaction name="actionExport_RTI"/>
+   <addaction name="actionHelp"/>
+  </widget>
+  <action name="actionOpen">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/folder-open.svg</normaloff>:/icons/gtango/folder-open.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Open...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionNext">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/go-previous.svg</normaloff>:/icons/gtango/go-previous.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Next image</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionPrevious">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/go-next.svg</normaloff>:/icons/gtango/go-next.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Previous image</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="actionZoom_in">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/zoom-in.svg</normaloff>:/icons/gtango/zoom-in.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom in</string>
+   </property>
+   <property name="shortcut">
+    <string>+</string>
+   </property>
+  </action>
+  <action name="actionZoom_out">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/zoom-out.svg</normaloff>:/icons/gtango/zoom-out.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom out</string>
+   </property>
+   <property name="shortcut">
+    <string>-</string>
+   </property>
+  </action>
+  <action name="actionAdd_sphere_point">
+   <property name="text">
+    <string>Add sphere point</string>
+   </property>
+  </action>
+  <action name="actionAdd_sphere_highlight">
+   <property name="text">
+    <string>Add sphere highlight</string>
+   </property>
+  </action>
+  <action name="actionDelete_selected">
+   <property name="text">
+    <string>Delete selected item</string>
+   </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
+  </action>
+  <action name="actionHelp">
+   <property name="icon">
+    <iconset theme="system-help">
+     <normaloff>.</normaloff>.</iconset>
+   </property>
+   <property name="text">
+    <string>Help</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="actionProcess">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/system-run.svg</normaloff>:/icons/gtango/system-run.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Find highlights</string>
+   </property>
+  </action>
+  <action name="actionSave_LP">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/document-save.svg</normaloff>:/icons/gtango/document-save.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Save LPs...</string>
+   </property>
+  </action>
+  <action name="actionExport_RTI">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/document-save.svg</normaloff>:/icons/gtango/document-save.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Export RTI...</string>
+   </property>
+  </action>
+  <action name="actionLoad_LP">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/document-open.svg</normaloff>:/icons/gtango/document-open.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Load LP...</string>
+   </property>
+  </action>
+ </widget>
+ <resources>
+  <include location="icons.qrc"/>
+ </resources>
+ <connections/>
+</ui>

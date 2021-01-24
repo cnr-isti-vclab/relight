@@ -88,6 +88,9 @@ typedef Color3<double>  Color3d;
 
 
 //a Pixel is the collection of N lights intensity.
+//pixel array is organized by pixel:
+//pixel0: light1, light2 ... light n;
+//then pixel1: etc etc.
 
 class PixelArray: public std::vector<Color3f> {
 public:

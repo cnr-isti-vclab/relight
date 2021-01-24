@@ -809,11 +809,11 @@ loadProgram: function() {
 	var gl = t.gl;
 	t.vertShader = gl.createShader(gl.VERTEX_SHADER);
 	gl.shaderSource(t.vertShader, t.vertCode);
-	gl.compileShader(t.vertShader);
-	let compiled = gl.getShaderParameter(t.vertShader, gl.COMPILE_STATUS);
+
+	var compiled = gl.compileShader(t.vertShader);
 	if(!compiled) {
-		alert("Failed vertex shader compilation: see console log.");
-		console.log(t.vertCode);
+		alert("Failed vertex shader compilation: see console log and ask for support.");
+		console.log(t.vertShader);
 		console.log(gl.getShaderInfoLog(t.vertShader));
 	}
 
@@ -823,7 +823,7 @@ loadProgram: function() {
 	t.program = gl.createProgram();
 	compiled = gl.getShaderParameter(t.fragShader, gl.COMPILE_STATUS);
 	if(!compiled) {
-		alert("Failed fragment shader compilation: see console log.");
+		alert("Failed fragment shader compilation: see console log and ask for support.
 		console.log(t.fragCode);
 		console.log(gl.getShaderInfoLog(t.fragShader));
 	}
@@ -872,8 +872,7 @@ loadProgram: function() {
 	t.opacitylocation = gl.getUniformLocation(t.program, "opacity");
 
 //	t.matrixLocation = gl.getUniformLocation(t.program, "u_matrix");
-
-	var sampler = gl.getUniformLocation(t.program, "planes");
+  var sampler = gl.getUniformLocation(t.program, "planes");
 	var samplerArray = new Int32Array(t.njpegs);
 	var len = samplerArray.length;
 	while (len--)

@@ -119,6 +119,7 @@ bool JpegDecoder::finish() {
 
 bool JpegDecoder::restart() {
 	//jpeg_finish_decompress(&decInfo);
+	jpeg_abort_decompress(&decInfo);
 	rewind(file);
 	jpeg_stdio_src(&decInfo, file);
 	int w, h;
