@@ -561,7 +561,7 @@ loadComponent: function(plane, index, level, x, y) {
 			t.preload();
 			t.redraw();
 		}
-		if(t.img || t.dem) {
+		if(t.layout == 'image') {
 			t.width = image.width;
 			t.height = image.height;
 			t.loaded();
