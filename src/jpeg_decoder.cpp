@@ -76,10 +76,10 @@ bool JpegDecoder::init(const char* path, int &width, int &height) {
 }
 
 bool JpegDecoder::init(int &width, int &height) {
-	jpeg_read_header(&decInfo, true);
+	jpeg_read_header(&decInfo, (boolean)true);
 	decInfo.out_color_space = colorSpace;
 	decInfo.jpeg_color_space = jpegColorSpace;
-	decInfo.raw_data_out = false;
+	decInfo.raw_data_out = (boolean)false;
 	
 	if(decInfo.num_components > 1) 
 		subsampled =  decInfo.comp_info[1].h_samp_factor != 1;
