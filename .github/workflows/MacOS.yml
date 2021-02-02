@@ -1,0 +1,26 @@
+name: MacOS
+
+on:
+  [push, pull_request]
+
+jobs:
+  macos_build:
+    name: Build Relight (MacOS)
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+    - name: Install dependencies
+      run: |
+        brew install armadillo libjpeg
+    - name: Configure and Build
+      run: |
+        cd relight
+        mkdir build
+        cd build
+        cmake ..
+        make -j4
