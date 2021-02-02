@@ -3,7 +3,6 @@ QT += core gui widgets concurrent
 QMAKE_CXXFLAGS += -std=c++17
 
 TARGET = highlight
-CONFIG += console
 CONFIG -= app_bundle
 
 TEMPLATE = app
