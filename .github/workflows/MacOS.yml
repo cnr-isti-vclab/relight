@@ -19,7 +19,7 @@ jobs:
         brew install armadillo libjpeg
     - name: Configure and Build
       run: |
-        cd relight
+        cd highlight
         mkdir build
         cd build
         cmake ..
