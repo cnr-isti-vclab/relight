@@ -1,0 +1,27 @@
+name: Linux
+
+on:
+  [push, pull_request]
+
+jobs:
+  linux_build:
+    name: Build MeshLab (Linux)
+    runs-on: ubuntu-16.04 #in order to deploy, need to use oldest supported version
+    strategy:
+      matrix:
+        precision: [single_precision, double_precision]
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+    - name: Install dependencies
+      run: |
+       sudo apt-get install -y mesa-common-dev libglu1-mesa-dev libarmadillo-dev libjpeg-dev
+    - name: Configure and Build
+      run: |
+        cd relight
+        cmake
+        make -j4
