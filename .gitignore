@@ -41,6 +41,7 @@ Thumbs.db
 *.pro.user*
 CMakeFiles
 CMakeCache.txt
+CMakeLists.txt.user
 *.cmake
 Makefile
 *Qt*GCC*

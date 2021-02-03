@@ -82,8 +82,8 @@ bool JpegEncoder::encode(uint8_t* img, int width, int height) {
 
 	jpeg_set_defaults(&info);
 	jpeg_set_colorspace(&info, jpegColorSpace);
-	jpeg_set_quality(&info, quality, true);
-	info.optimize_coding = optimize;
+	jpeg_set_quality(&info, quality, (boolean)true);
+	info.optimize_coding = (boolean)optimize;
 
 	if(jpegColorSpace == JCS_YCbCr && subsample == false) {
 		for(int i = 0; i < numComponents; i++) {
@@ -92,7 +92,7 @@ bool JpegEncoder::encode(uint8_t* img, int width, int height) {
 		}
 	}
 
-	jpeg_start_compress(&info, true);
+	jpeg_start_compress(&info, (boolean)true);
 
 	writeRows(img, height);
 /*	int rowSize = info.image_width * info.input_components;
@@ -122,8 +122,8 @@ bool JpegEncoder::init(int width, int height) {
 
 	jpeg_set_defaults(&info);
 	jpeg_set_colorspace(&info, jpegColorSpace);
-	jpeg_set_quality(&info, quality, true);
-	info.optimize_coding = optimize;
+	jpeg_set_quality(&info, quality, (boolean)true);
+	info.optimize_coding = (boolean)optimize;
 
 	if(jpegColorSpace == JCS_YCbCr && subsample == false)
 		for(int i = 0; i < numComponents; i++) {
@@ -131,7 +131,7 @@ bool JpegEncoder::init(int width, int height) {
 			info.comp_info[i].v_samp_factor = 1;
 		}
 
-	jpeg_start_compress(&info, true);
+	jpeg_start_compress(&info, (boolean)true);
 	return true;
 }
 
