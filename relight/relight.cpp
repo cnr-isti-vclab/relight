@@ -12,14 +12,18 @@
 #include "../src/jpeg_decoder.h"
 #include "../src/jpeg_encoder.h"
 
-//#include <flann/flann.hpp>
-#include "../src/pca.h"
+//#include "../src/pca.h"
+#include "../src/eigenpca.h"
+
+#include <Eigen/Core>
+
 
 extern "C" {
 //#include "../libICA/src/libICA.h"
 }
 
 #include <set>
+#include <iostream>
 using namespace std;
 
 /* reampling model:
@@ -357,15 +361,16 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 		
 		vector<vector<double>> means(nmaterials);
 		
-		std::vector<stats::pca *> pcas;
+		std::vector<PCA *> pcas;
 		means.clear();
 		means.resize(nmaterials);
 		for(uint32_t m = 0; m < nmaterials; m++)
 			means[m].resize(dim, 0.0);
 		
+		//nmaterials is ALWAYS 1, no more support for multiple materials.
 		pcas.resize(nmaterials);
 		for(auto &pca: pcas)
-			pca = new stats::pca(dim);
+			pca = new PCA(dim, nsamples);
 		
 		//compute mean
 		vector<double> count(nmaterials, 0);
@@ -388,6 +393,7 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 		}
 		
 		
+
 		for(uint32_t i = 0; i < nsamples; i++) {
 			//TODO iterate over rawdata.
 			auto &mean = means[indices[i]];
@@ -401,13 +407,13 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 				record[k*3 + 2] = w*(c.b - mean[k*3+2]);
 			}
 			int m = indices[i];
-			pcas[m]->add_record(record);
+			assert(m == 0);
+			pcas[m]->setRecord(i, record);
 		}
 		
 		for(uint32_t i = 0; i < nmaterials; i++) {
-			stats::pca *pca = pcas[i];
-			pca->solve();
-			pca->set_num_retained(nplanes);
+			PCA *pca = pcas[i];
+			pca->solve(nplanes);
 			
 			MaterialBuilder &mat = materialbuilders[i];
 			mat.mean.resize(dim, 0.0f);
@@ -443,7 +449,7 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 		vector<vector<double>> means(nmaterials);
 		
 		for(int component = 0; component < 3; component++) {
-			std::vector<stats::pca *> pcas;
+			std::vector<PCA *> pcas;
 			means.clear();
 			means.resize(nmaterials);
 			for(uint32_t m = 0; m < nmaterials; m++)
@@ -451,7 +457,7 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 			
 			pcas.resize(nmaterials);
 			for(auto &pca: pcas)
-				pca = new stats::pca(dim);
+				pca = new PCA(dim, nsamples);
 			
 			//compute mean
 			vector<double> count(nmaterials, 0);
@@ -480,14 +486,15 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 					record[k] = (c[component] - mean[k]);
 				}
 				int m = indices[i];
-				pcas[m]->add_record(record);
+				assert(m == 0);
+				pcas[m]->setRecord(i, record);
 			}
 			
 			
 			for(uint32_t i = 0; i < nmaterials; i++) {
-				stats::pca *pca = pcas[i];
-				pca->solve();
-				pca->set_num_retained(yccplanes[component]);
+				PCA *pca = pcas[i];
+				pca->solve(yccplanes[component]);
+				//pca->set_num_retained(yccplanes[component]);
 				
 				MaterialBuilder &mat = materialbuilders[i];
 				mat.mean.resize(dim*3, 0.0f);
@@ -522,64 +529,6 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 
 void RtiBuilder::pickBaseICA(PixelArray &sample, std::vector<size_t> &indices) {
 #ifdef ICA
-	//http://tumic.wz.cz/fel/online/libICA/
-	
-	int cols = sample.components()*3; //number of components
-	
-	double **X = mat_create(nsamples, cols);
-	double **K = mat_create(cols, nplanes); //this should convert into principal space
-	double **W = mat_create(nplanes, nplanes);
-	double **A = mat_create(nplanes, nplanes);
-	double **S = mat_create(nsamples, cols); //original samples
-	
-	float *x = sample.data();
-	
-	for(int m = 0; m < nmaterials; m++) {
-		Material mat;
-		mat.mean.resize(cols);
-		
-		int row = 0; //keeps track of current sample in a material
-		for(int i = 0; i < nsamples; i++) {
-			if(indices[i] != m)
-				continue;
-			
-			for(int c = 0; c < cols; c++) {
-				X[row][c] = x[c + i*cols];
-				mat.mean[c] += X[row][c];
-			}
-			row++;
-		}
-		int rows = row;
-		for(int c = 0; c < cols; c++)
-			mat.mean[c] /= rows;
-		
-		
-		fastICA(X, rows, cols, nplanes, K, W, A, S);
-		
-		//lets normalize K
-		for(int p = 0; p < nplanes; p++) {
-			double s = 0.0;
-			for(int k = 0; k < cols; k++) {
-				double d = K[k][p];
-				s += d*d;
-			}
-			s = 1.0/(sqrt(s));
-			for(int k = 0; k < cols; k++)
-				K[k][p] *= s;
-		}
-		
-		mat.proj = arma::Mat<double>(cols, nplanes);
-		for(int r = 0; r < cols; r++)
-			for(int c = 0; c < nplanes; c++)
-				mat.proj(r, c) = K[r][c];
-		
-		materials.push_back(mat);
-	}
-	mat_delete(X, nsamples);
-	mat_delete(K, cols);
-	mat_delete(W, nplanes);
-	mat_delete(A, nplanes);
-	mat_delete(S, nsamples);
 #endif
 	
 }
@@ -604,7 +553,7 @@ void RtiBuilder::pickBasePTM() {
 	MaterialBuilder &mat = materialbuilders[0];
 	mat.mean.resize(dim, 0.0);
 	
-	arma::Mat<double> A(lights.size(), 6);
+	Eigen::MatrixXd A(lights.size(), 6);
 	for(uint32_t l = 0; l < lights.size(); l++) {
 		Vector3f &light = lights[l];
 		A(l, 0) = 1.0;
@@ -614,7 +563,8 @@ void RtiBuilder::pickBasePTM() {
 		A(l, 4) = (double)light[0]*light[1];
 		A(l, 5) = (double)light[1]*light[1];
 	}
-	arma::Mat<double> iA = inv_sympd(A.t()*A)*A.t();
+
+	Eigen::MatrixXd iA = (A.transpose()*A).inverse()*A.transpose();
 	
 	if(colorspace == LRGB) {
 		assert(nplanes == 9);
@@ -656,15 +606,15 @@ void RtiBuilder::pickBaseHSH() {
 	MaterialBuilder &mat = materialbuilders[0];
 	mat.mean.resize(dim, 0.0);
 	
-	arma::Mat<double> A(lights.size(), nplanes/3);
+	Eigen::MatrixXd A(lights.size(), nplanes/3);
 	for(uint32_t l = 0; l < lights.size(); l++) {
 		Vector3f &light = lights[l];
 		vector<float> lweights = lightWeightsHsh(light[0], light[1]);
 		for(uint32_t p = 0; p < nplanes/3; p++)
 			A(l, p) = (double)lweights[p];
 	}
-	arma::Mat<double> iA = inv_sympd(A.t()*A)*A.t();
-	
+	Eigen::MatrixXd iA = (A.transpose()*A).inverse()*A.transpose();
+
 	assert(nplanes == 27 || nplanes == 12);
 	
 	std::vector<float> &proj = mat.proj;
@@ -816,20 +766,6 @@ void RtiBuilder::estimateError(PixelArray &sample, std::vector<size_t> &indices,
 		e += se;
 		se = sqrt(se);
 		//weights[i] += se;
-		
-		//check error
-		/*		arma::Col<double> variable = mat.toVariable(principal);
-		arma::Row<double> qprin(principal.size());
-		for(int k = 0; k < qprin.size(); k++)
-			qprin[k] = floor(principal[k]/4.0)*4.0;
-		arma::Col<double> qvar = m.toVariable(qprin); */
-		/*		double e = mat.mse((float *)sample[i], variable);
-		double qe = mat.mse((float *)sample[i], qvar);
-		
-		maxerror = std::max(e, maxerror);
-		meanerror += e;
-		maxqerror = std::max(qe, maxqerror);
-		meanqerror += qe; */
 	}
 	//normalization of weights
 	
@@ -987,8 +923,7 @@ Vector3f extractMedian(Color3f *pixels, int n) {
 Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 	static bool init = true;
 
-	static arma::Mat<float> T;
-
+	Eigen::Matrix3f T;
 	static std::vector<float> w0, w1, w2;
 
 	if(init) {
@@ -1000,64 +935,33 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 		Vector3f l1(sin(a)*cos(5*b), sin(a)*sin(5*b), cos(a));
 		Vector3f l2(sin(a)*cos(9*b), sin(a)*sin(9*b), cos(a));
 
-		T << l0[0] << l0[1] << l0[2] << arma::endr
-		  << l1[0] << l1[1] << l1[2] << arma::endr
-		  << l2[0] << l2[1] << l2[2] << arma::endr;
+		T << l0[0], l0[1], l0[2],
+			 l1[0], l1[1], l1[2],
+			 l2[0], l2[1], l2[2];
 
-		T = inv(T);
+		T = T.inverse();
 
 		w0 = lightWeights(l0[0], l0[1]);
 		w1 = lightWeights(l1[0], l1[1]);
 		w2 = lightWeights(l2[0], l2[1]);
 	}
 
-	//if(colorspace != RGB) throw "NO NORMALS if not RGB, for the moment";
 
-	//MaterialBuilder &mat = this->materialbuilders[0];
 	Material &mat = this->materials[0];
 
-	arma::Col<float> bright(3); //3 lights
-	bright.fill(0.0f);
-
-	static int count = 0;
+	Eigen::Vector3f bright(0, 0, 0);
 
 	if(colorspace == RGB) {
 		for(uint32_t p = 0; p < nplanes; p += 3) {
-
-//#define TEST_COLOR 1
-#ifdef TEST_COLOR
-			bright[0] += w1[p/3]*pri[p+0];
-			bright[1] += w1[p/3]*pri[p+1];
-			bright[2] += w1[p/3]*pri[p+2];
-#else
-	//		bright[0] += 0.2125f*w0[p/3]*pri[p] + 0.7154f*w0[p/3]*pri[p+1] + 0.0721f*w0[p/3]*pri[p+2];
-	//		bright[1] += 0.2125f*w1[p/3]*pri[p] + 0.7154f*w1[p/3]*pri[p+1] + 0.0721f*w1[p/3]*pri[p+2];
-	//		bright[2] += 0.2125f*w2[p/3]*pri[p] + 0.7154f*w2[p/3]*pri[p+1] + 0.0721f*w2[p/3]*pri[p+2];
-
 			bright[0] += w0[p/3]*pri[p] + w0[p/3]*pri[p+1] + w0[p/3]*pri[p+2];
 			bright[1] += w1[p/3]*pri[p] + w1[p/3]*pri[p+1] + w1[p/3]*pri[p+2];
 			bright[2] += w2[p/3]*pri[p] + w2[p/3]*pri[p+1] + w2[p/3]*pri[p+2];
-#endif
 		}
 
 	}
 	else if (colorspace == MRGB) { //seems like weights are multiplied by 255 in rbf!
 		MaterialBuilder &matb = materialbuilders[0];
 
-#ifdef TEST_COLOR
-		bright[0] = w1[0];
-		bright[1] = w1[1];
-		bright[2] = w1[2];
-
-		for (uint32_t p = 0; p < nplanes; p++) {
-			Material::Plane &plane = mat.planes[p];
-
-			float val = pri[p];
-			bright[0] += val*(w1[3 * (p + 1) + 0] - 127) / plane.range;
-			bright[1] += val*(w1[3 * (p + 1) + 1] - 127) / plane.range;
-			bright[2] += val*(w1[3 * (p + 1) + 2] - 127) / plane.range;
-		}
-#else
 		bright[0] = w0[0] + w0[1] + w0[2];
 		bright[1] = w1[0] + w1[1] + w1[2];
 		bright[2] = w2[0] + w2[1] + w2[2];
@@ -1069,47 +973,22 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 			bright[1] += val*(w1[3 * (p + 1) + 0] + w1[3 * (p + 1) + 1] + w1[3 * (p + 1) + 2] - 3 * 127) / plane.range;
 			bright[2] += val*(w2[3 * (p + 1) + 0] + w2[3 * (p + 1) + 1] + w2[3 * (p + 1) + 2] - 3 * 127) / plane.range;
 		}
-#endif
 	}
-//	else 
-//				throw QString("Unsupported colorspace (RGB and MRGB only supported!)");
 
-	//bright /= 3;
-	arma::Col<float> N = T*bright;
+	Eigen::Vector3f N = T*bright;
 	Vector3f n(N[0], N[1], N[2]);
-	//Vector3f n(bright[0], bright[1], bright[2]);
+
 
 	n = n/n.norm();
 	n[0] = (n[0] + 1.0f)/2.0f;
 	n[1] = (n[1] + 1.0f)/2.0f;
-	n[2] = (n[2] + 1.0f)/2.0f; //n[2] = (n[2] + 1.0f)/2.0f */
-
-#ifdef TEST_COLOR
-	n[0] = bright[0]/255;
-	n[1] = bright[1]/255;
-	n[2] = bright[2]/255;
-#endif
+	n[2] = (n[2] + 1.0f)/2.0f;
 
 	return n;
 }
 
-
+/* UNUSED! */
 Vector3f RtiBuilder::getNormal(Color3f *pixel) {
-
-
-/*	 //MAX direction
- *  uint32_t m = -1;
-	float max = 0.0f;
-	for(uint32_t i = 0; i < ndimensions; i++) {
-		Color3f &c = pixel[i];
-		float b = 0.2126f*c.r + 0.7152f*c.g + 0.0722f*c.b;
-		if(b > max) {
-			m = i;
-			max = b;
-		}
-	}
-	return imageset.lights[m]; */
-
 
 	static std::vector<float> proj;
 
@@ -1120,7 +999,7 @@ Vector3f RtiBuilder::getNormal(Color3f *pixel) {
 		//DREW
 		init = false;
 
-		arma::Mat<double> A(lights.size(), 6);
+		Eigen::Matrix3d A(lights.size(), 6);
 		for(uint32_t l = 0; l < lights.size(); l++) {
 			Vector3f &light = lights[l];
 
@@ -1133,7 +1012,7 @@ Vector3f RtiBuilder::getNormal(Color3f *pixel) {
 			A(l, 4) = (double)light[0]*light[1];
 			A(l, 5) = 1.0;
 		}
-		arma::Mat<double> iA = inv_sympd(A.t()*A)*A.t();
+		Eigen::MatrixXd iA = (A.transpose()*A).inverse()*A.transpose();
 
 		proj.resize(dim* 6, 0.0);
 		for(uint32_t p = 0; p < 6; p++) {
@@ -1146,11 +1025,6 @@ Vector3f RtiBuilder::getNormal(Color3f *pixel) {
 		}
 	}
 
-
-
-
-//	vector<float> res(6, 0.0f);
-	float *v = (float *)pixel;
 	Vector3f n(0, 0, 0);
 
 	/* DREW */
@@ -1646,7 +1520,7 @@ void RtiBuilder::buildResampleMap() {
 
 
 	float radius = 1/(sigma*sigma);
-	arma::Mat<double> B(ndimensions, lights.size(), arma::fill::zeros);
+	Eigen::MatrixXd B = Eigen::MatrixXd::Zero(ndimensions, lights.size());
 	
 	resamplemap.resize(ndimensions);
 	for(uint32_t y = 0; y < resolution; y++) {
@@ -1692,7 +1566,8 @@ void RtiBuilder::buildResampleMap() {
 	
 	
 	//rows           cols
-	A = arma::Mat<double>(lights.size(), ndimensions, arma::fill::zeros);
+	A = Eigen::MatrixXd::Zero(lights.size(), ndimensions);
+	//A = arma::Mat<double>(lights.size(), ndimensions, arma::fill::zeros);
 	for(uint32_t l = 0; l < lights.size(); l++) {
 		Vector3f &light = lights[l];
 		float lx = light[0];
@@ -1728,14 +1603,20 @@ void RtiBuilder::buildResampleMap() {
 	//	 x = (B + (AtA + kI)^-1 * At*(I - AB))*b]
 	//  original regularization coefficient was 0.1
 
-	arma::Mat<double> I(ndimensions, ndimensions, arma::fill::eye);
+	Eigen::MatrixXd I = Eigen::MatrixXd::Identity(ndimensions, ndimensions);
+
+	Eigen::MatrixXd iAtA = (A.transpose()*A  + regularization*I).inverse();
+	Eigen::MatrixXd tI = Eigen::MatrixXd::Identity(lights.size(), lights.size());
+	Eigen::MatrixXd iA = B + iAtA*(A.transpose() * (tI - A*B));
+
+	/*arma::Mat<double> I(ndimensions, ndimensions, arma::fill::eye);
 	arma::Mat<double> At = A.t();
 	arma::Mat<double> AtA = At*A;
 	arma::Mat<double> iAtA = inv_sympd(AtA + regularization*I);
 	
 	arma::Mat<double> tI(lights.size(), lights.size(), arma::fill::eye);
 	
-	arma::Mat<double> iA = B + iAtA *(At * (tI - A*B));
+	arma::Mat<double> iA = B + iAtA *(At * (tI - A*B)); */
 	
 	
 	resamplemap.clear();
