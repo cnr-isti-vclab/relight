@@ -11,10 +11,11 @@ QMAKE_CXXFLAGS += -std=c++11
 DEFINES += _USE_MATH_DEFINES
 DEFINES += NOMINMAX
 
-win32:INCLUDEPATH += ../libjpeg/include ../armadillo-9.200.7/include
-win32:LIBS += ../libjpeg/lib/jpeg.lib ../armadillo-9.200.7/lib/blas_win64_MT.lib ../armadillo-9.200.7/lib/lapack_win64_MT.lib
+win32:INCLUDEPATH += ../libjpeg/include #../armadillo-9.200.7/include
+win32:LIBS += ../libjpeg/lib/jpeg.lib #../armadillo-9.200.7/lib/blas_win64_MT.lib ../armadillo-9.200.7/lib/lapack_win64_MT.lib
 
-unix:LIBS += -larmadillo -ljpeg 
+unix:INCLUDEPATH += /usr/include/eigen3
+unix:LIBS += -ljpeg #-larmadillo
 
 DESTDIR = "../bin"
 
@@ -24,11 +25,9 @@ SOURCES += main.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/jpeg_encoder.cpp \
     ../src/material.cpp \
-    relight.cpp \
     ../src/rti.cpp \
-    ../src/pca.cpp \
-    ../src/utils.cpp \
-    ../src/legacy_rti.cpp
+    ../src/legacy_rti.cpp \
+    relight.cpp
 
 HEADERS += \
     ../src/getopt.h \
@@ -39,7 +38,9 @@ HEADERS += \
     ../src/vector.h \
     ../src/rti.h \
     ../src/legacy_rti.h \
+    ../src/eigenpca.h \
     rtibuilder.h
+
 
 DISTFILES += \
     plan.txt
