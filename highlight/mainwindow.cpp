@@ -316,6 +316,7 @@ void MainWindow::process() {
 	progress_jobs.clear();
 	for(int i = 0; i < images.size(); i++)
 		progress_jobs.push_back(i);
+	//0 -> ok, 1 -> could not open 2 -> flipped, 3-> wrong resolution
 	QFuture<void> future = QtConcurrent::map(progress_jobs, [&](int i) -> int { return processImage(i); });
 	watcher.setFuture(future);
 	connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
@@ -329,6 +330,16 @@ void MainWindow::cancelProcess() {
 }
 
 void MainWindow::finishedProcess() {
+	if(notloaded.size() || flipped.size() || resolution.size()) {
+		if(notloaded.size())
+			QMessageBox::critical(this, "Houston we have a problem!", "Could not load images: " + notloaded.join(", "));
+		if(resolution.size())
+			QMessageBox::critical(this, "Houston we have a problem!", "These images have different sizes: "+ resolution.join(", "));
+		if(flipped.size())
+			QMessageBox::critical(this, "Houston we have a problem!", "These images are probably just rotated: " + flipped.join(", "));
+		return;
+	}
+
 	auto selected = ui->imageList->selectedItems();
 	if(selected.size() == 0) {
 		cerr << "Porca paletta!" << endl;
@@ -347,13 +358,18 @@ int MainWindow::processImage(int n) {
 	QString filename = images[n];
 	QImage img(dir.filePath(filename));
 	if(img.isNull()) {
-		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
+		notloaded.push_back(images[n]);
 		return 0;
 	}
 	if(img.size() != imgsize) {
-		QMessageBox::critical(this, "Houston we have a problem!", "All images must be the same size! (" + filename + " doesn't...)");
+		if(img.size() == imgsize.transposed())
+			flipped.push_back(images[n]);
+		else
+			resolution.push_back(images[n]);
 		return 0;
 	}
+
+
 	for(auto &it: balls) {
 		if(it.second.fitted)
 			it.second.findHighlight(img, n);

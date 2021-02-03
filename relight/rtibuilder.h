@@ -11,7 +11,7 @@
 #include <flann/flann.hpp>
 #endif
 
-#include <armadillo>
+#include <Eigen/Core>
 
 #include <functional>
 class QDir;
@@ -44,7 +44,8 @@ public:
 protected:
 	//for each resample pos get coeffs from the origina lights.
 	std::vector<std::vector<std::pair<int, float>>> resamplemap;
-	arma::Mat<double> A;
+	Eigen::MatrixXd A;
+	//arma::Mat<double> A;
 
 #ifdef USE_MATERIALS
 	flann::Index<flann::L2<float>> *materialindex;
