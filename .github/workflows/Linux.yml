@@ -1,0 +1,26 @@
+name: Linux
+
+on:
+  [push, pull_request]
+
+jobs:
+  linux_build:
+    name: Build Relight (Linux)
+    runs-on: ubuntu-16.04 #in order to deploy, need to use oldest supported version
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+    - name: Install dependencies
+      run: |
+       sudo apt-get install -y mesa-common-dev libglu1-mesa-dev libarmadillo-dev libjpeg-dev
+    - name: Configure and Build
+      run: |
+        cd highlight
+        mkdir build
+        cd build
+        cmake ..
+        make -j4
