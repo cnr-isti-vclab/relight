@@ -809,8 +809,8 @@ loadProgram: function() {
 	var gl = t.gl;
 	t.vertShader = gl.createShader(gl.VERTEX_SHADER);
 	gl.shaderSource(t.vertShader, t.vertCode);
-
-	var compiled = gl.compileShader(t.vertShader);
+	gl.compileShader(t.vertShader);
+	compiled = gl.getShaderParameter(t.vertShader, gl.COMPILE_STATUS);
 	if(!compiled) {
 		alert("Failed vertex shader compilation: see console log and ask for support.");
 		console.log(t.vertShader);
@@ -820,14 +820,15 @@ loadProgram: function() {
 	t.fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 	gl.shaderSource(t.fragShader, t.fragCode);
 	gl.compileShader(t.fragShader);
-	t.program = gl.createProgram();
+
 	compiled = gl.getShaderParameter(t.fragShader, gl.COMPILE_STATUS);
 	if(!compiled) {
-		alert("Failed fragment shader compilation: see console log and ask for support.
+		alert("Failed fragment shader compilation: see console log and ask for support.");
 		console.log(t.fragCode);
 		console.log(gl.getShaderInfoLog(t.fragShader));
 	}
 
+	t.program = gl.createProgram();
 	gl.attachShader(t.program, t.vertShader);
 	gl.attachShader(t.program, t.fragShader);
 	gl.linkProgram(t.program);

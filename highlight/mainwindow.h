@@ -94,6 +94,9 @@ private:
 	RTIScene *scene = nullptr;
 	QGraphicsPixmapItem *imagePixmap = nullptr;
 	bool ignore_scene_changes = false;
+	QStringList notloaded; //used for looking for highlights and return status.
+	QStringList flipped;
+	QStringList resolution;
 };
 
 #endif // MAINWINDOW_H

@@ -10,10 +10,11 @@ TEMPLATE = app
 DEFINES += _USE_MATH_DEFINES
 DEFINES += NOMINMAX
 
-win32:INCLUDEPATH += ../libjpeg/include ../armadillo-9.200.7/include
-win32:LIBS += ../libjpeg/lib/jpeg.lib ../armadillo-9.200.7/lib/blas_win64_MT.lib ../armadillo-9.200.7/lib/lapack_win64_MT.lib
+win32:INCLUDEPATH += ../libjpeg/include
+win32:LIBS += ../libjpeg/lib/jpeg.lib
 
-unix:LIBS += -larmadillo -ljpeg
+unix:INCLUDEPATH += /usr/include/eigen3
+unix:LIBS += -ljpeg
 
 SOURCES += main.cpp \
     imagecropper.cpp \
@@ -26,9 +27,7 @@ SOURCES += main.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/jpeg_encoder.cpp \
     ../src/material.cpp \
-    ../src/pca.cpp \
     ../src/rti.cpp \
-    ../src/utils.cpp \
     helpdialog.cpp
 
 
@@ -40,12 +39,12 @@ HEADERS += \
     ball.h \
     graphics_view_zoom.h \
     rtiexport.h \
+    helpdialog.h \
     ../src/imageset.h \
     ../src/jpeg_decoder.h \
     ../src/jpeg_encoder.h \
     ../src/material.h \
-    ../src/pca.h \
-    helpdialog.h \
+    ../src/eigenpca.h \
     ../relight/rtibuilder.h
 
 FORMS += \
