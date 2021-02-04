@@ -21,14 +21,13 @@ jobs:
         echo "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC" >> $GITHUB_ENV
         echo "JPEGTURBO_HOME=${{ github.workspace }}\external\libjpeg-turbo-2.0.6" >> $GITHUB_ENV
         echo "EIGEN_HOME=${{ github.workspace }}\external\eigen-3.3.9" >> $GITHUB_ENV
-        echo "DESTDIR=${{ github.workspace }}\highlight\install"
     - name: Configure and Build
       run: |
         cd highlight
         mkdir build
         mkdir install
         cd build
-        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel ..
+        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX=../install ..
         nmake
         nmake install
     - name: Deploy
