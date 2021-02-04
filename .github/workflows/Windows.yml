@@ -21,22 +21,10 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
-    - name: Install dependencies
-      shell: bash
-      run: |
-        cd external/libjpeg-turbo-2.0.6
-        mkdir build
-        cd build
-        cmake -G"NMake Makefiles" ..
-        nmake
-        nmake install #dir should be C:\libjpeg-turbo64
-        echo "======="
-        ls -l C:\libjpeg-turbo64
-        echo "======="
     - name: Setup env variables
       shell: bash
       run: |
-        echo "JPEGTURBO_HOME=C:\libjpeg-turbo64" >> $GITHUB_ENV
+        echo "JPEGTURBO_HOME=$${GITHUB_WORKSPACE}\external\libjpeg-turbo64" >> $GITHUB_ENV
         echo "EIGEN_HOME=$${GITHUB_WORKSPACE}\external\eigen-3.3.9" >> $GITHUB_ENV
     - name: Configure and Build
       shell: bash
