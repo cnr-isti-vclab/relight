@@ -27,7 +27,7 @@ jobs:
         cd external/libjpeg-turbo-2.0.6
         mkdir build
         cd build
-        cmake -G"NMake Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+        cmake -G"NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=C:\libjpeg-turbo64 ..
         nmake
         nmake install #dir should be C:\libjpeg-turbo64
         echo "======="
