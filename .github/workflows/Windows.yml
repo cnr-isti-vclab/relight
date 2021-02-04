@@ -18,8 +18,8 @@ jobs:
     - name: Setup env variables
       shell: bash
       run: |
-        echo "JPEGTURBO_HOME=${{GITHUB_WORKSPACE}}\external\libjpeg-turbo64" >> $GITHUB_ENV
-        echo "EIGEN_HOME=${{GITHUB_WORKSPACE}}\external\eigen-3.3.9" >> $GITHUB_ENV
+        echo "JPEGTURBO_HOME=$(pwd)\external\libjpeg-turbo64" >> $GITHUB_ENV
+        echo "EIGEN_HOME=$(pwd)\external\eigen-3.3.9" >> $GITHUB_ENV
     - name: Configure and Build
       run: |
         cd highlight
