@@ -18,8 +18,6 @@ else()
 	find_package(Eigen3 REQUIRED)
 endif()
 
-message("INSTALL DIR: " ${CMAKE_INSTALL_PREFIX})
-
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
