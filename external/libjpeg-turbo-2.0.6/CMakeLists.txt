@@ -109,7 +109,7 @@ if(CMAKE_INSTALL_PREFIX STREQUAL "${CMAKE_INSTALL_DEFAULT_PREFIX}")
   endif()
 endif()
 
-if (not WIN32)
+if (NOT WIN32)
   include(cmakescripts/GNUInstallDirs.cmake)
 enfif()
 
