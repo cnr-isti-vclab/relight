@@ -24,7 +24,7 @@ jobs:
     - name: Install dependencies
       shell: bash
       run: |
-        cd external
+        cd external/libjpeg-turbo-2.0.6
         mkdir build
         cd build
         cmake -G"NMake Makefiles" -DCMAKE_BUILD_TYPE=Release ..
