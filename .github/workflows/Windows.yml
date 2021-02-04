@@ -11,12 +11,6 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: true
-    - name: Download Jom
-      run: |
-        Invoke-WebRequest -Uri "http://mirrors.ukfast.co.uk/sites/qt.io/official_releases/jom/jom_1_1_3.zip" -OutFile "jom_1_1_3.zip"
-        New-Item -Name "jom" -ItemType "directory"
-        Expand-Archive -Path jom_1_1_3.zip -DestinationPath .\jom
-        echo "$(Get-Location)\jom" >> GITHUB_PATH
     - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
     - name: Install Qt
@@ -27,10 +21,9 @@ jobs:
         echo "JPEGTURBO_HOME=$${GITHUB_WORKSPACE}\external\libjpeg-turbo64" >> $GITHUB_ENV
         echo "EIGEN_HOME=$${GITHUB_WORKSPACE}\external\eigen-3.3.9" >> $GITHUB_ENV
     - name: Configure and Build
-      shell: bash
       run: |
         cd highlight
         mkdir build
         cd build
         cmake -G "NMake Makefiles" ..
-        jom -j4
+        nmake
