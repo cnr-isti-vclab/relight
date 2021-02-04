@@ -79,3 +79,9 @@ target_link_libraries(
 		Qt5::Widgets
 		Qt5::Concurrent)
 target_compile_definitions(relight PUBLIC _USE_MATH_DEFINES NOMINMAX)
+
+install (TARGETS relight DESTINATION .)
+
+if (WIN32)
+	install(FILES ${JPEGTURBO_HOME}/bin/jpeg62.dll DESTINATION .)
+endif()
