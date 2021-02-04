@@ -58,7 +58,10 @@ set (RELIGHT_RESOURCES
 )
 
 add_executable(relight ${RELIGHT_HEADERS} ${RELIGHT_SOURCES} ${RELIGHT_FORMS} ${RELIGHT_RESOURCES})
-target_include_directories(relight PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(
+	relight PUBLIC 
+		${CMAKE_CURRENT_SOURCE_DIR}
+		${JPEG_INCLUDE_DIR})
 target_link_libraries(
 	relight PUBLIC
 		${JPEG_LIBRARIES}
