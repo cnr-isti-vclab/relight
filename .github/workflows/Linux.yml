@@ -16,7 +16,10 @@ jobs:
       uses: jurplel/install-qt-action@v2
     - name: Install dependencies
       run: |
-       sudo apt-get install -y mesa-common-dev libglu1-mesa-dev libeigen3-dev libjpeg-dev
+        #apt in 16.04 gets old version of eigen...
+        wget http://mirrors.kernel.org/ubuntu/pool/universe/e/eigen3/libeigen3-dev_3.3.4-4_all.deb
+        sudo dpkg -i libeigen3-dev*
+        sudo apt-get install -y mesa-common-dev libglu1-mesa-dev libjpeg-dev
     - name: Configure and Build
       run: |
         cd highlight
