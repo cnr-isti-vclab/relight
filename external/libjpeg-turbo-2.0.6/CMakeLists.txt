@@ -109,7 +109,7 @@ if(CMAKE_INSTALL_PREFIX STREQUAL "${CMAKE_INSTALL_DEFAULT_PREFIX}")
   endif()
 endif()
 
-include(cmakescripts/GNUInstallDirs.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmakescripts/GNUInstallDirs.cmake)
 
 macro(report_directory var)
   if(CMAKE_INSTALL_${var} STREQUAL CMAKE_INSTALL_FULL_${var})
