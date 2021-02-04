@@ -18,7 +18,7 @@ jobs:
     - name: Setup env variables
       shell: bash
       run: |
-        echo "JPEGTURBO_HOME=${{ github.workspace }}\external\libjpeg-turbo64" >> $GITHUB_ENV
+        echo "JPEGTURBO_HOME=${{ github.workspace }}\external\libjpeg-turbo-2.0.6" >> $GITHUB_ENV
         echo "EIGEN_HOME=${{ github.workspace }}\external\eigen-3.3.9" >> $GITHUB_ENV
     - name: Configure and Build
       run: |
