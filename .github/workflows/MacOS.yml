@@ -16,7 +16,7 @@ jobs:
       uses: jurplel/install-qt-action@v2
     - name: Install dependencies
       run: |
-        brew install armadillo libjpeg
+        brew install eigen libjpeg
     - name: Configure and Build
       run: |
         cd highlight
