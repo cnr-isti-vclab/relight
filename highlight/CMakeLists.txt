@@ -7,8 +7,14 @@ find_package(
 	Qt5
 	COMPONENTS Core Gui Widgets Concurrent
 	REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package (JPEG REQUIRED)
+if (MSVC)
+	set(JPEG_INCLUDE_DIR $ENV{JPEGTURBO_HOME}/include)
+	set(JPEG_LIBRARIES $ENV{JPEGTURBO_HOME}/lib/jpeg.lib)
+	set(EIGEN3_INCLUDE_DIR $ENV{EIGEN_HOME})
+else()
+	find_package (JPEG REQUIRED)
+	find_package(Eigen3 REQUIRED)
+endif()
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -61,11 +67,11 @@ add_executable(relight ${RELIGHT_HEADERS} ${RELIGHT_SOURCES} ${RELIGHT_FORMS} ${
 target_include_directories(
 	relight PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
-		${JPEG_INCLUDE_DIR})
+		${JPEG_INCLUDE_DIR}
+		${EIGEN3_INCLUDE_DIR})
 target_link_libraries(
 	relight PUBLIC
 		${JPEG_LIBRARIES}
-		Eigen3::Eigen
 		Qt5::Core
 		Qt5::Gui
 		Qt5::Widgets
