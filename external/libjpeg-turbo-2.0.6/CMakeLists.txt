@@ -111,7 +111,7 @@ endif()
 
 if (NOT WIN32)
   include(cmakescripts/GNUInstallDirs.cmake)
-enfif()
+endif()
 
 macro(report_directory var)
   if(CMAKE_INSTALL_${var} STREQUAL CMAKE_INSTALL_FULL_${var})
