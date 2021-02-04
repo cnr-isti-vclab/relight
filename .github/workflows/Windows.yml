@@ -27,7 +27,7 @@ jobs:
         mkdir build
         mkdir install
         cd build
-        cmake -G "NMake Makefiles" .. -DCMAKE_INSTALL_PREFIX=../install
+        cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=../install ..
         nmake
         nmake install
     - name: Deploy
