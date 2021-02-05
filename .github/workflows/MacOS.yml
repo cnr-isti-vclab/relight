@@ -19,7 +19,7 @@ jobs:
         brew install eigen libjpeg
     - name: Configure and Build
       run: |
-        cd highlight
+        cd relight
         mkdir build
         cd build
         cmake ..

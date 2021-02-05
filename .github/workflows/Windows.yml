@@ -23,7 +23,7 @@ jobs:
         echo "EIGEN_HOME=${{ github.workspace }}\external\eigen-3.3.9" >> $GITHUB_ENV
     - name: Configure and Build
       run: |
-        cd highlight
+        cd relight
         mkdir build
         mkdir install
         cd build
@@ -32,10 +32,10 @@ jobs:
         nmake install
     - name: Deploy
       run: |
-        cd highlight/install
+        cd relight/install
         windeployqt relight.exe
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v1
       with:
         name: Relight_windows_portable
-        path: highlight/install
+        path: relight/install

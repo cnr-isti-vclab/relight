@@ -22,7 +22,7 @@ SOURCES += main.cpp \
     ball.cpp \
     graphics_view_zoom.cpp \
     rtiexport.cpp \
-    ../relight/relight.cpp \
+    ../relight-cli/rtibuilder.cpp \
     ../src/imageset.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/jpeg_encoder.cpp \
