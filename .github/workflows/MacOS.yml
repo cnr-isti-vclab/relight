@@ -22,5 +22,15 @@ jobs:
         cd relight
         mkdir build
         cd build
-        cmake ..
+        cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
         make -j4
+        make install
+    - name: Deploy
+      run: |
+        cd highlight/install
+        macdeployqt relight.app
+    - name: Upload Relight Portable
+      uses: actions/upload-artifact@v1
+      with:
+        name: Relight_windows_portable
+        path: highlight/install
