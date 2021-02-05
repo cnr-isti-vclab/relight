@@ -5,7 +5,7 @@
 #include <map>
 #include <QFutureWatcher>
 #include "../src/rti.h"
-#include "../relight/rtibuilder.h"
+#include "../relight-cli/rtibuilder.h"
 
 namespace Ui {
 	class RtiExport;
