@@ -32,5 +32,5 @@ jobs:
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v1
       with:
-        name: Relight_windows_portable
+        name: Relight_macos_portable
         path: highlight/install
