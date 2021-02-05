@@ -16,9 +16,9 @@ Relight new formats provide better accuracy and smaller size.
 
 # Relight fitter
 
-*relight* is a Qt command-line program to process a stack of photos into an RTI.
+*relight-cli* is a Qt command-line program to process a stack of photos into an RTI.
 
-	Usage: relight [-frqpsScCey]<input folder> [output folder]
+	Usage: relight-cli [-frqpsScCey]<input folder> [output folder]
 
 	input folder containing a .lp with number of photos and light directions
 	optional output folder (default is ./)
@@ -33,9 +33,9 @@ Relight new formats provide better accuracy and smaller size.
 	-C        : apply chroma subsampling 
 	-e        : evaluate reconstruction error (default: false)
 
-*relight* can also be used to convert .ptm files into relight format:
+*relight-cli* can also be used to convert .ptm files into relight format:
 
-	relight [-q]<file.ptm> [output folder]
+	relight-cli [-q]<file.ptm> [output folder]
 	-q <int>  : jpeg quality (default: 90)
 
 
