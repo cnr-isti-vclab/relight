@@ -56,7 +56,6 @@ protected:
 
 	PixelArray resamplePixels(PixelArray &samples);
 	void resamplePixel(Color3f *sample, Color3f *pixel);
-	Vector3f getNormal(Color3f *pixel);
 	Vector3f getNormalThreeLights(std::vector<float> &pri); //use 3 virtual lights at 45 degs.
 
 
@@ -68,8 +67,6 @@ protected:
 	void getPixelMaterial(PixelArray &pixels, std::vector<size_t> &indices);
 	void getPixelBestMaterial(PixelArray &pixels, std::vector<size_t> &indices);
 
-
-	void pickBaseICA(PixelArray &sample, std::vector<size_t> &indices);
 	void pickBasePCA(PixelArray &sample, std::vector<size_t> &indices);
 	void pickBasePTM();
 	void pickBaseHSH();

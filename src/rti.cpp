@@ -412,7 +412,7 @@ done:
 	return coeffs;
 }
 
-std::vector<float> Rti::lightWeightsDmd(float lx, float ly) {
+std::vector<float> Rti::lightWeightsDmd(float /*lx*/, float /*ly*/) {
 	cerr << "Not implemented!" << endl;
 	if(colorspace == RGB)
 		assert(nplanes %3 == 0);
@@ -610,7 +610,7 @@ double Rti::evaluateError(ImageSet &imageset, Rti &rti, QString output, int refe
 	double tot = 0.0;
 
 	int count = 0;
-	for(uint32_t nl = 0; nl < nlights; nl++) {
+	for(int nl = 0; nl < (int)nlights; nl++) {
 		if(reference >= 0 && nl != reference) {
 			continue;
 		}

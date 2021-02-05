@@ -37,7 +37,7 @@ bool ImageSet::init(const char *_path, bool ignore_filenames, int skip_image) {
 	}
 
 	QTextStream stream(&sphere);
-	size_t n;
+	int n;
 	stream >> n;
 
 
@@ -45,7 +45,7 @@ bool ImageSet::init(const char *_path, bool ignore_filenames, int skip_image) {
 	img_ext << "*.jpg" << "*.JPG";
 	images = dir.entryList(img_ext);
 
-	for(size_t i = 0; i < n; i++) {
+	for(int i = 0; i < n; i++) {
 		QString s;
 		Vector3f light;
 		stream >> s >> light[0] >> light[1] >> light[2];
@@ -77,7 +77,7 @@ bool ImageSet::init(const char *_path, bool ignore_filenames, int skip_image) {
 
 bool ImageSet::initImages(const char *_path) {
 	QDir dir(_path);
-	for(size_t i = 0; i < images.size(); i++) {
+	for(int i = 0; i < images.size(); i++) {
 		QString filepath = dir.filePath(images[i]);
 		int w, h;
 		JpegDecoder *dec = new JpegDecoder;
@@ -85,7 +85,7 @@ bool ImageSet::initImages(const char *_path) {
 			cerr << "Failed decoding image: " << qPrintable(filepath) << endl;
 			return false;
 		}
-		if(width && (width != (size_t)w || height != (size_t)h)) {
+		if(width && (width != w || height != h)) {
 			cerr << "Inconsistent image size for " << qPrintable(filepath) << endl;
 			return false;
 		}
@@ -126,7 +126,7 @@ void ImageSet::readLine(PixelArray &pixels) {
 
 	for(size_t i = 0; i < decoders.size(); i++) {
 		decoders[i]->readRows(1, row.data());
-		for(size_t x = left; x < right; x++) {
+		for(int x = left; x < right; x++) {
 			pixels(x - left, i).r = row[x*3 + 0];
 			pixels(x - left, i).g = row[x*3 + 1];
 			pixels(x - left, i).b = row[x*3 + 2];
@@ -153,7 +153,7 @@ uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate) {
 	if(current_line == 0)
 		skipToTop();
 	
-	uint32_t nsamples = width*height/samplingrate;
+	int nsamples = width*height/samplingrate;
 	if(nsamples > width*height)
 		nsamples = width*height;
 
@@ -165,7 +165,7 @@ uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate) {
 
 	int offset = 0;
 	vector<uint8_t> row(image_width*3);
-	for(uint32_t y = top; y < bottom; y++) {
+	for(int y = top; y < bottom; y++) {
 		if(callback) {
 			bool keep_going = (*callback)(std::string("Sampling images"), 100*(y-top)/height);
 			if(!keep_going)
@@ -205,7 +205,7 @@ void ImageSet::skipToTop() {
 	std::vector<uint8_t> row(image_width*3);
 
 	for(uint32_t i = 0; i < decoders.size(); i++) {
-		for(size_t y = 0; y < top; y++)
+		for(int y = 0; y < top; y++)
 			decoders[i]->readRows(1, row.data());
 		
 		if(callback) {

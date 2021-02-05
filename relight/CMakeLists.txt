@@ -36,7 +36,7 @@ set (RELIGHT_HEADERS
 	../src/jpeg_encoder.h
 	../src/material.h
 	../src/eigenpca.h
-	../relight/rtibuilder.h
+	../relight-cli/rtibuilder.h
 )
 
 set (RELIGHT_SOURCES
@@ -46,11 +46,10 @@ set (RELIGHT_SOURCES
 	ball.cpp
 	graphics_view_zoom.cpp
 	rtiexport.cpp
-	../relight/relight.cpp
+	../relight-cli/rtibuilder.cpp
 	../src/imageset.cpp
 	../src/jpeg_decoder.cpp
 	../src/jpeg_encoder.cpp
-	../src/material.cpp
 	../src/rti.cpp
 	helpdialog.cpp
 )

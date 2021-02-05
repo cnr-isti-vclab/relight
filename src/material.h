@@ -53,14 +53,13 @@ public:
 
 };
 
+
 class MaterialBuilder {
 public:
 	std::vector<float> proj;
 	std::vector<float> mean;
-
-	std::vector<float> toPrincipal(float *v);
-	std::vector<float> toVariable(const std::vector<float> &v);
 };
+
 
 #endif // MATERIAL_H
 

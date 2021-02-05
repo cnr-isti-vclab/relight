@@ -1,7 +1,6 @@
 #include "legacy_rti.h"
 #include "jpeg_decoder.h"
 #include "jpeg_encoder.h"
-#include "pca.h"
 
 #include <iostream>
 #include <sstream>
@@ -265,8 +264,10 @@ bool LRti::loadHSH(FILE* file) {
 		return false;
 	
 	int basis_terms = basis[0]; //number of terms in the basis
-	int basis_type = basis[1]; //ignored
-	int basis_size = basis[2]; //ignored
+/*	//ignored
+	int basis_type = basis[1];
+	int basis_size = basis[2];
+*/
 	
 	if(rti_type != 3) {
 		cerr << "Unsupported .rti if not HSH (for the moment)" << endl;
@@ -292,10 +293,10 @@ bool LRti::loadHSH(FILE* file) {
 	//in .rti system HSH its c*scale + bias
 	//we need to convert the coefficients to the uniform standard.
 	
-	for(size_t i = 0; i < basis_terms; i++) 
+	for(int i = 0; i < basis_terms; i++)
 		bias[i] = -bias[i]/scale[i];
 
-	int line_size = width * basis_terms * 3;
+	uint line_size = width * basis_terms * 3;
 	vector<unsigned char> line(line_size);
 
 	//for each pixel is 9 for red... 9 for green, 9 for blue
@@ -358,7 +359,7 @@ LRti LRti::clipped(int left, int bottom, int right, int top) {
 
 
 template <class C> std::ostringstream &join(std::vector<C> &v, std::ostringstream &stream, const char *separator = " ") {
-	for(int i = 0; i < v.size(); i++) {
+	for(size_t i = 0; i < v.size(); i++) {
 		stream << v[i];
 		if(i != v.size()-1)
 			stream << separator;
@@ -389,7 +390,6 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 	
 	vector<uint8_t *> buffers(9, NULL);
 	vector<int> sizes(9, 0);
-	vector<float> pca;
 	
 	switch(format) {
 	case RAW:
@@ -508,8 +508,8 @@ bool LRti::encodeJPEG(int startplane, int quality, const char *filename) {
 
 	vector<uint8_t> line(width*3);
 	for(int y = height-1; y >= 0; y--) {
-		for(uint32_t x = 0; x < width; x++) {
-			uint32_t p = y*width + x;
+		for(int32_t x = 0; x < width; x++) {
+			int32_t p = y*width + x;
 			if(type == PTM_LRGB) {
 				line[x*3 + 0] = data[order[startplane + 0]][p];
 				line[x*3 + 1] = data[order[startplane + 1]][p];
@@ -523,7 +523,8 @@ bool LRti::encodeJPEG(int startplane, int quality, const char *filename) {
 		enc.writeRows(line.data(), 1);
 	}
 
-	size_t s = enc.finish();
+	//return size, if needed.
+	enc.finish();
 
 	return true;
 }
