@@ -24,7 +24,6 @@ SOURCES += main.cpp \
     ../src/imageset.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/jpeg_encoder.cpp \
-    ../src/material.cpp \
     ../src/rti.cpp \
     ../src/legacy_rti.cpp \
     rtibuilder.cpp

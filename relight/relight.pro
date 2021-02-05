@@ -26,7 +26,6 @@ SOURCES += main.cpp \
     ../src/imageset.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/jpeg_encoder.cpp \
-    ../src/material.cpp \
     ../src/rti.cpp \
     helpdialog.cpp
 
@@ -45,7 +44,7 @@ HEADERS += \
     ../src/jpeg_encoder.h \
     ../src/material.h \
     ../src/eigenpca.h \
-    ../relight/rtibuilder.h
+    ../relight-cli/rtibuilder.h
 
 FORMS += \
     mainwindow.ui \

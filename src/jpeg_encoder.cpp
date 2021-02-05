@@ -157,7 +157,7 @@ size_t JpegEncoder::finish() {
 	return size;
 }
 
-void JpegEncoder :: onError(j_common_ptr cinfo)
+void JpegEncoder :: onError(j_common_ptr /* cinfo */)
 {
 /*	// cinfo->err is actually a pointer to my_error_mgr.defaultErrorManager, since pub
 	// is the first element of my_error_mgr we can do a sneaky cast
@@ -167,7 +167,7 @@ void JpegEncoder :: onError(j_common_ptr cinfo)
 }
 
 
-void JpegEncoder :: onMessage(j_common_ptr cinfo)
+void JpegEncoder :: onMessage(j_common_ptr /* cinfo */)
 {
 	// disable error messages
 	/*char buffer[JMSG_LENGTH_MAX];

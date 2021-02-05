@@ -24,7 +24,6 @@ SET(SOURCES
 	../src/imageset.cpp
 	../src/jpeg_decoder.cpp
 	../src/jpeg_encoder.cpp
-	../src/material.cpp
 	../src/rti.cpp
 	../src/pca.cpp
 	../src/utils.cpp

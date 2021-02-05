@@ -178,7 +178,7 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 	return true;
 }
 
-void RtiBuilder::pickMaterials(PixelArray &sample) {
+void RtiBuilder::pickMaterials(PixelArray &/*sample*/) {
 	if(nmaterials <= 1)
 		return;
 	
@@ -527,12 +527,6 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 	}
 }
 
-void RtiBuilder::pickBaseICA(PixelArray &sample, std::vector<size_t> &indices) {
-#ifdef ICA
-#endif
-	
-}
-
 void RtiBuilder::pickBasePTM() {
 	
 	/* every light is linear combination of 6 pol coeff
@@ -716,8 +710,7 @@ void RtiBuilder::estimateError(PixelArray &sample, std::vector<size_t> &indices,
 	uint32_t dim = sample.components()*3;
 	double e = 0.0;
 	double m = 0.0;
-	for(int i = 0; i < sample.npixels(); i++) {
-		
+	for(size_t i = 0; i < sample.npixels(); i++) {
 		MaterialBuilder &matb = materialbuilders[indices[i]];
 		Material &mat = materials[indices[i]];
 		
@@ -753,8 +746,8 @@ void RtiBuilder::estimateError(PixelArray &sample, std::vector<size_t> &indices,
 			se += d*d;
 		}
 		for(uint32_t k = 0; k < variable.size()/3; k++) {
-			float O = variable[k*3+0] + variable[k*3+1] + variable[k*3+2];
-			float S = s[k*3+0] + s[k*3+1] + s[k*3+2];
+//			float O = variable[k*3+0] + variable[k*3+1] + variable[k*3+2];
+//			float S = s[k*3+0] + s[k*3+1] + s[k*3+2];
 			
 			float Or = (variable[k*3+1] - variable[k*3+0]);
 			float Ob = (variable[k*3+1] - variable[k*3+2]);
@@ -790,9 +783,6 @@ struct SwitchCost {
 
 
 bool RtiBuilder::saveJSON(QDir &dir, int quality) {
-	
-	uint32_t dim = ndimensions*3;
-	
 	//save info.json
 	QFile info(dir.filePath("info.json"));
 	info.open(QFile::WriteOnly);
@@ -843,7 +833,7 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 	
 	if(type == RBF || type == BILINEAR) {
 		stream << "\"basis\": [\n";
-		for(int i = 0; i < basis.size(); i++) {
+		for(size_t i = 0; i < basis.size(); i++) {
 			if(i != 0) {
 				stream << ",";
 				if((i % 80) == 0) 
@@ -960,8 +950,6 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 
 	}
 	else if (colorspace == MRGB) { //seems like weights are multiplied by 255 in rbf!
-		MaterialBuilder &matb = materialbuilders[0];
-
 		bright[0] = w0[0] + w0[1] + w0[2];
 		bright[1] = w1[0] + w1[1] + w1[2];
 		bright[2] = w2[0] + w2[1] + w2[2];
@@ -983,59 +971,6 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 	n[0] = (n[0] + 1.0f)/2.0f;
 	n[1] = (n[1] + 1.0f)/2.0f;
 	n[2] = (n[2] + 1.0f)/2.0f;
-
-	return n;
-}
-
-/* UNUSED! */
-Vector3f RtiBuilder::getNormal(Color3f *pixel) {
-
-	static std::vector<float> proj;
-
-	static bool init = true;
-	int dim = lights.size()*3;
-
-	if(init) {
-		//DREW
-		init = false;
-
-		Eigen::Matrix3d A(lights.size(), 6);
-		for(uint32_t l = 0; l < lights.size(); l++) {
-			Vector3f &light = lights[l];
-
-
-			A(l, 0) = (double)light[0];
-			A(l, 1) = (double)light[1];
-			A(l, 2) = (double)light[2];
-
-			A(l, 3) = (double)light[0]*light[0];
-			A(l, 4) = (double)light[0]*light[1];
-			A(l, 5) = 1.0;
-		}
-		Eigen::MatrixXd iA = (A.transpose()*A).inverse()*A.transpose();
-
-		proj.resize(dim* 6, 0.0);
-		for(uint32_t p = 0; p < 6; p++) {
-			for(uint32_t k = 0; k < lights.size(); k ++) {
-				uint32_t off = k*3 + p*dim;
-				proj[off+0] = 0.2125f*iA(p, k);
-				proj[off+1] = 0.7154f*iA(p, k);
-				proj[off+2] = 0.0721f*iA(p, k);
-			}
-		}
-	}
-
-	Vector3f n(0, 0, 0);
-
-	/* DREW */
-/*	for(size_t p = 0; p < 3; p++)
-		for(size_t k = 0; k < dim; k++)
-			n[p] += v[k] * proj[k + p*dim];
-	//if(n[2] < 0) n[2] = 0;
-	n = n/n.norm();
-	n[0] = (n[0] + 1.0f)/2.0f;
-	n[2] = (n[1] + 1.0f)/2.0f;
-	n[1] = 0; //n[2] = (n[2] + 1.0f)/2.0f; */
 
 	return n;
 }

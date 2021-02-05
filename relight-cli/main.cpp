@@ -16,8 +16,11 @@ using namespace std;
 
 //adaptive base reflectance
 void help() {
-    //cout << "\t-f <format>: flat\n";
-    cout << "Usage: relight [-mrdqp]<input folder> [output folder]\n\n";
+	cout << "Create an RTI from a set of images and a set of light directions (.lp) in a folder.\n";
+	cout << "It is also possible to convert from .ptm or .rti to relight format and viceversa.\n\n";
+	cout << "Usage: relight-cli [-mrdqp]<input folder> [output folder]\n\n";
+	cout << "       relight-cli [-q]<input.ptm|.rti> [output folder]\n\n";
+	cout << "       relight-cli [-q]<input.json> [output.ptm]\n\n";
     cout << "\tinput folder containing a .lp with number of photos and light directions\n";
     cout << "\toptional output folder (default ./)\n\n";
     cout << "\t-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear\n";
@@ -307,16 +310,13 @@ int main(int argc, char *argv[]) {
             return 1;
         }
 
-        uint32_t size = rti.width*rti.height*3;
-        //vector<uint8_t> buffer(size);
-
         QDir dir(redrawdir);
         if(!dir.exists()) {
             cerr << "Directory for redraw not found!\n" << endl;
             return 1;
         }
 
-        for(int i = 0; i < rti.lights.size(); i++) {
+		for(size_t i = 0; i < rti.lights.size(); i++) {
             Vector3f &rlight = rti.lights[i];
           //  rti.render(rlight[0], rlight[1], buffer.data());
 
@@ -339,15 +339,15 @@ int main(int argc, char *argv[]) {
 
         if(builder.skip_image == -1) {
             double totmse = 0.0;
-            for(int i = 0; i < builder.lights.size(); i++) {
+			for(size_t i = 0; i < builder.lights.size(); i++) {
                 double mse = Rti::evaluateError(builder.imageset, rti, QString(), i);
                 totmse += mse;
-                double psnr = 20*log10(255.0) - 10*log10(mse);
+//                double psnr = 20*log10(255.0) - 10*log10(mse);
                 mse = sqrt(mse);
 
-                Vector3f light = builder.imageset.lights[i];
-                float r = sqrt(light[0]*light[0] + light[1]*light[1]);
-                float elevation = asin(r);
+//                Vector3f light = builder.imageset.lights[i];
+//                float r = sqrt(light[0]*light[0] + light[1]*light[1]);
+//                float elevation = asin(r);
                 /*				cout << output << "," << types[builder.type] << "," << colorspaces[builder.colorspace] << ","
                     << builder.nplanes << ","<< builder.nmaterials << "," << builder.yccplanes[0] << ","
                     << size << "," << psnr << "," << mse << ","
