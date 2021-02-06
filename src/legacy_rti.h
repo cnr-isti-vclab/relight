@@ -6,6 +6,8 @@
 #include <vector>
 #include <string>
 
+/* NOTE: the image is flipped in the coefficients! */
+
 class LRti {
 public:
 	enum Type { UNKNOWN = 0, PTM_LRGB = 1, PTM_RGB = 2, HSH  = 3};
@@ -29,9 +31,9 @@ public:
 	bool encode(PTMFormat format, int &size, uint8_t *&buffer, int quality = 90);
 	bool encode(PTMFormat format, const char *filename, int quality = 90);
 
-	bool encodeJPEG(int startplane, int quality, const char *filename);
+	bool encodeJPEGtoFile(int startplane, int quality, const char *filename);
 	//used to load relight planes into this class.
-	bool decodeJPEG(size_t size, unsigned char *buffer, int plane0, int plane1, int plane2);
+	bool decodeJPEGfromFile(size_t size, unsigned char *buffer, int plane0, int plane1, int plane2);
 
 
 protected:
@@ -43,7 +45,6 @@ protected:
 
 	//load jpeg into data;
 	bool decodeJPEG(size_t size, unsigned char *buffer, int plane);
-
 	bool encodeJPEG(std::vector<int> &sizes, std::vector<uint8_t *> &buffers, int quality = 90);
 };
 

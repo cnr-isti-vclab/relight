@@ -411,10 +411,10 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 	stream << "PTM_1.2\n";
 	stream << f << "\n";
 	stream << width << "\n" << height << "\n";
-	join(scale, stream) << " \n";
+	join(scale, stream) << "\n";
 	for(auto &b: bias)
 		b = floor(b*255.0 + 0.5);
-	join(bias, stream) << " \n";
+	join(bias, stream) << "\n";
 	
 	switch(format) {
 	case RAW:
@@ -424,7 +424,7 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 		stream << "0 0 0 0 0 0 0 0 0\n";
 		stream << "0 0 0 0 0 0 0 0 0\n";
 		stream << "0 0 0 0 0 0 0 0 0\n";
-		stream << "1 2 3 4 5 6 7 8 9\n";
+		stream << "0 1 2 3 4 5 6 7 8\n";
 		stream << "-1 -1 -1 -1 -1 -1 -1 -1 -1\n";
 		join(sizes, stream) << "\n";
 		stream << "0 0 0 0 0 0 0 0 0\n";
@@ -443,13 +443,11 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 	switch(format) {
 	case RAW:
 		if(type == PTM_LRGB) {
-			//reverse image
 			for(int y = 0; y < height; y++) {
 				for(int32_t x = 0; x < width; x++) {
 					int32_t i = y*width + x;
-					int32_t j =(height -1 -y)*width + x;
 					for(int k = 0; k < 6; k++)
-						start[i*6 + k] = data[k][j];
+						start[i*6 + k] = data[k][i];
 				}
 			}
 
@@ -457,13 +455,24 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 			for(int y = 0; y < height; y++) {
 				for(int32_t x = 0; x < width; x++) {
 					int32_t i = y*width + x;
-					int32_t j =(height -1 -y)*width + x;
 					for(int k = 0; k < 3; k++)
-						start[i*3 + k] = data[6 + k][j];
+						start[i*3 + k] = data[6 + k][i];
 				}
 			}
 
 		} else if(type == PTM_RGB) {
+			//data is in groups of 6 coeffs for each component
+			//
+			for(int p = 0; p < 18; p += 6) {
+				int o = p*width*height;
+				for(int y = 0; y < height; y++) {
+					for(int32_t x = 0; x < width; x++) {
+						int32_t i = y*width + x;
+						for(int k = 0; k < 6; k++)
+							start[o + i*6 + k] = data[p + k][i];
+					}
+				}
+			}
 
 		} else {
 			throw "Unimplemented";
@@ -501,9 +510,10 @@ bool LRti::encode(PTMFormat format, const char *filename, int quality) {
 	return true;
 }
 
-/* JPEG */
+/* JPEG
+ * write to file, we need to reverse the order of the Y */
 
-bool LRti::encodeJPEG(int startplane, int quality, const char *filename) {
+bool LRti::encodeJPEGtoFile(int startplane, int quality, const char *filename) {
 	vector<int> order;
 	if(type == PTM_LRGB) {
 		//lrgb ptm order is: x^2, y^2, xy, x, y, 1, r, g, b
@@ -555,6 +565,8 @@ bool LRti::encodeJPEG(vector<int> &sizes, vector<uint8_t *> &buffers, int qualit
 		enc.setColorSpace(JCS_GRAYSCALE, 1);
 		enc.setJpegColorSpace(JCS_GRAYSCALE);
 		
+		//needs to reverse the image!
+		//
 		bool ok = enc.encode(data[k].data(), width, height, buffers[k], sizes[k]);
 		if(!ok) {
 			for(int i = 0; i < k; i++)
@@ -683,17 +695,13 @@ bool LRti::decodeJPEG(size_t size, unsigned char *buffer, int plane) {
 	return true;
 }
 
-bool LRti::decodeJPEG(size_t size, unsigned char *buffer, int plane0, int plane1, int plane2) {
+bool LRti::decodeJPEGfromFile(size_t size, unsigned char *buffer, int plane0, int plane1, int plane2) {
 	vector<int> invorder;
 	if(type == PTM_LRGB) {
-		//lrgb ptm order is: x^2, y^2, xy, x, y, 1, r, g, b
-		//while we use r, g, b, 1, x, y, x2 xy y2
-		invorder = {6,8,7, 4,5,3, 0,1,2};
-		//invorder = {6,7,8, 5,3,4, 0,2,1}; //was order
-
+		invorder = {6,7,8, 5,3,4, 0,2,1};
 
 	} else if(type == PTM_RGB) {
-		invorder = { 3,5,4, 1,2,0};
+		invorder = { 5,11,17,  3,9,15,  4,10,16,  0,6,12,  2,8,14, 1,7,13 };
 	} else
 		invorder = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 
@@ -705,20 +713,26 @@ bool LRti::decodeJPEG(size_t size, unsigned char *buffer, int plane0, int plane1
 		cerr << "Failed decoding jpeg or different size." << endl;
 		return false;
 	}
-	cout << "Planes : " << plane0 << " " << plane1 << " " << plane2 << " sent to: ";
+	int o = plane0;
 	plane0 = invorder[plane0];
 	plane1 = invorder[plane1];
 	plane2 = invorder[plane2];
-	cout << plane0 << " " << plane1 << " " << plane2 << endl;
 
 	chromasubsampled = dec.chromaSubsampled();
 	data[plane0].resize(w*h);
 	data[plane1].resize(w*h);
 	data[plane2].resize(w*h);
-	for(int i = 0; i < w*h; i++) {
-		data[plane0][i] = img[i*3+0];
-		data[plane1][i] = img[i*3+1];
-		data[plane2][i] = img[i*3+2];
+
+
+	for(int y = 0; y < height; y++) {
+		for(int32_t x = 0; x < width; x++) {
+			int i = x + y*width;
+			int j = x + (height - 1 -y)*width;
+
+			data[plane0][j] = img[i*3+0];
+			data[plane1][j] = img[i*3+1];
+			data[plane2][j] = img[i*3+2];
+		}
 	}
 
 	delete []img;
