@@ -7,6 +7,7 @@
 #include <string>
 #include <cstring>
 #include <assert.h>
+#include <math.h>
 
 using namespace std;
 
@@ -189,7 +190,7 @@ bool LRti::loadPTM(FILE* file) {
 bool LRti::decodeRAW(const string &version, FILE *file) {
 	if(type == PTM_LRGB) {
 		//stored as interleaved abcdefRGB before 1.2
-		//stored as interleaved abcdef then planes R, G, B.
+		//stored as interleaved abcdef then planes RGB.
 		bool ptm12 = (version == "PTM_1.2");
 		int multiplexed = ptm12? 6 : 9;
 		uint32_t line_size = width*multiplexed;
@@ -410,8 +411,10 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 	stream << "PTM_1.2\n";
 	stream << f << "\n";
 	stream << width << "\n" << height << "\n";
-	join(scale, stream) << "\n";
-	join(bias, stream) << "\n";
+	join(scale, stream) << " \n";
+	for(auto &b: bias)
+		b = floor(b*255.0 + 0.5);
+	join(bias, stream) << " \n";
 	
 	switch(format) {
 	case RAW:
@@ -439,15 +442,31 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 	uint8_t *start = buffer + pos;
 	switch(format) {
 	case RAW:
-		//no need to allocate buffer
-		for(int i = 0; i < height*width; i++) {
-			for(int k = 0; k < 6; k++)
-				start[i*6 + k] = data[k][i];
-		}
-		start += height*width*6;
-		for(int i = 0; i < height*width; i++) {
-			for(int k = 0; k < 3; k++)
-				start[i*3 + k] = data[6+k][i];
+		if(type == PTM_LRGB) {
+			//reverse image
+			for(int y = 0; y < height; y++) {
+				for(int32_t x = 0; x < width; x++) {
+					int32_t i = y*width + x;
+					int32_t j =(height -1 -y)*width + x;
+					for(int k = 0; k < 6; k++)
+						start[i*6 + k] = data[k][j];
+				}
+			}
+
+			start += height*width*6;
+			for(int y = 0; y < height; y++) {
+				for(int32_t x = 0; x < width; x++) {
+					int32_t i = y*width + x;
+					int32_t j =(height -1 -y)*width + x;
+					for(int k = 0; k < 3; k++)
+						start[i*3 + k] = data[6 + k][j];
+				}
+			}
+
+		} else if(type == PTM_RGB) {
+
+		} else {
+			throw "Unimplemented";
 		}
 		break;
 		
@@ -542,12 +561,12 @@ bool LRti::encodeJPEG(vector<int> &sizes, vector<uint8_t *> &buffers, int qualit
 				delete []buffers[i];
 			return false;
 		}
-		/*		std::ostringstream filename;
+				std::ostringstream filename;
 		 filename << "coeff_" << k << ".jpg";
 		 
 		FILE *file = fopen(filename.str().c_str(), "wb");
 		fwrite(buffers[k], 1, sizes[k], file);
-		fclose(file); */
+		fclose(file);
 	}
 	return true;
 }
@@ -618,21 +637,12 @@ bool LRti::decodeJPEG(FILE *file) {
 		vector<uint8_t> buffer(sizes[s]);
 		fread(buffer.data(), 1, sizes[s], file);
 		
-		uint8_t *img = NULL;
-		int w, h;
-		JpegDecoder dec;
-		dec.setColorSpace(JCS_GRAYSCALE);
-		dec.setJpegColorSpace(JCS_GRAYSCALE);
-		
-		if(!dec.decode(buffer.data(), buffer.size(), img, w, h) || w != width || h != height) {
-			cerr << "Failed decoding jpeg." << endl;
+		bool readed = decodeJPEG(buffer.size(), buffer.data(), s);
+
+		if(!readed)
 			return false;
-		}
-		
-		chromasubsampled = dec.chromaSubsampled();
-		memcpy(data[s].data(), img, w*h);
-		delete []img;
-		
+		int w = width;
+		int h = height;
 		if(r != -1) {
 			for(int i = 0; i < w*h; i++) {
 				data[s][i] = data[s][i] - 128 + data[r][i];
@@ -652,4 +662,66 @@ bool LRti::decodeJPEG(FILE *file) {
 	}
 	
 	return true;
+}
+
+bool LRti::decodeJPEG(size_t size, unsigned char *buffer, int plane) {
+	uint8_t *img = NULL;
+	int w, h;
+	JpegDecoder dec;
+	dec.setColorSpace(JCS_GRAYSCALE);
+	dec.setJpegColorSpace(JCS_GRAYSCALE);
+
+	if(!dec.decode(buffer, size, img, w, h) || w != width || h != height) {
+		cerr << "Failed decoding jpeg or different size." << endl;
+		return false;
+	}
+
+	chromasubsampled = dec.chromaSubsampled();
+	data[plane].resize(w*h);
+	memcpy(data[plane].data(), img, w*h);
+	delete []img;
+	return true;
+}
+
+bool LRti::decodeJPEG(size_t size, unsigned char *buffer, int plane0, int plane1, int plane2) {
+	vector<int> invorder;
+	if(type == PTM_LRGB) {
+		//lrgb ptm order is: x^2, y^2, xy, x, y, 1, r, g, b
+		//while we use r, g, b, 1, x, y, x2 xy y2
+		invorder = {6,8,7, 4,5,3, 0,1,2};
+		//invorder = {6,7,8, 5,3,4, 0,2,1}; //was order
+
+
+	} else if(type == PTM_RGB) {
+		invorder = { 3,5,4, 1,2,0};
+	} else
+		invorder = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+
+
+	uint8_t *img = NULL;
+	int w, h;
+	JpegDecoder dec;
+	if(!dec.decode(buffer, size, img, w, h) || w != width || h != height) {
+		cerr << "Failed decoding jpeg or different size." << endl;
+		return false;
+	}
+	cout << "Planes : " << plane0 << " " << plane1 << " " << plane2 << " sent to: ";
+	plane0 = invorder[plane0];
+	plane1 = invorder[plane1];
+	plane2 = invorder[plane2];
+	cout << plane0 << " " << plane1 << " " << plane2 << endl;
+
+	chromasubsampled = dec.chromaSubsampled();
+	data[plane0].resize(w*h);
+	data[plane1].resize(w*h);
+	data[plane2].resize(w*h);
+	for(int i = 0; i < w*h; i++) {
+		data[plane0][i] = img[i*3+0];
+		data[plane1][i] = img[i*3+1];
+		data[plane2][i] = img[i*3+2];
+	}
+
+	delete []img;
+	return true;
+
 }

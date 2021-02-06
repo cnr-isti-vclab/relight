@@ -5,6 +5,9 @@
 
 #include <QDir>
 #include <QImage>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 #include <iostream>
 #include <string>
@@ -52,7 +55,11 @@ void help() {
     cout << "\t-L <x:y:z> : reconstruct only one image from light parameters, output is the filename\n";
 }
 
+//convert PTM into relight format
 int convertRTI(const char *file, const char *output, int quality);
+
+//converts relight into PTM format
+int convertToRTI(const char *file, const char *output);
 
 void test(std::string input, std::string output,  Vector3f light) {
 
@@ -289,8 +296,12 @@ int main(int argc, char *argv[]) {
 
 
     QFileInfo info(input.c_str());
-    if(info.isFile())
-        return convertRTI(input.c_str(), output.c_str(), quality);
+	if(info.isFile()) {
+		if(info.suffix() == "json") {
+			return convertToRTI(input.c_str(), output.c_str());
+		} else
+			return convertRTI(input.c_str(), output.c_str(), quality);
+	}
 
     if(!builder.init(input)) {
         cerr << builder.error << " !\n" << endl;
@@ -462,7 +473,103 @@ int convertRTI(const char *file, const char *output, int quality) {
     for(uint32_t p = 0; p < rti.nplanes; p += 3) {
         lrti.encodeJPEG(p, quality, dir.filePath("plane_%1.jpg").arg(p/3).toStdString().c_str());
     }
-    //time to save the JPG
-
     return 0;
+}
+
+
+int convertToRTI(const char *filename, const char *output) {
+	QFile file(filename);
+	if(!file.open(QFile::ReadOnly)) {
+		cerr << "Failed opening: " << filename << endl;
+		return 1;
+	}
+
+	QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+	QJsonObject obj = doc.object();
+
+	LRti lrti;
+	lrti.width = obj["width"].toInt();
+	lrti.height = obj["height"].toInt();
+	QString type = obj["type"].toString();
+	QString colorspace = obj["colorspace"].toString();
+	int quality = obj["quality"].toInt();
+	int nplanes = obj["nplanes"].toInt();
+	lrti.scale.resize(nplanes);
+	lrti.bias.resize(nplanes);
+
+	QJsonObject material = obj["materials"].toArray()[0].toObject();
+	QJsonArray scale = material["scale"].toArray();
+	QJsonArray bias = material["bias"].toArray();
+
+	vector<int> order = { 5,3,4, 0,2,1};
+
+	if(type == "ptm") {
+		if(colorspace == "rgb") {
+			lrti.type = LRti::PTM_RGB;
+			if(nplanes != 18) {
+				cerr << "Wrong number of planes (" << nplanes << ") was expecting 18." << endl;
+				return 1;
+			}
+			int count = 0;
+			for(int i = 0; i < 6; i++) {
+				for(int k = 0; k < 3; k++) {
+					lrti.scale[order[i]] = (float)scale[count].toDouble();
+					lrti.bias[order[i]] = (float)bias[count].toDouble();
+					count++;
+				}
+			}
+
+		} else if(colorspace == "lrgb") {
+			lrti.type = LRti::PTM_LRGB;
+			if(nplanes != 9) {
+				cerr << "Wrong number of planes (" << nplanes << ") was expecting 9." << endl;
+				return 1;
+			}
+			int count = 3;
+			for(int i = 0; i < 6; i++) {
+				lrti.scale[order[i]] = (float)scale[count].toDouble();
+				lrti.bias[order[i]] = (float)bias[count].toDouble();
+				count++;
+			}
+			lrti.scale.resize(6);
+			lrti.bias.resize(6);
+		} else {
+			cerr << "Cannot convert PTM relight with colorspace: " << qPrintable(colorspace) << endl;
+			return 1;
+		}
+	} else if(type == "hsh" && colorspace == "rgb") {
+		lrti.type = LRti::HSH;
+		if(nplanes != 27 && nplanes != 12) {
+			cerr << "Wrong number of planes (" << nplanes << ") was expecting 12 or 27." << endl;
+			return 1;
+		}
+
+		for(size_t i = 0; i < lrti.scale.size(); i++) {
+			lrti.scale[i] = scale[i*3].toDouble();
+			lrti.bias[i]  = bias[i*3].toDouble();
+		}
+
+	} else {
+		cerr << "Cannot convert relight format: " << qPrintable(type) << " and colorspace: " << qPrintable(colorspace) << endl;
+		return 1;
+	}
+
+	lrti.data.resize(nplanes);
+	QFileInfo info(filename);
+	QString path = info.dir().path();
+	for(int i = 0; i < nplanes/3; i++) {
+		QString imagepath = path + QString("/plane_%1.jpg").arg(i);
+		QFile image(imagepath);
+		if(!image.open(QFile::ReadOnly)) {
+			cerr << "Could not find or open file: " << qPrintable(imagepath) << endl;
+			return 1;
+		}
+		QByteArray buffer = image.readAll();
+		//reverse order!!!
+		lrti.decodeJPEG(buffer.size(), (unsigned char *)buffer.data(), i*3, i*3+1, i*3+2);
+	}
+
+	//lrti.encode(LRti::JPEG, output, quality);
+	lrti.encode(LRti::RAW, output, quality);
+	return 0;
 }
