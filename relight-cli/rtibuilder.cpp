@@ -17,11 +17,6 @@
 
 #include <Eigen/Core>
 
-
-extern "C" {
-//#include "../libICA/src/libICA.h"
-}
-
 #include <set>
 #include <iostream>
 using namespace std;

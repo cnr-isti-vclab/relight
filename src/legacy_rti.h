@@ -30,7 +30,9 @@ public:
 	bool encode(PTMFormat format, const char *filename, int quality = 90);
 
 	bool encodeJPEG(int startplane, int quality, const char *filename);
-	
+	//used to load relight planes into this class.
+	bool decodeJPEG(size_t size, unsigned char *buffer, int plane0, int plane1, int plane2);
+
 
 protected:
 	bool loadPTM(FILE *file);
@@ -39,8 +41,11 @@ protected:
 	bool decodeRAW(const std::string &version, FILE *file);
 	bool decodeJPEG(FILE *file);
 
+	//load jpeg into data;
+	bool decodeJPEG(size_t size, unsigned char *buffer, int plane);
 
 	bool encodeJPEG(std::vector<int> &sizes, std::vector<uint8_t *> &buffers, int quality = 90);
 };
 
 #endif // RRTI_H
+
