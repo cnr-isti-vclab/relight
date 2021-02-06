@@ -471,7 +471,7 @@ int convertRTI(const char *file, const char *output, int quality) {
 
     rti.saveJSON(dir, quality);
     for(uint32_t p = 0; p < rti.nplanes; p += 3) {
-        lrti.encodeJPEG(p, quality, dir.filePath("plane_%1.jpg").arg(p/3).toStdString().c_str());
+		lrti.encodeJPEGtoFile(p, quality, dir.filePath("plane_%1.jpg").arg(p/3).toStdString().c_str());
     }
     return 0;
 }
@@ -511,12 +511,12 @@ int convertToRTI(const char *filename, const char *output) {
 				return 1;
 			}
 			int count = 0;
+			lrti.scale.resize(6);
+			lrti.bias.resize(6);
 			for(int i = 0; i < 6; i++) {
-				for(int k = 0; k < 3; k++) {
-					lrti.scale[order[i]] = (float)scale[count].toDouble();
-					lrti.bias[order[i]] = (float)bias[count].toDouble();
-					count++;
-				}
+				lrti.scale[order[i]] = (float)scale[count*3].toDouble();
+				lrti.bias[order[i]] = (float)bias[count*3].toDouble();
+				count++;
 			}
 
 		} else if(colorspace == "lrgb") {
@@ -566,10 +566,15 @@ int convertToRTI(const char *filename, const char *output) {
 		}
 		QByteArray buffer = image.readAll();
 		//reverse order!!!
-		lrti.decodeJPEG(buffer.size(), (unsigned char *)buffer.data(), i*3, i*3+1, i*3+2);
+		lrti.decodeJPEGfromFile(buffer.size(), (unsigned char *)buffer.data(), i*3, i*3+1, i*3+2);
 	}
 
-	//lrti.encode(LRti::JPEG, output, quality);
-	lrti.encode(LRti::RAW, output, quality);
+
+	LRti::PTMFormat ptmformat = LRti::JPEG;
+	//RTIViewer does not support RGB PTM  in JPEG format.
+	if(type == "ptm" && colorspace == "rgb")
+		ptmformat = LRti::RAW;
+	lrti.encode(ptmformat, output, quality);
+
 	return 0;
 }
