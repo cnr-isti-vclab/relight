@@ -37,9 +37,12 @@ Ball::Ball() {}
 void Ball::setActive(bool _active) {
 	active = _active;
 	QPen pen;
+	pen.setCosmetic(true);
 	pen.setColor(active? Qt::yellow : Qt::white);
 	if(circle) circle->setPen(pen);
-	for(auto p: border) p->setPen(pen);
+	for(auto p: border)
+		p->setPen(pen);
+
 }
 
 bool Ball::fit(QSize imgsize) {

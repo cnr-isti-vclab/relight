@@ -52,6 +52,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->graphicsView->setScene(scene);
 	ui->graphicsView->setDragMode(QGraphicsView::ScrollHandDrag);
 	ui->graphicsView->setInteractive(true);
+	QApplication::setOverrideCursor( Qt::ArrowCursor );
+
 	auto *gvz = new Graphics_view_zoom(ui->graphicsView);
 	connect(gvz, SIGNAL(dblClicked(QPoint)), this, SLOT(pointPicked(QPoint)));
 	connect(ui->actionZoom_in,  SIGNAL(triggered(bool)), gvz, SLOT(zoomIn()));
@@ -247,18 +249,21 @@ void MainWindow::deleteSelected() {
 }
 
 void MainWindow::changeSphere(QListWidgetItem *current, QListWidgetItem *previous) {
+
+	for(auto &ball: balls)
+		ball.second.setActive(false);
+
 	int current_id = current->data(Qt::UserRole).toInt();
 	Ball &ball = balls[current_id];
 	ball.setActive(true);
 
-	if(previous) {
-		int previous_id = previous->data(Qt::UserRole).toInt();
-		Ball &old = balls[previous_id];
-		old.setActive(false);
-	}
+
 }
 
 int MainWindow::addSphere() {
+	for(auto &ball: balls)
+		ball.second.setActive(false);
+
 	ignore_scene_changes = true;
 	std::set<int> used;
 
@@ -274,6 +279,7 @@ int MainWindow::addSphere() {
 	item ->setData(Qt::UserRole, id);
 	balls[id] = Ball(images.size());
 	QPen outlinePen(Qt::yellow);
+	outlinePen.setCosmetic(true);
 	balls[id].circle = scene->addEllipse(0, 0, 1, 1, outlinePen);
 	balls[id].circle->setVisible(false);
 
