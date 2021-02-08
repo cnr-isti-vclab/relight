@@ -22,6 +22,12 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
+if (APPLE)
+	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X deployment version" FORCE)
+	SET(CMAKE_INSTALL_RPATH $ORIGIN/../Frameworks)
+	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif()
+
 set (RELIGHT_HEADERS
 	imagecropper.h
 	imagecropper_e.h
