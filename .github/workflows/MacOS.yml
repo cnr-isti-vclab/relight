@@ -27,10 +27,10 @@ jobs:
         make install
     - name: Deploy
       run: |
-        cd highlight/install
+        cd relight/install
         macdeployqt relight.app
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v1
       with:
         name: Relight_macos_portable
-        path: highlight/install
+        path: relight/install
