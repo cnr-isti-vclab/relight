@@ -153,7 +153,7 @@ uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate) {
 	if(current_line == 0)
 		skipToTop();
 	
-	int nsamples = width*height/samplingrate;
+	uint32_t nsamples = width*height/samplingrate;
 	if(nsamples > width*height)
 		nsamples = width*height;
 
@@ -191,17 +191,13 @@ uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate) {
 }
 
 void ImageSet::restart() {
-	cout << "Restarting\n" << endl;
-
-	for(uint32_t i = 0; i < decoders.size(); i++) {
+	for(uint32_t i = 0; i < decoders.size(); i++)
 		decoders[i]->restart();
-	}
+	
 	current_line = 0;
-	cout << "Restarted\n" << endl;
 }
 
 void ImageSet::skipToTop() {
-	cout << "Skipping\n" << endl;
 	std::vector<uint8_t> row(image_width*3);
 
 	for(uint32_t i = 0; i < decoders.size(); i++) {

@@ -131,8 +131,8 @@ void RtiExport::makeRti(QString output, QRect rect) {
 		
 		builder.type         = basis();
 		builder.colorspace   = colorSpace();
-		builder.nplanes      = ui->planes->value();
-		builder.yccplanes[0] = ui->chroma->value();
+		builder.nplanes      = uint32_t(ui->planes->value());
+		builder.yccplanes[0] = uint32_t(ui->chroma->value());
 		//builder.sigma =
 		
 		if( builder.colorspace == Rti::MYCC) {

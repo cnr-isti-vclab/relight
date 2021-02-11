@@ -37,7 +37,7 @@ bool JpegDecoder::decode(const char* path, uint8_t*& img, int& width, int& heigh
 	jpeg_stdio_src(&decInfo, file);
 	bool rv = decode(img, width, height);
 	fclose(file);
-	file = NULL;
+	file = nullptr;
 	return rv;
 }
 

@@ -67,9 +67,9 @@ bool Rti::load(const char *filename) {
 		lights.resize(jlights.size()/3);
 		for(size_t i = 0; i < lights.size(); i++) {
 			Vector3f &l = lights[i];
-			l[0] = jlights[i*3+0].toDouble();
-			l[1] = jlights[i*3+1].toDouble();
-			l[2] = jlights[i*3+2].toDouble();
+			l[0] = float(jlights[i*3+0].toDouble());
+			l[1] = float(jlights[i*3+1].toDouble());
+			l[2] = float(jlights[i*3+2].toDouble());
 		}
 		ndimensions = lights.size();
 	}
@@ -132,7 +132,7 @@ bool Rti::load(const char *filename) {
 				for(uint32_t c = 0; c < ndimensions; c++) {
 					for(int k = 0; k < 3; k++) {
 						uint32_t o = ((m*(nplanes+1) + p)*ndimensions + c)*3 + k;
-						float c = jbasis[o].toDouble();
+						float c = float(jbasis[o].toDouble());
 						if(p == 0)
 							basis[o] = c;
 						else
@@ -544,8 +544,8 @@ std::vector<float> Rti::lightWeightsBilinear(float lx, float ly) {
 	x = x*(resolution - 1.0f);
 	y = y*(resolution - 1.0f);
 
-	float sx = std::min((int)resolution-2, std::max(0, (int)floor(x)));
-	float sy = std::min((int)resolution-2, std::max(0, (int)floor(y)));
+	float sx = std::min(int(resolution-2), std::max(0, int(floor(x))));
+	float sy = std::min(int(resolution-2), std::max(0, int(floor(y))));
 	float dx = x - sx;
 	float dy = y - sy;
 
@@ -555,7 +555,6 @@ std::vector<float> Rti::lightWeightsBilinear(float lx, float ly) {
 	float s11 =      dx * dy;
 
 	vector<float> lweights(nm * (np+1) * 3, 0.0f);
-
 
 	//TODO optimize away basePixel
 	for(size_t m = 0; m < nm; m++) {

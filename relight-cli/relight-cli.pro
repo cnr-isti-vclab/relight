@@ -15,7 +15,7 @@ win32:INCLUDEPATH += ../libjpeg/include
 win32:LIBS += ../libjpeg/lib/jpeg.lib 
 
 unix:INCLUDEPATH += /usr/include/eigen3
-unix:LIBS += -ljpeg #-larmadillo
+unix:LIBS += -ljpeg
 
 DESTDIR = "../bin"
 

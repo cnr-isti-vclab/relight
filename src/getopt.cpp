@@ -125,7 +125,7 @@ int optind = 0;
    in which the last option character we returned was found.
    This allows us to pick up the scan where we left off.
 
-   If this is zero, or a null string, it means resume the scan
+   If this is zero, or a nullptr string, it means resume the scan
    by advancing to the next ARGV-element.  */
 
 static char *nextchar;
@@ -323,7 +323,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
     {
       first_nonopt = last_nonopt = optind = 1;
 
-      nextchar = NULL;
+      nextchar = nullptr;
 
       /* Determine how to handle the ordering of options and nonoptions.  */
 
@@ -337,13 +337,13 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
           ordering = REQUIRE_ORDER;
           ++optstring;
         }
-      else if (getenv ("POSIXLY_CORRECT") != NULL)
+      else if (getenv ("POSIXLY_CORRECT") != nullptr)
         ordering = REQUIRE_ORDER;
       else
         ordering = PERMUTE;
     }
 
-  if (nextchar == NULL || *nextchar == '\0')
+  if (nextchar == nullptr || *nextchar == '\0')
     {
       if (ordering == PERMUTE)
         {
@@ -361,7 +361,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
           while (optind < argc
                  && (argv[optind][0] != '-' || argv[optind][1] == '\0')
 #ifdef GETOPT_COMPAT
-                 && (longopts == NULL
+                 && (longopts == nullptr
                      || argv[optind][0] != '+' || argv[optind][1] == '\0')
 #endif                                /* GETOPT_COMPAT */
                  )
@@ -370,7 +370,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
         }
 
       /* Special ARGV-element `--' means premature end of options.
-         Skip it like a null option,
+         Skip it like a nullptr option,
          then exchange with previous non-options as if it were an option,
          then skip everything else like a non-option.  */
 
@@ -404,7 +404,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
 
       if ((argv[optind][0] != '-' || argv[optind][1] == '\0')
 #ifdef GETOPT_COMPAT
-          && (longopts == NULL
+          && (longopts == nullptr
               || argv[optind][0] != '+' || argv[optind][1] == '\0')
 #endif                                /* GETOPT_COMPAT */
           )
@@ -419,10 +419,10 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
          Start decoding its characters.  */
 
       nextchar = (argv[optind] + 1
-                  + (longopts != NULL && argv[optind][1] == '-'));
+                  + (longopts != nullptr && argv[optind][1] == '-'));
     }
 
-  if (longopts != NULL
+  if (longopts != nullptr
       && ((argv[optind][0] == '-'
            && (argv[optind][1] == '-' || long_only))
 #ifdef GETOPT_COMPAT
@@ -434,7 +434,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
       char *s = nextchar;
       int exact = 0;
       int ambig = 0;
-      const struct option *pfound = NULL;
+      const struct option *pfound = nullptr;
       int indfound;
 
       indfound = 0;             /* To silence the compiler.  */
@@ -455,7 +455,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
                 exact = 1;
                 break;
               }
-            else if (pfound == NULL)
+            else if (pfound == nullptr)
               {
                 /* First nonexact match found.  */
                 pfound = p;
@@ -476,7 +476,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
           return '?';
         }
 
-      if (pfound != NULL)
+      if (pfound != nullptr)
         {
           option_index = indfound;
           optind++;
@@ -520,7 +520,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
                 }
             }
           nextchar += strlen (nextchar);
-          if (longind != NULL)
+          if (longind != nullptr)
             *longind = option_index;
           if (pfound->flag)
             {
@@ -537,7 +537,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
 #ifdef GETOPT_COMPAT
           || argv[optind][0] == '+'
 #endif                                /* GETOPT_COMPAT */
-          || my_index (optstring, *nextchar) == NULL)
+          || my_index (optstring, *nextchar) == nullptr)
         {
           if (opterr)
             {
@@ -566,7 +566,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
     if (*nextchar == '\0')
       ++optind;
 
-    if (temp == NULL || c == ':')
+    if (temp == nullptr || c == ':')
       {
         if (opterr)
           {
@@ -596,7 +596,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
               }
             else
               optarg = 0;
-            nextchar = NULL;
+            nextchar = nullptr;
           }
         else
           {
@@ -631,7 +631,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
               /* We already incremented `optind' once;
                  increment it again when taking next ARGV-elt as argument.  */
               optarg = argv[optind++];
-            nextchar = NULL;
+            nextchar = nullptr;
           }
       }
     return c;

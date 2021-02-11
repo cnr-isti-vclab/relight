@@ -248,7 +248,7 @@ void MainWindow::deleteSelected() {
 	updateBorderPoints();
 }
 
-void MainWindow::changeSphere(QListWidgetItem *current, QListWidgetItem *previous) {
+void MainWindow::changeSphere(QListWidgetItem *current, QListWidgetItem */*previous*/) {
 
 	for(auto &ball: balls)
 		ball.second.setActive(false);
@@ -467,14 +467,22 @@ void MainWindow::loadLP() {
 	}
 
 
+	vector<bool> valid(directions.size());
+	for(uint i = 0; i < directions.size(); i++) {
+		Vector3f d = directions[i];
+		valid[i] = (d[0] != 0.0f || d[1] != 0.0f || d[2] != 0.0f);
+	}
 
 	if(balls[0].border.size() == 0) {
 		balls[0].only_directions = true;
 		balls[0].directions = directions;
+		balls[0].valid = valid;
+		
 	} else {
 		int id = addSphere();
 		balls[id].only_directions = true;
 		balls[id].directions = directions;
+		balls[id].valid = valid;
 	}
 
 
