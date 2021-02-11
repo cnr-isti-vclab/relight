@@ -187,16 +187,16 @@ int main(int argc, char *argv[]) {
             quality = atoi(optarg);
             break;
         case 'p':
-            builder.nplanes = (uint32_t)atoi(optarg);
+            builder.nplanes = uint32_t(atoi(optarg));
             break;
         case 'y':
-            builder.yccplanes[0] = (uint32_t)atoi(optarg);
+            builder.yccplanes[0] = uint32_t(atoi(optarg));
             break;
         case 's':
-            builder.samplingrate = (uint32_t)atoi(optarg);
+            builder.samplingrate = uint32_t(atoi(optarg));
             break;
         case 'S': {
-            float sigma = (float)atof(optarg);
+            float sigma = float(atof(optarg));
             if(sigma > 0)
                 builder.sigma = sigma;
             break;
@@ -215,13 +215,13 @@ int main(int argc, char *argv[]) {
 			break;
 		}
         case 'R': {
-            float reg = (float)atof(optarg);
+            float reg = float(atof(optarg));
             if(reg > 0)
                 builder.regularization = reg;
             break;
         }
         case 'B': {
-            float compress = (float)atof(optarg);
+            float compress = float(atof(optarg));
             if(compress >= 0.0f && compress <= 1.0f)
                 builder.rangecompress = compress;
             else {
@@ -235,7 +235,7 @@ int main(int argc, char *argv[]) {
             break;
 
         case 'c':
-            builder.rangescale = (float)atof(optarg);
+            builder.rangescale = float(atof(optarg));
             break;
         case 'D':
             redrawdir = optarg;
@@ -254,9 +254,9 @@ int main(int argc, char *argv[]) {
             break;
         }
         case '?':
-            cerr << "Option " << (char)optopt << " requires an argument!\n" << endl;
+            cerr << "Option " << char(optopt) << " requires an argument!\n" << endl;
             if (isprint (optopt))
-                cerr << "Unknown option " << (char)optopt << " !\n" << endl;
+                cerr << "Unknown option " << char(optopt) << " !\n" << endl;
             else
                 cerr << "Unknown option character!\n" << endl;
             return 1;
@@ -440,7 +440,7 @@ int convertRTI(const char *file, const char *output, int quality) {
         rti.bias = {0, 0, 0};
         for(int i = 0; i < 6; i++) {
             rti.scale.push_back(lrti.scale[order[i]]);
-            rti.bias.push_back((float)lrti.bias[order[i]]);
+            rti.bias.push_back(float(lrti.bias[order[i]]));
         }
 
     } else if(lrti.type == LRti::PTM_RGB){
@@ -493,7 +493,7 @@ int convertToRTI(const char *filename, const char *output) {
 	QString type = obj["type"].toString();
 	QString colorspace = obj["colorspace"].toString();
 	int quality = obj["quality"].toInt();
-	int nplanes = obj["nplanes"].toInt();
+	uint nplanes = uint(obj["nplanes"].toInt());
 	lrti.scale.resize(nplanes);
 	lrti.bias.resize(nplanes);
 
@@ -501,7 +501,7 @@ int convertToRTI(const char *filename, const char *output) {
 	QJsonArray scale = material["scale"].toArray();
 	QJsonArray bias = material["bias"].toArray();
 
-	vector<int> order = { 5,3,4, 0,2,1};
+	vector<uint> order = { 5,3,4, 0,2,1};
 
 	if(type == "ptm") {
 		if(colorspace == "rgb") {
@@ -513,9 +513,9 @@ int convertToRTI(const char *filename, const char *output) {
 			int count = 0;
 			lrti.scale.resize(6);
 			lrti.bias.resize(6);
-			for(int i = 0; i < 6; i++) {
-				lrti.scale[order[i]] = (float)scale[count*3].toDouble();
-				lrti.bias[order[i]] = (float)bias[count*3].toDouble();
+			for(uint i = 0; i < 6; i++) {
+				lrti.scale[order[i]] = float(scale[count*3].toDouble());
+				lrti.bias[order[i]] = float(bias[count*3].toDouble());
 				count++;
 			}
 
@@ -526,9 +526,9 @@ int convertToRTI(const char *filename, const char *output) {
 				return 1;
 			}
 			int count = 3;
-			for(int i = 0; i < 6; i++) {
-				lrti.scale[order[i]] = (float)scale[count].toDouble();
-				lrti.bias[order[i]] = (float)bias[count].toDouble();
+			for(uint i = 0; i < 6; i++) {
+				lrti.scale[order[i]] = float(scale[count].toDouble());
+				lrti.bias[order[i]] = float(bias[count].toDouble());
 				count++;
 			}
 			lrti.scale.resize(6);
@@ -545,8 +545,8 @@ int convertToRTI(const char *filename, const char *output) {
 		}
 
 		for(size_t i = 0; i < lrti.scale.size(); i++) {
-			lrti.scale[i] = scale[i*3].toDouble();
-			lrti.bias[i]  = bias[i*3].toDouble();
+			lrti.scale[i] = float(scale[int(i*3)].toDouble());
+			lrti.bias[i]  = float(bias[int(i*3)].toDouble());
 		}
 
 	} else {
@@ -557,7 +557,7 @@ int convertToRTI(const char *filename, const char *output) {
 	lrti.data.resize(nplanes);
 	QFileInfo info(filename);
 	QString path = info.dir().path();
-	for(int i = 0; i < nplanes/3; i++) {
+	for(uint i = 0; i < nplanes/3; i++) {
 		QString imagepath = path + QString("/plane_%1.jpg").arg(i);
 		QFile image(imagepath);
 		if(!image.open(QFile::ReadOnly)) {
@@ -565,7 +565,6 @@ int convertToRTI(const char *filename, const char *output) {
 			return 1;
 		}
 		QByteArray buffer = image.readAll();
-		//reverse order!!!
 		lrti.decodeJPEGfromFile(buffer.size(), (unsigned char *)buffer.data(), i*3, i*3+1, i*3+2);
 	}
 

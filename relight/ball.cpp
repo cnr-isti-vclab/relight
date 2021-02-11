@@ -200,6 +200,8 @@ void Ball::findHighlight(QImage img, int n) {
 
 void Ball::computeDirections() {
 
+	if(only_directions)
+		return;
 	for(size_t i = 0; i < lights.size(); i++) {
 		if(!valid[i]) {
 			directions[i] = Vector3f(0, 0, 0);

@@ -21,7 +21,7 @@ public:
 	std::vector<Vector3f> lights;
 	QStringList images;
 
-	ImageSet(const char *path = NULL);
+	ImageSet(const char *path = nullptr);
 	~ImageSet();
 
 	bool init(const char *path, bool ignore_filenames = true, int skip_image = -1);

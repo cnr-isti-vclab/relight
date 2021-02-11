@@ -64,7 +64,7 @@ bool JpegEncoder::encode(uint8_t* img, int width, int height, const char* path) 
 }
 
 bool JpegEncoder::encode(uint8_t* img, int width, int height, uint8_t *&buffer, int &length) {
-	unsigned char *mem = NULL;
+	unsigned char *mem = nullptr;
 	unsigned long mem_size = 0;
 	jpeg_mem_dest(&info, &mem, &mem_size);
 	bool ok = encode(img, width, height);

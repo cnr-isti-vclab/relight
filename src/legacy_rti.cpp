@@ -23,7 +23,7 @@ bool skipComments(FILE *file, char head = '#') {
 	char buffer[1024];
 	while(1) {
 		long pos = ftell(file);
-		if(fgets(buffer, 1024, file) == NULL)
+		if(fgets(buffer, 1024, file) == nullptr)
 			return false;
 		if(buffer[0] != head) {
 			fseek(file, pos, SEEK_SET);
@@ -35,7 +35,7 @@ bool skipComments(FILE *file, char head = '#') {
 
 bool getLine(FILE *file, string &str) {
 	char buffer[1024];
-	if(fgets(buffer, 1024, file) == NULL)
+	if(fgets(buffer, 1024, file) == nullptr)
 		return false;
 	buffer[1023] = 0;
 	
@@ -47,17 +47,17 @@ bool getLine(FILE *file, string &str) {
 
 bool getInteger(FILE *file, int &n) {
 	char buffer[32];
-	if(fgets(buffer, 32, file) == NULL)
+	if(fgets(buffer, 32, file) == nullptr)
 		return false;
 	buffer[31] = 0;
 	errno = 0;
-	n = strtol(buffer, NULL, 10);
+	n = strtol(buffer, nullptr, 10);
 	return errno == 0;
 }
 
 bool getFloats(FILE *file, vector<float> &a, unsigned int expected = 0) {
 	char buffer[256];
-	if(fgets(buffer, 256, file) == NULL)
+	if(fgets(buffer, 256, file) == nullptr)
 		return false;
 	buffer[255] = '0';
 	char *start = buffer;
@@ -76,7 +76,7 @@ bool getFloats(FILE *file, vector<float> &a, unsigned int expected = 0) {
 
 bool getIntegers(FILE *file, vector<int> &a, unsigned int expected = 0) {
 	char buffer[256];
-	if(fgets(buffer, 256, file) == NULL)
+	if(fgets(buffer, 256, file) == nullptr)
 		return false;
 	buffer[255] = '0';
 	char *start = buffer;
@@ -95,7 +95,7 @@ bool getIntegers(FILE *file, vector<int> &a, unsigned int expected = 0) {
 
 bool LRti::load(const char *filename) {
 	FILE* file = fopen(filename, "rb");
-	if (file == NULL) {
+	if (file == nullptr) {
 		cerr << "Could not open file: " << filename << endl;
 		return false;
 	}
@@ -264,7 +264,7 @@ bool LRti::loadHSH(FILE* file) {
 	if(!getIntegers(file, basis, 3))
 		return false;
 	
-	int basis_terms = basis[0]; //number of terms in the basis
+	uint basis_terms = basis[0]; //number of terms in the basis
 /*	//ignored
 	int basis_type = basis[1];
 	int basis_size = basis[2];
@@ -287,14 +287,23 @@ bool LRti::loadHSH(FILE* file) {
 	bias.resize(basis_terms);
 	scale.resize(basis_terms);
 	
-	fread(scale.data(), sizeof(float), basis_terms, file);  //max
-	fread(bias.data(),  sizeof(float), basis_terms, file); //min
+	size_t read = fread(scale.data(), sizeof(float), basis_terms, file);  //max
+	if(read != basis_terms*sizeof(float)) {
+		cerr << "Failed reading basis." << endl;
+		return false;
+	}
+		
+	read = fread(bias.data(),  sizeof(float), basis_terms, file); //min
+	if(read != basis_terms*sizeof(float)) {
+		cerr << "Failed reading basis." << endl;
+		return false;
+	}
 
 	//in OUR system we want to write (c - bias)*scale
 	//in .rti system HSH its c*scale + bias
 	//we need to convert the coefficients to the uniform standard.
 	
-	for(int i = 0; i < basis_terms; i++)
+	for(uint i = 0; i < basis_terms; i++)
 		bias[i] = -bias[i]/scale[i];
 
 	uint line_size = width * basis_terms * 3;
@@ -389,7 +398,7 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 	
 	int bsize = 0;  //binary size
 	
-	vector<uint8_t *> buffers(9, NULL);
+	vector<uint8_t *> buffers(9, nullptr);
 	vector<int> sizes(9, 0);
 	
 	switch(format) {
@@ -501,7 +510,7 @@ bool LRti::encode(PTMFormat format, const char *filename, int quality) {
 		cerr << "Could not open file: " << filename << endl;
 		return false;
 	}
-	uint8_t *buffer = NULL;
+	uint8_t *buffer = nullptr;
 	int size = 0;
 	bool ok  = encode(format, size, buffer, quality);
 	if(!ok) return false;
@@ -594,7 +603,7 @@ bool LRti::decodeJPEG(FILE *file) {
 	vector<int> sizes;
 	vector<int> overflows;
 	
-	int ncoeffs = 9;
+	uint ncoeffs = 9;
 	switch(type) {
 	case PTM_LRGB: ncoeffs = 9; break;
 	case PTM_RGB: ncoeffs = 18; break;
@@ -613,41 +622,41 @@ bool LRti::decodeJPEG(FILE *file) {
 		return false;
 	}
 	//check transform and motions are 0
-	for(int k = 0; k < ncoeffs; k++) {
+	for(uint k = 0; k < ncoeffs; k++) {
 		if(transform[k] != 0 || motionx[k] != 0 || motiony[k] != 0) {
 			cerr << "Transform and motion array unsupported." << endl;
 			return false;
 		}
 	}
 	//find in which order to decode them
-	vector<uint32_t> sequence(order.size());
-	for(uint32_t i = 0; i < order.size(); i++)
-		sequence[order[i]] = i;
+	vector<uint> sequence(order.size());
+	for(uint i = 0; i < order.size(); i++)
+		sequence[uint(order[i])] = i;
 	//		sequence[order[i]-1] = i; ???
 	
 	//precompute start of planes
 	vector<int> pos(ncoeffs+1);
-	pos[0] = ftell(file);
-	for(int k = 1; k < ncoeffs+1; k++) {
+	pos[0] = int(ftell(file));
+	for(uint k = 1; k < ncoeffs+1; k++) {
 		pos[k] = pos[k-1] + sizes[k-1] + overflows[k-1];
 	}
 	
 	//check size
 	fseek(file, 0L, SEEK_END);
-	int tot_size = ftell(file);
-	if(tot_size < pos[ncoeffs]) {
+	uint tot_size = uint(ftell(file));
+	if(tot_size < uint(pos[ncoeffs])) {
 		cerr << "File is truncated." << endl;
 		return false;
 	}
 	
-	for(int k = 0; k < ncoeffs; k++) {
-		int s = sequence[k];
+	for(uint k = 0; k < ncoeffs; k++) {
+		uint s = sequence[k];
 		int r = reference[s];
 		
 		//read jpeg
 		fseek(file, pos[s], SEEK_SET);
 		vector<uint8_t> buffer(sizes[s]);
-		fread(buffer.data(), 1, sizes[s], file);
+		fread(buffer.data(), 1, uint(sizes[s]), file);
 		
 		bool readed = decodeJPEG(buffer.size(), buffer.data(), s);
 
@@ -676,8 +685,8 @@ bool LRti::decodeJPEG(FILE *file) {
 	return true;
 }
 
-bool LRti::decodeJPEG(size_t size, unsigned char *buffer, int plane) {
-	uint8_t *img = NULL;
+bool LRti::decodeJPEG(size_t size, unsigned char *buffer, uint plane) {
+	uint8_t *img = nullptr;
 	int w, h;
 	JpegDecoder dec;
 	dec.setColorSpace(JCS_GRAYSCALE);
@@ -689,14 +698,14 @@ bool LRti::decodeJPEG(size_t size, unsigned char *buffer, int plane) {
 	}
 
 	chromasubsampled = dec.chromaSubsampled();
-	data[plane].resize(w*h);
-	memcpy(data[plane].data(), img, w*h);
+	data[plane].resize(uint(w*h));
+	memcpy(data[plane].data(), img, uint(w*h));
 	delete []img;
 	return true;
 }
 
-bool LRti::decodeJPEGfromFile(size_t size, unsigned char *buffer, int plane0, int plane1, int plane2) {
-	vector<int> invorder;
+bool LRti::decodeJPEGfromFile(size_t size, unsigned char *buffer, uint plane0, uint plane1, uint plane2) {
+	vector<uint> invorder;
 	if(type == PTM_LRGB) {
 		invorder = {6,7,8, 5,3,4, 0,2,1};
 
@@ -706,28 +715,27 @@ bool LRti::decodeJPEGfromFile(size_t size, unsigned char *buffer, int plane0, in
 		invorder = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 
 
-	uint8_t *img = NULL;
+	uint8_t *img = nullptr;
 	int w, h;
 	JpegDecoder dec;
 	if(!dec.decode(buffer, size, img, w, h) || w != width || h != height) {
 		cerr << "Failed decoding jpeg or different size." << endl;
 		return false;
 	}
-	int o = plane0;
 	plane0 = invorder[plane0];
 	plane1 = invorder[plane1];
 	plane2 = invorder[plane2];
 
 	chromasubsampled = dec.chromaSubsampled();
-	data[plane0].resize(w*h);
-	data[plane1].resize(w*h);
-	data[plane2].resize(w*h);
+	data[plane0].resize(uint(w*h));
+	data[plane1].resize(uint(w*h));
+	data[plane2].resize(uint(w*h));
 
 
 	for(int y = 0; y < height; y++) {
-		for(int32_t x = 0; x < width; x++) {
-			int i = x + y*width;
-			int j = x + (height - 1 -y)*width;
+		for(int x = 0; x < width; x++) {
+			uint i = uint(x + y*width);
+			uint j = uint(x + (height - 1 -y)*width);
 
 			data[plane0][j] = img[i*3+0];
 			data[plane1][j] = img[i*3+1];

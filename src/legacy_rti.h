@@ -33,7 +33,7 @@ public:
 
 	bool encodeJPEGtoFile(int startplane, int quality, const char *filename);
 	//used to load relight planes into this class.
-	bool decodeJPEGfromFile(size_t size, unsigned char *buffer, int plane0, int plane1, int plane2);
+	bool decodeJPEGfromFile(size_t size, unsigned char *buffer, uint plane0, uint plane1, uint plane2);
 
 
 protected:
@@ -44,7 +44,7 @@ protected:
 	bool decodeJPEG(FILE *file);
 
 	//load jpeg into data;
-	bool decodeJPEG(size_t size, unsigned char *buffer, int plane);
+	bool decodeJPEG(size_t size, unsigned char *buffer, uint plane);
 	bool encodeJPEG(std::vector<int> &sizes, std::vector<uint8_t *> &buffers, int quality = 90);
 };
 
