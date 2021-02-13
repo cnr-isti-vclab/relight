@@ -498,7 +498,7 @@ void MainWindow::saveLPs() {
 
 		Ball ball = it.second;
 		filename = dir.filePath(filename);
-		ball.save(filename, images);
+		ball.saveLP(filename, images);
 	}
 }
 

@@ -1,6 +1,8 @@
 #include "ball.h"
 #include <QGraphicsEllipseItem>
 #include <QPen>
+#include <QJsonObject>
+#include <QJsonArray>
 
 #include <math.h>
 #include <assert.h>
@@ -225,7 +227,7 @@ void Ball::computeDirections() {
 	}
 
 }
-void Ball::save(QString filename, QStringList images) {
+void Ball::saveLP(QString filename, QStringList images) {
 	QFile file(filename);
 	if(!file.open(QFile::WriteOnly)) {
 		QString error = file.errorString();
@@ -244,3 +246,73 @@ void Ball::save(QString filename, QStringList images) {
 		stream << images[i] << " " << d[0] << " " << d[1] << " " << d[2] << "\n";
 	}
 }
+
+QJsonObject Ball::toJsonObject() {
+	QJsonObject ball;
+	QJsonArray jcenter = { center.x(), center.y() };
+	ball["center"] = jcenter;
+	ball["radius"] = radius;
+	ball["smallradius"] = smallradius;
+	QJsonObject jinner;
+	jinner.insert("left", inner.left());
+	jinner.insert("top", inner.top());
+	jinner.insert("width", inner.width());
+	jinner.insert("height", inner.height());
+	ball["inner"] = jinner;
+
+	QJsonArray jlights;
+	for(QPointF l: lights) {
+		QJsonArray jlight = { l.x(), l.y() };
+		jlights.append(jlight);
+	}
+	ball["lights"] = jlights;
+
+	QJsonArray jdirections;
+	for(Vector3f l: directions) {
+		QJsonArray jdir = { l[0], l[1], l[2] };
+		jdirections.append(jdir);
+	}
+	ball["directions"] = jdirections;
+	return ball;
+}
+
+void Ball::fromJsonObject(QJsonObject obj) {
+	auto jcenter = obj["center"].toArray();
+	center.setX(jcenter[0].toDouble());
+	center.setY(jcenter[1].toDouble());
+
+	radius = obj["radius"].toDouble();
+	smallradius = obj["mallradius"].toDouble();
+
+	auto jinner = obj["inner"].toObject();
+	inner.setLeft(jinner["left"].toInt());
+	inner.setTop(jinner["top"].toInt());
+	inner.setWidth(jinner["width"].toInt());
+	inner.setHeight(jinner["height"].toInt());
+
+	lights.clear();
+	for(auto jlight: obj["lights"].toArray()) {
+		auto j = jlight.toArray();
+		lights.push_back(QPointF(j[0].toDouble(), j[1].toDouble()));
+	}
+
+	directions.clear();
+	for(auto jdir: obj["directions"].toArray()) {
+		auto j = jdir.toArray();
+		directions.push_back(Vector3f(j[0].toDouble(), j[1].toDouble(), j[2].toDouble()));
+	}
+}
+
+
+/*QPointF center;      //in pixel coordinates of the image
+float radius;        //fitted radius
+float smallradius;   //innner radius where to look for reflections
+QRect inner;         //box of the inner part of the sphere.
+bool fitted;         //we have a valid fit
+
+std::vector<QPointF> lights;       //2d pixel of the light spot for this ball.
+std::vector<Vector3f> directions;  //
+
+std::vector<bool> valid;
+std::vector<BorderPoint *> border;
+*/
