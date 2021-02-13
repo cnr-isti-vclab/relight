@@ -50,6 +50,11 @@ public:
 	int currentImage = -1;
 	std::map<int, Ball> balls;
 
+	std::vector<Vector3f> directions;  //light directions as computed from the balls.
+	std::vector<Vector3f> positions;   //3d positions if using more than 1 ball.
+
+
+
 	std::vector<int> progress_jobs;
 	QProgressDialog *progress;
 	//Progress *progress;

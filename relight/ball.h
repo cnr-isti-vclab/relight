@@ -31,14 +31,13 @@ protected:
 	QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 };
 
-
+class QJsonObject;
 
 class Ball {
 public:
 	Ball(int n_lights) {
 		lights.resize(n_lights);
 		directions.resize(n_lights);
-		positions.resize(n_lights);
 		valid.resize(n_lights, false);
 	}
 	void run();
@@ -51,9 +50,8 @@ public:
 	QRect inner;         //box of the inner part of the sphere.
 	bool fitted;         //we have a valid fit
 
-	std::vector<QPointF> lights;
-	std::vector<Vector3f> directions;
-	std::vector<Vector3f> positions;  //3d positions if using more than 1 ball.
+	std::vector<QPointF> lights;       //2d pixel of the light spot for this ball.
+	std::vector<Vector3f> directions;  //
 
 	std::vector<bool> valid;
 	std::vector<BorderPoint *> border;
@@ -66,9 +64,12 @@ public:
 	bool fit(QSize imgsize);
 	void findHighlight(QImage im, int n);
 	void computeDirections();
-	void save(QString filename, QStringList images);
+	void saveLP(QString filename, QStringList images);
 
 	void setActive(bool active);
+
+	QJsonObject toJsonObject();
+	void fromJsonObject(QJsonObject obj);
 };
 
 #endif // BALL_H
