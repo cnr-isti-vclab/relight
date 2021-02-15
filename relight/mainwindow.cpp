@@ -41,12 +41,11 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->process,        SIGNAL(clicked(bool)),                this, SLOT(process()));
 	connect(ui->actionSave_LP, SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
 	connect(ui->loadLP, SIGNAL(clicked(bool)), this, SLOT(loadLP()));
-
+	connect(ui->actionHelp, SIGNAL(triggered(bool)), this, SLOT(showHelp()));
 
 
 	//connect(ui->actionProcess,  SIGNAL(triggered(bool)),            this, SLOT(process()));
 	connect(ui->actionDelete_selected,     SIGNAL(triggered(bool)),   this, SLOT(deleteSelected()));
-
 
 	connect(ui->imageList,     SIGNAL(currentItemChanged(QListWidgetItem *, QListWidgetItem *)), this, SLOT(openImage(QListWidgetItem *)));
 	connect(ui->sphereList,     SIGNAL(currentItemChanged(QListWidgetItem *, QListWidgetItem *)), this, SLOT(changeSphere(QListWidgetItem *, QListWidgetItem *)));
@@ -70,9 +69,6 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionZoom_out, SIGNAL(triggered(bool)), gvz, SLOT(zoomOut()));
 
 
-
-	connect(ui->actionHelp, SIGNAL(triggered(bool)), this, SLOT(showHelp()));
-
 	rtiexport = new RtiExport(this);
 	help = new HelpDialog(this);
 }
@@ -87,7 +83,8 @@ void MainWindow::clear() {
 	project_filename = QString();
 	ui->imageList->clear();
 	ui->graphicsView->resetMatrix();
-	project = Project();
+	ui->sphereList->clear();
+	project.clear();
 }
 
 void MainWindow::newProject() {
@@ -95,18 +92,17 @@ void MainWindow::newProject() {
 	QString dir = QFileDialog::getExistingDirectory(this, "Choose picture folder", lastDir);
 	if(dir.isNull()) return;
 
-	QStringList img_ext;
-	img_ext << "*.jpg" << "*.JPG" << "*.NEF" << "*.CR2";
-	for(QString &s: QDir(dir).entryList(img_ext))
-		project.images1.push_back(Image(s));
+	clear();
+
+	project.setDir(QDir(dir));
+	bool ok = project.scanDir();
 	if(!project.size()) {
 		QMessageBox::critical(this, "Houston we have a problem!", "Could not find images in directory: " + project.dir.path());
 		return;
 	}
+	if(!ok)
+		QMessageBox::critical(this, "Resolution problem", "Not all of the images in the folder have the same resolution (marked in red)");
 
-	clear();
-
-	project.setDir(QDir(dir));
 	enableActions();
 	init();
 }
@@ -120,16 +116,16 @@ void MainWindow::openProject() {
 
 	clear();
 
-	Project p;
+	project.clear();
 	try {
-		p.load(filename);
+		project.load(filename);
 	} catch(QString e) {
 		QMessageBox::critical(this, "Could not load the project: " + filename, "Error: " + e);
 		return;
 	}
-	project_filename == filename;
-	project = p;
+	project_filename = project.dir.relativeFilePath(filename);
 	enableActions();
+	setupSpheres();
 	init();
 }
 
@@ -178,7 +174,7 @@ bool MainWindow::init() {
 	settings->setValue("LastDir", project.dir.path());
 
 	ui->imageList->clear();
-	project.imgsize = QSize();
+	//project.imgsize = QSize();
 
 	//create the items (name and TODO thumbnail
 	int count = 0;
@@ -219,8 +215,8 @@ void MainWindow::openImage(QListWidgetItem *item, bool fit) {
 	imagePixmap = new QGraphicsPixmapItem(QPixmap::fromImage(img));
 	imagePixmap->setZValue(-1);
 	scene->addItem(imagePixmap);
-	if(!project.imgsize.isValid())
-		project.imgsize = img.size();
+	//if(!project.imgsize.isValid())
+	//	project.imgsize = img.size();
 
 	if(fit) {
 		//find smallest problems
@@ -229,17 +225,28 @@ void MainWindow::openImage(QListWidgetItem *item, bool fit) {
 		double s = std::min(sx, sy);
 		ui->graphicsView->scale(s, s);
 	}
+	showHighlights(n);
+}
 
+void MainWindow::showHighlights(size_t n) {
 	for(auto it: project.balls) {
 		Ball *ball = it.second;
-		if(ball->fitted && !ball->lights[n].isNull()) {
-			QRectF mark(- QPointF(2, 2), QPointF(2, 2));
-			ball->highlight->setRect(mark);
-			ball->highlight->setPos(ball->lights[n]);
-			ball->highlight->setVisible(true);
-		} else
-			ball->highlight->setVisible(false);
+		if(!ball->fitted)
+			continue;
+		if(!ball->highlight)
+			throw QString("Highlight should be already here!");
 
+		QRectF mark(- QPointF(4, 4), QPointF(4, 4));
+		ball->highlight->setRect(mark);
+		ball->highlight->setVisible(true);
+
+		if(!ball->lights[n].isNull()) {
+			ball->highlight->setPos(ball->lights[n]);
+			ball->highlight->setBrush(Qt::green);
+		} else {
+			ball->highlight->setPos(ball->inner.center());
+			ball->highlight->setBrush(Qt::red);
+		}
 	}
 }
 
@@ -265,7 +272,8 @@ void MainWindow::pointPicked(QPoint p) {
 	QPen outlinePen(Qt::white);
 	outlinePen.setCosmetic(true);
 	outlinePen.setWidth(5);
-	auto borderPoint = new BorderPoint(pos.x()-3, pos.y()-3, 6, 6);
+	auto borderPoint = new BorderPoint(-3, -3, 6, 6);
+	borderPoint->setPos(pos.x(), pos.y());
 	borderPoint->setPen(outlinePen);
 	borderPoint->setBrush(blueBrush);
 	borderPoint->setFlag(QGraphicsItem::ItemIsMovable);
@@ -279,6 +287,7 @@ void MainWindow::pointPicked(QPoint p) {
 
 	auto item = ui->sphereList->selectedItems()[0];
 	int id = item->data(Qt::UserRole).toInt();
+	assert(project.balls.count(id));
 	Ball *ball = project.balls[id];
 	ball->border.push_back(borderPoint);
 
@@ -305,11 +314,13 @@ void MainWindow::updateBorderPoints() {
 }
 
 void MainWindow::updateHighlight() {
+	size_t n = size_t(currentImage);
 	for(auto &it: project.balls) {
 		Ball *ball = it.second;
 		if(!ball->highlight) continue;
 
-		ball->lights[size_t(currentImage)] = ball->highlight->pos();
+		ball->highlight->setBrush(Qt::green);
+		ball->lights[n] = ball->highlight->pos();
 	}
 }
 
@@ -323,14 +334,21 @@ void MainWindow::deleteSelected() {
 			if(remove) delete e;
 			return !remove;
 		});
+		if(ball->highlight && ball->highlight->isSelected()) {
+			ball->resetHighlight(currentImage);
+			showHighlights(currentImage);
+		}
 	}
 	updateBorderPoints();
 }
 
 void MainWindow::changeSphere(QListWidgetItem *current, QListWidgetItem */*previous*/) {
 
-	for(auto &ball: project.balls)
+	for(auto ball: project.balls)
 		ball.second->setActive(false);
+
+	if(!current)
+		return;
 
 	int current_id = current->data(Qt::UserRole).toInt();
 	if(!project.balls.count(current_id))
@@ -351,42 +369,60 @@ int MainWindow::addSphere() {
 	int id = 0;
 	while(used.count(id))
 		id++;
+	Ball *ball = new Ball(project.size());
+	project.balls[id] = ball;
+	setupSphere(id, ball);
+	return id;
+}
 
+void MainWindow::setupSpheres() {
+	for(auto b: project.balls) {
+		int id = b.first;
+		Ball *ball = b.second;
+		setupSphere(id, ball);
+	}
+}
+
+void MainWindow::setupSphere(int id, Ball *ball) {
 	auto *item = new QListWidgetItem(QString("Shere %1").arg(id+1), ui->sphereList);
 	item->setSelected(true);
 	item ->setData(Qt::UserRole, id);
-	project.balls[id] = new Ball(project.size());
+
 	QPen outlinePen(Qt::yellow);
 	outlinePen.setCosmetic(true);
-	project.balls[id]->circle = scene->addEllipse(0, 0, 1, 1, outlinePen);
-	project.balls[id]->circle->setVisible(false);
+	ball->circle = scene->addEllipse(0, 0, 1, 1, outlinePen);
+	if(ball->center.isNull())
+		ball->circle->setVisible(false);
+	else {
+		QPointF c = ball->center;
+		double r = double(ball->radius);
+		ball->circle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
+		ball->circle->setVisible(true);
+	}
 
-	QPen highpen(Qt::red);
-	highpen.setWidth(3);
-	highpen.setCosmetic(true);
 
-	auto high = new HighlightPoint(0, 0, 1, 1);
+	auto high = new HighlightPoint(-2, -2, 2, 2);
 	high->setVisible(false);
-	high->setPen(highpen);
-	high->setBrush(Qt::red);
+	QPen pen;
+	pen.setColor(Qt::transparent);
+	pen.setWidth(0);
+	high->setPen(pen);
+	high->setBrush(Qt::green);
 	high->setFlag(QGraphicsItem::ItemIsMovable);
 	high->setFlag(QGraphicsItem::ItemIsSelectable);
 	high->setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
+	ball->highlight = high;
 	scene->addItem(high);
-	project.balls[id]->highlight = high;
-	return id;
+
+	for(auto b: ball->border)
+		scene->addItem(b);
 }
 
 void MainWindow::removeSphere() {
 	for(auto a: ui->sphereList->selectedItems()) {
 		int id = a->data(Qt::UserRole).toInt();
+		assert(project.balls.count(id));
 		Ball *ball = project.balls[id];
-		for(auto e: ball->border)
-			delete e;
-		if(ball->circle)
-			delete ball->circle;
-		if(ball->highlight)
-			delete ball->highlight;
 		delete ball;
 		project.balls.erase(id);
 	}
@@ -536,20 +572,6 @@ void MainWindow::loadLP() {
 		for(size_t i = 0; i < project.size(); i++)
 			project.images1[i].direction = directions[i];
 	}
-/*
-	if(project.balls[0].border.size() == 0) {
-		Ball &ball = project.balls[0];
-		ball.only_directions = true;
-		ball.directions = directions;
-		ball.valid = valid;
-		
-	} else {
-		int id = addSphere();
-		Ball &ball = project.balls[id];
-		ball.only_directions = true;
-		ball.directions = directions;
-		ball.valid = valid;
-	} */
 }
 void MainWindow::saveLPs() {
 	int count = 0;

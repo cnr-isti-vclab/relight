@@ -66,8 +66,8 @@ public:
 	void findHighlight(QImage im, int n);
 	void computeDirections();
 
-
 	void setActive(bool active);
+	void resetHighlight(size_t n); //reset light and direction of the detected highlight, of image n.
 
 	QJsonObject toJsonObject();
 	void fromJsonObject(QJsonObject obj);

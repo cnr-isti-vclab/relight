@@ -42,6 +42,20 @@ void Image::load(QJsonObject obj) {
 }
 
 
+Project::~Project() {
+	clear();
+}
+
+void Project::clear() {
+	dir = QDir();
+	imgsize = QSize();
+	images1.clear();
+	for(auto b: balls)
+		delete b.second;
+	balls.clear();
+	crop = QRect();
+}
+
 bool Project::setDir(QDir folder) {
 	if(!folder.exists()) {
 		//ask the user for a directory!
@@ -51,6 +65,39 @@ bool Project::setDir(QDir folder) {
 	dir = folder;
 	QDir::setCurrent(dir.path());
 	return true;
+}
+
+bool Project::scanDir() {
+	QStringList img_ext;
+	img_ext << "*.jpg" << "*.JPG" << "*.NEF" << "*.CR2";
+
+	QVector<QSize> resolutions;
+	vector<int> count;
+	for(QString &s: QDir(dir).entryList(img_ext)) {
+		images1.push_back(Image(s));
+		QImageReader reader(s);
+		QSize size = reader.size();
+		if(resolutions.indexOf(size)== -1) {
+			resolutions.push_back(size);
+			count.push_back(1);
+		}
+	}
+	if(!images1.size())
+		return false;
+	int max_n = 0;
+	for(int i = 0; i < resolutions.size(); i++) {
+		if(count[i] > max_n) {
+			max_n = count[i];
+			imgsize = resolutions[i];
+		}
+	}
+
+	for(Image &image: images1) {
+		QImageReader reader(image.filename);
+		QSize size = reader.size();
+		image.valid = (size != imgsize);
+	}
+	return resolutions.size() == 1;
 }
 
 void Project::load(QString filename) {
@@ -132,9 +179,10 @@ void Project::save(QString filename) {
 		project.insert("crop", jcrop);
 	}
 
-	QJsonArray spheres;
+	QJsonArray jspheres;
 	for(auto ball: balls)
-		spheres.append(ball.second->toJsonObject());
+		jspheres.append(ball.second->toJsonObject());
+	project.insert("spheres", jspheres);
 
 	QJsonDocument doc(project);
 

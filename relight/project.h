@@ -24,13 +24,16 @@ class Project {
 public:
 
 	Project() {}
-	~Project() { for(auto b: balls) delete b.second; balls.clear(); }
+	~Project();
+
+	void clear();
 	void load(QString filename);
 	void save(QString filename);
 	void saveLP(QString filename, std::vector<Vector3f> &directions);
 	void computeDirections();
 
 	bool setDir(QDir folder);
+	bool scanDir(); //load images from project.dir, and return false if some problems with resolution.
 	bool hasDirections() {
 		for(auto &im: images1)
 			if(!im.direction.isZero())
@@ -60,15 +63,7 @@ public:
 	QDir dir;                  //image folder
 	QSize imgsize;             //images width and height (must be the same for all).
 	std::vector<Image> images1;
-
 	std::map<int, Ball *> balls;
-
-
-	//std::vector<bool> valid;           //correct resolution?
-	//std::vector<bool> skip;            //skip image.
-	//std::vector<Vector3f> directions;  //light directions as computed from the balls, 0, 0, 0 is invalid!
-	//std::vector<Vector3f> positions;   //3d positions if using more than 1 ball.
-
 	QRect crop;
 };
 

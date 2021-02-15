@@ -47,11 +47,22 @@ Ball::~Ball() {
 		delete b;
 }
 
+void Ball::resetHighlight(size_t n) {
+	lights[n] = QPointF();
+	directions[n] = Vector3f();
+}
+
 void Ball::setActive(bool _active) {
 	active = _active;
 	QPen pen;
 	pen.setCosmetic(true);
-	pen.setColor(active? Qt::yellow : Qt::white);
+	pen.setColor(active? Qt::yellow : Qt::lightGray);
+	if(!active) {
+		QVector<qreal> dashes;
+		dashes << 4 << 4;
+		pen.setDashPattern(dashes);
+	}
+
 	if(circle) circle->setPen(pen);
 	for(auto p: border)
 		p->setPen(pen);
@@ -170,6 +181,7 @@ void Ball::findHighlight(QImage img, int n) {
 
 	//find biggest spot by removing outliers.
 	int radius = ceil(0.5*inner.width());
+	QPoint center = inner.center();
 	while(radius > ceil(0.02*inner.width())) {
 		QPointF newbari(0, 0); //in image coords
 		double weight = 0.0;
@@ -263,6 +275,13 @@ QJsonObject Ball::toJsonObject() {
 		jdirections.append(jdir);
 	}
 	ball["directions"] = jdirections;
+
+	QJsonArray jborder;
+	for(BorderPoint *p: border) {
+		QJsonArray b = { p->pos().x(), p->pos().y() };
+		jborder.push_back(b);
+	}
+	ball["border"] = jborder;
 	return ball;
 }
 
@@ -270,9 +289,10 @@ void Ball::fromJsonObject(QJsonObject obj) {
 	auto jcenter = obj["center"].toArray();
 	center.setX(jcenter[0].toDouble());
 	center.setY(jcenter[1].toDouble());
+	fitted = !center.isNull();
 
 	radius = obj["radius"].toDouble();
-	smallradius = obj["mallradius"].toDouble();
+	smallradius = obj["smallradius"].toDouble();
 
 	auto jinner = obj["inner"].toObject();
 	inner.setLeft(jinner["left"].toInt());
@@ -290,5 +310,25 @@ void Ball::fromJsonObject(QJsonObject obj) {
 	for(auto jdir: obj["directions"].toArray()) {
 		auto j = jdir.toArray();
 		directions.push_back(Vector3f(j[0].toDouble(), j[1].toDouble(), j[2].toDouble()));
+	}
+	border.clear();
+	for(auto jborder: obj["border"].toArray()) {
+		auto b = jborder.toArray();
+		//TODO cleanp this code replicated in mainwindow.
+		QBrush blueBrush(Qt::blue);
+		QPen outlinePen(Qt::white);
+		outlinePen.setWidth(5);
+		outlinePen.setCosmetic(true);
+
+
+		auto borderPoint = new BorderPoint(-3, -3, 6, 6);
+		borderPoint->setPos(b[0].toDouble(), b[1].toDouble());
+		borderPoint->setPen(outlinePen);
+		borderPoint->setBrush(blueBrush);
+		borderPoint->setFlag(QGraphicsItem::ItemIsMovable);
+		borderPoint->setFlag(QGraphicsItem::ItemIsSelectable);
+		borderPoint->setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
+		borderPoint->setCursor(Qt::CrossCursor);
+		border.push_back(borderPoint);
 	}
 }

@@ -287,7 +287,7 @@
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/go-previous.svg</normaloff>:/icons/gtango/go-previous.svg</iconset>
+     <normaloff>:/icons/gtango/go-next.svg</normaloff>:/icons/gtango/go-next.svg</iconset>
    </property>
    <property name="text">
     <string>Next image</string>
@@ -302,7 +302,7 @@
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/go-next.svg</normaloff>:/icons/gtango/go-next.svg</iconset>
+     <normaloff>:/icons/gtango/go-previous.svg</normaloff>:/icons/gtango/go-previous.svg</iconset>
    </property>
    <property name="text">
     <string>Previous image</string>
