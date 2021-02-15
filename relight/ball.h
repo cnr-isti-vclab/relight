@@ -38,12 +38,12 @@ public:
 	Ball(int n_lights) {
 		lights.resize(n_lights);
 		directions.resize(n_lights);
-		valid.resize(n_lights, false);
+		//valid.resize(n_lights, false);
 	}
 	void run();
 
 	bool active = false;
-	bool only_directions = false;
+
 	QPointF center;      //in pixel coordinates of the image
 	float radius;        //fitted radius
 	float smallradius;   //innner radius where to look for reflections
@@ -52,8 +52,8 @@ public:
 
 	std::vector<QPointF> lights;       //2d pixel of the light spot for this ball.
 	std::vector<Vector3f> directions;  //
+	//std::vector<bool> valid;
 
-	std::vector<bool> valid;
 	std::vector<BorderPoint *> border;
 
 	QGraphicsEllipseItem *circle = nullptr;
@@ -61,10 +61,11 @@ public:
 	QImage sphere;
 
 	Ball();
+	~Ball();
 	bool fit(QSize imgsize);
 	void findHighlight(QImage im, int n);
 	void computeDirections();
-	void saveLP(QString filename, QStringList images);
+
 
 	void setActive(bool active);
 

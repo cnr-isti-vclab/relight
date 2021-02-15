@@ -191,7 +191,10 @@
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionSave_as"/>
     <addaction name="separator"/>
     <addaction name="actionProcess"/>
     <addaction name="actionLoad_LP"/>
@@ -246,7 +249,9 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionNew"/>
    <addaction name="actionOpen"/>
+   <addaction name="actionSave"/>
    <addaction name="actionPrevious"/>
    <addaction name="actionNext"/>
    <addaction name="separator"/>
@@ -264,6 +269,9 @@
    <property name="text">
     <string>Open...</string>
    </property>
+   <property name="toolTip">
+    <string>Open project...</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
    </property>
@@ -274,6 +282,9 @@
    </property>
   </action>
   <action name="actionNext">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/gtango/go-previous.svg</normaloff>:/icons/gtango/go-previous.svg</iconset>
@@ -286,6 +297,9 @@
    </property>
   </action>
   <action name="actionPrevious">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/gtango/go-next.svg</normaloff>:/icons/gtango/go-next.svg</iconset>
@@ -298,6 +312,9 @@
    </property>
   </action>
   <action name="actionZoom_in">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/gtango/zoom-in.svg</normaloff>:/icons/gtango/zoom-in.svg</iconset>
@@ -310,6 +327,9 @@
    </property>
   </action>
   <action name="actionZoom_out">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/gtango/zoom-out.svg</normaloff>:/icons/gtango/zoom-out.svg</iconset>
@@ -354,6 +374,9 @@
    </property>
   </action>
   <action name="actionProcess">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/gtango/system-run.svg</normaloff>:/icons/gtango/system-run.svg</iconset>
@@ -363,6 +386,9 @@
    </property>
   </action>
   <action name="actionSave_LP">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/gtango/document-save.svg</normaloff>:/icons/gtango/document-save.svg</iconset>
@@ -372,6 +398,9 @@
    </property>
   </action>
   <action name="actionExport_RTI">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/gtango/document-save.svg</normaloff>:/icons/gtango/document-save.svg</iconset>
@@ -381,12 +410,56 @@
    </property>
   </action>
   <action name="actionLoad_LP">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/gtango/document-open.svg</normaloff>:/icons/gtango/document-open.svg</iconset>
    </property>
    <property name="text">
     <string>Load LP...</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/save.svg</normaloff>:/icons/gtango/save.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Save...</string>
+   </property>
+   <property name="toolTip">
+    <string>Save project...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionSave_as">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Save as...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
+   </property>
+  </action>
+  <action name="actionNew">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/folder-new.svg</normaloff>:/icons/gtango/folder-new.svg</iconset>
+   </property>
+   <property name="text">
+    <string>New...</string>
+   </property>
+   <property name="toolTip">
+    <string>New project...</string>
    </property>
   </action>
  </widget>

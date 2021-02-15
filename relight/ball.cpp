@@ -1,13 +1,15 @@
 #include "ball.h"
+
 #include <QGraphicsEllipseItem>
 #include <QPen>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QMessageBox>
 
 #include <math.h>
 #include <assert.h>
 #include "mainwindow.h"
-
+#include "project.h"
 #include <iostream>
 
 using namespace std;
@@ -35,6 +37,15 @@ QVariant HighlightPoint::itemChange(GraphicsItemChange change, const QVariant &v
 
 
 Ball::Ball() {}
+
+Ball::~Ball() {
+	if(circle)
+		delete circle;
+	if(highlight)
+		delete highlight;
+	for(auto b: border)
+		delete b;
+}
 
 void Ball::setActive(bool _active) {
 	active = _active;
@@ -116,6 +127,7 @@ bool Ball::fit(QSize imgsize) {
 
 void Ball::findHighlight(QImage img, int n) {
 	sphere = QImage(inner.width(), inner.height(), QImage::Format_ARGB32);
+	sphere.fill(0);
 	uchar threshold = 220;
 
 	QPointF bari(0, 0); //in image coords
@@ -196,16 +208,13 @@ void Ball::findHighlight(QImage img, int n) {
 	}
 
 	lights[n] = bari;
-	valid[n] = !(bari == QPointF(0, 0));
-
 }
 
 void Ball::computeDirections() {
 
-	if(only_directions)
-		return;
+	directions.resize(lights.size());
 	for(size_t i = 0; i < lights.size(); i++) {
-		if(!valid[i]) {
+		if(lights[i].isNull()) {
 			directions[i] = Vector3f(0, 0, 0);
 			continue;
 		}
@@ -226,25 +235,6 @@ void Ball::computeDirections() {
 		directions[i] = Vector3f(x, y, z);
 	}
 
-}
-void Ball::saveLP(QString filename, QStringList images) {
-	QFile file(filename);
-	if(!file.open(QFile::WriteOnly)) {
-		QString error = file.errorString();
-		throw error;
-	}
-	QTextStream stream(&file);
-
-	computeDirections();
-	int tot = count(valid.begin(), valid.end(), true);
-
-	stream << tot << "\n";
-	for(size_t i = 0; i < directions.size(); i++) {
-		if(!valid[i])
-			continue;
-		Vector3f d = directions[i];
-		stream << images[i] << " " << d[0] << " " << d[1] << " " << d[2] << "\n";
-	}
 }
 
 QJsonObject Ball::toJsonObject() {
@@ -302,17 +292,3 @@ void Ball::fromJsonObject(QJsonObject obj) {
 		directions.push_back(Vector3f(j[0].toDouble(), j[1].toDouble(), j[2].toDouble()));
 	}
 }
-
-
-/*QPointF center;      //in pixel coordinates of the image
-float radius;        //fitted radius
-float smallradius;   //innner radius where to look for reflections
-QRect inner;         //box of the inner part of the sphere.
-bool fitted;         //we have a valid fit
-
-std::vector<QPointF> lights;       //2d pixel of the light spot for this ball.
-std::vector<Vector3f> directions;  //
-
-std::vector<bool> valid;
-std::vector<BorderPoint *> border;
-*/

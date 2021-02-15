@@ -6,6 +6,52 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QTextStream>
+#include <QImageReader>
+#include <QMessageBox>
+
+using namespace std;
+
+QJsonObject Image::save() {
+
+	QJsonObject obj;
+	obj.insert("filename", filename);
+	obj.insert("skip", skip);
+
+	QJsonArray dir { direction[0], direction[1], direction[2] };
+	obj.insert("direction", dir);
+
+	QJsonArray pos { position[0], position[1], position[2] };
+	obj.insert("position", pos);
+
+	return obj;
+}
+void Image::load(QJsonObject obj) {
+	filename = obj["filename"].toString();
+	skip = obj["skip"].toBool();
+
+	QJsonArray dir = obj["directions"].toArray();
+	direction[0] = dir[0].toDouble();
+	direction[1] = dir[1].toDouble();
+	direction[2] = dir[2].toDouble();
+
+	QJsonArray pos = obj["positions"].toArray();
+	position[0] = pos[0].toDouble();
+	position[1] = pos[1].toDouble();
+	position[2] = pos[2].toDouble();
+}
+
+
+bool Project::setDir(QDir folder) {
+	if(!folder.exists()) {
+		//ask the user for a directory!
+		QString folder = QFileDialog::getExistingDirectory(nullptr, "Could not find the image folder: select the images folder.");
+		if(folder.isNull()) return false;
+	}
+	dir = folder;
+	QDir::setCurrent(dir.path());
+	return true;
+}
 
 void Project::load(QString filename) {
 	QFile file(filename);
@@ -20,40 +66,25 @@ void Project::load(QString filename) {
 		throw "Missing or invalid width and/or height.";
 
 	QFileInfo info(filename);
-	dir = info.dir();
-	dir.cd(obj["folder"].toString());
+	QDir folder = info.dir();
+	folder.cd(obj["folder"].toString());
 
-	if(!dir.exists()) {
-		//ask the user for a directory!
-		QString folder = QFileDialog::getExistingDirectory(nullptr, "Could not find the image folder: select the images folder.");
-		if(folder.isNull()) return;
-		dir = QDir(folder);
-	}
+	if(!setDir(folder))
+		throw(QString("Can't load a project without a valid folder"));
 
-	images.clear();
 	for(auto img: obj["images"].toArray()) {
-		QString filename = img.toString();
-		QFileInfo imginfo(filename);
+		Image image;
+		image.load(img.toObject());
+
+		QFileInfo imginfo(image.filename);
 		if(!imginfo.exists())
-			throw QString("Could not find the image: " + filename + " in folder: " + dir.absolutePath());
+			throw QString("Could not find the image: " + image.filename) + " in folder: " + dir.absolutePath();
 
-		images.push_back(filename);
-	}
+		QImageReader reader(image.filename);
+		QSize size = reader.size();
+		image.valid = (size != imgsize);
 
-	directions.clear();
-	if(obj.contains("directions")) {
-		for(auto direction: obj["directions"].toArray()) {
-			auto d = direction.toArray();
-			directions.push_back(Vector3f(d[0].toDouble(), d[1].toDouble(), d[2].toDouble()));
-		}
-	}
-
-	positions.clear();
-	if(obj.contains("positions")) {
-		for(auto position: obj["positions"].toArray()) {
-			auto d = position.toArray();
-			positions.push_back(Vector3f(d[0].toDouble(), d[1].toDouble(), d[2].toDouble()));
-		}
+		images1.push_back(image);
 	}
 
 	if(obj.contains("crop")) {
@@ -67,8 +98,8 @@ void Project::load(QString filename) {
 	if(obj.contains("spheres")) {
 		int count =0 ;
 		for(auto sphere: obj["spheres"].toArray()) {
-			Ball ball;
-			ball.fromJsonObject(sphere.toObject());
+			Ball *ball = new Ball;
+			ball->fromJsonObject(sphere.toObject());
 			balls[count++] = ball;
 		}
 	}
@@ -86,26 +117,11 @@ void Project::save(QString filename) {
 	QString path = dir.relativeFilePath(info.absoluteDir().absolutePath());
 	project.insert("folder", path);
 
-	QJsonArray jimages = QJsonArray::fromStringList(images);
+	QJsonArray jimages;
+	for(auto &img: images1)
+		jimages.push_back(img.save());
+
 	project.insert("images", jimages);
-
-	if(directions.size()) {
-		QJsonArray jdirections;
-		for(Vector3f &d: directions) {
-			QJsonArray jd = { d[0], d[1], d[2] };
-			jdirections.push_back(jd);
-		}
-		project.insert("directions", jdirections);
-	}
-
-	if(positions.size()) {
-		QJsonArray jpositions;
-		for(Vector3f &d: positions) {
-			QJsonArray jd = { d[0], d[1], d[2] };
-			jpositions.push_back(jd);
-		}
-		project.insert("positions", jpositions);
-	}
 
 	if(crop.isValid()) {
 		QJsonObject jcrop;
@@ -118,8 +134,72 @@ void Project::save(QString filename) {
 
 	QJsonArray spheres;
 	for(auto ball: balls)
-		spheres.append(ball.second.toJsonObject());
+		spheres.append(ball.second->toJsonObject());
 
 	QJsonDocument doc(project);
-	doc.toJson();
+
+
+	QFile file(filename);
+	file.open(QFile::WriteOnly | QFile::Truncate);
+	file.write(doc.toJson());
+}
+
+
+void Project::saveLP(QString filename, std::vector<Vector3f> &directions) {
+	QFile file(filename);
+	if(!file.open(QFile::WriteOnly)) {
+		QString error = file.errorString();
+		throw error;
+	}
+	QTextStream stream(&file);
+
+	//computeDirections();
+
+	int invalid_count = 0;
+	for(auto d: directions)
+		if(d.isZero())
+			invalid_count++;
+
+	if(invalid_count)
+		QMessageBox::warning(nullptr, "Saving LP :" + filename, QString("Saving LP will skip %1 missing light directions"));
+
+	stream << directions.size() << "\n";
+	for(size_t i = 0; i < directions.size(); i++) {
+		Vector3f d = directions[i];
+		if(d.isZero())
+			continue;
+		stream << images1[i].filename << " " << d[0] << " " << d[1] << " " << d[2] << "\n";
+	}
+}
+
+void  Project::computeDirections() {
+	if(balls.size() == 0) {
+		QMessageBox::critical(nullptr, "Missing light directions.", "Light directions can be loaded from a .lp file or processing the spheres.");
+		return;
+	}
+	vector<Vector3f> directions(size(), Vector3f(0, 0, 0));
+	vector<float> weights(size(), 0.0f);
+	if(balls.size()) {
+		for(auto it: balls) {
+			Ball *ball = it.second;
+			ball->computeDirections();
+			if(ball->directions.size() != size())
+				throw QString("Ball number of directions is different than images");
+
+			for(size_t i = 0; i < ball->directions.size(); i++) {
+				Vector3f d = ball->directions[i];
+				if(d.isZero())
+					continue;
+				directions[i] += d;
+				weights[i] += 1.0f;
+			}
+		}
+	}
+
+	//Simple mean for the balls directions (not certainly the smartest thing).
+	for(size_t i = 0; i < directions.size(); i++) {
+		if(weights[i] > 0)
+			images1[i].direction = directions[i]/weights[i];
+	}
+
 }

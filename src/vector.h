@@ -11,7 +11,7 @@ template <class T> class Vector3 {
 public:
 	T v[3];
 
-	Vector3() {}
+	Vector3() { v[0] = v[1] = v[2] = 0; }
 	Vector3(T x, T y, T z) {
 		v[0] = x; v[1] = y; v[2] = z;
 	}
@@ -20,12 +20,19 @@ public:
 	const T &operator[](int i) const { return v[i]; }
 
 	Vector3 operator+(const Vector3 &b) const { return Vector3(v[0]+b[0], v[1]+b[1], v[2]+b[2]);	}
+	void operator+=(const Vector3 &b) { v[0] += b[0]; v[1] += b[1]; v[2] += b[2]; }
+
 	Vector3 operator-(const Vector3 &b) const { return Vector3(v[0]-b[0], v[1]-b[1], v[2]-b[2]);	}
+
 	Vector3 operator*(float d) { return Vector3(v[0]*d, v[1]*d, v[2]*d); }
 	T operator*(const Vector3 &b) { return v[0]*b[0] + v[1]*b[1] + v[2]*b[2]; }
+
 	Vector3 operator/(float d) { return Vector3(v[0]/d, v[1]/d, v[2]/d); }
+	void operator/=(float w) { v[0] /= w; v[1] /= w; v[2]/= w; }
+
 	double squaredNorm() { return v[0]*(double)v[0] + v[1]*(double)v[1] + v[2]*(double)v[2]; }
 	double norm() { return sqrt(squaredNorm()); }
+	bool isZero() { return v[0] == 0 && v[1] == 0 && v[2] == 0; }
 };
 
 typedef Vector3<uint16_t> Vector3us;

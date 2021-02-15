@@ -4,9 +4,9 @@
 #include <QMainWindow>
 #include <QDir>
 #include "ball.h"
-//#include "progress.h"
-#include <QProgressDialog>
+#include "project.h"
 
+#include <QProgressDialog>
 #include <QGraphicsScene>
 #include <QThreadPool>
 #include <QFutureWatcher>
@@ -43,17 +43,11 @@ public:
 	explicit MainWindow(QWidget *parent = nullptr);
 	~MainWindow();
 
-	QDir dir;
-	QStringList images;
-	std::vector<bool> valid; //valid images.
-	QSize imgsize;
+	Project project;
+	QString project_filename;
+
 	int currentImage = -1;
-	std::map<int, Ball> balls;
-
-	std::vector<Vector3f> directions;  //light directions as computed from the balls.
-	std::vector<Vector3f> positions;   //3d positions if using more than 1 ball.
-
-
+	//std::vector<bool> valid; //valid images.
 
 	std::vector<int> progress_jobs;
 	QProgressDialog *progress;
@@ -61,11 +55,18 @@ public:
 	QFutureWatcher<void> watcher;
 
 
-	bool init(QString folder);
+	bool init();
 	int processImage(int n);
-public slots:
 
-	void open();
+public slots:
+	void enableActions();
+
+	void openProject();
+	void newProject();
+	void saveProject();
+	void saveProjectAs();
+
+	void clear(); //clear everything (project, images etc.)
 	void openImage(QListWidgetItem *, bool fit = false);
 	void next();
 	void previous();
@@ -73,6 +74,7 @@ public slots:
 	void deleteSelected();
 	void updateBorderPoints();
 	void updateHighlight();
+
 
 
 	void changeSphere(QListWidgetItem *current, QListWidgetItem *previous);
