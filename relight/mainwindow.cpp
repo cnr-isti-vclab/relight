@@ -84,10 +84,9 @@ void MainWindow::clear() {
 		delete imagePixmap;
 		imagePixmap = nullptr;
 	}
-
+	project_filename = QString();
 	ui->imageList->clear();
-	project.imgsize = QSize();
-
+	ui->graphicsView->resetMatrix();
 	project = Project();
 }
 
@@ -95,7 +94,18 @@ void MainWindow::newProject() {
 	QString lastDir = settings->value("LastDir", QDir::homePath()).toString();
 	QString dir = QFileDialog::getExistingDirectory(this, "Choose picture folder", lastDir);
 	if(dir.isNull()) return;
+
+	QStringList img_ext;
+	img_ext << "*.jpg" << "*.JPG" << "*.NEF" << "*.CR2";
+	for(QString &s: QDir(dir).entryList(img_ext))
+		project.images1.push_back(Image(s));
+	if(!project.size()) {
+		QMessageBox::critical(this, "Houston we have a problem!", "Could not find images in directory: " + project.dir.path());
+		return;
+	}
+
 	clear();
+
 	project.setDir(QDir(dir));
 	enableActions();
 	init();
@@ -117,6 +127,7 @@ void MainWindow::openProject() {
 		QMessageBox::critical(this, "Could not load the project: " + filename, "Error: " + e);
 		return;
 	}
+	project_filename == filename;
 	project = p;
 	enableActions();
 	init();
@@ -161,14 +172,6 @@ void MainWindow::enableActions() {
 }
 
 bool MainWindow::init() {
-	QStringList img_ext;
-	img_ext << "*.jpg" << "*.JPG" << "*.NEF" << "*.CR2";
-	for(QString &s: project.dir.entryList(img_ext))
-		project.images1.push_back(Image(s));
-	if(!project.size()) {
-		QMessageBox::critical(this, "Houston we have a problem!", "Could not find images in directory: " + project.dir.path());
-		return false;
-	}
 
 	if(imagePixmap)
 		delete imagePixmap;
@@ -330,6 +333,8 @@ void MainWindow::changeSphere(QListWidgetItem *current, QListWidgetItem */*previ
 		ball.second->setActive(false);
 
 	int current_id = current->data(Qt::UserRole).toInt();
+	if(!project.balls.count(current_id))
+		throw QString("A sphere was not properly deleted!");
 	project.balls[current_id]->setActive(true);
 }
 
