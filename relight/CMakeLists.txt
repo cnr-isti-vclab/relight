@@ -37,6 +37,7 @@ set (RELIGHT_HEADERS
 	graphics_view_zoom.h
 	rtiexport.h
 	helpdialog.h
+	project.h
 	../src/imageset.h
 	../src/jpeg_decoder.h
 	../src/jpeg_encoder.h
@@ -52,6 +53,7 @@ set (RELIGHT_SOURCES
 	ball.cpp
 	graphics_view_zoom.cpp
 	rtiexport.cpp
+	project.cpp
 	../relight-cli/rtibuilder.cpp
 	../src/imageset.cpp
 	../src/jpeg_decoder.cpp

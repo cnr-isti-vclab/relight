@@ -78,8 +78,12 @@ public slots:
 
 
 	void changeSphere(QListWidgetItem *current, QListWidgetItem *previous);
+	void setupSpheres();
+	void setupSphere(int id, Ball *ball);
 	int addSphere();
+
 	void removeSphere();
+	void showHighlights(size_t n);
 
 	void process();
 	void cancelProcess();
