@@ -18,6 +18,8 @@
         <file>gtango/zoom-in.svg</file>
         <file>gtango/zoom-original.svg</file>
         <file>gtango/zoom-out.svg</file>
+        <file>gtango/folder-new.svg</file>
+        <file>gtango/save.svg</file>
     </qresource>
     <qresource prefix="/docs">
         <file>docs/help.html</file>

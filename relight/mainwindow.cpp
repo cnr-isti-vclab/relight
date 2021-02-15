@@ -27,12 +27,22 @@ MainWindow::MainWindow(QWidget *parent) :
 	settings = new QSettings("VCG", "Relight", this);
 
 	ui->setupUi(this);
-	connect(ui->actionOpen,     SIGNAL(triggered(bool)),              this, SLOT(open()));
-	connect(ui->actionPrevious, SIGNAL(triggered(bool)),              this, SLOT(previous()));
-	connect(ui->actionNext,     SIGNAL(triggered(bool)),              this, SLOT(next()));
+	connect(ui->actionNew,        SIGNAL(triggered(bool)),              this, SLOT(newProject()));
+	connect(ui->actionOpen,       SIGNAL(triggered(bool)),              this, SLOT(openProject()));
+
+	connect(ui->actionSave,       SIGNAL(triggered(bool)),              this, SLOT(saveProject()));
+	connect(ui->actionSave_as,    SIGNAL(triggered(bool)),              this, SLOT(saveProjectAs()));
+	connect(ui->actionPrevious,   SIGNAL(triggered(bool)),              this, SLOT(previous()));
+	connect(ui->actionNext,       SIGNAL(triggered(bool)),              this, SLOT(next()));
+	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)), this, SLOT(exportRTI()));
+
 	connect(ui->addSphere,      SIGNAL(clicked(bool)),                this, SLOT(addSphere()));
 	connect(ui->removeSphere,   SIGNAL(clicked(bool)),                this, SLOT(removeSphere()));
 	connect(ui->process,        SIGNAL(clicked(bool)),                this, SLOT(process()));
+	connect(ui->actionSave_LP, SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
+	connect(ui->loadLP, SIGNAL(clicked(bool)), this, SLOT(loadLP()));
+
+
 
 	//connect(ui->actionProcess,  SIGNAL(triggered(bool)),            this, SLOT(process()));
 	connect(ui->actionDelete_selected,     SIGNAL(triggered(bool)),   this, SLOT(deleteSelected()));
@@ -59,9 +69,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionZoom_in,  SIGNAL(triggered(bool)), gvz, SLOT(zoomIn()));
 	connect(ui->actionZoom_out, SIGNAL(triggered(bool)), gvz, SLOT(zoomOut()));
 
-	connect(ui->actionSave_LP, SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
-	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)), this, SLOT(exportRTI()));
-	connect(ui->loadLP, SIGNAL(clicked(bool)), this, SLOT(loadLP()));
+
 
 	connect(ui->actionHelp, SIGNAL(triggered(bool)), this, SLOT(showHelp()));
 
@@ -71,47 +79,115 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow() {	delete ui; }
 
-void MainWindow::open() {
+void MainWindow::clear() {
+	if(imagePixmap) {
+		delete imagePixmap;
+		imagePixmap = nullptr;
+	}
+
+	ui->imageList->clear();
+	project.imgsize = QSize();
+
+	project = Project();
+}
+
+void MainWindow::newProject() {
 	QString lastDir = settings->value("LastDir", QDir::homePath()).toString();
 	QString dir = QFileDialog::getExistingDirectory(this, "Choose picture folder", lastDir);
 	if(dir.isNull()) return;
-	init(dir);
+	clear();
+	project.setDir(QDir(dir));
+	enableActions();
+	init();
 }
 
-bool MainWindow::init(QString dirname) {
-	dir = QDir(dirname);
-	if(!dir.exists()) {
-		cerr << "Could not find " << qPrintable(dirname) << " folder.\n";
-		return false;
+void MainWindow::openProject() {
+	QString lastDir = settings->value("LastDir", QDir::homePath()).toString();
+
+	QString filename = QFileDialog::getOpenFileName(this, "Select a project", lastDir, "*.relight");
+	if(filename.isNull())
+		return;
+
+	clear();
+
+	Project p;
+	try {
+		p.load(filename);
+	} catch(QString e) {
+		QMessageBox::critical(this, "Could not load the project: " + filename, "Error: " + e);
+		return;
 	}
+	project = p;
+	enableActions();
+	init();
+}
+
+void MainWindow::saveProject() {
+	QString lastDir = settings->value("LastDir", QDir::homePath()).toString();
+
+	if(project_filename.isNull()) {
+		QString filename = QFileDialog::getSaveFileName(this, "Save file: ", lastDir, "*.relight");
+		if(!filename.endsWith((".relight")))
+			filename += ".relight";
+		project_filename = filename;
+	}
+	if(!project_filename.isNull())
+		project.save(project_filename);
+	//TODO set window title as project filename filename
+}
+
+void MainWindow::saveProjectAs() {
+	QString lastDir = settings->value("LastDir", QDir::homePath()).toString();
+
+	QString new_filename = QFileDialog::getSaveFileName(this, "Save file: ", lastDir, "*.relight");
+	if(new_filename.isNull())
+		return;
+	project_filename = new_filename;
+	saveProject();
+}
+
+void MainWindow::enableActions() {
+	ui->actionSave->setEnabled(true);
+	ui->actionSave_as->setEnabled(true);
+	ui->actionPrevious->setEnabled(true);
+	ui->actionNext->setEnabled(true);
+	ui->actionExport_RTI->setEnabled(true);
+
+	ui->addSphere->setEnabled(true);
+	ui->removeSphere->setEnabled(true);
+	ui->loadLP->setEnabled(true);
+	if(project.hasDirections())
+		ui->actionSave_LP->setEnabled(true);
+}
+
+bool MainWindow::init() {
 	QStringList img_ext;
 	img_ext << "*.jpg" << "*.JPG" << "*.NEF" << "*.CR2";
-	images = dir.entryList(img_ext);
-	if(!images.size()) {
-		QMessageBox::critical(this, "Houston we have a problem!", "Could not find images in directory: " + dirname);
+	for(QString &s: project.dir.entryList(img_ext))
+		project.images1.push_back(Image(s));
+	if(!project.size()) {
+		QMessageBox::critical(this, "Houston we have a problem!", "Could not find images in directory: " + project.dir.path());
 		return false;
 	}
 
 	if(imagePixmap)
 		delete imagePixmap;
-	settings->setValue("LastDir", dir.path());
+	settings->setValue("LastDir", project.dir.path());
 
 	ui->imageList->clear();
-	imgsize = QSize();
-	valid.clear();
-	valid.resize(size_t(images.size()), bool(true));
+	project.imgsize = QSize();
 
 	//create the items (name and TODO thumbnail
 	int count = 0;
-	for(QString a: images) {
-		auto *item = new QListWidgetItem(a, ui->imageList);
+	for(Image &a: project.images1) {
+		auto *item = new QListWidgetItem(a.filename, ui->imageList);
 		item ->setData(Qt::UserRole, count++);
 	}
 
 	openImage(ui->imageList->item(0), true);
 	//TODO: in background load and process the images
 
-	addSphere();
+//	addSphere();
 
 	ui->addSphere->setEnabled(true);
 	ui->removeSphere->setEnabled(true);
@@ -122,10 +198,13 @@ bool MainWindow::init(QString dirname) {
 }
 
 void MainWindow::openImage(QListWidgetItem *item, bool fit) {
+	if(!item)
+		return;
+
 	ui->imageList->setCurrentItem(item);
 	QString filename = item->text();
 
-	QImage img(dir.filePath(filename));
+	QImage img(project.dir.filePath(filename));
 	if(img.isNull()) {
 		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
 		return;
@@ -137,31 +216,26 @@ void MainWindow::openImage(QListWidgetItem *item, bool fit) {
 	imagePixmap = new QGraphicsPixmapItem(QPixmap::fromImage(img));
 	imagePixmap->setZValue(-1);
 	scene->addItem(imagePixmap);
-	if(!imgsize.isValid())
-		imgsize = img.size();
-
-	if(imgsize != img.size()) {
-		valid[n] = false;
-	}
-
+	if(!project.imgsize.isValid())
+		project.imgsize = img.size();
 
 	if(fit) {
 		//find smallest problems
-		double sx =  double(ui->graphicsView->width()) / imgsize.width();
-		double sy = double(ui->graphicsView->height()) / imgsize.height();
+		double sx =  double(ui->graphicsView->width()) / project.imgsize.width();
+		double sy = double(ui->graphicsView->height()) / project.imgsize.height();
 		double s = std::min(sx, sy);
 		ui->graphicsView->scale(s, s);
 	}
 
-	for(auto it: balls) {
-		Ball &ball = it.second;
-		if(ball.fitted && ball.valid[n]) {
+	for(auto it: project.balls) {
+		Ball *ball = it.second;
+		if(ball->fitted && !ball->lights[n].isNull()) {
 			QRectF mark(- QPointF(2, 2), QPointF(2, 2));
-			ball.highlight->setRect(mark);
-			ball.highlight->setPos(ball.lights[n]);
-			ball.highlight->setVisible(true);
+			ball->highlight->setRect(mark);
+			ball->highlight->setPos(ball->lights[n]);
+			ball->highlight->setVisible(true);
 		} else
-			ball.highlight->setVisible(false);
+			ball->highlight->setVisible(false);
 
 	}
 }
@@ -175,7 +249,7 @@ void MainWindow::previous() {
 
 
 void MainWindow::next() {
-	if(currentImage == images.size()-1)
+	if(currentImage == (int)project.size()-1)
 		return;
 	openImage(ui->imageList->item(currentImage+1));
 }
@@ -197,49 +271,51 @@ void MainWindow::pointPicked(QPoint p) {
 	borderPoint->setCursor(Qt::CrossCursor);
 	scene->addItem(borderPoint);
 
+	if(!project.balls.size())
+		addSphere();
 
 	auto item = ui->sphereList->selectedItems()[0];
 	int id = item->data(Qt::UserRole).toInt();
-	Ball &ball = balls[id];
-	ball.border.push_back(borderPoint);
+	Ball *ball = project.balls[id];
+	ball->border.push_back(borderPoint);
 
 	updateBorderPoints();
 }
 
 void MainWindow::updateBorderPoints() {
 
-	for(auto &it: balls) {
-		Ball &ball = it.second;
+	for(auto &it: project.balls) {
+		Ball *ball = it.second;
 
-		ball.circle->setVisible(false);
+		ball->circle->setVisible(false);
 
-		if(ball.border.size() >= 3) {
-			bool fitted = ball.fit(imgsize);
+		if(ball->border.size() >= 3) {
+			bool fitted = ball->fit(project.imgsize);
 			if(fitted) {
-				QPointF c = ball.center;
-				double r = double(ball.radius);
-				ball.circle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
-				ball.circle->setVisible(true);
+				QPointF c = ball->center;
+				double r = double(ball->radius);
+				ball->circle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
+				ball->circle->setVisible(true);
 			}
 		}
 	}
 }
 
 void MainWindow::updateHighlight() {
-	for(auto &it: balls) {
-		Ball &ball = it.second;
-		if(!ball.highlight) continue;
+	for(auto &it: project.balls) {
+		Ball *ball = it.second;
+		if(!ball->highlight) continue;
 
-		ball.lights[size_t(currentImage)] = ball.highlight->pos();
+		ball->lights[size_t(currentImage)] = ball->highlight->pos();
 	}
 }
 
 void MainWindow::deleteSelected() {
-	for(auto &it: balls) {
-		Ball &ball = it.second;
-		auto border = ball.border;
-		ball.border.clear();
-		std::copy_if (border.begin(), border.end(), std::back_inserter(ball.border), [border](QGraphicsEllipseItem *e) {
+	for(auto &it: project.balls) {
+		Ball *ball = it.second;
+		auto border = ball->border;
+		ball->border.clear();
+		std::copy_if (border.begin(), border.end(), std::back_inserter(ball->border), [border](QGraphicsEllipseItem *e) {
 			bool remove = e->isSelected();
 			if(remove) delete e;
 			return !remove;
@@ -250,19 +326,16 @@ void MainWindow::deleteSelected() {
 
 void MainWindow::changeSphere(QListWidgetItem *current, QListWidgetItem */*previous*/) {
 
-	for(auto &ball: balls)
-		ball.second.setActive(false);
+	for(auto &ball: project.balls)
+		ball.second->setActive(false);
 
 	int current_id = current->data(Qt::UserRole).toInt();
-	Ball &ball = balls[current_id];
-	ball.setActive(true);
-
-
+	project.balls[current_id]->setActive(true);
 }
 
 int MainWindow::addSphere() {
-	for(auto &ball: balls)
-		ball.second.setActive(false);
+	for(auto &ball: project.balls)
+		ball.second->setActive(false);
 
 	ignore_scene_changes = true;
 	std::set<int> used;
@@ -277,11 +350,11 @@ int MainWindow::addSphere() {
 	auto *item = new QListWidgetItem(QString("Shere %1").arg(id+1), ui->sphereList);
 	item->setSelected(true);
 	item ->setData(Qt::UserRole, id);
-	balls[id] = Ball(images.size());
+	project.balls[id] = new Ball(project.size());
 	QPen outlinePen(Qt::yellow);
 	outlinePen.setCosmetic(true);
-	balls[id].circle = scene->addEllipse(0, 0, 1, 1, outlinePen);
-	balls[id].circle->setVisible(false);
+	project.balls[id]->circle = scene->addEllipse(0, 0, 1, 1, outlinePen);
+	project.balls[id]->circle->setVisible(false);
 
 	QPen highpen(Qt::red);
 	highpen.setWidth(3);
@@ -295,32 +368,33 @@ int MainWindow::addSphere() {
 	high->setFlag(QGraphicsItem::ItemIsSelectable);
 	high->setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
 	scene->addItem(high);
-	balls[id].highlight = high;
+	project.balls[id]->highlight = high;
 	return id;
 }
 
 void MainWindow::removeSphere() {
 	for(auto a: ui->sphereList->selectedItems()) {
 		int id = a->data(Qt::UserRole).toInt();
-		Ball &ball = balls[id];
-		for(auto e: ball.border)
+		Ball *ball = project.balls[id];
+		for(auto e: ball->border)
 			delete e;
-		if(ball.circle)
-			delete ball.circle;
-		if(ball.highlight)
-			delete ball.highlight;
-		balls.erase(id);
+		if(ball->circle)
+			delete ball->circle;
+		if(ball->highlight)
+			delete ball->highlight;
+		delete ball;
+		project.balls.erase(id);
 	}
 	qDeleteAll(ui->sphereList->selectedItems());
 }
 
 
 void MainWindow::process() {
-	progress = new QProgressDialog("Looking for highlights...", "Cancel", 0, images.size(), this);
+	progress = new QProgressDialog("Looking for highlights...", "Cancel", 0, project.size(), this);
 
 	QThreadPool::globalInstance()->setMaxThreadCount(1);
 	progress_jobs.clear();
-	for(int i = 0; i < images.size(); i++)
+	for(size_t i = 0; i < project.size(); i++)
 		progress_jobs.push_back(i);
 	//0 -> ok, 1 -> could not open 2 -> flipped, 3-> wrong resolution
 	QFuture<void> future = QtConcurrent::map(progress_jobs, [&](int i) -> int { return processImage(i); });
@@ -346,39 +420,35 @@ void MainWindow::finishedProcess() {
 		return;
 	}
 
+	project.computeDirections();
 	auto selected = ui->imageList->selectedItems();
-	if(selected.size() == 0) {
-		cerr << "Porca paletta!" << endl;
+	if(selected.size() == 0)
 		return;
-	}
 	openImage(selected[0]);
 }
 
 int MainWindow::processImage(int n) {
-	if(n < 0 || n >= int(valid.size())) {
-			cerr << "Failed!" << endl;
-			return 0;
-	}
-	if(!valid[size_t(n)]) return 0;
+	if(project.images1[size_t(n)].skip) return 0;
 
-	QString filename = images[n];
-	QImage img(dir.filePath(filename));
+	QString filename = project.images1[n].filename;
+	QImage img(project.dir.filePath(filename));
 	if(img.isNull()) {
-		notloaded.push_back(images[n]);
+		notloaded.push_back(project.images1[n].filename);
 		return 0;
 	}
-	if(img.size() != imgsize) {
-		if(img.size() == imgsize.transposed())
-			flipped.push_back(images[n]);
+	if(img.size() != project.imgsize) {
+		if(img.size() == project.imgsize.transposed())
+			flipped.push_back(project.images1[n].filename);
 		else
-			resolution.push_back(images[n]);
+			resolution.push_back(project.images1[n].filename);
 		return 0;
 	}
 
 
-	for(auto &it: balls) {
-		if(it.second.fitted)
-			it.second.findHighlight(img, n);
+	for(auto &it: project.balls) {
+		if(it.second->fitted) {
+			it.second->findHighlight(img, n);
+		}
 	}
 	return 1;
 }
@@ -410,106 +480,112 @@ void MainWindow::loadLP() {
 		return;
 	}
 	QTextStream stream(&file);
-	std::vector<Vector3f> directions;
+
 	size_t n;
 	stream >> n;
+
 	vector<QString> filenames;
+	std::vector<Vector3f> directions;
 
 	for(size_t i = 0; i < n; i++) {
 		QString s;
 		Vector3f light;
 		stream >> s >> light[0] >> light[1] >> light[2];
 		directions.push_back(light);
+
+		//we keep only the filename (not the path)
+		QFileInfo info(s);
+		s = info.fileName();
 		filenames.push_back(s);
 	}
 
-	if(images.size() == 0) {
-		QFileInfo info(lp);
-		QDir tmp_dir = info.dir();
-		QStringList img_ext;
-		img_ext << "*.jpg" << "*.JPG";
-		QStringList tmp_images = tmp_dir.entryList(img_ext);
-		while(tmp_images.size() != int(filenames.size())) {
-			QMessageBox::information(this, "Loading images", "Select a directory containing the image");
-			QString folder = QFileDialog::getExistingDirectory(this, "Select a directory for images", dir.path());
-			if(folder.isEmpty()) return;
-			dir = QDir(folder);
-			tmp_images = tmp_dir.entryList(img_ext);
-			if(tmp_images.size() != int(filenames.size())) {
-				auto response = QMessageBox::question(this, "Light directions and images",
-					QString("The folder contains %1 images, the .lp file specify %1 images.\n Select another folder.")
-							.arg(tmp_images.size()).arg(filenames.size()));
-				if(response == QMessageBox::Cancel || response == QMessageBox::No)
-					return;
-			}
-		}
 
-		bool names_match = true;
-		for(size_t i = 0; i < filenames.size(); i++) {
-			QFileInfo fileinfo(filenames[i]);
-			if(fileinfo.fileName() != tmp_images[int(i)]) {
-				names_match = false;
-				break;
-			}
-		}
-		if(names_match == false) {
-			auto response = QMessageBox::question(this, "Light directions and images",
-				"Filenames in .lp do not match with images in the .lp directory. Do you want to just use the filename order?");
-			if(response == QMessageBox::Cancel || response == QMessageBox::No)
-				return;
-		}
-		init(info.dir().path());
-	} else {
-		if(int(filenames.size()) != images.size()) {
-			QMessageBox::critical(this, "Cannot load .lp file:", QString("The folder contains %1 images, the .lp file specify %1 images. Select another lp").arg(images.size()).arg(filenames.size()));
+	if(project.size() != filenames.size()) {
+		auto response = QMessageBox::question(this, "Light directions and images",
+			QString("The folder contains %1 images, the .lp file specify %1 images.\n")
+					.arg(project.size()).arg(filenames.size()));
+		if(response == QMessageBox::Cancel || response == QMessageBox::No)
 			return;
+	}
+
+	vector<Vector3f> ordered_dir(directions.size());
+	bool success = true;
+	for(size_t i = 0; i < filenames.size(); i++) {
+		QString &s = filenames[i];
+		int pos = project.indexOf(s);
+		if(pos == -1) {
+			success = false;
+			break;
 		}
+		ordered_dir[pos] = directions[i];
 	}
 
-
-	vector<bool> valid(directions.size());
-	for(uint i = 0; i < directions.size(); i++) {
-		Vector3f d = directions[i];
-		valid[i] = (d[0] != 0.0f || d[1] != 0.0f || d[2] != 0.0f);
+	if(success) {
+		for(size_t i = 0; i < project.size(); i++)
+			project.images1[i].direction = ordered_dir[i];
+	} else {
+		auto response = QMessageBox::question(this, "Light directions and images",
+			"Filenames in .lp do not match with images in the .lp directory. Do you want to just use the filename order?");
+		if(response == QMessageBox::Cancel || response == QMessageBox::No)
+			return;
+		for(size_t i = 0; i < project.size(); i++)
+			project.images1[i].direction = directions[i];
 	}
-
-	if(balls[0].border.size() == 0) {
-		balls[0].only_directions = true;
-		balls[0].directions = directions;
-		balls[0].valid = valid;
+/*
+	if(project.balls[0].border.size() == 0) {
+		Ball &ball = project.balls[0];
+		ball.only_directions = true;
+		ball.directions = directions;
+		ball.valid = valid;
 		
 	} else {
 		int id = addSphere();
-		balls[id].only_directions = true;
-		balls[id].directions = directions;
-		balls[id].valid = valid;
-	}
-
-
+		Ball &ball = project.balls[id];
+		ball.only_directions = true;
+		ball.directions = directions;
+		ball.valid = valid;
+	} */
 }
 void MainWindow::saveLPs() {
 	int count = 0;
 	QString basename = "sphere";
-	for(auto it: balls) {
+	for(auto it: project.balls) {
 		QString filename = basename;
 		if(count > 0)
 			filename += QString::number(count++);
 		filename += ".lp";
 
-		Ball ball = it.second;
-		filename = dir.filePath(filename);
-		ball.saveLP(filename, images);
+		Ball *ball = it.second;
+		filename = project.dir.filePath(filename);
+		ball->computeDirections();
+		project.saveLP(filename, ball->directions);
+		//ball->saveLP(filename, project.images1);
 	}
 }
 
 void MainWindow::exportRTI() {
+	if(!project.size())
+		project.computeDirections();
+
+	QStringList nodir;
+	for(size_t i = 0; i < project.size(); i++) {
+		if(project.images1[i].skip)
+			continue;
+
+		if(project.images1[i].direction.isZero())
+			nodir.push_back(project.images1[i].filename);
+	}
+	if(nodir.size()) {
+		QMessageBox::critical(this, "Could not export RTI.", "Some images lack a light direction: " + nodir.join(", "));
+		return;
+	}
+
+
 	//should init with saved preferences.
-	rtiexport->setImages(images);
+	rtiexport->setImages(project.images());
 	rtiexport->showImage(imagePixmap->pixmap());
-	Ball &ball = (*balls.begin()).second;
-	ball.computeDirections();
-	rtiexport->lights = ball.directions;
-	rtiexport->path = dir.path();
+	rtiexport->lights = project.directions();
+	rtiexport->path = project.dir.path();
 	rtiexport->show();
 	rtiexport->exec();
 }
