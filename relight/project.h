@@ -24,7 +24,7 @@ class Project {
 public:
 
 	Project() {}
-	~Project() { for(auto b: balls) delete b.second; }
+	~Project() { for(auto b: balls) delete b.second; balls.clear(); }
 	void load(QString filename);
 	void save(QString filename);
 	void saveLP(QString filename, std::vector<Vector3f> &directions);
