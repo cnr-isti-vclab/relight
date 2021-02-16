@@ -45,6 +45,8 @@ Ball::~Ball() {
 		delete highlight;
 	for(auto b: border)
 		delete b;
+	if(sphere)
+		delete sphere;
 }
 
 void Ball::resetHighlight(size_t n) {
@@ -137,8 +139,11 @@ bool Ball::fit(QSize imgsize) {
 
 
 void Ball::findHighlight(QImage img, int n) {
-	sphere = QImage(inner.width(), inner.height(), QImage::Format_ARGB32);
-	sphere.fill(0);
+	//TODO hack!
+	if(n == 0) {
+		sphereImg = QImage(inner.width(), inner.height(), QImage::Format_ARGB32);
+		sphereImg.fill(0);
+	}
 	uchar threshold = 220;
 
 	QPointF bari(0, 0); //in image coords
@@ -160,10 +165,10 @@ void Ball::findHighlight(QImage img, int n) {
 				QRgb c = img.pixel(x, y);
 				int g = qGray(c);
 
-				int mg = qGray(sphere.pixel(X, Y));
-				assert(X < sphere.width());
-				assert(Y < sphere.height());
-				if(g > mg) sphere.setPixel(X, Y, qRgb(g, g, g));
+				int mg = qGray(sphereImg.pixel(X, Y));
+				assert(X < sphereImg.width());
+				assert(Y < sphereImg.height());
+				if(g > mg) sphereImg.setPixel(X, Y, qRgb(g, g, g));
 
 				if(g < threshold) continue;
 
@@ -181,7 +186,6 @@ void Ball::findHighlight(QImage img, int n) {
 
 	//find biggest spot by removing outliers.
 	int radius = ceil(0.5*inner.width());
-	QPoint center = inner.center();
 	while(radius > ceil(0.02*inner.width())) {
 		QPointF newbari(0, 0); //in image coords
 		double weight = 0.0;
@@ -203,10 +207,10 @@ void Ball::findHighlight(QImage img, int n) {
 				QRgb c = img.pixel(x, y);
 				int g = qGray(c);
 
-				int mg = qGray(sphere.pixel(X, Y));
-				assert(X < sphere.width());
-				assert(Y < sphere.height());
-				if(g > mg) sphere.setPixel(X, Y, qRgb(g, g, g));
+				int mg = qGray(sphereImg.pixel(X, Y));
+				assert(X < sphereImg.width());
+				assert(Y < sphereImg.height());
+				if(g > mg) sphereImg.setPixel(X, Y, qRgb(g, g, g));
 
 				if(g < threshold) continue;
 
@@ -217,6 +221,14 @@ void Ball::findHighlight(QImage img, int n) {
 		if(!weight) break;
 		bari = newbari/weight;
 		radius *= 0.5;
+	}
+
+	if(!sphere) {
+		sphere = new QGraphicsPixmapItem(QPixmap::fromImage(sphereImg));
+		sphere->setZValue(-0.5);
+		sphere->setPos(inner.topLeft());
+	} else {
+		sphere->setPixmap(QPixmap::fromImage(sphereImg));
 	}
 
 	lights[n] = bari;

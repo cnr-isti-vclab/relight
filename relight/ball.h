@@ -58,7 +58,8 @@ public:
 
 	QGraphicsEllipseItem *circle = nullptr;
 	HighlightPoint *highlight = nullptr;
-	QImage sphere;
+	QImage sphereImg;
+	QGraphicsPixmapItem *sphere = nullptr;
 
 	Ball();
 	~Ball();

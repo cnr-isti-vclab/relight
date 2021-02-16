@@ -40,7 +40,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->removeSphere,   SIGNAL(clicked(bool)),                this, SLOT(removeSphere()));
 	connect(ui->process,        SIGNAL(clicked(bool)),                this, SLOT(process()));
 	connect(ui->actionSave_LP, SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
-	connect(ui->loadLP, SIGNAL(clicked(bool)), this, SLOT(loadLP()));
+	connect(ui->showSpheres, SIGNAL(clicked(bool)), this, SLOT(showSpheres(bool)));
 	connect(ui->actionHelp, SIGNAL(triggered(bool)), this, SLOT(showHelp()));
 
 
@@ -162,7 +162,7 @@ void MainWindow::enableActions() {
 
 	ui->addSphere->setEnabled(true);
 	ui->removeSphere->setEnabled(true);
-	ui->loadLP->setEnabled(true);
+	ui->showSpheres->setEnabled(true);
 	if(project.hasDirections())
 		ui->actionSave_LP->setEnabled(true);
 }
@@ -191,7 +191,7 @@ bool MainWindow::init() {
 	ui->addSphere->setEnabled(true);
 	ui->removeSphere->setEnabled(true);
 	ui->process->setEnabled(true);
-	ui->loadLP->setEnabled(true);
+	ui->showSpheres->setEnabled(true);
 	ui->saveLP->setEnabled(true);
 	return true;
 }
@@ -229,6 +229,7 @@ void MainWindow::openImage(QListWidgetItem *item, bool fit) {
 }
 
 void MainWindow::showHighlights(size_t n) {
+	ignore_scene_changes = true;
 	for(auto it: project.balls) {
 		Ball *ball = it.second;
 		if(!ball->fitted)
@@ -247,6 +248,19 @@ void MainWindow::showHighlights(size_t n) {
 			ball->highlight->setPos(ball->inner.center());
 			ball->highlight->setBrush(Qt::red);
 		}
+	}
+	ignore_scene_changes = false;
+}
+
+void MainWindow::showSpheres(bool show) {
+	for(auto it: project.balls) {
+		Ball *ball = it.second;
+		if(!ball->sphere)
+			continue;
+		if(show)
+			scene->addItem(ball->sphere);
+		else
+			scene->removeItem(ball->sphere);
 	}
 }
 
@@ -314,6 +328,9 @@ void MainWindow::updateBorderPoints() {
 }
 
 void MainWindow::updateHighlight() {
+	if(ignore_scene_changes)
+		return;
+
 	size_t n = size_t(currentImage);
 	for(auto &it: project.balls) {
 		Ball *ball = it.second;
@@ -366,12 +383,13 @@ int MainWindow::addSphere() {
 	for(int i = 0; i < ui->sphereList->count(); ++i)
 		used.insert(ui->sphereList->item(i)->data(Qt::UserRole).toInt());
 
-	int id = 0;
+	int id = 0;;
 	while(used.count(id))
 		id++;
 	Ball *ball = new Ball(project.size());
 	project.balls[id] = ball;
 	setupSphere(id, ball);
+	ignore_scene_changes = false;
 	return id;
 }
 
@@ -406,7 +424,7 @@ void MainWindow::setupSphere(int id, Ball *ball) {
 	QPen pen;
 	pen.setColor(Qt::transparent);
 	pen.setWidth(0);
-	high->setPen(pen);
+	high->setPen(pen);;
 	high->setBrush(Qt::green);
 	high->setFlag(QGraphicsItem::ItemIsMovable);
 	high->setFlag(QGraphicsItem::ItemIsSelectable);
