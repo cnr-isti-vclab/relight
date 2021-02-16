@@ -41,6 +41,8 @@ Ball::Ball() {}
 Ball::~Ball() {
 	if(circle)
 		delete circle;
+	if(smallcircle)
+		delete smallcircle;
 	if(highlight)
 		delete highlight;
 	for(auto b: border)
@@ -60,12 +62,16 @@ void Ball::setActive(bool _active) {
 	pen.setCosmetic(true);
 	pen.setColor(active? Qt::yellow : Qt::lightGray);
 	if(!active) {
-		QVector<qreal> dashes;
-		dashes << 4 << 4;
-		pen.setDashPattern(dashes);
+
 	}
 
 	if(circle) circle->setPen(pen);
+
+	QVector<qreal> dashes;
+	dashes << 4 << 4;
+	pen.setDashPattern(dashes);
+
+	if(smallcircle) smallcircle->setPen(pen);
 	for(auto p: border)
 		p->setPen(pen);
 

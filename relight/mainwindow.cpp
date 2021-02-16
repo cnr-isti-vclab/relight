@@ -311,17 +311,23 @@ void MainWindow::pointPicked(QPoint p) {
 void MainWindow::updateBorderPoints() {
 
 	for(auto &it: project.balls) {
+		//TODO make a ball function
 		Ball *ball = it.second;
 
 		ball->circle->setVisible(false);
+		ball->smallcircle->setVisible(false);
 
 		if(ball->border.size() >= 3) {
 			bool fitted = ball->fit(project.imgsize);
 			if(fitted) {
 				QPointF c = ball->center;
-				double r = double(ball->radius);
-				ball->circle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
+				double R = double(ball->radius);
+				double r = double(ball->smallradius);
+				ball->circle->setRect(c.x()-R, c.y()-R, 2*R, 2*R);
 				ball->circle->setVisible(true);
+				ball->smallcircle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
+				ball->smallcircle->setVisible(true);
+
 			}
 		}
 	}
@@ -409,13 +415,18 @@ void MainWindow::setupSphere(int id, Ball *ball) {
 	QPen outlinePen(Qt::yellow);
 	outlinePen.setCosmetic(true);
 	ball->circle = scene->addEllipse(0, 0, 1, 1, outlinePen);
-	if(ball->center.isNull())
+	ball->smallcircle = scene->addEllipse(0, 0, 1, 1, outlinePen);
+	if(ball->center.isNull()) {
 		ball->circle->setVisible(false);
-	else {
+		ball->smallcircle->setVisible(false);
+	} else {
 		QPointF c = ball->center;
-		double r = double(ball->radius);
-		ball->circle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
+		double R = double(ball->radius);
+		double r = double(ball->smallradius);
+		ball->circle->setRect(c.x()-R, c.y()-R, 2*R, 2*R);
 		ball->circle->setVisible(true);
+		ball->smallcircle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
+		ball->smallcircle->setVisible(true);
 	}
 
 
