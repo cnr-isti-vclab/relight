@@ -57,6 +57,7 @@ public:
 	std::vector<BorderPoint *> border;
 
 	QGraphicsEllipseItem *circle = nullptr;
+	QGraphicsEllipseItem *smallcircle = nullptr;
 	HighlightPoint *highlight = nullptr;
 	QImage sphereImg;
 	QGraphicsPixmapItem *sphere = nullptr;
