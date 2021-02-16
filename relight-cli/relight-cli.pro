@@ -1,4 +1,4 @@
-QT += core
+QT += core concurrent
 
 TARGET = relight-cli
 CONFIG += console
