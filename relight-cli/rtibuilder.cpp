@@ -9,6 +9,11 @@
 #include <QStringList>
 #include <QTextStream>
 #include <QImage>
+#include <QElapsedTimer>
+#include <QRunnable>
+#include <QThreadPool>
+#include <QtConcurrent>
+#include <QFuture>
 #include "../src/jpeg_decoder.h"
 #include "../src/jpeg_encoder.h"
 
@@ -880,7 +885,6 @@ Vector3f extractMean(Color3f *pixels, int n) {
 		m[0] += c[0];
 		m[1] += c[1];
 		m[2] += c[2];
-		break;
 	}
 	return Vector3f(m[0]/n, m[1]/n, m[2]/n);
 }
@@ -924,7 +928,7 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 			 l1[0], l1[1], l1[2],
 			 l2[0], l2[1], l2[2];
 
-		T = T.inverse();
+		T = T.inverse().eval();
 
 		w0 = lightWeights(l0[0], l0[1]);
 		w1 = lightWeights(l1[0], l1[1]);
@@ -942,7 +946,6 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 			bright[1] += w1[p/3]*pri[p] + w1[p/3]*pri[p+1] + w1[p/3]*pri[p+2];
 			bright[2] += w2[p/3]*pri[p] + w2[p/3]*pri[p+1] + w2[p/3]*pri[p+2];
 		}
-
 	}
 	else if (colorspace == MRGB) { //seems like weights are multiplied by 255 in rbf!
 		bright[0] = w0[0] + w0[1] + w0[2];
@@ -969,6 +972,36 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 
 	return n;
 }
+
+
+class Worker {
+public:
+	RtiBuilder &b;
+	vector<vector<uint8_t>> line;
+	vector<uchar> normals;
+	vector<uchar> means;
+	vector<uchar> medians;
+	PixelArray sample;
+	PixelArray resample;
+
+
+	Worker(RtiBuilder &_builder): b(_builder) {
+		uint32_t njpegs = (b.nplanes-1)/3 + 1;
+		line.resize(njpegs);
+		for(auto &p: line)
+			p.resize(b.width*3, 0);
+		normals.resize(b.width*3);
+		means.resize(b.width*3);
+		medians.resize(b.width*3);
+		sample.resize(b.width, b.lights.size());
+		resample.resize(b.width, b.ndimensions);
+		//setAutodelete(false);
+	}
+
+	void run() {
+		b.processLine(sample, resample, line, normals, means, medians);
+	}
+};
 
 size_t RtiBuilder::save(const string &output, int quality) {
 	uint32_t dim = ndimensions*3;
@@ -1187,28 +1220,67 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		}
 	}
 
+	size_t nworkers = 8;
+	vector<Worker *> workers(height, nullptr);
+	for(size_t i = 0; i < nworkers; i++) {
+		workers[i] = new Worker(*this);
+	}
+	vector<QFuture<void>> futures(height);
 
+	QThreadPool pool;
+	pool.setMaxThreadCount(nworkers);
 
+	QElapsedTimer timer;
+	timer.start();
 
-	for(uint32_t y = 0; y < height; y++) {
+	for(uint32_t y = 0; y < height + nworkers; y++) {
 		if(callback) {
-			bool keep_going = (*callback)("Saving...", 100*y/height);
+			bool keep_going = (*callback)("Saving...", 100*(y)/height);
 			if(!keep_going) {
 				cout << "TODO: clean up directory, we are already saving!" << endl;
 				throw 1;
 			}
 		}
+		if(y >= nworkers) {
+			futures[y - nworkers].waitForFinished();
 
-		imageset.readLine(sample);
+			Worker *doneworker = workers[y - nworkers];
 
-		for(uint32_t x = 0; x < width; x++)
-			resamplePixel(sample(x), resample(x));
-		
+			for(uint32_t x = 0; x < width; x++) {
+				if (savenormals)
+					normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], doneworker->normals[x*3+1], doneworker->normals[x*3+2]));
+				if(savemeans)
+					means.setPixel(x, y- nworkers, qRgb(doneworker->means[x*3], doneworker->means[x*3+1], doneworker->means[x*3+2]));
+				if(savemedians)
+					medians.setPixel(x, y- nworkers, qRgb(doneworker->medians[x*3], doneworker->medians[x*3+1], doneworker->medians[x*3+2]));
+			}
+			for(size_t j = 0; j < encoders.size(); j++)
+				encoders[j]->writeRows(doneworker->line[j].data(), 1);
+			if(y < height)
+				workers[y] = doneworker;
+			else
+				delete doneworker;
+		}
+
+		if(y < height) {
+			Worker *worker = workers[y];
+			assert(worker != nullptr);
+
+			imageset.readLine(worker->sample);
+
+			futures[y] = QtConcurrent::run(&pool, [worker](){worker->run(); });
+		}
+
+
+
+
+
+
 		//classify samples
 		//lower error but increase size of the files (why?)
 		//getPixelBestMaterial(resample, indices);
-		getPixelMaterial(resample, indices);
-		
+		//getPixelMaterial(resample, indices);
+		/*
 		for(uint32_t x = 0; x < width; x++) {
 			uint32_t m = indices[x];
 			Material &mat = materials[m];
@@ -1252,11 +1324,9 @@ size_t RtiBuilder::save(const string &output, int quality) {
 					}
 				}
 			}
-		}
-		
-		for(size_t j = 0; j < encoders.size(); j++)
-			encoders[j]->writeRows(line[j].data(), 1);
+		}*/
 	}
+	cout << "Done: " << timer.restart() << endl;
 
 
 
@@ -1292,6 +1362,62 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	total += infoinfo.size();
 	
 	return total;
+}
+
+void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vector<std::vector<uint8_t>> &line,
+							 std::vector<uchar> &normals, std::vector<uchar> &means, std::vector<uchar> &medians) {
+
+	for(uint32_t x = 0; x < width; x++)
+		resamplePixel(sample(x), resample(x));
+
+
+	for(uint32_t x = 0; x < width; x++) {
+		Material &mat = materials[0];
+
+		vector<float> pri = toPrincipal(0, (float *)(resample(x)));
+
+		if (savenormals) {
+			Vector3f n = getNormalThreeLights(pri);
+			normals[x*3+0] = 255*n[0];
+			normals[x*3+1] = 255*n[1];
+			normals[x*3+2] = 255*n[2];
+		}
+
+		if(savemeans) {
+			Vector3f n = extractMean(sample(x), lights.size());
+			means[x*3+0] = n[0];
+			means[x*3+1] = n[1];
+			means[x*3+2] = n[2];
+		}
+
+		if(savemedians) {
+			Vector3f n = extractMedian(sample(x), lights.size());
+			medians[x*3+0] = n[0];
+			medians[x*3+1] = n[1];
+			medians[x*3+2] = n[2];
+		}
+
+		if(colorspace == LRGB){
+
+			for(uint32_t j = 0; j < nplanes/3; j++) {
+				for(uint32_t c = 0; c < 3; c++) {
+					uint32_t p = j*3 + c;
+					if(j >= 1)
+						pri[p] = mat.planes[p].quantize(pri[p]);
+					line[j][x*3 + c] = pri[p];
+				}
+			}
+
+		} else {
+
+			for(uint32_t j = 0; j < nplanes/3; j++) {
+				for(uint32_t c = 0; c < 3; c++) {
+					uint32_t p = j*3 + c;
+					line[j][x*3 + c] = mat.planes[p].quantize(pri[p]);
+				}
+			}
+		}
+	}
 }
 
 /*

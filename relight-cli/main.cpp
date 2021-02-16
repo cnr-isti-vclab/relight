@@ -32,9 +32,9 @@ void help() {
     cout << "\t-y <int>  : number of Y planes in YCC\n\n";
 
     //	cout << "\t-m <int>  : number of materials (default 8)\n";
-    cout << "\t-n <int>  : extract normals\n";
-    cout << "\t-m <int>  : extract mean image\n";
-    cout << "\t-M <int>  : extract median image (7/8th quantile) \n";
+	cout << "\t-n        : extract normals\n";
+	cout << "\t-m        : extract mean image\n";
+	cout << "\t-M        : extract median image (7/8th quantile) \n";
 
 	cout << "\t-k <int>x<int>+<int>+<int>: Kropping extracts only the widthxheight+offx+offy part\n";
 

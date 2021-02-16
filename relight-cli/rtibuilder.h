@@ -41,6 +41,10 @@ public:
 	size_t save(const std::string &output, int quality = 95);
 	bool saveJSON(QDir &dir, int quality);
 
+
+	void processLine(PixelArray &sample, PixelArray &resample, std::vector<std::vector<uint8_t>> &line,
+					 std::vector<uchar> &normal, std::vector<uchar> &mean, std::vector<uchar> &median);
+
 protected:
 	//for each resample pos get coeffs from the origina lights.
 	std::vector<std::vector<std::pair<int, float>>> resamplemap;
@@ -54,10 +58,10 @@ protected:
 	std::vector<MaterialBuilder> materialbuilders;
 	//std::vector<Material> materials;
 
+
 	PixelArray resamplePixels(PixelArray &samples);
 	void resamplePixel(Color3f *sample, Color3f *pixel);
 	Vector3f getNormalThreeLights(std::vector<float> &pri); //use 3 virtual lights at 45 degs.
-
 
 	void buildResampleMap();
 	void pickMaterials(PixelArray &sample);
