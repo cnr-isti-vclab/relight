@@ -106,9 +106,9 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="loadLP">
+         <widget class="QPushButton" name="showSpheres">
           <property name="enabled">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
           <property name="toolTip">
            <string>Load light directions .lp file</string>
@@ -118,7 +118,10 @@
           </property>
           <property name="icon">
            <iconset resource="icons.qrc">
-            <normaloff>:/icons/gtango/document-open.svg</normaloff>:/icons/gtango/document-open.svg</iconset>
+            <normaloff>:/icons/gtango/spherelight.svg</normaloff>:/icons/gtango/spherelight.svg</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
           </property>
          </widget>
         </item>

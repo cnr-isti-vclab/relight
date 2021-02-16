@@ -81,6 +81,7 @@ public slots:
 	void setupSpheres();
 	void setupSphere(int id, Ball *ball);
 	int addSphere();
+	void showSpheres(bool show);
 
 	void removeSphere();
 	void showHighlights(size_t n);
@@ -104,6 +105,7 @@ private:
 	HelpDialog *help = nullptr;
 	RTIScene *scene = nullptr;
 	QGraphicsPixmapItem *imagePixmap = nullptr;
+
 	bool ignore_scene_changes = false;
 	QStringList notloaded; //used for looking for highlights and return status.
 	QStringList flipped;

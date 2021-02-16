@@ -20,6 +20,7 @@
         <file>gtango/zoom-out.svg</file>
         <file>gtango/folder-new.svg</file>
         <file>gtango/save.svg</file>
+        <file>gtango/spherelight.svg</file>
     </qresource>
     <qresource prefix="/docs">
         <file>docs/help.html</file>
