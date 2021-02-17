@@ -54,6 +54,7 @@ public:
 	std::vector<Vector3f> directions;  //
 	//std::vector<bool> valid;
 
+	std::vector<std::vector<int>>histogram;
 	std::vector<BorderPoint *> border;
 
 	QGraphicsEllipseItem *circle = nullptr;

@@ -75,6 +75,8 @@ public slots:
 	void updateBorderPoints();
 	void updateHighlight();
 
+	void imagesContextMenu(QPoint);
+	void spheresContextMenu(QPoint);
 
 
 	void changeSphere(QListWidgetItem *current, QListWidgetItem *previous);
@@ -87,6 +89,7 @@ public slots:
 	void showHighlights(size_t n);
 
 	void process();
+	void processCurrentSphere();
 	void cancelProcess();
 	void finishedProcess();
 
@@ -107,6 +110,7 @@ private:
 	QGraphicsPixmapItem *imagePixmap = nullptr;
 
 	bool ignore_scene_changes = false;
+	int sphere_to_process = -1;
 	QStringList notloaded; //used for looking for highlights and return status.
 	QStringList flipped;
 	QStringList resolution;

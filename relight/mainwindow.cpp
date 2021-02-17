@@ -32,16 +32,24 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	connect(ui->actionSave,       SIGNAL(triggered(bool)),              this, SLOT(saveProject()));
 	connect(ui->actionSave_as,    SIGNAL(triggered(bool)),              this, SLOT(saveProjectAs()));
+	connect(ui->actionExit,       SIGNAL(triggered(bool)),              this, SLOT(quit()));
+
 	connect(ui->actionPrevious,   SIGNAL(triggered(bool)),              this, SLOT(previous()));
 	connect(ui->actionNext,       SIGNAL(triggered(bool)),              this, SLOT(next()));
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)), this, SLOT(exportRTI()));
 
-	connect(ui->addSphere,      SIGNAL(clicked(bool)),                this, SLOT(addSphere()));
-	connect(ui->removeSphere,   SIGNAL(clicked(bool)),                this, SLOT(removeSphere()));
-	connect(ui->process,        SIGNAL(clicked(bool)),                this, SLOT(process()));
-	connect(ui->actionSave_LP, SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
-	connect(ui->showSpheres, SIGNAL(clicked(bool)), this, SLOT(showSpheres(bool)));
-	connect(ui->actionHelp, SIGNAL(triggered(bool)), this, SLOT(showHelp()));
+	connect(ui->addSphere,        SIGNAL(clicked(bool)),                this, SLOT(addSphere()));
+	connect(ui->removeSphere,     SIGNAL(clicked(bool)),                this, SLOT(removeSphere()));
+	connect(ui->process,          SIGNAL(clicked(bool)),                this, SLOT(process()));
+	connect(ui->actionSave_LP,    SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
+	connect(ui->showSpheres,      SIGNAL(clicked(bool)), this, SLOT(showSpheres(bool)));
+	connect(ui->actionHelp,       SIGNAL(triggered(bool)), this, SLOT(showHelp()));
+
+	ui->imageList->setContextMenuPolicy(Qt::CustomContextMenu);
+	connect(ui->imageList, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(imagesContextMenu(QPoint)));
+
+	ui->sphereList->setContextMenuPolicy(Qt::CustomContextMenu);
+	connect(ui->sphereList, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(spheresContextMenu(QPoint)));
 
 
 	//connect(ui->actionProcess,  SIGNAL(triggered(bool)),            this, SLOT(process()));
@@ -179,7 +187,7 @@ bool MainWindow::init() {
 	//create the items (name and TODO thumbnail
 	int count = 0;
 	for(Image &a: project.images1) {
-		auto *item = new QListWidgetItem(a.filename, ui->imageList);
+		auto *item = new QListWidgetItem(QString("%1 - %2").arg(count+1).arg(a.filename), ui->imageList);
 		item ->setData(Qt::UserRole, count++);
 	}
 
@@ -201,7 +209,8 @@ void MainWindow::openImage(QListWidgetItem *item, bool fit) {
 		return;
 
 	ui->imageList->setCurrentItem(item);
-	QString filename = item->text();
+	int id = item->data(Qt::UserRole).toInt();
+	QString filename = project.images1[id].filename;//item->text();
 
 	QImage img(project.dir.filePath(filename));
 	if(img.isNull()) {
@@ -458,6 +467,39 @@ void MainWindow::removeSphere() {
 	qDeleteAll(ui->sphereList->selectedItems());
 }
 
+void MainWindow::imagesContextMenu(QPoint) {
+
+}
+void MainWindow::spheresContextMenu(QPoint pos) {
+	auto *item = ui->sphereList->itemAt(pos);
+	if(!item) return;
+	ui->sphereList->setCurrentItem(item);
+
+	QMenu myMenu;
+	myMenu.addAction("Find highlights",  this, SLOT(processCurrentSphere()));
+	myMenu.addAction("Insert", this, SLOT(addSphere()));
+	myMenu.addSeparator();
+	myMenu.addAction("RemoveThisSphere",  this, SLOT(removeSphere()));
+
+
+	myMenu.exec(mapToGlobal(pos));
+}
+
+
+void MainWindow::processCurrentSphere() {
+	for(auto a: ui->sphereList->selectedItems()) {
+		int id = a->data(Qt::UserRole).toInt();
+		assert(project.balls.count(id));
+		Ball *ball = project.balls[id];
+		if(!ball->fitted) {
+			QMessageBox::critical(this, "Sorry can't do.", "This sphere has no center or radius!");
+			return;
+		}
+		sphere_to_process = id;
+		break;
+	}
+	process();
+}
 
 void MainWindow::process() {
 	progress = new QProgressDialog("Looking for highlights...", "Cancel", 0, project.size(), this);
@@ -490,6 +532,20 @@ void MainWindow::finishedProcess() {
 		return;
 	}
 
+#ifdef NDEBUG
+	//histogram for highlight threshold
+	for(auto it: project.balls) {
+		Ball *ball = it.second;
+		cout << "Ball " << it.first << "\n";
+		for(size_t i = 0; i < ball->histogram.size(); i++) {
+			cout << "Light: " << i << " ";
+			for(int n: ball->histogram[i])
+				cout << n << " ";
+			cout << "\n";
+		}
+		cout << endl;
+	}
+#endif
 	project.computeDirections();
 	auto selected = ui->imageList->selectedItems();
 	if(selected.size() == 0)
@@ -516,6 +572,8 @@ int MainWindow::processImage(int n) {
 
 
 	for(auto &it: project.balls) {
+		if(sphere_to_process != -1 && sphere_to_process != it.first)
+			continue;
 		if(it.second->fitted) {
 			it.second->findHighlight(img, n);
 		}
@@ -524,7 +582,9 @@ int MainWindow::processImage(int n) {
 }
 
 void MainWindow::quit() {
-
+	int res = QMessageBox::question(this, "Closing relight.", "Sure?");
+	if(res == QMessageBox::Yes)
+		exit(0);
 }
 
 /*load LP:
