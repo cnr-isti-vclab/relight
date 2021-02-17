@@ -145,12 +145,15 @@ bool Ball::fit(QSize imgsize) {
 
 
 void Ball::findHighlight(QImage img, int n) {
+	if(n == 0) histogram.clear();
 	//TODO hack!
 	if(n == 0) {
 		sphereImg = QImage(inner.width(), inner.height(), QImage::Format_ARGB32);
 		sphereImg.fill(0);
 	}
-	uchar threshold = 220;
+	uchar threshold = 230;
+
+	vector<int> histo;
 
 	QPointF bari(0, 0); //in image coords
 	int count = 0;
@@ -183,11 +186,20 @@ void Ball::findHighlight(QImage img, int n) {
 
 			}
 		}
+		histo.push_back(count);
+
 		if(count > 0) {
 			bari.rx() /= count;
 			bari.ry() /= count;
 		}
 		threshold -= 10;
+	}
+
+	histogram.push_back(histo);
+	if(threshold < 200) {
+		//highlight in the mid greys? probably all the ball is in shadow.
+		lights[n] = QPointF(0, 0);
+		return;
 	}
 
 	//find biggest spot by removing outliers.
