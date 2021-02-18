@@ -223,6 +223,7 @@
     <addaction name="actionAdd_sphere_point"/>
     <addaction name="actionAdd_sphere_highlight"/>
     <addaction name="separator"/>
+    <addaction name="actionRuler"/>
     <addaction name="actionDelete_selected"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -261,10 +262,14 @@
    <addaction name="actionZoom_in"/>
    <addaction name="actionZoom_out"/>
    <addaction name="separator"/>
+   <addaction name="actionRuler"/>
    <addaction name="actionExport_RTI"/>
    <addaction name="actionHelp"/>
   </widget>
   <action name="actionOpen">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/gtango/folder-open.svg</normaloff>:/icons/gtango/folder-open.svg</iconset>
@@ -463,6 +468,18 @@
    </property>
    <property name="toolTip">
     <string>New project...</string>
+   </property>
+  </action>
+  <action name="actionRuler">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/ruler.svg</normaloff>:/icons/gtango/ruler.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Measure...</string>
+   </property>
+   <property name="toolTip">
+    <string>Take a measure</string>
    </property>
   </action>
  </widget>

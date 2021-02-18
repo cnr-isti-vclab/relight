@@ -9,6 +9,7 @@
 #include <QTextStream>
 #include <QImageReader>
 #include <QMessageBox>
+#include <QPen>
 
 using namespace std;
 
@@ -41,6 +42,45 @@ void Image::load(QJsonObject obj) {
 	position[2] = pos[2].toDouble();
 }
 
+Measure::~Measure() {
+	delete first_point;
+	delete second_point;
+}
+
+QPainterPath Measure::path() {
+	QPainterPath path;
+	path.moveTo(-4, -4);
+	path.lineTo(-1, -1);
+	path.moveTo( 4, -4);
+	path.lineTo( 1, -1);
+	path.moveTo( 4,  4);
+	path.lineTo( 1,  1);
+	path.moveTo(-4,  4);
+	path.lineTo(-1,  1);
+	return path;
+}
+
+QGraphicsPathItem *Measure::newPoint(QPointF p) {
+
+	QGraphicsPathItem *item = new QGraphicsPathItem(path());
+	QPen pen;
+	pen.setColor(Qt::yellow);
+	pen.setWidth(2);
+	
+	item->setPen(pen);
+	item->setPos(p);
+	return item;
+}
+
+void Measure::setFirstPoint(QPointF p) {
+	first = p;
+	first_point = newPoint(p);
+}
+
+void Measure::setSecondPoint(QPointF p) {
+	second = p;
+	second_point = newPoint(p);
+}
 
 Project::~Project() {
 	clear();

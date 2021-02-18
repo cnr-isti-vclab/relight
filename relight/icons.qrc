@@ -21,6 +21,7 @@
         <file>gtango/folder-new.svg</file>
         <file>gtango/save.svg</file>
         <file>gtango/spherelight.svg</file>
+        <file>gtango/ruler.svg</file>
     </qresource>
     <qresource prefix="/docs">
         <file>docs/help.html</file>
