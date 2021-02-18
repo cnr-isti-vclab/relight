@@ -34,6 +34,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionSave_as,    SIGNAL(triggered(bool)),              this, SLOT(saveProjectAs()));
 	connect(ui->actionExit,       SIGNAL(triggered(bool)),              this, SLOT(quit()));
 
+	connect(ui->actionRuler,      SIGNAL(triggered(bool)),              this, SLOT(startMeasure()));
 	connect(ui->actionPrevious,   SIGNAL(triggered(bool)),              this, SLOT(previous()));
 	connect(ui->actionNext,       SIGNAL(triggered(bool)),              this, SLOT(next()));
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)), this, SLOT(exportRTI()));
@@ -73,6 +74,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	auto *gvz = new Graphics_view_zoom(ui->graphicsView);
 	connect(gvz, SIGNAL(dblClicked(QPoint)), this, SLOT(pointPicked(QPoint)));
+	connect(gvz, SIGNAL(clicked(QPoint)), this, SLOT(pointClick(QPoint)));
 	connect(ui->actionZoom_in,  SIGNAL(triggered(bool)), gvz, SLOT(zoomIn()));
 	connect(ui->actionZoom_out, SIGNAL(triggered(bool)), gvz, SLOT(zoomOut()));
 
@@ -282,14 +284,43 @@ void MainWindow::previous() {
 
 
 void MainWindow::next() {
-	if(currentImage == (int)project.size()-1)
+	if(currentImage == int(project.size()-1))
 		return;
 	openImage(ui->imageList->item(currentImage+1));
 }
 
-void MainWindow::pointPicked(QPoint p) {
+void MainWindow::startMeasure() {
+	measuring = FIRST_POINT;	
+	measure = new Measure();
+	QApplication::setOverrideCursor( Qt::CrossCursor );
+}
+void MainWindow::endMeasure() {
+	measuring = NOPE;
+	QApplication::setOverrideCursor( Qt::ArrowCursor );
+	//open box and ask user for a measure in his unit of choice.
+	
+	project.measures.push_back(measure);
+	measure = nullptr;
+}
 
+void MainWindow::pointClick(QPoint p) {
 	QPointF pos = ui->graphicsView->mapToScene(p);
+	
+	if(measuring == FIRST_POINT) {
+		measure->setFirstPoint(pos);
+		scene->addItem(measure->first_point);
+		measuring = SECOND_POINT;
+		
+	} else if(measuring == SECOND_POINT) {
+		measure->setSecondPoint(pos);
+		scene->addItem(measure->second_point);
+		endMeasure();
+	}
+	
+}
+void MainWindow::pointPicked(QPoint p) {
+	QPointF pos = ui->graphicsView->mapToScene(p);
+	
 	QBrush blueBrush(Qt::blue);
 
 	QPen outlinePen(Qt::white);
@@ -444,7 +475,7 @@ void MainWindow::setupSphere(int id, Ball *ball) {
 	QPen pen;
 	pen.setColor(Qt::transparent);
 	pen.setWidth(0);
-	high->setPen(pen);;
+	high->setPen(pen);
 	high->setBrush(Qt::green);
 	high->setFlag(QGraphicsItem::ItemIsMovable);
 	high->setFlag(QGraphicsItem::ItemIsSelectable);
@@ -496,7 +527,6 @@ void MainWindow::processCurrentSphere() {
 			return;
 		}
 		sphere_to_process = id;
-		break;
 	}
 	process();
 }

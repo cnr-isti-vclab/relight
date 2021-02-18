@@ -18,6 +18,8 @@ private:
 	Qt::KeyboardModifiers _modifiers;
 	double _zoom_factor_base;
 	QPointF target_scene_pos, target_viewport_pos;
+	QPoint pressPosition;
+	double click_threshold = 2;
 	bool eventFilter(QObject* object, QEvent* event);
 
 public slots:
@@ -26,6 +28,7 @@ public slots:
 
 signals:
 	void zoomed();
+	void clicked(QPoint);
 	void dblClicked(QPoint);
 };
 

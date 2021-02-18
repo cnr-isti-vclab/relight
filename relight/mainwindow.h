@@ -71,6 +71,7 @@ public slots:
 	void next();
 	void previous();
 	void pointPicked(QPoint p);
+	void pointClick(QPoint p);
 	void deleteSelected();
 	void updateBorderPoints();
 	void updateHighlight();
@@ -82,12 +83,15 @@ public slots:
 	void changeSphere(QListWidgetItem *current, QListWidgetItem *previous);
 	void setupSpheres();
 	void setupSphere(int id, Ball *ball);
-	int addSphere();
+	int  addSphere();
 	void showSpheres(bool show);
 
 	void removeSphere();
 	void showHighlights(size_t n);
 
+	void startMeasure();
+	void endMeasure();
+	
 	void process();
 	void processCurrentSphere();
 	void cancelProcess();
@@ -109,6 +113,10 @@ private:
 	RTIScene *scene = nullptr;
 	QGraphicsPixmapItem *imagePixmap = nullptr;
 
+	enum Measuring { NOPE = 0, FIRST_POINT = 1, SECOND_POINT = 2 };
+	Measuring measuring = NOPE;
+	Measure *measure = nullptr; //tmporary measure.
+	
 	bool ignore_scene_changes = false;
 	int sphere_to_process = -1;
 	QStringList notloaded; //used for looking for highlights and return status.

@@ -4,6 +4,8 @@
 #include <QDir>
 #include <QString>
 #include <QJsonObject>
+#include <QGraphicsPathItem>
+#include <QPainterPath>
 #include "ball.h"
 
 
@@ -18,6 +20,27 @@ public:
 	bool skip = false;
 	Vector3f direction = Vector3f(0, 0, 0);
 	Vector3f position = Vector3f(0, 0, 0);
+};
+
+class Measure {
+public:
+	Measure() {}
+	~Measure();
+	
+	QPainterPath path();
+	QGraphicsPathItem *newPoint(QPointF p);
+	void setFirstPoint(QPointF p);
+	void setSecondPoint(QPointF p);
+	void clear();
+	
+	QPointF first;
+	QPointF second;
+	
+	QGraphicsPathItem *first_point = nullptr;
+	QGraphicsPathItem *second_point = nullptr;
+	//QString path = "m -1,1 -4,4 m 6,-4 4,4 m -4,-6 3,-4 m -9,0 4,4";	
+	enum Unit { MM, CM, M, INCH, YARD };
+	Unit unit;
 };
 
 class Project {
@@ -64,6 +87,7 @@ public:
 	QSize imgsize;             //images width and height (must be the same for all).
 	std::vector<Image> images1;
 	std::map<int, Ball *> balls;
+	std::vector<Measure *> measures;
 	QRect crop;
 };
 
