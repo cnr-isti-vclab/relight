@@ -27,10 +27,15 @@ public:
 	Measure() {}
 	~Measure();
 	
+	QJsonObject save();
+	void load(QJsonObject obj);
+
 	QPainterPath path();
 	QGraphicsPathItem *newPoint(QPointF p);
 	void setFirstPoint(QPointF p);
 	void setSecondPoint(QPointF p);
+	void setLength(double d);
+	void updateLine();
 	void clear();
 	
 	QPointF first;
@@ -38,9 +43,12 @@ public:
 	
 	QGraphicsPathItem *first_point = nullptr;
 	QGraphicsPathItem *second_point = nullptr;
+	QGraphicsLineItem *line = nullptr;
+	QGraphicsTextItem *value = nullptr;
 	//QString path = "m -1,1 -4,4 m 6,-4 4,4 m -4,-6 3,-4 m -9,0 4,4";	
-	enum Unit { MM, CM, M, INCH, YARD };
-	Unit unit;
+	enum Unit { MM, CM, M, INCH, FEET, YARD };
+	Unit unit = MM;
+	double length = 0.0;
 };
 
 class Project {

@@ -91,6 +91,8 @@ public slots:
 
 	void startMeasure();
 	void endMeasure();
+	void setupMeasures();
+
 	
 	void process();
 	void processCurrentSphere();

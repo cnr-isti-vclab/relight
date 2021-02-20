@@ -45,18 +45,59 @@ void Image::load(QJsonObject obj) {
 Measure::~Measure() {
 	delete first_point;
 	delete second_point;
+	delete line;
+	delete value;
 }
+
+QJsonObject Measure::save() {
+	QString unit_str = "mm";
+	switch(unit) {
+		case MM: unit_str = "mm"; break;
+		case CM: unit_str = "cm"; break;
+		case M: unit_str = "m"; break;
+		case INCH: unit_str = "inch"; break;
+		case FEET: unit_str = "feet"; break;
+		case YARD: unit_str = "yard"; break;
+	default: break;
+	}
+	QJsonObject obj;
+	obj.insert("unit", unit_str);
+	obj.insert("length", length);
+	QJsonArray jfirst = { first.x(), second.y() };
+	obj.insert("first", jfirst);
+	QJsonArray jsecond = { second.x(), second.y() };
+	obj.insert("second", jsecond);
+	return obj;
+}
+
+void Measure::load(QJsonObject obj) {
+	QString junit = obj["unit"].toString();
+	unit = MM;
+	if(junit == "mm") unit = MM;
+	if(junit == "cm") unit = CM;
+	if(junit == "m") unit = M;
+	if(junit == "inch") unit = INCH;
+	if(junit == "feet") unit = FEET;
+	if(junit == "yard") unit = YARD;
+	length = obj["length"].toDouble();
+
+	QJsonArray jfirst = obj["first"].toArray();
+	first = QPointF(jfirst[0].toDouble(), jfirst[1].toDouble());
+	QJsonArray jsecond = obj["second"].toArray();
+	second = QPointF(jsecond[0].toDouble(), jsecond[1].toDouble());
+}
+
 
 QPainterPath Measure::path() {
 	QPainterPath path;
-	path.moveTo(-4, -4);
-	path.lineTo(-1, -1);
-	path.moveTo( 4, -4);
-	path.lineTo( 1, -1);
-	path.moveTo( 4,  4);
-	path.lineTo( 1,  1);
-	path.moveTo(-4,  4);
-	path.lineTo(-1,  1);
+	path.moveTo(-8, -8);
+	path.lineTo(-3, -3);
+	path.moveTo( 8, -8);
+	path.lineTo( 3, -3);
+	path.moveTo( 8,  8);
+	path.lineTo( 3,  3);
+	path.moveTo(-8,  8);
+	path.lineTo(-3,  3);
 	return path;
 }
 
@@ -82,6 +123,26 @@ void Measure::setSecondPoint(QPointF p) {
 	second_point = newPoint(p);
 }
 
+void Measure::setLength(double d) {
+	length = d;
+	value =  new QGraphicsTextItem(QString::number(length));
+	value->setDefaultTextColor(Qt::yellow);
+	value->setFont(QFont("Arial", 16));
+	value->setPos((first + second)/2);
+}
+
+void Measure::updateLine() {
+	if(!line) {
+		line = new QGraphicsLineItem();
+		QPen pen;
+		pen.setColor(Qt::yellow);
+		pen.setWidth(1);
+
+		line->setPen(pen);
+	}
+	line->setLine(first.x(), first.y(), second.x(), second.y());
+}
+
 Project::~Project() {
 	clear();
 }
@@ -90,9 +151,15 @@ void Project::clear() {
 	dir = QDir();
 	imgsize = QSize();
 	images1.clear();
+
 	for(auto b: balls)
 		delete b.second;
 	balls.clear();
+
+	for(auto m: measures)
+		delete m;
+	measures.clear();
+
 	crop = QRect();
 }
 
@@ -191,6 +258,13 @@ void Project::load(QString filename) {
 		}
 	}
 
+	if(obj.contains("measures")) {
+		for(auto jmeasure: obj["measures"].toArray()) {
+			Measure *measure = new Measure;
+			measure->load(jmeasure.toObject());
+			measures.push_back(measure);
+		}
+	}
 }
 
 void Project::save(QString filename) {
@@ -223,6 +297,12 @@ void Project::save(QString filename) {
 	for(auto ball: balls)
 		jspheres.append(ball.second->toJsonObject());
 	project.insert("spheres", jspheres);
+
+
+	QJsonArray jmeasures;
+	for(auto measure: measures)
+		jmeasures.append(measure->save());
+	project.insert("measures", jmeasures);
 
 	QJsonDocument doc(project);
 
