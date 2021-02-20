@@ -5,6 +5,7 @@
 #include "rtiexport.h"
 #include "helpdialog.h"
 
+#include <QInputDialog>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QGraphicsPixmapItem>
@@ -136,6 +137,7 @@ void MainWindow::openProject() {
 	project_filename = project.dir.relativeFilePath(filename);
 	enableActions();
 	setupSpheres();
+	setupMeasures();
 	init();
 }
 
@@ -298,7 +300,15 @@ void MainWindow::endMeasure() {
 	measuring = NOPE;
 	QApplication::setOverrideCursor( Qt::ArrowCursor );
 	//open box and ask user for a measure in his unit of choice.
-	
+	bool ok = true;
+
+	double length = QInputDialog::getDouble(this, "Enter a measurement", "The distance between the two points in mm.", 0.0, 0.0, 1000000.0, 1, &ok);
+	measure->setLength(length);
+	scene->addItem(measure->value);
+	if(!ok) {
+		delete measure;
+		return;
+	}
 	project.measures.push_back(measure);
 	measure = nullptr;
 }
@@ -313,7 +323,9 @@ void MainWindow::pointClick(QPoint p) {
 		
 	} else if(measuring == SECOND_POINT) {
 		measure->setSecondPoint(pos);
+		measure->updateLine();
 		scene->addItem(measure->second_point);
+		scene->addItem(measure->line);
 		endMeasure();
 	}
 	
@@ -437,6 +449,20 @@ int MainWindow::addSphere() {
 	setupSphere(id, ball);
 	ignore_scene_changes = false;
 	return id;
+}
+
+void MainWindow::setupMeasures() {
+	for(auto m: project.measures) {
+		//TODO move all this to a single function in Measure.
+		m->setFirstPoint(m->first);
+		m->setSecondPoint(m->second);
+		m->updateLine();
+		m->setLength(m->length);
+		scene->addItem(m->first_point);
+		scene->addItem(m->second_point);
+		scene->addItem(m->line);
+		scene->addItem(m->value);
+	}
 }
 
 void MainWindow::setupSpheres() {
