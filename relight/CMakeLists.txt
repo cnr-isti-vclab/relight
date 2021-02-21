@@ -34,6 +34,7 @@ set (RELIGHT_HEADERS
 	imagecropper_p.h
 	mainwindow.h
 	ball.h
+	measure.h
 	graphics_view_zoom.h
 	rtiexport.h
 	helpdialog.h
@@ -51,6 +52,7 @@ set (RELIGHT_SOURCES
 	imagecropper.cpp
 	mainwindow.cpp
 	ball.cpp
+	measure.cpp
 	graphics_view_zoom.cpp
 	rtiexport.cpp
 	project.cpp
