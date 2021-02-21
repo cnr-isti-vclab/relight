@@ -115,8 +115,6 @@ private:
 	RTIScene *scene = nullptr;
 	QGraphicsPixmapItem *imagePixmap = nullptr;
 
-	enum Measuring { NOPE = 0, FIRST_POINT = 1, SECOND_POINT = 2 };
-	Measuring measuring = NOPE;
 	Measure *measure = nullptr; //tmporary measure.
 	
 	bool ignore_scene_changes = false;
