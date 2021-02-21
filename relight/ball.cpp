@@ -279,7 +279,7 @@ void Ball::computeDirections() {
 
 }
 
-QJsonObject Ball::toJsonObject() {
+QJsonObject Ball::toJson() {
 	QJsonObject ball;
 	QJsonArray jcenter = { center.x(), center.y() };
 	ball["center"] = jcenter;
@@ -315,7 +315,7 @@ QJsonObject Ball::toJsonObject() {
 	return ball;
 }
 
-void Ball::fromJsonObject(QJsonObject obj) {
+void Ball::fromJson(QJsonObject obj) {
 	auto jcenter = obj["center"].toArray();
 	center.setX(jcenter[0].toDouble());
 	center.setY(jcenter[1].toDouble());

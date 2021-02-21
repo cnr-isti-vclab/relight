@@ -20,7 +20,6 @@
 #include <assert.h>
 using namespace std;
 
-
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow)
@@ -28,23 +27,23 @@ MainWindow::MainWindow(QWidget *parent) :
 	settings = new QSettings("VCG", "Relight", this);
 
 	ui->setupUi(this);
-	connect(ui->actionNew,        SIGNAL(triggered(bool)),              this, SLOT(newProject()));
-	connect(ui->actionOpen,       SIGNAL(triggered(bool)),              this, SLOT(openProject()));
+	connect(ui->actionNew,        SIGNAL(triggered(bool)),  this, SLOT(newProject()));
+	connect(ui->actionOpen,       SIGNAL(triggered(bool)),  this, SLOT(openProject()));
 
-	connect(ui->actionSave,       SIGNAL(triggered(bool)),              this, SLOT(saveProject()));
-	connect(ui->actionSave_as,    SIGNAL(triggered(bool)),              this, SLOT(saveProjectAs()));
-	connect(ui->actionExit,       SIGNAL(triggered(bool)),              this, SLOT(quit()));
+	connect(ui->actionSave,       SIGNAL(triggered(bool)),  this, SLOT(saveProject()));
+	connect(ui->actionSave_as,    SIGNAL(triggered(bool)),  this, SLOT(saveProjectAs()));
+	connect(ui->actionExit,       SIGNAL(triggered(bool)),  this, SLOT(quit()));
 
-	connect(ui->actionRuler,      SIGNAL(triggered(bool)),              this, SLOT(startMeasure()));
-	connect(ui->actionPrevious,   SIGNAL(triggered(bool)),              this, SLOT(previous()));
-	connect(ui->actionNext,       SIGNAL(triggered(bool)),              this, SLOT(next()));
-	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)), this, SLOT(exportRTI()));
+	connect(ui->actionRuler,      SIGNAL(triggered(bool)),  this, SLOT(startMeasure()));
+	connect(ui->actionPrevious,   SIGNAL(triggered(bool)),  this, SLOT(previous()));
+	connect(ui->actionNext,       SIGNAL(triggered(bool)),  this, SLOT(next()));
+	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)),  this, SLOT(exportRTI()));
 
-	connect(ui->addSphere,        SIGNAL(clicked(bool)),                this, SLOT(addSphere()));
-	connect(ui->removeSphere,     SIGNAL(clicked(bool)),                this, SLOT(removeSphere()));
-	connect(ui->process,          SIGNAL(clicked(bool)),                this, SLOT(process()));
+	connect(ui->addSphere,        SIGNAL(clicked(bool)),   this, SLOT(addSphere()));
+	connect(ui->removeSphere,     SIGNAL(clicked(bool)),   this, SLOT(removeSphere()));
+	connect(ui->process,          SIGNAL(clicked(bool)),   this, SLOT(process()));
 	connect(ui->actionSave_LP,    SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
-	connect(ui->showSpheres,      SIGNAL(clicked(bool)), this, SLOT(showSpheres(bool)));
+	connect(ui->showSpheres,      SIGNAL(clicked(bool)),   this, SLOT(showSpheres(bool)));
 	connect(ui->actionHelp,       SIGNAL(triggered(bool)), this, SLOT(showHelp()));
 
 	ui->imageList->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -292,40 +291,36 @@ void MainWindow::next() {
 }
 
 void MainWindow::startMeasure() {
-	measuring = FIRST_POINT;	
 	measure = new Measure();
+	measure->setScene(scene);
 	QApplication::setOverrideCursor( Qt::CrossCursor );
 }
 void MainWindow::endMeasure() {
-	measuring = NOPE;
 	QApplication::setOverrideCursor( Qt::ArrowCursor );
-	//open box and ask user for a measure in his unit of choice.
-	bool ok = true;
 
+	bool ok = true;
 	double length = QInputDialog::getDouble(this, "Enter a measurement", "The distance between the two points in mm.", 0.0, 0.0, 1000000.0, 1, &ok);
-	measure->setLength(length);
-	scene->addItem(measure->value);
 	if(!ok) {
 		delete measure;
 		return;
 	}
+
+	measure->setLength(length);
 	project.measures.push_back(measure);
 	measure = nullptr;
 }
 
 void MainWindow::pointClick(QPoint p) {
+	if(!measure)
+		return;
+
 	QPointF pos = ui->graphicsView->mapToScene(p);
 	
-	if(measuring == FIRST_POINT) {
+	if(measure->measuring == Measure::FIRST_POINT) {
 		measure->setFirstPoint(pos);
-		scene->addItem(measure->first_point);
-		measuring = SECOND_POINT;
-		
-	} else if(measuring == SECOND_POINT) {
+
+	} else if(measure->measuring == Measure::SECOND_POINT) {
 		measure->setSecondPoint(pos);
-		measure->updateLine();
-		scene->addItem(measure->second_point);
-		scene->addItem(measure->line);
 		endMeasure();
 	}
 	
@@ -453,15 +448,8 @@ int MainWindow::addSphere() {
 
 void MainWindow::setupMeasures() {
 	for(auto m: project.measures) {
-		//TODO move all this to a single function in Measure.
-		m->setFirstPoint(m->first);
-		m->setSecondPoint(m->second);
-		m->updateLine();
-		m->setLength(m->length);
-		scene->addItem(m->first_point);
-		scene->addItem(m->second_point);
-		scene->addItem(m->line);
-		scene->addItem(m->value);
+		m->setScene(scene);
+		m->setVisible(true);
 	}
 }
 

@@ -28,7 +28,8 @@ SOURCES += main.cpp \
     ../src/jpeg_encoder.cpp \
     ../src/rti.cpp \
     helpdialog.cpp \
-    project.cpp
+    project.cpp \
+    measure.cpp
 
 
 HEADERS += \
@@ -46,7 +47,8 @@ HEADERS += \
     ../src/material.h \
     ../src/eigenpca.h \
     ../relight-cli/rtibuilder.h \
-    project.h
+    project.h \
+    measure.h
 
 FORMS += \
     mainwindow.ui \

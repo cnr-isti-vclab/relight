@@ -1,19 +1,23 @@
 #include "project.h"
 
 #include <QFile>
+#include <QTextStream>
+
 #include <QFileInfo>
 #include <QFileDialog>
+#include <QMessageBox>
+
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-#include <QTextStream>
-#include <QImageReader>
-#include <QMessageBox>
+
 #include <QPen>
+#include <QImageReader>
+
 
 using namespace std;
 
-QJsonObject Image::save() {
+QJsonObject Image::toJson() {
 
 	QJsonObject obj;
 	obj.insert("filename", filename);
@@ -27,7 +31,7 @@ QJsonObject Image::save() {
 
 	return obj;
 }
-void Image::load(QJsonObject obj) {
+void Image::fromJson(QJsonObject obj) {
 	filename = obj["filename"].toString();
 	skip = obj["skip"].toBool();
 
@@ -42,106 +46,6 @@ void Image::load(QJsonObject obj) {
 	position[2] = pos[2].toDouble();
 }
 
-Measure::~Measure() {
-	delete first_point;
-	delete second_point;
-	delete line;
-	delete value;
-}
-
-QJsonObject Measure::save() {
-	QString unit_str = "mm";
-	switch(unit) {
-		case MM: unit_str = "mm"; break;
-		case CM: unit_str = "cm"; break;
-		case M: unit_str = "m"; break;
-		case INCH: unit_str = "inch"; break;
-		case FEET: unit_str = "feet"; break;
-		case YARD: unit_str = "yard"; break;
-	default: break;
-	}
-	QJsonObject obj;
-	obj.insert("unit", unit_str);
-	obj.insert("length", length);
-	QJsonArray jfirst = { first.x(), second.y() };
-	obj.insert("first", jfirst);
-	QJsonArray jsecond = { second.x(), second.y() };
-	obj.insert("second", jsecond);
-	return obj;
-}
-
-void Measure::load(QJsonObject obj) {
-	QString junit = obj["unit"].toString();
-	unit = MM;
-	if(junit == "mm") unit = MM;
-	if(junit == "cm") unit = CM;
-	if(junit == "m") unit = M;
-	if(junit == "inch") unit = INCH;
-	if(junit == "feet") unit = FEET;
-	if(junit == "yard") unit = YARD;
-	length = obj["length"].toDouble();
-
-	QJsonArray jfirst = obj["first"].toArray();
-	first = QPointF(jfirst[0].toDouble(), jfirst[1].toDouble());
-	QJsonArray jsecond = obj["second"].toArray();
-	second = QPointF(jsecond[0].toDouble(), jsecond[1].toDouble());
-}
-
-
-QPainterPath Measure::path() {
-	QPainterPath path;
-	path.moveTo(-8, -8);
-	path.lineTo(-3, -3);
-	path.moveTo( 8, -8);
-	path.lineTo( 3, -3);
-	path.moveTo( 8,  8);
-	path.lineTo( 3,  3);
-	path.moveTo(-8,  8);
-	path.lineTo(-3,  3);
-	return path;
-}
-
-QGraphicsPathItem *Measure::newPoint(QPointF p) {
-
-	QGraphicsPathItem *item = new QGraphicsPathItem(path());
-	QPen pen;
-	pen.setColor(Qt::yellow);
-	pen.setWidth(2);
-	
-	item->setPen(pen);
-	item->setPos(p);
-	return item;
-}
-
-void Measure::setFirstPoint(QPointF p) {
-	first = p;
-	first_point = newPoint(p);
-}
-
-void Measure::setSecondPoint(QPointF p) {
-	second = p;
-	second_point = newPoint(p);
-}
-
-void Measure::setLength(double d) {
-	length = d;
-	value =  new QGraphicsTextItem(QString::number(length));
-	value->setDefaultTextColor(Qt::yellow);
-	value->setFont(QFont("Arial", 16));
-	value->setPos((first + second)/2);
-}
-
-void Measure::updateLine() {
-	if(!line) {
-		line = new QGraphicsLineItem();
-		QPen pen;
-		pen.setColor(Qt::yellow);
-		pen.setWidth(1);
-
-		line->setPen(pen);
-	}
-	line->setLine(first.x(), first.y(), second.x(), second.y());
-}
 
 Project::~Project() {
 	clear();
@@ -228,7 +132,7 @@ void Project::load(QString filename) {
 
 	for(auto img: obj["images"].toArray()) {
 		Image image;
-		image.load(img.toObject());
+		image.fromJson(img.toObject());
 
 		QFileInfo imginfo(image.filename);
 		if(!imginfo.exists())
@@ -253,7 +157,7 @@ void Project::load(QString filename) {
 		int count =0 ;
 		for(auto sphere: obj["spheres"].toArray()) {
 			Ball *ball = new Ball;
-			ball->fromJsonObject(sphere.toObject());
+			ball->fromJson(sphere.toObject());
 			balls[count++] = ball;
 		}
 	}
@@ -261,7 +165,7 @@ void Project::load(QString filename) {
 	if(obj.contains("measures")) {
 		for(auto jmeasure: obj["measures"].toArray()) {
 			Measure *measure = new Measure;
-			measure->load(jmeasure.toObject());
+			measure->fromJson(jmeasure.toObject());
 			measures.push_back(measure);
 		}
 	}
@@ -280,7 +184,7 @@ void Project::save(QString filename) {
 
 	QJsonArray jimages;
 	for(auto &img: images1)
-		jimages.push_back(img.save());
+		jimages.push_back(img.toJson());
 
 	project.insert("images", jimages);
 
@@ -294,14 +198,14 @@ void Project::save(QString filename) {
 	}
 
 	QJsonArray jspheres;
-	for(auto ball: balls)
-		jspheres.append(ball.second->toJsonObject());
+	for(auto it: balls)
+		jspheres.append(it.second->toJson());
 	project.insert("spheres", jspheres);
 
 
 	QJsonArray jmeasures;
-	for(auto measure: measures)
-		jmeasures.append(measure->save());
+	for(Measure *measure: measures)
+		jmeasures.append(measure->toJson());
 	project.insert("measures", jmeasures);
 
 	QJsonDocument doc(project);
