@@ -51,7 +51,6 @@ public:
 
 	std::vector<int> progress_jobs;
 	QProgressDialog *progress;
-	//Progress *progress;
 	QFutureWatcher<void> watcher;
 
 
@@ -85,6 +84,13 @@ public slots:
 	void setupSphere(int id, Ball *ball);
 	int  addSphere();
 	void showSpheres(bool show);
+	
+	void toggleMaxLuma();
+	void computeMaxLuma();
+	bool lumaCallback(std::string s, int n);
+	void lumaCancel();
+	void lumaFinish();
+	
 
 	void removeSphere();
 	void showHighlights(size_t n);
@@ -106,6 +112,11 @@ public slots:
 	void showHelp();
 
 	void quit();
+	
+signals:
+	void lumaProgressText(const QString &str);
+	void lumaProgress(int n);
+	
 
 private:
 	Ui::MainWindow *ui;
@@ -122,6 +133,10 @@ private:
 	QStringList notloaded; //used for looking for highlights and return status.
 	QStringList flipped;
 	QStringList resolution;
+	QImage maxLuma;
+	bool maxLuming = false;
+	bool lumaCancelling = false;
 };
+
 
 #endif // MAINWINDOW_H

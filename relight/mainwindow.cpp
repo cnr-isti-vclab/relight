@@ -3,6 +3,7 @@
 
 #include "graphics_view_zoom.h"
 #include "rtiexport.h"
+#include "../src/imageset.h"
 #include "helpdialog.h"
 
 #include <QInputDialog>
@@ -37,6 +38,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionRuler,      SIGNAL(triggered(bool)),  this, SLOT(startMeasure()));
 	connect(ui->actionPrevious,   SIGNAL(triggered(bool)),  this, SLOT(previous()));
 	connect(ui->actionNext,       SIGNAL(triggered(bool)),  this, SLOT(next()));
+	connect(ui->actionToggle_max_luma, SIGNAL(triggered(bool)), this, SLOT(toggleMaxLuma()));
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)),  this, SLOT(exportRTI()));
 
 	connect(ui->addSphere,        SIGNAL(clicked(bool)),   this, SLOT(addSphere()));
@@ -93,6 +95,8 @@ void MainWindow::clear() {
 		imagePixmap = nullptr;
 	}
 	project_filename = QString();
+	if(imagePixmap)
+		delete imagePixmap;
 	ui->imageList->clear();
 	ui->graphicsView->resetMatrix();
 	ui->sphereList->clear();
@@ -200,6 +204,7 @@ bool MainWindow::init() {
 	openImage(ui->imageList->item(0), true);
 	//TODO: in background load and process the images
 
+	
 //	addSphere();
 
 	ui->addSphere->setEnabled(true);
@@ -214,6 +219,8 @@ void MainWindow::openImage(QListWidgetItem *item, bool fit) {
 	if(!item)
 		return;
 
+	maxLuming = false;
+			
 	ui->imageList->setCurrentItem(item);
 	int id = item->data(Qt::UserRole).toInt();
 	QString filename = project.images1[id].filename;//item->text();
@@ -265,6 +272,71 @@ void MainWindow::showHighlights(size_t n) {
 		}
 	}
 	ignore_scene_changes = false;
+}
+
+	
+bool MainWindow::lumaCallback(std::string s, int n) {
+	QString str(s.c_str());
+	emit lumaProgressText(str);
+	emit lumaProgress(n);
+	if(lumaCancelling)
+		return false;
+	return true;
+}
+
+void MainWindow::lumaCancel() {
+	lumaCancelling = true;
+}
+
+void MainWindow::lumaFinish() {
+	if(progress == nullptr)
+		return;
+	progress->close();
+	delete progress;
+	progress = nullptr;
+	toggleMaxLuma();
+}
+
+void MainWindow::computeMaxLuma() {
+	
+	lumaCancelling = false;
+	QFuture<void> future = QtConcurrent::run([this]() {
+		ImageSet imageset;
+		for(auto image: project.images1)
+			imageset.images.push_back(image.filename);
+		imageset.initImages(this->project.dir.path().toStdString().c_str());
+		std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->lumaCallback(s, n); };
+		this->maxLuma = imageset.maxImage(&callback); 
+	} );
+	watcher.setFuture(future);
+	connect(&watcher, SIGNAL(finished()), this, SLOT(lumaFinish()));
+
+	progress = new QProgressDialog("Building max luma image", "Cancel", 0, 100, this);
+	progress->setAutoClose(false);
+	progress->setAutoReset(false);
+	progress->setWindowModality(Qt::WindowModal);
+	connect(progress, SIGNAL(canceled()), this, SLOT(lumaCancel()));
+	connect(this, SIGNAL(lumaProgress(int)), progress, SLOT(setValue(int)));
+	connect(this, SIGNAL(lumaProgressText(const QString &)), progress, SLOT(setLabelText(const QString &)));
+	progress->show();
+}
+
+void MainWindow::toggleMaxLuma() {
+	
+	if(maxLuma.isNull()) {
+		computeMaxLuma();
+		return;
+	}
+	if(maxLuming)
+		openImage(ui->imageList->item(currentImage));
+	else {
+		if(imagePixmap)
+			delete imagePixmap;
+		imagePixmap = new QGraphicsPixmapItem(QPixmap::fromImage(maxLuma));
+		imagePixmap->setZValue(-1);
+		scene->addItem(imagePixmap);
+	}
+	maxLuming = !maxLuming;
 }
 
 void MainWindow::showSpheres(bool show) {
