@@ -43,8 +43,10 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->removeSphere,     SIGNAL(clicked(bool)),   this, SLOT(removeSphere()));
 	connect(ui->process,          SIGNAL(clicked(bool)),   this, SLOT(process()));
 	connect(ui->actionSave_LP,    SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
+	connect(ui->actionLoad_LP,    SIGNAL(triggered(bool)), this, SLOT(loadLP()));
 	connect(ui->showSpheres,      SIGNAL(clicked(bool)),   this, SLOT(showSpheres(bool)));
 	connect(ui->actionHelp,       SIGNAL(triggered(bool)), this, SLOT(showHelp()));
+
 
 	ui->imageList->setContextMenuPolicy(Qt::CustomContextMenu);
 	connect(ui->imageList, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(imagesContextMenu(QPoint)));
@@ -170,6 +172,7 @@ void MainWindow::enableActions() {
 	ui->actionPrevious->setEnabled(true);
 	ui->actionNext->setEnabled(true);
 	ui->actionExport_RTI->setEnabled(true);
+	ui->actionLoad_LP->setEnabled(true);
 
 	ui->addSphere->setEnabled(true);
 	ui->removeSphere->setEnabled(true);

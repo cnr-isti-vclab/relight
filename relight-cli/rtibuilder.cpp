@@ -148,8 +148,7 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 	imageset.sample(resample, ndimensions, [&](Color3f *sample, Color3f *resample) { this->resamplePixel(sample, resample); }, samplingram);
 	nsamples = resample.npixels();
 	
-	//PixelArray resample = resamplePixels(sample);
-	
+	cout << "Nsamples: " << nsamples << endl;
 #ifdef DEBUG
 	if(resolution > 0) {
 		saveLightPixel(sample(0), resolution*4, "sample0.png");
