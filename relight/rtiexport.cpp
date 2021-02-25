@@ -127,8 +127,11 @@ bool RtiExport::callback(std::string s, int n) {
 void RtiExport::makeRti(QString output, QRect rect) {
 	
 	try {
+		int ram = ui->ram->value();
+
 		RtiBuilder builder;
 		
+		builder.samplingram = ram;
 		builder.type         = basis();
 		builder.colorspace   = colorSpace();
 		builder.nplanes      = uint32_t(ui->planes->value());
@@ -158,6 +161,7 @@ void RtiExport::makeRti(QString output, QRect rect) {
 			QMessageBox::critical(this, "We have a problem!", QString(builder.error.c_str()));
 			return;
 		}
+
 		builder.save(output.toStdString(), ui->quality->value());
 
 	} catch(int status) {

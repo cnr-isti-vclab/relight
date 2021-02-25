@@ -469,6 +469,9 @@
    <property name="toolTip">
     <string>New project...</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
   </action>
   <action name="actionRuler">
    <property name="icon">
