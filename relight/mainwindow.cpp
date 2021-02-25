@@ -727,7 +727,7 @@ void MainWindow::saveLPs() {
 }
 
 void MainWindow::exportRTI() {
-	if(!project.size())
+	if(project.balls.size())
 		project.computeDirections();
 
 	QStringList nodir;

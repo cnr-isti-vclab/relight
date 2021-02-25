@@ -117,17 +117,15 @@ bool RtiExport::callback(std::string s, int n) {
 	emit progressText(str);
 	emit progress(n);
 
-	if(cancel) {
-		cancel = false;
+	if(cancel) 
 		return false;
-	}
 	return true;
 }
 
 void RtiExport::makeRti(QString output, QRect rect) {
 	
 	try {
-		int ram = ui->ram->value();
+		uint32_t ram = uint32_t(ui->ram->value());
 
 		RtiBuilder builder;
 		
@@ -155,6 +153,7 @@ void RtiExport::makeRti(QString output, QRect rect) {
 		builder.height = builder.imageset.height;
 		builder.savemeans = true;
 		
+		cancel = false;
 		std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->callback(s, n); };
 		
 		if(!builder.init(&callback)) {
