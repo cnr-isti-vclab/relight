@@ -212,6 +212,7 @@
     </property>
     <addaction name="actionPrevious"/>
     <addaction name="actionNext"/>
+    <addaction name="actionToggle_max_luma"/>
     <addaction name="separator"/>
     <addaction name="actionZoom_in"/>
     <addaction name="actionZoom_out"/>
@@ -483,6 +484,11 @@
    </property>
    <property name="toolTip">
     <string>Take a measure</string>
+   </property>
+  </action>
+  <action name="actionToggle_max_luma">
+   <property name="text">
+    <string>Toggle max luma</string>
    </property>
   </action>
  </widget>

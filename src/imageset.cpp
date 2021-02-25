@@ -4,12 +4,13 @@
 #include <QDir>
 #include <QFile>
 #include <QTextStream>
+#include <QImage>
 #include "imageset.h"
 #include "jpeg_decoder.h"
 
 using namespace std;
 
-ImageSet::ImageSet(const char *path): width(0), height(0) {
+ImageSet::ImageSet(const char *path) {
 	if(path)
 		init(path);
 }
@@ -89,8 +90,8 @@ bool ImageSet::initImages(const char *_path) {
 			cerr << "Inconsistent image size for " << qPrintable(filepath) << endl;
 			return false;
 		}
-		right = image_width = width = (size_t)w;
-		bottom = image_height = height = (size_t)h;
+		right = image_width = width = w;
+		bottom = image_height = height = h;
 
 		decoders.push_back(dec);
 	}
@@ -110,6 +111,37 @@ void ImageSet::crop(int _left, int _top, int _width, int _height) {
 		cout << "left: " << left << " top: " << top << " right: " << right << " bottom: " << bottom << " width: " << width << " height: " << height << endl;
 		throw "Invalid crop parameters";
 	}
+}
+
+QImage ImageSet::maxImage(std::function<bool(std::string stage, int percent)> *callback) {
+	int w = image_width;
+	int h = image_height;
+	QImage image(w, h, QImage::Format::Format_RGB888);
+	image.fill(0);
+	
+	uint8_t *row = new uint8_t[w*h*3];
+	
+	restart();
+	for(int y = 0; y < image_height; y++) {
+		if(callback) {
+			bool keep_going = (*callback)(std::string("Sampling images"), 100*(y-top)/height);
+			if(!keep_going)
+				throw 1;
+		}
+		uint8_t *rowmax = image.scanLine(y);
+		for(uint32_t i = 0; i < decoders.size(); i++) {
+			JpegDecoder *dec = decoders[i];
+			dec->readRows(1, row);
+			
+			for(int x = 0; x < image_width; x++) {
+				rowmax[x*3 + 0] = std::max(rowmax[x*3 + 0], row[x*3 + 0]);
+				rowmax[x*3 + 1] = std::max(rowmax[x*3 + 1], row[x*3 + 0]);
+				rowmax[x*3 + 2] = std::max(rowmax[x*3 + 2], row[x*3 + 0]);
+			}
+		}
+	}
+	delete []row;
+	return image;
 }
 
 void ImageSet::decode(size_t img, unsigned char *buffer) {
