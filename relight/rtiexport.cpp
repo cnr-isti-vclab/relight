@@ -192,7 +192,6 @@ void RtiExport::createRTI() {
 	QRect rect = QRect(0, 0, 0, 0);
 	if(ui->cropview->handleShown()) {
 		rect = ui->cropview->croppedRect();
-		cout << "Cropping! " << rect << endl << flush;
 	}
 	
 	

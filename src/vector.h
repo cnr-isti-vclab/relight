@@ -118,6 +118,7 @@ public:
 	Color3f *operator()(int i) {
 		return (data() + i*nlights);
 	}
+	//get ith sample, k light.
 	Color3f &operator()(size_t i, size_t k) { return *(data() + i*nlights + k); }
 	int npixels() const { return (int)size()/nlights; }
 	float *rawdata() { return (float *)data(); }

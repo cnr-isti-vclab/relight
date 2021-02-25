@@ -40,7 +40,7 @@ void help() {
 
     cout << "\nIgnore exotic parameters below here\n\n";
     cout << "\t-r <int>  : side of the basis function (default 8, 0 means rbf interpolation)\n";
-    cout << "\t-s <int>  : sampling rate for pca (default 40)\n";
+	cout << "\t-s <int>  : sampling RAM for pca  in MB (default 500MB)\n";
     cout << "\t-S <float>: sigma in rgf gaussian interpolation default 0.125 (~100 img)\n";
     cout << "\t-R <float>: regularization coeff for bilinear default 0.1\n";
     cout << "\t-B <float>: range compress bits for planes (default 0.0) 1.0 means compress\n";
@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
             builder.yccplanes[0] = uint32_t(atoi(optarg));
             break;
         case 's':
-            builder.samplingrate = uint32_t(atoi(optarg));
+			builder.samplingram = uint32_t(atoi(optarg));
             break;
         case 'S': {
             float sigma = float(atof(optarg));

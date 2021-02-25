@@ -136,19 +136,19 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 	} else
 		ndimensions = lights.size();
 	
-	if(samplingrate == 0) {
-		cerr << "Sampling rate must be > 0\n";
+	if(samplingram == 0) {
+		cerr << "Sampling RAM must be > 0\n";
 		return false;
 	}
 
 	imageset.setCallback(callback);
 	
 	//collect a set of samples resampled
-	PixelArray sample;
-	imageset.sample(sample, samplingrate);
-	nsamples = sample.npixels();
+	PixelArray resample;
+	imageset.sample(resample, ndimensions, [&](Color3f *sample, Color3f *resample) { this->resamplePixel(sample, resample); }, samplingram);
+	nsamples = resample.npixels();
 	
-	PixelArray resample = resamplePixels(sample);
+	//PixelArray resample = resamplePixels(sample);
 	
 #ifdef DEBUG
 	if(resolution > 0) {
@@ -1326,7 +1326,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			}
 		}*/
 	}
-	cout << "Done: " << timer.restart() << endl;
+	cout << "Done in: " << timer.restart() << "ms" << endl;
 
 
 
