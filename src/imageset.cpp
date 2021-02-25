@@ -149,21 +149,24 @@ public:
 	}
 };
 
-uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate) {
+uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, function<void(Color3f *sample, Color3f *resample)> resampler, uint32_t samplingram) {
 	if(current_line == 0)
 		skipToTop();
+
+	uint32_t bytes_per_sample = ndimensions*12;
+	uint32_t nsamples = samplingram*((1<<20)/bytes_per_sample);
 	
-	uint32_t nsamples = width*height/samplingrate;
-	if(nsamples > width*height)
+	if(nsamples > (uint32_t)width*height)
 		nsamples = width*height;
 
 	uint32_t samplexrow = std::min((int)(nsamples/height), (int)(width/4));
 	nsamples = samplexrow*height;
-	sample.resize(nsamples, lights.size());
+	resample.resize(nsamples, ndimensions);
 
 	StupidSampler sampler;
+	PixelArray sample(samplexrow, lights.size());
 
-	int offset = 0;
+	uint32_t offset = 0;
 	vector<uint8_t> row(image_width*3);
 	for(int y = top; y < bottom; y++) {
 		if(callback) {
@@ -176,15 +179,19 @@ uint32_t ImageSet::sample(PixelArray &sample, uint32_t samplingrate) {
 		for(uint32_t i = 0; i < decoders.size(); i++) {
 			JpegDecoder *dec = decoders[i];
 			dec->readRows(1, row.data());
-			int off = offset;
+			uint32_t x = 0;
 			for(int k: selection) {
-				sample(off, i).r = row[(k+left)*3 + 0];
-				sample(off, i).g = row[(k+left)*3 + 1];
-				sample(off, i).b = row[(k+left)*3 + 2];
+				Color3f &pixel = sample(x, i);
+				pixel.r = row[(k+left)*3 + 0];
+				pixel.g = row[(k+left)*3 + 1];
+				pixel.b = row[(k+left)*3 + 2];
 
-				off++;
+				x++;
 			}
 		}
+		for(uint32_t x = 0; x < samplexrow; x++)
+			resampler(sample(x), resample(offset + x));
+
 		offset += samplexrow;
 	}
 	return nsamples;
@@ -211,6 +218,5 @@ void ImageSet::skipToTop() {
 		}
 	}
 	current_line += top;
-	cout << "Skipped\n" << endl;
 }
 
