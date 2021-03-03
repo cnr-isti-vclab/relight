@@ -122,14 +122,43 @@ Methods:
 
 ## Building relight
 
-*relight* is a console Qt application, with [armadillo](http://arma.sourceforge.net/) lib dependency. 
+### Debian Linux
 
-Using qt:
+```
+$ uname -a
+Linux x220 5.10.0-3-amd64 #1 SMP Debian 5.10.13-1 (2021-02-06) x86_64 GNU/Linux
 
-	qmake relight.pro
-	make
+$ cat /etc/os-release 
+PRETTY_NAME="Debian GNU/Linux bullseye/sid"
+NAME="Debian GNU/Linux"
+ID=debian
+HOME_URL="https://www.debian.org/"
+SUPPORT_URL="https://www.debian.org/support"
+BUG_REPORT_URL="https://bugs.debian.org/"
+```
 
-#TODO
+Install dependencies.
+
+```shell
+$ apt update && apt install \
+    build-essential \
+    cmake \
+    git \
+    qtbase5-dev \
+    libeigen3-dev \
+    libjpeg62-turbo-dev
+```
+
+Clone this repository and build.
+
+```shell
+$ git clone https://github.com/cnr-isti-vclab/relight.git
+$ cd relight
+$ cmake .
+$ make
+```
+    
+# TODO
 
 * White balance and other conversion from RAW features (dcraw)
 * use color tablet to calibrate raw images
