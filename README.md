@@ -158,7 +158,7 @@ $ cmake .
 $ make
 ```
     
-#TODO
+# TODO
 
 * White balance and other conversion from RAW features (dcraw)
 * use color tablet to calibrate raw images
