@@ -36,7 +36,7 @@ void help() {
 	cout << "\t-m        : extract mean image\n";
 	cout << "\t-M        : extract median image (7/8th quantile) \n";
 
-	cout << "\t-k <int>x<int>+<int>+<int>: Kropping extracts only the widthxheight+offx+offy part\n";
+	cout << "\t-k <int>x<int>+<int>+<int>: Cropping extracts only the widthxheight+offx+offy part\n";
 
     cout << "\nIgnore exotic parameters below here\n\n";
     cout << "\t-r <int>  : side of the basis function (default 8, 0 means rbf interpolation)\n";
