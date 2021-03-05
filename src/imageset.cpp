@@ -21,57 +21,90 @@ ImageSet::~ImageSet() {
 		delete dec;
 }
 
+void ImageSet::parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::vector<QString> &filenames, int skip_image) {
+
+	QFile sphere(sphere_path);
+	if(!sphere.open(QFile::ReadOnly))
+		throw QString("Could not open: " + sphere_path);
+
+	QTextStream stream(&sphere);
+	bool ok;
+	int n = stream.readLine().toInt(&ok);
+
+
+	if(!ok || n <= 0 || n > 1000)
+		throw QString("Invalid format or number of lights in .lp.");
+
+	for(int i = 0; i < n; i++) {
+		QString filename;
+		Vector3f light;
+		QString line = stream.readLine();
+		QStringList tokens = line.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+		if(tokens.size() != 4)
+			throw QString("Invalid line in .lp: " + line);
+
+		filename = tokens[0];
+		for(int k = 0; k < 3; k++) {
+			bool ok;
+			light[k] = tokens[k+1].toDouble(&ok);
+			if(!ok)
+				throw QString("Failed reading light direction in: " + line);
+		}
+		double norm = light.norm();
+		if(norm < 0.0001)
+			throw QString("Light direction too close to the origin! " + line);
+
+		light /= norm;
+
+		if(i == skip_image)
+			continue;
+
+		lights.push_back(light);
+		filenames.push_back(filename);
+	}
+
+}
+
 bool ImageSet::init(const char *_path, bool ignore_filenames, int skip_image) {
 
 
 	QDir dir(_path);
 	QStringList lps = dir.entryList(QStringList() << "*.lp");
 	if(lps.size() == 0) {
-		cerr << "Could not find .lp file\n";
+		cerr << "Could not find .lp file";
 		return false;
 	}
 	QString sphere_path = dir.filePath(lps[0]);
-	QFile sphere(sphere_path);
-	if(!sphere.open(QFile::ReadOnly)) {
-		cerr << "Could not open: " << qPrintable(sphere_path) << endl;
-		return false;
-	}
-
-	QTextStream stream(&sphere);
-	int n;
-	stream >> n;
-
 
 	QStringList img_ext;
 	img_ext << "*.jpg" << "*.JPG";
 	images = dir.entryList(img_ext);
 
-	for(int i = 0; i < n; i++) {
-		QString s;
-		Vector3f light;
-		stream >> s >> light[0] >> light[1] >> light[2];
 
-		if(i == skip_image)
-			continue;
-
-		lights.push_back(light);
+	try {
+		std::vector<QString> filenames;
+		parseLP(sphere_path, lights, filenames, skip_image);
 
 		if(ignore_filenames) {
-			if(images.size() != n) {
-				cerr << "Lp number of lights (" << n << ") different from the number of images found (" << images.size() << ")\n";
-				return false;
+			if(images.size() != (int)filenames.size()) {
+				QString error = QString("Lp number of lights (%1) different from the number of images found (%2)").arg(filenames.size(), images.size());
+				throw error;
 			}
 
 		} else {
-			throw "TODO: remove absolute parth of the image.";
-			//often path are absolute. TODO cleanup HERE!
-			QString filepath = dir.filePath(images[i]);
+			throw "TODO: unimplemented.";
+
+			//TODO check and remove absolute parth of the image;
+			/*QString filepath = dir.filePath(images[i]);
 			QFileInfo info(filepath);
 			if(!info.exists()) {
 				cerr << "Could not find image: " << qPrintable(s) << endl;
 				return false;
-			}
+			}*/
 		}
+	} catch(QString error) {
+		cerr << qPrintable(error) << endl;
+		return false;
 	}
 	return initImages(_path);
 }
