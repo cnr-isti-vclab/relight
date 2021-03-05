@@ -723,31 +723,17 @@ void MainWindow::loadLP() {
 	QString lp = QFileDialog::getOpenFileName(this, "Select light direction file", QString(), "Light directions (*.lp)");
 	if(lp.isNull())
 		return;
-	QFile file(lp);
-	if(!file.open(QFile::ReadOnly)) {
-		QMessageBox::critical(this, "Could not load file", file.errorString());
-		return;
-	}
-	QTextStream stream(&file);
-
-	size_t n;
-	stream >> n;
 
 	vector<QString> filenames;
 	std::vector<Vector3f> directions;
 
-	for(size_t i = 0; i < n; i++) {
-		QString s;
-		Vector3f light;
-		stream >> s >> light[0] >> light[1] >> light[2];
-		directions.push_back(light);
+	try {
+		ImageSet::parseLP(lp, directions, filenames);
 
-		//we keep only the filename (not the path)
-		QFileInfo info(s);
-		s = info.fileName();
-		filenames.push_back(s);
+	} catch(QString error) {
+		QMessageBox::critical(this, "LP file invalid: ", error);
+		return;
 	}
-
 
 	if(project.size() != filenames.size()) {
 		auto response = QMessageBox::question(this, "Light directions and images",
