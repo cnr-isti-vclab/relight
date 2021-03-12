@@ -109,6 +109,9 @@ public slots:
 	void loadLP();
 	void exportRTI();
 
+
+	void editLensParameters();
+
 	void showHelp();
 
 	void quit();

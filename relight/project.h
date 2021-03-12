@@ -3,7 +3,7 @@
 
 #include "measure.h"
 #include "ball.h"
-
+#include "lens.h"
 #include <QDir>
 #include <QString>
 
@@ -14,7 +14,7 @@ public:
 	Image(QString s = ""): filename(s) {}
 
 	QJsonObject toJson();
-	void fromJson(QJsonObject obj);
+	void fromJson(const QJsonObject &obj);
 	QString filename;
 	bool valid = true;
 	bool skip = false;
@@ -25,6 +25,16 @@ public:
 
 class Project {
 public:
+
+	QDir dir;                  //image folder
+	QSize imgsize;             //images width and height (must be the same for all).
+	Lens lens;
+
+
+	std::vector<Image> images1;
+	std::map<int, Ball *> balls;
+	std::vector<Measure *> measures;
+	QRect crop;
 
 	Project() {}
 	~Project();
@@ -63,12 +73,7 @@ public:
 		return -1;
 	}
 
-	QDir dir;                  //image folder
-	QSize imgsize;             //images width and height (must be the same for all).
-	std::vector<Image> images1;
-	std::map<int, Ball *> balls;
-	std::vector<Measure *> measures;
-	QRect crop;
+
 };
 
 #endif // PROJECT_H
