@@ -29,7 +29,10 @@ SOURCES += main.cpp \
     ../src/rti.cpp \
     helpdialog.cpp \
     project.cpp \
-    measure.cpp
+    measure.cpp \
+    focaldialog.cpp \
+    lens.cpp \
+    ../src/qexifimageheader.cpp
 
 
 HEADERS += \
@@ -48,12 +51,16 @@ HEADERS += \
     ../src/eigenpca.h \
     ../relight-cli/rtibuilder.h \
     project.h \
-    measure.h
+    measure.h \
+    focaldialog.h \
+    lens.h \
+    ../src/qexifimageheader.h
 
 FORMS += \
     mainwindow.ui \
     rtiexport.ui \
-    helpdialog.ui
+    helpdialog.ui \
+    focaldialog.ui
 
 RESOURCES += \
     icons.qrc

@@ -250,7 +250,7 @@ QExifValue::QExifValue( const QString &value, TextEncoding encoding )
     switch( encoding )
     {
     case AsciiEncoding:
-        d = new QExifUndefinedValuePrivate( QByteArray::fromRawData( "ASCII\0\0\0", 8 ) + value.toAscii() );
+		d = new QExifUndefinedValuePrivate( QByteArray::fromRawData( "ASCII\0\0\0", 8 ) + value.toLatin1());
         break;
     case JisEncoding:
     {
@@ -460,7 +460,7 @@ QString QExifValue::toString(QSysInfo::Endian byteOrder) const
         switch( encoding() )
         {
         case AsciiEncoding:
-            return QString::fromAscii( string.constData(), string.length() );
+			return QString::fromLatin1( string.constData(), string.length() );
         case JisEncoding:
         {
             QTextCodec *codec = QTextCodec::codecForName( "JIS X 0208" );
@@ -571,7 +571,7 @@ QByteArray QExifValue::toByteArray() const
     switch( d->type )
     {
     case Ascii:
-        return static_cast< const QExifAsciiValuePrivate * >( d.constData() )->value.toAscii();
+		return static_cast< const QExifAsciiValuePrivate * >( d.constData() )->value.toLatin1();
     case Undefined:
         return static_cast< const QExifUndefinedValuePrivate * >( d.constData() )->value;
     default:
@@ -893,7 +893,7 @@ bool QExifImageHeader::loadFromJpeg(QIODevice *device)
 {
     clear();
     QByteArray exifData = extractExif(device);
-    QByteArray nextData = device->read( 20 );
+	QByteArray nextData = device->read(20);
     if ( nextData.isEmpty()) return false;
     if (!exifData.isEmpty()) {
         QBuffer buffer(&exifData);
@@ -901,117 +901,6 @@ bool QExifImageHeader::loadFromJpeg(QIODevice *device)
         return readOk;
     }
     return false;
-}
-/*!
-    Saves meta-data to a JPEG image with the given \a fileName.
-    Returns true if the data was successfully written.
-    */
-bool QExifImageHeader::saveToJpeg(const QString &fileName) const
-{
-    QFile file(fileName);
-    if (file.open(QIODevice::ReadWrite))
-        return saveToJpeg(&file);
-    else
-        return false;
-}
-/*!
-    Save meta-data to the given I/O \a device.
-    The device must be non-sequential and already contain a valid JPEG image.
-    Returns true if the data was successfully written.
-    */
-bool QExifImageHeader::saveToJpeg(QIODevice *device) const
-{
-    if( device->isSequential() )
-        return false;
-    QByteArray exif;
-    {
-        QBuffer buffer( &exif );
-        if( !buffer.open( QIODevice::WriteOnly ) )
-            return false;
-        write( &buffer );
-        buffer.close();
-        exif = QByteArray::fromRawData( "Exif\0\0", 6 ) + exif;
-    }
-    QDataStream stream( device );
-    stream.setByteOrder( QDataStream::BigEndian );
-    if( device->read( 2 ) != "\xFF\xD8" ) // Not a valid JPEG image.
-        return false;
-    quint16 segmentId;
-    quint16 segmentLength;
-    stream >> segmentId;
-    stream >> segmentLength;
-    if( segmentId == 0xFFE0 )
-    {
-        QByteArray jfif = device->read( segmentLength - 2 );
-        if( !jfif.startsWith( "JFIF" ) )
-            return false;
-        stream >> segmentId;
-        stream >> segmentLength;
-        if( segmentId == 0xFFE1 )
-        {
-            QByteArray oldExif = device->read( segmentLength - 2 );
-            if( !oldExif.startsWith( "Exif" ) )
-                return false;
-            int dSize = oldExif.size() - exif.size();
-            if( dSize > 0 )
-                exif += QByteArray( dSize, '\0' );
-            QByteArray remainder = device->readAll();
-            device->seek( 0 );
-            stream << quint16( 0xFFD8 ); // SOI
-            stream << quint16( 0xFFE0 ); // APP0
-            stream << quint16( jfif.size() + 2 );
-            device->write( jfif );
-            stream << quint16( 0xFFE1 ); //APP1
-            stream << quint16( exif.size() + 2 );
-            device->write( exif );
-            device->write( remainder );
-        }
-        else
-        {
-            QByteArray remainder = device->readAll();
-            device->seek( 0 );
-            stream << quint16( 0xFFD8 ); // SOI
-            stream << quint16( 0xFFE0 ); // APP0
-            stream << quint16( jfif.size() + 2 );
-            device->write( jfif );
-            stream << quint16( 0xFFE1 ); //APP1
-            stream << quint16( exif.size() + 2 );
-            device->write( exif );
-            stream << quint16( 0xFFE0 ); // APP0
-            stream << segmentId;
-            stream << segmentLength;
-            device->write( remainder );
-        }
-    }
-    else if( segmentId == 0xFFE1 )
-    {
-        QByteArray oldExif = device->read( segmentLength - 2 );
-        if( !oldExif.startsWith( "Exif" ) )
-            return false;
-        int dSize = oldExif.size() - exif.size();
-        if( dSize > 0 )
-            exif += QByteArray( dSize, '\0' );
-        QByteArray remainder = device->readAll();
-        device->seek( 0 );
-        stream << quint16( 0xFFD8 ); // SOI
-        stream << quint16( 0xFFE1 ); //APP1
-        stream << quint16( exif.size() + 2 );
-        device->write( exif );
-        device->write( remainder );
-    }
-    else
-    {
-        QByteArray remainder = device->readAll();
-        device->seek( 0 );
-        stream << quint16( 0xFFD8 ); // SOI
-        stream << quint16( 0xFFE1 ); //APP1
-        stream << quint16( exif.size() + 2 );
-        device->write( exif );
-        stream << segmentId;
-        stream << segmentLength;
-        device->write( remainder );
-    }
-    return true;
 }
 /*!
     Returns the byte order of EXIF file.
@@ -1242,25 +1131,7 @@ QImage QExifImageHeader::thumbnail() const
     }
     return image;
 }
-/*!
-    Sets the image \a thumbnail.
-    */
-void QExifImageHeader::setThumbnail( const QImage &thumbnail )
-{
-    if (!thumbnail.isNull()) {
-        QBuffer buffer;
-        if (buffer.open(QIODevice::WriteOnly) && thumbnail.save(&buffer, "JPG")) {
-            buffer.close();
-            d->thumbnailSize = thumbnail.size();
-            d->thumbnailData = buffer.data();
-            d->thumbnailOrientation = QExifValue();
-        }
-    } else {
-        d->thumbnailSize = QSize();
-        d->thumbnailData = QByteArray();
-    }
-    d->size = -1;
-}
+
 QByteArray QExifImageHeader::extractExif( QIODevice *device ) const
 {
     QDataStream stream( device );
@@ -1321,9 +1192,9 @@ QExifValue QExifImageHeader::readIfdValue(QDataStream &stream, int startPos, con
         if (header.count > 4) {
             stream.device()->seek(startPos + header.offset);
             QByteArray ascii = stream.device()->read(header.count);
-            return QExifValue(QString::fromAscii(ascii.constData(), ascii.size() - 1));
+			return QExifValue(QString::fromLatin1(ascii.constData(), ascii.size() - 1));
         } else {
-            return QExifValue(QString::fromAscii(header.offsetAscii, header.count - 1));
+			return QExifValue(QString::fromLatin1(header.offsetAscii, header.count - 1));
         }
     case QExifValue::Short:
     {
@@ -1610,129 +1481,4 @@ void QExifImageHeader::writeExifValue(QDataStream &stream, const QExifValue &val
         qWarning() << "Invalid Ifd Type" << value.type();
         break;
     }
-}
-template <typename T> quint32 QExifImageHeader::writeExifHeaders(
-        QDataStream &stream, const QMap<T, QExifValue> &values, quint32 offset) const
-{
-    offset += values.count() * 12;
-    for (typename QMap<T, QExifValue>::const_iterator i = values.constBegin(); i != values.constEnd(); i++)
-        offset = writeExifHeader(stream, i.key(), i.value(), offset);
-    return offset;
-}
-template <typename T> void QExifImageHeader::writeExifValues(
-        QDataStream &stream, const QMap<T, QExifValue> &values) const
-{
-    for (typename QMap<T, QExifValue>::const_iterator i = values.constBegin(); i != values.constEnd(); i++)
-        writeExifValue(stream, i.value());
-}
-/*!
-    Writes an EXIF header to an I/O \a device.
-    Returns the total number of bytes written.
-    */
-qint64 QExifImageHeader::write(QIODevice *device) const
-{
-#ifndef QT_NO_DEBUG
-    qint64 startPos = device->pos();
-#endif
-
-#define TEXIF    // set debugging on
-#ifdef TEXIF
-    QIODevice *exDevice = device;
-    QByteArray exif = "";
-    QBuffer buffer(&exif);
-    /*readOk = */buffer.open(QIODevice::ReadWrite);
-    device = &buffer;
-    QDataStream stream( &buffer );
-#else
-    QDataStream stream( device );
-#endif
-    if (d->byteOrder == QSysInfo::LittleEndian) {
-        stream.setByteOrder( QDataStream::LittleEndian );
-        device->write("II", 2);
-        device->write("\x2A\x00", 2);
-        device->write("\x08\x00\x00\x00", 4);
-    } else if (d->byteOrder == QSysInfo::BigEndian) {
-        stream.setByteOrder(QDataStream::BigEndian);
-        device->write("MM", 2);
-        device->write("\x00\x2A", 2);
-        device->write("\x00\x00\x00\x08", 4);
-    }
-    quint16 count = d->imageIfdValues.count() + 1;
-    quint32 offset = 26;
-    if (!d->gpsIfdValues.isEmpty()) {
-        count++;
-        offset += 12;
-    }
-    stream << count;
-    offset = writeExifHeaders(stream, d->imageIfdValues, offset);
-    quint32 exifIfdOffset = offset;
-    stream << quint16( ExifIfdPointer );
-    stream << quint16( QExifValue::Long );
-    stream << quint32( 1 );
-    stream << exifIfdOffset;
-    offset += calculateSize(d->exifIfdValues);
-    quint32 gpsIfdOffset = offset;
-    if (!d->gpsIfdValues.isEmpty()) {
-        stream << quint16(GpsInfoIfdPointer);
-        stream << quint16(QExifValue::Long);
-        stream << quint32(1);
-        stream << gpsIfdOffset;
-        d->imageIfdValues.insert(ImageTag(GpsInfoIfdPointer), QExifValue(offset));
-        offset += calculateSize(d->gpsIfdValues);
-    }
-    if (!d->thumbnailData.isEmpty())
-        stream << offset; // Write offset to thumbnail Ifd. //TODO check offset
-    else
-        stream << quint32(0);
-    writeExifValues( stream, d->imageIfdValues );
-    Q_ASSERT(startPos + exifIfdOffset == device->pos());
-    stream << quint16(d->exifIfdValues.count());
-    // 2014-02-03 Sig
-    exifIfdOffset += 2; // add 2 bytes for d->exifIfdValues.count()
-    // TODO check offset + gpsIfdOffset
-    // Sig
-    writeExifHeaders(stream, d->exifIfdValues, exifIfdOffset);
-    writeExifValues(stream, d->exifIfdValues);
-    Q_ASSERT(startPos + gpsIfdOffset == device->pos());
-    if (!d->gpsIfdValues.isEmpty()) {
-        stream << quint16(d->gpsIfdValues.count());
-        writeExifHeaders(stream, d->gpsIfdValues, gpsIfdOffset);
-        writeExifValues(stream, d->gpsIfdValues);
-    }
-    Q_ASSERT(startPos + offset == device->pos());
-    if (!d->thumbnailData.isEmpty()) {
-        offset += 86;
-        stream << quint16(7);
-        QExifValue xResolution = d->thumbnailXResolution.isNull()
-                ? QExifValue(QExifURational(72, 1))
-                : d->thumbnailXResolution;
-        QExifValue yResolution = d->thumbnailYResolution.isNull()
-                ? QExifValue(QExifURational(72, 1))
-                : d->thumbnailYResolution;
-        QExifValue resolutionUnit = d->thumbnailResolutionUnit.isNull()
-                ? QExifValue(quint16(2))
-                : d->thumbnailResolutionUnit;
-        QExifValue orientation = d->thumbnailOrientation.isNull()
-                ? QExifValue(quint16(0))
-                : d->thumbnailOrientation;
-        writeExifHeader(stream, Compression, QExifValue(quint16(6)), offset);
-        offset = writeExifHeader(stream, XResolution, xResolution, offset);
-        offset = writeExifHeader(stream, YResolution, yResolution, offset);
-        writeExifHeader(stream, ResolutionUnit, resolutionUnit, offset);
-        writeExifHeader(stream, Orientation, orientation, offset);
-        writeExifHeader(stream, JpegInterchangeFormat, QExifValue(offset), offset);
-        writeExifHeader(stream, JpegInterchangeFormatLength,
-                        QExifValue(quint32(d->thumbnailData.size())), offset);
-        writeExifValue(stream, xResolution);
-        writeExifValue(stream, yResolution);
-        Q_ASSERT(startPos + offset == device->pos());
-        device->write(d->thumbnailData);
-        offset += d->thumbnailData.size();
-    }
-    Q_ASSERT(startPos + offset == device->pos());
-    d->size = offset;
-#ifdef TEXIF
-    exDevice->write(exif);
-#endif
-    return offset;
 }
