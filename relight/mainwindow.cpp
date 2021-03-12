@@ -5,6 +5,7 @@
 #include "rtiexport.h"
 #include "../src/imageset.h"
 #include "helpdialog.h"
+#include "focaldialog.h"
 
 #include <QInputDialog>
 #include <QFileDialog>
@@ -47,6 +48,9 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionSave_LP,    SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
 	connect(ui->actionLoad_LP,    SIGNAL(triggered(bool)), this, SLOT(loadLP()));
 	connect(ui->showSpheres,      SIGNAL(clicked(bool)),   this, SLOT(showSpheres(bool)));
+
+	connect(ui->actionLens_parameters, SIGNAL(triggered(bool)), this, SLOT(editLensParameters()));
+
 	connect(ui->actionHelp,       SIGNAL(triggered(bool)), this, SLOT(showHelp()));
 
 
@@ -810,6 +814,14 @@ void MainWindow::exportRTI() {
 	rtiexport->show();
 	rtiexport->exec();
 }
+
+void MainWindow::editLensParameters() {
+	FocalDialog *focal = new FocalDialog(&project, this);
+	focal->setWindowModality(Qt::WindowModal);
+	bool result = focal->exec();
+	delete focal;
+}
+
 
 void MainWindow::showHelp() {
 	help->show();

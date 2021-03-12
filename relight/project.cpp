@@ -14,7 +14,9 @@
 #include <QPen>
 #include <QImageReader>
 
+#include <iostream>
 
+#include "../src/qexifimageheader.h"
 using namespace std;
 
 QJsonObject Image::toJson() {
@@ -31,7 +33,7 @@ QJsonObject Image::toJson() {
 
 	return obj;
 }
-void Image::fromJson(QJsonObject obj) {
+void Image::fromJson(const QJsonObject &obj) {
 	filename = obj["filename"].toString();
 	skip = obj["skip"].toBool();
 
@@ -105,8 +107,30 @@ bool Project::scanDir() {
 
 	for(Image &image: images1) {
 		QImageReader reader(image.filename);
+
 		QSize size = reader.size();
 		image.valid = (size != imgsize);
+
+		QExifImageHeader exif;
+		exif.loadFromJpeg(image.filename);
+		auto tags = exif.imageTags();
+		cout << exif.contains(QExifImageHeader::ImageWidth) << ": " << exif.value(QExifImageHeader::ImageWidth).toLong() << endl;
+		//ImageWidth ImageLength
+
+		auto extended = exif.extendedTags();
+		cout << exif.value(QExifImageHeader::ExposureTime).type() << " " << qPrintable(exif.value(QExifImageHeader::ExposureTime).toRational().second) << endl;
+		//ColorSpace
+		//PixelXDimension
+		//PixelYDimension
+		//FocalLength
+		//FocalLengthIn35mmFilm
+		//FocalPlaneXResolution
+		//FocalPlaneYResolution
+		//FocalPlaneResolutionUnit
+		//ExposureTime
+		//FNumber
+		//ShutterSpeedValue
+		//FocalLength
 	}
 	return resolutions.size() == 1;
 }
@@ -129,6 +153,8 @@ void Project::load(QString filename) {
 
 	if(!setDir(folder))
 		throw(QString("Can't load a project without a valid folder"));
+
+	lens.fromJson(obj["lens"].toObject());
 
 	for(auto img: obj["images"].toArray()) {
 		Image image;
@@ -187,6 +213,10 @@ void Project::save(QString filename) {
 		jimages.push_back(img.toJson());
 
 	project.insert("images", jimages);
+
+
+	QJsonObject jlens = lens.toJson();
+	project.insert("lens", jlens);
 
 	if(crop.isValid()) {
 		QJsonObject jcrop;

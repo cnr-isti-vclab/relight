@@ -235,9 +235,16 @@
     <addaction name="separator"/>
     <addaction name="actionAbout"/>
    </widget>
+   <widget class="QMenu" name="menuCalibration">
+    <property name="title">
+     <string>Calibration</string>
+    </property>
+    <addaction name="actionLens_parameters"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit_2"/>
    <addaction name="menuEdit"/>
+   <addaction name="menuCalibration"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -489,6 +496,11 @@
   <action name="actionToggle_max_luma">
    <property name="text">
     <string>Toggle max luma</string>
+   </property>
+  </action>
+  <action name="actionLens_parameters">
+   <property name="text">
+    <string>Lens parameters...</string>
    </property>
   </action>
  </widget>
