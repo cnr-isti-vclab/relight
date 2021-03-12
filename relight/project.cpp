@@ -118,7 +118,7 @@ bool Project::scanDir() {
 		//ImageWidth ImageLength
 
 		auto extended = exif.extendedTags();
-		cout << exif.value(QExifImageHeader::ExposureTime).type() << " " << qPrintable(exif.value(QExifImageHeader::ExposureTime).toRational().second) << endl;
+		cout << exif.value(QExifImageHeader::ExposureTime).type() << " " << exif.value(QExifImageHeader::ExposureTime).toRational().second << endl;
 		//ColorSpace
 		//PixelXDimension
 		//PixelYDimension

@@ -38,6 +38,8 @@ set (RELIGHT_HEADERS
 	graphics_view_zoom.h
 	rtiexport.h
 	helpdialog.h
+	focaldialog.h
+	lens.h
 	project.h
 	../src/imageset.h
 	../src/jpeg_decoder.h
@@ -55,6 +57,7 @@ set (RELIGHT_SOURCES
 	measure.cpp
 	graphics_view_zoom.cpp
 	rtiexport.cpp
+	lens.cpp
 	project.cpp
 	../relight-cli/rtibuilder.cpp
 	../src/imageset.cpp
@@ -62,6 +65,7 @@ set (RELIGHT_SOURCES
 	../src/jpeg_encoder.cpp
 	../src/rti.cpp
 	helpdialog.cpp
+	focaldialog.cpp
 )
 
 set (RELIGHT_FORMS
