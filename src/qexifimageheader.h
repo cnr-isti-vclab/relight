@@ -49,6 +49,7 @@
 #define QEXIFIMAGEHEADER_H
 #include <QPair>
 #include <QVector>
+#include <QIODevice>
 #include <QSharedData>
 #include <QVariant>
 #include <QSysInfo>
@@ -260,10 +261,7 @@ public:
     bool loadFromData(QByteArray *exifData);
     bool loadFromJpeg(const QString &fileName);
     bool loadFromJpeg(QIODevice *device);
-    bool saveToJpeg(const QString &fileName) const;
-    bool saveToJpeg(QIODevice *device) const;
     bool read(QIODevice *device);
-    qint64 write(QIODevice *device) const;
     qint64 size() const;
     QSysInfo::Endian byteOrder() const;
     void clear();
@@ -284,7 +282,6 @@ public:
     void setValue(GpsTag tag, const QExifValue &value);
     bool success();
     QImage thumbnail() const;
-    void setThumbnail( const QImage &thumbnail );
     // added by Sig sig@sigvdr.de
     bool modified(void);
     quint8 headerId(void);

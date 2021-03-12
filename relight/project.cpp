@@ -114,6 +114,21 @@ bool Project::scanDir() {
 		QExifImageHeader exif;
 		exif.loadFromJpeg(image.filename);
 		auto tags = exif.imageTags();
+		for(auto tag: tags) {
+			if(exif.contains(tag)) {
+				auto value = exif.value(tag);
+				QString type;
+				switch(value.type()) {
+				case QExifValue::Type::Ascii: type = "Ascii"; break;
+				case QExifValue::Type::Byte: type = "Byte"; break;
+				case QExifValue::Type::Long: type = "Long"; break;
+				case QExifValue::Type::Rational: type = "Rational"; break;
+				case QExifValue::Type::Short: type = "Short"; break;
+				case QExifValue::Type::SignedLong: type = "SignedLong"; break;
+				case QExifValue::Type::SignedRational: type = "SignedRational"; break;
+				}
+			}
+		}
 		cout << exif.contains(QExifImageHeader::ImageWidth) << ": " << exif.value(QExifImageHeader::ImageWidth).toLong() << endl;
 		//ImageWidth ImageLength
 
