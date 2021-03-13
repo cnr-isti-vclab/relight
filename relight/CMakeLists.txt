@@ -44,6 +44,7 @@ set (RELIGHT_HEADERS
 	../src/imageset.h
 	../src/jpeg_decoder.h
 	../src/jpeg_encoder.h
+	../src/qexifimageheader.h
 	../src/material.h
 	../src/eigenpca.h
 	../relight-cli/rtibuilder.h
@@ -57,6 +58,7 @@ set (RELIGHT_SOURCES
 	measure.cpp
 	graphics_view_zoom.cpp
 	rtiexport.cpp
+
 	lens.cpp
 	project.cpp
 	../relight-cli/rtibuilder.cpp
@@ -64,6 +66,7 @@ set (RELIGHT_SOURCES
 	../src/jpeg_decoder.cpp
 	../src/jpeg_encoder.cpp
 	../src/rti.cpp
+	../src/qexifimageheader.cpp
 	helpdialog.cpp
 	focaldialog.cpp
 )
