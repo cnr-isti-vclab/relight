@@ -16,37 +16,7 @@
 
 #include <iostream>
 
-#include "../src/qexifimageheader.h"
 using namespace std;
-
-QJsonObject Image::toJson() {
-
-	QJsonObject obj;
-	obj.insert("filename", filename);
-	obj.insert("skip", skip);
-
-	QJsonArray dir { direction[0], direction[1], direction[2] };
-	obj.insert("direction", dir);
-
-	QJsonArray pos { position[0], position[1], position[2] };
-	obj.insert("position", pos);
-
-	return obj;
-}
-void Image::fromJson(const QJsonObject &obj) {
-	filename = obj["filename"].toString();
-	skip = obj["skip"].toBool();
-
-	QJsonArray dir = obj["directions"].toArray();
-	direction[0] = dir[0].toDouble();
-	direction[1] = dir[1].toDouble();
-	direction[2] = dir[2].toDouble();
-
-	QJsonArray pos = obj["positions"].toArray();
-	position[0] = pos[0].toDouble();
-	position[1] = pos[1].toDouble();
-	position[2] = pos[2].toDouble();
-}
 
 
 Project::~Project() {
@@ -106,46 +76,12 @@ bool Project::scanDir() {
 	}
 
 	for(Image &image: images1) {
-		QImageReader reader(image.filename);
+		image.readExif();
 
+		QImageReader reader(image.filename);
 		QSize size = reader.size();
 		image.valid = (size != imgsize);
 
-		QExifImageHeader exif;
-		exif.loadFromJpeg(image.filename);
-		auto tags = exif.imageTags();
-		for(auto tag: tags) {
-			if(exif.contains(tag)) {
-				auto value = exif.value(tag);
-				QString type;
-				switch(value.type()) {
-				case QExifValue::Type::Ascii: type = "Ascii"; break;
-				case QExifValue::Type::Byte: type = "Byte"; break;
-				case QExifValue::Type::Long: type = "Long"; break;
-				case QExifValue::Type::Rational: type = "Rational"; break;
-				case QExifValue::Type::Short: type = "Short"; break;
-				case QExifValue::Type::SignedLong: type = "SignedLong"; break;
-				case QExifValue::Type::SignedRational: type = "SignedRational"; break;
-				}
-			}
-		}
-		cout << exif.contains(QExifImageHeader::ImageWidth) << ": " << exif.value(QExifImageHeader::ImageWidth).toLong() << endl;
-		//ImageWidth ImageLength
-
-		auto extended = exif.extendedTags();
-		cout << exif.value(QExifImageHeader::ExposureTime).type() << " " << exif.value(QExifImageHeader::ExposureTime).toRational().second << endl;
-		//ColorSpace
-		//PixelXDimension
-		//PixelYDimension
-		//FocalLength
-		//FocalLengthIn35mmFilm
-		//FocalPlaneXResolution
-		//FocalPlaneYResolution
-		//FocalPlaneResolutionUnit
-		//ExposureTime
-		//FNumber
-		//ShutterSpeedValue
-		//FocalLength
 	}
 	return resolutions.size() == 1;
 }

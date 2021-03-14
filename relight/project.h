@@ -4,23 +4,11 @@
 #include "measure.h"
 #include "ball.h"
 #include "lens.h"
+#include "image.h"
 #include <QDir>
 #include <QString>
 
 class QJsonObject;
-
-class Image {
-public:
-	Image(QString s = ""): filename(s) {}
-
-	QJsonObject toJson();
-	void fromJson(const QJsonObject &obj);
-	QString filename;
-	bool valid = true;
-	bool skip = false;
-	Vector3f direction = Vector3f(0, 0, 0);
-	Vector3f position = Vector3f(0, 0, 0);
-};
 
 
 class Project {
