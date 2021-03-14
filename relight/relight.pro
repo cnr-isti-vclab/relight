@@ -32,7 +32,8 @@ SOURCES += main.cpp \
     measure.cpp \
     focaldialog.cpp \
     lens.cpp \
-    ../src/qexifimageheader.cpp
+    image.cpp \
+    ../src/exif.cpp
 
 
 HEADERS += \
@@ -54,7 +55,8 @@ HEADERS += \
     measure.h \
     focaldialog.h \
     lens.h \
-    ../src/qexifimageheader.h
+    image.h \
+    ../src/exif.h
 
 FORMS += \
     mainwindow.ui \
