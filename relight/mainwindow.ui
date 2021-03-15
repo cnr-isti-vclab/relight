@@ -6,16 +6,16 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>516</width>
-    <height>605</height>
+    <width>635</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout_2">
-    <item>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <widget class="QLabel" name="label_2">
@@ -31,6 +31,12 @@
           <horstretch>1</horstretch>
           <verstretch>1</verstretch>
          </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>300</width>
+          <height>16777215</height>
+         </size>
         </property>
        </widget>
       </item>
@@ -152,6 +158,22 @@
        </widget>
       </item>
       <item>
+       <widget class="QListView" name="imageList1">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>1</horstretch>
+          <verstretch>4</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>300</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QListWidget" name="imageList">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -169,7 +191,7 @@
       </item>
      </layout>
     </item>
-    <item>
+    <item row="0" column="1" rowspan="2">
      <widget class="QGraphicsView" name="graphicsView">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -186,7 +208,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>516</width>
+     <width>635</width>
      <height>22</height>
     </rect>
    </property>

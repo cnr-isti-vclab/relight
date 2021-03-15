@@ -1,3 +1,5 @@
+/* The implementation taken and extensively modified from Qt Exif implementation (now abandoned) */
+
 #include "exif.h"
 #include <QFile>
 #include <QDataStream>
@@ -11,7 +13,7 @@ void IfdHeader::parse(QDataStream &stream, quint32 startPos) {
 	stream >> count;
 
 	quint32 pos = stream.device()->pos() + 4;
-	bool needsOffset = 1;
+	int needsOffset = 1;
 	if(tag != Exif::ExifIfdPointer && tag != Exif::GpsInfoIfdPointer) {
 		if(type == Ascii || type == Undefined || type == Byte)
 			needsOffset = 4;

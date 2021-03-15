@@ -13,6 +13,9 @@
 #include <QGraphicsPixmapItem>
 #include <QMouseEvent>
 #include <QSettings>
+#include <QListView>
+#include <QStandardItemModel>
+#include <QItemSelectionModel>
 
 #include <QtConcurrent/QtConcurrent>
 
@@ -89,6 +92,19 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	rtiexport = new RtiExport(this);
 	help = new HelpDialog(this);
+	imageModel = new QStandardItemModel(ui->imageList1);
+	ui->imageList1->setModel(imageModel);
+
+
+	// Register model item  changed signal
+	QItemSelectionModel *selectionModel = ui->imageList1->selectionModel();
+
+	//TODO remove QListWidget!
+	ui->imageList->setVisible(false);
+	connect(selectionModel, SIGNAL(currentChanged(const QModelIndex &, const QModelIndex &)),
+			this, SLOT(openImage(const QModelIndex &)));
+	connect( imageModel , SIGNAL(itemChanged(QStandardItem *)), this, SLOT( imageChecked(QStandardItem * )));
+
 }
 
 MainWindow::~MainWindow() {	delete ui; }
@@ -106,6 +122,8 @@ void MainWindow::clear() {
 	ui->sphereList->clear();
 	project.clear();
 }
+
+
 
 void MainWindow::newProject() {
 	QString lastDir = settings->value("LastDir", QDir::homePath()).toString();
@@ -196,19 +214,30 @@ bool MainWindow::init() {
 	settings->setValue("LastDir", project.dir.path());
 
 	ui->imageList->clear();
-	//project.imgsize = QSize();
 
 	//create the items (name and TODO thumbnail
 	int count = 0;
 	for(Image &a: project.images1) {
 		auto *item = new QListWidgetItem(QString("%1 - %2").arg(count+1).arg(a.filename), ui->imageList);
-		item ->setData(Qt::UserRole, count++);
+		item ->setData(Qt::UserRole, count);
+
+		QStandardItem *poListItem = new QStandardItem;
+		if(!a.valid)
+			poListItem->setBackground(Qt::red);
+		poListItem->setText(QString("%1 - %2").arg(count+1).arg(a.filename));
+		poListItem->setCheckable(true);
+		// Uncheck the item
+		poListItem->setCheckState(a.valid ? Qt::Checked : Qt::Unchecked);
+		poListItem->setData(a.valid ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
+		poListItem->setData(count, Qt::UserRole+1);
+		imageModel->setItem(count, poListItem);
+
+		count++;
 	}
 
 	openImage(ui->imageList->item(0), true);
 	//TODO: in background load and process the images
 
-	
 //	addSphere();
 
 	ui->addSphere->setEnabled(true);
@@ -219,14 +248,33 @@ bool MainWindow::init() {
 	return true;
 }
 
+void MainWindow::imageChecked(QStandardItem *item) {
+	QModelIndex index = imageModel->indexFromItem(item);
+	Image &image = project.images1[index.row()];
+	bool skip = !index.data(Qt::CheckStateRole).toBool();
+	if(!skip && !image.valid) {
+		QMessageBox::critical(this, "Can't include this image.", "This image has a different resolution or focal, cannot include in the processing");
+		item->setCheckState(Qt::Unchecked);
+		return;
+	}
+	image.skip = skip;
+	item->setBackground(image.skip? Qt::red : Qt::white);
+}
+
+void MainWindow::openImage(const QModelIndex &index) {
+	// Set selection
+	openImage(index.row(), false);
+}
+
 void MainWindow::openImage(QListWidgetItem *item, bool fit) {
 	if(!item)
 		return;
-
-	maxLuming = false;
-			
 	ui->imageList->setCurrentItem(item);
 	int id = item->data(Qt::UserRole).toInt();
+	openImage(id, fit);
+}
+
+void MainWindow::openImage(int id, bool fit) {
 	QString filename = project.images1[id].filename;//item->text();
 
 	QImage img(project.dir.filePath(filename));
@@ -234,7 +282,10 @@ void MainWindow::openImage(QListWidgetItem *item, bool fit) {
 		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
 		return;
 	}
-	currentImage = item->data(Qt::UserRole).toInt();
+	currentImage = id;
+
+	maxLuming = false;
+
 	size_t n = size_t(currentImage);
 	if(imagePixmap)
 		delete imagePixmap;
@@ -405,6 +456,11 @@ void MainWindow::pointClick(QPoint p) {
 	
 }
 void MainWindow::pointPicked(QPoint p) {
+	//works only on images with correct resolution and lens.
+	Image image = project.images1[currentImage];
+	if(!image.valid)
+		return;
+
 	QPointF pos = ui->graphicsView->mapToScene(p);
 	
 	QBrush blueBrush(Qt::blue);

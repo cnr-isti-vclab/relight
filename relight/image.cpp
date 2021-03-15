@@ -36,26 +36,11 @@ void Image::fromJson(const QJsonObject &obj) {
 	::fromJson(obj["position"].toObject(), position);
 }
 
-void Image::readExif() {
-	Exif exif;//exif
-	exif.parse(filename);
+void Image::readExif(Exif &exif) {
+	exposureTime = exif[Exif::ExposureTime].toDouble();
+	//ColorSpace
 
 	for(auto tag: exif.keys()) {
 		cout << qPrintable(exif.tagNames[tag]) << " = " << qPrintable(exif[tag].toString()) << endl;
 	}
-
-
-
-	//ColorSpace
-	//PixelXDimension
-	//PixelYDimension
-	//FocalLength
-	//FocalLengthIn35mmFilm
-	//FocalPlaneXResolution
-	//FocalPlaneYResolution
-	//FocalPlaneResolutionUnit
-	//ExposureTime
-	//FNumber
-	//ShutterSpeedValue
-	//FocalLength
 }

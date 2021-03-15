@@ -123,6 +123,9 @@
         <property name="readOnly">
          <bool>true</bool>
         </property>
+        <property name="maximum">
+         <number>65535</number>
+        </property>
        </widget>
       </item>
       <item row="0" column="2">
@@ -136,6 +139,9 @@
        <widget class="QSpinBox" name="height">
         <property name="enabled">
          <bool>true</bool>
+        </property>
+        <property name="maximum">
+         <number>65535</number>
         </property>
        </widget>
       </item>
@@ -151,7 +157,7 @@
       <item row="2" column="0">
        <widget class="QLabel" name="label_14">
         <property name="text">
-         <string>Focal X:</string>
+         <string>Focal:</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -159,20 +165,7 @@
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QDoubleSpinBox" name="focalx"/>
-      </item>
-      <item row="2" column="2">
-       <widget class="QLabel" name="label_17">
-        <property name="text">
-         <string>Focal Y:</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="3">
-       <widget class="QDoubleSpinBox" name="focaly"/>
+       <widget class="QDoubleSpinBox" name="focalLength"/>
       </item>
       <item row="3" column="0">
        <widget class="QLabel" name="label_5">
