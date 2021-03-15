@@ -4,48 +4,52 @@
 #include <vector>
 
 class QJsonObject;
-
+class Exif;
 
 class Lens {
 public:
 	int width = 0, height = 0;
 	bool focal35equivalent = true;
-	double focalx = 0, focaly = 0; //in mm
-	double ccdWidth = 0;           //in mm
-	double ccdHeight = 0;          //in mm
+	double focalLength = 0; //in mm
+	double pixelSizeX = 0, pixelSizeY = 0;
 	double principalOffsetX = 0, principalOffsetY = 0;
+
+	//double ccdWidth = 0;           //in mm
+	//double ccdHeight = 0;          //in mm
+
 	double k1 = 0, k2 = 0, p1 = 0, p2 = 0;
 
 	QJsonObject toJson();
 	void fromJson(const QJsonObject &obj);
+	void readExif(Exif &exif);
 
-	double focalX() {
-		if(focal35equivalent)
-			return 35*focalx/ccdWidth;
-		return focalx;
+	//compute focal length 35mm equivalent.
+	double focal35() {
+		if(focal35equivalent) return focalLength;
+		else {
+			double width = pixelSizeX * width;
+			return focalLength * 35 / width;
+		}
 	}
 
-	double focalY() {
-		if(focal35equivalent)
-			return 35*focaly/ccdHeight;
-		return focaly;
+	double ccdWidth() {
+		return pixelSizeX*width;
 	}
 
-	double focal35X() {
-		if(focal35equivalent)
-			return focalx;
-		return ccdWidth*focalx/35;
-	}
-
-
-	double focal35Y() {
-		if(focal35equivalent)
-			return focaly;
-		return ccdHeight*focaly/35;
+	double ccdHeight() {
+		return pixelSizeY*height;
 	}
 
 	std::vector<double> matrix() {
-		std::vector<double> m = { focalX(), 0, principalOffsetX };
+		double fx = focalLength /pixelSizeX;
+		double fy = focalLength /pixelSizeY;
+		double ox = principalOffsetX;
+		double oy = principalOffsetY;
+		std::vector<double> m = {
+			-fx, 0, ox,
+			-fy, 0, oy,
+			0, 0, 1
+		};
 		return m;
 	}
 };

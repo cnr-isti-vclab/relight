@@ -1,4 +1,5 @@
 #include "project.h"
+#include "../src/exif.h"
 
 #include <QFile>
 #include <QTextStream>
@@ -57,16 +58,24 @@ bool Project::scanDir() {
 	QVector<QSize> resolutions;
 	vector<int> count;
 	for(QString &s: QDir(dir).entryList(img_ext)) {
-		images1.push_back(Image(s));
+		Image image(s);
+
 		QImageReader reader(s);
 		QSize size = reader.size();
-		if(resolutions.indexOf(size)== -1) {
+		image.width = size.width();
+		image.height = size.height();
+
+		int index = resolutions.indexOf(size);
+		if(index == -1) {
 			resolutions.push_back(size);
 			count.push_back(1);
-		}
+		} else
+			count[index]++;
+		images1.push_back(image);
 	}
 	if(!images1.size())
 		return false;
+
 	int max_n = 0;
 	for(int i = 0; i < resolutions.size(); i++) {
 		if(count[i] > max_n) {
@@ -75,15 +84,52 @@ bool Project::scanDir() {
 		}
 	}
 
+
 	for(Image &image: images1) {
-		image.readExif();
-
-		QImageReader reader(image.filename);
-		QSize size = reader.size();
-		image.valid = (size != imgsize);
-
+		image.valid = image.width == imgsize.width() && image.height == imgsize.height();
+		image.skip = !image.valid;
 	}
-	return resolutions.size() == 1;
+
+
+	lens.width = imgsize.width();
+	lens.height = imgsize.height();
+
+	QVector<Lens> alllens;
+	QVector<double> focals;
+	count.clear();
+	for(Image &image: images1) {
+		Exif exif;//exif
+		exif.parse(image.filename);
+		image.readExif(exif);
+
+
+		Lens image_lens;
+		image_lens.width = lens.width;
+		image_lens.height = lens.height;
+		image_lens.readExif(exif);
+		alllens.push_back(image_lens);
+		int index = focals.indexOf(image_lens.focal35());
+
+		if(index == -1) {
+			focals.push_back(image_lens.focal35());
+			count.push_back(1);
+		} else
+			count[index]++;
+	}
+
+	max_n = 0;
+	for(int i = 0; i < focals.size(); i++) {
+		if(count[i] > max_n) {
+			max_n = count[i];
+			lens = alllens[i];
+		}
+	}
+	for(int i = 0; i < images1.size(); i++) {
+		images1[i].valid |= (lens.focal35() == alllens[i].focal35());
+		images1[i].skip = !images1[i].valid;
+	}
+
+	return resolutions.size() == 1 && focals.size() == 1;
 }
 
 void Project::load(QString filename) {

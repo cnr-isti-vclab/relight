@@ -20,7 +20,8 @@ class QGraphicsPixmapItem;
 class QSettings;
 class RtiExport;
 class HelpDialog;
-
+class QStandardItemModel;
+class QStandardItem;
 
 namespace Ui {
 class MainWindow;
@@ -66,7 +67,12 @@ public slots:
 	void saveProjectAs();
 
 	void clear(); //clear everything (project, images etc.)
+	void openImage(const QModelIndex &current);
 	void openImage(QListWidgetItem *, bool fit = false);
+	void openImage(int id, bool fit = false);
+	void imageChecked(QStandardItem *item);
+
+
 	void next();
 	void previous();
 	void pointPicked(QPoint p);
@@ -139,6 +145,8 @@ private:
 	QImage maxLuma;
 	bool maxLuming = false;
 	bool lumaCancelling = false;
+
+	QStandardItemModel *imageModel = nullptr;
 };
 
 

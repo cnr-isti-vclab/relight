@@ -9,15 +9,16 @@ FocalDialog::FocalDialog(Project *_project, QWidget *parent) :
 
 	ui->setupUi(this);
 
-	ui->width->setValue(project->imgsize.width());
-	ui->height->setValue(project->imgsize.width());
-
 	Lens &lens = project->lens;
 
-	ui->focalx->setValue(lens.focalx);
-	ui->focaly->setValue(lens.focaly);
-	ui->ccdWidth->setValue(lens.ccdWidth);
-	ui->ccdHeight->setValue(lens.ccdHeight);
+	ui->width->setValue(lens.width);
+	ui->height->setValue(lens.height);
+
+
+
+	ui->focalLength->setValue(lens.focalLength);
+	ui->ccdWidth->setValue(lens.ccdWidth());
+	ui->ccdHeight->setValue(lens.ccdHeight());
 	ui->principalOffsetX->setValue(lens.principalOffsetX);
 	ui->principalOffsetY->setValue(lens.principalOffsetY);
 	ui->k1->setValue(lens.k1);
@@ -27,6 +28,9 @@ FocalDialog::FocalDialog(Project *_project, QWidget *parent) :
 
 	ui->equivalent->setChecked(lens.focal35equivalent);
 	ui->real->setChecked(!lens.focal35equivalent);
+
+	ui->ccdWidth->setDisabled(lens.focal35equivalent);
+	ui->ccdHeight->setDisabled(lens.focal35equivalent);
 
 	connect(ui->equivalent, SIGNAL(clicked(bool)), this, SLOT(setAsEquivalent()));
 	connect(ui->real,       SIGNAL(clicked(bool)), this, SLOT(setAsReal()));
@@ -38,9 +42,12 @@ FocalDialog::~FocalDialog() {
 
 void FocalDialog::setAsReal() {
 	project->lens.focal35equivalent = false;
-
+	ui->ccdWidth->setDisabled(project->lens.focal35equivalent);
+	ui->ccdHeight->setDisabled(project->lens.focal35equivalent);
 }
 
 void FocalDialog::setAsEquivalent() {
 	project->lens.focal35equivalent = true;
+	ui->ccdWidth->setDisabled(project->lens.focal35equivalent);
+	ui->ccdHeight->setDisabled(project->lens.focal35equivalent);
 }

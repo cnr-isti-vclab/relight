@@ -6,7 +6,7 @@
 
 
 class QJsonObject;
-
+class Exif;
 
 class Image {
 public:
@@ -15,12 +15,14 @@ public:
 	bool skip = false;
 	Vector3f direction = Vector3f(0, 0, 0);
 	Vector3f position = Vector3f(0, 0, 0);
+	double exposureTime = 0;
+	uint32_t width = 0, height =0;
 
 	Image(QString s = ""): filename(s) {}
 
 	QJsonObject toJson();
 	void fromJson(const QJsonObject &obj);
-	void readExif();
+	void readExif(Exif &exif);
 };
 
 #endif // IMAGE_H
