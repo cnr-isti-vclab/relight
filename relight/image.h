@@ -13,8 +13,8 @@ public:
 	QString filename;
 	bool valid = true;
 	bool skip = false;
-	Vector3f direction = Vector3f(0, 0, 0);
-	Vector3f position = Vector3f(0, 0, 0);
+	Vector3f direction = Vector3f(0, 0, 0);  //light direction (infinite distance assumed)
+	Vector3f position = Vector3f(0, 0, 0);   //3d light position
 	double exposureTime = 0;
 	uint32_t width = 0, height =0;
 
