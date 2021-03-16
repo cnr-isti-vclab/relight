@@ -189,7 +189,7 @@ void RtiExport::makeRti(QString output, QRect rect, bool deepzoom) {
 					QString filename = plane + ".jpg";
 					py::object image = new_from_file(filename.toStdString(), "access"_a='sequential');
 					py::object dzsave = image.attr("dzsave");
-					dzsave(plane.toStdString(), "overlap"_a=0, "tile_size"_a=256);
+					dzsave(plane.toStdString(), "overlap"_a=0, "tile_size"_a=256, "depth"_a="onetile");
 					callback("Deepzoom creation...", 100*(i+1)/(builder.nplanes/3));
 				}
 			} catch(py::error_already_set &e) {
