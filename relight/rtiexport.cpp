@@ -1,3 +1,8 @@
+//this include must be the first one, not to be messed by slots keyword defined by QT.
+#include <pybind11/pybind11.h>
+namespace py = pybind11;
+
+
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QProgressDialog>
@@ -122,7 +127,7 @@ bool RtiExport::callback(std::string s, int n) {
 	return true;
 }
 
-void RtiExport::makeRti(QString output, QRect rect) {
+void RtiExport::makeRti(QString output, QRect rect, bool deepzoom) {
 	
 	try {
 		uint32_t ram = uint32_t(ui->ram->value());
@@ -151,7 +156,7 @@ void RtiExport::makeRti(QString output, QRect rect) {
 		
 		builder.width  = builder.imageset.width;
 		builder.height = builder.imageset.height;
-		builder.savemeans = true;
+		builder.savemeans = false;
 		
 		cancel = false;
 		std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->callback(s, n); };
@@ -162,6 +167,44 @@ void RtiExport::makeRti(QString output, QRect rect) {
 		}
 
 		builder.save(output.toStdString(), ui->quality->value());
+
+
+		if(deepzoom) {
+			wchar_t *argv[] = { L"ah!" };
+			Py_Initialize();
+			PySys_SetArgv(1, argv);
+
+			//will be needed to load local modules
+			//PyObject *sys_path = PySys_GetObject("path");
+			//PyList_Append(sys_path, PyString_FromString("./scripts"));
+
+			try {
+				using namespace pybind11::literals;
+
+				py::object Image = py::module_::import("pyvips").attr("Image");
+				py::object new_from_file = Image.attr("new_from_file");
+
+				for(int i = 0; i < builder.nplanes/3; i++) {
+					QString plane = QString("%1/plane_%2").arg(output).arg(i);
+					QString filename = plane + ".jpg";
+					py::object image = new_from_file(filename.toStdString(), "access"_a='sequential');
+					py::object dzsave = image.attr("dzsave");
+					dzsave(plane.toStdString(), "overlap"_a=0, "tile_size"_a=256);
+					callback("Deepzoom creation...", 100*(i+1)/(builder.nplanes/3));
+				}
+			} catch(py::error_already_set &e) {
+
+				cout << std::string(py::str(e.type())) << endl;
+				cout << std::string(py::str(e.value())) << endl;
+				return;
+
+				/*if (e.matches(PyExc_PermissionError)) {
+					py::print("missing.txt found but not accessible");
+				} else {
+					throw;
+				}*/
+			}
+		}
 
 	} catch(int status) {
 		if(status == 1) { //was canceled.
@@ -196,9 +239,11 @@ void RtiExport::createRTI() {
 	if(ui->cropview->handleShown()) {
 		rect = ui->cropview->croppedRect();
 	}
+
+	bool deepzoom = ui->formatDeepzoom->isChecked();
 	
 	
-	QFuture<void> future = QtConcurrent::run([this, output, rect]() { this->makeRti(output, rect); } );
+	QFuture<void> future = QtConcurrent::run([this, output, rect, deepzoom]() { this->makeRti(output, rect, deepzoom); } );
 	watcher.setFuture(future);
 	connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
 	connect(this, SIGNAL(progress(int)), progressbar, SLOT(setValue(int)));

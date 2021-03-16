@@ -48,7 +48,7 @@ public:
 	void setOption(QString key, QVariant value);
 	bool callback(std::string s, int n);
 
-	void makeRti(QString output, QRect rect = QRect(0, 0, 0, 0));
+	void makeRti(QString output, QRect rect = QRect(0, 0, 0, 0), bool deepzoom = false);
 
 public slots:
 	void changeBasis(int n);

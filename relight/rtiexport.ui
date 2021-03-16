@@ -117,21 +117,21 @@
         </property>
         <layout class="QGridLayout" name="gridLayout_4">
          <item row="0" column="0">
-          <widget class="QRadioButton" name="radioButton">
+          <widget class="QRadioButton" name="formatRTI">
            <property name="text">
             <string>RTI</string>
            </property>
           </widget>
          </item>
          <item row="1" column="0">
-          <widget class="QRadioButton" name="radioButton_2">
+          <widget class="QRadioButton" name="formatRelight">
            <property name="text">
             <string>Relight</string>
            </property>
           </widget>
          </item>
          <item row="2" column="0">
-          <widget class="QRadioButton" name="radioButton_3">
+          <widget class="QRadioButton" name="formatDeepzoom">
            <property name="text">
             <string>Relight + Deepzoom</string>
            </property>
