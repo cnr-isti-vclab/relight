@@ -11,7 +11,6 @@
 using namespace std;
 
 
-
 /* usage: dome_calibration <ball> [<color_table>] */
 
 

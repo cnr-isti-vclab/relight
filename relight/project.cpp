@@ -163,7 +163,8 @@ void Project::load(QString filename) {
 
 		QImageReader reader(image.filename);
 		QSize size = reader.size();
-		image.valid = (size != imgsize);
+		image.valid = (size == imgsize);
+		if(!image.valid) image.skip = true;
 
 		images1.push_back(image);
 	}

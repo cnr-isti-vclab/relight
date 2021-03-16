@@ -113,7 +113,8 @@ void Exif::parse(QString &filename) {
 	quint16 length;
 	stream >> length;
 	if(file.read(4) != "Exif" )
-		throw QString("Failed parsing file: " + filename);
+		return;
+		//throw QString("Failed parsing file: " + filename);
 	file.read(2);
 
 

@@ -13,8 +13,10 @@ DEFINES += NOMINMAX
 win32:INCLUDEPATH += ../libjpeg/include
 win32:LIBS += ../libjpeg/lib/jpeg.lib
 
-unix:INCLUDEPATH += /usr/include/eigen3
-unix:LIBS += -ljpeg
+unix:INCLUDEPATH += /usr/include/eigen3 /usr/include/python3.6m
+unix:LIBS += -ljpeg -lpython3.6m
+
+INCLUDEPATH += pybind11/include
 
 SOURCES += main.cpp \
     imagecropper.cpp \
