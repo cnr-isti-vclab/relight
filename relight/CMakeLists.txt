@@ -7,6 +7,9 @@ find_package(
 	Qt5
 	COMPONENTS Core Gui Widgets Concurrent
 	REQUIRED)
+find_package(PythonLibs REQUIRED)
+add_subdirectory(pybind11)
+
 if (MSVC)
 	file(TO_CMAKE_PATH $ENV{JPEGTURBO_HOME} JPEGTURBO_HOME)
 	file(TO_CMAKE_PATH $ENV{EIGEN_HOME} EIGEN_HOME)
@@ -40,11 +43,12 @@ set (RELIGHT_HEADERS
 	helpdialog.h
 	focaldialog.h
 	lens.h
+	image.h
 	project.h
 	../src/imageset.h
 	../src/jpeg_decoder.h
 	../src/jpeg_encoder.h
-	../src/qexifimageheader.h
+	../src/exif.h
 	../src/material.h
 	../src/eigenpca.h
 	../relight-cli/rtibuilder.h
@@ -60,13 +64,14 @@ set (RELIGHT_SOURCES
 	rtiexport.cpp
 
 	lens.cpp
+	image.cpp
 	project.cpp
 	../relight-cli/rtibuilder.cpp
 	../src/imageset.cpp
 	../src/jpeg_decoder.cpp
 	../src/jpeg_encoder.cpp
 	../src/rti.cpp
-	../src/qexifimageheader.cpp
+	../src/exif.cpp
 	helpdialog.cpp
 	focaldialog.cpp
 )
@@ -86,14 +91,17 @@ target_include_directories(
 	relight PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}
-		${EIGEN3_INCLUDE_DIR})
+		${EIGEN3_INCLUDE_DIR}
+		${PYTHON_INCLUDE_DIRS}
+		${PYBIND11_INCLUDE_DIR})
 target_link_libraries(
 	relight PUBLIC
 		${JPEG_LIBRARIES}
 		Qt5::Core
 		Qt5::Gui
 		Qt5::Widgets
-		Qt5::Concurrent)
+		Qt5::Concurrent
+		${PYTHON_LIBRARIES})
 target_compile_definitions(relight PUBLIC _USE_MATH_DEFINES NOMINMAX)
 
 install (TARGETS relight DESTINATION .)
