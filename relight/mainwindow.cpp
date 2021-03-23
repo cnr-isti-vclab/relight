@@ -47,6 +47,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	connect(ui->addSphere,        SIGNAL(clicked(bool)),   this, SLOT(addSphere()));
 	connect(ui->removeSphere,     SIGNAL(clicked(bool)),   this, SLOT(removeSphere()));
+	connect(ui->saveLP,           SIGNAL(clicked(bool)),   this, SLOT(saveLPs()));
+
 	connect(ui->process,          SIGNAL(clicked(bool)),   this, SLOT(process()));
 	connect(ui->actionSave_LP,    SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
 	connect(ui->actionLoad_LP,    SIGNAL(triggered(bool)), this, SLOT(loadLP()));
@@ -199,6 +201,7 @@ void MainWindow::enableActions() {
 	ui->actionNext->setEnabled(true);
 	ui->actionExport_RTI->setEnabled(true);
 	ui->actionLoad_LP->setEnabled(true);
+	ui->actionSave_LP->setEnabled(true);
 
 	ui->addSphere->setEnabled(true);
 	ui->removeSphere->setEnabled(true);
@@ -217,6 +220,7 @@ bool MainWindow::init() {
 
 	//create the items (name and TODO thumbnail
 	int count = 0;
+	imageModel->clear();
 	for(Image &a: project.images1) {
 		auto *item = new QListWidgetItem(QString("%1 - %2").arg(count+1).arg(a.filename), ui->imageList);
 		item ->setData(Qt::UserRole, count);
@@ -840,8 +844,8 @@ void MainWindow::saveLPs() {
 		filename = project.dir.filePath(filename);
 		ball->computeDirections();
 		project.saveLP(filename, ball->directions);
-		//ball->saveLP(filename, project.images1);
 	}
+	QMessageBox::information(this, "Saved LPs", QString("Saved %1 .lp's in images folder.").arg(project.balls.size()));
 }
 
 void MainWindow::exportRTI() {
