@@ -89,9 +89,13 @@ bool RtiBuilder::init(const string &folder, std::function<bool(std::string stage
 		error = "RBF and BILINEAR support only MRGB and MYCC";
 		return false;
 	}
-	
-	if(!imageset.init(folder.c_str(), true, skip_image)) {
-		error = "Failed imageset init.";
+	try {
+		if(!imageset.init(folder.c_str(), true, skip_image)) {
+			error = "Failed imageset init.";
+			return false;
+		}
+	} catch(QString e) {
+		error = e.toStdString();
 		return false;
 	}
 	if(crop[2] != 0) //some width specified
