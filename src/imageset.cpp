@@ -108,8 +108,28 @@ bool ImageSet::init(const char *_path, bool ignore_filenames, int skip_image) {
 	}
 	return initImages(_path);
 }
-
+#ifdef WINDOWS
+#else
+#include <sys/time.h>
+#include <sys/resource.h>
+#endif
 bool ImageSet::initImages(const char *_path) {
+	int noFilesNeeded = images.size() + 50;
+#ifdef WINDOWS
+	int maxfiles = _getmaxstdio();
+	int newmaxfiles =
+	if(maxfiles < noFilesNeeded)
+		_setmaxstdio(noFilesNeeded);
+# else
+	struct rlimit limits;
+	getrlimit(RLIMIT_NOFILE, &limits);
+	if(int(limits.rlim_max) < noFilesNeeded) {
+		throw QString("The max number of files that can be opened is: %1.\nIt depends on system security configurations.\nContact us to work on this problem.").arg(limits.rlim_max);
+	}
+	limits.rlim_cur = limits.rlim_max;
+	setrlimit(RLIMIT_NOFILE, &limits);
+#endif
+
 	QDir dir(_path);
 	for(int i = 0; i < images.size(); i++) {
 		QString filepath = dir.filePath(images[i]);
