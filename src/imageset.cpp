@@ -108,19 +108,26 @@ bool ImageSet::init(const char *_path, bool ignore_filenames, int skip_image) {
 	}
 	return initImages(_path);
 }
-#ifdef WINDOWS
+#ifdef _WIN32
+
 #else
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
 bool ImageSet::initImages(const char *_path) {
 	int noFilesNeeded = images.size() + 50;
-#ifdef WINDOWS
+#ifdef _WIN32
 	int maxfiles = _getmaxstdio();
 	int newmaxfiles =
 	if(maxfiles < noFilesNeeded)
 		_setmaxstdio(noFilesNeeded);
-# else
+#elif __APPLE__
+	struct rlimit limits;
+	getrlimit(RLIMIT_NOFILE, &limits);
+	if(int(limits.rlim_cur) < noFilesNeeded) {
+		throw QString("The max number of files that can be opened is: %1.\nIt depends on system security configurations.\nContact us to work on this problem.").arg(limits.rlim_max);
+	}
+#elif __linux__
 	struct rlimit limits;
 	getrlimit(RLIMIT_NOFILE, &limits);
 	if(int(limits.rlim_max) < noFilesNeeded) {
