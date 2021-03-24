@@ -264,7 +264,7 @@ bool LRti::loadHSH(FILE* file) {
 	if(!getIntegers(file, basis, 3))
 		return false;
 	
-	uint basis_terms = basis[0]; //number of terms in the basis
+	int basis_terms = basis[0]; //number of terms in the basis
 /*	//ignored
 	int basis_type = basis[1];
 	int basis_size = basis[2];
@@ -303,10 +303,10 @@ bool LRti::loadHSH(FILE* file) {
 	//in .rti system HSH its c*scale + bias
 	//we need to convert the coefficients to the uniform standard.
 	
-	for(uint i = 0; i < basis_terms; i++)
+	for(uint32_t i = 0; i < basis_terms; i++)
 		bias[i] = -bias[i]/scale[i];
 
-	uint line_size = width * basis_terms * 3;
+	uint32_t line_size = width * basis_terms * 3;
 	vector<unsigned char> line(line_size);
 
 	//for each pixel is 9 for red... 9 for green, 9 for blue
