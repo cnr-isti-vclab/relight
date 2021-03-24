@@ -17,6 +17,12 @@ win32:LIBS += ../libjpeg/lib/jpeg.lib
 unix:INCLUDEPATH += /usr/include/eigen3
 unix:LIBS += -ljpeg
 
+mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/2.0.6/include \
+    /usr/local/include \
+    /usr/local/include/eigen3
+mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/2.0.6/lib/ -ljpeg 
+mac:LIBS += -framework Accelerate
+
 DESTDIR = "../bin"
 
 SOURCES += main.cpp \
