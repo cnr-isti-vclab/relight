@@ -832,13 +832,13 @@ void MainWindow::loadLP() {
 	}
 }
 void MainWindow::saveLPs() {
-	int count = 0;
+	int count = 1;
 	QString basename = "sphere";
 	for(auto it: project.balls) {
 		QString filename = basename;
-		if(count > 0)
-			filename += QString::number(count++);
+		filename += QString::number(count);
 		filename += ".lp";
+		count++;
 
 		Ball *ball = it.second;
 		filename = project.dir.filePath(filename);
@@ -846,6 +846,13 @@ void MainWindow::saveLPs() {
 		project.saveLP(filename, ball->directions);
 	}
 	QMessageBox::information(this, "Saved LPs", QString("Saved %1 .lp's in images folder.").arg(project.balls.size()));
+	project.computeDirections();
+
+	vector<Vector3f> directions;
+	for(auto img: project.images1)
+		directions.push_back(img.direction);
+
+	project.saveLP(basename + ".lp", directions);
 }
 
 void MainWindow::exportRTI() {

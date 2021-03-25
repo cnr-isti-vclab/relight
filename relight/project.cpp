@@ -261,13 +261,11 @@ void Project::saveLP(QString filename, std::vector<Vector3f> &directions) {
 			invalid_count++;
 
 	if(invalid_count)
-		QMessageBox::warning(nullptr, "Saving LP :" + filename, QString("Saving LP will skip %1 missing light directions"));
+		QMessageBox::warning(nullptr, "Saving LP :" + filename, QString("Missing %1 light directions").arg(invalid_count));
 
 	stream << directions.size() << "\n";
 	for(size_t i = 0; i < directions.size(); i++) {
 		Vector3f d = directions[i];
-		if(d.isZero())
-			continue;
 		stream << images1[i].filename << " " << d[0] << " " << d[1] << " " << d[2] << "\n";
 	}
 }
