@@ -1,12 +1,10 @@
 #!/usr/bin/python3
 
-import re, os, sys, json, glob
-
+import re, os, sys, json, glob, shutil
 
 width_re = re.compile('Width="(\d+)"')
-#width_re = re.compile('[a-z]+')
 height_re = re.compile('Height="(\d+)"')
-pos_re = re.compile("(\d+)_(\d+).jpg")
+pos_re = re.compile("(\d+)_(\d+).jp.*g")
 
 tilesize = 256
 overlap = 0
@@ -15,6 +13,7 @@ format = 'jpg'
 def tarzoom(basename):
 	index =  { "tilesize": tilesize, "overlap": 0, "format":format, "offsets": [0] }
 
+	print(basename)
 	with open(basename + '.dzi') as f:
 		contents = f.read()
 		w = index['width']  = int(width_re.search(contents).group(1))
@@ -42,13 +41,11 @@ def tarzoom(basename):
 			maxy = max(y, maxy)
 
 		ordered = [None] *(maxx+1)*(maxy+1)
-		print(maxx * maxy)
 		for file in files:
 			found = pos_re.search(file[0])
 			x = int(found.group(1))
 			y = int(found.group(2))
 			i = x + (maxx+1)*y
-			print(x, y, i)
 			ordered[i] = file
 
 
@@ -67,22 +64,13 @@ def tarzoom(basename):
 	with open(basename + ".tzi", 'w') as outfile:
 		json.dump(index, outfile)
 
-
-for plane in glob.glob('plane_*.dzi'):
-	tarzoom(plane[0:-4])
-
+#	os.remove(basename + ".dzi")
+#	shutil.rmtree(basename + '_files')
 
 
+if __name__ == "__main__":
+	if hasattr(sys, 'argv'):
+		output = sys.argv[1]
+	for plane in glob.glob(output + '/plane_*.dzi'):
+		tarzoom(plane[0:-4])
 
-
-
-
-
-
-#!/bin/bash
-#for i in plane*.jpg; do 
-#	rm -rf ${i%.jpg}_files;
-#	rm -rf ${i%.jpg};
-#	vips dzsave $i ${i%.jpg} --layout dz --tile-size 256 --overlap 1	  --depth onetile --suffix .jpg[Q=95]; 
-#	
-#done

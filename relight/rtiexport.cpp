@@ -1,5 +1,6 @@
 //this include must be the first one, not to be messed by slots keyword defined by QT.
 #include <pybind11/pybind11.h>
+#include <pybind11/embed.h>
 namespace py = pybind11;
 
 
@@ -127,7 +128,7 @@ bool RtiExport::callback(std::string s, int n) {
 	return true;
 }
 
-void RtiExport::makeRti(QString output, QRect rect, bool deepzoom) {
+void RtiExport::makeRti(QString output, QRect rect, Format format) {
 	
 	try {
 		uint32_t ram = uint32_t(ui->ram->value());
@@ -169,17 +170,51 @@ void RtiExport::makeRti(QString output, QRect rect, bool deepzoom) {
 		builder.save(output.toStdString(), ui->quality->value());
 
 
-		if(deepzoom) {
-			wchar_t *argv[] = { L"ah!" };
-			Py_Initialize();
-			PySys_SetArgv(1, argv);
 
-			//will be needed to load local modules
-			//PyObject *sys_path = PySys_GetObject("path");
-			//PyList_Append(sys_path, PyString_FromString("./scripts"));
+		if(format == DEEPZOOM || format == TARZOOM) {
 
 			try {
+				py::scoped_interpreter guard{};
+
+				for(int i = 0; i < builder.nplanes/3; i++) {
+
+					QString str(R"f(
+import sys
+
+if not hasattr(sys, 'argv'):
+	sys.argv = ['']
+
+from pyvips import Image
+
+plane = '%1/plane_%2'
+filename = plane + '.jpg'
+image = Image.new_from_file(filename, access='sequential')
+image.dzsave(plane, overlap=0, tile_size=256, depth='onetile')
+				)f");
+					str = str.arg(output).arg(i);
+
+					callback("Deepzoom creation...", 100*(i+1)/(builder.nplanes/3));
+					py::object scope1 = py::module_::import("__main__").attr("__dict__");
+					py::exec(str.toStdString(), scope1);
+				}
+			} catch(py::error_already_set &e) {
+
+				cout << "Deepzoom: " << std::string(py::str(e.type())) << endl;
+				cout << std::string(py::str(e.value())) << endl;
+				return;
+			}
+
+				/*wchar_t *argv[] = { L"ah!" };
+				Py_Initialize();
+				PySys_SetArgv(1, argv);
+
+				//will be needed to load local modules
+				//PyObject *sys_path = PySys_GetObject("path");
+				//PyList_Append(sys_path, PyString_FromString("./scripts"));
+
 				using namespace pybind11::literals;
+
+
 
 				py::object Image = py::module_::import("pyvips").attr("Image");
 				py::object new_from_file = Image.attr("new_from_file");
@@ -191,19 +226,25 @@ void RtiExport::makeRti(QString output, QRect rect, bool deepzoom) {
 					py::object dzsave = image.attr("dzsave");
 					dzsave(plane.toStdString(), "overlap"_a=0, "tile_size"_a=256, "depth"_a="onetile");
 					callback("Deepzoom creation...", 100*(i+1)/(builder.nplanes/3));
-				}
-			} catch(py::error_already_set &e) {
+				}*/
+			try {
+				if(format == TARZOOM) {
+					py::scoped_interpreter guard{};
 
-				cout << std::string(py::str(e.type())) << endl;
+					QFile file(":/scripts/build_tarzoom.py");
+					file.open(QFile::ReadOnly);
+					QString content = file.readAll();
+					py::object scope = py::module_::import("__main__").attr("__dict__");
+					scope["output"] = output.toStdString();
+					py::exec(content.toStdString(), scope);
+				}
+
+			} catch(py::error_already_set &e) {
+				cout << "Tarzoom: " << std::string(py::str(e.type())) << endl;
 				cout << std::string(py::str(e.value())) << endl;
 				return;
-
-				/*if (e.matches(PyExc_PermissionError)) {
-					py::print("missing.txt found but not accessible");
-				} else {
-					throw;
-				}*/
 			}
+
 		}
 
 	} catch(int status) {
@@ -240,10 +281,14 @@ void RtiExport::createRTI() {
 		rect = ui->cropview->croppedRect();
 	}
 
-	bool deepzoom = ui->formatDeepzoom->isChecked();
+	Format format = RELIGHT;
+	if(ui->formatDeepzoom->isChecked())
+		format = DEEPZOOM;
+	if(ui->formatTarzoom->isChecked())
+		format = TARZOOM;
 	
 	
-	QFuture<void> future = QtConcurrent::run([this, output, rect, deepzoom]() { this->makeRti(output, rect, deepzoom); } );
+	QFuture<void> future = QtConcurrent::run([this, output, rect, format]() { this->makeRti(output, rect, format); } );
 	watcher.setFuture(future);
 	connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
 	connect(this, SIGNAL(progress(int)), progressbar, SLOT(setValue(int)));
