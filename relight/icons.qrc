@@ -26,4 +26,7 @@
     <qresource prefix="/docs">
         <file>docs/help.html</file>
     </qresource>
+    <qresource prefix="/">
+        <file>scripts/build_tarzoom.py</file>
+    </qresource>
 </RCC>
