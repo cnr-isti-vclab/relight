@@ -125,12 +125,98 @@ bool Project::scanDir() {
 		}
 	}
 	for(int i = 0; i < images1.size(); i++) {
-		images1[i].valid |= (lens.focal35() == alllens[i].focal35());
+		images1[i].valid &= (lens.focal35() == alllens[i].focal35());
 		images1[i].skip = !images1[i].valid;
 	}
 
 	return resolutions.size() == 1 && focals.size() == 1;
 }
+double mutualInfo(QImage &a, QImage &b) {
+	uint32_t histogram[256*256];
+	memset(histogram, 0, 256*256*4);
+	for(int y = 0; y < a.height(); y++) {
+		const uint8_t *u = a.scanLine(y);
+		const uint8_t *v = b.scanLine(y);
+		for(int x = 0; x < a.width(); x++) {
+			histogram[u[x*3+1] + v[x*3+1]*256]++;
+		}
+	}
+	uint32_t histo1DA[256];
+	uint32_t histo1DB[256];
+	memset(histo1DA, 0, 256*4);
+	memset(histo1DB, 0, 256*4);
+
+	double n = 0.0;
+
+	int i = 0;
+	for(int y = 0; y < 256; y++) {
+		unsigned int &b = histo1DB[y];
+		for(int x = 0; x < 256; x++) {
+			double ab = histogram[i++];
+			histo1DA[x] += ab;
+			b += ab;
+		}
+		n += b;
+	}
+
+	double m = 0.0;
+	for(int y = 0; y < 256; y++)
+		for(int x = 0; x < 256; x++) {
+			double ab = histogram[x + 256*y]/n;
+			if(ab == 0) continue;
+			double a = histo1DA[x]/n;
+			double b = histo1DB[y]/n;
+			m += ab * log2((ab)/(a*b));
+			m -= a*log(a) + b*log(b);
+		}
+	//n should be width*height when no border
+	return m;
+}
+
+void Project::rotateImages() {
+	//find first image non rotated.
+	QString target_filename;
+	for(Image &image: images1) {
+		if(image.width == imgsize.width() && image.height == imgsize.height())
+			target_filename = image.filename;
+	}
+
+	int width = 300;
+	QImage target(target_filename);
+	target = target.scaledToWidth(width);
+	for(Image &image: images1) {
+		if(image.width == imgsize.width())
+			continue;
+		if(image.height != imgsize.width() ||
+				image.width != imgsize.height())
+			continue;
+		QImage source(image.filename);
+
+		QImage thumb = source.scaledToHeight(width);
+		QTransform rot_right;
+		rot_right.rotate(90);
+		QImage right = thumb.transformed(rot_right);
+
+		QTransform rot_left;
+		rot_left.rotate(-90);
+		QImage left = thumb.transformed(rot_left);
+
+		double right_mutual = mutualInfo(target, right);
+		double left_mutual = mutualInfo(target, left);
+
+		QTransform final = right_mutual > left_mutual ? rot_left : rot_right;
+		//TODO should be libjpeg to rotate.
+		QImage rotated = source.transformed(final);
+		rotated.save(image.filename);
+
+		image.width = imgsize.width();
+		image.height = imgsize.height();
+		image.valid = true;
+		image.skip = false;
+		cout << "Right: " << right_mutual << " Left: " << left_mutual << endl;
+	}
+}
+
 
 void Project::load(QString filename) {
 	QFile file(filename);

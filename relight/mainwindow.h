@@ -72,7 +72,6 @@ public slots:
 	void openImage(int id, bool fit = false);
 	void imageChecked(QStandardItem *item);
 
-
 	void next();
 	void previous();
 	void pointPicked(QPoint p);
