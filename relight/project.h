@@ -35,6 +35,7 @@ public:
 
 	bool setDir(QDir folder);
 	bool scanDir(); //load images from project.dir, and return false if some problems with resolution.
+	void rotateImages();
 	bool hasDirections() {
 		for(auto &im: images1)
 			if(!im.direction.isZero())

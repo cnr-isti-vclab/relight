@@ -140,8 +140,25 @@ void MainWindow::newProject() {
 		QMessageBox::critical(this, "Houston we have a problem!", "Could not find images in directory: " + project.dir.path());
 		return;
 	}
-	if(!ok)
-		QMessageBox::critical(this, "Resolution problem", "Not all of the images in the folder have the same resolution (marked in red)");
+	if(!ok) {
+		//check if we can rotate a few images.
+		bool canrotate = false;
+		for(Image &image: project.images1) {
+			if(image.width == project.imgsize.width() &&
+				image.height == project.imgsize.height())
+				continue;
+
+			if(image.height == project.imgsize.width() &&
+				image.width == project.imgsize.height())
+				canrotate = true;
+		}
+		if(canrotate) {
+			int answer = QMessageBox::question(this, "Some images are rotated.", "Do you wish to uniform image rotation?", QMessageBox::Ok, QMessageBox::Cancel);
+			if(answer != QMessageBox::No)
+				project.rotateImages();
+		} else
+			QMessageBox::critical(this, "Resolution problem", "Not all of the images in the folder have the same resolution (marked in red)");
+	}
 
 	enableActions();
 	init();

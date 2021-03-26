@@ -248,6 +248,9 @@
     <addaction name="separator"/>
     <addaction name="actionRuler"/>
     <addaction name="actionDelete_selected"/>
+    <addaction name="separator"/>
+    <addaction name="actionRotate_all_right"/>
+    <addaction name="actionRotate_all_right_2"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -523,6 +526,16 @@
   <action name="actionLens_parameters">
    <property name="text">
     <string>Lens parameters...</string>
+   </property>
+  </action>
+  <action name="actionRotate_all_right">
+   <property name="text">
+    <string>Rotate right all images</string>
+   </property>
+  </action>
+  <action name="actionRotate_all_right_2">
+   <property name="text">
+    <string>Rotate left all images</string>
    </property>
   </action>
  </widget>
