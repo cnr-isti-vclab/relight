@@ -30,7 +30,8 @@ public:
 	static void parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::vector<QString> &filenames, int skip_image = -1);
 
 
-	bool init(const char *path, bool ignore_filenames = true, int skip_image = -1);
+	bool initFromFolder(const char *path, bool ignore_filenames = true, int skip_image = -1);
+	bool initFromProject(const char *filename);
 	bool initImages(const char *path); //require lights and images to be available, path points to the dir of the images.
 	
 	QImage maxImage(std::function<bool(std::string stage, int percent)> *callback = nullptr); 

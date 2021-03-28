@@ -86,8 +86,8 @@ void ImageCropper::setProportionFixed(const bool _isFixed)
 QRect ImageCropper::croppedRect() {
 	QRectF &r = pimpl->croppingRect;
 	QRectF realSizeRect(
-				QPointF(r.left() - leftDelta, r.top() - topDelta),
-				r.size());
+		QPointF(r.left() - leftDelta, r.top() - topDelta),
+			r.size());
 
 	realSizeRect.setLeft((r.left() - leftDelta) * xScale);
 	realSizeRect.setTop ((r.top() - topDelta) * yScale);
@@ -103,6 +103,8 @@ QRect ImageCropper::croppedRect() {
 }
 
 void ImageCropper::setCrop(QRect rect) {
+	if(!rect.isValid())
+		return;
 	QRectF &r = pimpl->croppingRect;
 	r.setLeft(rect.left()/xScale + leftDelta);
 	r.setTop(rect.top()/yScale + topDelta);
@@ -127,12 +129,6 @@ void ImageCropper::updateDeltaAndScale() {
 	xScale = (float)pimpl->imageForCropping.width()  / scaledImageSize.width();
 	yScale = (float)pimpl->imageForCropping.height() / scaledImageSize.height();
 }
-
-const QPixmap ImageCropper::cropImage() {
-	QRect realRect = croppedRect();
-	return pimpl->imageForCropping.copy(realRect);
-}
-
 
 void ImageCropper::resizeEvent(QResizeEvent *event) {
 	QRect currentRealRect = croppedRect();

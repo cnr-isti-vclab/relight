@@ -69,8 +69,6 @@ void test(std::string input, std::string output,  Vector3f light) {
         return;
     }
 
-	//uint32_t size = rti.width*rti.height*3;
-//    vector<uint8_t> buffer(size);
     light = light / light.norm();
  //   rti.render(light[0], light[1], buffer.data());
     QImage img(rti.width, rti.height, QImage::Format_RGBA8888);
@@ -295,18 +293,23 @@ int main(int argc, char *argv[]) {
     }
 
 
-    QFileInfo info(input.c_str());
+	QFileInfo info(input.c_str());
 	if(info.isFile()) {
-		if(info.suffix() == "json") {
+		if(info.suffix() == "relight") {
+			if(!builder.initFromProject(input)) {
+				cerr << builder.error << "\n" << endl;
+				return 1;
+			}
+		} if(info.suffix() == "json") {
 			return convertToRTI(input.c_str(), output.c_str());
-		} else
+		} else if(info.suffix() == "rti" || info.suffix() == "ptm")
 			return convertRTI(input.c_str(), output.c_str(), quality);
+	} else {
+		if(!builder.initFromFolder(input)) {
+			cerr << builder.error << " !\n" << endl;
+			return 1;
+		}
 	}
-
-    if(!builder.init(input)) {
-        cerr << builder.error << " !\n" << endl;
-        return 1;
-    }
 
     int size = builder.save(output, quality);
     if(size == 0) {
@@ -380,7 +383,7 @@ int main(int argc, char *argv[]) {
 
         QDir out(output.c_str());
         ImageSet imgset;
-        imgset.init(input.c_str(), true);
+		imgset.initFromFolder(input.c_str(), true);
         double mse = 0;
         mse = Rti::evaluateError(imgset, rti, out.filePath("error.png"), builder.skip_image);
 
@@ -576,4 +579,8 @@ int convertToRTI(const char *filename, const char *output) {
 	lrti.encode(ptmformat, output, quality);
 
 	return 0;
+}
+
+void initFromProject() {
+
 }

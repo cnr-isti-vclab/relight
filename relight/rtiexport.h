@@ -21,6 +21,7 @@ class RtiExport : public QDialog
 public:
 	QStringList images;
 	std::vector<Vector3f> lights;
+	QRect crop;
 	QString path;
 
 	QProgressDialog *progressbar;
@@ -34,6 +35,7 @@ public:
 	Rti::ColorSpace colorSpace();
 	
 	void setImages(QStringList images);
+	void setCrop(QRect rect);
 	void showImage(QPixmap pix);
 	
 	int quality();

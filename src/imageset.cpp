@@ -5,6 +5,11 @@
 #include <QFile>
 #include <QTextStream>
 #include <QImage>
+
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+
 #include "imageset.h"
 #include "jpeg_decoder.h"
 
@@ -12,7 +17,7 @@ using namespace std;
 
 ImageSet::ImageSet(const char *path) {
 	if(path)
-		init(path);
+		initFromFolder(path);
 }
 
 ImageSet::~ImageSet() {
@@ -65,8 +70,7 @@ void ImageSet::parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::
 
 }
 
-bool ImageSet::init(const char *_path, bool ignore_filenames, int skip_image) {
-
+bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip_image) {
 
 	QDir dir(_path);
 	QStringList lps = dir.entryList(QStringList() << "*.lp");
@@ -92,7 +96,7 @@ bool ImageSet::init(const char *_path, bool ignore_filenames, int skip_image) {
 			}
 
 		} else {
-			throw "TODO: unimplemented.";
+			throw QString("TODO: unimplemented.");
 
 			//TODO check and remove absolute parth of the image;
 			/*QString filepath = dir.filePath(images[i]);
@@ -108,6 +112,61 @@ bool ImageSet::init(const char *_path, bool ignore_filenames, int skip_image) {
 	}
 	return initImages(_path);
 }
+
+bool ImageSet::initFromProject(const char *filename) {
+	QFile file(filename);
+	if(!file.open(QFile::ReadOnly))
+		throw QString("Failed opening: ") + QString(filename);
+
+	QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+	QJsonObject obj = doc.object();
+
+	QFileInfo info(filename);
+	QDir folder = info.dir();
+	folder.cd(obj["folder"].toString());
+
+	for(auto img: obj["images"].toArray()) {
+		auto image = img.toObject();
+
+		bool skip = image["skip"].toBool();
+		if(skip)
+			continue;
+
+		QString filename = image["filename"].toString();
+		Vector3f direction;
+		auto dir = image["direction"].toObject();
+		direction[0] = dir["x"].toDouble();
+		direction[1] = dir["y"].toDouble();
+		direction[2] = dir["z"].toDouble();
+
+		if(direction.isZero())
+			continue;
+
+		QFileInfo imginfo(folder.filePath(filename));
+		if(!imginfo.exists())
+			throw QString("Could not find the image: " + filename) + " in folder: " + folder.absolutePath();
+		images.push_back(filename);
+		lights.push_back(direction);
+	}
+
+	bool ok = initImages(folder.path().toStdString().c_str());
+	if(!ok)
+		return false;
+
+	//needs image_width and height to apply crop
+	int range[4] = { 0, 0, 0, 0 };
+	if(obj.contains("crop")) {
+		QJsonObject c = obj["crop"].toObject();
+		range[0] = c["left"].toInt();
+		range[1] = c["top"].toInt();
+		range[2] = c["width"].toInt();
+		range[3] = c["height"].toInt();
+		crop(range[0], range[1], range[2], range[3]);
+	}
+	return true;
+}
+
+
 #ifdef _WIN32
 
 #else
@@ -119,8 +178,8 @@ bool ImageSet::initImages(const char *_path) {
 #ifdef _WIN32
 	int maxfiles = _getmaxstdio();
 	int newmaxfiles =
-	if(maxfiles < noFilesNeeded)
-		_setmaxstdio(noFilesNeeded);
+			if(maxfiles < noFilesNeeded)
+			_setmaxstdio(noFilesNeeded);
 #elif __APPLE__
 	struct rlimit limits;
 	getrlimit(RLIMIT_NOFILE, &limits);
@@ -142,14 +201,12 @@ bool ImageSet::initImages(const char *_path) {
 		QString filepath = dir.filePath(images[i]);
 		int w, h;
 		JpegDecoder *dec = new JpegDecoder;
-		if(!dec->init(filepath.toStdString().c_str(), w, h)) {
-			cerr << "Failed decoding image: " << qPrintable(filepath) << endl;
-			return false;
-		}
-		if(width && (width != w || height != h)) {
-			cerr << "Inconsistent image size for " << qPrintable(filepath) << endl;
-			return false;
-		}
+		if(!dec->init(filepath.toStdString().c_str(), w, h))
+			throw QString("Failed decoding image: " + filepath);
+
+		if(width && (width != w || height != h))
+			throw QString("Inconsistent image size for " + filepath);
+
 		right = image_width = width = w;
 		bottom = image_height = height = h;
 
@@ -157,6 +214,8 @@ bool ImageSet::initImages(const char *_path) {
 	}
 	return true;
 }
+
+
 void ImageSet::crop(int _left, int _top, int _width, int _height) {
 	left = _left;
 	top = _top;
