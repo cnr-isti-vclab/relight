@@ -28,7 +28,6 @@ signals:
 	void areaChanged(QRect rect);
 
 public:
-	const QPixmap cropImage();
 	bool handleShown() { return show_handle; }
 	QRect croppedRect();
 

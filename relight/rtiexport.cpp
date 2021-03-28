@@ -65,6 +65,14 @@ void RtiExport::setImages(QStringList _images) {
 	images = _images;
 }
 
+void RtiExport::setCrop(QRect rect) {
+	crop = rect;
+	if(crop.isValid()) {
+		ui->cropview->setCrop(rect);
+		ui->cropview->showHandle();
+	}
+}
+
 ostream& operator<<(ostream& os, const QRectF& r) {
 	os << "top: " << r.top() << " left: " << r.left() << " width: " << r.width() << " height: " << r.height();
 	return os;
@@ -202,6 +210,9 @@ image.dzsave(plane, overlap=0, tile_size=256, depth='onetile')
 				cout << "Deepzoom: " << std::string(py::str(e.type())) << endl;
 				cout << std::string(py::str(e.value())) << endl;
 				return;
+
+			} catch(...) {
+
 			}
 
 				/*wchar_t *argv[] = { L"ah!" };
@@ -243,6 +254,8 @@ image.dzsave(plane, overlap=0, tile_size=256, depth='onetile')
 				cout << "Tarzoom: " << std::string(py::str(e.type())) << endl;
 				cout << std::string(py::str(e.value())) << endl;
 				return;
+			} catch(...) {
+//				QMessageBox
 			}
 
 		}
@@ -316,7 +329,9 @@ void RtiExport::showCrop() {
 void RtiExport::acceptCrop() {
 	ui->export_frame->show();
 	ui->crop_frame->hide();
+	crop = ui->cropview->croppedRect();
 }
+
 void RtiExport::rejectCrop() {
 	ui->cropview->hideHandle();
 	ui->export_frame->show();

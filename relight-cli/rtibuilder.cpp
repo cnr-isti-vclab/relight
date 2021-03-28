@@ -14,6 +14,8 @@
 #include <QThreadPool>
 #include <QtConcurrent>
 #include <QFuture>
+
+
 #include "../src/jpeg_decoder.h"
 #include "../src/jpeg_encoder.h"
 
@@ -78,19 +80,11 @@ RtiBuilder::~RtiBuilder() {
 #endif
 }
 
-bool RtiBuilder::init(const string &folder, std::function<bool(std::string stage, int percent)> *_callback) {
+bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(std::string stage, int percent)> *_callback) {
 	
-	if((type == PTM || type == HSH) && colorspace == MRGB) {
-		error = "PTM and HSH do not support MRGB";
-		return false;
-	}
-	
-	if((type == RBF || type == BILINEAR) &&  (colorspace != MRGB && colorspace != MYCC)) {
-		error = "RBF and BILINEAR support only MRGB and MYCC";
-		return false;
-	}
+
 	try {
-		if(!imageset.init(folder.c_str(), true, skip_image)) {
+		if(!imageset.initFromFolder(folder.c_str(), true, skip_image)) {
 			error = "Failed imageset init.";
 			return false;
 		}
@@ -103,6 +97,22 @@ bool RtiBuilder::init(const string &folder, std::function<bool(std::string stage
 	width = imageset.width;
 	height = imageset.height;
 	lights = imageset.lights;
+	return init(_callback);
+}
+
+//TODO: should use project.h, but we need first to decouople ball QGraphicViews pieces.
+
+bool RtiBuilder::initFromProject(const std::string &filename, std::function<bool(std::string stage, int percent)> *_callback) {
+
+	try {
+		imageset.initFromProject(filename.c_str());
+		width = imageset.width;
+		height = imageset.height;
+		lights = imageset.lights;
+	} catch(QString e) {
+		error = e.toStdString();
+		return false;
+	}
 	return init(_callback);
 }
 
@@ -132,6 +142,17 @@ void RtiBuilder::savePixel(Color3f *p, int side, const QString &file) {
 }
 
 bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_callback) {
+
+	if((type == PTM || type == HSH) && colorspace == MRGB) {
+		error = "PTM and HSH do not support MRGB";
+		return false;
+	}
+
+	if((type == RBF || type == BILINEAR) &&  (colorspace != MRGB && colorspace != MYCC)) {
+		error = "RBF and BILINEAR support only MRGB and MYCC";
+		return false;
+	}
+
 	callback = _callback;
 	if(type == BILINEAR) {
 		ndimensions = resolution*resolution;
@@ -168,7 +189,7 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 #endif
 	pickMaterials(resample);
 	
-	try { 
+	try {
 		pickBase(resample);
 	} catch(std::exception e) {
 		error = "Could not create a base.";
@@ -749,8 +770,8 @@ void RtiBuilder::estimateError(PixelArray &sample, std::vector<size_t> &indices,
 			se += d*d;
 		}
 		for(uint32_t k = 0; k < variable.size()/3; k++) {
-//			float O = variable[k*3+0] + variable[k*3+1] + variable[k*3+2];
-//			float S = s[k*3+0] + s[k*3+1] + s[k*3+2];
+			//			float O = variable[k*3+0] + variable[k*3+1] + variable[k*3+2];
+			//			float S = s[k*3+0] + s[k*3+1] + s[k*3+2];
 			
 			float Or = (variable[k*3+1] - variable[k*3+0]);
 			float Ob = (variable[k*3+1] - variable[k*3+2]);
@@ -839,7 +860,7 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 		for(size_t i = 0; i < basis.size(); i++) {
 			if(i != 0) {
 				stream << ",";
-				if((i % 80) == 0) 
+				if((i % 80) == 0)
 					stream << "\n";
 			}
 			stream << (int)basis[i];
@@ -928,8 +949,8 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 		Vector3f l2(sin(a)*cos(9*b), sin(a)*sin(9*b), cos(a));
 
 		T << l0[0], l0[1], l0[2],
-			 l1[0], l1[1], l1[2],
-			 l2[0], l2[1], l2[2];
+				l1[0], l1[1], l1[2],
+				l2[0], l2[1], l2[2];
 
 		T = T.inverse().eval();
 
@@ -1308,7 +1329,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			}
 
 			if(colorspace == LRGB){
-				
+
 				for(uint32_t j = 0; j < nplanes/3; j++) {
 					for(uint32_t c = 0; c < 3; c++) {
 						uint32_t p = j*3 + c;
@@ -1319,7 +1340,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 				}
 				
 			} else {
-				
+
 				for(uint32_t j = 0; j < nplanes/3; j++) {
 					for(uint32_t c = 0; c < 3; c++) {
 						uint32_t p = j*3 + c;
@@ -1812,3 +1833,4 @@ std::vector<float> RtiBuilder::toPrincipal(uint32_t m, float *v) {
 	}
 	return res;
 }
+

@@ -144,8 +144,8 @@ void MainWindow::newProject() {
 		//check if we can rotate a few images.
 		bool canrotate = false;
 		for(Image &image: project.images1) {
-			if(image.width == project.imgsize.width() &&
-				image.height == project.imgsize.height())
+			if(image.width == uint32_t(project.imgsize.width()) &&
+				image.height == uint32_t(project.imgsize.height()))
 				continue;
 
 			if(image.height == project.imgsize.width() &&
@@ -892,11 +892,15 @@ void MainWindow::exportRTI() {
 
 	//should init with saved preferences.
 	rtiexport->setImages(project.images());
+
 	rtiexport->showImage(imagePixmap->pixmap());
 	rtiexport->lights = project.directions();
 	rtiexport->path = project.dir.path();
 	rtiexport->show();
+	//this needs to be called AFTER show, to ensure proportions are computed properly
+	rtiexport->setCrop(project.crop);
 	rtiexport->exec();
+	project.crop = rtiexport->crop;
 }
 
 void MainWindow::editLensParameters() {
