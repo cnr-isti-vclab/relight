@@ -80,9 +80,10 @@ RtiBuilder::~RtiBuilder() {
 #endif
 }
 
+//bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(std::string stage, int percent)> *_callback) {
 bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(std::string stage, int percent)> *_callback) {
 	
-
+	callback = _callback;
 	try {
 		if(!imageset.initFromFolder(folder.c_str(), true, skip_image)) {
 			error = "Failed imageset init.";
@@ -97,13 +98,13 @@ bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(std::st
 	width = imageset.width;
 	height = imageset.height;
 	lights = imageset.lights;
-	return init(_callback);
+	return init();
 }
 
 //TODO: should use project.h, but we need first to decouople ball QGraphicViews pieces.
 
 bool RtiBuilder::initFromProject(const std::string &filename, std::function<bool(std::string stage, int percent)> *_callback) {
-
+	callback = _callback;
 	try {
 		imageset.initFromProject(filename.c_str());
 		width = imageset.width;
@@ -142,7 +143,6 @@ void RtiBuilder::savePixel(Color3f *p, int side, const QString &file) {
 }
 
 bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_callback) {
-
 	if((type == PTM || type == HSH) && colorspace == MRGB) {
 		error = "PTM and HSH do not support MRGB";
 		return false;
@@ -173,7 +173,6 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 	imageset.sample(resample, ndimensions, [&](Color3f *sample, Color3f *resample) { this->resamplePixel(sample, resample); }, samplingram);
 	nsamples = resample.npixels();
 	
-	cout << "Nsamples: " << nsamples << endl;
 #ifdef DEBUG
 	if(resolution > 0) {
 		saveLightPixel(sample(0), resolution*4, "sample0.png");
@@ -645,7 +644,7 @@ void RtiBuilder::pickBaseHSH() {
 	
 }
 
-void RtiBuilder::	pickBase(PixelArray &sample) {
+void RtiBuilder::pickBase(PixelArray &sample) {
 	
 	//index sample per material
 	vector<size_t> indices(sample.npixels(), 0);
@@ -660,6 +659,7 @@ void RtiBuilder::	pickBase(PixelArray &sample) {
 	default: cerr << "Unknown basis" << endl; exit(0);
 	}
 	
+
 	uint32_t dim = sample.components()*3;
 	for(uint32_t i = 0; i < nmaterials; i++) {
 		MaterialBuilder &matb = materialbuilders[i];
@@ -687,7 +687,12 @@ void RtiBuilder::	pickBase(PixelArray &sample) {
 		}
 	}
 	
+	if(callback)
+		(*callback)("Coefficients quantization...", 0);
+
 	for(uint32_t i = 0; i < sample.npixels(); i++) {
+		if(callback && (i % 8000) == 0)
+			(*callback)("Coefficients quantization...", 100*i/sample.npixels());
 		vector<float> principal = toPrincipal(indices[i],(float *)sample(i));
 		
 		Material &mat = materials[indices[i]];
@@ -724,7 +729,9 @@ void RtiBuilder::	pickBase(PixelArray &sample) {
 			plane.range = 127/plane.range;
 		}
 	}
-	
+
+	if(callback)
+		(*callback)("Coefficients quantization...", 100);
 	//	estimateError(sample, indices, weights);
 }
 
@@ -1187,10 +1194,6 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	}
 	
 	//the image is processed one row at a time
-	PixelArray sample(width, lights.size());  //all the lines from the lights
-	PixelArray resample(width, ndimensions); //resampled to a square base.
-	
-	std::vector<size_t> indices; //material per pixel in a row
 	uint32_t njpegs = (nplanes-1)/3 + 1;
 	vector<vector<uint8_t>> line(njpegs); //row in the new base.
 	for(auto &p: line)
@@ -1261,8 +1264,8 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	timer.start();
 
 	for(uint32_t y = 0; y < height + nworkers; y++) {
-		if(callback) {
-			bool keep_going = (*callback)("Saving...", 100*(y)/height);
+		if(callback && y > 0) {
+			bool keep_going = (*callback)("Saving...", 100*(y)/(height + nworkers-1));
 			if(!keep_going) {
 				cout << "TODO: clean up directory, we are already saving!" << endl;
 				throw 1;
@@ -1354,9 +1357,11 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			}
 		}*/
 	}
-	cout << "Done in: " << timer.restart() << "ms" << endl;
-
-
+	int time = timer.restart();
+	if(time < 10000)
+		cout << "\nDone in: " << time << "ms" << endl;
+	else
+		cout << "\nDone in: " << time/1000 << "s" << endl;
 
 
 	size_t total = 0;

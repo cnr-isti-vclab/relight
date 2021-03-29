@@ -76,6 +76,16 @@ void test(std::string input, std::string output,  Vector3f light) {
     img.save(output.c_str());
 }
 
+bool progress(string str, int n) {
+	static string previous = "";
+	if(previous == str) cout << '\r';
+	else if(previous != "")
+		cout << "\n";
+	cout << str << " %" << n << std::flush;
+	previous = str;
+	return true;
+}
+
 int main(int argc, char *argv[]) {
 
     if(argc == 1) {
@@ -89,10 +99,11 @@ int main(int argc, char *argv[]) {
     QString redrawdir;
     bool relighted = false;
     Vector3f light;
+	bool verbose;
 
 	opterr = 0;
     char c;
-	while ((c  = getopt (argc, argv, "hmMnr:d:q:p:s:c:reE:b:y:S:R:CD:B:L:k:")) != -1)
+	while ((c  = getopt (argc, argv, "hmMnr:d:q:p:s:c:reE:b:y:S:R:CD:B:L:k:v")) != -1)
         switch (c)
         {
         case 'h':
@@ -171,7 +182,7 @@ int main(int argc, char *argv[]) {
             }
         }
             break;
-            /*		case 'd':
+			/*		case 'd':c
             encoder.distortion = atof(optarg);
             break; */
         case 'e':
@@ -251,6 +262,9 @@ int main(int argc, char *argv[]) {
             relighted = true;
             break;
         }
+		case 'v':
+			verbose = true;
+			break;
         case '?':
             cerr << "Option " << char(optopt) << " requires an argument!\n" << endl;
             if (isprint (optopt))
@@ -292,11 +306,18 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+	std::function<bool(std::string stage, int percent)> *callback = nullptr;
+
+	//bool (*callback)(std::string stage, int percent) = nullptr;
+	if(verbose) {
+		callback = new std::function<bool(std::string stage, int percent)>();
+		*callback = [](std::string stage, int percent)->bool{ return progress(stage, percent); };
+	}
 
 	QFileInfo info(input.c_str());
 	if(info.isFile()) {
 		if(info.suffix() == "relight") {
-			if(!builder.initFromProject(input)) {
+			if(!builder.initFromProject(input, callback)) {
 				cerr << builder.error << "\n" << endl;
 				return 1;
 			}
@@ -305,7 +326,7 @@ int main(int argc, char *argv[]) {
 		} else if(info.suffix() == "rti" || info.suffix() == "ptm")
 			return convertRTI(input.c_str(), output.c_str(), quality);
 	} else {
-		if(!builder.initFromFolder(input)) {
+		if(!builder.initFromFolder(input, callback)) {
 			cerr << builder.error << " !\n" << endl;
 			return 1;
 		}
