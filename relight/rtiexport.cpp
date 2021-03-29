@@ -136,7 +136,7 @@ bool RtiExport::callback(std::string s, int n) {
 	return true;
 }
 
-void RtiExport::makeRti(QString output, QRect rect, Format format) {
+void RtiExport::makeRti(QString output, QRect rect, Format format, bool means, bool normals, bool highNormals) {
 	
 	try {
 		uint32_t ram = uint32_t(ui->ram->value());
@@ -165,7 +165,9 @@ void RtiExport::makeRti(QString output, QRect rect, Format format) {
 		
 		builder.width  = builder.imageset.width;
 		builder.height = builder.imageset.height;
-		builder.savemeans = false;
+
+		builder.savemeans = means;
+		builder.savenormals = normals;
 		
 		cancel = false;
 		std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->callback(s, n); };
@@ -177,7 +179,20 @@ void RtiExport::makeRti(QString output, QRect rect, Format format) {
 
 		builder.save(output.toStdString(), ui->quality->value());
 
+		if(highNormals) {
+			try {
+				py::scoped_interpreter guard{};
 
+			} catch(py::error_already_set &e) {
+
+				cout << "Deepzoom: " << std::string(py::str(e.type())) << endl;
+				cout << std::string(py::str(e.value())) << endl;
+				return;
+
+			} catch(...) {
+
+			}
+		}
 
 		if(format == DEEPZOOM || format == TARZOOM) {
 
@@ -301,7 +316,13 @@ void RtiExport::createRTI() {
 		format = TARZOOM;
 	
 	
-	QFuture<void> future = QtConcurrent::run([this, output, rect, format]() { this->makeRti(output, rect, format); } );
+	QFuture<void> future = QtConcurrent::run([this, output, rect, format]() {
+		this->makeRti(output, rect, format,
+			ui->means->isChecked(),
+			ui->normals->isChecked(),
+			ui->highNormals->isChecked());
+	} );
+
 	watcher.setFuture(future);
 	connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
 	connect(this, SIGNAL(progress(int)), progressbar, SLOT(setValue(int)));

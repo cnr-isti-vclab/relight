@@ -1238,6 +1238,9 @@ size_t RtiBuilder::save(const string &output, int quality) {
 
 	//colorspace check
 	if (savenormals) {
+		//init matrix for light computation (bleargh, static in function)
+		vector<float> dummy(nplanes, 0.0f);
+		getNormalThreeLights(dummy);
 		if (colorspace != RGB && colorspace != MRGB) {
 			cerr << "NO NORMALS (unsupported colorspace: RGB and MRGB only supported!)" << endl;
 			savenormals = false;
@@ -1272,7 +1275,8 @@ size_t RtiBuilder::save(const string &output, int quality) {
 
 			for(uint32_t x = 0; x < width; x++) {
 				if (savenormals)
-					normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], doneworker->normals[x*3+1], doneworker->normals[x*3+2]));
+					normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], 0, doneworker->normals[x*3+1]));
+					//normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], doneworker->normals[x*3+1], doneworker->normals[x*3+2]));
 				if(savemeans)
 					means.setPixel(x, y- nworkers, qRgb(doneworker->means[x*3], doneworker->means[x*3+1], doneworker->means[x*3+2]));
 				if(savemedians)
