@@ -52,7 +52,7 @@ public:
 
 	enum Format { PTM, RTI, RELIGHT, DEEPZOOM, TARZOOM };
 
-	void makeRti(QString output, QRect rect = QRect(0, 0, 0, 0), Format format = RELIGHT);
+	void makeRti(QString output, QRect rect = QRect(0, 0, 0, 0), Format format = RELIGHT, bool means = false, bool normals = false, bool highNormals = false);
 
 public slots:
 	void changeBasis(int n);
