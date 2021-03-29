@@ -148,8 +148,8 @@ void MainWindow::newProject() {
 				image.height == uint32_t(project.imgsize.height()))
 				continue;
 
-			if(image.height == project.imgsize.width() &&
-				image.width == project.imgsize.height())
+			if(int(image.height) == project.imgsize.width() &&
+				int(image.width) == project.imgsize.height())
 				canrotate = true;
 		}
 		if(canrotate) {

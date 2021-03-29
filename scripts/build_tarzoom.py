@@ -64,8 +64,8 @@ def tarzoom(basename):
 	with open(basename + ".tzi", 'w') as outfile:
 		json.dump(index, outfile)
 
-#	os.remove(basename + ".dzi")
-#	shutil.rmtree(basename + '_files')
+	os.remove(basename + ".dzi")
+	shutil.rmtree(basename + '_files')
 
 
 if __name__ == "__main__":

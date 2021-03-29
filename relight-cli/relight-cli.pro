@@ -6,7 +6,7 @@ CONFIG -= app_bundle
 
 TEMPLATE = app
 
-QMAKE_CXXFLAGS += -std=c++11
+QMAKE_CXXFLAGS += -std=c++17
 
 DEFINES += _USE_MATH_DEFINES
 DEFINES += NOMINMAX

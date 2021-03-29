@@ -32,13 +32,11 @@ public:
 
 	std::function<bool(std::string stage, int percent)> *callback = nullptr;
 
-
-
 	RtiBuilder();
 	~RtiBuilder();
-	bool initFromFolder(const std::string &folder, std::function<bool(std::string stage, int percent)> *callback = nullptr);
+	bool initFromFolder(const std::string &folder, std::function<bool(std::string stage, int percent)> *_callback = nullptr);
 	bool initFromProject(const std::string &filename, std::function<bool(std::string stage, int percent)> *_callback = nullptr);
-	bool init(std::function<bool(std::string stage, int percent)> *callback = nullptr);
+	bool init(std::function<bool(std::string stage, int percent)> *_callback = nullptr);
 
 	size_t save(const std::string &output, int quality = 95);
 	bool saveJSON(QDir &dir, int quality);
