@@ -321,7 +321,7 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, function<v
 	vector<uint8_t> row(image_width*3);
 	for(int y = top; y < bottom; y++) {
 		if(callback) {
-			bool keep_going = (*callback)(std::string("Sampling images"), 100*(y-top)/(height-1));
+			bool keep_going = (*callback)(std::string("Sampling images:"), 100*(y-top)/(height-1));
 			if(!keep_going)
 				throw 1;
 		}
@@ -363,7 +363,7 @@ void ImageSet::skipToTop() {
 			decoders[i]->readRows(1, row.data());
 		
 		if(callback) {
-			bool keep_going = (*callback)(std::string("Skipping cropped part"), 100*i/(decoders.size()-1));
+			bool keep_going = (*callback)(std::string("Skipping cropped lines..."), 100*i/(decoders.size()-1));
 			if(!keep_going)
 				throw 1;
 		}

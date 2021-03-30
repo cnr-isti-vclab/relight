@@ -9,7 +9,6 @@
 #include <QStringList>
 #include <QTextStream>
 #include <QImage>
-#include <QElapsedTimer>
 #include <QRunnable>
 #include <QThreadPool>
 #include <QtConcurrent>
@@ -107,6 +106,10 @@ bool RtiBuilder::initFromProject(const std::string &filename, std::function<bool
 	callback = _callback;
 	try {
 		imageset.initFromProject(filename.c_str());
+		//overwrite project crop if specified in builder.
+		if(crop[2] != 0) //some width specified
+			imageset.crop(crop[0], crop[1], crop[2], crop[3]);
+
 		width = imageset.width;
 		height = imageset.height;
 		lights = imageset.lights;
@@ -373,6 +376,8 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 		w /= totw;
 	*/
 	
+	if(callback)
+		(*callback)("Computing PCA:", 0);
 	materials.resize(nmaterials);
 	materialbuilders.resize(nmaterials);
 	
@@ -414,6 +419,7 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 			for(double &d: mean)
 				d /= count[m];
 		}
+		(*callback)("Computing PCA:", 5);
 		
 		
 
@@ -433,7 +439,9 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 			assert(m == 0);
 			pcas[m]->setRecord(i, record);
 		}
-		
+
+		(*callback)("Computing PCA:", 10);
+
 		for(uint32_t i = 0; i < nmaterials; i++) {
 			PCA *pca = pcas[i];
 			pca->solve(nplanes);
@@ -512,7 +520,7 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 				assert(m == 0);
 				pcas[m]->setRecord(i, record);
 			}
-			
+
 			
 			for(uint32_t i = 0; i < nmaterials; i++) {
 				PCA *pca = pcas[i];
@@ -546,8 +554,10 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 				}
 				delete pca;
 			}
+			(*callback)("Computing PCA:", 100*component/3);
 		}
 	}
+	(*callback)("Computing PCA:", 100);
 }
 
 void RtiBuilder::pickBasePTM() {
@@ -688,11 +698,12 @@ void RtiBuilder::pickBase(PixelArray &sample) {
 	}
 	
 	if(callback)
-		(*callback)("Coefficients quantization...", 0);
+		(*callback)("Coefficients quantization:", 0);
 
+	//TODO workers to speed up this.
 	for(uint32_t i = 0; i < sample.npixels(); i++) {
 		if(callback && (i % 8000) == 0)
-			(*callback)("Coefficients quantization...", 100*i/sample.npixels());
+			(*callback)("Coefficients quantization:", 100*i/sample.npixels());
 		vector<float> principal = toPrincipal(indices[i],(float *)sample(i));
 		
 		Material &mat = materials[indices[i]];
@@ -731,7 +742,7 @@ void RtiBuilder::pickBase(PixelArray &sample) {
 	}
 
 	if(callback)
-		(*callback)("Coefficients quantization...", 100);
+		(*callback)("Coefficients quantization:", 100);
 	//	estimateError(sample, indices, weights);
 }
 
@@ -1260,12 +1271,9 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	QThreadPool pool;
 	pool.setMaxThreadCount(nworkers);
 
-	QElapsedTimer timer;
-	timer.start();
-
 	for(uint32_t y = 0; y < height + nworkers; y++) {
 		if(callback && y > 0) {
-			bool keep_going = (*callback)("Saving...", 100*(y)/(height + nworkers-1));
+			bool keep_going = (*callback)("Saving:", 100*(y)/(height + nworkers-1));
 			if(!keep_going) {
 				cout << "TODO: clean up directory, we are already saving!" << endl;
 				throw 1;
@@ -1357,12 +1365,6 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			}
 		}*/
 	}
-	int time = timer.restart();
-	if(time < 10000)
-		cout << "\nDone in: " << time << "ms" << endl;
-	else
-		cout << "\nDone in: " << time/1000 << "s" << endl;
-
 
 	size_t total = 0;
 	for(size_t p = 0; p < encoders.size(); p++) {

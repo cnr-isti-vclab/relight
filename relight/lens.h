@@ -27,8 +27,8 @@ public:
 	double focal35() {
 		if(focal35equivalent) return focalLength;
 		else {
-			double width = pixelSizeX * width;
-			return focalLength * 35 / width;
+			double w = pixelSizeX * width;
+			return focalLength * 35 / w;
 		}
 	}
 

@@ -303,7 +303,7 @@ bool LRti::loadHSH(FILE* file) {
 	//in .rti system HSH its c*scale + bias
 	//we need to convert the coefficients to the uniform standard.
 	
-	for(uint32_t i = 0; i < basis_terms; i++)
+	for(int i = 0; i < basis_terms; i++)
 		bias[i] = -bias[i]/scale[i];
 
 	uint32_t line_size = width * basis_terms * 3;
@@ -656,11 +656,13 @@ bool LRti::decodeJPEG(FILE *file) {
 		//read jpeg
 		fseek(file, pos[s], SEEK_SET);
 		vector<uint8_t> buffer(sizes[s]);
-		fread(buffer.data(), 1, uint(sizes[s]), file);
+		int readed = fread(buffer.data(), 1, uint(sizes[s]), file);
+		if(readed != sizes[s])
+			return false;
 		
-		bool readed = decodeJPEG(buffer.size(), buffer.data(), s);
+		bool decoded = decodeJPEG(buffer.size(), buffer.data(), s);
 
-		if(!readed)
+		if(!decoded)
 			return false;
 		int w = width;
 		int h = height;

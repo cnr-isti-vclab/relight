@@ -61,13 +61,11 @@ bool Project::scanDir() {
 		Image image(s);
 
 		QImageReader reader(s);
-		QSize size = reader.size();
-		image.width = size.width();
-		image.height = size.height();
+		image.size = reader.size();
 
-		int index = resolutions.indexOf(size);
+		int index = resolutions.indexOf(image.size);
 		if(index == -1) {
-			resolutions.push_back(size);
+			resolutions.push_back(image.size);
 			count.push_back(1);
 		} else
 			count[index]++;
@@ -86,7 +84,7 @@ bool Project::scanDir() {
 
 
 	for(Image &image: images1) {
-		image.valid = image.width == imgsize.width() && image.height == imgsize.height();
+		image.valid = image.size == imgsize;
 		image.skip = !image.valid;
 	}
 
@@ -124,7 +122,7 @@ bool Project::scanDir() {
 			lens = alllens[i];
 		}
 	}
-	for(int i = 0; i < images1.size(); i++) {
+	for(uint32_t i = 0; i < images1.size(); i++) {
 		images1[i].valid &= (lens.focal35() == alllens[i].focal35());
 		images1[i].skip = !images1[i].valid;
 	}
@@ -177,7 +175,7 @@ void Project::rotateImages() {
 	//find first image non rotated.
 	QString target_filename;
 	for(Image &image: images1) {
-		if(image.width == imgsize.width() && image.height == imgsize.height())
+		if(image.size == imgsize)
 			target_filename = image.filename;
 	}
 
@@ -185,11 +183,9 @@ void Project::rotateImages() {
 	QImage target(target_filename);
 	target = target.scaledToWidth(width);
 	for(Image &image: images1) {
-		if(image.width == imgsize.width())
+		if(!image.isRotated(imgsize))
 			continue;
-		if(image.height != imgsize.width() ||
-				image.width != imgsize.height())
-			continue;
+
 		QImage source(image.filename);
 
 		QImage thumb = source.scaledToHeight(width);
@@ -209,8 +205,7 @@ void Project::rotateImages() {
 		QImage rotated = source.transformed(final);
 		rotated.save(image.filename);
 
-		image.width = imgsize.width();
-		image.height = imgsize.height();
+		image.size = imgsize;
 		image.valid = true;
 		image.skip = false;
 		cout << "Right: " << right_mutual << " Left: " << left_mutual << endl;

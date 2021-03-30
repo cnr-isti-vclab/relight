@@ -199,7 +199,7 @@ void RtiExport::makeRti(QString output, QRect rect, Format format, bool means, b
 			try {
 				py::scoped_interpreter guard{};
 
-				for(int i = 0; i < builder.nplanes/3; i++) {
+				for(uint32_t i = 0; i < builder.nplanes/3; i++) {
 
 					QString str(R"f(
 import sys

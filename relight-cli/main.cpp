@@ -8,6 +8,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QElapsedTimer>
 
 #include <iostream>
 #include <string>
@@ -99,7 +100,7 @@ int main(int argc, char *argv[]) {
     QString redrawdir;
     bool relighted = false;
     Vector3f light;
-	bool verbose;
+	bool verbose = true;
 
 	opterr = 0;
     char c;
@@ -220,7 +221,10 @@ int main(int argc, char *argv[]) {
 				builder.crop[0] = c2[1].toInt();
 			if(c2.size() > 2)
 				builder.crop[1] = c2[2].toInt();
-			//cout << crop[0] << " " << crop[1] << " " << crop[2] << " " << crop[3] << endl;
+			if(verbose) {
+				cout << "Cropping: X: " << builder.crop[0] << " Y: " << builder.crop[1]
+					 << " Width: " << builder.crop[2] << " Height: " << builder.crop[3] << endl;
+			}
 			break;
 		}
         case 'R': {
@@ -263,7 +267,7 @@ int main(int argc, char *argv[]) {
             break;
         }
 		case 'v':
-			verbose = true;
+			verbose = false;
 			break;
         case '?':
             cerr << "Option " << char(optopt) << " requires an argument!\n" << endl;
@@ -314,6 +318,9 @@ int main(int argc, char *argv[]) {
 		*callback = [](std::string stage, int percent)->bool{ return progress(stage, percent); };
 	}
 
+	QElapsedTimer timer;
+	timer.start();
+
 	QFileInfo info(input.c_str());
 	if(info.isFile()) {
 		if(info.suffix() == "relight") {
@@ -336,7 +343,13 @@ int main(int argc, char *argv[]) {
     if(size == 0) {
         cerr << "Failed saving: " << builder.error << " !\n" << endl;
         return 1;
-    }
+	}
+
+	int time = timer.restart();
+	if(time < 10000)
+		cout << "\nDone in: " << time << "ms" << endl;
+	else
+		cout << "\nDone in: " << time/1000 << "s" << endl;
 
     if(redrawdir.size()) {
         Rti rti;
