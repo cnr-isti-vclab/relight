@@ -112,6 +112,7 @@ public slots:
 
 	void saveLPs();
 	void loadLP();
+	void loadLP(QString filename);
 	void exportRTI();
 
 

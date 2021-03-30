@@ -144,20 +144,28 @@ void MainWindow::newProject() {
 		//check if we can rotate a few images.
 		bool canrotate = false;
 		for(Image &image: project.images1) {
-			if(image.width == uint32_t(project.imgsize.width()) &&
-				image.height == uint32_t(project.imgsize.height()))
+			if(image.size == project.imgsize)
 				continue;
 
-			if(int(image.height) == project.imgsize.width() &&
-				int(image.width) == project.imgsize.height())
+			if(image.isRotated(project.imgsize))
 				canrotate = true;
 		}
 		if(canrotate) {
-			int answer = QMessageBox::question(this, "Some images are rotated.", "Do you wish to uniform image rotation?", QMessageBox::Ok, QMessageBox::Cancel);
+			int answer = QMessageBox::question(this, "Some images are rotated.", "Do you wish to uniform image rotation?", QMessageBox::Yes, QMessageBox::No);
 			if(answer != QMessageBox::No)
 				project.rotateImages();
 		} else
 			QMessageBox::critical(this, "Resolution problem", "Not all of the images in the folder have the same resolution (marked in red)");
+	}
+
+	QStringList img_ext;
+	img_ext << "*.lp";
+	QStringList lps = QDir(dir).entryList(img_ext);
+	if(lps.size() > 1) {
+	} else if(lps.size() == 1) {
+		int answer = QMessageBox::question(this, "Found an .lp file", "Do you wish to load the .lp file?", QMessageBox::Yes, QMessageBox::No);
+		if(answer != QMessageBox::No)
+			loadLP(lps[0]);
 	}
 
 	enableActions();
@@ -804,7 +812,10 @@ void MainWindow::loadLP() {
 	QString lp = QFileDialog::getOpenFileName(this, "Select light direction file", QString(), "Light directions (*.lp)");
 	if(lp.isNull())
 		return;
+	loadLP(lp);
+}
 
+void MainWindow::loadLP(QString lp) {
 	vector<QString> filenames;
 	std::vector<Vector3f> directions;
 
