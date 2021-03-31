@@ -39,6 +39,7 @@ find_package(
 	Qt5
 	COMPONENTS Core Gui Concurrent
 	REQUIRED)
+find_package(OpenMP)
 
 if (MSVC)
 	file(TO_CMAKE_PATH $ENV{JPEGTURBO_HOME} JPEGTURBO_HOME)
@@ -61,6 +62,7 @@ target_include_directories(
 target_link_libraries(
 	relight-cli PUBLIC
 		${JPEG_LIBRARIES}
+		OpenMP::OpenMP_CXX
 		Qt5::Core
 		Qt5::Gui
 		Qt5::Concurrent)

@@ -8,6 +8,7 @@ find_package(
 	COMPONENTS Core Gui Widgets Concurrent
 	REQUIRED)
 find_package(PythonLibs REQUIRED)
+find_package(OpenMP)
 add_subdirectory(pybind11)
 
 if (MSVC)
@@ -62,7 +63,7 @@ set (RELIGHT_SOURCES
 	measure.cpp
 	graphics_view_zoom.cpp
 	rtiexport.cpp
-
+	httpserver.cpp
 	lens.cpp
 	image.cpp
 	project.cpp
@@ -97,6 +98,7 @@ target_include_directories(
 target_link_libraries(
 	relight PUBLIC
 		${JPEG_LIBRARIES}
+		OpenMP::OpenMP_CXX
 		Qt5::Core
 		Qt5::Gui
 		Qt5::Widgets
