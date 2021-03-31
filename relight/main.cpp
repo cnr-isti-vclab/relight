@@ -5,6 +5,8 @@
 #include <QPointF>
 #include <QTextStream>
 
+#include <QTimer>
+
 #include "mainwindow.h"
 #include <iostream>
 #include <vector>
@@ -31,9 +33,16 @@ void calibrateColors(QString dir) {
 }
 
 
+
 int main(int argc, char *argv[]) {
 
-	const auto &app = QApplication(argc, argv);
+	QApplication app(argc, argv);
+
+//	AutoStyle autostyle;
+//	app.connect(&autostyle, SIGNAL(resetStyle(QString)), SLOT(setStyleSheet(QString)));
+	QFile style(":/darkorange/stylesheet.txt");
+	style.open(QFile::ReadOnly);
+	app.setStyleSheet(style.readAll());
 
 	auto mainwindow = new MainWindow();
 	mainwindow->showMaximized();

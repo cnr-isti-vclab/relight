@@ -11,7 +11,7 @@
 #include <QGraphicsScene>
 #include <QThreadPool>
 #include <QFutureWatcher>
-
+#include <QTimer>
 #include <map>
 
 
@@ -27,6 +27,28 @@ class QStandardItem;
 namespace Ui {
 class MainWindow;
 }
+/*
+ * used just for debugging and working on the style.
+class AutoStyle: public QTimer {
+	Q_OBJECT
+public:
+	AutoStyle() {
+		this->setInterval(1000);
+		this->start();
+		setSingleShot(false);
+		connect(this, SIGNAL(timeout()), this, SLOT(resetStyleSlot()));
+	}
+public slots:
+	void resetStyleSlot() {
+		//QFile style(":/darkorange/stylesheet.txt");
+		QFile style("/home/ponchio/devel/relight/relight/darkorange/stylesheet.txt");
+		style.open(QFile::ReadOnly);
+		emit resetStyle(style.readAll());
+	}
+signals:
+	void resetStyle(QString str);
+}; */
+
 
 class RTIScene: public QGraphicsScene {
 	Q_OBJECT
