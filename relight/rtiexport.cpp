@@ -59,10 +59,12 @@ RtiExport::RtiExport(QWidget *parent) :
 	ui->cropview->hideHandle();
 	ui->cropview->setBackgroundColor( Qt::lightGray );
 	ui->cropview->setCroppingRectBorderColor( Qt::white);
+	changeBasis(0);
 }
 
 void RtiExport::close() {
 	server.stop();
+	QDialog::close();
 }
 
 RtiExport::~RtiExport() {
