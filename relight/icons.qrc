@@ -27,10 +27,16 @@
     <qresource prefix="/docs">
         <file>docs/help.html</file>
     </qresource>
-	<qresource prefix="/">
+
+<qresource prefix="/">
         <file alias="scripts/build_tarzoom.py">../scripts/build_tarzoom.py</file>
+		<file >darkorange/checkbox.png</file>
+		<file >darkorange/down_arrow.png</file>
+		<file >darkorange/handle.png</file>
+		<file >darkorange/stylesheet.txt</file>
     </qresource>
-	<qresource prefix="/demo">
+
+    <qresource prefix="/demo">
 	   <file alias="index.html">../demo/index.html</file>
 		<file alias="skin.css">../demo/skin.css</file>
 		<file alias="skin.svg">../demo/skin.svg</file>

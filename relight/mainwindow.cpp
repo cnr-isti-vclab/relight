@@ -253,8 +253,8 @@ bool MainWindow::init() {
 		item ->setData(Qt::UserRole, count);
 
 		QStandardItem *poListItem = new QStandardItem;
-		if(!a.valid)
-			poListItem->setBackground(Qt::red);
+		//if(!a.valid)
+		//	poListItem->setBackground(Qt::red);
 		poListItem->setText(QString("%1 - %2").arg(count+1).arg(a.filename));
 		poListItem->setCheckable(true);
 		// Uncheck the item
@@ -289,7 +289,7 @@ void MainWindow::imageChecked(QStandardItem *item) {
 		return;
 	}
 	image.skip = skip;
-	item->setBackground(image.skip? Qt::red : Qt::white);
+//item->setBackground(image.skip? Qt::red : Qt::white);
 }
 
 void MainWindow::openImage(const QModelIndex &index) {
