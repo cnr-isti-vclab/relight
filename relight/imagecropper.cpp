@@ -177,6 +177,7 @@ void ImageCropper::paintEvent(QPaintEvent* _event)
 			float x = (this->width() - pimpl->croppingRect.width())/2;
 			float y = (this->height() - pimpl->croppingRect.height())/2;
 			pimpl->croppingRect.moveTo(x, y);
+			emit areaChanged(croppedRect());
 		}
 
 		QPainterPath p;
