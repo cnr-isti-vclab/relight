@@ -44,6 +44,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionNext,       SIGNAL(triggered(bool)),  this, SLOT(next()));
 	connect(ui->actionToggle_max_luma, SIGNAL(triggered(bool)), this, SLOT(toggleMaxLuma()));
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)),  this, SLOT(exportRTI()));
+	connect(ui->actionView_RTI, SIGNAL(triggered(bool)),  this, SLOT(viewRTI()));
+
 
 	connect(ui->addSphere,        SIGNAL(clicked(bool)),   this, SLOT(addSphere()));
 	connect(ui->removeSphere,     SIGNAL(clicked(bool)),   this, SLOT(removeSphere()));
@@ -913,6 +915,17 @@ void MainWindow::exportRTI() {
 	rtiexport->exec();
 	project.crop = rtiexport->crop;
 }
+
+void MainWindow::viewRTI() {
+	QString output = QFileDialog::getExistingDirectory(this, "Select an output directory");
+	if(output.isNull()) return;
+	server.stop();
+	server.port = 8880;
+	server.start(output);
+	server.show();
+}
+
+
 
 void MainWindow::editLensParameters() {
 	FocalDialog *focal = new FocalDialog(&project, this);

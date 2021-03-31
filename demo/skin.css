@@ -1,0 +1,82 @@
+.openlime-overlay, .openline-svgoverlay {
+	pointer-events: none;
+}
+
+
+
+.openlime-toolbar rect[style] {
+	fill:rgb(255, 255, 255, 0) !important;
+	stroke:none !important;
+}
+
+.openlime-toolbar path[style] {
+	stroke:white !important;
+	fill:white !important
+}
+
+
+.openlime-toolbar {
+	position:absolute; 
+	bottom:0px;
+	right:0px;
+	padding:5px;
+	background-color:rgb(0, 0, 0, 0.0);
+	display:flex;
+}
+
+
+.openlime-toolbar svg:not(:root) {
+	width:auto;
+	height: 5vh;
+	display: block;
+}
+
+.openlime-toolbar .openlime-button:hover {
+	cursor:pointer;
+	opacity:50%;
+
+}
+
+
+.openlime-light path[style] {
+	fill:#80808011 !important; 
+}
+.openlime-light-active .openlime-light path[style] {
+	fill:#ffcc00 !important; 
+}
+
+
+
+g.openlime-compact {
+	visibility:hidden !important;
+}
+
+g.openlime-expand {
+	visibility:visible !important;
+}
+
+.openlime-fullscreen-active g.openlime-compact {
+	visibility:visible !important;
+}
+
+.openlime-fullscreen-active g.openlime-expand {
+	visibility:hidden !important;
+}
+
+.openlime-layers-menu {
+	position:absolute;
+	cursor:pointer;
+	transition-duration: 0.5s;
+
+	background-color: #f1f1f1;
+	list-style: none;
+	padding:0px;
+	z-index: 1;
+}
+.openlime-layers-menu li {
+	display:block;
+	padding: 12px 16px;
+}
+
+.openlime-layers-menu li:hover { background-color: #ddd; }
+

@@ -7,6 +7,8 @@
 #include "../src/rti.h"
 #include "../relight-cli/rtibuilder.h"
 
+#include "httpserver.h"
+
 namespace Ui {
 	class RtiExport;
 }
@@ -27,7 +29,6 @@ public:
 	QProgressDialog *progressbar;
 	QFutureWatcher<void> watcher;
 	bool cancel = false;
-
 
 	explicit RtiExport(QWidget *parent = nullptr);
 	~RtiExport();
@@ -57,9 +58,12 @@ public:
 public slots:
 	void changeBasis(int n);
 	void changePlanes(int n);
-	void createRTI();
+	void createRTI(QString output);
+	void createRTI(bool view = false);
+	void createRTIandView();
 	void finishedProcess();
 	void cancelProcess();
+	void close();
 
 	void showCrop();
 	void acceptCrop();
@@ -73,6 +77,9 @@ signals:
 	void progress(int n);
 private:
 	Ui::RtiExport *ui;
+	HttpServer server;
+	bool viewAfter = false;
+	QString outputFolder;
 };
 
 #endif // RTIEXPORT_H

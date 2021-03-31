@@ -14,7 +14,21 @@ win32:INCLUDEPATH += ../libjpeg/include
 win32:LIBS += ../libjpeg/lib/jpeg.lib
 
 unix:INCLUDEPATH += /usr/include/eigen3 /usr/include/python3.6m
-unix:LIBS += -ljpeg -lpython3.6m
+unix:LIBS += -ljpeg -liomp5 -lpython3.6m
+unix:QMAKE_CXXFLAGS += -fopenmp
+
+
+mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/2.0.6/include \
+    /usr/local/include \
+    /usr/local/include/eigen3
+mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/2.0.6/lib/ -ljpeg
+mac:LIBS += -framework Accelerate
+mac:QMAKE_CXXFLAGS += -fopenmp
+mac:QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp -lomp -I/usr/local/include
+mac:QMAKE_LFLAGS += -lomp
+mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
+
+
 
 INCLUDEPATH += pybind11/include
 
@@ -35,7 +49,8 @@ SOURCES += main.cpp \
     focaldialog.cpp \
     lens.cpp \
     image.cpp \
-    ../src/exif.cpp
+    ../src/exif.cpp \
+    httpserver.cpp
 
 
 HEADERS += \
@@ -58,7 +73,8 @@ HEADERS += \
     focaldialog.h \
     lens.h \
     image.h \
-    ../src/exif.h
+    ../src/exif.h \
+    httpserver.h
 
 FORMS += \
     mainwindow.ui \

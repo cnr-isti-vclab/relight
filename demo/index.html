@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>OpenLime der</title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta charset="UTF-8" />
+
+	<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
+	<link rel="stylesheet" href="skin.css"/>
+
+	<style>
+html, body {
+	margin: 0px;
+	padding: 0px;
+	height: 100%;
+}
+
+#openlime {
+	position:relative;
+	height: 100%
+}
+
+#openlime>canvas {
+	width: 100%;
+	height: 100%;
+	/* this is important, it would cause firefox flickering! */
+	overflow: hidden;
+}
+
+	</style>
+</head>
+
+<body>
+	<div id="openlime"></div>
+</body>
+
+<script src="openlime.min.js"></script>
+
+
+<script>
+
+//autodetect type:
+async function autodetect() {
+	let response = await fetch('plane_0.tzi');
+	if(response.status == 200)
+		return "tarzoom";
+
+	response = await fetch('plane_0.dzi');
+	if(response.status == 200)
+		return "deepzoom";
+
+	response = await fetch('plane_0.jpg');
+	if(response.status == 200)
+		return "image";
+
+	alert("Could not detect an RTI here");
+	return "";
+}
+
+async function init() {
+	let layout = await autodetect();
+
+	let lime = new OpenLIME.OpenLIME('#openlime', { background:'black' });
+
+
+	let layer = new OpenLIME.Layer({ 
+		layout: layout, 
+		type:'rti',
+		url: 'info.json',
+	});
+
+	lime.canvas.addLayer('coin16', layer); 
+
+	let ui = new OpenLIME.UIBasic(lime, { skin: 'skin.svg' });
+	ui.actions.light.active = true;
+	lime.camera.maxFixedZoom = 1;
+}
+
+init();
+
+
+</script>
+
+</html>

@@ -8,7 +8,7 @@
         <file>gtango/document-save.svg</file>
         <file>gtango/edit-cut.svg</file>
         <file>gtango/folder.svg</file>
-        <file>gtango/folder-open.svg</file>
+		<file>gtango/folder-open.svg</file>
         <file>gtango/go-next.svg</file>
         <file>gtango/go-previous.svg</file>
         <file>gtango/list-add.svg</file>
@@ -20,13 +20,20 @@
         <file>gtango/zoom-out.svg</file>
         <file>gtango/folder-new.svg</file>
         <file>gtango/save.svg</file>
-        <file>gtango/spherelight.svg</file>
+		<file>gtango/spherelight.svg</file>
         <file>gtango/ruler.svg</file>
+        <file>gtango/image.svg</file>
     </qresource>
     <qresource prefix="/docs">
         <file>docs/help.html</file>
     </qresource>
-    <qresource prefix="/">
+	<qresource prefix="/">
         <file alias="scripts/build_tarzoom.py">../scripts/build_tarzoom.py</file>
     </qresource>
+	<qresource prefix="/demo">
+	   <file alias="index.html">../demo/index.html</file>
+		<file alias="skin.css">../demo/skin.css</file>
+		<file alias="skin.svg">../demo/skin.svg</file>
+		<file alias="openlime.min.js">../demo/openlime.min.js</file>
+		</qresource>
 </RCC>

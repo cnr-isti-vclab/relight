@@ -5,6 +5,7 @@
 #include <QDir>
 #include "ball.h"
 #include "project.h"
+#include "httpserver.h"
 
 #include <QProgressDialog>
 #include <QGraphicsScene>
@@ -53,6 +54,7 @@ public:
 	std::vector<int> progress_jobs;
 	QProgressDialog *progress;
 	QFutureWatcher<void> watcher;
+	HttpServer server;
 
 
 	bool init();
@@ -114,6 +116,8 @@ public slots:
 	void loadLP();
 	void loadLP(QString filename);
 	void exportRTI();
+
+	void viewRTI();
 
 
 	void editLensParameters();
