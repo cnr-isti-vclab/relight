@@ -16,6 +16,7 @@ namespace py = pybind11;
 #include "rtiexport.h"
 #include "ui_rtiexport.h"
 #include "imagecropper.h"
+#include "httpserver.h"
 
 #include <functional>
 #include <iostream>
@@ -29,7 +30,10 @@ RtiExport::RtiExport(QWidget *parent) :
 	ui->crop_frame->hide();
 	connect(ui->basis, SIGNAL(currentIndexChanged(int)), this, SLOT(changeBasis(int)));
 	connect(ui->planes, SIGNAL(valueChanged(int)), this, SLOT(changePlanes(int)));
-	connect(this, SIGNAL(accepted()), this, SLOT(createRTI()));
+	connect(ui->build, SIGNAL(clicked()), this, SLOT(createRTI()));
+	connect(ui->preview, SIGNAL(clicked()), this, SLOT(createRTIandView()));
+	connect(ui->close, SIGNAL(clicked()), this, SLOT(close()));
+	connect(this, SIGNAL(rejected()), this, SLOT(close()));
 	
 	connect(ui->crop,          SIGNAL(clicked()),  this, SLOT(showCrop()));
 	connect(ui->cropbuttonbox, SIGNAL(accepted()), this, SLOT(acceptCrop()));
@@ -55,6 +59,10 @@ RtiExport::RtiExport(QWidget *parent) :
 	ui->cropview->hideHandle();
 	ui->cropview->setBackgroundColor( Qt::lightGray );
 	ui->cropview->setCroppingRectBorderColor( Qt::white);
+}
+
+void RtiExport::close() {
+	server.stop();
 }
 
 RtiExport::~RtiExport() {
@@ -83,7 +91,7 @@ ostream& operator<<(ostream& os, const QRect& r) {
 }
 
 void RtiExport::showImage(QPixmap pix) {
-	ui->cropview->setImage(pix);	
+	ui->cropview->setImage(pix);
 }
 
 void RtiExport::changeBasis(int n) {
@@ -212,7 +220,7 @@ from pyvips import Image
 plane = '%1/plane_%2'
 filename = plane + '.jpg'
 image = Image.new_from_file(filename, access='sequential')
-image.dzsave(plane, overlap=0, tile_size=256, depth='onetile')
+image.dzsave(plane, overlap=0, tile_size=256, depth='onetile', suffix='.jpg[Q=98]')
 				)f");
 					str = str.arg(output).arg(i);
 
@@ -291,11 +299,19 @@ image.dzsave(plane, overlap=0, tile_size=256, depth='onetile')
 	}
 }
 
-
-void RtiExport::createRTI() {
+void RtiExport::createRTI(bool view) {
 	QString output = QFileDialog::getSaveFileName(this, "Select an output directory");
 	if(output.isNull()) return;
-	
+	viewAfter = true;
+	createRTI(output);
+}
+
+void RtiExport::createRTIandView() {
+	createRTI(true);
+}
+
+void RtiExport::createRTI(QString output) {
+	outputFolder = output;
 	
 	progressbar = new QProgressDialog("Building RTI...", "Cancel", 0, 100, this);
 	progressbar->setAutoClose(false);
@@ -339,6 +355,11 @@ void RtiExport::finishedProcess() {
 	progressbar->close();
 	delete progressbar;
 	progressbar = nullptr;
+
+	if(viewAfter) {
+		server.start(outputFolder);
+		server.show();
+	}
 }
 
 void RtiExport::showCrop() {

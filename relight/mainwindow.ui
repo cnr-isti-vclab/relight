@@ -238,6 +238,8 @@
     <addaction name="separator"/>
     <addaction name="actionZoom_in"/>
     <addaction name="actionZoom_out"/>
+    <addaction name="actionView_RTI"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuEdit_2">
     <property name="title">
@@ -297,6 +299,7 @@
    <addaction name="separator"/>
    <addaction name="actionRuler"/>
    <addaction name="actionExport_RTI"/>
+   <addaction name="actionView_RTI"/>
    <addaction name="actionHelp"/>
   </widget>
   <action name="actionOpen">
@@ -536,6 +539,18 @@
   <action name="actionRotate_all_right_2">
    <property name="text">
     <string>Rotate left all images</string>
+   </property>
+  </action>
+  <action name="actionView_RTI">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/gtango/image.svg</normaloff>:/icons/gtango/image.svg</iconset>
+   </property>
+   <property name="text">
+    <string>View RTI </string>
+   </property>
+   <property name="toolTip">
+    <string>View RTI in the browser</string>
    </property>
   </action>
  </widget>

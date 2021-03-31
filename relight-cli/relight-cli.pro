@@ -23,6 +23,11 @@ mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/2.0.6/include \
     /usr/local/include/eigen3
 mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/2.0.6/lib/ -ljpeg 
 mac:LIBS += -framework Accelerate
+mac:QMAKE_CXXFLAGS += -fopenmp
+mac:QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp -lomp -I/usr/local/include
+mac:QMAKE_LFLAGS += -lomp
+mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
+
 
 DESTDIR = "../bin"
 
