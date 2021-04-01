@@ -30,7 +30,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow)
 {
-	settings = new QSettings("VCG", "Relight", this);
+	settings = new QSettings;
 
 	ui->setupUi(this);
 	connect(ui->actionNew,        SIGNAL(triggered(bool)),  this, SLOT(newProject()));

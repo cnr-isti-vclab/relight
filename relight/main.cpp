@@ -38,6 +38,11 @@ int main(int argc, char *argv[]) {
 
 	QApplication app(argc, argv);
 
+	QCoreApplication::setOrganizationName("VCG");
+	QCoreApplication::setOrganizationDomain("vcg.isti.cnr.it");
+	QCoreApplication::setApplicationName("Relight");
+
+
 //	AutoStyle autostyle;
 //	app.connect(&autostyle, SIGNAL(resetStyle(QString)), SLOT(setStyleSheet(QString)));
 	QFile style(":/darkorange/stylesheet.txt");
