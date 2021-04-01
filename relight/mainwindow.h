@@ -138,6 +138,7 @@ public slots:
 	void loadLP();
 	void loadLP(QString filename);
 	void exportRTI();
+	void computeNormals();
 
 	void viewRTI();
 

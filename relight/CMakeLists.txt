@@ -67,6 +67,7 @@ set (RELIGHT_SOURCES
 	lens.cpp
 	image.cpp
 	project.cpp
+	scripts.cpp
 	../relight-cli/rtibuilder.cpp
 	../src/imageset.cpp
 	../src/jpeg_decoder.cpp

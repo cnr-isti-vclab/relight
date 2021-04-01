@@ -50,7 +50,8 @@ SOURCES += main.cpp \
     lens.cpp \
     image.cpp \
     ../src/exif.cpp \
-    httpserver.cpp
+    httpserver.cpp \
+    scripts.cpp
 
 
 HEADERS += \
@@ -74,7 +75,8 @@ HEADERS += \
     lens.h \
     image.h \
     ../src/exif.h \
-    httpserver.h
+    httpserver.h \
+    scripts.h
 
 FORMS += \
     mainwindow.ui \
