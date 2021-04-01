@@ -191,7 +191,7 @@
       </item>
      </layout>
     </item>
-    <item row="0" column="1" rowspan="2">
+    <item row="0" column="1">
      <widget class="QGraphicsView" name="graphicsView">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -268,10 +268,17 @@
     </property>
     <addaction name="actionLens_parameters"/>
    </widget>
+   <widget class="QMenu" name="menuBuild">
+    <property name="title">
+     <string>Build</string>
+    </property>
+    <addaction name="actionNormals"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit_2"/>
    <addaction name="menuEdit"/>
    <addaction name="menuCalibration"/>
+   <addaction name="menuBuild"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -551,6 +558,11 @@
    </property>
    <property name="toolTip">
     <string>View RTI in the browser</string>
+   </property>
+  </action>
+  <action name="actionNormals">
+   <property name="text">
+    <string>Normals</string>
    </property>
   </action>
  </widget>

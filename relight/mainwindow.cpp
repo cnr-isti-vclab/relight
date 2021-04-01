@@ -6,6 +6,7 @@
 #include "../src/imageset.h"
 #include "helpdialog.h"
 #include "focaldialog.h"
+#include "scripts.h"
 
 #include <QInputDialog>
 #include <QFileDialog>
@@ -45,6 +46,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionToggle_max_luma, SIGNAL(triggered(bool)), this, SLOT(toggleMaxLuma()));
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)),  this, SLOT(exportRTI()));
 	connect(ui->actionView_RTI, SIGNAL(triggered(bool)),  this, SLOT(viewRTI()));
+
+	connect(ui->actionNormals, SIGNAL(triggered()), this, (SLOT(computeNormals())));
 
 
 	connect(ui->addSphere,        SIGNAL(clicked(bool)),   this, SLOT(addSphere()));
@@ -925,6 +928,10 @@ void MainWindow::viewRTI() {
 	server.show();
 }
 
+void MainWindow::computeNormals() {
+
+	Scripts::normals("normals.png", project.images(), project.directions(), 0);
+}
 
 
 void MainWindow::editLensParameters() {

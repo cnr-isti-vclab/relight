@@ -43,16 +43,19 @@ public:
 		return false;
 	}
 	size_t size() { return images1.size(); }
+
 	QStringList images() {
 		QStringList imgs;
 		for(Image &img: images1)
-			imgs.push_back(img.filename);
+			if(!img.skip)
+				imgs.push_back(img.filename);
 		return imgs;
 	}
 	std::vector<Vector3f> directions() {
 		std::vector<Vector3f> dirs;
 		for(Image &img: images1)
-			dirs.push_back(img.direction);
+			if(!img.skip)
+				dirs.push_back(img.direction);
 		return dirs;
 	}
 	int indexOf(QString s) {

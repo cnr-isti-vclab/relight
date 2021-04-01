@@ -1,9 +1,3 @@
-//this include must be the first one, not to be messed by slots keyword defined by QT.
-#include <pybind11/pybind11.h>
-#include <pybind11/embed.h>
-namespace py = pybind11;
-
-
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QProgressDialog>
@@ -17,6 +11,7 @@ namespace py = pybind11;
 #include "ui_rtiexport.h"
 #include "imagecropper.h"
 #include "httpserver.h"
+#include "scripts.h"
 
 #include <functional>
 #include <iostream>
@@ -187,60 +182,26 @@ void RtiExport::makeRti(QString output, QRect rect, Format format, bool means, b
 			return;
 		}
 
-		builder.save(output.toStdString(), ui->quality->value());
+		int quality= ui->quality->value();
+		builder.save(output.toStdString(), quality);
 
-		if(highNormals) {
-			try {
-				py::scoped_interpreter guard{};
 
-			} catch(py::error_already_set &e) {
-
-				cout << "Deepzoom: " << std::string(py::str(e.type())) << endl;
-				cout << std::string(py::str(e.value())) << endl;
-				return;
-
-			} catch(...) {
-
+		if(format == DEEPZOOM || format == TARZOOM) {
+			for(uint32_t i = 0; i < builder.nplanes/3; i++) {
+				callback("Deepzoom creation...", 100*i/((builder.nplanes/3)-1));
+				Scripts::deepzoom(QString("%1/plane_%2").arg(output).arg(i), quality);
+			}
+			if(format == TARZOOM) {
+				for(uint32_t i = 0; i < builder.nplanes/3; i++) {
+					callback("Tarzoom creation...", 100*i/((builder.nplanes/3)-1));
+					Scripts::tarzoom(QString("%1/plane_%2").arg(output).arg(i));
+				}
 			}
 		}
 
-		if(format == DEEPZOOM || format == TARZOOM) {
-
-			try {
-				py::scoped_interpreter guard{};
-
-				for(uint32_t i = 0; i < builder.nplanes/3; i++) {
-
-					QString str(R"f(
-import sys
-
-if not hasattr(sys, 'argv'):
-	sys.argv = ['']
-
-from pyvips import Image
-
-plane = '%1/plane_%2'
-filename = plane + '.jpg'
-image = Image.new_from_file(filename, access='sequential')
-image.dzsave(plane, overlap=0, tile_size=256, depth='onetile', suffix='.jpg[Q=98]')
-				)f");
-					str = str.arg(output).arg(i);
-
-					callback("Deepzoom creation...", 100*(i+1)/(builder.nplanes/3));
-					py::object scope1 = py::module_::import("__main__").attr("__dict__");
-					py::exec(str.toStdString(), scope1);
-				}
-			} catch(py::error_already_set &e) {
-
-				cout << "Deepzoom: " << std::string(py::str(e.type())) << endl;
-				cout << std::string(py::str(e.value())) << endl;
-				return;
-
-			} catch(...) {
-
-			}
-
-				/*wchar_t *argv[] = { L"ah!" };
+				/* This uses the pybind11 to initialize and run functions imported from a script
+				 *
+				 * wchar_t *argv[] = { L"ah!" };
 				Py_Initialize();
 				PySys_SetArgv(1, argv);
 
@@ -248,7 +209,6 @@ image.dzsave(plane, overlap=0, tile_size=256, depth='onetile', suffix='.jpg[Q=98
 				//PyObject *sys_path = PySys_GetObject("path");
 				//PyList_Append(sys_path, PyString_FromString("./scripts"));
 
-				using namespace pybind11::literals;
 
 
 
@@ -263,6 +223,8 @@ image.dzsave(plane, overlap=0, tile_size=256, depth='onetile', suffix='.jpg[Q=98
 					dzsave(plane.toStdString(), "overlap"_a=0, "tile_size"_a=256, "depth"_a="onetile");
 					callback("Deepzoom creation...", 100*(i+1)/(builder.nplanes/3));
 				}*/
+
+			/*
 			try {
 				if(format == TARZOOM) {
 					py::scoped_interpreter guard{};
@@ -272,6 +234,13 @@ image.dzsave(plane, overlap=0, tile_size=256, depth='onetile', suffix='.jpg[Q=98
 					QString content = file.readAll();
 					py::object scope = py::module_::import("__main__").attr("__dict__");
 					scope["output"] = output.toStdString();
+
+					using namespace pybind11::literals;
+					py::module_ np = py::module_::import("numpy");  // like 'import numpy as np'
+					py::array_t<float> pylights({3, int(lights.size())});
+					memcpy(pylights.mutable_data(), lights.data(), lights.size()*4);
+
+					scope["lights"] = lights;
 					py::exec(content.toStdString(), scope);
 				}
 
@@ -281,7 +250,30 @@ image.dzsave(plane, overlap=0, tile_size=256, depth='onetile', suffix='.jpg[Q=98
 				return;
 			} catch(...) {
 //				QMessageBox
-			}
+			} */
+
+
+
+		if(highNormals) {
+			/*
+			try {
+				py::scoped_interpreter guard{};
+
+				QFile file(":/scripts/normalmap.py");
+				file.open(QFile::ReadOnly);
+				QString content = file.readAll();
+				py::object scope = py::module_::import("__main__").attr("__dict__");
+				scope["output"] = output.toStdString();
+				scope["output"] = 0;
+				py::exec(content.toStdString(), scope);
+
+			} catch(py::error_already_set &e) {
+				cout << "normalmap: " << std::string(py::str(e.type())) << endl;
+				cout << std::string(py::str(e.value())) << endl;
+				return;
+			} catch(...) {
+//				QMessageBox
+			} */
 
 		}
 
@@ -304,7 +296,7 @@ image.dzsave(plane, overlap=0, tile_size=256, depth='onetile', suffix='.jpg[Q=98
 void RtiExport::createRTI(bool view) {
 	QString output = QFileDialog::getSaveFileName(this, "Select an output directory");
 	if(output.isNull()) return;
-	viewAfter = true;
+	viewAfter = view;
 	createRTI(output);
 }
 
