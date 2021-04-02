@@ -17,9 +17,7 @@ public:
 	static void normals(QString output, QStringList images, const std::vector<Vector3f> &lights, int method);
 
 private:
-	static void run(const char *data, pybind11::object &scope);
-	static void runScript(QString script, pybind11::object &scope);
-	static void runScripts(QStringList script, pybind11::object &scope);
+	static QString scriptDir();
 };
 
 #endif // SCRIPTS_H
