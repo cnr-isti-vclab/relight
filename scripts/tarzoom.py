@@ -69,8 +69,6 @@ def tarzoom(basename):
 
 
 if __name__ == "__main__":
-	if hasattr(sys, 'argv'):
-		plane = sys.argv[1]
-
+	plane = sys.argv[1]
 	tarzoom(plane)
 
