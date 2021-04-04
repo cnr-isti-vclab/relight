@@ -25,12 +25,15 @@ RtiExport::RtiExport(QWidget *parent) :
 	ui->crop_frame->hide();
 	connect(ui->basis, SIGNAL(currentIndexChanged(int)), this, SLOT(changeBasis(int)));
 	connect(ui->planes, SIGNAL(valueChanged(int)), this, SLOT(changePlanes(int)));
-	connect(ui->build, SIGNAL(clicked()), this, SLOT(createRTI()));
+	connect(ui->build_rti, SIGNAL(clicked()), this, SLOT(createRTI()));
+	connect(ui->build_normals, SIGNAL(clicked()), this, SLOT(createNormals()));
 	connect(ui->preview, SIGNAL(clicked()), this, SLOT(createRTIandView()));
-	connect(ui->close, SIGNAL(clicked()), this, SLOT(close()));
+//	connect(ui->close, SIGNAL(clicked()), this, SLOT(close()));
 	connect(this, SIGNAL(rejected()), this, SLOT(close()));
 	
 	connect(ui->crop,          SIGNAL(clicked()),  this, SLOT(showCrop()));
+	connect(ui->crop1,          SIGNAL(clicked()),  this, SLOT(showCrop()));
+
 	connect(ui->cropbuttonbox, SIGNAL(accepted()), this, SLOT(acceptCrop()));
 	connect(ui->cropbuttonbox, SIGNAL(rejected()), this, SLOT(rejectCrop()));
 	connect(ui->cropview, SIGNAL(areaChanged(QRect)), this, SLOT(cropChanged(QRect)));
@@ -293,8 +296,30 @@ void RtiExport::makeRti(QString output, QRect rect, Format format, bool means, b
 	}
 }
 
+
+void RtiExport::createNormals() {
+	QString output = QFileDialog::getSaveFileName(this, "Select an output file for normal:");
+	if(output.isNull()) return;
+	if(!output.endsWith(".png"))
+		output += ".png";
+
+	int method = 0; //least squares
+	if(ui->l2_solver->isChecked())
+		method = 0;
+	if(ui->sbl_solver->isChecked())
+		method = 4;
+	if(ui->sbl_solver->isChecked())
+		method = 5;
+
+	QRect rect = QRect(0, 0, 0, 0);
+	if(ui->cropview->handleShown()) {
+		rect = ui->cropview->croppedRect();
+	}
+	Scripts::normals(output, images, lights, method, rect);
+}
+
 void RtiExport::createRTI(bool view) {
-	QString output = QFileDialog::getSaveFileName(this, "Select an output directory");
+	QString output = QFileDialog::getSaveFileName(this, "Select an output directory", QString(), tr("Images (*.png)"));
 	if(output.isNull()) return;
 	viewAfter = view;
 	createRTI(output);
@@ -327,10 +352,12 @@ void RtiExport::createRTI(QString output) {
 	
 	
 	QFuture<void> future = QtConcurrent::run([this, output, rect, format]() {
-		this->makeRti(output, rect, format,
+		this->makeRti(output, rect, format
+/*			,
 			ui->means->isChecked(),
 			ui->normals->isChecked(),
-			ui->highNormals->isChecked());
+			ui->highNormals->isChecked() */
+		);
 	} );
 
 	watcher.setFuture(future);

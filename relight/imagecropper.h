@@ -1,10 +1,28 @@
 #ifndef IMAGECROPPER_H
 #define IMAGECROPPER_H
 
-#include "imagecropper_p.h"
-#include "imagecropper_e.h"
-
 #include <QWidget>
+#include <QSizeF>
+
+namespace {
+	const QRect INIT_CROPPING_RECT = QRect();
+	const QSizeF INIT_PROPORTION = QSizeF(1.0, 1.0);
+}
+
+enum CursorPosition {
+	CursorPositionUndefined,
+	CursorPositionMiddle,
+	CursorPositionTop,
+	CursorPositionBottom,
+	CursorPositionLeft,
+	CursorPositionRight,
+	CursorPositionTopLeft,
+	CursorPositionTopRight,
+	CursorPositionBottomLeft,
+	CursorPositionBottomRight
+};
+
+
 
 class ImageCropper : public QWidget
 {
@@ -64,11 +82,24 @@ private:
 
 private:
 	// Private data implementation
-	ImageCropperPrivate* pimpl;
 	bool show_handle = true;
 
 	float leftDelta, topDelta;
 	float xScale, yScale;
+
+
+	QPixmap imageForCropping;
+	QRectF croppingRect;
+	QRectF lastStaticCroppingRect;
+	CursorPosition _cursorPosition = CursorPositionUndefined;
+	bool isMousePressed = false;
+	bool isProportionFixed = false;
+	QPointF startMousePos;
+	QSizeF proportion = QSizeF(1.0, 1.0);
+	QSizeF deltas = QSizeF(1.0, 1.0);
+	QColor backgroundColor = Qt::black;
+	QColor croppingRectBorderColor = Qt::white;
+
 };
 
 #endif // IMAGECROPPER_H

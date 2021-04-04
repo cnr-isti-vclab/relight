@@ -28,7 +28,7 @@ namespace Ui {
 class MainWindow;
 }
 /*
- * used just for debugging and working on the style.
+ * used just for debugging and working on the style. */
 class AutoStyle: public QTimer {
 	Q_OBJECT
 public:
@@ -47,7 +47,7 @@ public slots:
 	}
 signals:
 	void resetStyle(QString str);
-}; */
+};
 
 
 class RTIScene: public QGraphicsScene {
@@ -138,7 +138,6 @@ public slots:
 	void loadLP();
 	void loadLP(QString filename);
 	void exportRTI();
-	void computeNormals();
 
 	void viewRTI();
 
