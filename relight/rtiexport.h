@@ -60,6 +60,7 @@ public slots:
 	void changePlanes(int n);
 	void createRTI(QString output);
 	void createRTI(bool view = false);
+	void createNormals();
 	void createRTIandView();
 	void finishedProcess();
 	void cancelProcess();

@@ -4,70 +4,63 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <math.h>
+#include <iostream>
+using namespace std;
 
 namespace {
 	static const QSize WIDGET_MINIMUM_SIZE(300, 300);
 }
 
-ImageCropper::ImageCropper(QWidget* parent) :
-	QWidget(parent),
-	pimpl(new ImageCropperPrivate)
-{
+ImageCropper::ImageCropper(QWidget* parent):	QWidget(parent) {
 	setMinimumSize(WIDGET_MINIMUM_SIZE);
 	setMouseTracking(true);
 }
 
-ImageCropper::~ImageCropper()
-{
-	delete pimpl;
-}
+ImageCropper::~ImageCropper() {}
 
-void ImageCropper::setImage(const QPixmap& _image)
-{
-	pimpl->imageForCropping = _image;
+void ImageCropper::setImage(const QPixmap& _image) {
+	imageForCropping = _image;
 	update();
 }
 
-void ImageCropper::setBackgroundColor(const QColor& _backgroundColor)
-{
-	pimpl->backgroundColor = _backgroundColor;
+void ImageCropper::setBackgroundColor(const QColor& _backgroundColor) {
+	backgroundColor = _backgroundColor;
 	update();
 }
 
 void ImageCropper::setCroppingRectBorderColor(const QColor& _borderColor)
 {
-	pimpl->croppingRectBorderColor = _borderColor;
+	croppingRectBorderColor = _borderColor;
 	update();
 }
 
-void ImageCropper::setProportion(const QSizeF& _proportion)
-{
-	if (pimpl->proportion != _proportion) {
-		pimpl->proportion = _proportion;
+void ImageCropper::setProportion(const QSizeF& _proportion) {
+	if (proportion != _proportion) {
+		proportion = _proportion;
 		float heightDelta = (float)_proportion.height() / _proportion.width();
 		float widthDelta = (float)_proportion.width() / _proportion.height();
-		pimpl->deltas.setHeight(heightDelta);
-		pimpl->deltas.setWidth(widthDelta);
+		deltas.setHeight(heightDelta);
+		deltas.setWidth(widthDelta);
 	}
 
-	if ( pimpl->isProportionFixed ) {
+	if ( isProportionFixed ) {
 		float croppintRectSideRelation =
-				(float)pimpl->croppingRect.width() / pimpl->croppingRect.height();
+				(float)croppingRect.width() / croppingRect.height();
 		float proportionSideRelation =
-				(float)pimpl->proportion.width() / pimpl->proportion.height();
+				(float)proportion.width() / proportion.height();
 		if (croppintRectSideRelation != proportionSideRelation) {
 
-			float area = pimpl->croppingRect.width() * pimpl->croppingRect.height();
-			pimpl->croppingRect.setWidth(sqrt(area /  pimpl->deltas.height()));
-			pimpl->croppingRect.setHeight(sqrt(area /  pimpl->deltas.width()));
+			float area = croppingRect.width() * croppingRect.height();
+			croppingRect.setWidth(sqrt(area /  deltas.height()));
+			croppingRect.setHeight(sqrt(area /  deltas.width()));
 /*			bool widthShotrerThenHeight =
-					pimpl->croppingRect.width() < pimpl->croppingRect.height();
+					croppingRect.width() < croppingRect.height();
 			if (widthShotrerThenHeight) {
-				pimpl->croppingRect.setHeight(
-							pimpl->croppingRect.width() * pimpl->deltas.height());
+				croppingRect.setHeight(
+							croppingRect.width() * deltas.height());
 			} else {
-				pimpl->croppingRect.setWidth(
-							pimpl->croppingRect.height() * pimpl->deltas.width());
+				croppingRect.setWidth(
+							croppingRect.height() * deltas.width());
 			} */
 			update();
 		}
@@ -77,35 +70,29 @@ void ImageCropper::setProportion(const QSizeF& _proportion)
 
 void ImageCropper::setProportionFixed(const bool _isFixed)
 {
-	if (pimpl->isProportionFixed != _isFixed) {
-		pimpl->isProportionFixed = _isFixed;
-		setProportion(pimpl->proportion);
+	if (isProportionFixed != _isFixed) {
+		isProportionFixed = _isFixed;
+		setProportion(proportion);
 	}
 }
 
 QRect ImageCropper::croppedRect() {
-	QRectF &r = pimpl->croppingRect;
-	QRectF realSizeRect(
-		QPointF(r.left() - leftDelta, r.top() - topDelta),
-			r.size());
-
+	QRectF &r = croppingRect;
+	QRectF realSizeRect;
 	realSizeRect.setLeft((r.left() - leftDelta) * xScale);
 	realSizeRect.setTop ((r.top() - topDelta) * yScale);
 
 	realSizeRect.setWidth(r.width() * xScale);
 	realSizeRect.setHeight(r.height() * yScale);
 
-	if(realSizeRect.left() < 0) realSizeRect.setLeft(0);
-	if(realSizeRect.top() < 0) realSizeRect.setTop(0);
-	if(realSizeRect.right() > pimpl->imageForCropping.width()) realSizeRect.setRight(pimpl->imageForCropping.width());
-	if(realSizeRect.bottom() > pimpl->imageForCropping.height()) realSizeRect.setBottom(pimpl->imageForCropping.height());
+	realSizeRect = realSizeRect.intersected(QRectF(0, 0, imageForCropping.width(), imageForCropping.height()));
 	return realSizeRect.toRect();
 }
 
 void ImageCropper::setCrop(QRect rect) {
 	if(!rect.isValid())
 		return;
-	QRectF &r = pimpl->croppingRect;
+	QRectF &r = croppingRect;
 	r.setLeft(rect.left()/xScale + leftDelta);
 	r.setTop(rect.top()/yScale + topDelta);
 	r.setWidth(rect.width()/xScale);
@@ -116,7 +103,7 @@ void ImageCropper::setCrop(QRect rect) {
 void ImageCropper::updateDeltaAndScale() {
 	//TODO don't resize an image just to compute a proportion.
 	QSize scaledImageSize =
-			pimpl->imageForCropping.scaled(
+			imageForCropping.scaled(
 				this->size(), Qt::KeepAspectRatio, Qt::FastTransformation
 				).size();
 	leftDelta = 0.0f;
@@ -126,8 +113,8 @@ void ImageCropper::updateDeltaAndScale() {
 	} else {
 		topDelta = (this->height() - scaledImageSize.height()) /  2.0f;
 	}
-	xScale = (float)pimpl->imageForCropping.width()  / scaledImageSize.width();
-	yScale = (float)pimpl->imageForCropping.height() / scaledImageSize.height();
+	xScale = (float)imageForCropping.width()  / scaledImageSize.width();
+	yScale = (float)imageForCropping.height() / scaledImageSize.height();
 }
 
 void ImageCropper::resizeEvent(QResizeEvent *event) {
@@ -158,9 +145,9 @@ void ImageCropper::paintEvent(QPaintEvent* _event)
 
 	{
 		QPixmap scaledImage =
-				pimpl->imageForCropping.scaled(this->size(), Qt::KeepAspectRatio, Qt::FastTransformation);
+				imageForCropping.scaled(this->size(), Qt::KeepAspectRatio, Qt::FastTransformation);
 
-		widgetPainter.fillRect( this->rect(), pimpl->backgroundColor );
+		widgetPainter.fillRect( this->rect(), backgroundColor );
 		
 		if ( this->size().height() == scaledImage.height() ) {
 			widgetPainter.drawPixmap( ( this->width() - scaledImage.width() ) / 2, 0, scaledImage );
@@ -170,40 +157,40 @@ void ImageCropper::paintEvent(QPaintEvent* _event)
 	}
 
 	if(show_handle) {
-		if (pimpl->croppingRect.isNull()) {
+		if (croppingRect.isNull()) {
 			const int width = WIDGET_MINIMUM_SIZE.width()/2;
 			const int height = WIDGET_MINIMUM_SIZE.height()/2;
-			pimpl->croppingRect.setSize(QSize(width, height));
-			float x = (this->width() - pimpl->croppingRect.width())/2;
-			float y = (this->height() - pimpl->croppingRect.height())/2;
-			pimpl->croppingRect.moveTo(x, y);
+			croppingRect.setSize(QSize(width, height));
+			float x = (this->width() - croppingRect.width())/2;
+			float y = (this->height() - croppingRect.height())/2;
+			croppingRect.moveTo(x, y);
 			emit areaChanged(croppedRect());
 		}
 
 		QPainterPath p;
-		p.addRect(pimpl->croppingRect);
+		p.addRect(croppingRect);
 		p.addRect(this->rect());
 		widgetPainter.setBrush(QBrush(QColor(0,0,0,120)));
 		widgetPainter.setPen(Qt::transparent);
 		widgetPainter.drawPath(p);
 
-		widgetPainter.setPen(pimpl->croppingRectBorderColor);
+		widgetPainter.setPen(croppingRectBorderColor);
 
 		{
 			widgetPainter.setBrush(QBrush(Qt::transparent));
-			widgetPainter.drawRect(pimpl->croppingRect);
+			widgetPainter.drawRect(croppingRect);
 		}
 
 		{
-			widgetPainter.setBrush(QBrush(pimpl->croppingRectBorderColor));
+			widgetPainter.setBrush(QBrush(croppingRectBorderColor));
 
-			int leftXCoord   = pimpl->croppingRect.left() - 2;
-			int centerXCoord = pimpl->croppingRect.center().x() - 3;
-			int rightXCoord  = pimpl->croppingRect.right() - 2;
+			int leftXCoord   = croppingRect.left() - 2;
+			int centerXCoord = croppingRect.center().x() - 3;
+			int rightXCoord  = croppingRect.right() - 2;
 
-			int topYCoord    = pimpl->croppingRect.top() - 2;
-			int middleYCoord = pimpl->croppingRect.center().y() - 3;
-			int bottomYCoord = pimpl->croppingRect.bottom() - 2;
+			int topYCoord    = croppingRect.top() - 2;
+			int middleYCoord = croppingRect.center().y() - 3;
+			int bottomYCoord = croppingRect.bottom() - 2;
 			//
 			const QSize pointSize(6, 6);
 			//
@@ -226,17 +213,17 @@ void ImageCropper::paintEvent(QPaintEvent* _event)
 		}
 
 		{
-			QPen dashPen(pimpl->croppingRectBorderColor);
+			QPen dashPen(croppingRectBorderColor);
 			dashPen.setStyle(Qt::DashLine);
 			widgetPainter.setPen(dashPen);
 
 			widgetPainter.drawLine(
-						QPoint(pimpl->croppingRect.center().x(), pimpl->croppingRect.top()),
-						QPoint(pimpl->croppingRect.center().x(), pimpl->croppingRect.bottom()) );
+						QPoint(croppingRect.center().x(), croppingRect.top()),
+						QPoint(croppingRect.center().x(), croppingRect.bottom()) );
 
 			widgetPainter.drawLine(
-						QPoint(pimpl->croppingRect.left(), pimpl->croppingRect.center().y()),
-						QPoint(pimpl->croppingRect.right(), pimpl->croppingRect.center().y()) );
+						QPoint(croppingRect.left(), croppingRect.center().y()),
+						QPoint(croppingRect.right(), croppingRect.center().y()) );
 		}
 	}
 	//
@@ -246,9 +233,9 @@ void ImageCropper::paintEvent(QPaintEvent* _event)
 void ImageCropper::mousePressEvent(QMouseEvent* _event)
 {
 	if (_event->button() == Qt::LeftButton) {
-		pimpl->isMousePressed = true;
-		pimpl->startMousePos = _event->pos();
-		pimpl->lastStaticCroppingRect = pimpl->croppingRect;
+		isMousePressed = true;
+		startMousePos = _event->pos();
+		lastStaticCroppingRect = croppingRect;
 	}
 	//
 	updateCursorIcon(_event->pos());
@@ -258,22 +245,22 @@ void ImageCropper::mouseMoveEvent(QMouseEvent* _event)
 {
 	QPointF mousePos = _event->pos();
 	//
-	if (!pimpl->isMousePressed) {
-		pimpl->cursorPosition = cursorPosition(pimpl->croppingRect, mousePos);
+	if (!isMousePressed) {
+		_cursorPosition = cursorPosition(croppingRect, mousePos);
 		updateCursorIcon(mousePos);
-	} else if (pimpl->cursorPosition != CursorPositionUndefined) {
+	} else if (_cursorPosition != CursorPositionUndefined) {
 		QPointF mouseDelta;
-		mouseDelta.setX( mousePos.x() - pimpl->startMousePos.x() );
-		mouseDelta.setY( mousePos.y() - pimpl->startMousePos.y() );
+		mouseDelta.setX( mousePos.x() - startMousePos.x() );
+		mouseDelta.setY( mousePos.y() - startMousePos.y() );
 		//
-		QRectF &r = pimpl->croppingRect;
+		QRectF &r = croppingRect;
 
-		if (pimpl->cursorPosition != CursorPositionMiddle) {
+		if (_cursorPosition != CursorPositionMiddle) {
 		
 			QRectF newGeometry =
 					calculateGeometry(
-						pimpl->lastStaticCroppingRect,
-						pimpl->cursorPosition,
+						lastStaticCroppingRect,
+						_cursorPosition,
 						mouseDelta);
 
 			if (!newGeometry.isNull()) {
@@ -281,26 +268,25 @@ void ImageCropper::mouseMoveEvent(QMouseEvent* _event)
 
 				if(r.left() < leftDelta) r.setLeft(leftDelta);
 				if(r.top() < topDelta) r.setTop(topDelta);
-				float rightEdge = pimpl->imageForCropping.width()/xScale + leftDelta;
+				float rightEdge = imageForCropping.width()/xScale + leftDelta;
 				if(r.right() > rightEdge) r.setRight(rightEdge);
 
-				float bottomEdge = pimpl->imageForCropping.height()/yScale + topDelta;
+				float bottomEdge = imageForCropping.height()/yScale + topDelta;
 				if(r.bottom() > bottomEdge) r.setBottom(bottomEdge);
 			}
 		} else {
 
-			r.moveTo( pimpl->lastStaticCroppingRect.topLeft() + mouseDelta );
+			r.moveTo( lastStaticCroppingRect.topLeft() + mouseDelta );
 
 			if(r.left() < leftDelta) r.moveLeft(leftDelta);
 			if(r.top() < topDelta) r.moveTop(topDelta);
 
-			float rightEdge = pimpl->imageForCropping.width()/xScale + leftDelta;
+			float rightEdge = imageForCropping.width()/xScale + leftDelta;
 			if(r.right() > rightEdge) r.moveRight(rightEdge);
 
-			float bottomEdge = pimpl->imageForCropping.height()/yScale + topDelta;
+			float bottomEdge = imageForCropping.height()/yScale + topDelta;
 			if(r.bottom() > bottomEdge) r.moveBottom(bottomEdge);
 		}
-
 		emit areaChanged(croppedRect());
 		update();
 	}
@@ -308,7 +294,7 @@ void ImageCropper::mouseMoveEvent(QMouseEvent* _event)
 
 void ImageCropper::mouseReleaseEvent(QMouseEvent* _event)
 {
-	pimpl->isMousePressed = false;
+	isMousePressed = false;
 	updateCursorIcon(_event->pos());
 }
 
@@ -361,7 +347,7 @@ void ImageCropper::updateCursorIcon(const QPointF& _mousePosition)
 {
 	QCursor cursorIcon;
 	//
-	switch (cursorPosition(pimpl->croppingRect, _mousePosition))
+	switch (cursorPosition(croppingRect, _mousePosition))
 	{
 		case CursorPositionTopRight:
 		case CursorPositionBottomLeft:
@@ -380,7 +366,7 @@ void ImageCropper::updateCursorIcon(const QPointF& _mousePosition)
 			cursorIcon = QCursor(Qt::SizeHorCursor);
 			break;
 		case CursorPositionMiddle:
-			cursorIcon = pimpl->isMousePressed ?
+			cursorIcon = isMousePressed ?
 						QCursor(Qt::ClosedHandCursor) :
 						QCursor(Qt::OpenHandCursor);
 			break;
@@ -401,10 +387,10 @@ const QRectF ImageCropper::calculateGeometry(
 {
 	QRectF resultGeometry;
 	//
-	if ( pimpl->isProportionFixed ) {
+	if ( isProportionFixed ) {
 		resultGeometry =
 				calculateGeometryWithFixedProportions(
-					_sourceGeometry, _cursorPosition, _mouseDelta, pimpl->deltas);
+					_sourceGeometry, _cursorPosition, _mouseDelta, deltas);
 	} else {
 		resultGeometry =
 				calculateGeometryWithCustomProportions(

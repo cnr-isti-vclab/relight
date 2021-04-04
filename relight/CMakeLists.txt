@@ -34,8 +34,6 @@ endif()
 
 set (RELIGHT_HEADERS
 	imagecropper.h
-	imagecropper_e.h
-	imagecropper_p.h
 	mainwindow.h
 	ball.h
 	measure.h

@@ -56,8 +56,6 @@ SOURCES += main.cpp \
 
 HEADERS += \
     imagecropper.h \
-    imagecropper_e.h \
-    imagecropper_p.h \
     mainwindow.h \
     ball.h \
     graphics_view_zoom.h \
@@ -76,14 +74,13 @@ HEADERS += \
     image.h \
     ../src/exif.h \
     httpserver.h \
-    scripts.h
+    scripts.h 
 
 FORMS += \
     mainwindow.ui \
     rtiexport.ui \
     helpdialog.ui \
-    focaldialog.ui
-
+    focaldialog.ui 
 RESOURCES += \
     icons.qrc
 

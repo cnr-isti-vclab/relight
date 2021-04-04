@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
 //	app.connect(&autostyle, SIGNAL(resetStyle(QString)), SLOT(setStyleSheet(QString)));
 	QFile style(":/darkorange/stylesheet.txt");
 	style.open(QFile::ReadOnly);
-	app.setStyleSheet(style.readAll());
+	app.setStyleSheet(style.readAll()); 
 
 	auto mainwindow = new MainWindow();
 	mainwindow->showMaximized();

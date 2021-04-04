@@ -25,291 +25,311 @@
     </widget>
    </item>
    <item>
-    <widget class="QFrame" name="export_frame">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-       <horstretch>1</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
+    <widget class="QTabWidget" name="export_frame">
+     <property name="currentIndex">
+      <number>1</number>
      </property>
-     <property name="minimumSize">
-      <size>
-       <width>300</width>
-       <height>300</height>
-      </size>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Raised</enum>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_5">
-      <item row="0" column="0">
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>Basis:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0" colspan="3">
-       <widget class="QComboBox" name="basis">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>1</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <item>
+     <widget class="QWidget" name="tabWidgetPage1">
+      <attribute name="title">
+       <string>RTI</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QLabel" name="label">
          <property name="text">
-          <string>PTM 18 - Polinomial texture map</string>
+          <string>Basis:</string>
          </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>HSH - 12 - Hemispherical harmonics</string>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="basis">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>1</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>HSH 27 - Hemispherical Harmonics</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>BLN - Bilinear interpolation + PCA</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>RBF - Radial basis functions + PCA</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>YBLN - Bilinear + PCA + chroma </string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>YRBF - RBF +  PCA + chroma</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="2" column="0" colspan="3">
-       <widget class="QGroupBox" name="groupBox_3">
-        <property name="title">
-         <string>Format:</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
-          <widget class="QRadioButton" name="formatRTI">
-           <property name="text">
-            <string>RTI</string>
-           </property>
-          </widget>
+          <property name="text">
+           <string>PTM 18 - Polinomial texture map</string>
+          </property>
          </item>
          <item>
-          <widget class="QRadioButton" name="formatRelight">
-           <property name="text">
-            <string>Relight</string>
-           </property>
-          </widget>
+          <property name="text">
+           <string>HSH - 12 - Hemispherical harmonics</string>
+          </property>
          </item>
          <item>
-          <widget class="QRadioButton" name="formatDeepzoom">
-           <property name="text">
-            <string>Relight + Deepzoom</string>
-           </property>
-           <property name="checked">
-            <bool>false</bool>
-           </property>
-          </widget>
+          <property name="text">
+           <string>HSH 27 - Hemispherical Harmonics</string>
+          </property>
          </item>
          <item>
-          <widget class="QRadioButton" name="formatTarzoom">
-           <property name="text">
-            <string>Relight + Tarzoom</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
+          <property name="text">
+           <string>BLN - Bilinear interpolation + PCA</string>
+          </property>
          </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="3" column="0" colspan="3">
-       <widget class="QGroupBox" name="groupBox_2">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="title">
-         <string>Quality</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_2">
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_9">
-           <property name="text">
-            <string>RAM (MB)</string>
-           </property>
-          </widget>
+         <item>
+          <property name="text">
+           <string>RBF - Radial basis functions + PCA</string>
+          </property>
          </item>
-         <item row="0" column="1">
-          <widget class="QSpinBox" name="ram">
-           <property name="minimum">
-            <number>64</number>
-           </property>
-           <property name="maximum">
-            <number>4000000</number>
-           </property>
-           <property name="singleStep">
-            <number>50</number>
-           </property>
-           <property name="value">
-            <number>500</number>
-           </property>
-          </widget>
+         <item>
+          <property name="text">
+           <string>YBLN - Bilinear + PCA + chroma </string>
+          </property>
          </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>Jpeg quality:</string>
-           </property>
-          </widget>
+         <item>
+          <property name="text">
+           <string>YRBF - RBF +  PCA + chroma</string>
+          </property>
          </item>
-         <item row="1" column="1">
-          <widget class="QSpinBox" name="quality">
-           <property name="minimum">
-            <number>80</number>
-           </property>
-           <property name="maximum">
-            <number>100</number>
-           </property>
-           <property name="value">
-            <number>95</number>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Number of planes:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QSpinBox" name="planes">
-           <property name="minimum">
-            <number>9</number>
-           </property>
-           <property name="maximum">
-            <number>27</number>
-           </property>
-           <property name="value">
-            <number>18</number>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>Chroma planes:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1">
-          <widget class="QSpinBox" name="chroma">
-           <property name="minimum">
-            <number>4</number>
-           </property>
-           <property name="maximum">
-            <number>27</number>
-           </property>
-           <property name="value">
-            <number>10</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="4" column="0" colspan="3">
-       <widget class="QGroupBox" name="groupBox_5">
-        <property name="title">
-         <string>Additional</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_4">
-         <item row="2" column="0">
-          <widget class="QCheckBox" name="normals">
-           <property name="text">
-            <string>Normal map</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QCheckBox" name="means">
-           <property name="text">
-            <string>Mean value image</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QCheckBox" name="highNormals">
-           <property name="text">
-            <string>High quality normal map</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="6" column="1" colspan="2">
-       <spacer name="verticalSpacer">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>99</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="5" column="0" colspan="3">
-       <widget class="QPushButton" name="crop">
-        <property name="text">
-         <string>Crop...</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="0">
-       <widget class="QPushButton" name="build">
-        <property name="text">
-         <string>Build</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="1">
-       <widget class="QPushButton" name="preview">
-        <property name="text">
-         <string>Build and view</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="2">
-       <widget class="QPushButton" name="close">
-        <property name="text">
-         <string>Close</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="title">
+          <string>Format:</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QRadioButton" name="formatRTI">
+            <property name="text">
+             <string>RTI</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="formatRelight">
+            <property name="text">
+             <string>Relight</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="formatDeepzoom">
+            <property name="text">
+             <string>Relight + Deepzoom</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="formatTarzoom">
+            <property name="text">
+             <string>Relight + Tarzoom</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="title">
+          <string>Quality</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>RAM (MB)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="ram">
+            <property name="minimum">
+             <number>64</number>
+            </property>
+            <property name="maximum">
+             <number>4000000</number>
+            </property>
+            <property name="singleStep">
+             <number>50</number>
+            </property>
+            <property name="value">
+             <number>500</number>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Chroma planes:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QSpinBox" name="chroma">
+            <property name="minimum">
+             <number>4</number>
+            </property>
+            <property name="maximum">
+             <number>27</number>
+            </property>
+            <property name="value">
+             <number>10</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Number of planes:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QSpinBox" name="planes">
+            <property name="minimum">
+             <number>9</number>
+            </property>
+            <property name="maximum">
+             <number>27</number>
+            </property>
+            <property name="value">
+             <number>18</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Jpeg quality:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="quality">
+            <property name="minimum">
+             <number>80</number>
+            </property>
+            <property name="maximum">
+             <number>100</number>
+            </property>
+            <property name="value">
+             <number>95</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="crop">
+         <property name="text">
+          <string>Crop...</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="build_rti">
+         <property name="text">
+          <string>Build</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="preview">
+         <property name="text">
+          <string>Build and view</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>Normals</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <item>
+        <widget class="QGroupBox" name="groupBox_5">
+         <property name="title">
+          <string>Solver</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_4">
+          <item row="0" column="0">
+           <widget class="QRadioButton" name="l2_solver">
+            <property name="text">
+             <string>Least squares</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QRadioButton" name="sbl_solver">
+            <property name="text">
+             <string>Sparse Baesian</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QRadioButton" name="rpca_solver">
+            <property name="text">
+             <string>Robust PCA</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="crop1">
+         <property name="text">
+          <string>Crop...</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="build_normals">
+         <property name="text">
+          <string>Build</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
    <item>

@@ -47,8 +47,6 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)),  this, SLOT(exportRTI()));
 	connect(ui->actionView_RTI, SIGNAL(triggered(bool)),  this, SLOT(viewRTI()));
 
-	connect(ui->actionNormals, SIGNAL(triggered()), this, (SLOT(computeNormals())));
-
 
 	connect(ui->addSphere,        SIGNAL(clicked(bool)),   this, SLOT(addSphere()));
 	connect(ui->removeSphere,     SIGNAL(clicked(bool)),   this, SLOT(removeSphere()));
@@ -927,12 +925,6 @@ void MainWindow::viewRTI() {
 	server.start(output);
 	server.show();
 }
-
-void MainWindow::computeNormals() {
-
-	Scripts::normals("normals.png", project.images(), project.directions(), 0);
-}
-
 
 void MainWindow::editLensParameters() {
 	FocalDialog *focal = new FocalDialog(&project, this);
