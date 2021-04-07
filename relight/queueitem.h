@@ -24,5 +24,8 @@ public:
 public slots:
 	void setSelected(bool selected);
 	void progress(QString text, int percent);
+
+private:
+	QMap<int, QString> style;
 };
 #endif // QUEUEITEM_H

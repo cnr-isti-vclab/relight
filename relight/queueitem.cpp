@@ -9,6 +9,12 @@
 using namespace std;
 
 QueueItem::QueueItem(Task *_task, QListWidget *parent): QListWidgetItem(parent) {
+	style[Task::ON_QUEUE] = "background-color:#323232; color:#b1b1b1";
+	style[Task::RUNNING] = "background-color:#328232; color:#b1b1b1";
+	style[Task::PAUSED] = "background-color:#323232; color:#b1b1b1";
+	style[Task::STOPPED] = "background-color:#823232; color:#b1b1b1";
+	style[Task::DONE] = "background-color:#323282; color:#b1b1b1";
+	style[Task::FAILED] = "background-color:#823232; color:#b1b1b1";
 
 	task = _task;
 	connect(task, SIGNAL(progress(QString,int)), this, SLOT(progress(QString,int)));
@@ -52,21 +58,41 @@ QueueItem::QueueItem(Task *_task, QListWidget *parent): QListWidgetItem(parent) 
 	setSizeHint(widget->minimumSizeHint());
 	parent->setItemWidget(this, widget);
 
+	update();
 }
 
 void QueueItem::progress(QString text, int percent) {
+	status->setText(text);
 	progressbar->setValue(percent);
 }
 
 void QueueItem::update() {
-
+	cout << "UPdating: " << task->status << endl;
+	switch(task->status) {
+	case Task::PAUSED:
+		status->setText("Paused");
+	case Task::ON_QUEUE:
+	case Task::RUNNING:
+		break;
+	case Task::DONE:
+		status->setText("Done");
+		progressbar->setValue(100);
+		break;
+	case Task::STOPPED:
+		status->setText("Stopped");
+		break;
+	case Task::FAILED:
+		status->setText(task->error);
+		progressbar->setValue(0);
+	}
+	widget->setStyleSheet(style[task->status]);
 }
 
 void QueueItem::setSelected(bool selected) {
 	if(selected)
-		widget->setStyleSheet("background-color:  #ffa02f; color: #ffffff;");
+		widget->setStyleSheet("background-color:#ffa02f; color: #ffffff;");
 	else
-		widget->setStyleSheet("background-color:#323232; color:#b1b1b1");
+		widget->setStyleSheet(style[task->status]);
 }
 
 

@@ -406,6 +406,9 @@ void RtiExport::createRTI1(QString output) {
 		task->addParameter("crop", Parameter::RECT,  rect);
 	}
 
+	task->addParameter("quality", Parameter::INT, ui->quality->value());
+
+
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);
 /*

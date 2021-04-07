@@ -9,7 +9,7 @@
 class Task: public QThread {
 	Q_OBJECT
 public:
-	int id;
+	int id = 0;
 	QString label;
 
 	QString input_folder;
@@ -19,7 +19,7 @@ public:
 	QList<Parameter> parameters;
 
 	enum Status { ON_QUEUE = 0, RUNNING = 1, PAUSED = 2, STOPPED = 3, DONE = 4, FAILED = 5};
-	Status status;
+	Status status = ON_QUEUE;
 	QString error;
 	QString log;
 
@@ -32,7 +32,12 @@ public:
 	void addParameter(const QString &id, Parameter::Type type, QVariant value) {
 		parameters.append(Parameter(id, type, value));
 	}
-
+	bool hasParameter(const QString &id) {
+		for(Parameter &p: parameters)
+			if(p.id == id)
+				return true;
+		return false;
+	}
 	Parameter &operator[](const QString &id) {
 		for(Parameter &p: parameters)
 			if(p.id == id)
