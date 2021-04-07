@@ -8,7 +8,7 @@
         <file>gtango/document-save.svg</file>
         <file>gtango/edit-cut.svg</file>
         <file>gtango/folder.svg</file>
-		<file>gtango/folder-open.svg</file>
+        <file>gtango/folder-open.svg</file>
         <file>gtango/go-next.svg</file>
         <file>gtango/go-previous.svg</file>
         <file>gtango/list-add.svg</file>
@@ -20,26 +20,61 @@
         <file>gtango/zoom-out.svg</file>
         <file>gtango/folder-new.svg</file>
         <file>gtango/save.svg</file>
-		<file>gtango/spherelight.svg</file>
+        <file>gtango/spherelight.svg</file>
         <file>gtango/ruler.svg</file>
         <file>gtango/image.svg</file>
+        <file>gtango/go-bottom.svg</file>
+        <file>gtango/go-top.svg</file>
+        <file>gtango/media-playback-pause.svg</file>
+        <file>gtango/media-playback-start.svg</file>
+        <file>gtango/media-playback-stop.svg</file>
+        <file>feather/camera.svg</file>
+        <file>feather/chevron-left.svg</file>
+        <file>feather/chevron-right.svg</file>
+        <file>feather/crop.svg</file>
+        <file>feather/download.svg</file>
+        <file>feather/file.svg</file>
+        <file>feather/folder.svg</file>
+        <file>feather/image.svg</file>
+        <file>feather/info.svg</file>
+        <file>feather/list.svg</file>
+        <file>feather/maximize.svg</file>
+        <file>feather/minus.svg</file>
+        <file>feather/pause.svg</file>
+        <file>feather/play.svg</file>
+        <file>feather/plus.svg</file>
+        <file>feather/save.svg</file>
+        <file>feather/scissors.svg</file>
+        <file>feather/settings.svg</file>
+        <file>feather/stop.svg</file>
+        <file>feather/trash-2.svg</file>
+        <file>feather/zoom-in.svg</file>
+        <file>feather/zoom-out.svg</file>
+        <file>feather/cast.svg</file>
+        <file>feather/check.svg</file>
+        <file>feather/chevrons-down.svg</file>
+        <file>feather/chevrons-up.svg</file>
+        <file>feather/corner-left-down.svg</file>
+        <file>feather/corner-right-down.svg</file>
+        <file>feather/rotate.svg</file>
+        <file>feather/rotate-left.svg</file>
+        <file>feather/rotate-right.svg</file>
+        <file>feather/x.svg</file>
     </qresource>
     <qresource prefix="/docs">
         <file>docs/help.html</file>
     </qresource>
-
-<qresource prefix="/">
+    <qresource prefix="/">
         <file alias="scripts/build_tarzoom.py">../scripts/build_tarzoom.py</file>
-		<file >darkorange/checkbox.png</file>
-		<file >darkorange/down_arrow.png</file>
-		<file >darkorange/handle.png</file>
-		<file >darkorange/stylesheet.txt</file>
+        <file>darkorange/checkbox.png</file>
+        <file>darkorange/down_arrow.png</file>
+        <file>darkorange/handle.png</file>
+        <file>darkorange/stylesheet.txt</file>
     </qresource>
-
     <qresource prefix="/demo">
-	   <file alias="index.html">../demo/index.html</file>
-		<file alias="skin.css">../demo/skin.css</file>
-		<file alias="skin.svg">../demo/skin.svg</file>
-		<file alias="openlime.min.js">../demo/openlime.min.js</file>
-		</qresource>
+        <file alias="index.html">../demo/index.html</file>
+        <file alias="skin.css">../demo/skin.css</file>
+        <file alias="skin.svg">../demo/skin.svg</file>
+        <file alias="openlime.min.js">../demo/openlime.min.js</file>
+    </qresource>
 </RCC>

@@ -12,6 +12,12 @@
 #include "imagecropper.h"
 #include "httpserver.h"
 #include "scripts.h"
+#include "processqueue.h"
+
+#include "../src/rti.h"
+#include "../relight-cli/rtibuilder.h"
+
+#include "rtitask.h"
 
 #include <functional>
 #include <iostream>
@@ -120,16 +126,16 @@ void RtiExport::changePlanes(int n) {
 	ui->chroma->setMaximum(n);
 }
 
-Rti::Type RtiExport::basis() {
-	int b =  ui->basis->currentIndex();
+Rti::Type basis(int index) {
+	//int b =  ui->basis->currentIndex();
 	Rti::Type table[] =       { Rti::PTM, Rti::HSH, Rti::HSH, Rti::BILINEAR,  Rti::RBF, Rti::BILINEAR, Rti::RBF };
-	return table[b];
+	return table[index];
 }
 
-Rti::ColorSpace  RtiExport::colorSpace() {
-	int b =  ui->basis->currentIndex();
+Rti::ColorSpace  colorSpace(int index) {
+	//int b =  ui->basis->currentIndex();
 	Rti::ColorSpace table[] = { Rti::RGB, Rti::RGB, Rti::RGB, Rti::MRGB,     Rti::MRGB, Rti::MYCC, Rti::MYCC };
-	return table[b];
+	return table[index];
 	
 }
 
@@ -152,8 +158,8 @@ void RtiExport::makeRti(QString output, QRect rect, Format format, bool means, b
 		RtiBuilder builder;
 		
 		builder.samplingram = ram;
-		builder.type         = basis();
-		builder.colorspace   = colorSpace();
+		builder.type         = basis(ui->basis->currentIndex());
+		builder.colorspace   = colorSpace(ui->basis->currentIndex());
 		builder.nplanes      = uint32_t(ui->planes->value());
 		builder.yccplanes[0] = uint32_t(ui->chroma->value());
 		//builder.sigma =
@@ -303,6 +309,46 @@ void RtiExport::createNormals() {
 	if(!output.endsWith(".png"))
 		output += ".png";
 
+	Script *task = new Script();
+	task->interpreter = "/usr/bin/python3";
+	task->script_filename = "normals/normalmap.py";
+	task->output = output;
+	task->input_folder = path;
+	task->label = "Normals"; //should use
+
+	QJsonArray jlights;
+	for(auto light: lights) {
+		jlights.push_back(QJsonArray() << light[0] << light[1] << light[2]);
+	}
+	QJsonObject obj;
+	obj["lights"] =  jlights;
+
+	QJsonArray jimages;
+	for(auto image: images) {
+		jimages.push_back(image);
+	}
+	obj["images"] = jimages;
+
+	/*	QRect rect = QRect(0, 0, 0, 0);
+		if(ui->cropview->handleShown()) {
+			rect = ui->cropview->croppedRect();
+		} */
+
+	if(crop.isValid()) {
+		QJsonObject c;
+		c["x"] = crop.left();
+		c["y"] = crop.top();
+		c["width"] = crop.width();
+		c["height"] = crop.height();
+		obj["crop"] = c;
+	}
+
+	QJsonDocument doc;
+	doc.setObject(obj);
+
+	task->addParameter("json", Parameter::TMP_FILE, doc.toJson());
+	task->addParameter("output", Parameter::FILENAME, output);
+
 	int method = 0; //least squares
 	if(ui->l2_solver->isChecked())
 		method = 0;
@@ -311,27 +357,108 @@ void RtiExport::createNormals() {
 	if(ui->sbl_solver->isChecked())
 		method = 5;
 
-	QRect rect = QRect(0, 0, 0, 0);
-	if(ui->cropview->handleShown()) {
-		rect = ui->cropview->croppedRect();
-	}
-	Scripts::normals(output, images, lights, method, rect);
+	task->addParameter("method", Parameter::INT, method);
+
+
+	ProcessQueue &queue = ProcessQueue::instance();
+	queue.addTask(task);
 }
 
 void RtiExport::createRTI(bool view) {
 	QString output = QFileDialog::getSaveFileName(this, "Select an output directory", QString(), tr("Images (*.png)"));
 	if(output.isNull()) return;
 	viewAfter = view;
-	createRTI(output);
+	createRTI1(output);
 }
 
 void RtiExport::createRTIandView() {
 	createRTI(true);
 }
 
+void RtiExport::createRTI1(QString output) {
+	RtiTask *task = new RtiTask;
+	task->input_folder = path;
+	task->output = output;
+	task->label = "RTI"; //should use
+
+
+	uint32_t ram = uint32_t(ui->ram->value());
+	task->addParameter("ram", Parameter::INT, ram);
+	task->addParameter("path", Parameter::FOLDER, path);
+	task->addParameter("output", Parameter::FOLDER, output);
+	task->addParameter("images", Parameter::STRINGLIST, images);
+
+	QList<QVariant> slights;
+	for(auto light: lights)
+		for(int k = 0; k < 3; k++)
+			slights << QVariant(light[k]);
+	task->addParameter("lights", Parameter::DOUBLELIST, slights);
+
+	task->addParameter("type", Parameter::INT,  basis(ui->basis->currentIndex()));
+	task->addParameter("colorspace", Parameter::INT, colorSpace(ui->basis->currentIndex()));
+	task->addParameter("nplanes", Parameter::INT, ui->planes->value());
+	task->addParameter("yplanes", Parameter::INT, ui->chroma->value());
+
+
+	QRect rect = QRect(0, 0, 0, 0);
+	if(ui->cropview->handleShown()) {
+		rect = ui->cropview->croppedRect();
+		task->addParameter("crop", Parameter::RECT,  rect);
+	}
+
+	ProcessQueue &queue = ProcessQueue::instance();
+	queue.addTask(task);
+/*
+
+
+	RtiBuilder *builder = new RtiBuilder;
+	builder->samplingram = ram;
+	builder->type         = basis();
+	builder->colorspace   = colorSpace();
+	builder->nplanes      = uint32_t(ui->planes->value());
+	builder->yccplanes[0] = uint32_t(ui->chroma->value());
+	//builder->sigma =
+
+	if( builder->colorspace == Rti::MYCC) {
+		builder->yccplanes[1] = builder->yccplanes[2] = (builder->nplanes - builder->yccplanes[0])/2;
+		builder->nplanes = builder->yccplanes[0] + 2*builder->yccplanes[1];
+	}
+	builder->crop[0] = rect.left();
+	builder->crop[1] = rect.top();
+	builder->crop[2] = rect.width();
+	builder->crop[3] = rect.height();
+	builder->imageset.images = images;
+	builder->lights = builder->imageset.lights = lights;
+	builder->imageset.initImages(path.toStdString().c_str());
+	builder->imageset.crop(rect.left(), rect.top(), rect.width(), rect.height());
+
+	builder->width  = builder->imageset.width;
+	builder->height = builder->imageset.height;
+
+	builder->savemeans = false;
+	builder->savenormals = false;
+
+
+	QFuture<void> future = QtConcurrent::run([builder]() {
+		this->makeRti(output, rect, format
+
+	std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->callback(s, n); };
+
+	if(!builder->init(&callback)) {
+		QMessageBox::critical(this, "We have a problem!", QString(builder->error.c_str()));
+		return;
+	}
+
+	int quality= ui->quality->value();
+	builder->save(output.toStdString(), quality);
+
+*/
+}
+
 void RtiExport::createRTI(QString output) {
 	outputFolder = output;
-	
+
+
 	progressbar = new QProgressDialog("Building RTI...", "Cancel", 0, 100, this);
 	progressbar->setAutoClose(false);
 	progressbar->setAutoReset(false);

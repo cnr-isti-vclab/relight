@@ -4,10 +4,9 @@
 #include <QDialog>
 #include <map>
 #include <QFutureWatcher>
-#include "../src/rti.h"
-#include "../relight-cli/rtibuilder.h"
 
 #include "httpserver.h"
+#include "../src/vector.h"
 
 namespace Ui {
 	class RtiExport;
@@ -32,8 +31,8 @@ public:
 
 	explicit RtiExport(QWidget *parent = nullptr);
 	~RtiExport();
-	Rti::Type basis();
-	Rti::ColorSpace colorSpace();
+	//Rti::Type basis();
+	//Rti::ColorSpace colorSpace();
 	
 	void setImages(QStringList images);
 	void setCrop(QRect rect);
@@ -59,6 +58,7 @@ public slots:
 	void changeBasis(int n);
 	void changePlanes(int n);
 	void createRTI(QString output);
+	void createRTI1(QString output);
 	void createRTI(bool view = false);
 	void createNormals();
 	void createRTIandView();

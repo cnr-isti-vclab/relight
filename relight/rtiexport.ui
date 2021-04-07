@@ -27,7 +27,7 @@
    <item>
     <widget class="QTabWidget" name="export_frame">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tabWidgetPage1">
       <attribute name="title">
@@ -232,6 +232,10 @@
          <property name="text">
           <string>Crop...</string>
          </property>
+         <property name="icon">
+          <iconset resource="icons.qrc">
+           <normaloff>:/icons/feather/crop.svg</normaloff>:/icons/feather/crop.svg</iconset>
+         </property>
         </widget>
        </item>
        <item>
@@ -305,6 +309,10 @@
         <widget class="QPushButton" name="crop1">
          <property name="text">
           <string>Crop...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="icons.qrc">
+           <normaloff>:/icons/feather/crop.svg</normaloff>:/icons/feather/crop.svg</iconset>
          </property>
         </widget>
        </item>
@@ -528,6 +536,8 @@
    <header>imagecropper.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

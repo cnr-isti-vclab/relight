@@ -7,6 +7,7 @@
 #include "helpdialog.h"
 #include "focaldialog.h"
 #include "scripts.h"
+#include "queuewindow.h"
 
 #include <QInputDialog>
 #include <QFileDialog>
@@ -46,6 +47,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionToggle_max_luma, SIGNAL(triggered(bool)), this, SLOT(toggleMaxLuma()));
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)),  this, SLOT(exportRTI()));
 	connect(ui->actionView_RTI, SIGNAL(triggered(bool)),  this, SLOT(viewRTI()));
+
+	connect(ui->actionShow_queue, SIGNAL(triggered(bool)),  this, SLOT(showQueue()));
 
 
 	connect(ui->addSphere,        SIGNAL(clicked(bool)),   this, SLOT(addSphere()));
@@ -924,6 +927,14 @@ void MainWindow::viewRTI() {
 	server.port = 8880;
 	server.start(output);
 	server.show();
+}
+
+void MainWindow::showQueue() {
+	if(!queue)
+		queue = new QueueWindow(this);
+
+	queue->show();
+	queue->raise();
 }
 
 void MainWindow::editLensParameters() {

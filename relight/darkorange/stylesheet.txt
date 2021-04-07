@@ -117,6 +117,10 @@ QPushButton:focus {
 	outline: none;
 }
 
+QPushButton:disabled {
+	color: #aaa;
+}
+
 QComboBox
 {
     selection-background-color: #ffaa00;
@@ -179,6 +183,11 @@ border: 2px solid QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffa02f, 
 QTextEdit:focus
 {
     border: 1px solid #ffa02f;
+}
+
+
+QListView::item:selected {
+	background: palette(Highlight)
 }
 
 QScrollBar:horizontal {
@@ -380,6 +389,7 @@ QProgressBar
     border-radius: 5px;
     text-align: center;
 	color:white;
+	height:5px;
 }
 
 QProgressBar::chunk

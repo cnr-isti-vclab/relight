@@ -23,6 +23,7 @@ class RtiExport;
 class HelpDialog;
 class QStandardItemModel;
 class QStandardItem;
+class QueueWindow;
 
 namespace Ui {
 class MainWindow;
@@ -75,6 +76,7 @@ public:
 
 	std::vector<int> progress_jobs;
 	QProgressDialog *progress;
+	QueueWindow *queue = nullptr;
 	QFutureWatcher<void> watcher;
 	HttpServer server;
 
@@ -140,6 +142,7 @@ public slots:
 	void exportRTI();
 
 	void viewRTI();
+	void showQueue();
 
 
 	void editLensParameters();
