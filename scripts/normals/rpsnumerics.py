@@ -154,6 +154,7 @@ def rpca_inexact_alm(D, lambda_=None, max_ite=100, tol=1.0e-6):
     sv = 10    # This can be tuned
 
     while ite < max_ite:
+        print("Iterations: " + 100*ita/max_ite + "%", flush=True)
         ite = ite + 1
         T = D - A + (1/mu) * Y
         E = np.maximum(T - lambda_/mu, 0.0)

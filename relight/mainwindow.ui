@@ -268,17 +268,20 @@
     </property>
     <addaction name="actionLens_parameters"/>
    </widget>
-   <widget class="QMenu" name="menuBuild">
+   <widget class="QMenu" name="menuExport">
     <property name="title">
-     <string>Build</string>
+     <string>Export</string>
     </property>
-    <addaction name="actionNormals"/>
+    <addaction name="actionExport_RTI_2"/>
+    <addaction name="actionExport_Normals"/>
+    <addaction name="separator"/>
+    <addaction name="actionShow_queue"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit_2"/>
    <addaction name="menuEdit"/>
    <addaction name="menuCalibration"/>
-   <addaction name="menuBuild"/>
+   <addaction name="menuExport"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -306,6 +309,7 @@
    <addaction name="separator"/>
    <addaction name="actionRuler"/>
    <addaction name="actionExport_RTI"/>
+   <addaction name="actionShow_queue"/>
    <addaction name="actionView_RTI"/>
    <addaction name="actionHelp"/>
   </widget>
@@ -315,7 +319,7 @@
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/folder-open.svg</normaloff>:/icons/gtango/folder-open.svg</iconset>
+     <normaloff>:/icons/feather/folder.svg</normaloff>:/icons/feather/folder.svg</iconset>
    </property>
    <property name="text">
     <string>Open...</string>
@@ -338,7 +342,7 @@
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/go-next.svg</normaloff>:/icons/gtango/go-next.svg</iconset>
+     <normaloff>:/icons/feather/chevron-right.svg</normaloff>:/icons/feather/chevron-right.svg</iconset>
    </property>
    <property name="text">
     <string>Next image</string>
@@ -353,7 +357,7 @@
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/go-previous.svg</normaloff>:/icons/gtango/go-previous.svg</iconset>
+     <normaloff>:/icons/feather/chevron-left.svg</normaloff>:/icons/feather/chevron-left.svg</iconset>
    </property>
    <property name="text">
     <string>Previous image</string>
@@ -368,7 +372,7 @@
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/zoom-in.svg</normaloff>:/icons/gtango/zoom-in.svg</iconset>
+     <normaloff>:/icons/feather/zoom-in.svg</normaloff>:/icons/feather/zoom-in.svg</iconset>
    </property>
    <property name="text">
     <string>Zoom in</string>
@@ -383,7 +387,7 @@
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/zoom-out.svg</normaloff>:/icons/gtango/zoom-out.svg</iconset>
+     <normaloff>:/icons/feather/zoom-out.svg</normaloff>:/icons/feather/zoom-out.svg</iconset>
    </property>
    <property name="text">
     <string>Zoom out</string>
@@ -412,8 +416,8 @@
   </action>
   <action name="actionHelp">
    <property name="icon">
-    <iconset theme="system-help">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/feather/info.svg</normaloff>:/icons/feather/info.svg</iconset>
    </property>
    <property name="text">
     <string>Help</string>
@@ -430,7 +434,7 @@
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/system-run.svg</normaloff>:/icons/gtango/system-run.svg</iconset>
+     <normaloff>:/icons/feather/settings.svg</normaloff>:/icons/feather/settings.svg</iconset>
    </property>
    <property name="text">
     <string>Find highlights</string>
@@ -442,7 +446,7 @@
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/document-save.svg</normaloff>:/icons/gtango/document-save.svg</iconset>
+     <normaloff>:/icons/feather/save.svg</normaloff>:/icons/feather/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save LPs...</string>
@@ -454,7 +458,7 @@
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/document-save.svg</normaloff>:/icons/gtango/document-save.svg</iconset>
+     <normaloff>:/icons/feather/download.svg</normaloff>:/icons/feather/download.svg</iconset>
    </property>
    <property name="text">
     <string>Export RTI...</string>
@@ -466,7 +470,7 @@
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/document-open.svg</normaloff>:/icons/gtango/document-open.svg</iconset>
+     <normaloff>:/icons/feather/folder.svg</normaloff>:/icons/feather/folder.svg</iconset>
    </property>
    <property name="text">
     <string>Load LP...</string>
@@ -478,7 +482,7 @@
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/save.svg</normaloff>:/icons/gtango/save.svg</iconset>
+     <normaloff>:/icons/feather/save.svg</normaloff>:/icons/feather/save.svg</iconset>
    </property>
    <property name="text">
     <string>Save...</string>
@@ -504,7 +508,7 @@
   <action name="actionNew">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/folder-new.svg</normaloff>:/icons/gtango/folder-new.svg</iconset>
+     <normaloff>:/icons/feather/file.svg</normaloff>:/icons/feather/file.svg</iconset>
    </property>
    <property name="text">
     <string>New...</string>
@@ -551,7 +555,7 @@
   <action name="actionView_RTI">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/image.svg</normaloff>:/icons/gtango/image.svg</iconset>
+     <normaloff>:/icons/feather/cast.svg</normaloff>:/icons/feather/cast.svg</iconset>
    </property>
    <property name="text">
     <string>View RTI </string>
@@ -563,6 +567,25 @@
   <action name="actionNormals">
    <property name="text">
     <string>Normals</string>
+   </property>
+  </action>
+  <action name="actionExport_RTI_2">
+   <property name="text">
+    <string>Export RTI...</string>
+   </property>
+  </action>
+  <action name="actionExport_Normals">
+   <property name="text">
+    <string>Export Normals...</string>
+   </property>
+  </action>
+  <action name="actionShow_queue">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/feather/list.svg</normaloff>:/icons/feather/list.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Show queue...</string>
    </property>
   </action>
  </widget>

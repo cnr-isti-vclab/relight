@@ -51,7 +51,14 @@ SOURCES += main.cpp \
     image.cpp \
     ../src/exif.cpp \
     httpserver.cpp \
-    scripts.cpp
+    scripts.cpp \
+    processqueue.cpp \
+    queuewindow.cpp \
+    queueitem.cpp \
+    script.cpp \
+    parameter.cpp \
+    task.cpp \
+    rtitask.cpp
 
 
 HEADERS += \
@@ -74,13 +81,21 @@ HEADERS += \
     image.h \
     ../src/exif.h \
     httpserver.h \
-    scripts.h 
+    scripts.h \ 
+    processqueue.h \
+    queuewindow.h \
+    queueitem.h \
+    script.h \
+    parameter.h \
+    task.h \
+    rtitask.h
 
 FORMS += \
     mainwindow.ui \
     rtiexport.ui \
     helpdialog.ui \
-    focaldialog.ui 
+    focaldialog.ui \  
+    queuewindow.ui
 RESOURCES += \
     icons.qrc
 

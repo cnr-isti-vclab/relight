@@ -85,7 +85,7 @@ def load_image_list(imagelist, crop):
 
     count = 1
     for fname in imagelist:
-        print("Loading images...," + str(int(100*count/len(imagelist))))
+        print("Loading images: " + str(int(100*count/len(imagelist))) + "%", flush=True)
         count += 1
         im = cv2.imread(fname).astype(np.float64)
 
@@ -93,7 +93,7 @@ def load_image_list(imagelist, crop):
             # Assuming that RGBA will not be an input
             im = np.mean(im, axis=2)   # RGB -> Gray
 
-        if crop is not None and turbo is None:
+        if crop is not None:
             im = im[y:y + crop['height'], crop['x']:crop['x'] + crop['width']]
 
         if M is None:
