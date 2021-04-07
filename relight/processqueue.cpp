@@ -85,6 +85,8 @@ void ProcessQueue::startNewProcess() {
 	queue.pop_front();
 
 	task->start();
+	task->status = Task::RUNNING;
+	emit update();
 /*	Script &script = process.script;
 	QDir dir(process.script.dir);
 	if(!dir.exists()) {

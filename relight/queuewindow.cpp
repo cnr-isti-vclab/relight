@@ -28,6 +28,8 @@ QueueWindow::QueueWindow(QWidget *parent = 0) :
 	connect(ui->actionSend_to_bottom, SIGNAL(triggered(bool)), this, SLOT(sendToTop()));
 	connect(ui->actionSend_to_top,    SIGNAL(triggered(bool)), this, SLOT(sendToBottom()));
 	connect(ui->actionRemove,         SIGNAL(triggered(bool)), this, SLOT(remove()));
+
+	update();
 }
 
 QueueWindow::~QueueWindow() {
@@ -135,4 +137,16 @@ void QueueWindow::update() {
 			ui->list->addItem(item);
 		}
 	}
+	if(queue.task && !tasks.contains(queue.task->id)) {
+		QueueItem *item = new QueueItem(queue.task, ui->list);
+		ui->list->addItem(item);
+	}
+	for(Task *task: queue.past) {
+		if(!tasks.contains(task->id)) {
+			QueueItem *item = new QueueItem(task, ui->list);
+			ui->list->addItem(item);
+
+		}
+	}
+
 }

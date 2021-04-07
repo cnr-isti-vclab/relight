@@ -118,9 +118,9 @@ void ImageCropper::updateDeltaAndScale() {
 }
 
 void ImageCropper::resizeEvent(QResizeEvent *event) {
-	QRect currentRealRect = croppedRect();
 	QWidget::resizeEvent(event);
 	updateDeltaAndScale();
+	QRect currentRealRect = croppedRect();
 	setCrop(currentRealRect);
 }
 
