@@ -5,7 +5,6 @@
 #include <QDir>
 #include "ball.h"
 #include "project.h"
-#include "httpserver.h"
 
 #include <QProgressDialog>
 #include <QGraphicsScene>
@@ -78,7 +77,6 @@ public:
 	QProgressDialog *progress;
 	QueueWindow *queue = nullptr;
 	QFutureWatcher<void> watcher;
-	HttpServer server;
 
 
 	bool init();

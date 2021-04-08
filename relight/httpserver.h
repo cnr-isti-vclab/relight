@@ -13,6 +13,10 @@ class HttpServer {
 public:
 	HttpServer();
 	~HttpServer();
+	static HttpServer &instance() {
+		static HttpServer server;
+		return server;
+	}
 public:
 	int port = 61007;
 	void start(QString folder);

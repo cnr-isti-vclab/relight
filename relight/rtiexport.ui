@@ -126,6 +126,13 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QCheckBox" name="openlime">
+            <property name="text">
+             <string>Add Openlime viewer</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
