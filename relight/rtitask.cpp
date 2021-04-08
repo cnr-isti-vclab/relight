@@ -15,6 +15,7 @@ RtiTask::~RtiTask() {
 
 
 void RtiTask::run() {
+	status = RUNNING;
 	builder = new RtiBuilder;
 	builder->samplingram = (*this)["ram"].value.toInt();
 	builder->type         = Rti::Type((*this)["type"].value.toInt());
@@ -50,26 +51,36 @@ void RtiTask::run() {
 
 	std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
 
-	if(!builder->init(&callback)) {
-		error = builder->error.c_str();
-		status = FAILED;
+	try {
+		if(!builder->init(&callback)) {
+			error = builder->error.c_str();
+			status = FAILED;
+			return;
+		}
+		int quality= (*this)["quality"].value.toInt();
+		builder->save(output.toStdString(), quality);
+	} catch(std::string e) {
+		error = e.c_str();
+		status = STOPPED;
 		return;
 	}
-	int quality= (*this)["quality"].value.toInt();
-	builder->save(output.toStdString(), quality);
 	status = DONE;
 }
 
 void RtiTask::pause() {
-	status = PAUSED;
 	mutex.lock();
+	status = PAUSED;
 }
 
 void RtiTask::resume() {
-
-}
-void RtiTask::stop() {
 	if(status == PAUSED) {
+		status = RUNNING;
+		mutex.unlock();
+	}
+}
+
+void RtiTask::stop() {
+	if(status == PAUSED) { //we were already locked then.
 		status = STOPPED;
 		mutex.unlock();
 	}
@@ -80,7 +91,8 @@ bool RtiTask::progressed(std::string s, int percent) {
 	QString str(s.c_str());
 	emit progress(str, percent);
 	if(status == PAUSED) {
-		mutex.lock();
+		mutex.lock();  //mutex should be already locked. this talls the
+		mutex.unlock();
 	}
 	if(status == STOPPED)
 		return false;

@@ -320,11 +320,8 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, function<v
 	uint32_t offset = 0;
 	vector<uint8_t> row(image_width*3);
 	for(int y = top; y < bottom; y++) {
-		if(callback) {
-			bool keep_going = (*callback)(std::string("Sampling images:"), 100*(y-top)/(height-1));
-			if(!keep_going)
-				throw 1;
-		}
+		if(callback && !(*callback)(std::string("Sampling images:"), 100*(y-top)/(height-1)))
+			throw std::string("Cancelled");
 
 		auto &selection = sampler.result(samplexrow, width);
 		for(uint32_t i = 0; i < decoders.size(); i++) {
@@ -362,11 +359,8 @@ void ImageSet::skipToTop() {
 		for(int y = 0; y < top; y++)
 			decoders[i]->readRows(1, row.data());
 		
-		if(callback) {
-			bool keep_going = (*callback)(std::string("Skipping cropped lines..."), 100*i/(decoders.size()-1));
-			if(!keep_going)
-				throw 1;
-		}
+		if(callback && !(*callback)(std::string("Skipping cropped lines..."), 100*i/(decoders.size()-1)))
+			throw std::string("Cancelled");
 	}
 	current_line += top;
 }
