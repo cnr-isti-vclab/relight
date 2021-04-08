@@ -67,7 +67,6 @@ void QueueItem::progress(QString text, int percent) {
 }
 
 void QueueItem::update() {
-	cout << "UPdating: " << task->status << endl;
 	switch(task->status) {
 	case Task::PAUSED:
 		status->setText("Paused");
