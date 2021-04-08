@@ -200,7 +200,6 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 		error = "Could not create a base.";
 		return false;
 	}
-
 	return true;
 }
 
@@ -377,7 +376,8 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 	*/
 	
 	if(callback)
-		(*callback)("Computing PCA:", 0);
+		if(!(*callback)("Computing PCA:", 0))
+			throw std::string("Cancelled.");
 	materials.resize(nmaterials);
 	materialbuilders.resize(nmaterials);
 	
@@ -419,7 +419,8 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 			for(double &d: mean)
 				d /= count[m];
 		}
-		(*callback)("Computing PCA:", 5);
+		if(callback && !(*callback)("Computing PCA:", 5))
+			throw std::string("Cancelled.");
 		
 		
 
@@ -440,7 +441,8 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 			pcas[m]->setRecord(i, record);
 		}
 
-		(*callback)("Computing PCA:", 10);
+		if(callback && !(*callback)("Computing PCA:", 10))
+				throw std::string("Cancelled.");
 
 		for(uint32_t i = 0; i < nmaterials; i++) {
 			PCA *pca = pcas[i];
@@ -554,10 +556,12 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 				}
 				delete pca;
 			}
-			(*callback)("Computing PCA:", 100*component/3);
+			if(callback && !(*callback)("Computing PCA:", 100*component/3))
+				throw std::string("Cancelled.");
 		}
 	}
-	(*callback)("Computing PCA:", 100);
+	if(callback && !(*callback)("Computing PCA:", 100))
+		throw std::string("Cancelled.");
 }
 
 void RtiBuilder::pickBasePTM() {
@@ -697,13 +701,14 @@ void RtiBuilder::pickBase(PixelArray &sample) {
 		}
 	}
 	
-	if(callback)
-		(*callback)("Coefficients quantization:", 0);
+	if(callback && !(*callback)("Coefficients quantization:", 0))
+		throw std::string("Cancelled.");
 
 	//TODO workers to speed up this.
 	for(uint32_t i = 0; i < sample.npixels(); i++) {
 		if(callback && (i % 8000) == 0)
-			(*callback)("Coefficients quantization:", 100*i/sample.npixels());
+			if(!(*callback)("Coefficients quantization:", 100*i/sample.npixels()))
+				throw std::string("Cancelled.");
 		vector<float> principal = toPrincipal(indices[i],(float *)sample(i));
 		
 		Material &mat = materials[indices[i]];
@@ -741,8 +746,8 @@ void RtiBuilder::pickBase(PixelArray &sample) {
 		}
 	}
 
-	if(callback)
-		(*callback)("Coefficients quantization:", 100);
+	if(callback && !(*callback)("Coefficients quantization:", 100))
+		throw std::string("Cancelled.");
 	//	estimateError(sample, indices, weights);
 }
 
@@ -1276,7 +1281,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			bool keep_going = (*callback)("Saving:", 100*(y)/(height + nworkers-1));
 			if(!keep_going) {
 				cout << "TODO: clean up directory, we are already saving!" << endl;
-				throw 1;
+				break;
 			}
 		}
 		if(y >= nworkers) {
@@ -1618,7 +1623,7 @@ void RtiBuilder::buildResampleMap() {
 		if(callback) {
 			bool keep_going = (*callback)(std::string("Resampling light directions"), 100*y/resolution);
 			if(!keep_going) {
-				throw 1;
+				throw std::string("Cancelled.");
 			}
 		}
 

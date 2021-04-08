@@ -24,10 +24,6 @@ void ProcessQueue::run() {
 		lock.lock();
 		if(stopped) {
 			lock.unlock();
-			if(task) {
-				task->stop();
-				task->wait();
-			}
 			break;
 		}
 
@@ -46,36 +42,13 @@ void ProcessQueue::run() {
 
 		task->wait(100);
 
-
 		if(task->isFinished()) {
 			past.push_back(task);
 			task = nullptr;
+			emit update();
 		}
 	}
-/*		qprocess->waitForFinished(250);
-		cout << qPrintable(qprocess->readAllStandardError()) << endl;
-		cout << qPrintable(qprocess->readAllStandardOutput()) << endl;
 
-		qprocess->readAllStandardOutput();
-		if(qprocess->state() == QProcess::NotRunning) {
-			lock.lock();
-
-
-			int out = qprocess->exitCode();
-			cout << "Exitode: " << out << endl;
-			cout << " Exist status ok? " << (qprocess->exitStatus() == QProcess::NormalExit) << endl;
-
-			if(out < 0) {
-				process.error = qprocess->readAllStandardError();
-				process.failed = true;
-			}
-			past.push_back(process);
-
-			delete qprocess;
-			qprocess = nullptr;
-			lock.unlock();
-		}
-	} */
 }
 
 
@@ -110,7 +83,7 @@ void ProcessQueue::startNewProcess() {
 
 void ProcessQueue::addTask(Task *a, bool paused) {
 	if(paused)
-		a->status = Task::PAUSED;
+		a->pause();
 	a->id = newId();
 	QMutexLocker locker(&lock);
 	queue.push_back(a);
@@ -124,6 +97,7 @@ void ProcessQueue::removeTask(int id) {
 		Task *task = queue.takeAt(index);
 		delete task;
 	}
+	emit update();
 }
 
 void ProcessQueue::pushFront(int id) {
@@ -134,6 +108,7 @@ void ProcessQueue::pushFront(int id) {
 
 	Task *p = queue.takeAt(index);
 	queue.push_front(p);
+	emit update();
 }
 
 void ProcessQueue::pushBack(int id) {
@@ -144,18 +119,23 @@ void ProcessQueue::pushBack(int id) {
 
 	Task *p = queue.takeAt(index);
 	queue.push_back(p);
+	emit update();
 }
 
 void ProcessQueue::clear() {
 	QMutexLocker locker(&lock);
 	queue.clear();
+	emit update();
 }
 
 void ProcessQueue::start() {
 	QMutexLocker locker(&lock);
 	stopped = false;
+	if(task)
+		task->resume();
 	if(!isRunning())
 		QThread::start();
+	emit update();
 }
 
 void ProcessQueue::pause() {
@@ -163,13 +143,16 @@ void ProcessQueue::pause() {
 	stopped = true;
 	if(task)
 		task->pause();
-} //pause current process.
+	emit update();
+}
 
 void ProcessQueue::stop() {
 	QMutexLocker locker(&lock);
 	stopped = true;
-
-} //stop cuirrent process and pause the queue.
+	if(task)
+		task->stop();
+	emit update();
+}
 
 int ProcessQueue::indexOf(int id) {
 	for(int i = 0; i < queue.size(); i++) {
