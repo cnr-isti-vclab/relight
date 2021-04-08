@@ -1,10 +1,19 @@
 #include <QFileInfo>
 #include <QFile>
 #include <QDir>
+#include <QProcess>
+#include <QSettings>
+#include <QRect>
 
 #include "rtitask.h"
 #include "../src/rti.h"
 #include "../relight-cli/rtibuilder.h"
+
+
+#include <iostream>
+using namespace std;
+
+int convertToRTI(const char *filename, const char *output);
 
 RtiTask::RtiTask()
 {
@@ -23,7 +32,7 @@ void RtiTask::run() {
 	builder->samplingram = (*this)["ram"].value.toInt();
 	builder->type         = Rti::Type((*this)["type"].value.toInt());
 	builder->colorspace   = Rti::ColorSpace((*this)["colorspace"].value.toInt());
-	builder->nplanes      = (*this)["nplanes"].value.toInt();
+	int nplanes = builder->nplanes      = (*this)["nplanes"].value.toInt();
 	builder->yccplanes[0] = (*this)["yplanes"].value.toInt();
 	//builder->sigma =
 
@@ -51,6 +60,7 @@ void RtiTask::run() {
 	}
 	builder->width  = builder->imageset.width;
 	builder->height = builder->imageset.height;
+	int quality= (*this)["quality"].value.toInt();
 
 	std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
 
@@ -60,13 +70,58 @@ void RtiTask::run() {
 			status = FAILED;
 			return;
 		}
-		int quality= (*this)["quality"].value.toInt();
+
 		builder->save(output.toStdString(), quality);
+
 	} catch(std::string e) {
 		error = e.c_str();
 		status = STOPPED;
 		return;
 	}
+
+	QSettings settings;
+	QString scriptdir = settings.value("scripts_path").toString();
+	QString python = settings.value("python_path").toString();
+
+	QString format = (*this)["format"].value.toString();
+	if(format == "rti") {
+		convertToRTI((output + ".rti").toLatin1().data(), output.toLatin1().data());
+
+	}
+	if(format == "deepzoom" || format == "tarzoom") {
+		if(python.isNull() || python.isEmpty()) {
+			error = "Python executable not set";
+			status = FAILED;
+			return;
+		}
+
+		for(int plane = 0; plane < nplanes; plane++) {
+			QString command = QString("%1 %2/deepzoom.py \"%3\" %4").arg(python).arg(scriptdir).arg(plane).arg(quality);
+			cout << "Command: " << qPrintable(command) << endl;
+			if(QProcess::execute(command) < 0) {
+				error = "Failed deepzoom";
+				status = FAILED;
+				break;
+			}
+			if(progressed("Deepzoom:", 100*(plane+1)/nplanes))
+				break;
+		}
+	}
+
+	if(format == "tarzoom") {
+		for(int plane = 0; plane < nplanes; plane++) {
+			QString command = QString("%1 %2/tarzoom.py \"%3\"").arg(python).arg(scriptdir).arg(plane);
+			cout << "Command: " << qPrintable(command) << endl;
+			if(QProcess::execute(command) < 0) {
+				error = "Failed deepzoom";
+				status = FAILED;
+				break;
+			}
+			if(progressed("Tarzoom:", 100*(plane+1)/nplanes))
+				break;
+		}
+	}
+
 	if((*this)["openlime"].value.toBool()) {
 		QStringList files = QStringList() << ":/demo/index.html"
 					  << ":/demo/openlime.min.js"

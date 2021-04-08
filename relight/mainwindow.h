@@ -23,7 +23,7 @@ class HelpDialog;
 class QStandardItemModel;
 class QStandardItem;
 class QueueWindow;
-
+class SettingsDialog;
 namespace Ui {
 class MainWindow;
 }
@@ -76,6 +76,7 @@ public:
 	std::vector<int> progress_jobs;
 	QProgressDialog *progress;
 	QueueWindow *queue = nullptr;
+	SettingsDialog *settings_dialog = nullptr;
 	QFutureWatcher<void> watcher;
 
 
@@ -89,6 +90,7 @@ public slots:
 	void newProject();
 	void saveProject();
 	void saveProjectAs();
+	void preferences();
 
 	void clear(); //clear everything (project, images etc.)
 	void openImage(const QModelIndex &current);

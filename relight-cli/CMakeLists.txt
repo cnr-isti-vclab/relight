@@ -26,6 +26,7 @@ SET(SOURCES
 	../src/jpeg_encoder.cpp
 	../src/rti.cpp
 	../src/legacy_rti.cpp
+	convert_rti.cpp
 )
 
 cmake_minimum_required(VERSION 3.1)

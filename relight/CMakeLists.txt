@@ -41,9 +41,11 @@ set (RELIGHT_HEADERS
 	rtiexport.h
 	helpdialog.h
 	focaldialog.h
+	settingsdialog.h
 	lens.h
 	image.h
 	project.h
+	../src/legacy_rti.h
 	../src/imageset.h
 	../src/jpeg_decoder.h
 	../src/jpeg_encoder.h
@@ -51,6 +53,13 @@ set (RELIGHT_HEADERS
 	../src/material.h
 	../src/eigenpca.h
 	../relight-cli/rtibuilder.h
+	processqueue.h
+	queueitem.h
+	queuewindow.h
+	parameter.h
+	task.h
+	script.h
+	rtitask.h
 )
 
 set (RELIGHT_SOURCES
@@ -67,19 +76,32 @@ set (RELIGHT_SOURCES
 	project.cpp
 	scripts.cpp
 	../relight-cli/rtibuilder.cpp
+	../relight-cli/convert_rti.cpp
 	../src/imageset.cpp
 	../src/jpeg_decoder.cpp
 	../src/jpeg_encoder.cpp
 	../src/rti.cpp
+	../src/legacy_rti.cpp
 	../src/exif.cpp
 	helpdialog.cpp
 	focaldialog.cpp
+	settingsdialog.cpp
+	processqueue.cpp
+	queueitem.cpp
+	queuewindow.cpp
+	parameter.cpp
+	task.cpp
+	script.cpp
+	rtitask.cpp
 )
 
 set (RELIGHT_FORMS
 	mainwindow.ui
 	rtiexport.ui
 	helpdialog.ui
+	queuewindow.ui
+	settingsdialog.ui
+	focaldialog.ui
 )
 
 set (RELIGHT_RESOURCES

@@ -38,7 +38,8 @@ SOURCES += main.cpp \
     ../src/jpeg_encoder.cpp \
     ../src/rti.cpp \
     ../src/legacy_rti.cpp \
-    rtibuilder.cpp
+    rtibuilder.cpp \
+    convert_rti.cpp
 
 HEADERS += \
     ../src/getopt.h \
