@@ -407,7 +407,7 @@ void RtiExport::createRTI1(QString output) {
 	}
 
 	task->addParameter("quality", Parameter::INT, ui->quality->value());
-
+	task->addParameter("openlime", Parameter::BOOL, ui->openlime->isChecked());
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);

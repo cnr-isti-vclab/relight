@@ -1,5 +1,8 @@
-#include "rtitask.h"
+#include <QFileInfo>
+#include <QFile>
+#include <QDir>
 
+#include "rtitask.h"
 #include "../src/rti.h"
 #include "../relight-cli/rtibuilder.h"
 
@@ -64,6 +67,22 @@ void RtiTask::run() {
 		status = STOPPED;
 		return;
 	}
+	if((*this)["openlime"].value.toBool()) {
+		QStringList files = QStringList() << ":/demo/index.html"
+					  << ":/demo/openlime.min.js"
+					  << ":/demo/skin.css"
+					  << ":/demo/skin.svg";
+		QDir dir(output);
+		for(QString file: files) {
+			QFile fp(file);
+			fp.open(QFile::ReadOnly);
+			QFileInfo info(file);
+			QFile copy(dir.filePath(info.fileName()));
+			copy.open(QFile::WriteOnly);
+			copy.write(fp.readAll());
+		}
+	}
+
 	status = DONE;
 }
 

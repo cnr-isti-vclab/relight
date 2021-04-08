@@ -4,6 +4,7 @@
 #include <QPushButton>
 #include <QProgressBar>
 #include "task.h"
+#include "httpserver.h"
 
 #include <iostream>
 using namespace std;
@@ -49,10 +50,11 @@ QueueItem::QueueItem(Task *_task, QListWidget *parent): QListWidgetItem(parent) 
 //	progressbar->hide();
 	grid->addWidget(progressbar, 3, 1, 1, 1);
 
-	trash = new QPushButton();
-	trash->setIcon(QIcon(":/icons/feather/trash-2.svg"));
-	grid->addWidget(trash, 0, 2, 4, 1);
+	cast = new QPushButton();
+	cast->setIcon(QIcon(":/icons/feather/cast.svg"));
+	grid->addWidget(cast, 0, 2, 4, 1);
 
+	connect(cast, SIGNAL(clicked(bool)), this, SLOT(casting()));
 	widget->setLayout(grid);
 
 	setSizeHint(widget->minimumSizeHint());
@@ -94,4 +96,10 @@ void QueueItem::setSelected(bool selected) {
 		widget->setStyleSheet(style[task->status]);
 }
 
-
+void QueueItem::casting() {
+	HttpServer &server = HttpServer::instance();
+	server.stop();
+	server.port = 8880;
+	server.start(task->output);
+	server.show();
+}

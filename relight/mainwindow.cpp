@@ -8,6 +8,7 @@
 #include "focaldialog.h"
 #include "scripts.h"
 #include "queuewindow.h"
+#include "httpserver.h"
 
 #include <QInputDialog>
 #include <QFileDialog>
@@ -923,6 +924,7 @@ void MainWindow::exportRTI() {
 void MainWindow::viewRTI() {
 	QString output = QFileDialog::getExistingDirectory(this, "Select an output directory");
 	if(output.isNull()) return;
+	HttpServer &server = HttpServer::instance();
 	server.stop();
 	server.port = 8880;
 	server.start(output);
