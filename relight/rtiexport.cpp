@@ -310,7 +310,6 @@ void RtiExport::createNormals() {
 		output += ".png";
 
 	Script *task = new Script();
-	task->interpreter = "/usr/bin/python3";
 	task->script_filename = "normals/normalmap.py";
 	task->output = output;
 	task->input_folder = path;
@@ -407,10 +406,25 @@ void RtiExport::createRTI1(QString output) {
 	}
 
 	task->addParameter("quality", Parameter::INT, ui->quality->value());
+	QString format;
+	if(ui->formatRTI->isChecked())
+		format = "rti";
+	else if(ui->formatRelight->isChecked())
+		format = "relight";
+	else if(ui->formatDeepzoom->isChecked())
+		format = "deepzoom";
+	else if(ui->formatTarzoom->isChecked())
+		format = "deepzoom";
+
+	task->addParameter("format", Parameter::STRING, format);
+
 	task->addParameter("openlime", Parameter::BOOL, ui->openlime->isChecked());
+
+
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);
+
 /*
 
 

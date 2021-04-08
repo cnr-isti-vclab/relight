@@ -9,6 +9,7 @@
 #include "scripts.h"
 #include "queuewindow.h"
 #include "httpserver.h"
+#include "settingsdialog.h"
 
 #include <QInputDialog>
 #include <QFileDialog>
@@ -40,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	connect(ui->actionSave,       SIGNAL(triggered(bool)),  this, SLOT(saveProject()));
 	connect(ui->actionSave_as,    SIGNAL(triggered(bool)),  this, SLOT(saveProjectAs()));
+	connect(ui->actionPreferences,    SIGNAL(triggered(bool)),  this, SLOT(preferences()));
 	connect(ui->actionExit,       SIGNAL(triggered(bool)),  this, SLOT(quit()));
 
 	connect(ui->actionRuler,      SIGNAL(triggered(bool)),  this, SLOT(startMeasure()));
@@ -117,6 +119,12 @@ MainWindow::MainWindow(QWidget *parent) :
 }
 
 MainWindow::~MainWindow() {	delete ui; }
+
+void MainWindow::preferences() {
+	if(!settings_dialog)
+		settings_dialog = new SettingsDialog();
+	settings_dialog->show();
+}
 
 void MainWindow::clear() {
 	if(imagePixmap) {

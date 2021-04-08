@@ -37,7 +37,16 @@ void Script::run() {
 	if(!dir.exists()) {
 		error = "Could not find script folder: " + dir.path();
 		status = FAILED;
+		return;
 	}
+
+	QString python = QSettings().value("python_path").toString();
+	if(python.isNull()) {
+		error = "Python executable not set";
+		status = FAILED;
+		return;
+	}
+
 
 	QString script_path = dir.filePath(script_filename);
 	QFileInfo info(script_path);
@@ -47,7 +56,7 @@ void Script::run() {
 	}
 
 	QProcess process;
-	process.setProgram(interpreter);
+	process.setProgram(python);
 	qDebug() << arguments();
 	process.setArguments(QStringList() << script_path << arguments());
 	process.start();

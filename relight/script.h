@@ -1,13 +1,13 @@
 #ifndef SCRIPT_H
 #define SCRIPT_H
 
-
 #include "task.h"
+
+class QTemporaryFile;
 
 class Script: public Task {
 	Q_OBJECT
 public:
-	QString interpreter;
 	QString script_dir;
 	QString script_filename;
 

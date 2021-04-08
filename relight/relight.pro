@@ -58,7 +58,10 @@ SOURCES += main.cpp \
     script.cpp \
     parameter.cpp \
     task.cpp \
-    rtitask.cpp
+    rtitask.cpp \
+    settingsdialog.cpp \
+    ../relight-cli/convert_rti.cpp \
+    ../src/legacy_rti.cpp
 
 
 HEADERS += \
@@ -88,14 +91,17 @@ HEADERS += \
     script.h \
     parameter.h \
     task.h \
-    rtitask.h
+    rtitask.h \
+    settingsdialog.h \
+    ../src/legacy_rti.h
 
 FORMS += \
     mainwindow.ui \
     rtiexport.ui \
     helpdialog.ui \
     focaldialog.ui \  
-    queuewindow.ui
+    queuewindow.ui \
+    settingsdialog.ui
 RESOURCES += \
     icons.qrc
 
