@@ -15,10 +15,7 @@ using namespace std;
 
 int convertToRTI(const char *filename, const char *output);
 
-RtiTask::RtiTask()
-{
-
-}
+RtiTask::RtiTask() {}
 
 RtiTask::~RtiTask() {
 	if(builder)
