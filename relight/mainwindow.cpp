@@ -121,8 +121,10 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow() {	delete ui; }
 
 void MainWindow::preferences() {
-	if(!settings_dialog)
+	if(!settings_dialog) {
 		settings_dialog = new SettingsDialog();
+		settings_dialog->setModal(true);
+	}
 	settings_dialog->show();
 }
 
@@ -922,6 +924,7 @@ void MainWindow::exportRTI() {
 	rtiexport->showImage(imagePixmap->pixmap());
 	rtiexport->lights = project.directions();
 	rtiexport->path = project.dir.path();
+	rtiexport->setModal(true);
 	rtiexport->show();
 	//this needs to be called AFTER show, to ensure proportions are computed properly
 	rtiexport->setCrop(project.crop);
@@ -932,9 +935,10 @@ void MainWindow::exportRTI() {
 void MainWindow::viewRTI() {
 	QString output = QFileDialog::getExistingDirectory(this, "Select an output directory");
 	if(output.isNull()) return;
+
 	HttpServer &server = HttpServer::instance();
 	server.stop();
-	server.port = 8880;
+	server.port = QSettings().value("port", 8080).toInt();
 	server.start(output);
 	server.show();
 }

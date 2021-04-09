@@ -20,6 +20,7 @@ public slots:
 	void openScripts();
 	void setPython();
 	void setScripts();
+	void setPort();
 
 private:
 	bool checkPython(QString python);
