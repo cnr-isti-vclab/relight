@@ -16,7 +16,7 @@ jobs:
       uses: jurplel/install-qt-action@v2
     - name: Install dependencies
       run: |
-        brew install eigen libjpeg
+        brew install eigen libjpeg libomp
     - name: Configure and Build
       run: |
         cd relight
