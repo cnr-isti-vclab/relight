@@ -13,7 +13,7 @@ class QueueWindow : public QMainWindow {
 	Q_OBJECT
 
 public:
-	explicit QueueWindow(QWidget *parent);
+	explicit QueueWindow(QWidget *parent = 0);
 	~QueueWindow();
 
 	void setToolsStatus();

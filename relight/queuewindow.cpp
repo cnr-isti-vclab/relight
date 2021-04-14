@@ -8,7 +8,7 @@
 
 #include <iostream>
 using namespace std;
-QueueWindow::QueueWindow(QWidget *parent = 0) :
+QueueWindow::QueueWindow(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::QueueWindow) {
 
