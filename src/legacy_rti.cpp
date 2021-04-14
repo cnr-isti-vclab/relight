@@ -603,7 +603,7 @@ bool LRti::decodeJPEG(FILE *file) {
 	vector<int> sizes;
 	vector<int> overflows;
 	
-	uint ncoeffs = 9;
+	unsigned int ncoeffs = 9;
 	switch(type) {
 	case PTM_LRGB: ncoeffs = 9; break;
 	case PTM_RGB: ncoeffs = 18; break;
@@ -622,41 +622,41 @@ bool LRti::decodeJPEG(FILE *file) {
 		return false;
 	}
 	//check transform and motions are 0
-	for(uint k = 0; k < ncoeffs; k++) {
+	for(unsigned int k = 0; k < ncoeffs; k++) {
 		if(transform[k] != 0 || motionx[k] != 0 || motiony[k] != 0) {
 			cerr << "Transform and motion array unsupported." << endl;
 			return false;
 		}
 	}
 	//find in which order to decode them
-	vector<uint> sequence(order.size());
-	for(uint i = 0; i < order.size(); i++)
-		sequence[uint(order[i])] = i;
+	vector<unsigned int> sequence(order.size());
+	for(unsigned int i = 0; i < order.size(); i++)
+		sequence[(unsigned int)(order[i])] = i;
 	//		sequence[order[i]-1] = i; ???
 	
 	//precompute start of planes
 	vector<int> pos(ncoeffs+1);
 	pos[0] = int(ftell(file));
-	for(uint k = 1; k < ncoeffs+1; k++) {
+	for(unsigned int k = 1; k < ncoeffs+1; k++) {
 		pos[k] = pos[k-1] + sizes[k-1] + overflows[k-1];
 	}
 	
 	//check size
 	fseek(file, 0L, SEEK_END);
-	uint tot_size = uint(ftell(file));
-	if(tot_size < uint(pos[ncoeffs])) {
+	unsigned int tot_size = ftell(file);
+	if(tot_size < (unsigned int)(pos[ncoeffs])) {
 		cerr << "File is truncated." << endl;
 		return false;
 	}
 	
-	for(uint k = 0; k < ncoeffs; k++) {
-		uint s = sequence[k];
+	for(unsigned int k = 0; k < ncoeffs; k++) {
+		unsigned int s = sequence[k];
 		int r = reference[s];
 		
 		//read jpeg
 		fseek(file, pos[s], SEEK_SET);
 		vector<uint8_t> buffer(sizes[s]);
-		int readed = fread(buffer.data(), 1, uint(sizes[s]), file);
+		int readed = fread(buffer.data(), 1, size_t(sizes[s]), file);
 		if(readed != sizes[s])
 			return false;
 		
@@ -687,7 +687,7 @@ bool LRti::decodeJPEG(FILE *file) {
 	return true;
 }
 
-bool LRti::decodeJPEG(size_t size, unsigned char *buffer, uint plane) {
+bool LRti::decodeJPEG(size_t size, unsigned char *buffer, unsigned int plane) {
 	uint8_t *img = nullptr;
 	int w, h;
 	JpegDecoder dec;
@@ -700,21 +700,22 @@ bool LRti::decodeJPEG(size_t size, unsigned char *buffer, uint plane) {
 	}
 
 	chromasubsampled = dec.chromaSubsampled();
-	data[plane].resize(uint(w*h));
-	memcpy(data[plane].data(), img, uint(w*h));
+	data[plane].resize(int(w*h));
+	memcpy(data[plane].data(), img, int(w*h));
 	delete []img;
 	return true;
 }
 
-bool LRti::decodeJPEGfromFile(size_t size, unsigned char *buffer, uint plane0, uint plane1, uint plane2) {
-	vector<uint> invorder;
+bool LRti::decodeJPEGfromFile(size_t size, unsigned char *buffer, unsigned int plane0, unsigned int plane1, unsigned int plane2) {
+	vector<unsigned int> invorder;
 	if(type == PTM_LRGB) {
 		invorder = {6,7,8, 5,3,4, 0,2,1};
 
 	} else if(type == PTM_RGB) {
 		invorder = { 5,11,17,  3,9,15,  4,10,16,  0,6,12,  2,8,14, 1,7,13 };
-	} else
+	} else {
 		invorder = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+	}
 
 
 	uint8_t *img = nullptr;
@@ -729,15 +730,15 @@ bool LRti::decodeJPEGfromFile(size_t size, unsigned char *buffer, uint plane0, u
 	plane2 = invorder[plane2];
 
 	chromasubsampled = dec.chromaSubsampled();
-	data[plane0].resize(uint(w*h));
-	data[plane1].resize(uint(w*h));
-	data[plane2].resize(uint(w*h));
+	data[plane0].resize(int(w*h));
+	data[plane1].resize(int(w*h));
+	data[plane2].resize(int(w*h));
 
 
 	for(int y = 0; y < height; y++) {
 		for(int x = 0; x < width; x++) {
-			uint i = uint(x + y*width);
-			uint j = uint(x + (height - 1 -y)*width);
+			unsigned int i = int(x + y*width);
+			unsigned int j = int(x + (height - 1 -y)*width);
 
 			data[plane0][j] = img[i*3+0];
 			data[plane1][j] = img[i*3+1];
