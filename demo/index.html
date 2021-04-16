@@ -71,10 +71,11 @@ async function init() {
 		url: 'info.json',
 	});
 
-	lime.canvas.addLayer('coin16', layer); 
+	lime.canvas.addLayer('RTI', layer); 
 
 	let ui = new OpenLIME.UIBasic(lime, { skin: 'skin.svg' });
 	ui.actions.light.active = true;
+	ui.actions.layers.display = true;
 	lime.camera.maxFixedZoom = 1;
 }
 

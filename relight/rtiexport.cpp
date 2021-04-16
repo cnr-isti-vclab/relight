@@ -498,12 +498,7 @@ void RtiExport::createRTI(QString output) {
 	
 	
 	QFuture<void> future = QtConcurrent::run([this, output, rect, format]() {
-		this->makeRti(output, rect, format
-/*			,
-			ui->means->isChecked(),
-			ui->normals->isChecked(),
-			ui->highNormals->isChecked() */
-		);
+		this->makeRti(output, rect, format, true, true);
 	} );
 
 	watcher.setFuture(future);
