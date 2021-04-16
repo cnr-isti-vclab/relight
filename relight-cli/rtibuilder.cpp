@@ -146,7 +146,7 @@ void RtiBuilder::savePixel(Color3f *p, int side, const QString &file) {
 }
 
 bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_callback) {
-	if((type == PTM || type == HSH) && colorspace == MRGB) {
+	if((type == PTM || type == HSH || type == SH || type == H) && colorspace == MRGB) {
 		error = "PTM and HSH do not support MRGB";
 		return false;
 	}
@@ -630,17 +630,29 @@ void RtiBuilder::pickBasePTM() {
 	}
 }
 
-void RtiBuilder::pickBaseHSH() {
+void RtiBuilder::pickBaseHSH(Rti::Type base) {
 	uint32_t dim = ndimensions*3;
 	materials.resize(1);
 	materialbuilders.resize(1);
 	MaterialBuilder &mat = materialbuilders[0];
 	mat.mean.resize(dim, 0.0);
 	
+	vector<float> lweights;
+
 	Eigen::MatrixXd A(lights.size(), nplanes/3);
 	for(uint32_t l = 0; l < lights.size(); l++) {
 		Vector3f &light = lights[l];
-		vector<float> lweights = lightWeightsHsh(light[0], light[1]);
+		switch(base) {
+		case HSH:
+			lweights = lightWeightsHsh(light[0], light[1]);
+			break;
+		case SH:
+			lweights = lightWeightsSh(light[0], light[1]);
+			break;
+		case H:
+			lweights = lightWeightsH(light[0], light[1]);
+			break;
+		}
 		for(uint32_t p = 0; p < nplanes/3; p++)
 			A(l, p) = (double)lweights[p];
 	}
@@ -655,7 +667,6 @@ void RtiBuilder::pickBaseHSH() {
 			proj[k*3+0 + (p+0)*dim] = proj[k*3+1 + (p+1)*dim] = proj[k*3+2 + (p+2)*dim] = iA(p/3, k);
 		}
 	}
-	
 }
 
 void RtiBuilder::pickBase(PixelArray &sample) {
@@ -669,7 +680,9 @@ void RtiBuilder::pickBase(PixelArray &sample) {
 	case RBF:
 	case BILINEAR: pickBasePCA(sample, indices); break;
 	case PTM:      pickBasePTM(); break;
-	case HSH:      pickBaseHSH(); break;
+	case HSH:
+	case SH:
+	case H:        pickBaseHSH(); break;
 	default: cerr << "Unknown basis" << endl; exit(0);
 	}
 	
@@ -840,6 +853,8 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 	switch(type) {
 	case PTM: stream << "ptm"; break;
 	case HSH: stream << "hsh"; break;
+	case SH:  stream << "sh"; break;
+	case H:   stream << "h"; break;
 	case RBF: stream << "rbf"; break;
 	case BILINEAR: stream << "bilinear"; break;
 	default: error = "Unknown RTI type"; return false;

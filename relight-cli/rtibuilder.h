@@ -73,7 +73,7 @@ protected:
 
 	void pickBasePCA(PixelArray &sample, std::vector<size_t> &indices);
 	void pickBasePTM();
-	void pickBaseHSH();
+	void pickBaseHSH(Type base = HSH);
 
 	
 //DEBUG
