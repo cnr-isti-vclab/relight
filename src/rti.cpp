@@ -48,7 +48,7 @@ bool Rti::load(const char *filename) {
 	width = obj["width"].toInt();
 	height = obj["height"].toInt();
 
-	map<string, Type> types = {{"ptm", PTM}, {"hsh", HSH}, {"dmd", DMD}, {"rbf", RBF}, {"bilinear", BILINEAR }};
+	map<string, Type> types = {{"ptm", PTM}, {"hsh", HSH}, {"sh", SH}, {"h", H}, {"dmd", DMD}, {"rbf", RBF}, {"bilinear", BILINEAR }};
 	QString t = obj["type"].toString();
 	if(!types.count(qPrintable(t))) {
 		error = "Unknown basis type: " + t.toStdString();
@@ -376,6 +376,8 @@ std::vector<float> Rti::lightWeights(float lx, float ly) {
 	switch(type) {
 	case PTM:      return lightWeightsPtm(lx, ly);
 	case HSH:      return lightWeightsHsh(lx, ly);
+	case SH:       return lightWeightsSh(lx, ly);
+	case H:        return lightWeightsH(lx, ly);
 	case DMD:      return lightWeightsDmd(lx, ly);
 	case RBF:      return lightWeightsRbf(lx, ly);
 	case BILINEAR: return lightWeightsBilinear(lx, ly);
@@ -435,20 +437,88 @@ std::vector<float> Rti::lightWeightsHsh(float lx, float ly) {
 	float cosT = cos(theta);
 	float cosT2 = cosT * cosT;
 
+	float sz = sqrt(lz/(1 + lz));
+
+	vector<float> xweights(9);
 	vector<float> lweights(9);
-	lweights[0] = 1.0f / sqrt(2.0f * M_PI);
+	xweights[0] = lweights[0] = 1.0f / sqrt(2.0f * M_PI);
 
 	lweights[1] = sqrt(6.0f / M_PI) * (cosP * sqrt(cosT-cosT2));
+	xweights[1] = sqrt(6.0f / M_PI) * lx * sz;
+
 	lweights[2] = sqrt(3.0f / (2.0f * M_PI)) * (-1.0f + 2.0f*cosT);
+	xweights[2] = sqrt(3.0f / (2.0f *M_PI)) * (2.0* lz - 1);
+
 	lweights[3] = sqrt(6.0f / M_PI) * (sqrt(cosT - cosT2) * sin(phi));
+	xweights[3] = sqrt(6.0f / M_PI) * ly * sz;
+
 
 	lweights[4] = sqrt(30.0f / M_PI) * (cos(2.0f * phi) * (-cosT + cosT2));
+	xweights[4] = -sqrt(30.0f / M_PI) * (lx*lx - ly*ly)* lz / (1 + lz);
+
 	lweights[5] = sqrt(30.0f / M_PI) * (cosP*(-1.0f + 2.0f * cosT) * sqrt(cosT - cosT2));
+	xweights[5] = sqrt(30.0f / M_PI) * lx * (2*lz - 1)*sz;
+
 	lweights[6] = sqrt(5.0f / (2.0f * M_PI)) * (1.0f - 6.0f * cosT + 6.0f * cosT2);
+	xweights[6] = sqrt(5.0f / (2.0f * M_PI)) *(6.0f *lz * lz - 6.0f *lz + 1);
+
 	lweights[7] = sqrt(30.0f / M_PI) * ((-1.0f + 2.0f * cosT) * sqrt(cosT - cosT2) * sin(phi));
+	xweights[7] = sqrt(30.0f / M_PI) * ly * (2*lz - 1)*sz;
+
 	lweights[8] = sqrt(30.0f / M_PI) * ((-cosT + cosT2) * sin(2.0f*phi));
+	xweights[8] = -2.0*sqrt(30.0f / M_PI) * lx * ly *lz / (1 + lz);
 
 	return lweights;
+}
+
+std::vector<float> Rti::lightWeightsSh(float lx, float ly) {
+	float lz = sqrt(1.0f - lx*lx - ly*ly);
+	float phi = atan2(ly, lx);
+	if (phi < 0.0f)
+		phi = 2.0f * M_PI + phi;
+	float theta = std::min(acos(lz), (float)M_PI / 2.0f - 0.01f);
+
+
+	float sinP = sin(phi);
+	float cosP = cos(phi);
+	float cosT = cos(theta);
+	float sinT = sin(theta);
+
+
+	vector<float> xweights(9);
+	vector<float> lweights(9);
+	xweights[0] = lweights[0] = 0.5 / sqrt(M_PI);
+
+	lweights[1] = 0.5*sqrt(3.0f / M_PI) * sinP*sinT;
+	xweights[1] = 0.5*sqrt(3.0f / M_PI) * lx;
+
+	lweights[2] = 0.5*sqrt(3.0f / M_PI) * cosT;
+	xweights[2] = 0.5*sqrt(3.0f / M_PI) * lz;
+
+	lweights[3] = 0.5*sqrt(3.0f / M_PI) * cosP*sinT;
+	xweights[3] = 0.5*sqrt(3.0f / M_PI) * ly;
+
+	lweights[4] = 0.25*sqrt(15 / M_PI) * sin(2*phi)*sinT*sinT;
+	xweights[4] = 0.5*sqrt(15 / M_PI) * lx*ly;
+
+	lweights[5] = 0.5*sqrt(15 / M_PI) * sinT * cosT * sinP;
+	xweights[5] = 0.5*sqrt(15 / M_PI) * lx*lz;
+
+	lweights[6] = 0.25*sqrt(5 / M_PI)*(3*cosT*cosT - 1);
+	xweights[6] = 0.25*sqrt(5 / M_PI) * (3*lz*lz -1);
+
+	lweights[7] = 0.5*sqrt(15 / M_PI) * sinT*cosT*cosP;
+	xweights[7] = 0.5*sqrt(15 / M_PI) *lz *ly;
+
+	lweights[8] = 0.25*sqrt(15 / M_PI)*sinT*sinT*cos(2*phi);
+	xweights[8] = 0.25*sqrt(15 / M_PI) *(-lx*lx + ly*ly);
+
+	return lweights;
+}
+
+std::vector<float> Rti::lightWeightsH(float lx, float ly) {
+	float lz = sqrt(1.0f - lx*lx - ly*ly);
+	throw 1;
 }
 
 std::vector<float> Rti::rbfWeights(float lx, float ly) {

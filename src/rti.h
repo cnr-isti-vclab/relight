@@ -21,7 +21,7 @@ class QString;
 class Rti {
 public:
 
-	enum Type       { PTM = 0, HSH = 1, RBF = 2, BILINEAR = 3, DMD = 4 };
+	enum Type       { PTM = 0, HSH = 1, RBF = 2, BILINEAR = 3, DMD = 4, SH = 5, H = 6 };
 	enum ColorSpace { RGB = 0, LRGB = 1, YCC = 2, MRGB = 3, MYCC = 4 };
 	enum Format     { JSON = 0, BRTI = 1 };
 	enum ImgFormat  { RAW = 0, JPEG = 1, PNG = 2 }; //add other formats?
@@ -78,6 +78,8 @@ public:
 	std::vector<float> lightWeights(float lx, float ly);
 	std::vector<float> lightWeightsPtm(float lx, float ly);
 	std::vector<float> lightWeightsHsh(float lx, float ly);
+	std::vector<float> lightWeightsSh(float lx, float ly);
+	std::vector<float> lightWeightsH(float lx, float ly);
 	std::vector<float> lightWeightsDmd(float lx, float ly);
 	std::vector<float> lightWeightsRbf(float lx, float ly);
 	std::vector<float> lightWeightsBilinear(float lx, float ly);

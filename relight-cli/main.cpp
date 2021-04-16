@@ -64,7 +64,7 @@ int convertToRTI(const char *file, const char *output);
 
 void test(std::string input, std::string output,  Vector3f light) {
 
-    Rti rti;
+	Rti rti;
     if(!rti.load(input.c_str())) {
         cerr << "Failed loading rti: " << input << " !\n" << endl;
         return;
@@ -88,7 +88,8 @@ bool progress(string str, int n) {
 }
 
 int main(int argc, char *argv[]) {
-
+	Rti rti1;
+	rti1.lightWeightsSh(0.3, 0.2);
     if(argc == 1) {
         help();
         return 0;
@@ -144,6 +145,14 @@ int main(int argc, char *argv[]) {
             } else if(b == "hsh") {
                 builder.type = RtiBuilder::HSH;
                 builder.colorspace = RtiBuilder::RGB;
+
+			} else if(b == "sh") {
+				builder.type = RtiBuilder::SH;
+				builder.colorspace = RtiBuilder::RGB;
+
+			} else if(b == "h") {
+				builder.type = RtiBuilder::H;
+				builder.colorspace = RtiBuilder::RGB;
 
             } else if(b == "lhsh") {
                 builder.type = RtiBuilder::HSH;
