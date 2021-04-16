@@ -41,6 +41,7 @@ public slots:
 	void showHandle(bool _show = true);
 	void hideHandle();
 	void setCrop(QRect rect);
+	void resetCrop();
 
 signals:
 	void areaChanged(QRect rect);
@@ -81,12 +82,10 @@ private:
 
 
 private:
-	// Private data implementation
 	bool show_handle = true;
 
 	float leftDelta, topDelta;
 	float xScale, yScale;
-
 
 	QPixmap imageForCropping;
 	QRectF croppingRect;
