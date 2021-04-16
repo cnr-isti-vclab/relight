@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   version="1.1"
+   viewBox="0 0 61.763393 61.763393"
+   height="61.763393px"
+   width="61.763393px">
+  <g
+     transform="translate(-110.1176,-0.21201288)"
+     id="layer1">
+    <g
+       transform="rotate(45,140.99934,31.09375)"
+       id="g1118">
+      <circle
+         r="28.881697"
+         cy="31.09375"
+         cx="140.99928"
+         id="circle1097"
+         style="opacity:1;fill:#facd5a;fill-opacity:1;" />
+      <path
+         style="opacity:1;fill:#5f82c3;fill-opacity:1;"
+         d="m 143.60717,23.069584 -8.8731,2.350716 h -1.79036 -11.45286 -4.18216 c -0.99186,0 -1.79036,0.798495 -1.79036,1.790356 v 7.146567 c 0,0.991862 0.7985,1.790357 1.79036,1.790356 l 4.18216,10e-7 h 11.45286 1.79036 l 8.8731,2.350717 h 8.02514 V 23.069584 Z"/>
+      <path
+         style="opacity:1;fill:#415a87;fill-opacity:1;stroke:none;stroke-width:0.44758919;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         d="m 143.60717,23.069588 3.22592,1e-6 v 15.428708 h -3.22592 z"/>
+      <circle
+         style="opacity:1;fill:#000000;fill-opacity:0.24747476;" cx="134.30319" cy="30.783945" r="1.7184228" />
+      <path
+         style="fill:#fce094;fill-opacity:1;"
+         d="m 625.11133,59.142578 -52.01367,32.84375 V 141.5293 c 0,0 29.93586,19.35178 52.24023,33.82031 a 109.15917,109.15917 0 0 0 16.73242,-57.83008 109.15917,109.15917 0 0 0 -16.95898,-58.376952 z"
+         transform="scale(0.26458333)"/>
+      <path
+         style="fill:#fef9d4;fill-opacity:1;"
+         d="m 636.06055,82.210938 -62.96289,16.99414 v 34.287112 l 63.79492,17.11523 a 109.15917,109.15917 0 0 0 5.17773,-33.08789 109.15917,109.15917 0 0 0 -6.00976,-35.308592 z"
+         transform="scale(0.26458333)"/>
+    </g>
+  </g>
+</svg>
