@@ -68,6 +68,7 @@ public slots:
 
 	void showCrop();
 	void acceptCrop();
+	void resetCrop();
 	void rejectCrop();
 	void cropChanged(QRect rect); //someone moved the crop rectangle
 	void updateCrop(); //someone edited the spinboxs

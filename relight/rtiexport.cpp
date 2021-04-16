@@ -37,9 +37,11 @@ RtiExport::RtiExport(QWidget *parent) :
 //	connect(ui->close, SIGNAL(clicked()), this, SLOT(close()));
 	connect(this, SIGNAL(rejected()), this, SLOT(close()));
 	
+	connect(ui->cropbuttonbox, SIGNAL(accepted()), this, SLOT(acceptCrop()));
 	connect(ui->crop,          SIGNAL(clicked()),  this, SLOT(showCrop()));
-	connect(ui->crop1,          SIGNAL(clicked()),  this, SLOT(showCrop()));
+	connect(ui->crop1,         SIGNAL(clicked()),  this, SLOT(showCrop()));
 
+	connect(ui->cropreset, SIGNAL(clicked()), this, SLOT(resetCrop()));
 	connect(ui->cropbuttonbox, SIGNAL(accepted()), this, SLOT(acceptCrop()));
 	connect(ui->cropbuttonbox, SIGNAL(rejected()), this, SLOT(rejectCrop()));
 	connect(ui->cropview, SIGNAL(areaChanged(QRect)), this, SLOT(cropChanged(QRect)));
@@ -128,7 +130,7 @@ void RtiExport::changePlanes(int n) {
 
 Rti::Type basis(int index) {
 	//int b =  ui->basis->currentIndex();
-	Rti::Type table[] =       { Rti::PTM, Rti::HSH, Rti::HSH, Rti::BILINEAR,  Rti::RBF, Rti::BILINEAR, Rti::RBF };
+	Rti::Type table[] =       { Rti::PTM, Rti::HSH, Rti::HSH, Rti::BILINEAR,  Rti::RBF, Rti::BILINEAR, Rti::RBF, Rti::DMD, Rti::SH, Rti::H };
 	return table[index];
 }
 
@@ -534,9 +536,14 @@ void RtiExport::showCrop() {
 }
 
 void RtiExport::acceptCrop() {
-	ui->export_frame->show();
-	ui->crop_frame->hide();
 	crop = ui->cropview->croppedRect();
+	ui->crop_frame->hide();
+	ui->export_frame->show();
+}
+
+void RtiExport::resetCrop() {
+	ui->cropview->resetCrop();
+	cropChanged(ui->cropview->croppedRect());
 }
 
 void RtiExport::rejectCrop() {
@@ -546,7 +553,6 @@ void RtiExport::rejectCrop() {
 }
 
 void RtiExport::cropChanged(QRect rect) {
-	
 	ui->width->setValue(rect.width());
 	ui->height->setValue(rect.height());
 	ui->left->setValue(rect.left());

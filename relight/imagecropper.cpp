@@ -3,6 +3,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QApplication>
 #include <math.h>
 #include <iostream>
 using namespace std;
@@ -53,7 +54,7 @@ void ImageCropper::setProportion(const QSizeF& _proportion) {
 			float area = croppingRect.width() * croppingRect.height();
 			croppingRect.setWidth(sqrt(area /  deltas.height()));
 			croppingRect.setHeight(sqrt(area /  deltas.width()));
-/*			bool widthShotrerThenHeight =
+			bool widthShotrerThenHeight =
 					croppingRect.width() < croppingRect.height();
 			if (widthShotrerThenHeight) {
 				croppingRect.setHeight(
@@ -61,7 +62,7 @@ void ImageCropper::setProportion(const QSizeF& _proportion) {
 			} else {
 				croppingRect.setWidth(
 							croppingRect.height() * deltas.width());
-			} */
+			}
 			update();
 		}
 	}
@@ -100,10 +101,13 @@ void ImageCropper::setCrop(QRect rect) {
 	update();
 }
 
+void ImageCropper::resetCrop() {
+	setCrop(imageForCropping.rect());
+}
+
 void ImageCropper::updateDeltaAndScale() {
 	//TODO don't resize an image just to compute a proportion.
-	QSize scaledImageSize =
-			imageForCropping.scaled(
+	QSize scaledImageSize = imageForCropping.scaled(
 				this->size(), Qt::KeepAspectRatio, Qt::FastTransformation
 				).size();
 	leftDelta = 0.0f;
@@ -111,6 +115,8 @@ void ImageCropper::updateDeltaAndScale() {
 	if (this->size().height() == scaledImageSize.height()) {
 		leftDelta = (this->width() - scaledImageSize.width()) / 2.0f;
 	} else {
+		if(this->size().width() != scaledImageSize.width())
+			throw "Should never happen this";
 		topDelta = (this->height() - scaledImageSize.height()) /  2.0f;
 	}
 	xScale = (float)imageForCropping.width()  / scaledImageSize.width();
@@ -119,8 +125,8 @@ void ImageCropper::updateDeltaAndScale() {
 
 void ImageCropper::resizeEvent(QResizeEvent *event) {
 	QWidget::resizeEvent(event);
-	updateDeltaAndScale();
 	QRect currentRealRect = croppedRect();
+	updateDeltaAndScale();
 	setCrop(currentRealRect);
 }
 
@@ -376,6 +382,7 @@ void ImageCropper::updateCursorIcon(const QPointF& _mousePosition)
 			break;
 	}
 	//
+	QApplication::setOverrideCursor(cursorIcon);
 	this->setCursor(cursorIcon);
 }
 
