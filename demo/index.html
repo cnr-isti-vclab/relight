@@ -59,9 +59,27 @@ async function autodetect() {
 	return "";
 }
 
+async function autodetectNormals(layout) {
+	if(layout == 'tarzoom')
+	let response = await fetch('normals.tzi');
+	if(response.status == 200)
+		return true;
+
+	response = await fetch('normals.dzi');
+	if(response.status == 200)
+		return true;
+
+	response = await fetch('normals.jpg');
+	if(response.status == 200)
+		return true;
+
+	return false;
+}
+
+
 async function init() {
 	let layout = await autodetect();
-
+	let normals = await autodetectNormals(layout);
 	let lime = new OpenLIME.OpenLIME('#openlime', { background:'black' });
 
 
@@ -69,6 +87,7 @@ async function init() {
 		layout: layout, 
 		type:'rti',
 		url: 'info.json',
+		normals: normals
 	});
 
 	lime.canvas.addLayer('RTI', layer); 
