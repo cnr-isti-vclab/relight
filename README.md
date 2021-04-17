@@ -154,6 +154,7 @@ Clone this repository and build.
 ```shell
 $ git clone https://github.com/cnr-isti-vclab/relight.git
 $ cd relight
+$ git submodule update --init --recursive
 $ cmake .
 $ make
 ```
