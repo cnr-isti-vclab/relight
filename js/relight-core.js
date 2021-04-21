@@ -125,7 +125,11 @@ setUrl: function(url) {
 	t.img = 'plane_0';
 
 	t.waiting = 1;
-	t.get(url + '/info.json', 'json', function(d) { t.waiting--; t.loadInfo(d); });
+	if (t.layout == "webrtiviewer") {
+		t.get(url + '/info.xml', 'xml', function(d) { t.waiting--; t.loadWebRTIViewerInfo(d); });
+	} else {
+		t.get(url + '/info.json', 'json', function(d) { t.waiting--; t.loadInfo(d); });
+	}
 },
 
 loadInfo: function(info) {
@@ -203,6 +207,274 @@ loadInfo: function(info) {
 	t.loaded();
 },
 
+loadWebRTIViewerInfo: function(info) {
+	var t = this;
+	t.format = "jpg";
+	var val = parseInt(info.getElementsByTagName("MultiRes")[0].getAttribute("format"));
+	if (!isNaN(val)) {
+		if (val == 1) {
+			t.format = "png";
+		}
+	}
+	var content = info.getElementsByTagName("Content")[0];
+	var type = content.getAttribute("type");
+	switch(type) {
+		case "HSH_RTI" : t.type="hsh"; t.colorspace="rgb"; break;
+		case "RGB_PTM" : t.type="ptm"; t.colorspace="rgb"; break;
+		case "LRGB_PTM": t.type="ptm"; t.colorspace="lrgb"; break;
+		case "IMAGE"   : t.type="img"; t.colorspace="rgb"; break;
+		default: console.log("Unrecognized type", type); return;
+	}
+
+	var size = info.getElementsByTagName("Size")[0];
+
+	// In the WebRTIViewer format, we need to distinguish
+	// between the size of the full dataset (which usually
+	// has dimensions of powers of 2) and the size of
+	// the actual image, which is usually smaller and is centered
+	// in the middle of the full dataset.
+	// The sizes here are the sizes of the actual image.
+	t.imgWidth = parseInt(size.getAttribute("width"));
+	t.imgHeight = parseInt(size.getAttribute("height"));
+
+	var ordlen = parseInt(size.getAttribute("coefficients"));
+	t.nplanes = 3*ordlen;
+	if (t.colorspace == "lrgb") {
+		t.nplanes = ordlen + 3;
+	}
+
+	t.njpegs = 0;
+	while(t.njpegs*3 < t.nplanes) {
+		t.njpegs++;
+	}
+	t.planes = [];
+
+	console.log("type",t.type,"colorspace",t.colorspace,"format",t.format, "imgWidth", t.imgWidth, "imgHeight", t.imgHeight, "nplanes", t.nplanes, "njpegs", t.njpegs);
+
+	// TODO: what to do if t.type == "img" ?
+
+	t.yccplanes = [0, 0, 0];
+
+	t.nmaterials = 1;
+	// t.nplanes+1 because t.factor and t.bias 
+	// indexes start at 1, not 0
+	t.factor = new Float32Array(t.nplanes+1);
+	t.bias = new Float32Array(t.nplanes+1);
+
+	var scale = info.getElementsByTagName("Scale")[0];
+	var scale_tokens = scale.childNodes[0].nodeValue.split(" ");
+	if (scale_tokens.length < ordlen) return;
+
+	var bias = info.getElementsByTagName("Bias")[0];
+	var bias_tokens = bias.childNodes[0].nodeValue.split(" ");
+	if (bias_tokens.length < ordlen) return;
+
+	if (t.colorspace == "lrgb") {
+		// first 3 planes (first image) in lrgb are rgb,
+		// which are not scaled
+		t.factor[1] = t.factor[2] = t.factor[3] = 1.;
+		t.bias[1] = t.bias[2] = t.bias[3] = 0.;
+	}
+
+	for (var j = 0; j < ordlen; j++ ) {
+		var ffactor = parseFloat(scale_tokens[j]);
+		var fbias = parseFloat(bias_tokens[j]);
+
+	    // In WebRTIViewer, a single value of Scale and
+		// a single value of Bias can apply to all 3
+	    // planes (R, G, B) in the image file, while in relight
+	    // each plane has its own scale and bias.
+		// The exception is that WebRTIViewer does provide
+		// a separate Scale and Bias for every plane in the L images.
+		// Furthermore, relight/src/legacy_rti.cpp
+		// manipulates scale and bias to be consistent with relight's
+		// preferred usage; those manipulations are reproduced here.
+		if (t.colorspace == "lrgb") {
+			var pos = 4 + j;
+		    t.bias[pos] = fbias/255;
+		    t.factor[pos] = ffactor;
+		} else {
+		    for (var k=0; k<3; k++) {
+				var pos = 1 + 3*j + k;
+				if (t.type == "hsh") {
+				    // Working around an apparent bug in
+					// webGLRTIMaker-build/rti.cpp, which for HSH
+					// files switches the Scale and Bias values.
+					var tbias = ffactor;
+					var tfactor = fbias;
+					t.bias[pos] = -tbias/tfactor;
+					t.factor[pos] = tfactor;
+				} else {
+					t.bias[pos] = fbias/255.;
+					t.factor[pos] = ffactor;
+				}
+		    }
+		}
+	}
+
+	// copied from spidergl library, used by webRTIViewer
+	function sglGetLines(text) {
+		var allLines = text.split("\n");
+		var n = allLines.length;
+		var lines = [ ];
+		var line = null;
+		for (var i=0; i<n; ++i) {
+			line = allLines[i].replace(/[ \t]+/g, " ").replace(/\s\s*$/, "");
+			if (line.length > 0) {
+				lines.push(line);
+			}
+		}
+		return lines;
+	}
+
+	var tree = info.getElementsByTagName("Tree")[0];
+	var tree_content = tree.textContent;
+	var lines = sglGetLines(tree_content);
+	var n = lines.length;
+	var tokens = null;
+	var i = 0;
+
+	if (n <= 1) return;
+	tokens = lines[i++].split(" ");
+	if (tokens.length < 2) return;
+	var nodesCount = parseInt(tokens[0]);
+	if (nodesCount <= 0) return;
+	var rootIndex = parseInt(tokens[1]);
+	if ((rootIndex < 0) || (rootIndex >= nodesCount)) return;
+
+	if (n <= i) return;
+	tokens = lines[i++].split(" ");
+	if (tokens.length < 1) return;
+	var tileSize = parseInt(tokens[0]);
+	if (tileSize <= 0) return;
+
+	if (n <= i) return;
+	tokens = lines[i++].split(" ");
+	if (tokens.length < 3) return;
+	// width height depth
+	var whd = [ 1.0, 1.0, 1.0 ];
+	whd[0] = parseFloat(tokens[0]);
+	whd[1] = parseFloat(tokens[1]);
+	whd[2] = parseFloat(tokens[2]);
+
+	if (n <= i) return;
+	tokens = lines[i++].split(" ");
+	if (tokens.length < 3) return;
+	var offset = [ 0.0, 0.0, 0.0 ];
+	offset[0] = parseFloat(tokens[0]);
+	offset[1] = parseFloat(tokens[1]);
+	offset[2] = parseFloat(tokens[2]);
+
+	t.tilesize = tileSize;
+	t.width = whd[0];
+	t.height = whd[1];
+
+	t.tindex = [];
+
+	// ilevel follows the standard convention 
+	// in this code: ilevel = 0 is the level where
+	// a single tile covers the whole image
+	function addToTIndex(ilevel, x, y, id) {
+		if (t.tindex[ilevel] === undefined) {
+			t.tindex[ilevel] = []
+		}
+		if (t.tindex[ilevel][x] === undefined) {
+			t.tindex[ilevel][x] = []
+		}
+		t.tindex[ilevel][x][y] = id;
+	}
+
+	t.nlevels = 1;
+	var temp = t.width;
+	// nlpow2 = 2 ^ t.nlevels
+	var nlpow2 = 1;
+	while (temp > t.tilesize) {
+		t.nlevels++;
+		temp /= 2;
+		nlpow2 *= 2;
+	}
+
+	// Build a table:
+	// given dx (the width of a tile in image coords),
+	// determine the level.
+	dx2ilevel = [];
+	temp = 1.;
+	for (var k=0; k<t.nlevels; k++) {
+		dx2ilevel[temp*nlpow2] = k;
+		temp /= 2;
+	}
+
+	// In the webRTIViewer format, there are two ways of generating
+	// the tree: from an explicit description, or by a default process
+	if (n > i) {  // tree is described explicitly
+		var maxid = 0;
+		var minlevel = 1000;
+		var maxlevel = -1;
+		for (var k=0; k<nodesCount; k++) {
+			tokens = lines[i++].split(" ");
+			if (tokens.length < 14) return;
+
+			var id = parseInt(tokens[0]);
+			if (id <= 0) return;
+			var xmin = parseFloat(tokens[8]);
+			var ymin = parseFloat(tokens[9]);
+			var xmax = parseFloat(tokens[11]);
+			var ymax = parseFloat(tokens[12]);
+			var dx = xmax-xmin;
+			// TODO: could test if dx == dy
+			var ilevel = dx2ilevel[dx*nlpow2];
+			if (typeof ilevel == "undefined") {
+				console.log("problem in tile", id);
+				continue;
+			}
+			minlevel = Math.min(minlevel, ilevel);
+			maxlevel = Math.max(maxlevel, ilevel);
+			var x = xmin/dx;
+			// y labeling in webRTIViewer is
+			// flipped relative to relight
+			var y = (1.0-ymax)/dx;
+			addToTIndex(ilevel, x, y, id);
+		}
+
+	} else { // tree is generated by default process
+		var index2info = [];
+		var index = 0;
+		var count = 1;
+		for (var k=0; k<t.nlevels; k++) {
+			for (var s=0; s<count; s++) {
+				var parentIndex = -1;
+				if (index > 0) {
+					parentIndex = Math.ceil(index/4)-1;
+				}
+			    var id = index+1;
+				var x = 0;
+				var y = 0;
+				if (index > 0) {
+					var u = index % 4;
+					x = 2*index2info[parentIndex].x;
+					y = 2*index2info[parentIndex].y;
+					switch(u) {
+						// y's are flipped to change webRTIView's
+						// convention to relight's.
+						case 0: x++; y++; break;
+						case 1:           break;
+						case 2: x++;      break;
+						case 3:      y++; break;
+					}
+				}
+				addToTIndex(k, x, y, id);
+				index2info[index] = {x: x, y: y};
+			    index++;
+			}
+			count *= 4;
+		}
+	}
+
+	t.initTree();
+	t.loadProgram();
+	t.loaded();
+},
+
 
 onLoad: function(f) {
 	this._onload.push(f);
@@ -242,6 +514,41 @@ initTree: function() {
 	t.nodes = [];
 
 	switch(t.layout) {
+		case "webrtiviewer":
+			// TODO: next 3 lines are temporary!
+			// t.nlevels = 6;
+			// t.width = t.tilesize;
+			// t.height = t.tilesize;
+
+			t.getTileURL = function(image, x, y, level) {
+				var ppts = image.split('.');
+				// console.log("l", level, "x", x, "y", y, image);
+				var ext = ppts[1];
+				var plane = parseInt(ppts[0].split('_')[1]);
+				if (plane < 0) return;
+				// In the lrgb case, webRTIViewer orders the jpegs
+				// differently than relight, so fix that
+				// difference here.  But in addition, the two programs
+				// order the planes within each jpeg differently!
+				// The fix for that is in computeLightWeightsPtm().
+				if (t.colorspace == "lrgb") {
+					plane = (plane+2)%3;
+				}
+				// webRTIViewer file names increment from 1, not 0
+				plane += 1;
+				var ilevel = t.nlevels - 1 - level;
+				var id = t.tindex[ilevel][x][y];
+				var nimage = `${id}_${plane}.${ext}`;
+				// if (plane == 1) { console.log(level, x, y, id);
+				// console.log("nimage", nimage);
+				if(t.url)
+					return t.url + '/' + nimage;
+				else
+					return nimage;
+			};
+			break;
+
+
 		case "image":
 			t.nlevels = 1;
 			t.tilesize = 0;
@@ -657,7 +964,21 @@ computeLightWeights: function(lpos) {
 
 computeLightWeightsPtm: function(v) {
 	var t = this;
-	var w = [1.0, v[0], v[1], v[0]*v[0], v[0]*v[1], v[1]*v[1], 0, 0, 0];
+	var w = [];
+	// relight/relight-cli/main.cpp uses an "order" vector to
+	// reorder the PTM planes in the image, whereas webRTIViewer uses
+	// the standard order of PTM planes.  So either the webRTIViewer
+	// images need to be reordered during reading, to match the relight
+	// convention, or a different lighting equation must be used on
+	// images imported from webRTIViewer.  The latter approach
+	// is used here.
+	if (t.layout == "webrtiviewer") {
+		// webRTIViewer/PTM ordering convention
+		w = [v[0]*v[0], v[1]*v[1], v[0]*v[1], v[0], v[1], 1.0, 0, 0, 0];
+	} else {
+		// relight ordering convention
+		w = [1.0, v[0], v[1], v[0]*v[0], v[0]*v[1], v[1]*v[1], 0, 0, 0];
+	}
 
 	t.lweights = new Float32Array(t.nplanes);
 	for(var p = 0; p < w.length; p++)
