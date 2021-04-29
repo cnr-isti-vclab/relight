@@ -87,7 +87,7 @@ void RtiTask::run() {
 	}
 	if(format == "deepzoom" || format == "tarzoom") {
 		if(python.isNull() || python.isEmpty()) {
-			error = "Python executable not set";
+			error = "Set the Python executable in the File->Preferences dialog ";
 			status = FAILED;
 			return;
 		}
