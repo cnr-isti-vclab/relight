@@ -674,7 +674,10 @@ bool LRti::decodeJPEG(FILE *file) {
 		
 		if(overflows[s] > 0) {
 			vector<uint8_t> overs(overflows[s]);
-			fread(overs.data(), 1, overs.size(), file);
+			size_t readed = fread(overs.data(), 1, overs.size(), file);
+			if(readed!= overs.size())
+				throw "Failed reading jpeg";
+
 			for(int i = 0; i < overflows[s]; i += 5) {
 				//I wonder why the position is stored big endian.
 				int p = overs[i]*256*256*256 + overs[i+1]*256*256 + overs[i+2]*256 + overs[i+3];

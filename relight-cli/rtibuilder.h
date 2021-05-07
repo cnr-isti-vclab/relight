@@ -16,6 +16,8 @@
 #include <functional>
 class QDir;
 
+//store pair light, coefficients for each resampled light direction.
+typedef std::vector<std::vector<std::pair<int, float>>> Resamplemap;
 
 class RtiBuilder: public Rti {
 public:
@@ -42,12 +44,16 @@ public:
 	bool saveJSON(QDir &dir, int quality);
 
 
-	void processLine(PixelArray &sample, PixelArray &resample, std::vector<std::vector<uint8_t>> &line,
+	void processLine(int y, PixelArray &sample, PixelArray &resample, std::vector<std::vector<uint8_t>> &line,
 					 std::vector<uchar> &normal, std::vector<uchar> &mean, std::vector<uchar> &median);
 
 protected:
 	//for each resample pos get coeffs from the origina lights.
-	std::vector<std::vector<std::pair<int, float>>> resamplemap;
+	Resamplemap resamplemap;
+	//grid of resamplemaps to be interpolated.
+	int resample_width, resample_height;
+	std::vector<Resamplemap> resamplemaps;  //for per pixel direction light interpolation
+
 	Eigen::MatrixXd A;
 	//arma::Mat<double> A;
 
@@ -59,11 +65,15 @@ protected:
 	//std::vector<Material> materials;
 
 
-	PixelArray resamplePixels(PixelArray &samples);
-	void resamplePixel(Color3f *sample, Color3f *pixel);
+//	PixelArray resamplePixels(PixelArray &samples);
+	void resamplePixel(Color3f *sample, Color3f *pixel, Vector3f pos);
 	Vector3f getNormalThreeLights(std::vector<float> &pri); //use 3 virtual lights at 45 degs.
 
-	void buildResampleMap();
+	void buildResampleMap(std::vector<Vector3f> &lights, std::vector<std::vector<std::pair<int, float> > > &remap);
+	void buildResampleMaps();
+	void remapPixel(Color3f *sample, Color3f *pixel, Resamplemap &resamplemap, float weight);
+
+
 	void pickMaterials(PixelArray &sample);
 	void pickBase(PixelArray &sample);
 

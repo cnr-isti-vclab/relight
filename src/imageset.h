@@ -19,15 +19,20 @@ public:
 	//left, top is pixel [0, 0];
 	int left = 0, top = 0, right = 0, bottom = 0;
 	int current_line = 0;
-	std::vector<Vector3f> lights;
 	QStringList images;
+	std::vector<Vector3f> lights;
+	std::vector<float> intensity;
+	bool light3d = false;
+
 	
 	
 
 	ImageSet(const char *path = nullptr);
 	~ImageSet();
 
+	//light3d if lights are positional instead of directional.
 	static void parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::vector<QString> &filenames, int skip_image = -1);
+	static void parseJSON(QString filename,  std::vector<Vector3f> &lights);
 
 
 	bool initFromFolder(const char *path, bool ignore_filenames = true, int skip_image = -1);
@@ -41,7 +46,7 @@ public:
 
 	void decode(size_t img, unsigned char *buffer);
 	void readLine(PixelArray &line);
-	uint32_t sample(PixelArray &sample, uint32_t ndimensions, std::function<void(Color3f *, Color3f *)> resampler, uint32_t samplingrate);
+	uint32_t sample(PixelArray &sample, uint32_t ndimensions, std::function<void(Color3f *, Color3f *, Vector3f pos)> resampler, uint32_t samplingrate);
 	void restart();
 	void skipToTop();
 
