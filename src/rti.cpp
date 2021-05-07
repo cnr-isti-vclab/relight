@@ -518,6 +518,7 @@ std::vector<float> Rti::lightWeightsSh(float lx, float ly) {
 
 std::vector<float> Rti::lightWeightsH(float lx, float ly) {
 	float lz = sqrt(1.0f - lx*lx - ly*ly);
+	//TODO
 	throw 1;
 }
 

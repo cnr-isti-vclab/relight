@@ -25,6 +25,8 @@
 
 #include <set>
 #include <iostream>
+
+#include <math.h>
 using namespace std;
 
 /* reampling model:
@@ -159,7 +161,14 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 	callback = _callback;
 	if(type == BILINEAR) {
 		ndimensions = resolution*resolution;
-		buildResampleMap();
+
+		if(imageset.light3d) {
+			resample_height = 8;
+			resample_width = 8;
+			resamplemaps.resize(resample_height*resample_width);
+			buildResampleMaps();
+		} else
+			buildResampleMap(lights, resamplemap);
 		
 	} else
 		ndimensions = lights.size();
@@ -173,7 +182,7 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 	
 	//collect a set of samples resampled
 	PixelArray resample;
-	imageset.sample(resample, ndimensions, [&](Color3f *sample, Color3f *resample) { this->resamplePixel(sample, resample); }, samplingram);
+	imageset.sample(resample, ndimensions, [&](Color3f *sample, Color3f *resample, Vector3f pos) { this->resamplePixel(sample, resample, pos); }, samplingram);
 	nsamples = resample.npixels();
 	
 #ifdef DEBUG
@@ -442,7 +451,7 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 		}
 
 		if(callback && !(*callback)("Computing PCA:", 10))
-				throw std::string("Cancelled.");
+			throw std::string("Cancelled.");
 
 		for(uint32_t i = 0; i < nmaterials; i++) {
 			PCA *pca = pcas[i];
@@ -651,6 +660,8 @@ void RtiBuilder::pickBaseHSH(Rti::Type base) {
 			break;
 		case H:
 			lweights = lightWeightsH(light[0], light[1]);
+			break;
+		default:
 			break;
 		}
 		for(uint32_t p = 0; p < nplanes/3; p++)
@@ -1045,8 +1056,7 @@ public:
 	vector<uchar> medians;
 	PixelArray sample;
 	PixelArray resample;
-
-
+	
 	Worker(RtiBuilder &_builder): b(_builder) {
 		uint32_t njpegs = (b.nplanes-1)/3 + 1;
 		line.resize(njpegs);
@@ -1057,11 +1067,12 @@ public:
 		medians.resize(b.width*3);
 		sample.resize(b.width, b.lights.size());
 		resample.resize(b.width, b.ndimensions);
+
 		//setAutodelete(false);
 	}
 
-	void run() {
-		b.processLine(sample, resample, line, normals, means, medians);
+	void run(int y) {
+		b.processLine(y, sample, resample, line, normals, means, medians);
 	}
 };
 
@@ -1307,7 +1318,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			for(uint32_t x = 0; x < width; x++) {
 				if (savenormals)
 					normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], 0, doneworker->normals[x*3+1]));
-					//normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], doneworker->normals[x*3+1], doneworker->normals[x*3+2]));
+				//normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], doneworker->normals[x*3+1], doneworker->normals[x*3+2]));
 				if(savemeans)
 					means.setPixel(x, y- nworkers, qRgb(doneworker->means[x*3], doneworker->means[x*3+1], doneworker->means[x*3+2]));
 				if(savemedians)
@@ -1324,10 +1335,9 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		if(y < height) {
 			Worker *worker = workers[y];
 			assert(worker != nullptr);
-
 			imageset.readLine(worker->sample);
 
-			futures[y] = QtConcurrent::run(&pool, [worker](){worker->run(); });
+			futures[y] = QtConcurrent::run(&pool, [worker, y](){worker->run(y); });
 		}
 
 
@@ -1419,11 +1429,13 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	return total;
 }
 
-void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vector<std::vector<uint8_t>> &line,
+void RtiBuilder::processLine(int y, PixelArray &sample, PixelArray &resample, std::vector<std::vector<uint8_t>> &line,
 							 std::vector<uchar> &normals, std::vector<uchar> &means, std::vector<uchar> &medians) {
 
-	for(uint32_t x = 0; x < width; x++)
-		resamplePixel(sample(x), resample(x));
+	for(uint32_t x = 0; x < width; x++) {
+		Vector3f pos(x, y, 0);
+		resamplePixel(sample(x), resample(x), pos);
+	}
 
 
 	for(uint32_t x = 0; x < width; x++) {
@@ -1542,35 +1554,94 @@ double RtiBuilder::evaluateError(const std::string &output) {
 } */
 
 
-
+/*
 PixelArray RtiBuilder::resamplePixels(PixelArray &sample) {
-	
+
 	PixelArray pixels(nsamples, ndimensions);
 	
 	for(uint32_t i = 0; i < nsamples; i++)
 		resamplePixel(sample(i), pixels(i));
-	
+
 	return pixels;
+}*/
+
+void RtiBuilder::remapPixel(Color3f *sample, Color3f *pixel, Resamplemap &resamplemap, float weight) {
+	if(weight == 0) return;
+	for(uint32_t i = 0; i < ndimensions; i++) {
+		for(auto &w: resamplemap[i]) {
+			pixel[i].r += sample[w.first].r*w.second * weight;
+			pixel[i].g += sample[w.first].g*w.second * weight;
+			pixel[i].b += sample[w.first].b*w.second * weight;
+		}
+	}
 }
 
-void RtiBuilder::resamplePixel(Color3f *sample, Color3f *pixel) {
-	
-	if(type != BILINEAR) {
-		for(uint32_t i = 0; i < ndimensions; i++) {
-			if(colorspace == MYCC)
-				pixel[i] = sample[i].toYcc();
-			else {
-				pixel[i] = sample[i];
-				if(gammaFix) {
-					pixel[i].r = sqrt(pixel[i].r)*sqrt(255.0f);
-					pixel[i].g = sqrt(pixel[i].g)*sqrt(255.0f);
-					pixel[i].b = sqrt(pixel[i].b)*sqrt(255.0f);
+void RtiBuilder::resamplePixel(Color3f *sample, Color3f *pixel, Vector3f pos) { //pos in pixels.
+
+	if(type == BILINEAR) {
+		if(imageset.light3d) {
+			pos[0] = pos[0]/imageset.width;
+			pos[1] = pos[1]/imageset.height;
+
+
+			for(uint32_t i = 0; i < ndimensions; i++)
+				pixel[i].r = pixel[i].g = pixel[i].b = 0.0f;
+
+			//find 4 resamplemaps and coefficients
+			float x, y;
+			float dx = modff(pos[0], &x);
+			float dy = modff(pos[1], &y);
+			Resamplemap &A = resamplemaps[int(x) + int(y)*resample_width];
+			float wA = (1 - dx)*(1 - dy);
+			remapPixel(sample, pixel, A, wA);
+
+
+			Resamplemap &B = resamplemaps[int(x+1) + int(y)*resample_width];
+			float wB = dx*(1 - dy);
+			remapPixel(sample, pixel, B, wB);
+
+			Resamplemap &C = resamplemaps[int(x) + int(y+1)*resample_width];
+			float wC = (1 - dx)*dy;
+			remapPixel(sample, pixel, C, wC);
+
+			Resamplemap &D = resamplemaps[int(x+1) + int(y+1)*resample_width];
+			float wD = dx*dy;
+			remapPixel(sample, pixel, D, wD);
+
+
+			//for each pixel we need to know where it is, and compute a resamplemap (will be SLOWWWW)
+			//TODO 		it would be faster to compute a few resamplemap in a grid(every 100 pixels or so)
+			//		the sample is bilinear interpolation of these key resamplemap
+		} else {
+
+			for(uint32_t i = 0; i < ndimensions; i++) {
+				pixel[i].r = pixel[i].g = pixel[i].b = 0.0f;
+				for(auto &w: resamplemap[i]) {
+					pixel[i].r += sample[w.first].r*w.second;
+					pixel[i].g += sample[w.first].g*w.second;
+					pixel[i].b += sample[w.first].b*w.second;
 				}
 			}
-			
 		}
-		return;
+
+	} else { //NOT BILINEAR
+		for(uint32_t i = 0; i < ndimensions; i++)
+			pixel[i] = sample[i];
 	}
+
+	for(uint32_t i = 0; i < ndimensions; i++) {
+		if(colorspace == MYCC)
+			pixel[i] = pixel[i].toYcc();
+		else {
+			if(gammaFix) {
+				pixel[i].r = sqrt(pixel[i].r)*sqrt(255.0f);
+				pixel[i].g = sqrt(pixel[i].g)*sqrt(255.0f);
+				pixel[i].b = sqrt(pixel[i].b)*sqrt(255.0f);
+			}
+		}
+
+	}
+
 #ifdef LINEAR
 	//RBF interpolation. map a pixel to a sphere pos and interpolate based on euclidean distance
 	arma::Col<double> r(lights.size()*3);
@@ -1585,23 +1656,40 @@ void RtiBuilder::resamplePixel(Color3f *sample, Color3f *pixel) {
 		pixel[i].g = std::max(0.0, std::min(255.0, x[i*3+1]));
 		pixel[i].b = std::max(0.0, std::min(255.0, x[i*3+2]));
 	}
-	
+
 	return;
 #endif
-	for(uint32_t i = 0; i < ndimensions; i++) {
-		pixel[i].r = pixel[i].g = pixel[i].b = 0.0f;
-		for(auto &w: resamplemap[i]) {
-			pixel[i].r += sample[w.first].r*w.second;
-			pixel[i].g += sample[w.first].g*w.second;
-			pixel[i].b += sample[w.first].b*w.second;
+
+}
+void RtiBuilder::buildResampleMaps() {
+	vector<Vector3f> lights = imageset.lights;
+	for(int y = 0; y < resample_height; y++) {
+		for(int x = 0; x < resample_width; x++) {
+			Vector3f pos(
+						x/float(resample_width-1),
+						y/float(resample_height-1),
+						0);
+			pos[0] = (pos[0] - imageset.width/2.0f)/imageset.width;
+			pos[1] = (pos[1] - imageset.height/2.0f)/imageset.width; //SIC: we work in image coords where width determine the unit.
+
+
+			for(size_t i = 0; i < lights.size(); i++) {
+				Vector3f &l = lights[i];
+				l[0] -= pos[0];
+				l[1] -= pos[1];
+			}
+
+			auto &resamplemap = resamplemaps[x + y*resample_width];
+			buildResampleMap(lights, resamplemap);
+
+			//take into account intensity factor due to different distance
+
+
 		}
-		if(colorspace == MYCC)
-			pixel[i] = pixel[i].toYcc();
 	}
 }
 
-
-void RtiBuilder::buildResampleMap() {
+void RtiBuilder::buildResampleMap(std::vector<Vector3f> &lights, std::vector<std::vector<std::pair<int, float>>> &remap) {
 	/* every light is linear combination of 4 nearby points (x)
 	b = w00x00 + w01x01
 	solution is closed form matrix
@@ -1611,7 +1699,7 @@ void RtiBuilder::buildResampleMap() {
 	x = (At * A)^-1*At*b
 	
 	*/
-	
+
 #define LINEAR
 #ifdef LINEAR
 	/* To regularize problem expressed above
@@ -1632,8 +1720,16 @@ void RtiBuilder::buildResampleMap() {
 
 	float radius = 1/(sigma*sigma);
 	Eigen::MatrixXd B = Eigen::MatrixXd::Zero(ndimensions, lights.size());
-	
-	resamplemap.resize(ndimensions);
+
+	vector<Vector3f> directions(lights.size());
+	vector<float> intensities(lights.size());
+	for(size_t i = 0; i < lights.size(); i++) {
+		float n = lights[i].squaredNorm();
+		intensities[i] = 1/n;
+		directions[i] = lights[i]/ sqrt(n);
+	}
+
+	remap.resize(ndimensions);
 	for(uint32_t y = 0; y < resolution; y++) {
 		if(callback) {
 			bool keep_going = (*callback)(std::string("Resampling light directions"), 100*y/resolution);
@@ -1644,13 +1740,13 @@ void RtiBuilder::buildResampleMap() {
 
 		for(uint32_t x = 0; x < resolution; x++) {
 			Vector3f n = fromOcta(x, y, resolution);
-			
+
 			//compute rbf weights
-			auto &weights = resamplemap[x + y*resolution];
-			weights.resize(lights.size());
+			auto &weights = remap[x + y*resolution];
+			weights.resize(directions.size());
 			float totw = 0.0f;
-			for(size_t i = 0; i < lights.size(); i++) {
-				float d2 = (n - lights[i]).squaredNorm();
+			for(size_t i = 0; i < directions.size(); i++) {
+				float d2 = (n - directions[i]).squaredNorm();
 				float w = exp(-radius*d2);
 				weights[i] = std::make_pair(i, w);
 				totw += w;
@@ -1660,7 +1756,7 @@ void RtiBuilder::buildResampleMap() {
 			int count = 0;
 			for(size_t i = 0; i < weights.size(); i++) {
 				float &w = weights[i].second;
-				
+
 				w /= totw;
 				if(w > 0.005) { //might fail for extreme smoothing.
 					weights[count++] =  weights[i];
@@ -1674,13 +1770,13 @@ void RtiBuilder::buildResampleMap() {
 			}
 		}
 	}
-	
-	
+
+
 	//rows           cols
-	A = Eigen::MatrixXd::Zero(lights.size(), ndimensions);
-	//A = arma::Mat<double>(lights.size(), ndimensions, arma::fill::zeros);
-	for(uint32_t l = 0; l < lights.size(); l++) {
-		Vector3f &light = lights[l];
+	A = Eigen::MatrixXd::Zero(directions.size(), ndimensions);
+	//A = arma::Mat<double>(directions.size(), ndimensions, arma::fill::zeros);
+	for(uint32_t l = 0; l < directions.size(); l++) {
+		Vector3f &light = directions[l];
 		float lx = light[0];
 		float ly = light[1];
 		float lz = sqrt(1 - lx*lx - ly*ly);
@@ -1688,36 +1784,37 @@ void RtiBuilder::buildResampleMap() {
 		//rotate 45 deg.
 		float x = (lx + ly)/s;
 		float y = (ly - lx)/s;
-		
+
 		x = (x + 1.0f)/2.0f;
 		y = (y + 1.0f)/2.0f;
+
 		x = x*(resolution - 1.0f);
 		y = y*(resolution - 1.0f);
-		
+
 		int sx = std::min((int)resolution-2, std::max(0, (int)floor(x)));
 		int sy = std::min((int)resolution-2, std::max(0, (int)floor(y)));
 		float dx = x - (float)sx;
 		float dy = y - (float)sy;
-		
+
 		float s00 = (1 - dx)*(1 - dy);
 		float s10 =      dx *(1 - dy);
 		float s01 = (1 - dx)* dy;
 		float s11 =      dx * dy;
-		
+
 		A(l, ((sx+0) + (sy+0)*resolution)) = s00;
 		A(l, ((sx+1) + (sy+0)*resolution)) = s10;
 		A(l, ((sx+0) + (sy+1)*resolution)) = s01;
 		A(l, ((sx+1) + (sy+1)*resolution)) = s11;
-		
+
 	}
-	
+
 	//	 x = (B + (AtA + kI)^-1 * At*(I - AB))*b]
 	//  original regularization coefficient was 0.1
 
 	Eigen::MatrixXd I = Eigen::MatrixXd::Identity(ndimensions, ndimensions);
 
 	Eigen::MatrixXd iAtA = (A.transpose()*A  + regularization*I).inverse();
-	Eigen::MatrixXd tI = Eigen::MatrixXd::Identity(lights.size(), lights.size());
+	Eigen::MatrixXd tI = Eigen::MatrixXd::Identity(directions.size(), directions.size());
 	Eigen::MatrixXd iA = B + iAtA*(A.transpose() * (tI - A*B));
 
 	/*arma::Mat<double> I(ndimensions, ndimensions, arma::fill::eye);
@@ -1728,33 +1825,39 @@ void RtiBuilder::buildResampleMap() {
 	arma::Mat<double> tI(lights.size(), lights.size(), arma::fill::eye);
 	
 	arma::Mat<double> iA = B + iAtA *(At * (tI - A*B)); */
-	
-	
-	resamplemap.clear();
-	resamplemap.resize(ndimensions);
+
+
+	remap.clear();
+	remap.resize(ndimensions);
 	//rows
 	for(uint32_t i = 0; i < ndimensions; i++) {
-		auto &weights = resamplemap[i];
-		
+		auto &weights = remap[i];
+
 		//cols
-		for(uint32_t c = 0; c < lights.size(); c++) {
+		for(uint32_t c = 0; c < directions.size(); c++) {
 			double w = iA(i, c);
-			if(fabs(w) > 0.001)
+			if(fabs(w) > 0.05)
 				weights.push_back(std::make_pair(c, w));
-			
+
+		}
+	}
+
+	for(uint32_t i = 0; i < ndimensions; i++) {
+		for(auto &w: remap[i]) {
+			w.second *= intensities[w.first];
 		}
 	}
 	return;
-	
+
 #else
 	float radius = 64; //resolution*resolution*2;
-	resamplemap.resize(resolution*resolution);
+	remap.resize(resolution*resolution);
 	for(int y = 0; y < resolution; y++) {
 		for(int x = 0; x < resolution; x++) {
 			Vector3f n = fromOcta(x, y, resolution);
-			
+
 			//compute rbf weights
-			auto &weights = resamplemap[x + y*resolution];
+			auto &weights = remap[x + y*resolution];
 			weights.resize(lights.size());
 			float totw = 0.0f;
 			for(size_t i = 0; i < lights.size(); i++) {
@@ -1768,7 +1871,7 @@ void RtiBuilder::buildResampleMap() {
 			int count = 0;
 			for(size_t i = 0; i < weights.size(); i++) {
 				float &w = weights[i].second;
-				
+
 				w /= totw;
 				if(w > 0.005) { //might fail for extreme smoothing.
 					weights[count++] =  weights[i];
@@ -1781,23 +1884,23 @@ void RtiBuilder::buildResampleMap() {
 		}
 	}
 #endif
-	
+
 }
 
 std::vector<float> RtiBuilder::toPrincipal(uint32_t m, float *v) {
 	MaterialBuilder &mat = materialbuilders[m];
 	uint32_t dim = ndimensions*3;
-	
+
 	vector<float> res(nplanes, 0.0f);
-	
+
 	if(colorspace == LRGB) {
-		
+
 		for(size_t p = 0; p < nplanes; p++) {
 			for(size_t k = 0; k < dim; k++) {
 				res[p] += v[k] * mat.proj[k + p*dim];
 			}
 		}
-		
+
 		//get average luminance
 		vector<double> luma(ndimensions);
 		double max = 0.0;
@@ -1808,7 +1911,7 @@ std::vector<float> RtiBuilder::toPrincipal(uint32_t m, float *v) {
 		if(max > 0)
 			for(double &l: luma)
 				l /= max;
-		
+
 		double r = 0.0;
 		double g = 0.0;
 		double b = 0.0;
@@ -1822,21 +1925,21 @@ std::vector<float> RtiBuilder::toPrincipal(uint32_t m, float *v) {
 		res[0] = std::max(0.0, std::min(255.0, 255.0*r/y));
 		res[1] = std::max(0.0, std::min(255.0, 255.0*g/y));
 		res[2] = std::max(0.0, std::min(255.0, 255.0*b/y));
-		
+
 		//		double totluma = (res[0]+ res[1] + res[2])/(3.0 * 255.0);
-		
+
 		double totluma = (0.2125*res[0]+ 0.7154*res[1] + 0.0721*res[2])/255.0;
-		
-		
+
+
 		for(uint32_t p = 3; p < nplanes; p++)
 			res[p] /= totluma;
-		
+
 	} else { //RGB, YCC
 		vector<float> col(dim);
-		
+
 		for(size_t k = 0; k < dim; k++)
 			col[k] = v[k] - mat.mean[k];
-		
+
 		for(size_t p = 0; p < nplanes; p++) {
 			for(size_t k = 0; k < dim; k++) {
 				res[p] += col[k] * mat.proj[k + p*dim];

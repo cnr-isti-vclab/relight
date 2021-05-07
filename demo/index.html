@@ -2,7 +2,7 @@
 <html>
 
 <head>
-	<title>OpenLime der</title>
+    <title>OpenLime</title>
 
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta charset="UTF-8" />
@@ -60,18 +60,21 @@ async function autodetect() {
 }
 
 async function autodetectNormals(layout) {
-	if(layout == 'tarzoom')
-	let response = await fetch('normals.tzi');
-	if(response.status == 200)
-		return true;
-
-	response = await fetch('normals.dzi');
-	if(response.status == 200)
-		return true;
-
-	response = await fetch('normals.jpg');
-	if(response.status == 200)
-		return true;
+	if(layout == 'tarzoom') {
+		let response = await fetch('normals.tzi');
+		if(response.status == 200)
+			return true;
+	}
+	if(layout == 'deepzoom') {
+		let response = await fetch('normals.dzi');
+		if(response.status == 200)
+			return true;
+	}
+	if(layout == 'image') {
+		let response = await fetch('normals.jpg');
+		if(response.status == 200)
+			return true;
+	}
 
 	return false;
 }
@@ -80,7 +83,7 @@ async function autodetectNormals(layout) {
 async function init() {
 	let layout = await autodetect();
 	let normals = await autodetectNormals(layout);
-	let lime = new OpenLIME.OpenLIME('#openlime', { background:'black' });
+	var lime = new OpenLIME.OpenLIME('#openlime', { background:'black' });
 
 
 	let layer = new OpenLIME.Layer({ 
@@ -96,6 +99,7 @@ async function init() {
 	ui.actions.light.active = true;
 	ui.actions.layers.display = true;
 	lime.camera.maxFixedZoom = 1;
+	window.lime = lime;
 }
 
 init();

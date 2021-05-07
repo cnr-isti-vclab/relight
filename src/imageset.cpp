@@ -67,7 +67,6 @@ void ImageSet::parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::
 		lights.push_back(light);
 		filenames.push_back(filename);
 	}
-
 }
 
 bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip_image) {
@@ -88,6 +87,11 @@ bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip
 	try {
 		std::vector<QString> filenames;
 		parseLP(sphere_path, lights, filenames, skip_image);
+		if(light3d) {
+			for(Vector3f &l: lights)
+			intensity.push_back(1/l.squaredNorm());
+		} else
+			intensity.resize(lights.size(), 1.0f);
 
 		if(ignore_filenames) {
 			if(images.size() != (int)filenames.size()) {
@@ -278,9 +282,9 @@ void ImageSet::readLine(PixelArray &pixels) {
 	for(size_t i = 0; i < decoders.size(); i++) {
 		decoders[i]->readRows(1, row.data());
 		for(int x = left; x < right; x++) {
-			pixels(x - left, i).r = row[x*3 + 0];
-			pixels(x - left, i).g = row[x*3 + 1];
-			pixels(x - left, i).b = row[x*3 + 2];
+			pixels(x - left, i).r = row[x*3 + 0]*intensity[i];
+			pixels(x - left, i).g = row[x*3 + 1]*intensity[i];
+			pixels(x - left, i).b = row[x*3 + 2]*intensity[i];
 		}
 	}
 	current_line++;
@@ -300,7 +304,7 @@ public:
 	}
 };
 
-uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, function<void(Color3f *sample, Color3f *resample)> resampler, uint32_t samplingram) {
+uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, function<void(Color3f *sample, Color3f *resample, Vector3f pos)> resampler, uint32_t samplingram) {
 	if(current_line == 0)
 		skipToTop();
 
@@ -323,6 +327,7 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, function<v
 		if(callback && !(*callback)(std::string("Sampling images:"), 100*(y-top)/(height-1)))
 			throw std::string("Cancelled");
 
+		//read one row per image at a time
 		auto &selection = sampler.result(samplexrow, width);
 		for(uint32_t i = 0; i < decoders.size(); i++) {
 			JpegDecoder *dec = decoders[i];
@@ -333,12 +338,16 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, function<v
 				pixel.r = row[(k+left)*3 + 0];
 				pixel.g = row[(k+left)*3 + 1];
 				pixel.b = row[(k+left)*3 + 2];
-
 				x++;
 			}
 		}
-		for(uint32_t x = 0; x < samplexrow; x++)
-			resampler(sample(x), resample(offset + x));
+
+		uint32_t x = 0;
+		for(int k: selection) {
+			Vector3f pos(k+left, y, 0);
+			resampler(sample(x), resample(offset + x), pos);
+			x++;
+		}
 
 		offset += samplexrow;
 	}
