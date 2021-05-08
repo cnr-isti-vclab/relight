@@ -7,10 +7,6 @@
 #include "../src/imageset.h"
 #include "../src/material.h"
 
-#ifdef USE_MATERIALS
-#include <flann/flann.hpp>
-#endif
-
 #include <Eigen/Core>
 
 #include <functional>
@@ -26,7 +22,8 @@ public:
 	uint32_t nsamples = 1<<16; //TODO change to rate
 	float rangescale = 1.5;
 	int skip_image = -1;
-	float rangecompress = 0.0f; //betwee 0 and 1, where 1 is maximally compressed
+	//TODO: might want to use an euristic to get the best compromise to miniminze jpeg compression artifacts.
+	float rangecompress = 0.5f; //betwee 0 and 1, where 0 is maximally compressed
 	bool savenormals = false;
 	bool savemeans = false;
 	bool savemedians = false;
@@ -50,22 +47,15 @@ public:
 protected:
 	//for each resample pos get coeffs from the origina lights.
 	Resamplemap resamplemap;
+
 	//grid of resamplemaps to be interpolated.
 	int resample_width, resample_height;
 	std::vector<Resamplemap> resamplemaps;  //for per pixel direction light interpolation
 
 	Eigen::MatrixXd A;
-	//arma::Mat<double> A;
 
-#ifdef USE_MATERIALS
-	flann::Index<flann::L2<float>> *materialindex;
-#endif
+	MaterialBuilder materialbuilder;
 
-	std::vector<MaterialBuilder> materialbuilders;
-	//std::vector<Material> materials;
-
-
-//	PixelArray resamplePixels(PixelArray &samples);
 	void resamplePixel(Color3f *sample, Color3f *pixel, Vector3f pos);
 	Vector3f getNormalThreeLights(std::vector<float> &pri); //use 3 virtual lights at 45 degs.
 
@@ -74,15 +64,14 @@ protected:
 	void remapPixel(Color3f *sample, Color3f *pixel, Resamplemap &resamplemap, float weight);
 
 
-	void pickMaterials(PixelArray &sample);
 	void pickBase(PixelArray &sample);
 
-	void estimateError(PixelArray &sample, std::vector<size_t> &indices, std::vector<float> &weights);
+	void estimateError(PixelArray &sample, std::vector<float> &weights);
 	void getPixelMaterial(PixelArray &pixels, std::vector<size_t> &indices);
 	void getPixelBestMaterial(PixelArray &pixels, std::vector<size_t> &indices);
 
-	void pickBasePCA(PixelArray &sample, std::vector<size_t> &indices);
-	void pickBasePTM();
+	void pickBasePCA(PixelArray &sample);
+	void pickBasePTM(std::vector<Vector3f> &lights);
 	void pickBaseHSH(Type base = HSH);
 
 	
@@ -92,7 +81,7 @@ protected:
 	void savePixel(Color3f *p, int side, const QString &file);
 	void debugMaterials();
 
-	std::vector<float> toPrincipal(uint32_t m, float *v);
+	std::vector<float> toPrincipal(float *v);
 };
 
 

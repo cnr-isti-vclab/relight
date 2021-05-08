@@ -427,7 +427,7 @@ int main(int argc, char *argv[]) {
             totmse = sqrt(totmse);
 
             cout << output << "," << types[builder.type] << "," << colorspaces[builder.colorspace] << ","
-                 << builder.nplanes << ","<< builder.nmaterials << "," << builder.yccplanes[0] << ","
+				 << builder.nplanes << "," << builder.yccplanes[0] << ","
                  << size << "," << totpsnr << "," << totmse << endl;
 
 
@@ -453,7 +453,7 @@ int main(int argc, char *argv[]) {
         float r = sqrt(light[0]*light[0] + light[1]*light[1]);
         float azimut = asin(r);
         cout << output << "," << types[builder.type] << "," << colorspaces[builder.colorspace] << ","
-             << builder.nplanes << ","<< builder.nmaterials << "," << builder.yccplanes[0] << ","
+			 << builder.nplanes << "," << builder.yccplanes[0] << ","
              << size << "," << psnr << "," << mse << "," << azimut << "," << builder.sigma << "," << builder.regularization << "," << light[0] << "," << light[1] << endl;
     }
 

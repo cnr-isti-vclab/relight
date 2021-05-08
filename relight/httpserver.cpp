@@ -36,6 +36,7 @@ void HttpServer::start(QString folder) {
 	stop();
 
 	//server = new Server;
+	server->remove_mount_point("/");
 	auto ret = server->set_mount_point("/", folder.toStdString().c_str());
 	if(!ret)
 		throw QString("Could not mount folder " + folder + " for http server.");

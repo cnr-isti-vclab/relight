@@ -23,17 +23,6 @@ public:
 		float dequantize(uint8_t value) {
 			return 255.0f*((value/255.0f) - bias)*scale;
 		}
-
-
-/*
-		uint8_t quantize(double value) {
-			int v = 127 + (int)255*(value - bias)/scale;
-			return std::max(0, std::min(255, v));
-		}
-		float dequantize(uint8_t value) {
-			return ((value - (int)127)/255.0)*scale + bias;
-		}
-*/
 	};
 
 	std::vector<Plane> planes;
