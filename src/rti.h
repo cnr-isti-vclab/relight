@@ -33,7 +33,6 @@ public:
 	uint32_t width = 0;
 	uint32_t height = 0;
 	uint32_t nplanes = 9;
-	uint32_t nmaterials = 1;
 	uint32_t yccplanes[3] = {0, 0, 0}; //for ycc format (nplanes- yplanes)/2 = cplanes
 	float sigma = 0.125; //rbf interpolation parameter default for ~100 images
 	float regularization = 0.1; //bilinear regularization coeff.
@@ -52,8 +51,7 @@ public:
 	std::vector<float> bias;
 	std::vector<float> range; // material scale (no need for bias, it is zero centered)
 
-	std::vector<Material> materials;
-	std::vector<uint8_t> material; //material index for each pixel
+	Material material;
 	std::vector<float> basis; //for each material, first mean then each plane
 								//rbf ordered following lights
 								//bilinear as a matrix x + y*width
