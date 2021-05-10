@@ -94,7 +94,7 @@ bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip
 			intensity.resize(lights.size(), 1.0f);
 
 		if(ignore_filenames) {
-			if(images.size() != (int)filenames.size()) {
+			if(images.size() != int(filenames.size())) {
 				QString error = QString("Lp number of lights (%1) different from the number of images found (%2)").arg(filenames.size(), images.size());
 				throw error;
 			}
@@ -304,7 +304,7 @@ public:
 	}
 };
 
-uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, function<void(Color3f *sample, Color3f *resample, Vector3f pos)> resampler, uint32_t samplingram) {
+uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::function<void(Color3f *, Color3f *, int, int)> resampler, uint32_t samplingram) {
 	if(current_line == 0)
 		skipToTop();
 
@@ -344,8 +344,7 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, function<v
 
 		uint32_t x = 0;
 		for(int k: selection) {
-			Vector3f pos(k+left, y, 0);
-			resampler(sample(x), resample(offset + x), pos);
+			resampler(sample(x), resample(offset + x), k + left, y);
 			x++;
 		}
 
