@@ -46,7 +46,7 @@ public:
 
 	void decode(size_t img, unsigned char *buffer);
 	void readLine(PixelArray &line);
-	uint32_t sample(PixelArray &sample, uint32_t ndimensions, std::function<void(Color3f *, Color3f *, Vector3f pos)> resampler, uint32_t samplingrate);
+	uint32_t sample(PixelArray &sample, uint32_t ndimensions, std::function<void(Color3f *, Color3f *, int, int)> resampler, uint32_t samplingrate);
 	void restart();
 	void skipToTop();
 

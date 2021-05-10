@@ -45,26 +45,36 @@ public:
 					 std::vector<uchar> &normal, std::vector<uchar> &mean, std::vector<uchar> &median);
 
 protected:
+	MaterialBuilder materialbuilder;
+
 	//for each resample pos get coeffs from the origina lights.
 	Resamplemap resamplemap;
 
 	//grid of resamplemaps to be interpolated.
 	int resample_width, resample_height;
 	std::vector<Resamplemap> resamplemaps;  //for per pixel direction light interpolation
+	std::vector<MaterialBuilder> materialbuilders;
 
-	Eigen::MatrixXd A;
 
-	MaterialBuilder materialbuilder;
+	//return position in 3d coords (0, 0, 0 is the center of the image, x = 1 is on the right border, top is (height/width).
+	Vector3f pixelTo3dCoords(int x, int y);
 
-	void resamplePixel(Color3f *sample, Color3f *pixel, Vector3f pos);
-	Vector3f getNormalThreeLights(std::vector<float> &pri); //use 3 virtual lights at 45 degs.
+	//TODO this should go inimageset!
+	//compute the 3d lights relative to the pixel x, y
+	std::vector<Vector3f> relativeLights(int x, int y);
+
+	void resamplePixel(Color3f *sample, Color3f *pixel, int x, int y);
 
 	void buildResampleMap(std::vector<Vector3f> &lights, std::vector<std::vector<std::pair<int, float> > > &remap);
 	void buildResampleMaps();
 	void remapPixel(Color3f *sample, Color3f *pixel, Resamplemap &resamplemap, float weight);
 
 
-	void pickBase(PixelArray &sample);
+
+	void pickBase(PixelArray &sample, std::vector<Vector3f> &lights);
+	//use for 3d lights
+	void pickBases(PixelArray &sample);
+
 
 	void estimateError(PixelArray &sample, std::vector<float> &weights);
 	void getPixelMaterial(PixelArray &pixels, std::vector<size_t> &indices);
@@ -72,16 +82,19 @@ protected:
 
 	void pickBasePCA(PixelArray &sample);
 	void pickBasePTM(std::vector<Vector3f> &lights);
-	void pickBaseHSH(Type base = HSH);
+	void pickBaseHSH(std::vector<Vector3f> &lights, Type base = HSH);
 
-	
+	Vector3f getNormalThreeLights(std::vector<float> &pri); //use 3 virtual lights at 45 degs.
+
 //DEBUG
 	
-	void saveLightPixel(Color3f *p, int side, const QString &file);
-	void savePixel(Color3f *p, int side, const QString &file);
+	//void saveLightPixel(Color3f *p, int side, const QString &file);
+	//void savePixel(Color3f *p, int side, const QString &file);
 	void debugMaterials();
 
-	std::vector<float> toPrincipal(float *v);
+	std::vector<float> toPrincipal(float *v, MaterialBuilder &materialbuilder);
+	std::vector<float> toPrincipal(float *v, int x, int y);
+
 };
 
 

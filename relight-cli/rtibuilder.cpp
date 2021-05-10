@@ -64,7 +64,7 @@ static Vector3f fromOcta(int x, int y, int resolution) {
 	Vector3f n(X, Y, 1.0f - fabs(X) -fabs(Y));
 	if(n[2] < 0) //approx error.
 		n[2] = 0;
-	n = n/n.norm();
+	n = n/float(n.norm());
 	return n;
 }
 RtiBuilder::RtiBuilder() {}
@@ -110,7 +110,7 @@ bool RtiBuilder::initFromProject(const std::string &filename, std::function<bool
 	return init(_callback);
 }
 
-
+/*
 void RtiBuilder::saveLightPixel(Color3f *p, int side, const QString &file) {
 	QImage img(side, side, QImage::Format_RGB32);
 	img.fill(qRgb(0, 0, 0));
@@ -134,6 +134,7 @@ void RtiBuilder::savePixel(Color3f *p, int side, const QString &file) {
 	img = img.scaled(side, side, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 	img.save(file);
 }
+*/
 
 bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_callback) {
 	if((type == PTM || type == HSH || type == SH || type == H) && colorspace == MRGB) {
@@ -158,9 +159,9 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 		} else
 			buildResampleMap(lights, resamplemap);
 		
-	} else
+	} else {
 		ndimensions = lights.size();
-	
+	}
 	if(samplingram == 0) {
 		cerr << "Sampling RAM must be > 0\n";
 		return false;
@@ -170,25 +171,18 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 	
 	//collect a set of samples resampled
 	PixelArray resample;
-	imageset.sample(resample, ndimensions, [&](Color3f *sample, Color3f *resample, Vector3f pos) { this->resamplePixel(sample, resample, pos); }, samplingram);
+	imageset.sample(resample, ndimensions, [&](Color3f *sample, Color3f *resample, int x, int y) { this->resamplePixel(sample, resample, x, y); }, samplingram);
 	nsamples = resample.npixels();
 	
-#ifdef DEBUG
-	if(resolution > 0) {
-		saveLightPixel(sample(0), resolution*4, "sample0.png");
-		saveLightPixel(sample(1), resolution*4, "sample1.png");
-		saveLightPixel(sample(2), resolution*4, "sample2.png");
-		
-		//resample samples to base resolution
-		
-		savePixel(resample(0), resolution*4, "sample0r.png");
-		savePixel(resample(1), resolution*4, "sample1r.png");
-		savePixel(resample(2), resolution*4, "sample2r.png");
-	}
-#endif
-	
 	try {
-		pickBase(resample);
+		if(imageset.light3d) {
+			resample_height = 8;
+			resample_width = 8;
+			materialbuilders.resize(resample_width * resample_height);
+			pickBases(resample);
+		}
+		pickBase(resample, lights);
+
 	} catch(std::exception e) {
 		error = "Could not create a base.";
 		return false;
@@ -232,9 +226,9 @@ void RtiBuilder::pickBasePCA(PixelArray &sample) {
 		for(uint32_t i = 0; i < nsamples; i++) {
 			for(uint32_t k = 0; k < sample.components(); k ++) {
 				Color3f &c = sample(i, k);
-				means[k*3 + 0] += c.r;
-				means[k*3 + 1] += c.g;
-				means[k*3 + 2] += c.b;
+				means[k*3 + 0] += double(c.r);
+				means[k*3 + 1] += double(c.g);
+				means[k*3 + 2] += double(c.b);
 			}
 		}
 		for(double &d: means)
@@ -248,9 +242,9 @@ void RtiBuilder::pickBasePCA(PixelArray &sample) {
 			
 			for(uint32_t k = 0; k < sample.components(); k ++) {
 				Color3f c = sample(i, k);
-				record[k*3 + 0] = (c.r - means[k*3+0]);
-				record[k*3 + 1] = (c.g - means[k*3+1]);
-				record[k*3 + 2] = (c.b - means[k*3+2]);
+				record[k*3 + 0] = (double(c.r) - means[k*3+0]);
+				record[k*3 + 1] = (double(c.g) - means[k*3+1]);
+				record[k*3 + 2] = (double(c.b) - means[k*3+2]);
 			}
 			pca.setRecord(i, record);
 		}
@@ -260,18 +254,18 @@ void RtiBuilder::pickBasePCA(PixelArray &sample) {
 
 		pca.solve(nplanes);
 
-		MaterialBuilder &mat =materialbuilder;
+		MaterialBuilder &mat = materialbuilder;
 		mat.mean.resize(dim, 0.0f);
 
 		//ensure the mean is within range (might be slightly negative due to resampling bilinear
 		for(uint32_t k = 0; k < dim; k++)
-			mat.mean[k] = std::max(0.0, std::min(255.0, means[k]));
+			mat.mean[k] = std::max(0.0f, std::min(255.0f, float(means[k])));
 
 		mat.proj.resize(nplanes*dim);
 
 		for(uint32_t p = 0; p < nplanes; p++) {
 			for(uint32_t k = 0; k < dim; k++)
-				mat.proj[k + p*dim] = pca.proj()(k, p);
+				mat.proj[k + p*dim] = float(pca.proj()(k, p));
 		}
 
 	} else { //MYCC!
@@ -290,7 +284,7 @@ void RtiBuilder::pickBasePCA(PixelArray &sample) {
 			for(uint32_t i = 0; i < nsamples; i++) {
 				for(uint32_t k = 0; k < sample.components(); k ++) {
 					Color3f c = sample(i, k);
-					means[k] += c[component];
+					means[k] += double(c[component]);
 				}
 			}
 			for(double &d: means)
@@ -364,11 +358,11 @@ void RtiBuilder::pickBasePTM(std::vector<Vector3f> &lights) {
 	for(uint32_t l = 0; l < lights.size(); l++) {
 		Vector3f &light = lights[l];
 		A(l, 0) = 1.0;
-		A(l, 1) = (double)light[0];
-		A(l, 2) = (double)light[1];
-		A(l, 3) = (double)light[0]*light[0];
-		A(l, 4) = (double)light[0]*light[1];
-		A(l, 5) = (double)light[1]*light[1];
+		A(l, 1) = double(light[0]);
+		A(l, 2) = double(light[1]);
+		A(l, 3) = double(light[0]*light[0]);
+		A(l, 4) = double(light[0]*light[1]);
+		A(l, 5) = double(light[1]*light[1]);
 	}
 
 	Eigen::MatrixXd iA = (A.transpose()*A).inverse()*A.transpose();
@@ -384,11 +378,11 @@ void RtiBuilder::pickBasePTM(std::vector<Vector3f> &lights) {
 			for(uint32_t k = 0; k < lights.size(); k++) {
 				uint32_t off = k*3 + p*dim;
 				if(p >= 3) {
-					proj[off+0] = 0.2125*iA(p-3, k);
-					proj[off+1] = 0.7154*iA(p-3, k);
-					proj[off+2] = 0.0721*iA(p-3, k);
+					proj[off+0] = float(0.2125*iA(p-3, k));
+					proj[off+1] = float(0.7154*iA(p-3, k));
+					proj[off+2] = float(0.0721*iA(p-3, k));
 				} else {
-					proj[off + p] = 1.0/lights.size();
+					proj[off + p] = 1.0f/lights.size();
 				}
 			}
 		}
@@ -400,13 +394,13 @@ void RtiBuilder::pickBasePTM(std::vector<Vector3f> &lights) {
 		proj.resize(nplanes*dim, 0.0);
 		for(uint32_t p = 0; p < nplanes; p += 3) {
 			for(uint32_t k = 0; k < lights.size(); k ++) {
-				proj[k*3+0 + (p+0)*dim] = proj[k*3+1 + (p+1)*dim] = proj[k*3+2 + (p+2)*dim] = iA(p/3, k);
+				proj[k*3+0 + (p+0)*dim] = proj[k*3+1 + (p+1)*dim] = proj[k*3+2 + (p+2)*dim] = float(iA(p/3, k));
 			}
 		}
 	}
 }
 
-void RtiBuilder::pickBaseHSH(Rti::Type base) {
+void RtiBuilder::pickBaseHSH(std::vector<Vector3f> &lights, Rti::Type base) {
 	uint32_t dim = ndimensions*3;
 	MaterialBuilder &mat = materialbuilder;
 	mat.mean.resize(dim, 0.0);
@@ -430,7 +424,7 @@ void RtiBuilder::pickBaseHSH(Rti::Type base) {
 			break;
 		}
 		for(uint32_t p = 0; p < nplanes/3; p++)
-			A(l, p) = (double)lweights[p];
+			A(l, p) = double(lweights[p]);
 	}
 	Eigen::MatrixXd iA = (A.transpose()*A).inverse()*A.transpose();
 
@@ -445,15 +439,33 @@ void RtiBuilder::pickBaseHSH(Rti::Type base) {
 	}
 }
 
-void RtiBuilder::pickBase(PixelArray &sample) {
+void RtiBuilder::pickBases(PixelArray &sample) {
+	for(int y = 0; y < resample_height; y++) {
+		for(int x = 0; x < resample_width; x++) {
 
+			auto &resamplemap = resamplemaps[x + y*resample_width];
+			int pixel_x = imageset.width*x/resample_width;
+			int pixel_y = imageset.height*x/resample_height;
+
+			auto relights = relativeLights(pixel_x, pixel_y);
+			buildResampleMap(relights, resamplemap);
+			//take into account intensity factor due to different distance
+		}
+	}
+
+}
+
+void RtiBuilder::pickBase(PixelArray &sample, std::vector<Vector3f> &lights) {
+
+	//TODO PTM and HSH need only 1 pass to compute max and min, do not need to read tge samples in an array, can be done on the fly.
+	//RBF and BILINEAR instead need 2 passes: 1 for the PCA and the second for the min/max.
 	switch(type) {
 	case RBF:
 	case BILINEAR: pickBasePCA(sample); break;
 	case PTM:      pickBasePTM(lights); break;
 	case HSH:
 	case SH:
-	case H:        pickBaseHSH(); break;
+	case H:        pickBaseHSH(lights, type); break;
 	default: cerr << "Unknown basis" << endl; exit(0);
 	}
 	
@@ -477,10 +489,11 @@ void RtiBuilder::pickBase(PixelArray &sample) {
 	mat.planes.clear();
 	mat.planes.resize(nplanes);
 
+	//TODO: range is need only for MRGB and MYCC
 	for(uint32_t p = 0; p < nplanes; p++) {
 		Material::Plane &plane = mat.planes[p];
 		for(uint32_t k = 0; k < dim; k++)
-			plane.range = std::max(plane.range, (float)fabs(c[k + p*dim]));
+			plane.range = std::max(plane.range, fabs(c[k + p*dim]));
 	}
 	
 	if(callback && !(*callback)("Coefficients quantization:", 0))
@@ -491,7 +504,13 @@ void RtiBuilder::pickBase(PixelArray &sample) {
 		if(callback && (i % 8000) == 0)
 			if(!(*callback)("Coefficients quantization:", 100*i/sample.npixels()))
 				throw std::string("Cancelled.");
-		vector<float> principal = toPrincipal((float *)sample(i));
+		//TODO should interpolate instead!
+		//TODO for rbf and bilinear we don't interpolate the grid (rbf can't bilinear resemple the lights)
+		vector<float> principal;
+		if(type == RBF || type == BILINEAR)
+			principal = toPrincipal((float *)sample(i), materialbuilder);
+		else
+			toPrincipal((float *)sample(i), 0, 0);
 		
 		Material &mat = material;
 		//find max and min of coefficients
@@ -541,7 +560,7 @@ void RtiBuilder::estimateError(PixelArray &sample, std::vector<float> &weights) 
 		MaterialBuilder &matb = materialbuilder;
 		Material &mat = material;
 		
-		vector<float> principal = toPrincipal((float *)sample(i));
+		vector<float> principal = toPrincipal((float *)sample(i), materialbuilder);
 		for(size_t p = 0; p < principal.size(); p++) {
 			Material::Plane &plane = mat.planes[p];
 			principal[p] = plane.quantize(principal[p]);
@@ -1122,14 +1141,12 @@ size_t RtiBuilder::save(const string &output, int quality) {
 void RtiBuilder::processLine(int y, PixelArray &sample, PixelArray &resample, std::vector<std::vector<uint8_t>> &line,
 							 std::vector<uchar> &normals, std::vector<uchar> &means, std::vector<uchar> &medians) {
 
-	for(uint32_t x = 0; x < width; x++) {
-		Vector3f pos(x, y, 0);
-		resamplePixel(sample(x), resample(x), pos);
-	}
+	for(uint32_t x = 0; x < width; x++)
+		resamplePixel(sample(x), resample(x), x + imageset.left, y + imageset.top);
 
 
 	for(uint32_t x = 0; x < width; x++) {
-		vector<float> pri = toPrincipal((float *)(resample(x)));
+		vector<float> pri = toPrincipal((float *)(resample(x)), x + imageset.left, y + imageset.top);
 
 		if (savenormals) {
 			Vector3f n = getNormalThreeLights(pri);
@@ -1264,35 +1281,34 @@ void RtiBuilder::remapPixel(Color3f *sample, Color3f *pixel, Resamplemap &resamp
 	}
 }
 
-void RtiBuilder::resamplePixel(Color3f *sample, Color3f *pixel, Vector3f pos) { //pos in pixels.
-
+void RtiBuilder::resamplePixel(Color3f *sample, Color3f *pixel, int x, int y) { //pos in pixels.
 	if(type == BILINEAR) {
 		if(imageset.light3d) {
-			pos[0] = pos[0]/imageset.width;
-			pos[1] = pos[1]/imageset.height;
-
+			//TODO move this somewhere else
+			float X = (resample_width-1)*x/float(imageset.image_width);
+			float Y = (resample_height-1)*y/float(imageset.image_height);
 
 			for(uint32_t i = 0; i < ndimensions; i++)
 				pixel[i].r = pixel[i].g = pixel[i].b = 0.0f;
 
 			//find 4 resamplemaps and coefficients
-			float x, y;
-			float dx = modff(pos[0], &x);
-			float dy = modff(pos[1], &y);
-			Resamplemap &A = resamplemaps[int(x) + int(y)*resample_width];
+			float ix, iy;
+			float dx = modff(X, &ix);
+			float dy = modff(Y, &iy);
+			Resamplemap &A = resamplemaps[int(ix) + int(iy)*resample_width];
 			float wA = (1 - dx)*(1 - dy);
 			remapPixel(sample, pixel, A, wA);
 
 
-			Resamplemap &B = resamplemaps[int(x+1) + int(y)*resample_width];
+			Resamplemap &B = resamplemaps[int(ix+1) + int(iy)*resample_width];
 			float wB = dx*(1 - dy);
 			remapPixel(sample, pixel, B, wB);
 
-			Resamplemap &C = resamplemaps[int(x) + int(y+1)*resample_width];
+			Resamplemap &C = resamplemaps[int(ix) + int(iy+1)*resample_width];
 			float wC = (1 - dx)*dy;
 			remapPixel(sample, pixel, C, wC);
 
-			Resamplemap &D = resamplemaps[int(x+1) + int(y+1)*resample_width];
+			Resamplemap &D = resamplemaps[int(ix+1) + int(iy+1)*resample_width];
 			float wD = dx*dy;
 			remapPixel(sample, pixel, D, wD);
 
@@ -1349,30 +1365,39 @@ void RtiBuilder::resamplePixel(Color3f *sample, Color3f *pixel, Vector3f pos) { 
 #endif
 
 }
+
+Vector3f RtiBuilder::pixelTo3dCoords(int x, int y) {
+	Vector3f pos(
+				x/float(resample_width-1),
+				y/float(resample_height-1),
+				0);
+	pos[0] = (pos[0] - imageset.width/2.0f)/imageset.width;
+	pos[1] = (pos[1] - imageset.height/2.0f)/imageset.width; //SIC: we work in image coords where width determine the unit.
+	return pos;
+}
+
+vector<Vector3f> RtiBuilder::relativeLights(int x, int y) {
+	vector<Vector3f> relights = imageset.lights;
+	Vector3f pos = pixelTo3dCoords(x, y);
+	for(size_t i =	0; i < relights.size(); i++) {
+		Vector3f &l = relights[i];
+		l = l*2.5f;
+		l[0] -= pos[0];
+		l[1] -= pos[1];
+	}
+	return relights;
+}
+
 void RtiBuilder::buildResampleMaps() {
-	vector<Vector3f> lights = imageset.lights;
 	for(int y = 0; y < resample_height; y++) {
 		for(int x = 0; x < resample_width; x++) {
-			Vector3f pos(
-						x/float(resample_width-1),
-						y/float(resample_height-1),
-						0);
-			pos[0] = (pos[0] - imageset.width/2.0f)/imageset.width;
-			pos[1] = (pos[1] - imageset.height/2.0f)/imageset.width; //SIC: we work in image coords where width determine the unit.
-
-
-			for(size_t i = 0; i < lights.size(); i++) {
-				Vector3f &l = lights[i];
-				l[0] -= pos[0];
-				l[1] -= pos[1];
-			}
-
 			auto &resamplemap = resamplemaps[x + y*resample_width];
-			buildResampleMap(lights, resamplemap);
+			int pixel_x = imageset.width*x/resample_width;
+			int pixel_y = imageset.height*x/resample_height;
 
+			auto relights = relativeLights(pixel_x, pixel_y);
+			buildResampleMap(relights, resamplemap);
 			//take into account intensity factor due to different distance
-
-
 		}
 	}
 }
@@ -1388,8 +1413,7 @@ void RtiBuilder::buildResampleMap(std::vector<Vector3f> &lights, std::vector<std
 	
 	*/
 
-#define LINEAR
-#ifdef LINEAR
+
 	/* To regularize problem expressed above
 	 * We want the solution to be close to the rbf approx (skipping cons
 	 *
@@ -1460,15 +1484,14 @@ void RtiBuilder::buildResampleMap(std::vector<Vector3f> &lights, std::vector<std
 	}
 
 
-	//rows           cols
-	A = Eigen::MatrixXd::Zero(directions.size(), ndimensions);
-	//A = arma::Mat<double>(directions.size(), ndimensions, arma::fill::zeros);
+	Eigen::MatrixXd A = Eigen::MatrixXd::Zero(directions.size(), ndimensions);
 	for(uint32_t l = 0; l < directions.size(); l++) {
 		Vector3f &light = directions[l];
 		float lx = light[0];
 		float ly = light[1];
-		float lz = sqrt(1 - lx*lx - ly*ly);
+		float lz = sqrt(1.0f - lx*lx - ly*ly);
 		float s = fabs(lx) + fabs(ly) + fabs(lz);
+
 		//rotate 45 deg.
 		float x = (lx + ly)/s;
 		float y = (ly - lx)/s;
@@ -1479,20 +1502,20 @@ void RtiBuilder::buildResampleMap(std::vector<Vector3f> &lights, std::vector<std
 		x = x*(resolution - 1.0f);
 		y = y*(resolution - 1.0f);
 
-		int sx = std::min((int)resolution-2, std::max(0, (int)floor(x)));
-		int sy = std::min((int)resolution-2, std::max(0, (int)floor(y)));
-		float dx = x - (float)sx;
-		float dy = y - (float)sy;
+		int sx = std::min(int(resolution-2), std::max(0, int(floor(x))));
+		int sy = std::min(int(resolution-2), std::max(0, int(floor(y))));
+		float dx = x - float(sx);
+		float dy = y - float(sy);
 
 		float s00 = (1 - dx)*(1 - dy);
 		float s10 =      dx *(1 - dy);
 		float s01 = (1 - dx)* dy;
 		float s11 =      dx * dy;
 
-		A(l, ((sx+0) + (sy+0)*resolution)) = s00;
-		A(l, ((sx+1) + (sy+0)*resolution)) = s10;
-		A(l, ((sx+0) + (sy+1)*resolution)) = s01;
-		A(l, ((sx+1) + (sy+1)*resolution)) = s11;
+		A(l, ((sx+0) + (sy+0)*resolution)) = double(s00);
+		A(l, ((sx+1) + (sy+0)*resolution)) = double(s10);
+		A(l, ((sx+0) + (sy+1)*resolution)) = double(s01);
+		A(l, ((sx+1) + (sy+1)*resolution)) = double(s11);
 
 	}
 
@@ -1500,20 +1523,9 @@ void RtiBuilder::buildResampleMap(std::vector<Vector3f> &lights, std::vector<std
 	//  original regularization coefficient was 0.1
 
 	Eigen::MatrixXd I = Eigen::MatrixXd::Identity(ndimensions, ndimensions);
-
 	Eigen::MatrixXd iAtA = (A.transpose()*A  + regularization*I).inverse();
 	Eigen::MatrixXd tI = Eigen::MatrixXd::Identity(directions.size(), directions.size());
 	Eigen::MatrixXd iA = B + iAtA*(A.transpose() * (tI - A*B));
-
-	/*arma::Mat<double> I(ndimensions, ndimensions, arma::fill::eye);
-	arma::Mat<double> At = A.t();
-	arma::Mat<double> AtA = At*A;
-	arma::Mat<double> iAtA = inv_sympd(AtA + regularization*I);
-	
-	arma::Mat<double> tI(lights.size(), lights.size(), arma::fill::eye);
-	
-	arma::Mat<double> iA = B + iAtA *(At * (tI - A*B)); */
-
 
 	remap.clear();
 	remap.resize(ndimensions);
@@ -1536,46 +1548,47 @@ void RtiBuilder::buildResampleMap(std::vector<Vector3f> &lights, std::vector<std
 		}
 	}
 	return;
-
-#else
-	float radius = 64; //resolution*resolution*2;
-	remap.resize(resolution*resolution);
-	for(int y = 0; y < resolution; y++) {
-		for(int x = 0; x < resolution; x++) {
-			Vector3f n = fromOcta(x, y, resolution);
-
-			//compute rbf weights
-			auto &weights = remap[x + y*resolution];
-			weights.resize(lights.size());
-			float totw = 0.0f;
-			for(size_t i = 0; i < lights.size(); i++) {
-				float d2 = (n - lights[i]).squaredNorm();
-				float w = exp(-radius*d2);
-				weights[i] = std::make_pair(i, w);
-				totw += w;
-			}
-			//pick only most significant and renormalize
-			float retotw = 0.0f;
-			int count = 0;
-			for(size_t i = 0; i < weights.size(); i++) {
-				float &w = weights[i].second;
-
-				w /= totw;
-				if(w > 0.005) { //might fail for extreme smoothing.
-					weights[count++] =  weights[i];
-					retotw += w;
-				}
-			}
-			weights.resize(count);
-			for(auto &i: weights)
-				i.second /= retotw;
-		}
-	}
-#endif
-
 }
 
-std::vector<float> RtiBuilder::toPrincipal(float *v) {
+std::vector<float> RtiBuilder::toPrincipal(float *v, int x, int y) {
+	if(!imageset.light3d || type == RBF || type == BILINEAR)
+		return toPrincipal(v, materialbuilder);
+
+	float ix = (resample_width-1)*x/float(imageset.image_width);
+	float iy = (resample_height-1)*y/float(imageset.image_height);
+
+
+	//find 4 resamplemaps and coefficients
+	float X, Y;
+	float dx = modff(ix, &X);
+	float dy = modff(iy, &Y);
+	MaterialBuilder &A = materialbuilders[int(X) + int(Y)*resample_width];
+	float wA = (1 - dx)*(1 - dy);
+	vector<float> res = toPrincipal(v, A);
+
+
+	MaterialBuilder &B = materialbuilders[int(X+1) + int(Y)*resample_width];
+	float wB = dx*(1 - dy);
+	vector<float> tmp = toPrincipal(v, B);
+	for(size_t i = 0; i < res.size(); i++)
+		res[i] = res[i]*wA + tmp[i]*wB;
+
+	MaterialBuilder &C = materialbuilders[int(X) + int(Y+1)*resample_width];
+	float wC = (1 - dx)*dy;
+	tmp = toPrincipal(v, C);
+	for(size_t i = 0; i < res.size(); i++)
+		res[i] = tmp[i]*wC;
+
+	MaterialBuilder &D = materialbuilders[int(X+1) + int(Y+1)*resample_width];
+	float wD = dx*dy;
+	tmp = toPrincipal(v, D);
+	for(size_t i = 0; i < res.size(); i++)
+		res[i] += tmp[i]*wD;
+	return res;
+}
+
+
+std::vector<float> RtiBuilder::toPrincipal(float *v, MaterialBuilder &materialbuilder) {
 	uint32_t dim = ndimensions*3;
 
 	vector<float> res(nplanes, 0.0f);
@@ -1589,23 +1602,20 @@ std::vector<float> RtiBuilder::toPrincipal(float *v) {
 		}
 
 		//get average luminance
-		vector<double> luma(ndimensions);
-		double max = 0.0;
+		vector<float> luma(ndimensions);
+		float max = 0.0;
 		for(uint32_t i = 0; i < ndimensions; i++) {
-			luma[i] = (0.2125*v[i*3+0] + 0.7154*v[i*3+1] + 0.0721*v[i*3+2])/(255.0f);
+			luma[i] = (0.2125f*v[i*3+0] + 0.7154f*v[i*3+1] + 0.0721f*v[i*3+2])/(255.0f);
 			max = std::max(luma[i], max);
 		}
 		if(max > 0)
-			for(double &l: luma)
+			for(float &l: luma)
 				l /= max;
 
-		double r = 0.0;
-		double g = 0.0;
-		double b = 0.0;
-		double y = 0.0;
+		float r = 0.0, g = 0.0, b = 0.0, y = 0.0;
 		for(uint32_t i = 0; i < ndimensions; i++) {
-			r += (v[i*3+0]/255.0f)*(luma[i]);
-			g += (v[i*3+1]/255.0f)*(luma[i]);
+			r += (v[i*3+0]/255.0)*(luma[i]);
+			g += (v[i*3+1]/255.0)*(luma[i]);
 			b += (v[i*3+2]/255.0f)*(luma[i]);
 			y += luma[i]*luma[i];
 		}
@@ -1617,9 +1627,9 @@ std::vector<float> RtiBuilder::toPrincipal(float *v) {
 
 		double totluma = (0.2125*res[0]+ 0.7154*res[1] + 0.0721*res[2])/255.0;
 
-
 		for(uint32_t p = 3; p < nplanes; p++)
 			res[p] /= totluma;
+
 
 	} else { //RGB, YCC
 		vector<float> col(dim);
@@ -1648,8 +1658,8 @@ std::vector<float> RtiBuilder::toPrincipal(float *v) {
 					col.g = col.b = 0.5f;
 				col *= 255.0f;
 			}
-			res[1] = 255.0f * cb/count; // (nplanes/3);
-			res[2] = 255.0f * cr/count; // (nplanes/3);
+			res[1] = 255.0f * cb/count;
+			res[2] = 255.0f * cr/count;
 		}
 	}
 	return res;

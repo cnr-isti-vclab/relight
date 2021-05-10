@@ -62,7 +62,7 @@ bool Rti::load(const char *filename) {
 	}
 
 	if(type == RBF) {
-		sigma = obj["sigma"].toDouble();
+		sigma = float(obj["sigma"].toDouble());
 		QJsonArray jlights = obj["lights"].toArray();
 		lights.resize(jlights.size()/3);
 		for(size_t i = 0; i < lights.size(); i++) {
@@ -124,28 +124,19 @@ bool Rti::load(const char *filename) {
 
 		QJsonArray jbasis = obj["basis"].toArray();
 
-		for(uint32_t m = 0; m < nmaterials; m++) {
-			for(uint32_t p = 0; p < nplanes+1; p++) {
-				for(uint32_t c = 0; c < ndimensions; c++) {
-					for(int k = 0; k < 3; k++) {
-						uint32_t o = ((m*(nplanes+1) + p)*ndimensions + c)*3 + k;
-						float c = float(jbasis[o].toDouble());
-						if(p == 0)
-							basis[o] = c;
-						else
-							basis[o] = ((c - 127.0f)/material.planes[p-1].range);
-					}
+		for(uint32_t p = 0; p < nplanes+1; p++) {
+			for(uint32_t c = 0; c < ndimensions; c++) {
+				for(int k = 0; k < 3; k++) {
+					uint32_t o = (p*ndimensions + c)*3 + k;
+					float c = float(jbasis[o].toDouble());
+					if(p == 0)
+						basis[o] = c;
+					else
+						basis[o] = ((c - 127.0f)/material.planes[p-1].range);
 				}
 			}
 		}
-	}
 
-	QImage segments;
-	if(nmaterials > 1) {
-		if(!segments.load(dir.filePath("segments.png"))) {
-			cerr << "Could not find segments!" << endl;
-			return false;
-		}
 	}
 
 	int njpegs = (nplanes-1)/3 + 1;
