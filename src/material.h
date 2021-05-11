@@ -9,8 +9,8 @@ class Material {
 public:
 	struct Plane {
 		float range = 0.0; //to rename as mscale
-		float min = 0.0;
-		float max = 0.0;
+		float min = 1e20f;
+		float max = -1e20f;
 		float scale = 0.0;
 		float bias = 0.0;
 

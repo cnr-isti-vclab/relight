@@ -93,7 +93,8 @@ HEADERS += \
     task.h \
     rtitask.h \
     settingsdialog.h \
-    ../src/legacy_rti.h
+    ../src/legacy_rti.h \
+    httplib.h
 
 FORMS += \
     mainwindow.ui \

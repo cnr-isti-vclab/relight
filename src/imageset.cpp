@@ -87,11 +87,21 @@ bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip
 	try {
 		std::vector<QString> filenames;
 		parseLP(sphere_path, lights, filenames, skip_image);
+		float dome_radius = 5;
 		if(light3d) {
-			for(Vector3f &l: lights)
-			intensity.push_back(1/l.squaredNorm());
-		} else
-			intensity.resize(lights.size(), 1.0f);
+			lights3d = lights;
+			//temporary if no better wayto get 3d positions
+			for(size_t i = 0; i < lights.size(); i++)
+				lights3d[i] *= dome_radius;
+
+			light3d_radius = 0.0f;
+			for(size_t i = 0; i < lights.size(); i++) {
+				float r = lights3d[i].norm();
+				light3d_radius += r;
+				lights[i] = lights3d[i]/r;;
+			}
+			light3d_radius /= lights.size();
+		}
 
 		if(ignore_filenames) {
 			if(images.size() != int(filenames.size())) {
@@ -272,19 +282,47 @@ void ImageSet::decode(size_t img, unsigned char *buffer) {
 	decoders[img]->readRows(height, buffer);
 }
 
+//adjust light for pixel, light is 3d light already in image coords
+Vector3f ImageSet::relativeLight(const Vector3f &light, int x, int y){
+	Vector3f l = light;
+	l[0]  -= (x - width/2.0f)/width;
+	l[1]  -= (y - height/2.0f)/width;
+	return l;
+}
+
 void ImageSet::readLine(PixelArray &pixels) {
 	if(current_line == 0)
 		skipToTop();
 	pixels.resize(width, lights.size());
+	for(uint32_t x = 0; x < pixels.size(); x++) {
+		Pixel &pixel = pixels[x];
+		pixel.x = x;
+		pixel.y = current_line;
+	}
+
 	//TODO: no need to allocate EVERY time.
 	std::vector<uint8_t> row(image_width*3);
 
 	for(size_t i = 0; i < decoders.size(); i++) {
 		decoders[i]->readRows(1, row.data());
+
 		for(int x = left; x < right; x++) {
-			pixels(x - left, i).r = row[x*3 + 0]*intensity[i];
-			pixels(x - left, i).g = row[x*3 + 1]*intensity[i];
-			pixels(x - left, i).b = row[x*3 + 2]*intensity[i];
+			pixels[x - left][i].r = row[x*3 + 0];
+			pixels[x - left][i].g = row[x*3 + 1];
+			pixels[x - left][i].b = row[x*3 + 2];
+		}
+	}
+	//compensate intensity.
+	if(light3d) {
+		for(Pixel &pixel: pixels) {
+			for(size_t i = 0; i < lights3d.size(); i++) {
+				Vector3f l = relativeLight(lights3d[i], pixel.x, pixel.y);
+				float r = l.squaredNorm();
+				float di = r / (light3d_radius*light3d_radius);
+				pixel[i].r *= di;
+				pixel[i].g *= di;
+				pixel[i].b *= di;
+			}
 		}
 	}
 	current_line++;
@@ -304,7 +342,7 @@ public:
 	}
 };
 
-uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::function<void(Color3f *, Color3f *, int, int)> resampler, uint32_t samplingram) {
+uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::function<void(Pixel &, Pixel &)> resampler, uint32_t samplingram) {
 	if(current_line == 0)
 		skipToTop();
 
@@ -329,22 +367,38 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 
 		//read one row per image at a time
 		auto &selection = sampler.result(samplexrow, width);
+
 		for(uint32_t i = 0; i < decoders.size(); i++) {
 			JpegDecoder *dec = decoders[i];
 			dec->readRows(1, row.data());
 			uint32_t x = 0;
 			for(int k: selection) {
-				Color3f &pixel = sample(x, i);
+				Color3f &pixel = sample[x][i];
 				pixel.r = row[(k+left)*3 + 0];
 				pixel.g = row[(k+left)*3 + 1];
 				pixel.b = row[(k+left)*3 + 2];
 				x++;
 			}
 		}
+		//compensante intensity.
+		if(light3d) {
+			for(Pixel &pixel: sample) {
+				for(size_t i = 0; i < lights3d.size(); i++) {
+					Vector3f l = relativeLight(lights3d[i], pixel.x, pixel.y);
+					float r = l.squaredNorm();
+					float di = r / (light3d_radius*light3d_radius);
+					pixel[i].r *= di;
+					pixel[i].g *= di;
+					pixel[i].b *= di;
+				}
+			}
+		}
 
 		uint32_t x = 0;
 		for(int k: selection) {
-			resampler(sample(x), resample(offset + x), k + left, y);
+			sample[x].x = k+ left;
+			sample[x].y = y;
+			resampler(sample[x], resample[offset + x]);
 			x++;
 		}
 

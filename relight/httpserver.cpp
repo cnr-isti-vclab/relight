@@ -35,7 +35,6 @@ void HttpServer::addFile(const std::string &url, const std::string &path, const 
 void HttpServer::start(QString folder) {
 	stop();
 
-	//server = new Server;
 	server->remove_mount_point("/");
 	auto ret = server->set_mount_point("/", folder.toStdString().c_str());
 	if(!ret)
@@ -49,8 +48,8 @@ void HttpServer::start(QString folder) {
 }
 
 void HttpServer::stop() {
-	//if(!server)
-	//	return;
+	if(!server)
+		return;
 	server->stop();
 	try {
 		if(t.joinable())
@@ -58,7 +57,6 @@ void HttpServer::stop() {
 	} catch(std::system_error error) {
 		cout << "What? " << error.what() << endl;
 	}
-	//delete server;
 }
 
 void HttpServer::show() {
