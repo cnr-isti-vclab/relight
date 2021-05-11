@@ -21,7 +21,8 @@ public:
 	int current_line = 0;
 	QStringList images;
 	std::vector<Vector3f> lights;
-	std::vector<float> intensity;
+	std::vector<Vector3f> lights3d;
+	float light3d_radius = 1.0f;
 	bool light3d = false;
 
 	
@@ -46,9 +47,11 @@ public:
 
 	void decode(size_t img, unsigned char *buffer);
 	void readLine(PixelArray &line);
-	uint32_t sample(PixelArray &sample, uint32_t ndimensions, std::function<void(Color3f *, Color3f *, int, int)> resampler, uint32_t samplingrate);
+	uint32_t sample(PixelArray &sample, uint32_t ndimensions, std::function<void(Pixel &, Pixel &)> resampler, uint32_t samplingrate);
 	void restart();
 	void skipToTop();
+
+	Vector3f relativeLight(const Vector3f &light, int x, int y);
 
 protected:
 	std::function<bool(std::string stage, int percent)> *callback;

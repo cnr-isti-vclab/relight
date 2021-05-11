@@ -937,7 +937,6 @@ void MainWindow::viewRTI() {
 	if(output.isNull()) return;
 
 	HttpServer &server = HttpServer::instance();
-	server.stop();
 	server.port = QSettings().value("port", 8080).toInt();
 	server.start(output);
 	server.show();

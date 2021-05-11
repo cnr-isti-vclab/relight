@@ -41,7 +41,7 @@ public:
 	bool saveJSON(QDir &dir, int quality);
 
 
-	void processLine(int y, PixelArray &sample, PixelArray &resample, std::vector<std::vector<uint8_t>> &line,
+	void processLine(PixelArray &sample, PixelArray &resample, std::vector<std::vector<uint8_t>> &line,
 					 std::vector<uchar> &normal, std::vector<uchar> &mean, std::vector<uchar> &median);
 
 protected:
@@ -63,26 +63,29 @@ protected:
 	//compute the 3d lights relative to the pixel x, y
 	std::vector<Vector3f> relativeLights(int x, int y);
 
-	void resamplePixel(Color3f *sample, Color3f *pixel, int x, int y);
+	void resamplePixel(Pixel &sample, Pixel &pixel);
 
 	void buildResampleMap(std::vector<Vector3f> &lights, std::vector<std::vector<std::pair<int, float> > > &remap);
 	void buildResampleMaps();
-	void remapPixel(Color3f *sample, Color3f *pixel, Resamplemap &resamplemap, float weight);
+	void remapPixel(Pixel &sample, Pixel &pixel, Resamplemap &resamplemap, float weight);
 
 
 
-	void pickBase(PixelArray &sample, std::vector<Vector3f> &lights);
+	MaterialBuilder pickBase(PixelArray &sample, std::vector<Vector3f> &lights);
 	//use for 3d lights
 	void pickBases(PixelArray &sample);
+	void minmaxMaterial(PixelArray &sample);
+	void finalizeMaterial();
+
 
 
 	void estimateError(PixelArray &sample, std::vector<float> &weights);
 	void getPixelMaterial(PixelArray &pixels, std::vector<size_t> &indices);
 	void getPixelBestMaterial(PixelArray &pixels, std::vector<size_t> &indices);
 
-	void pickBasePCA(PixelArray &sample);
-	void pickBasePTM(std::vector<Vector3f> &lights);
-	void pickBaseHSH(std::vector<Vector3f> &lights, Type base = HSH);
+	MaterialBuilder pickBasePCA(PixelArray &sample);
+	MaterialBuilder pickBasePTM(std::vector<Vector3f> &lights);
+	MaterialBuilder pickBaseHSH(std::vector<Vector3f> &lights, Type base = HSH);
 
 	Vector3f getNormalThreeLights(std::vector<float> &pri); //use 3 virtual lights at 45 degs.
 
@@ -92,8 +95,8 @@ protected:
 	//void savePixel(Color3f *p, int side, const QString &file);
 	void debugMaterials();
 
-	std::vector<float> toPrincipal(float *v, MaterialBuilder &materialbuilder);
-	std::vector<float> toPrincipal(float *v, int x, int y);
+	std::vector<float> toPrincipal(Pixel &pixel, MaterialBuilder &materialbuilder);
+	std::vector<float> toPrincipal(Pixel &pixel);
 
 };
 
