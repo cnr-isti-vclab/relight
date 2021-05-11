@@ -51,13 +51,9 @@ protected:
 	Resamplemap resamplemap;
 
 	//grid of resamplemaps to be interpolated.
-	int resample_width, resample_height;
+	int resample_width = 9, resample_height = 9;
 	std::vector<Resamplemap> resamplemaps;  //for per pixel direction light interpolation
 	std::vector<MaterialBuilder> materialbuilders;
-
-
-	//return position in 3d coords (0, 0, 0 is the center of the image, x = 1 is on the right border, top is (height/width).
-	Vector3f pixelTo3dCoords(int x, int y);
 
 	//TODO this should go inimageset!
 	//compute the 3d lights relative to the pixel x, y

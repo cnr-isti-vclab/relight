@@ -22,7 +22,7 @@ public:
 	QStringList images;
 	std::vector<Vector3f> lights;
 	std::vector<Vector3f> lights3d;
-	float light3d_radius = 1.0f;
+	float dome_radius = 4.0f;
 	bool light3d = false;
 
 	
@@ -38,6 +38,7 @@ public:
 
 	bool initFromFolder(const char *path, bool ignore_filenames = true, int skip_image = -1);
 	bool initFromProject(const char *filename);
+	void initLights();
 	bool initImages(const char *path); //require lights and images to be available, path points to the dir of the images.
 	
 	QImage maxImage(std::function<bool(std::string stage, int percent)> *callback = nullptr); 
