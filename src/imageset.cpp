@@ -87,21 +87,6 @@ bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip
 	try {
 		std::vector<QString> filenames;
 		parseLP(sphere_path, lights, filenames, skip_image);
-		float dome_radius = 5;
-		if(light3d) {
-			lights3d = lights;
-			//temporary if no better wayto get 3d positions
-			for(size_t i = 0; i < lights.size(); i++)
-				lights3d[i] *= dome_radius;
-
-			light3d_radius = 0.0f;
-			for(size_t i = 0; i < lights.size(); i++) {
-				float r = lights3d[i].norm();
-				light3d_radius += r;
-				lights[i] = lights3d[i]/r;;
-			}
-			light3d_radius /= lights.size();
-		}
 
 		if(ignore_filenames) {
 			if(images.size() != int(filenames.size())) {
@@ -124,6 +109,7 @@ bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip
 		cerr << qPrintable(error) << endl;
 		return false;
 	}
+	initLights();
 	return initImages(_path);
 }
 
@@ -178,6 +164,32 @@ bool ImageSet::initFromProject(const char *filename) {
 		crop(range[0], range[1], range[2], range[3]);
 	}
 	return true;
+}
+
+void ImageSet::initLights() {
+	if(light3d) {
+		//if dome radius we assume lights are directionals
+		if(dome_radius) {
+			lights3d = lights;
+			//temporary if no better wayto get 3d positions
+			for(size_t i = 0; i < lights.size(); i++)
+				lights3d[i] *= dome_radius;
+
+		} else {
+			lights.resize(lights3d.size());
+			//we assume lights are NOT directionals and we autodetect a reasonable radius
+			//intensity will be corrected using dome_radius as reference in sample
+			dome_radius = 0.0f;
+			for(size_t i = 0; i < lights3d.size(); i++) {
+				float r = lights3d[i].norm();
+				dome_radius += r;
+				lights[i] = lights3d[i]/r;
+			}
+			dome_radius /= lights3d.size();
+		}
+	}
+	for(Vector3f &light: lights)
+		light.normalize();
 }
 
 
@@ -296,8 +308,8 @@ void ImageSet::readLine(PixelArray &pixels) {
 	pixels.resize(width, lights.size());
 	for(uint32_t x = 0; x < pixels.size(); x++) {
 		Pixel &pixel = pixels[x];
-		pixel.x = x;
-		pixel.y = current_line;
+		pixel.x = x + left;
+		pixel.y = image_height - 1 - current_line;
 	}
 
 	//TODO: no need to allocate EVERY time.
@@ -318,7 +330,7 @@ void ImageSet::readLine(PixelArray &pixels) {
 			for(size_t i = 0; i < lights3d.size(); i++) {
 				Vector3f l = relativeLight(lights3d[i], pixel.x, pixel.y);
 				float r = l.squaredNorm();
-				float di = r / (light3d_radius*light3d_radius);
+				float di = r / (dome_radius*dome_radius);
 				pixel[i].r *= di;
 				pixel[i].g *= di;
 				pixel[i].b *= di;
@@ -374,19 +386,31 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 			uint32_t x = 0;
 			for(int k: selection) {
 				Color3f &pixel = sample[x][i];
+
 				pixel.r = row[(k+left)*3 + 0];
 				pixel.g = row[(k+left)*3 + 1];
 				pixel.b = row[(k+left)*3 + 2];
 				x++;
 			}
 		}
+
+
 		//compensante intensity.
 		if(light3d) {
+
+			uint32_t x = 0;
+			for(int k: selection) {
+				sample[x].x = k+ left;
+				sample[x].y = image_height - 1 - y;
+				x++;
+			}
+
 			for(Pixel &pixel: sample) {
 				for(size_t i = 0; i < lights3d.size(); i++) {
 					Vector3f l = relativeLight(lights3d[i], pixel.x, pixel.y);
 					float r = l.squaredNorm();
-					float di = r / (light3d_radius*light3d_radius);
+					//TODO precompute
+					float di = r / (dome_radius*dome_radius);
 					pixel[i].r *= di;
 					pixel[i].g *= di;
 					pixel[i].b *= di;
@@ -396,8 +420,6 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 
 		uint32_t x = 0;
 		for(int k: selection) {
-			sample[x].x = k+ left;
-			sample[x].y = y;
 			resampler(sample[x], resample[offset + x]);
 			x++;
 		}

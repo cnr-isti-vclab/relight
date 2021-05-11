@@ -150,6 +150,7 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 	callback = _callback;
 
 
+
 	if(type == BILINEAR) {
 		ndimensions = resolution*resolution;
 		buildResampleMaps();
@@ -457,8 +458,6 @@ void RtiBuilder::pickBases(PixelArray &sample) {
 			materialbuilder = pickBase(sample, imageset.lights); //lights are unused for rbf
 
 		} else {
-			resample_height = 8;
-			resample_width = 8;
 			materialbuilders.resize(resample_width * resample_height);
 
 			for(int y = 0; y < resample_height; y++) {
@@ -1295,8 +1294,6 @@ PixelArray RtiBuilder::resamplePixels(PixelArray &sample) {
 
 void RtiBuilder::remapPixel(Pixel  &sample, Pixel &pixel, Resamplemap &resamplemap, float weight) {
 	if(weight == 0) return;
-	pixel.x = sample.x;
-	pixel.y = sample.y;
 	for(uint32_t i = 0; i < ndimensions; i++) {
 		for(auto &w: resamplemap[i]) {
 			pixel[i].r += sample[w.first].r*w.second * weight;
@@ -1327,7 +1324,6 @@ void RtiBuilder::resamplePixel(Pixel &sample, Pixel &pixel) { //pos in pixels.
 			float wA = (1 - dx)*(1 - dy);
 			remapPixel(sample, pixel, A, wA);
 
-
 			Resamplemap &B = resamplemaps[int(ix+1) + int(iy)*resample_width];
 			float wB = dx*(1 - dy);
 			remapPixel(sample, pixel, B, wB);
@@ -1340,10 +1336,6 @@ void RtiBuilder::resamplePixel(Pixel &sample, Pixel &pixel) { //pos in pixels.
 			float wD = dx*dy;
 			remapPixel(sample, pixel, D, wD);
 
-
-			//for each pixel we need to know where it is, and compute a resamplemap (will be SLOWWWW)
-			//TODO 		it would be faster to compute a few resamplemap in a grid(every 100 pixels or so)
-			//		the sample is bilinear interpolation of these key resamplemap
 		} else {
 
 			for(uint32_t i = 0; i < ndimensions; i++) {
@@ -1371,50 +1363,18 @@ void RtiBuilder::resamplePixel(Pixel &sample, Pixel &pixel) { //pos in pixels.
 				pixel[i].b = sqrt(pixel[i].b)*sqrt(255.0f);
 			}
 		}
-
 	}
-
-#ifdef LINEAR
-	//RBF interpolation. map a pixel to a sphere pos and interpolate based on euclidean distance
-	arma::Col<double> r(lights.size()*3);
-	for(int i = 0; i < lights.size(); i++) {
-		r[i*3 + 0] = sample[i].r;
-		r[i*3 + 1] = sample[i].g;
-		r[i*3 + 2] = sample[i].b;
-	}
-	arma::Col<double> x = arma::solve(H, r);
-	for(int i = 0; i < ndimensions; i++) {
-		pixel[i].r = std::max(0.0, std::min(255.0, x[i*3+0]));
-		pixel[i].g = std::max(0.0, std::min(255.0, x[i*3+1]));
-		pixel[i].b = std::max(0.0, std::min(255.0, x[i*3+2]));
-	}
-
-	return;
-#endif
-
 }
 
-Vector3f RtiBuilder::pixelTo3dCoords(int x, int y) {
-	Vector3f pos(
-				x/float(resample_width-1),
-				y/float(resample_height-1),
-				0);
-	pos[0] = (pos[0] - imageset.width/2.0f)/imageset.width;
-	pos[1] = (pos[1] - imageset.height/2.0f)/imageset.width; //SIC: we work in image coords where width determine the unit.
-	return pos;
-}
 
 //returno normalized light directions for a pixel
 //notice how sample are already intensity corrected.
 vector<Vector3f> RtiBuilder::relativeLights(int x, int y) {
-	vector<Vector3f> relights = imageset.lights;
-	Vector3f pos = pixelTo3dCoords(x, y);
-	for(size_t i =	0; i < relights.size(); i++) {
-		Vector3f &l = relights[i];
-		l = l*2.5f;
-		l[0] -= pos[0];
-		l[1] -= pos[1];
-		l.normalize();
+
+	vector<Vector3f> relights = imageset.lights3d;
+	for(Vector3f &light: relights) {
+		light = imageset.relativeLight(light, x, y);
+		light.normalize();
 	}
 	return relights;
 }
@@ -1424,17 +1384,17 @@ void RtiBuilder::buildResampleMaps() {
 		buildResampleMap(imageset.lights, resamplemap);
 		return;
 	}
-	resample_height = 8;
-	resample_width = 8;
 	resamplemaps.resize(resample_height*resample_width);
 
 	for(int y = 0; y < resample_height; y++) {
 		for(int x = 0; x < resample_width; x++) {
+			//TODO this should go into a class to avoid stupid onoff mistakes
 			auto &resamplemap = resamplemaps[x + y*resample_width];
-			int pixel_x = imageset.width*x/resample_width;
-			int pixel_y = imageset.height*x/resample_height;
+			int pixel_x = imageset.width*x/(resample_width-1);
+			int pixel_y = imageset.height*y/(resample_height-1);
 
 			auto relights = relativeLights(pixel_x, pixel_y);
+			//auto relights = relativeLights(imageset.width/2, imageset.height/2);
 			buildResampleMap(relights, resamplemap);
 		}
 	}
@@ -1567,7 +1527,7 @@ void RtiBuilder::buildResampleMap(std::vector<Vector3f> &lights, std::vector<std
 		//cols
 		for(uint32_t c = 0; c < lights.size(); c++) {
 			double w = iA(i, c);
-			if(fabs(w) > 0.05)
+			if(fabs(w) > 0.005)
 				weights.push_back(std::make_pair(c, w));
 
 		}
