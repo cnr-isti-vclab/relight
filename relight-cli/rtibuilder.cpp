@@ -25,6 +25,8 @@
 
 #include <set>
 #include <iostream>
+
+#include <math.h>
 using namespace std;
 
 /* reampling model:
@@ -52,8 +54,8 @@ static void toOcta(Vector3f d, float &x, float &y, int resolution) {
 
 static Vector3f fromOcta(int x, int y, int resolution) {
 	//rescale to [-1,1]
-	float oX = 2.0f*x/(float)(resolution-1) -1.0f; //(((x + 0.5f)/(resolution-1)) - 0.5f);
-	float oY = 2.0f*y/(float)(resolution-1) -1.0f; //(((y + 0.5f)/(resolution-1)) - 0.5f);
+	float oX = 2.0f*x/float(resolution-1) -1.0f; //(((x + 0.5f)/(resolution-1)) - 0.5f);
+	float oY = 2.0f*y/float(resolution-1) -1.0f; //(((y + 0.5f)/(resolution-1)) - 0.5f);
 	
 	//rotate 45 deg and keep it to [-1,1] diamond
 	float X = (oX - oY)/2.0f;
@@ -62,24 +64,12 @@ static Vector3f fromOcta(int x, int y, int resolution) {
 	Vector3f n(X, Y, 1.0f - fabs(X) -fabs(Y));
 	if(n[2] < 0) //approx error.
 		n[2] = 0;
-	n = n/n.norm();
+	n = n/float(n.norm());
 	return n;
 }
-
-#ifdef USE_MATERIALS
-RtiBuilder::RtiBuilder(): materialindex(nullptr) {}
-#else
 RtiBuilder::RtiBuilder() {}
-#endif
+RtiBuilder::~RtiBuilder() {}
 
-RtiBuilder::~RtiBuilder() {
-#ifdef USE_MATERIALS
-	if(materialindex)
-		delete materialindex;
-#endif
-}
-
-//bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(std::string stage, int percent)> *_callback) {
 bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(std::string stage, int percent)> *_callback) {
 	
 	callback = _callback;
@@ -94,13 +84,13 @@ bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(std::st
 	}
 	if(crop[2] != 0) //some width specified
 		imageset.crop(crop[0], crop[1], crop[2], crop[3]);
+
 	width = imageset.width;
 	height = imageset.height;
 	lights = imageset.lights;
 	return init();
 }
 
-//TODO: should use project.h, but we need first to decouople ball QGraphicViews pieces.
 
 bool RtiBuilder::initFromProject(const std::string &filename, std::function<bool(std::string stage, int percent)> *_callback) {
 	callback = _callback;
@@ -120,7 +110,7 @@ bool RtiBuilder::initFromProject(const std::string &filename, std::function<bool
 	return init(_callback);
 }
 
-
+/*
 void RtiBuilder::saveLightPixel(Color3f *p, int side, const QString &file) {
 	QImage img(side, side, QImage::Format_RGB32);
 	img.fill(qRgb(0, 0, 0));
@@ -144,6 +134,7 @@ void RtiBuilder::savePixel(Color3f *p, int side, const QString &file) {
 	img = img.scaled(side, side, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 	img.save(file);
 }
+*/
 
 bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_callback) {
 	if((type == PTM || type == HSH || type == SH || type == H) && colorspace == MRGB) {
@@ -157,42 +148,30 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 	}
 
 	callback = _callback;
+
+
+
 	if(type == BILINEAR) {
 		ndimensions = resolution*resolution;
-		buildResampleMap();
-		
-	} else
+		buildResampleMaps();
+	} else {
 		ndimensions = lights.size();
-	
+	}
 	if(samplingram == 0) {
 		cerr << "Sampling RAM must be > 0\n";
 		return false;
 	}
 
 	imageset.setCallback(callback);
-	
-	//collect a set of samples resampled
-	PixelArray resample;
-	imageset.sample(resample, ndimensions, [&](Color3f *sample, Color3f *resample) { this->resamplePixel(sample, resample); }, samplingram);
-	nsamples = resample.npixels();
-	
-#ifdef DEBUG
-	if(resolution > 0) {
-		saveLightPixel(sample(0), resolution*4, "sample0.png");
-		saveLightPixel(sample(1), resolution*4, "sample1.png");
-		saveLightPixel(sample(2), resolution*4, "sample2.png");
-		
-		//resample samples to base resolution
-		
-		savePixel(resample(0), resolution*4, "sample0r.png");
-		savePixel(resample(1), resolution*4, "sample1r.png");
-		savePixel(resample(2), resolution*4, "sample2r.png");
-	}
-#endif
-	pickMaterials(resample);
-	
+
 	try {
-		pickBase(resample);
+		//we don't actually need to store the samples, we can just add to (resample) add to PCA, or use to compute material.
+		//collect a set of samples resampled
+		PixelArray resample;
+		imageset.sample(resample, ndimensions, [&](Pixel &sample, Pixel &resample) { this->resamplePixel(sample, resample); }, samplingram);
+		nsamples = resample.npixels();
+
+		pickBases(resample);
 	} catch(std::exception e) {
 		error = "Could not create a base.";
 		return false;
@@ -203,127 +182,9 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 	return true;
 }
 
-void RtiBuilder::pickMaterials(PixelArray &/*sample*/) {
-	if(nmaterials <= 1)
-		return;
-	
-#ifdef USE_MATERIALS
-	
-	/*double ColourDistance(RGB e1, RGB e2)
-	{
-	  long rmean = ( (long)e1.r + (long)e2.r ) / 2;
-	  long r = (long)e1.r - (long)e2.r;
-	  long g = (long)e1.g - (long)e2.g;
-	  long b = (long)e1.b - (long)e2.b;
-	  return sqrt((((512+rmean)*r*r)>>8) + 4*g*g + (((767-rmean)*b*b)>>8));
-	}*/
-	
-	//build materials
-	int n = sample.components()*3;
-	//2 is branching
-	flann::KMeansIndexParams params(2, 20, flann::FLANN_CENTERS_KMEANSPP);
-	flann::Matrix<float> dataset = flann::Matrix<float>(sample.rawdata(), sample.npixels(), sample.components()*3);
-	
-	flann::Matrix<float> centers(new float[n*nmaterials], nmaterials, n);
-	nmaterials = flann::hierarchicalClustering<flann::L2<float>>(dataset, centers, params );
-	
-	materialindex = new flann::Index<flann::L2<float>>(centers, params);
-	materialindex->buildIndex();
-#else
-	cerr << "Materials not in use unless compiled using USE_MATERIALS define\n" << "NM: " << nmaterials << endl;
-	exit(0);
-#endif
-}
 
-void RtiBuilder::getPixelBestMaterial(PixelArray &pixels, vector<size_t> &indices) {
-	indices.resize(pixels.npixels(), 0);
-	if(nmaterials == 1)
-		return;
-	
-	uint32_t dim = ndimensions*3;
-	for(uint32_t i = 0; i < pixels.npixels(); i++) {
-		uint32_t best = 0;
-		float min = 1e20;
-		
-		for(uint32_t m = 0; m < nmaterials; m++) {
-			MaterialBuilder &matb = materialbuilders[m];
-			Material &mat = materials[m];
-			
-			vector<float> principal = toPrincipal(m,(float *)pixels(i));
-			
-			for(size_t p = 0; p < principal.size(); p++) {
-				Material::Plane &plane = mat.planes[p];
-				principal[p] = plane.quantize(principal[p]);
-				principal[p] = plane.dequantize(principal[p]);
-			}
-			
-			vector<float> variable(dim, 0.0f);
-			for(uint32_t k = 0; k < dim; k++)
-				variable[k] = matb.mean[k];
-			
-			for(uint32_t p = 0; p < nplanes; p++) {
-				float *eigen = matb.proj.data() + p*dim;//colptr(k);
-				for(uint32_t k = 0; k < dim; k++)
-					variable[k] += principal[p]*eigen[k];
-			}
-			float *s = (float *)pixels(i);
-			double e = 0.0;
-			for(uint32_t k = 0; k < variable.size(); k++) {
-				double d = variable[k] - s[k];
-				e += d*d;
-			}
-			e = sqrt(e/dim);
-			if(e < min) {
-				best = m;
-				min = e;
-			}
-			indices[i] =  best;
-		}
-	}
-}
-
-void RtiBuilder::getPixelMaterial(PixelArray &pixels, vector<size_t> &indices) {
-	indices.resize(pixels.npixels(), 0);
-	
-	if(nmaterials <= 1)
-		return;
-#ifdef USE_MATERIALS
-	if(!materialindex)
-		return;
-	
-	
-	flann::Matrix<size_t> mindices(indices.data(), pixels.npixels(), 1);
-	vector<float> distances(pixels.npixels());
-	flann::Matrix<float> mdistances(distances.data(), pixels.npixels(), 1);
-	
-	flann::SearchParams search_params;
-	flann::Matrix<float> dataset = flann::Matrix<float>(pixels.rawdata(), pixels.npixels(), pixels.components()*3);
-	//TODO look for leaks.
-	materialindex->knnSearch(dataset, mindices,  mdistances, 1, search_params);
-#else
-	cerr << "Materials require compilation with USE_MATERIALS\n";
-	exit(0);
-#endif
-}
-
-#ifdef ICA
-
-static double **mat_create(int rows, int cols)
-{
-	double **M = new double *[rows];
-	for (int i=0; i<rows; i++)
-		M[i] = new double[cols];
-	return M;
-}
-
-static void mat_delete(double **M, int rows) {
-	for (int i=0; i<rows; i++)
-		delete []M[i];
-	delete []M;
-}
-#endif
-
-void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
+//assumes pixel intensities are already fixed.
+MaterialBuilder RtiBuilder::pickBasePCA(PixelArray &sample) {
 	
 	
 	//let's work pixel by pixel
@@ -336,263 +197,175 @@ void RtiBuilder::pickBasePCA(PixelArray &sample, std::vector<size_t> &indices) {
 	//5 now mean is in sqrt(w_i)X_i, use the other one.
 	//6 compute the error per pixel, and update weihgts
 	//loop
-	
-	
-	/*
-	int ngroups = 40;
-	
-	//11 iterations 2 is branching
-	flann::KMeansIndexParams params(2, 20, flann::FLANN_CENTERS_KMEANSPP);
-	flann::Matrix<float> dataset = flann::Matrix<float>(sample.rawdata(), sample.npixels(), n);
-	
-	flann::Matrix<float> centers(new float[n*ngroups], ngroups, n);
-	ngroups = flann::hierarchicalClustering<flann::L2<float>>(dataset, centers, params);
-	
-	flann::Index<flann::L2<float>> groups(centers, params);
-	groups.buildIndex();
-	
-	vector<size_t> gindices(sample.npixels(), 0);
-	
-	flann::Matrix<size_t> mindices(gindices.data(), sample.npixels(), 1);
-	vector<float> distances(sample.npixels());
-	flann::Matrix<float> mdistances(distances.data(), sample.npixels(), 1);
-	
-	flann::SearchParams search_params;
-	//TODO look for leaks.
-	groups.knnSearch(dataset, mindices,  mdistances, 1, search_params);
-	
-	
-	vector<float> weights(ngroups, 0);
-	for(int i: gindices)
-		weights[i]++;
-	float totw = 0.0f;
-	for(int i = 0; i < weights.size(); i++) {
-		weights[i] = pow(1.0f/weights[i], 4.0f);
-		totw += weights[i];
-		//weights[i] = 1.0f;
-	}
-	for(float &w: weights)
-		w /= totw;
-	*/
+
+	MaterialBuilder mat;
 	
 	if(callback)
 		if(!(*callback)("Computing PCA:", 0))
 			throw std::string("Cancelled.");
-	materials.resize(nmaterials);
-	materialbuilders.resize(nmaterials);
-	
+
 	if(colorspace == MRGB) {
 		uint32_t dim = sample.components()*3;
 		
-		vector<float> weights(nsamples, 1.0f);
 		vector<double> record(dim);
 		
-		vector<vector<double>> means(nmaterials);
-		
-		std::vector<PCA *> pcas;
-		means.clear();
-		means.resize(nmaterials);
-		for(uint32_t m = 0; m < nmaterials; m++)
-			means[m].resize(dim, 0.0);
-		
-		//nmaterials is ALWAYS 1, no more support for multiple materials.
-		pcas.resize(nmaterials);
-		for(auto &pca: pcas)
-			pca = new PCA(dim, nsamples);
-		
+		vector<double> means;
+		PCA pca(dim, nsamples);
+		means.resize(dim, 0.0);
+
 		//compute mean
-		vector<double> count(nmaterials, 0);
-		for(uint32_t i = 0; i < nsamples; i++) {
-			int m = indices[i];
-			auto &mean = means[m];
-			count[m] += weights[i];
+		for(Pixel &pixel: sample) {
 			for(uint32_t k = 0; k < sample.components(); k ++) {
-				Color3f c = sample(i, k);
-				//			c = rgb2lab(c);
-				mean[k*3 + 0] += weights[i]*c.r;
-				mean[k*3 + 1] += weights[i]*c.g;
-				mean[k*3 + 2] += weights[i]*c.b;
+				Color3f &c = pixel[k];
+				means[k*3 + 0] += double(c.r);
+				means[k*3 + 1] += double(c.g);
+				means[k*3 + 2] += double(c.b);
 			}
 		}
-		for(uint32_t m = 0; m < means.size(); m++) {
-			auto &mean = means[m];
-			for(double &d: mean)
-				d /= count[m];
-		}
+		for(double &d: means)
+			d /= nsamples;
+
 		if(callback && !(*callback)("Computing PCA:", 5))
 			throw std::string("Cancelled.");
-		
-		
 
-		for(uint32_t i = 0; i < nsamples; i++) {
-			//TODO iterate over rawdata.
-			auto &mean = means[indices[i]];
-			double w = sqrt(weights[i]);
-			
+		for(uint32_t i = 0; i < sample.size(); i++) {
+			Pixel &pixel = sample[i];
 			for(uint32_t k = 0; k < sample.components(); k ++) {
-				Color3f c = sample(i, k);
-				//			c = rgb2lab(c);
-				record[k*3 + 0] = w*(c.r - mean[k*3+0]);
-				record[k*3 + 1] = w*(c.g - mean[k*3+1]);
-				record[k*3 + 2] = w*(c.b - mean[k*3+2]);
+				Color3f c = pixel[k];
+				record[k*3 + 0] = (double(c.r) - means[k*3+0]);
+				record[k*3 + 1] = (double(c.g) - means[k*3+1]);
+				record[k*3 + 2] = (double(c.b) - means[k*3+2]);
 			}
-			int m = indices[i];
-			assert(m == 0);
-			pcas[m]->setRecord(i, record);
+			pca.setRecord(i, record);
 		}
 
 		if(callback && !(*callback)("Computing PCA:", 10))
-				throw std::string("Cancelled.");
+			throw std::string("Cancelled.");
 
-		for(uint32_t i = 0; i < nmaterials; i++) {
-			PCA *pca = pcas[i];
-			pca->solve(nplanes);
-			
-			MaterialBuilder &mat = materialbuilders[i];
-			mat.mean.resize(dim, 0.0f);
-			//ensure the mean is within range (might be slightly negative due to resampling bilinear
+		pca.solve(nplanes);
+
+		mat.mean.resize(dim, 0.0f);
+
+		//ensure the mean is within range (might be slightly negative due to resampling bilinear
+		for(uint32_t k = 0; k < dim; k++)
+			mat.mean[k] = std::max(0.0f, std::min(255.0f, float(means[k])));
+
+		mat.proj.resize(nplanes*dim);
+
+		for(uint32_t p = 0; p < nplanes; p++) {
 			for(uint32_t k = 0; k < dim; k++)
-				mat.mean[k] = std::max(0.0, std::min(255.0, means[i][k])); // pca->mean()[k]));
-			/*		for(int k = 0; k < dim; k += 3) {
-			Color3f &c = *(Color3f *)&mat.mean[k];
-			c = lab2rgb(c);
-		} */
-			
-			mat.proj.resize(nplanes*dim);
-			
-			for(uint32_t p = 0; p < nplanes; p++) {
-				for(uint32_t k = 0; k < dim; k++)
-					mat.proj[k + p*dim] = pca->proj()(k, p);
-			}
-			/*		for(int p = 0; p < nplanes; p++) {
-			for(int k = 0; k < dim; k += 3) {
-				Color3f &c = *(Color3f *)&mat.proj[k + p*dim];
-				c = lab2rgb(c);
-			}
-		} */
-			delete pca;
+				mat.proj[k + p*dim] = float(pca.proj()(k, p));
 		}
-		
+
 	} else { //MYCC!
-		
-		
 		uint32_t dim = sample.components();
 		
 		vector<double> record(dim);
-		vector<vector<double>> means(nmaterials);
+		vector<double> means;
 		
 		for(int component = 0; component < 3; component++) {
 			std::vector<PCA *> pcas;
-			means.clear();
-			means.resize(nmaterials);
-			for(uint32_t m = 0; m < nmaterials; m++)
-				means[m].resize(dim, 0.0);
+			means.resize(dim, 0.0);
 			
-			pcas.resize(nmaterials);
-			for(auto &pca: pcas)
-				pca = new PCA(dim, nsamples);
+			PCA pca(dim, nsamples);
 			
 			//compute mean
-			vector<double> count(nmaterials, 0);
-			for(uint32_t i = 0; i < nsamples; i++) {
-				int m = indices[i];
-				auto &mean = means[m];
-				count[m] += 1;
+			for(Pixel &pixel: sample) {
 				for(uint32_t k = 0; k < sample.components(); k ++) {
-					Color3f c = sample(i, k);
-					mean[k] += c[component];
+					Color3f &c = pixel[k];
+					means[k] += double(c[component]);
 				}
 			}
-			for(uint32_t m = 0; m < means.size(); m++) {
-				auto &mean = means[m];
-				for(double &d: mean)
-					d /= count[m];
-			}
+			for(double &d: means)
+				d /= nsamples;
 			
 			
 			for(uint32_t i = 0; i < nsamples; i++) {
 				//TODO iterate over rawdata.
-				auto &mean = means[indices[i]];
-				
+				Pixel &pixel = sample[i];
 				for(uint32_t k = 0; k < sample.components(); k ++) {
-					Color3f c = sample(i, k);
-					record[k] = (c[component] - mean[k]);
+					Color3f &c = pixel[k];
+					record[k] = (c[component] - means[k]);
 				}
-				int m = indices[i];
-				assert(m == 0);
-				pcas[m]->setRecord(i, record);
+				pca.setRecord(i, record);
 			}
 
 			
-			for(uint32_t i = 0; i < nmaterials; i++) {
-				PCA *pca = pcas[i];
-				pca->solve(yccplanes[component]);
-				//pca->set_num_retained(yccplanes[component]);
-				
-				MaterialBuilder &mat = materialbuilders[i];
-				mat.mean.resize(dim*3, 0.0f);
-				//ensure the mean is within range (might be slightly negative due to resampling bilinear
-				for(uint32_t k = 0; k < dim; k++)
-					mat.mean[k*3 + component] = std::max(0.0, std::min(255.0, means[i][k])); // pca->mean()[k]));
-				
-				/*		for(int k = 0; k < dim; k += 3) {
+			pca.solve(yccplanes[component]);
+
+			mat.mean.resize(dim*3, 0.0f);
+			//ensure the mean is within range (might be slightly negative due to resampling bilinear
+			for(uint32_t k = 0; k < dim; k++)
+				mat.mean[k*3 + component] = std::max(0.0, std::min(255.0, means[k])); // pca->mean()[k]));
+
+			/*		for(int k = 0; k < dim; k += 3) {
 				Color3f &c = *(Color3f *)&mat.mean[k];
 				c = lab2rgb(c);
 				} */
-				mat.proj.resize(nplanes*dim*3, 0.0f); //actual;y redundant but harmless
-				
-				//ycc has interleaved first then the remaining y components
-				for(uint32_t yp = 0; yp < yccplanes[component]; yp++) {
-					uint32_t p = 0;
-					if(component == 0) {
-						if(yp < yccplanes[1])
-							p = yp*3 + component;
-						else if(component == 0)
-							p = yccplanes[1]*2 + yp;
-					} else
+			mat.proj.resize(nplanes*dim*3, 0.0f); //actual;y redundant but harmless
+
+			//ycc has interleaved first then the remaining y components
+			for(uint32_t yp = 0; yp < yccplanes[component]; yp++) {
+				uint32_t p = 0;
+				if(component == 0) {
+					if(yp < yccplanes[1])
 						p = yp*3 + component;
-					for(uint32_t k = 0; k < dim; k++)
-						mat.proj[k*3 + component + p*dim*3] = pca->proj()(k, yp);
-				}
-				delete pca;
+					else if(component == 0)
+						p = yccplanes[1]*2 + yp;
+				} else
+					p = yp*3 + component;
+				for(uint32_t k = 0; k < dim; k++)
+					mat.proj[k*3 + component + p*dim*3] = pca.proj()(k, yp);
 			}
+
+
 			if(callback && !(*callback)("Computing PCA:", 100*component/3))
 				throw std::string("Cancelled.");
 		}
 	}
+	//normalize coeffs
+	uint32_t dim = sample.components()*3;
+	float *c = mat.proj.data(); //colptr(0);
+
+	for(uint32_t p = 0; p < nplanes; p++) {
+		double e = 0.0;
+		for(uint32_t k = 0; k < dim; k++)
+			e += c[k + p*dim]*c[k+p*dim];
+		e = sqrt(e);
+		for(uint32_t k = 0; k < dim; k++)
+			c[k+p*dim] /= e;
+	}
+
 	if(callback && !(*callback)("Computing PCA:", 100))
 		throw std::string("Cancelled.");
+	return mat;
 }
 
-void RtiBuilder::pickBasePTM() {
+//assume directional lights and intensity already fixed.
+MaterialBuilder RtiBuilder::pickBasePTM(std::vector<Vector3f> &lights) {
 	
 	/* every light is linear combination of 6 pol coeff
 		b = w00x00 + w01x01 + ... w05x
 	solution is closed form matrix
-	b = Ax  H is 6 col Time 116 rows.
+	b = Ax  matrix A is 6 col Time 116 rows.
 	//we only want the least square sol.
 	invert it:
 	x = (At * A)^-1*At*b
 	*/
-	
-	//rows           cols
-	//LRGB approach:
-	
+
 	uint32_t dim = ndimensions*3;
-	materials.resize(1);
-	materialbuilders.resize(1);
-	MaterialBuilder &mat = materialbuilders[0];
+	MaterialBuilder mat;
 	mat.mean.resize(dim, 0.0);
 	
 	Eigen::MatrixXd A(lights.size(), 6);
 	for(uint32_t l = 0; l < lights.size(); l++) {
 		Vector3f &light = lights[l];
 		A(l, 0) = 1.0;
-		A(l, 1) = (double)light[0];
-		A(l, 2) = (double)light[1];
-		A(l, 3) = (double)light[0]*light[0];
-		A(l, 4) = (double)light[0]*light[1];
-		A(l, 5) = (double)light[1]*light[1];
+		A(l, 1) = double(light[0]);
+		A(l, 2) = double(light[1]);
+		A(l, 3) = double(light[0]*light[0]);
+		A(l, 4) = double(light[0]*light[1]);
+		A(l, 5) = double(light[1]*light[1]);
 	}
 
 	Eigen::MatrixXd iA = (A.transpose()*A).inverse()*A.transpose();
@@ -608,11 +381,11 @@ void RtiBuilder::pickBasePTM() {
 			for(uint32_t k = 0; k < lights.size(); k++) {
 				uint32_t off = k*3 + p*dim;
 				if(p >= 3) {
-					proj[off+0] = 0.2125*iA(p-3, k);
-					proj[off+1] = 0.7154*iA(p-3, k);
-					proj[off+2] = 0.0721*iA(p-3, k);
+					proj[off+0] = float(0.2125*iA(p-3, k));
+					proj[off+1] = float(0.7154*iA(p-3, k));
+					proj[off+2] = float(0.0721*iA(p-3, k));
 				} else {
-					proj[off + p] = 1.0/lights.size();
+					proj[off + p] = 1.0f/lights.size();
 				}
 			}
 		}
@@ -624,17 +397,18 @@ void RtiBuilder::pickBasePTM() {
 		proj.resize(nplanes*dim, 0.0);
 		for(uint32_t p = 0; p < nplanes; p += 3) {
 			for(uint32_t k = 0; k < lights.size(); k ++) {
-				proj[k*3+0 + (p+0)*dim] = proj[k*3+1 + (p+1)*dim] = proj[k*3+2 + (p+2)*dim] = iA(p/3, k);
+				proj[k*3+0 + (p+0)*dim] = proj[k*3+1 + (p+1)*dim] = proj[k*3+2 + (p+2)*dim] = float(iA(p/3, k));
 			}
 		}
 	}
+	return mat;
 }
 
-void RtiBuilder::pickBaseHSH(Rti::Type base) {
+//assume directional lights and intensity already fixed.
+
+MaterialBuilder RtiBuilder::pickBaseHSH(std::vector<Vector3f> &lights, Rti::Type base) {
 	uint32_t dim = ndimensions*3;
-	materials.resize(1);
-	materialbuilders.resize(1);
-	MaterialBuilder &mat = materialbuilders[0];
+	MaterialBuilder mat;
 	mat.mean.resize(dim, 0.0);
 	
 	vector<float> lweights;
@@ -652,9 +426,11 @@ void RtiBuilder::pickBaseHSH(Rti::Type base) {
 		case H:
 			lweights = lightWeightsH(light[0], light[1]);
 			break;
+		default:
+			break;
 		}
 		for(uint32_t p = 0; p < nplanes/3; p++)
-			A(l, p) = (double)lweights[p];
+			A(l, p) = double(lweights[p]);
 	}
 	Eigen::MatrixXd iA = (A.transpose()*A).inverse()*A.transpose();
 
@@ -667,53 +443,93 @@ void RtiBuilder::pickBaseHSH(Rti::Type base) {
 			proj[k*3+0 + (p+0)*dim] = proj[k*3+1 + (p+1)*dim] = proj[k*3+2 + (p+2)*dim] = iA(p/3, k);
 		}
 	}
+	return mat;
 }
 
-void RtiBuilder::pickBase(PixelArray &sample) {
-	
-	//index sample per material
-	vector<size_t> indices(sample.npixels(), 0);
-	if(nmaterials > 1)
-		getPixelMaterial(sample, indices);
-	
-	switch(type) {
-	case RBF:
-	case BILINEAR: pickBasePCA(sample, indices); break;
-	case PTM:      pickBasePTM(); break;
-	case HSH:
-	case SH:
-	case H:        pickBaseHSH(); break;
-	default: cerr << "Unknown basis" << endl; exit(0);
-	}
-	
+void RtiBuilder::pickBases(PixelArray &sample) {
+	//rbf can't 3d, bilinear just resample (and then single base)
+	if(!imageset.light3d) {
+		materialbuilder = pickBase(sample, imageset.lights);
 
-	uint32_t dim = sample.components()*3;
-	for(uint32_t i = 0; i < nmaterials; i++) {
-		MaterialBuilder &matb = materialbuilders[i];
-		float *c = matb.proj.data(); //colptr(0);
-		
-		//normalize
+	} else {
+
 		if(type == RBF || type == BILINEAR) {
-			for(uint32_t p = 0; p < nplanes; p++) {
-				double e = 0.0;
-				for(uint32_t k = 0; k < dim; k++)
-					e += c[k + p*dim]*c[k+p*dim];
-				e = sqrt(e);
-				for(uint32_t k = 0; k < dim; k++)
-					c[k+p*dim] /= e;
+
+			materialbuilder = pickBase(sample, imageset.lights); //lights are unused for rbf
+
+		} else {
+			materialbuilders.resize(resample_width * resample_height);
+
+			for(int y = 0; y < resample_height; y++) {
+				for(int x = 0; x < resample_width; x++) {
+					int pixel_x = imageset.width*x/(resample_width-1);
+					int pixel_y = imageset.height*y/(resample_height-1);
+					auto relights = relativeLights(pixel_x, pixel_y);
+					materialbuilders[x + y*resample_width] = pickBase(sample, relights);
+				}
 			}
 		}
-		Material &mat = materials[i];
-		mat.planes.clear();
-		mat.planes.resize(nplanes);
-		
+	}
+	minmaxMaterial(sample);
+	finalizeMaterial();
+}
+
+
+MaterialBuilder RtiBuilder::pickBase(PixelArray &sample, std::vector<Vector3f> &lights) {
+
+
+	vector<Vector3f> directions = lights;
+	for(Vector3f &light: directions)
+		light.normalize();
+
+
+	//TODO PTM and HSH need only 1 pass to compute max and min, do not need to read tge samples in an array, can be done on the fly.
+	//RBF and BILINEAR instead need 2 passes: 1 for the PCA and the second for the min/max.
+	MaterialBuilder builder;
+	switch(type) {
+	case RBF:
+	case BILINEAR: builder = pickBasePCA(sample); break;
+	case PTM:      builder = pickBasePTM(directions); break;
+	case HSH:
+	case SH:
+	case H:        builder = pickBaseHSH(directions, type); break;
+	default: cerr << "Unknown basis" << endl; exit(0);
+	}
+/*
+	uint32_t dim = sample.components()*3;
+	for(uint32_t p = 0; p < nplanes; p += 3) {
+		for(uint32_t k = 0; k < lights.size(); k ++) {
+			proj[k*3+0 + (p+0)*dim] = proj[k*3+1 + (p+1)*dim] = proj[k*3+2 + (p+2)*dim] = iA(p/3, k);
+		}
+	} */
+
+	return builder;
+}
+
+void RtiBuilder::minmaxMaterial(PixelArray &sample) {
+	uint32_t dim = sample.components()*3;
+
+	//material.planes.clear();
+	material.planes.resize(nplanes);
+
+	//normalize
+	if(type == RBF || type == BILINEAR) {
+		float *c = materialbuilder.proj.data(); //colptr(0);
 		for(uint32_t p = 0; p < nplanes; p++) {
-			Material::Plane &plane = mat.planes[p];
+			Material::Plane &plane = material.planes[p];
 			for(uint32_t k = 0; k < dim; k++)
-				plane.range = std::max(plane.range, (float)fabs(c[k + p*dim]));
+				plane.range = std::max(plane.range, fabs(c[k + p*dim]));
+
+			//basis coefficients can be negative, usually centered in zero
+			//so quantization formula is 127 + range*eigen,  hence scaling range (which is based on fabs)
+			plane.range = 127/plane.range;
 		}
 	}
-	
+
+
+	//TODO: range is need only for MRGB and MYCC
+
+
 	if(callback && !(*callback)("Coefficients quantization:", 0))
 		throw std::string("Cancelled.");
 
@@ -722,41 +538,32 @@ void RtiBuilder::pickBase(PixelArray &sample) {
 		if(callback && (i % 8000) == 0)
 			if(!(*callback)("Coefficients quantization:", 100*i/sample.npixels()))
 				throw std::string("Cancelled.");
-		vector<float> principal = toPrincipal(indices[i],(float *)sample(i));
-		
-		Material &mat = materials[indices[i]];
+		//TODO should interpolate instead!
+		//TODO for rbf and bilinear we don't interpolate the grid (rbf can't bilinear resemple the lights)
+		vector<float> principal = toPrincipal(sample[i]);
+
 		//find max and min of coefficients
 		for(uint32_t p = 0; p < nplanes; p++) {
-			Material::Plane &plane = mat.planes[p];
-			plane.min = std::min((float)principal[p], plane.min);
-			plane.max = std::max((float)principal[p], plane.max);
+			Material::Plane &plane = material.planes[p];
+			plane.min = std::min(principal[p], plane.min);
+			plane.max = std::max(principal[p], plane.max);
 		}
 	}
-	
-	
-	for(auto &mat: materials) {
-		float maxscale = 0.0f;
-		//ensure scale is the same for all materials
-		for(auto &plane: mat.planes)
-			maxscale = std::max(plane.max - plane.min, maxscale);
+}
 
-		//tested different scales for different coefficients (taking into account quantization for instance)
-		// for all datasets the quality/space is worse.
-		//rangecompress allows better quality at a large cost.
-		for(Material::Plane &plane: mat.planes) {
-			plane.scale = rangecompress*(plane.max - plane.min) + (1 - rangecompress)*maxscale;
-			plane.bias = -plane.min/plane.scale;
-			plane.scale /= 255.0f;
-		}
-	}
-	
-	//basis coefficients can be negative, usually centered in zero
-	//so quantization formula is 127 + range*eigen,  hence scaling range (which is based on fabs)
-	for(auto &m: materials) {
-		for(uint32_t p = 0; p < nplanes; p++) {
-			auto &plane = m.planes[p];
-			plane.range = 127/plane.range;
-		}
+void RtiBuilder::finalizeMaterial() {
+	float maxscale = 0.0f;
+	//ensure scale is the same for all materials
+	for(auto &plane: material.planes)
+		maxscale = std::max(plane.max - plane.min, maxscale);
+
+	//tested different scales for different coefficients (taking into account quantization for instance)
+	// for all datasets the quality/space is worse.
+	//rangecompress allows better quality at a large cost.
+	for(Material::Plane &plane: material.planes) {
+		plane.scale = rangecompress*(plane.max - plane.min) + (1 - rangecompress)*maxscale;
+		plane.bias = -plane.min/plane.scale;
+		plane.scale /= 255.0f;
 	}
 
 	if(callback && !(*callback)("Coefficients quantization:", 100))
@@ -764,17 +571,18 @@ void RtiBuilder::pickBase(PixelArray &sample) {
 	//	estimateError(sample, indices, weights);
 }
 
-void RtiBuilder::estimateError(PixelArray &sample, std::vector<size_t> &indices, std::vector<float> &weights) {
+
+void RtiBuilder::estimateError(PixelArray &sample, std::vector<float> &weights) {
 	weights.clear();
 	weights.resize(sample.npixels(), 0.0f);
 	uint32_t dim = sample.components()*3;
 	double e = 0.0;
 	double m = 0.0;
 	for(size_t i = 0; i < sample.npixels(); i++) {
-		MaterialBuilder &matb = materialbuilders[indices[i]];
-		Material &mat = materials[indices[i]];
+		MaterialBuilder &matb = materialbuilder;
+		Material &mat = material;
 		
-		vector<float> principal = toPrincipal(indices[i],(float *)sample(i));
+		vector<float> principal = toPrincipal(sample[i], materialbuilder);
 		for(size_t p = 0; p < principal.size(); p++) {
 			Material::Plane &plane = mat.planes[p];
 			principal[p] = plane.quantize(principal[p]);
@@ -799,7 +607,7 @@ void RtiBuilder::estimateError(PixelArray &sample, std::vector<size_t> &indices,
 				}
 			}*/
 		}
-		float *s = (float *)sample(i);
+		float *s = (float *)sample[i].data();
 		double se = 0.0;
 		for(uint32_t k = 0; k < variable.size(); k++) {
 			double d = variable[k] - s[k];
@@ -878,10 +686,10 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 		if(type == RBF)
 			stream << "\"sigma\": " << sigma << ",\n";
 		stream << "\"lights\": [";
-		for(uint32_t i = 0; i < lights.size(); i++) {
-			Vector3f &l = lights[i];
+		for(uint32_t i = 0; i < imageset.lights.size(); i++) {
+			Vector3f &l = imageset.lights[i];
 			stream << QString::number(l[0], 'f', 3) << ", " << QString::number(l[1], 'f', 3) << ", " << QString::number(l[2], 'f', 3);
-			if(i != lights.size()-1)
+			if(i != imageset.lights.size()-1)
 				stream << ", ";
 		}
 		stream << "],\n";
@@ -907,32 +715,29 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 	}
 	
 	stream << "\"materials\": [\n";
-	for(size_t i = 0; i < nmaterials; i++) {
-		stream << "{\n";
-		if(colorspace == MRGB || colorspace == MYCC) {
-			stream<< " \"range\": [";
-			for(uint32_t p = 0; p < nplanes; p++) {
-				if(p != 0) stream << ",";
-				stream << range[p];
-			}
-			stream << "],\n";
-		}
-		stream << " \"scale\": [";
+	stream << "{\n";
+	if(colorspace == MRGB || colorspace == MYCC) {
+		stream<< " \"range\": [";
 		for(uint32_t p = 0; p < nplanes; p++) {
 			if(p != 0) stream << ",";
-			stream << scale[p];
+			stream << range[p];
 		}
-		stream << "],\n \"bias\": [";
-		for(uint32_t p = 0; p < nplanes; p++) {
-			if(p != 0) stream << ",";
-			stream << bias[p];
-		}
-		
-		stream << "] }";
-		if(i != nmaterials - 1)
-			stream << ", ";
-		stream << "\n";
+		stream << "],\n";
 	}
+	stream << " \"scale\": [";
+	for(uint32_t p = 0; p < nplanes; p++) {
+		if(p != 0) stream << ",";
+		stream << scale[p];
+	}
+	stream << "],\n \"bias\": [";
+	for(uint32_t p = 0; p < nplanes; p++) {
+		if(p != 0) stream << ",";
+		stream << bias[p];
+	}
+
+	stream << "] }";
+	stream << "\n";
+
 	
 	stream << "]\n";
 	stream << "}\n";
@@ -940,7 +745,7 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 	return true;
 }
 
-Vector3f extractMean(Color3f *pixels, int n) {
+Vector3f extractMean(Pixel &pixels, int n) {
 	double m[3] = { 0.0, 0.0, 0.0 };
 	for(int i = 0; i < n; i++) {
 		Color3f &c = pixels[i];
@@ -952,7 +757,7 @@ Vector3f extractMean(Color3f *pixels, int n) {
 }
 
 
-Vector3f extractMedian(Color3f *pixels, int n) {
+Vector3f extractMedian(Pixel &pixels, int n) {
 
 	Vector3f m;
 	std::vector<float> a(n);
@@ -997,9 +802,6 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 		w2 = lightWeights(l2[0], l2[1]);
 	}
 
-
-	Material &mat = this->materials[0];
-
 	Eigen::Vector3f bright(0, 0, 0);
 
 	if(colorspace == RGB) {
@@ -1015,7 +817,7 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 		bright[2] = w2[0] + w2[1] + w2[2];
 
 		for (uint32_t p = 0; p < nplanes; p++) {
-			Material::Plane &plane = mat.planes[p];
+			Material::Plane &plane = material.planes[p];
 			float val = pri[p];
 			bright[0] += val*(w0[3 * (p + 1) + 0] + w0[3 * (p + 1) + 1] + w0[3 * (p + 1) + 2] - 3 * 127) / plane.range;
 			bright[1] += val*(w1[3 * (p + 1) + 0] + w1[3 * (p + 1) + 1] + w1[3 * (p + 1) + 2] - 3 * 127) / plane.range;
@@ -1045,8 +847,7 @@ public:
 	vector<uchar> medians;
 	PixelArray sample;
 	PixelArray resample;
-
-
+	
 	Worker(RtiBuilder &_builder): b(_builder) {
 		uint32_t njpegs = (b.nplanes-1)/3 + 1;
 		line.resize(njpegs);
@@ -1057,6 +858,7 @@ public:
 		medians.resize(b.width*3);
 		sample.resize(b.width, b.lights.size());
 		resample.resize(b.width, b.ndimensions);
+
 		//setAutodelete(false);
 	}
 
@@ -1082,38 +884,32 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	bias.resize(nplanes);
 	range.resize(nplanes);
 	
-	for(uint32_t m = 0; m < nmaterials; m++) {
-		Material &mat = materials[m];
-		for(uint32_t p = 0; p < nplanes; p++) {
-			scale[p] = mat.planes[p].scale;
-			bias[p]  = mat.planes[p].bias;
-			if(colorspace == MRGB || colorspace == MYCC)
-				range[p] = mat.planes[p].range;
-		}
+	for(uint32_t p = 0; p < nplanes; p++) {
+		scale[p] = material.planes[p].scale;
+		bias[p]  = material.planes[p].bias;
+		if(colorspace == MRGB || colorspace == MYCC)
+			range[p] = material.planes[p].range;
 	}
 	
 	if(type == RBF || type == BILINEAR) {
 		
 		if(colorspace == MRGB || colorspace == MYCC) { //ycc should only store 1 component!
-			for(uint32_t m = 0; m < nmaterials; m++) {
-				Material &mat = materials[m];
-				
-				MaterialBuilder &matb = materialbuilders[m];
-				for(uint32_t p = 0; p < ndimensions*3; p++) {
-					basis.push_back((int)(matb.mean[p]));
-				}
-				
-				
-				for(uint32_t p = 0; p < nplanes; p++) {
-					Material::Plane &plane = mat.planes[p];
-					float *eigen = matb.proj.data() + p*dim;
-					for(uint32_t k = 0; k < ndimensions*3; k++) {
-						basis.push_back((int)(127 + plane.range*eigen[k]));
-					}
+
+			for(uint32_t p = 0; p < ndimensions*3; p++)
+				basis.push_back((int)(materialbuilder.mean[p]));
+
+
+
+			for(uint32_t p = 0; p < nplanes; p++) {
+				Material::Plane &plane = material.planes[p];
+				float *eigen = materialbuilder.proj.data() + p*dim;
+				for(uint32_t k = 0; k < ndimensions*3; k++) {
+					basis.push_back((int)(127 + plane.range*eigen[k]));
 				}
 			}
 		}
 	}
+
 	
 	//TODO error control
 	bool ok = saveJSON(dir, quality);
@@ -1124,104 +920,67 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	if(type == RBF || type == BILINEAR) {
 		if(type == BILINEAR) {
 			
-			QImage img(resolution*(nplanes+1), resolution*nmaterials, QImage::Format_RGB32);
-			for(uint32_t m = 0; m < nmaterials; m++) {
-				Material &mat = materials[m];
-				MaterialBuilder &matb = materialbuilders[m];
-				
-				int Y = m*resolution;
+			QImage img(resolution*(nplanes+1), resolution, QImage::Format_RGB32);
+
+			for(uint32_t y = 0; y < resolution; y++) {
+				for(uint32_t x = 0; x < resolution; x++) {
+					uint32_t o = (x + y*resolution)*3;
+					int r = (int)materialbuilder.mean[o+0];
+					int g = (int)materialbuilder.mean[o+1];
+					int b = (int)materialbuilder.mean[o+2];
+					img.setPixel(x, y, qRgb(r, g, b));
+				}
+			}
+			for(uint32_t p = 0; p < nplanes; p++) {
+				Material::Plane &plane = material.planes[p];
+				float *eigen = materialbuilder.proj.data() + p*dim;
+				uint32_t X = (p+1)*resolution;
 				for(uint32_t y = 0; y < resolution; y++) {
 					for(uint32_t x = 0; x < resolution; x++) {
 						uint32_t o = (x + y*resolution)*3;
-						int r = (int)matb.mean[o+0];
-						int g = (int)matb.mean[o+1];
-						int b = (int)matb.mean[o+2];
-						img.setPixel(x, Y + y, qRgb(r, g, b));
-					}
-				}
-				for(uint32_t p = 0; p < nplanes; p++) {
-					Material::Plane &plane = mat.planes[p];
-					float *eigen = matb.proj.data() + p*dim;
-					uint32_t X = (p+1)*resolution;
-					for(uint32_t y = 0; y < resolution; y++) {
-						for(uint32_t x = 0; x < resolution; x++) {
-							uint32_t o = (x + y*resolution)*3;
-							int r = (int)(127 + plane.range*eigen[o+0]);
-							int g = (int)(127 + plane.range*eigen[o+1]);
-							int b = (int)(127 + plane.range*eigen[o+2]);
-							img.setPixel(X + x, Y + y, qRgb(r, g, b));
-						}
+						int r = (int)(127 + plane.range*eigen[o+0]);
+						int g = (int)(127 + plane.range*eigen[o+1]);
+						int b = (int)(127 + plane.range*eigen[o+2]);
+						img.setPixel(X + x, y, qRgb(r, g, b));
 					}
 				}
 			}
+
 			img.save(dir.filePath("materials.png"));
 			
 		} else if(type == RBF) {
 			
 			int side = 32;
-			QImage img(side*(nplanes+1), side*nmaterials, QImage::Format_RGB32);
+			QImage img(side*(nplanes+1), side, QImage::Format_RGB32);
 			img.fill(qRgb(0, 0, 0));
-			for(uint32_t m = 0; m < nmaterials; m++) {
-				Material &mat = materials[m];
-				MaterialBuilder &matb = materialbuilders[m];
-				int Y = m*side;
-				for(uint32_t i = 0; i < lights.size(); i++) {
+			for(uint32_t i = 0; i < imageset.lights.size(); i++) {
+				float dx, dy;
+				toOcta(imageset.lights[i], dx, dy, side);
+				int x = dx;
+				int y = dy;
+				int r = (int)materialbuilder.mean[i*3+0];
+				int g = (int)materialbuilder.mean[i*3+1];
+				int b = (int)materialbuilder.mean[i*3+2];
+				img.setPixel(0 + x, y, qRgb(r, g, b));
+			}
+			for(uint32_t p = 0; p < nplanes; p++) {
+				Material::Plane &plane = material.planes[p];
+				float *eigen = materialbuilder.proj.data() + p*dim;
+				uint32_t X = (p+1)*side;
+				for(size_t i = 0; i < imageset.lights.size(); i++) {
 					float dx, dy;
-					toOcta(lights[i], dx, dy, side);
-					int x = dx;
+					toOcta(imageset.lights[i], dx, dy, side);
+					uint32_t x = dx;
 					int y = dy;
-					int r = (int)matb.mean[i*3+0];
-					int g = (int)matb.mean[i*3+1];
-					int b = (int)matb.mean[i*3+2];
-					img.setPixel(0 + x, Y + y, qRgb(r, g, b));
-				}
-				for(uint32_t p = 0; p < nplanes; p++) {
-					Material::Plane &plane = mat.planes[p];
-					float *eigen = matb.proj.data() + p*dim;
-					uint32_t X = (p+1)*side;
-					for(size_t i = 0; i < lights.size(); i++) {
-						float dx, dy;
-						toOcta(lights[i], dx, dy, side);
-						uint32_t x = dx;
-						int y = dy;
-						int r = (int)(127 + plane.range*eigen[i*3+0]);
-						int g = (int)(127 + plane.range*eigen[i*3+1]);
-						int b = (int)(127 + plane.range*eigen[i*3+2]);
-						img.setPixel(X + x, Y + y, qRgb(r, g, b));
-					}
+					int r = (int)(127 + plane.range*eigen[i*3+0]);
+					int g = (int)(127 + plane.range*eigen[i*3+1]);
+					int b = (int)(127 + plane.range*eigen[i*3+2]);
+					img.setPixel(X + x, y, qRgb(r, g, b));
 				}
 			}
+
 			img.save(dir.filePath("materials.png"));
 		}
-		/*		//saving binary materials
-		basis.resize(3*ndimensions*(nplanes+1)*nmaterials, 0);
-		uint8_t *ubasis = new uint8_t[3*ndimensions*(nplanes+1)*nmaterials];
-		
-		uint32_t pos = 0;
-		for(uint32_t m = 0; m < nmaterials; m++) {
-			Material &mat = materials[m];
-			MaterialBuilder &matb = materialbuilders[m];
-			
-			for(uint32_t k = 0; k < ndimensions*3; k++) {
-				basis[pos] = ubasis[pos] = (int)(matb.mean[k]);
-				pos++;
-			}
-			
-			for(uint32_t p = 0; p < nplanes; p++) {
-				Material::Plane &plane = mat.planes[p];
-				float *eigen = matb.proj.data() + p*dim;
-				for(uint32_t k = 0; k < ndimensions*3; k++) {
-					ubasis[pos] = (int)(127 + plane.range*eigen[k]);
-					basis[pos] = ((ubasis[pos] - 127.0f)/plane.range);
-					pos++;
-				}
-			}
-		}
-		QFile bmaterials(dir.filePath("materials.bin"));
-		bmaterials.open(QFile::WriteOnly);
-		bmaterials.write((const char *)ubasis, 3*ndimensions*(nplanes+1)*nmaterials);
-		delete []ubasis;
-		bmaterials.close(); */
 	}
 	
 	//the image is processed one row at a time
@@ -1255,12 +1014,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		
 		encoders[i]->init(dir.filePath("plane_%1.jpg").arg(i).toStdString().c_str(), width, height);
 	}
-	
-	QImage segments(width, height, QImage::Format_Indexed8);
-	for(uint32_t m = 0; m < nmaterials; m++)
-		segments.setColor(m, qRgb(m*8, m*8, m*8));
-	//		segments.setColor(m, qRgb(m*93, m*172, m*200));
-	
+
 	//second reading.
 	imageset.restart();
 
@@ -1307,7 +1061,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			for(uint32_t x = 0; x < width; x++) {
 				if (savenormals)
 					normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], 0, doneworker->normals[x*3+1]));
-					//normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], doneworker->normals[x*3+1], doneworker->normals[x*3+2]));
+				//normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], doneworker->normals[x*3+1], doneworker->normals[x*3+2]));
 				if(savemeans)
 					means.setPixel(x, y- nworkers, qRgb(doneworker->means[x*3], doneworker->means[x*3+1], doneworker->means[x*3+2]));
 				if(savemedians)
@@ -1324,7 +1078,6 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		if(y < height) {
 			Worker *worker = workers[y];
 			assert(worker != nullptr);
-
 			imageset.readLine(worker->sample);
 
 			futures[y] = QtConcurrent::run(&pool, [worker](){worker->run(); });
@@ -1400,19 +1153,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 
 	if(savemedians)
 		medians.save(dir.filePath("medians.png"));
-	
-	if(nmaterials > 1) {
-		segments.save(dir.filePath("segments.png"));
-		QFileInfo seginfo(dir.filePath("segments.png"));
-		total += seginfo.size();
-	}
-	
-	
-	/*if(type == RBF || type == BILINEAR) {
-		QFileInfo matinfo(dir.filePath("materials.bin"));
-		total += matinfo.size();
-	}*/
-	
+
 	QFileInfo infoinfo(dir.filePath("info.json"));
 	total += infoinfo.size();
 	
@@ -1423,13 +1164,11 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 							 std::vector<uchar> &normals, std::vector<uchar> &means, std::vector<uchar> &medians) {
 
 	for(uint32_t x = 0; x < width; x++)
-		resamplePixel(sample(x), resample(x));
+		resamplePixel(sample[x], resample[x]);
 
 
 	for(uint32_t x = 0; x < width; x++) {
-		Material &mat = materials[0];
-
-		vector<float> pri = toPrincipal(0, (float *)(resample(x)));
+		vector<float> pri = toPrincipal(resample[x]);
 
 		if (savenormals) {
 			Vector3f n = getNormalThreeLights(pri);
@@ -1439,14 +1178,14 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 		}
 
 		if(savemeans) {
-			Vector3f n = extractMean(sample(x), lights.size());
+			Vector3f n = extractMean(sample[x], lights.size());
 			means[x*3+0] = n[0];
 			means[x*3+1] = n[1];
 			means[x*3+2] = n[2];
 		}
 
 		if(savemedians) {
-			Vector3f n = extractMedian(sample(x), lights.size());
+			Vector3f n = extractMedian(sample[x], lights.size());
 			medians[x*3+0] = n[0];
 			medians[x*3+1] = n[1];
 			medians[x*3+2] = n[2];
@@ -1458,7 +1197,7 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 				for(uint32_t c = 0; c < 3; c++) {
 					uint32_t p = j*3 + c;
 					if(j >= 1)
-						pri[p] = mat.planes[p].quantize(pri[p]);
+						pri[p] = material.planes[p].quantize(pri[p]);
 					line[j][x*3 + c] = pri[p];
 				}
 			}
@@ -1468,7 +1207,7 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 			for(uint32_t j = 0; j < nplanes/3; j++) {
 				for(uint32_t c = 0; c < 3; c++) {
 					uint32_t p = j*3 + c;
-					line[j][x*3 + c] = mat.planes[p].quantize(pri[p]);
+					line[j][x*3 + c] = material.planes[p].quantize(pri[p]);
 				}
 			}
 		}
@@ -1542,66 +1281,127 @@ double RtiBuilder::evaluateError(const std::string &output) {
 } */
 
 
-
+/*
 PixelArray RtiBuilder::resamplePixels(PixelArray &sample) {
-	
+
 	PixelArray pixels(nsamples, ndimensions);
 	
 	for(uint32_t i = 0; i < nsamples; i++)
 		resamplePixel(sample(i), pixels(i));
-	
+
 	return pixels;
+}*/
+
+void RtiBuilder::remapPixel(Pixel  &sample, Pixel &pixel, Resamplemap &resamplemap, float weight) {
+	if(weight == 0) return;
+	for(uint32_t i = 0; i < ndimensions; i++) {
+		for(auto &w: resamplemap[i]) {
+			pixel[i].r += sample[w.first].r*w.second * weight;
+			pixel[i].g += sample[w.first].g*w.second * weight;
+			pixel[i].b += sample[w.first].b*w.second * weight;
+		}
+	}
 }
 
-void RtiBuilder::resamplePixel(Color3f *sample, Color3f *pixel) {
-	
-	if(type != BILINEAR) {
-		for(uint32_t i = 0; i < ndimensions; i++) {
-			if(colorspace == MYCC)
-				pixel[i] = sample[i].toYcc();
-			else {
-				pixel[i] = sample[i];
-				if(gammaFix) {
-					pixel[i].r = sqrt(pixel[i].r)*sqrt(255.0f);
-					pixel[i].g = sqrt(pixel[i].g)*sqrt(255.0f);
-					pixel[i].b = sqrt(pixel[i].b)*sqrt(255.0f);
+void RtiBuilder::resamplePixel(Pixel &sample, Pixel &pixel) { //pos in pixels.
+
+	pixel.x = sample.x;
+	pixel.y = sample.y;
+	if(type == BILINEAR) {
+		if(imageset.light3d) {
+			//TODO move this somewhere else
+			float X = (resample_width-1)*sample.x/float(imageset.image_width);
+			float Y = (resample_height-1)*sample.y/float(imageset.image_height);
+
+			for(uint32_t i = 0; i < ndimensions; i++)
+				pixel[i].r = pixel[i].g = pixel[i].b = 0.0f;
+
+			//find 4 resamplemaps and coefficients
+			float ix, iy;
+			float dx = modff(X, &ix);
+			float dy = modff(Y, &iy);
+			Resamplemap &A = resamplemaps[int(ix) + int(iy)*resample_width];
+			float wA = (1 - dx)*(1 - dy);
+			remapPixel(sample, pixel, A, wA);
+
+			Resamplemap &B = resamplemaps[int(ix+1) + int(iy)*resample_width];
+			float wB = dx*(1 - dy);
+			remapPixel(sample, pixel, B, wB);
+
+			Resamplemap &C = resamplemaps[int(ix) + int(iy+1)*resample_width];
+			float wC = (1 - dx)*dy;
+			remapPixel(sample, pixel, C, wC);
+
+			Resamplemap &D = resamplemaps[int(ix+1) + int(iy+1)*resample_width];
+			float wD = dx*dy;
+			remapPixel(sample, pixel, D, wD);
+
+		} else {
+
+			for(uint32_t i = 0; i < ndimensions; i++) {
+				pixel[i].r = pixel[i].g = pixel[i].b = 0.0f;
+				for(auto &w: resamplemap[i]) {
+					pixel[i].r += sample[w.first].r*w.second;
+					pixel[i].g += sample[w.first].g*w.second;
+					pixel[i].b += sample[w.first].b*w.second;
 				}
 			}
-			
 		}
-		return;
+
+	} else { //NOT BILINEAR
+		for(uint32_t i = 0; i < ndimensions; i++)
+			pixel[i] = sample[i];
 	}
-#ifdef LINEAR
-	//RBF interpolation. map a pixel to a sphere pos and interpolate based on euclidean distance
-	arma::Col<double> r(lights.size()*3);
-	for(int i = 0; i < lights.size(); i++) {
-		r[i*3 + 0] = sample[i].r;
-		r[i*3 + 1] = sample[i].g;
-		r[i*3 + 2] = sample[i].b;
-	}
-	arma::Col<double> x = arma::solve(H, r);
-	for(int i = 0; i < ndimensions; i++) {
-		pixel[i].r = std::max(0.0, std::min(255.0, x[i*3+0]));
-		pixel[i].g = std::max(0.0, std::min(255.0, x[i*3+1]));
-		pixel[i].b = std::max(0.0, std::min(255.0, x[i*3+2]));
-	}
-	
-	return;
-#endif
+
 	for(uint32_t i = 0; i < ndimensions; i++) {
-		pixel[i].r = pixel[i].g = pixel[i].b = 0.0f;
-		for(auto &w: resamplemap[i]) {
-			pixel[i].r += sample[w.first].r*w.second;
-			pixel[i].g += sample[w.first].g*w.second;
-			pixel[i].b += sample[w.first].b*w.second;
-		}
 		if(colorspace == MYCC)
 			pixel[i] = pixel[i].toYcc();
+		else {
+			if(gammaFix) {
+				pixel[i].r = sqrt(pixel[i].r)*sqrt(255.0f);
+				pixel[i].g = sqrt(pixel[i].g)*sqrt(255.0f);
+				pixel[i].b = sqrt(pixel[i].b)*sqrt(255.0f);
+			}
+		}
 	}
 }
 
 
-void RtiBuilder::buildResampleMap() {
+//returno normalized light directions for a pixel
+//notice how sample are already intensity corrected.
+vector<Vector3f> RtiBuilder::relativeLights(int x, int y) {
+
+	vector<Vector3f> relights = imageset.lights3d;
+	for(Vector3f &light: relights) {
+		light = imageset.relativeLight(light, x, y);
+		light.normalize();
+	}
+	return relights;
+}
+
+void RtiBuilder::buildResampleMaps() {
+	if(!imageset.light3d) {
+		buildResampleMap(imageset.lights, resamplemap);
+		return;
+	}
+	resamplemaps.resize(resample_height*resample_width);
+
+	for(int y = 0; y < resample_height; y++) {
+		for(int x = 0; x < resample_width; x++) {
+			//TODO this should go into a class to avoid stupid onoff mistakes
+			auto &resamplemap = resamplemaps[x + y*resample_width];
+			int pixel_x = imageset.width*x/(resample_width-1);
+			int pixel_y = imageset.height*y/(resample_height-1);
+
+			auto relights = relativeLights(pixel_x, pixel_y);
+			//auto relights = relativeLights(imageset.width/2, imageset.height/2);
+			buildResampleMap(relights, resamplemap);
+		}
+	}
+}
+
+
+void RtiBuilder::buildResampleMap(std::vector<Vector3f> &lights, std::vector<std::vector<std::pair<int, float>>> &remap) {
 	/* every light is linear combination of 4 nearby points (x)
 	b = w00x00 + w01x01
 	solution is closed form matrix
@@ -1611,9 +1411,8 @@ void RtiBuilder::buildResampleMap() {
 	x = (At * A)^-1*At*b
 	
 	*/
-	
-#define LINEAR
-#ifdef LINEAR
+
+
 	/* To regularize problem expressed above
 	 * We want the solution to be close to the rbf approx (skipping cons
 	 *
@@ -1632,8 +1431,8 @@ void RtiBuilder::buildResampleMap() {
 
 	float radius = 1/(sigma*sigma);
 	Eigen::MatrixXd B = Eigen::MatrixXd::Zero(ndimensions, lights.size());
-	
-	resamplemap.resize(ndimensions);
+
+	remap.resize(ndimensions);
 	for(uint32_t y = 0; y < resolution; y++) {
 		if(callback) {
 			bool keep_going = (*callback)(std::string("Resampling light directions"), 100*y/resolution);
@@ -1644,9 +1443,9 @@ void RtiBuilder::buildResampleMap() {
 
 		for(uint32_t x = 0; x < resolution; x++) {
 			Vector3f n = fromOcta(x, y, resolution);
-			
+
 			//compute rbf weights
-			auto &weights = resamplemap[x + y*resolution];
+			auto &weights = remap[x + y*resolution];
 			weights.resize(lights.size());
 			float totw = 0.0f;
 			for(size_t i = 0; i < lights.size(); i++) {
@@ -1660,7 +1459,7 @@ void RtiBuilder::buildResampleMap() {
 			int count = 0;
 			for(size_t i = 0; i < weights.size(); i++) {
 				float &w = weights[i].second;
-				
+
 				w /= totw;
 				if(w > 0.005) { //might fail for extreme smoothing.
 					weights[count++] =  weights[i];
@@ -1674,172 +1473,160 @@ void RtiBuilder::buildResampleMap() {
 			}
 		}
 	}
-	
-	
-	//rows           cols
-	A = Eigen::MatrixXd::Zero(lights.size(), ndimensions);
-	//A = arma::Mat<double>(lights.size(), ndimensions, arma::fill::zeros);
+
+
+	Eigen::MatrixXd A = Eigen::MatrixXd::Zero(lights.size(), ndimensions);
 	for(uint32_t l = 0; l < lights.size(); l++) {
 		Vector3f &light = lights[l];
 		float lx = light[0];
 		float ly = light[1];
-		float lz = sqrt(1 - lx*lx - ly*ly);
+		float lz = sqrt(1.0f - lx*lx - ly*ly);
 		float s = fabs(lx) + fabs(ly) + fabs(lz);
+
 		//rotate 45 deg.
 		float x = (lx + ly)/s;
 		float y = (ly - lx)/s;
-		
+
 		x = (x + 1.0f)/2.0f;
 		y = (y + 1.0f)/2.0f;
+
 		x = x*(resolution - 1.0f);
 		y = y*(resolution - 1.0f);
-		
-		int sx = std::min((int)resolution-2, std::max(0, (int)floor(x)));
-		int sy = std::min((int)resolution-2, std::max(0, (int)floor(y)));
-		float dx = x - (float)sx;
-		float dy = y - (float)sy;
-		
+
+		int sx = std::min(int(resolution-2), std::max(0, int(floor(x))));
+		int sy = std::min(int(resolution-2), std::max(0, int(floor(y))));
+		float dx = x - float(sx);
+		float dy = y - float(sy);
+
 		float s00 = (1 - dx)*(1 - dy);
 		float s10 =      dx *(1 - dy);
 		float s01 = (1 - dx)* dy;
 		float s11 =      dx * dy;
-		
-		A(l, ((sx+0) + (sy+0)*resolution)) = s00;
-		A(l, ((sx+1) + (sy+0)*resolution)) = s10;
-		A(l, ((sx+0) + (sy+1)*resolution)) = s01;
-		A(l, ((sx+1) + (sy+1)*resolution)) = s11;
-		
+
+		A(l, ((sx+0) + (sy+0)*resolution)) = double(s00);
+		A(l, ((sx+1) + (sy+0)*resolution)) = double(s10);
+		A(l, ((sx+0) + (sy+1)*resolution)) = double(s01);
+		A(l, ((sx+1) + (sy+1)*resolution)) = double(s11);
+
 	}
-	
+
 	//	 x = (B + (AtA + kI)^-1 * At*(I - AB))*b]
 	//  original regularization coefficient was 0.1
 
 	Eigen::MatrixXd I = Eigen::MatrixXd::Identity(ndimensions, ndimensions);
-
 	Eigen::MatrixXd iAtA = (A.transpose()*A  + regularization*I).inverse();
 	Eigen::MatrixXd tI = Eigen::MatrixXd::Identity(lights.size(), lights.size());
 	Eigen::MatrixXd iA = B + iAtA*(A.transpose() * (tI - A*B));
 
-	/*arma::Mat<double> I(ndimensions, ndimensions, arma::fill::eye);
-	arma::Mat<double> At = A.t();
-	arma::Mat<double> AtA = At*A;
-	arma::Mat<double> iAtA = inv_sympd(AtA + regularization*I);
-	
-	arma::Mat<double> tI(lights.size(), lights.size(), arma::fill::eye);
-	
-	arma::Mat<double> iA = B + iAtA *(At * (tI - A*B)); */
-	
-	
-	resamplemap.clear();
-	resamplemap.resize(ndimensions);
+	remap.clear();
+	remap.resize(ndimensions);
 	//rows
 	for(uint32_t i = 0; i < ndimensions; i++) {
-		auto &weights = resamplemap[i];
-		
+		auto &weights = remap[i];
+
 		//cols
 		for(uint32_t c = 0; c < lights.size(); c++) {
 			double w = iA(i, c);
-			if(fabs(w) > 0.001)
+			if(fabs(w) > 0.005)
 				weights.push_back(std::make_pair(c, w));
-			
+
 		}
 	}
+
 	return;
-	
-#else
-	float radius = 64; //resolution*resolution*2;
-	resamplemap.resize(resolution*resolution);
-	for(int y = 0; y < resolution; y++) {
-		for(int x = 0; x < resolution; x++) {
-			Vector3f n = fromOcta(x, y, resolution);
-			
-			//compute rbf weights
-			auto &weights = resamplemap[x + y*resolution];
-			weights.resize(lights.size());
-			float totw = 0.0f;
-			for(size_t i = 0; i < lights.size(); i++) {
-				float d2 = (n - lights[i]).squaredNorm();
-				float w = exp(-radius*d2);
-				weights[i] = std::make_pair(i, w);
-				totw += w;
-			}
-			//pick only most significant and renormalize
-			float retotw = 0.0f;
-			int count = 0;
-			for(size_t i = 0; i < weights.size(); i++) {
-				float &w = weights[i].second;
-				
-				w /= totw;
-				if(w > 0.005) { //might fail for extreme smoothing.
-					weights[count++] =  weights[i];
-					retotw += w;
-				}
-			}
-			weights.resize(count);
-			for(auto &i: weights)
-				i.second /= retotw;
-		}
-	}
-#endif
-	
 }
 
-std::vector<float> RtiBuilder::toPrincipal(uint32_t m, float *v) {
-	MaterialBuilder &mat = materialbuilders[m];
+std::vector<float> RtiBuilder::toPrincipal(Pixel &pixel) {
+	if(!imageset.light3d || type == RBF || type == BILINEAR)
+		return toPrincipal(pixel, materialbuilder);
+
+	float ix = (resample_width-1)*pixel.x/float(imageset.image_width);
+	float iy = (resample_height-1)*pixel.y/float(imageset.image_height);
+
+
+	//find 4 resamplemaps and coefficients
+	float X, Y;
+	float dx = modff(ix, &X);
+	float dy = modff(iy, &Y);
+	MaterialBuilder &A = materialbuilders[int(X) + int(Y)*resample_width];
+	float wA = (1 - dx)*(1 - dy);
+	vector<float> res = toPrincipal(pixel, A);
+
+
+	MaterialBuilder &B = materialbuilders[int(X+1) + int(Y)*resample_width];
+	float wB = dx*(1 - dy);
+	vector<float> tmp = toPrincipal(pixel, B);
+	for(size_t i = 0; i < res.size(); i++)
+		res[i] = res[i]*wA + tmp[i]*wB;
+
+	MaterialBuilder &C = materialbuilders[int(X) + int(Y+1)*resample_width];
+	float wC = (1 - dx)*dy;
+	tmp = toPrincipal(pixel, C);
+	for(size_t i = 0; i < res.size(); i++)
+		res[i] += tmp[i]*wC;
+
+	MaterialBuilder &D = materialbuilders[int(X+1) + int(Y+1)*resample_width];
+	float wD = dx*dy;
+	tmp = toPrincipal(pixel, D);
+	for(size_t i = 0; i < res.size(); i++)
+		res[i] += tmp[i]*wD;
+	return res;
+}
+
+
+std::vector<float> RtiBuilder::toPrincipal(Pixel &pixel, MaterialBuilder &materialbuilder) {
+	float *v = (float *)pixel.data();
 	uint32_t dim = ndimensions*3;
-	
+
 	vector<float> res(nplanes, 0.0f);
-	
+
 	if(colorspace == LRGB) {
-		
+
 		for(size_t p = 0; p < nplanes; p++) {
 			for(size_t k = 0; k < dim; k++) {
-				res[p] += v[k] * mat.proj[k + p*dim];
+				res[p] += v[k] * materialbuilder.proj[k + p*dim];
 			}
 		}
-		
+
 		//get average luminance
-		vector<double> luma(ndimensions);
-		double max = 0.0;
+		vector<float> luma(ndimensions);
+		float max = 0.0;
 		for(uint32_t i = 0; i < ndimensions; i++) {
-			luma[i] = (0.2125*v[i*3+0] + 0.7154*v[i*3+1] + 0.0721*v[i*3+2])/(255.0f);
+			luma[i] = (0.2125f*v[i*3+0] + 0.7154f*v[i*3+1] + 0.0721f*v[i*3+2])/(255.0f);
 			max = std::max(luma[i], max);
 		}
 		if(max > 0)
-			for(double &l: luma)
+			for(float &l: luma)
 				l /= max;
-		
-		double r = 0.0;
-		double g = 0.0;
-		double b = 0.0;
-		double y = 0.0;
+
+		float r = 0.0, g = 0.0, b = 0.0, y = 0.0;
 		for(uint32_t i = 0; i < ndimensions; i++) {
-			r += (v[i*3+0]/255.0f)*(luma[i]);
-			g += (v[i*3+1]/255.0f)*(luma[i]);
+			r += (v[i*3+0]/255.0)*(luma[i]);
+			g += (v[i*3+1]/255.0)*(luma[i]);
 			b += (v[i*3+2]/255.0f)*(luma[i]);
 			y += luma[i]*luma[i];
 		}
 		res[0] = std::max(0.0, std::min(255.0, 255.0*r/y));
 		res[1] = std::max(0.0, std::min(255.0, 255.0*g/y));
 		res[2] = std::max(0.0, std::min(255.0, 255.0*b/y));
-		
+
 		//		double totluma = (res[0]+ res[1] + res[2])/(3.0 * 255.0);
-		
+
 		double totluma = (0.2125*res[0]+ 0.7154*res[1] + 0.0721*res[2])/255.0;
-		
-		
+
 		for(uint32_t p = 3; p < nplanes; p++)
 			res[p] /= totluma;
-		
+
+
 	} else { //RGB, YCC
 		vector<float> col(dim);
-		
+
 		for(size_t k = 0; k < dim; k++)
-			col[k] = v[k] - mat.mean[k];
-		
+			col[k] = v[k] - materialbuilder.mean[k];
+
 		for(size_t p = 0; p < nplanes; p++) {
 			for(size_t k = 0; k < dim; k++) {
-				res[p] += col[k] * mat.proj[k + p*dim];
+				res[p] += col[k] * materialbuilder.proj[k + p*dim];
 			}
 		}
 		if(colorspace == YCC) {
@@ -1858,8 +1645,8 @@ std::vector<float> RtiBuilder::toPrincipal(uint32_t m, float *v) {
 					col.g = col.b = 0.5f;
 				col *= 255.0f;
 			}
-			res[1] = 255.0f * cb/count; // (nplanes/3);
-			res[2] = 255.0f * cr/count; // (nplanes/3);
+			res[1] = 255.0f * cb/count;
+			res[2] = 255.0f * cr/count;
 		}
 	}
 	return res;
