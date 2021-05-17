@@ -26,12 +26,14 @@ public:
 
 	Vector3 operator*(float d) { return Vector3(v[0]*d, v[1]*d, v[2]*d); }
 	T operator*(const Vector3 &b) { return v[0]*b[0] + v[1]*b[1] + v[2]*b[2]; }
+	void operator*=(float d) { v[0] *= d; v[1] *= d; v[2] *= d; }
 
 	Vector3 operator/(float d) { return Vector3(v[0]/d, v[1]/d, v[2]/d); }
 	void operator/=(float w) { v[0] /= w; v[1] /= w; v[2]/= w; }
 
 	double squaredNorm() { return v[0]*(double)v[0] + v[1]*(double)v[1] + v[2]*(double)v[2]; }
 	double norm() { return sqrt(squaredNorm()); }
+	void normalize() { *this /= float(norm()); }
 	bool isZero() { return v[0] == 0 && v[1] == 0 && v[2] == 0; }
 };
 
@@ -98,31 +100,34 @@ typedef Color3<double>  Color3d;
 //pixel array is organized by pixel:
 //pixel0: light1, light2 ... light n;
 //then pixel1: etc etc.
+class Pixel: public std::vector<Color3f> {
+public:
+	int x, y;
+	float intensity;
+};
 
-class PixelArray: public std::vector<Color3f> {
+class PixelArray: public std::vector<Pixel> {
 public:
 	uint32_t nlights;
 
 	PixelArray(size_t n = 0, size_t k = 0): nlights(k) {
-		std::vector<Color3f>::resize(n*nlights);
+		resize(n, k);
 	}
 	void resize(size_t n, size_t k) {
 		nlights = k;
-		std::vector<Color3f>::resize(n*nlights);
+		std::vector<Pixel>::resize(n);
+		for(auto &pixel: *this)
+			pixel.resize(nlights);
 	}
 	uint32_t components() { return nlights; }
-	uint32_t npixels() { return size()/nlights; }
-	Color3f *pixel(size_t i) {
-		return data() + i*nlights;
+	uint32_t npixels() { return size(); }
+	std::vector<Color3f> &pixel(size_t i) {
+		return this->at(i);
 	}
-	Color3f *operator()(int i) {
-		return (data() + i*nlights);
-	}
-	//get ith sample, k light.
-	Color3f &operator()(size_t i, size_t k) { return *(data() + i*nlights + k); }
-	int npixels() const { return (int)size()/nlights; }
-	float *rawdata() { return (float *)data(); }
 
+	//get ith sample, k light.
+	//Color3f &operator()(size_t i, size_t k) { return *(data() + i*nlights + k); }
+	//float *rawdata() { return (float *)data(); }
 };
 
 #endif // VECTOR_H

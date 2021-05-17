@@ -31,6 +31,7 @@ void help() {
     cout << "\t-p <int>  : number of planes (default: 9)\n";
     cout << "\t-q <int>  : jpeg quality (default: 95)\n";
     cout << "\t-y <int>  : number of Y planes in YCC\n\n";
+	cout << "\t-3 <radius>: 3d light positions processing, ratio diameter_dome/image_width\n";
 
     //	cout << "\t-m <int>  : number of materials (default 8)\n";
 	cout << "\t-n        : extract normals\n";
@@ -105,7 +106,7 @@ int main(int argc, char *argv[]) {
 
 	opterr = 0;
     char c;
-	while ((c  = getopt (argc, argv, "hmMnr:d:q:p:s:c:reE:b:y:S:R:CD:B:L:k:v")) != -1)
+	while ((c  = getopt (argc, argv, "hmMn3:r:d:q:p:s:c:reE:b:y:S:R:CD:B:L:k:v")) != -1)
         switch (c)
         {
         case 'h':
@@ -195,6 +196,10 @@ int main(int argc, char *argv[]) {
 			/*		case 'd':c
             encoder.distortion = atof(optarg);
             break; */
+		case '3':  //assume lights positionals. (0, 0) is in the center of the image, (might add these values), and unit is image width
+			builder.imageset.light3d = true;
+			builder.imageset.dome_radius = float(atof(optarg));
+			break;
         case 'e':
             evaluate_error = true;
             break;
@@ -300,6 +305,13 @@ int main(int argc, char *argv[]) {
         help();
         return 1;
     }
+
+	if(builder.imageset.light3d == true && builder.type == RtiBuilder::RBF) {
+		cerr << "RBF basis do not support positional lights (for the moment)\n";
+		return 1;
+	}
+
+
     if( builder.colorspace == Rti::MYCC) {
         if(builder.yccplanes[0] == 0) {
             cerr << "Y nplanes in mycc must be specified (-y)!\n" << endl;
@@ -416,7 +428,7 @@ int main(int argc, char *argv[]) {
             totmse = sqrt(totmse);
 
             cout << output << "," << types[builder.type] << "," << colorspaces[builder.colorspace] << ","
-                 << builder.nplanes << ","<< builder.nmaterials << "," << builder.yccplanes[0] << ","
+				 << builder.nplanes << "," << builder.yccplanes[0] << ","
                  << size << "," << totpsnr << "," << totmse << endl;
 
 
@@ -442,7 +454,7 @@ int main(int argc, char *argv[]) {
         float r = sqrt(light[0]*light[0] + light[1]*light[1]);
         float azimut = asin(r);
         cout << output << "," << types[builder.type] << "," << colorspaces[builder.colorspace] << ","
-             << builder.nplanes << ","<< builder.nmaterials << "," << builder.yccplanes[0] << ","
+			 << builder.nplanes << "," << builder.yccplanes[0] << ","
              << size << "," << psnr << "," << mse << "," << azimut << "," << builder.sigma << "," << builder.regularization << "," << light[0] << "," << light[1] << endl;
     }
 

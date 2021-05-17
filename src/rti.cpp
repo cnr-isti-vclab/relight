@@ -62,7 +62,7 @@ bool Rti::load(const char *filename) {
 	}
 
 	if(type == RBF) {
-		sigma = obj["sigma"].toDouble();
+		sigma = float(obj["sigma"].toDouble());
 		QJsonArray jlights = obj["lights"].toArray();
 		lights.resize(jlights.size()/3);
 		for(size_t i = 0; i < lights.size(); i++) {
@@ -96,23 +96,20 @@ bool Rti::load(const char *filename) {
 	} else
 		nplanes = obj["nplanes"].toInt();
 
-
 	QJsonArray mats = obj["materials"].toArray();
-	nmaterials = mats.size();
-	materials.resize(nmaterials);
-	for(uint32_t i = 0; i < nmaterials; i++) {
-		QJsonObject jm = mats[i].toObject();
-		QJsonArray range = jm["range"].toArray();
-		QJsonArray offset = jm["bias"].toArray();
-		QJsonArray scale = jm["scale"].toArray();
-		Material &m = materials[i];
-		m.planes.resize(nplanes);
-		for(size_t p = 0; p < nplanes; p++) {
-			Material::Plane &plane = m.planes[p];
-			plane.range = range[p].toDouble();
-			plane.scale = scale[p].toDouble();
-			plane.bias = offset[p].toDouble();
-		}
+	int nmaterials = mats.size();
+	assert(nmaterials == 1);
+
+	QJsonObject jm = mats[0].toObject();
+	QJsonArray range = jm["range"].toArray();
+	QJsonArray offset = jm["bias"].toArray();
+	QJsonArray scale = jm["scale"].toArray();
+	material.planes.resize(nplanes);
+	for(size_t p = 0; p < nplanes; p++) {
+		Material::Plane &plane = material.planes[p];
+		plane.range = range[p].toDouble();
+		plane.scale = scale[p].toDouble();
+		plane.bias = offset[p].toDouble();
 	}
 
 	if(colorspace == MRGB || colorspace == MYCC) {
@@ -127,28 +124,19 @@ bool Rti::load(const char *filename) {
 
 		QJsonArray jbasis = obj["basis"].toArray();
 
-		for(uint32_t m = 0; m < nmaterials; m++) {
-			for(uint32_t p = 0; p < nplanes+1; p++) {
-				for(uint32_t c = 0; c < ndimensions; c++) {
-					for(int k = 0; k < 3; k++) {
-						uint32_t o = ((m*(nplanes+1) + p)*ndimensions + c)*3 + k;
-						float c = float(jbasis[o].toDouble());
-						if(p == 0)
-							basis[o] = c;
-						else
-							basis[o] = ((c - 127.0f)/materials[m].planes[p-1].range);
-					}
+		for(uint32_t p = 0; p < nplanes+1; p++) {
+			for(uint32_t c = 0; c < ndimensions; c++) {
+				for(int k = 0; k < 3; k++) {
+					uint32_t o = (p*ndimensions + c)*3 + k;
+					float c = float(jbasis[o].toDouble());
+					if(p == 0)
+						basis[o] = c;
+					else
+						basis[o] = ((c - 127.0f)/material.planes[p-1].range);
 				}
 			}
 		}
-	}
 
-	QImage segments;
-	if(nmaterials > 1) {
-		if(!segments.load(dir.filePath("segments.png"))) {
-			cerr << "Could not find segments!" << endl;
-			return false;
-		}
 	}
 
 	int njpegs = (nplanes-1)/3 + 1;
@@ -163,7 +151,6 @@ bool Rti::load(const char *filename) {
 		planedecs[i]->init(dir.filePath(QString("plane_%1.jpg").arg(i)).toStdString().c_str(), w, h);
 	}
 
-	material.resize(width*height);
 	size_t rowSize = width*3;
 	vector<uint8_t> row(rowSize);  //buffer for a row read in the jpeg
 
@@ -179,8 +166,6 @@ bool Rti::load(const char *filename) {
 			dec->readRows(1, row.data());
 			for(uint32_t x = 0; x < width; x++) {
 				uint32_t o = x + y*width;
-				if(nmaterials > 1)
-					material[o] = segments.pixelIndex(x, y);
 				planes[i*3][o] = row[x*3 + 0];
 				if(i*3+1 < nplanes)
 					planes[i*3+1][o] = row[x*3 + 1];
@@ -251,77 +236,68 @@ Rti Rti::clipped(int left, int bottom, int right, int top) {
 }
 
 void Rti::render(float lx, float ly, uint8_t *buffer, int stride, uint32_t renderplanes ) {
-    if(stride == 4)
-        for(size_t i = 0; i < width*height; i++)
-            buffer[i*4+3] = 255;
-    if(renderplanes == 0)
+	if(stride == 4)
+		for(size_t i = 0; i < width*height; i++)
+			buffer[i*4+3] = 255;
+	if(renderplanes == 0)
 		renderplanes = nplanes;
 
 	vector<float> lweights = lightWeights(lx, ly);
 
 	switch(colorspace) {
 	case LRGB: {
-		Material &m = materials[0];
 		for(size_t y = 0; y < height; y++) {
 			for(size_t x = 0; x < width; x++) {
 				size_t i = x + y*width;
 				//size_t j = x + (height-y-1)*width;
 				float l = 0;
 				for(uint32_t p = 3; p < nplanes; p++)
-					l += lweights[p-3]*m.planes[p].dequantize(planes[p][i]);
+					l += lweights[p-3]*material.planes[p].dequantize(planes[p][i]);
 				l /= 255.0;
 				//this should be in the range [0-255];
-                buffer[i*stride+0] = std::max(0, std::min(255, (int)(l*planes[0][i])));
-                buffer[i*stride+1] = std::max(0, std::min(255, (int)(l*planes[1][i])));
-                buffer[i*stride+2] = std::max(0, std::min(255, (int)(l*planes[2][i])));
+				buffer[i*stride+0] = std::max(0, std::min(255, (int)(l*planes[0][i])));
+				buffer[i*stride+1] = std::max(0, std::min(255, (int)(l*planes[1][i])));
+				buffer[i*stride+2] = std::max(0, std::min(255, (int)(l*planes[2][i])));
 			}
 		}
 		break;
 	}
 	case RGB: {
-		Material &m = materials[0];
 
 		for(uint32_t i = 0; i < width*height; i++) {
 			for(int c = 0; c < 3; c++) {
 				float l = 0.0f;
 				for(uint32_t p = c; p < nplanes; p += 3)
-					l += lweights[p/3]*m.planes[p].dequantize(planes[p][i]);
-                buffer[i*stride+c] = std::max(0, std::min(255, (int)(l)));
+					l += lweights[p/3]*material.planes[p].dequantize(planes[p][i]);
+				buffer[i*stride+c] = std::max(0, std::min(255, (int)(l)));
 			}
 		}
 		break;
 	}
 	case YCC: {
-		Material &m = materials[0];
-		
 		for(uint32_t i = 0; i < width*height; i++) {
 			Color3f color(0.0f, 0.0f, 0.0f);
-			color[1] = m.planes[1].dequantize(planes[1][i]);
-			color[2] = m.planes[2].dequantize(planes[2][i]);
+			color[1] = material.planes[1].dequantize(planes[1][i]);
+			color[2] = material.planes[2].dequantize(planes[2][i]);
 
 			for(uint32_t p = 0; p < nplanes; p += 3)
-				color[0] += lweights[p/3]* m.planes[p+0].dequantize(planes[p+0][i]);
+				color[0] += lweights[p/3]* material.planes[p+0].dequantize(planes[p+0][i]);
 
 			color *= 1/255.0f;
 			color = color.YCbCrToRgb();
 			color *= 255.0f;
 			for(int c = 0; c < 3; c++)
-                buffer[i*stride+c] = std::max(0, std::min(255, (int)(color[c])));
-		} 
+				buffer[i*stride+c] = std::max(0, std::min(255, (int)(color[c])));
+		}
 		break;
-	} 
+	}
 	case MYCC:
 	case MRGB:
 		for(uint32_t y = 0; y < height; y++) {
 			//compare the two values
 			for(uint32_t x = 0; x < width; x++) {
-				int m = 0;
-				if(nmaterials > 1)
-					m = material[x + y*width];
-				Material &mat = materials[m];
 
-
-				uint32_t off = 3*m*(nplanes+1);
+				uint32_t off = 3*(nplanes+1);
 				Color3f c(0.0f, 0.0f, 0.0f);
 				c[0] = lweights[off + 0];
 				c[1] = lweights[off + 1];
@@ -329,7 +305,7 @@ void Rti::render(float lx, float ly, uint8_t *buffer, int stride, uint32_t rende
 
 				if(colorspace == MRGB) {
 					for(uint32_t p = 0; p < renderplanes; p++) {
-						Material::Plane &plane = mat.planes[p];
+						Material::Plane &plane = material.planes[p];
 						float val = plane.dequantize(planes[p][x + y*width]);
 						c.r += val*lweights[off + 3*(p+1) + 0];
 						c.g += val*lweights[off + 3*(p+1) + 1];
@@ -339,13 +315,13 @@ void Rti::render(float lx, float ly, uint8_t *buffer, int stride, uint32_t rende
 				} else { //MYCC
 					for(uint32_t p = 0; p < yccplanes[1]; p++) {
 						for(int k = 0; k < 3; k++) {
-							Material::Plane &plane = mat.planes[p*3 + k];
+							Material::Plane &plane = material.planes[p*3 + k];
 							float val = plane.dequantize(planes[p*3 + k][x + y*width]);
 							c[k] += val*lweights[off + 3*(p*3 + k + 1) + k];
 						}
 					}
 					for(uint32_t p = yccplanes[1]*3; p < renderplanes; p++) {
-						Material::Plane &plane = mat.planes[p];
+						Material::Plane &plane = material.planes[p];
 						float val = plane.dequantize(planes[p][x + y*width]);
 						c.r += val*lweights[off + 3*(p+1) + 0];
 					}
@@ -363,9 +339,9 @@ void Rti::render(float lx, float ly, uint8_t *buffer, int stride, uint32_t rende
 					c.b *= c.b;
 				}
 
-                buffer[(x + y*width)*stride + 0] = std::max(0, std::min(255, (int)c.r));
-                buffer[(x + y*width)*stride + 1] = std::max(0, std::min(255, (int)c.g));
-                buffer[(x + y*width)*stride + 2] = std::max(0, std::min(255, (int)c.b));
+				buffer[(x + y*width)*stride + 0] = std::max(0, std::min(255, (int)c.r));
+				buffer[(x + y*width)*stride + 1] = std::max(0, std::min(255, (int)c.g));
+				buffer[(x + y*width)*stride + 2] = std::max(0, std::min(255, (int)c.b));
 			}
 		}
 		break;
@@ -518,6 +494,7 @@ std::vector<float> Rti::lightWeightsSh(float lx, float ly) {
 
 std::vector<float> Rti::lightWeightsH(float lx, float ly) {
 	float lz = sqrt(1.0f - lx*lx - ly*ly);
+	//TODO
 	throw 1;
 }
 
@@ -545,7 +522,6 @@ std::vector<float> Rti::rbfWeights(float lx, float ly) {
 
 std::vector<float> Rti::lightWeightsRbf(float lx, float ly) {
 	size_t np = nplanes;
-	size_t nm = nmaterials;
 	
 	//float radius = 49.0f; //previsoou sigma value
 	float radius = 1.0f/(sigma*sigma);
@@ -581,15 +557,13 @@ std::vector<float> Rti::lightWeightsRbf(float lx, float ly) {
 		w.second /= retotw;
 
 	//now iterate basis:
-	vector<float> lweights(nm * (np+1) * 3, 0.0f);
-	for(size_t m = 0; m < nm; m++) {
-		for(size_t p = 0; p < np+1; p++) {
-			for(size_t k = 0; k < 3; k++) {
-				float &w = lweights[3*(m*(np+1) + p) + k];
-				for(auto &light: weights) {
-					int o = ((m*(nplanes+1) + p)*ndimensions + light.first)*3 + k;
-					w += light.second*basis[o];
-				}
+	vector<float> lweights((np+1) * 3, 0.0f);
+	for(size_t p = 0; p < np+1; p++) {
+		for(size_t k = 0; k < 3; k++) {
+			float &w = lweights[3*p + k];
+			for(auto &light: weights) {
+				int o = (p*ndimensions + light.first)*3 + k;
+				w += light.second*basis[o];
 			}
 		}
 	}
@@ -601,7 +575,6 @@ size_t Rti::basePixelOffset(size_t m, size_t p, size_t x, size_t y, size_t k) {
 }
 
 std::vector<float> Rti::lightWeightsBilinear(float lx, float ly) {
-	size_t nm = nmaterials;
 	size_t np = nplanes;
 	float lz = sqrt(1 - lx*lx - ly*ly);
 	float s = fabs(lx) + fabs(ly) + fabs(lz);
@@ -624,25 +597,23 @@ std::vector<float> Rti::lightWeightsBilinear(float lx, float ly) {
 	float s01 = (1 - dx)* dy;
 	float s11 =      dx * dy;
 
-	vector<float> lweights(nm * (np+1) * 3, 0.0f);
+	vector<float> lweights((np+1) * 3, 0.0f);
 
 	//TODO optimize away basePixel
-	for(size_t m = 0; m < nm; m++) {
-		for(size_t p = 0; p < np+1; p++) {
-			for(size_t k = 0; k < 3; k++) {
-				float &w = lweights[3*(m*(np+1) + p) + k];
-				int o00 = basePixelOffset(m, p, sx, sy, k);
-				w += s00*basis[o00];
+	for(size_t p = 0; p < np+1; p++) {
+		for(size_t k = 0; k < 3; k++) {
+			float &w = lweights[3*(p) + k];
+			int o00 = basePixelOffset(0, p, sx, sy, k);
+			w += s00*basis[o00];
 
-				int o10 = basePixelOffset(m, p, sx+1, sy, k);
-				w += s10*basis[o10];
+			int o10 = basePixelOffset(0, p, sx+1, sy, k);
+			w += s10*basis[o10];
 
-				int o01 = basePixelOffset(m, p, sx, sy+1, k);
-				w += s01*basis[o01];
+			int o01 = basePixelOffset(0, p, sx, sy+1, k);
+			w += s01*basis[o01];
 
-				int o11 = basePixelOffset(m, p, sx+1, sy+1, k);
-				w += s11*basis[o11];
-			}
+			int o11 = basePixelOffset(0, p, sx+1, sy+1, k);
+			w += s11*basis[o11];
 		}
 	}
 	return lweights;
@@ -691,7 +662,7 @@ double Rti::evaluateError(ImageSet &imageset, Rti &rti, QString output, int refe
 
 		imageset.decode(nl, original.data());
 		
-/*		if(nl == reference) {
+		/*		if(nl == reference) {
 			QImage img(rti.width, rti.height, QImage::Format_RGB888);
 			rti.render(light[0], light[1], img.bits());
 			img.save(QString("%1.png").arg(nl));

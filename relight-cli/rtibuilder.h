@@ -7,15 +7,13 @@
 #include "../src/imageset.h"
 #include "../src/material.h"
 
-#ifdef USE_MATERIALS
-#include <flann/flann.hpp>
-#endif
-
 #include <Eigen/Core>
 
 #include <functional>
 class QDir;
 
+//store pair light, coefficients for each resampled light direction.
+typedef std::vector<std::vector<std::pair<int, float>>> Resamplemap;
 
 class RtiBuilder: public Rti {
 public:
@@ -24,7 +22,8 @@ public:
 	uint32_t nsamples = 1<<16; //TODO change to rate
 	float rangescale = 1.5;
 	int skip_image = -1;
-	float rangecompress = 0.0f; //betwee 0 and 1, where 1 is maximally compressed
+	//TODO: might want to use an euristic to get the best compromise to miniminze jpeg compression artifacts.
+	float rangecompress = 0.5f; //betwee 0 and 1, where 0 is maximally compressed
 	bool savenormals = false;
 	bool savemeans = false;
 	bool savemedians = false;
@@ -46,43 +45,55 @@ public:
 					 std::vector<uchar> &normal, std::vector<uchar> &mean, std::vector<uchar> &median);
 
 protected:
+	MaterialBuilder materialbuilder;
+
 	//for each resample pos get coeffs from the origina lights.
-	std::vector<std::vector<std::pair<int, float>>> resamplemap;
-	Eigen::MatrixXd A;
-	//arma::Mat<double> A;
+	Resamplemap resamplemap;
 
-#ifdef USE_MATERIALS
-	flann::Index<flann::L2<float>> *materialindex;
-#endif
-
+	//grid of resamplemaps to be interpolated.
+	int resample_width = 9, resample_height = 9;
+	std::vector<Resamplemap> resamplemaps;  //for per pixel direction light interpolation
 	std::vector<MaterialBuilder> materialbuilders;
-	//std::vector<Material> materials;
+
+	//TODO this should go inimageset!
+	//compute the 3d lights relative to the pixel x, y
+	std::vector<Vector3f> relativeLights(int x, int y);
+
+	void resamplePixel(Pixel &sample, Pixel &pixel);
+
+	void buildResampleMap(std::vector<Vector3f> &lights, std::vector<std::vector<std::pair<int, float> > > &remap);
+	void buildResampleMaps();
+	void remapPixel(Pixel &sample, Pixel &pixel, Resamplemap &resamplemap, float weight);
 
 
-	PixelArray resamplePixels(PixelArray &samples);
-	void resamplePixel(Color3f *sample, Color3f *pixel);
-	Vector3f getNormalThreeLights(std::vector<float> &pri); //use 3 virtual lights at 45 degs.
 
-	void buildResampleMap();
-	void pickMaterials(PixelArray &sample);
-	void pickBase(PixelArray &sample);
+	MaterialBuilder pickBase(PixelArray &sample, std::vector<Vector3f> &lights);
+	//use for 3d lights
+	void pickBases(PixelArray &sample);
+	void minmaxMaterial(PixelArray &sample);
+	void finalizeMaterial();
 
-	void estimateError(PixelArray &sample, std::vector<size_t> &indices, std::vector<float> &weights);
+
+
+	void estimateError(PixelArray &sample, std::vector<float> &weights);
 	void getPixelMaterial(PixelArray &pixels, std::vector<size_t> &indices);
 	void getPixelBestMaterial(PixelArray &pixels, std::vector<size_t> &indices);
 
-	void pickBasePCA(PixelArray &sample, std::vector<size_t> &indices);
-	void pickBasePTM();
-	void pickBaseHSH(Type base = HSH);
+	MaterialBuilder pickBasePCA(PixelArray &sample);
+	MaterialBuilder pickBasePTM(std::vector<Vector3f> &lights);
+	MaterialBuilder pickBaseHSH(std::vector<Vector3f> &lights, Type base = HSH);
 
-	
+	Vector3f getNormalThreeLights(std::vector<float> &pri); //use 3 virtual lights at 45 degs.
+
 //DEBUG
 	
-	void saveLightPixel(Color3f *p, int side, const QString &file);
-	void savePixel(Color3f *p, int side, const QString &file);
+	//void saveLightPixel(Color3f *p, int side, const QString &file);
+	//void savePixel(Color3f *p, int side, const QString &file);
 	void debugMaterials();
 
-	std::vector<float> toPrincipal(uint32_t m, float *v);
+	std::vector<float> toPrincipal(Pixel &pixel, MaterialBuilder &materialbuilder);
+	std::vector<float> toPrincipal(Pixel &pixel);
+
 };
 
 
