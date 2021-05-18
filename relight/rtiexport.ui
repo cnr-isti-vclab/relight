@@ -27,7 +27,7 @@
    <item>
     <widget class="QTabWidget" name="export_frame">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tabWidgetPage1">
       <attribute name="title">

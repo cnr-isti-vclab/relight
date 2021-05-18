@@ -66,7 +66,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="icons.qrc">
+           <iconset>
             <normaloff>:/icons/gtango/list-add.svg</normaloff>:/icons/gtango/list-add.svg</iconset>
           </property>
          </widget>
@@ -89,7 +89,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="icons.qrc">
+           <iconset>
             <normaloff>:/icons/gtango/list-remove.svg</normaloff>:/icons/gtango/list-remove.svg</iconset>
           </property>
          </widget>
@@ -106,7 +106,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="icons.qrc">
+           <iconset>
             <normaloff>:/icons/gtango/applications-system.svg</normaloff>:/icons/gtango/applications-system.svg</iconset>
           </property>
          </widget>
@@ -123,7 +123,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="icons.qrc">
+           <iconset>
             <normaloff>:/icons/gtango/spherelight.svg</normaloff>:/icons/gtango/spherelight.svg</iconset>
           </property>
           <property name="checkable">
@@ -143,7 +143,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="icons.qrc">
+           <iconset>
             <normaloff>:/icons/gtango/document-save.svg</normaloff>:/icons/gtango/document-save.svg</iconset>
           </property>
          </widget>
@@ -272,7 +272,7 @@
     <property name="title">
      <string>Export</string>
     </property>
-    <addaction name="actionExport_RTI_2"/>
+    <addaction name="actionExport_RTI"/>
     <addaction name="actionExport_Normals"/>
     <addaction name="separator"/>
     <addaction name="actionShow_queue"/>
@@ -318,7 +318,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/folder.svg</normaloff>:/icons/feather/folder.svg</iconset>
    </property>
    <property name="text">
@@ -341,7 +341,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/chevron-right.svg</normaloff>:/icons/feather/chevron-right.svg</iconset>
    </property>
    <property name="text">
@@ -356,7 +356,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/chevron-left.svg</normaloff>:/icons/feather/chevron-left.svg</iconset>
    </property>
    <property name="text">
@@ -371,7 +371,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/zoom-in.svg</normaloff>:/icons/feather/zoom-in.svg</iconset>
    </property>
    <property name="text">
@@ -386,7 +386,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/zoom-out.svg</normaloff>:/icons/feather/zoom-out.svg</iconset>
    </property>
    <property name="text">
@@ -416,7 +416,7 @@
   </action>
   <action name="actionHelp">
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/info.svg</normaloff>:/icons/feather/info.svg</iconset>
    </property>
    <property name="text">
@@ -433,7 +433,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/settings.svg</normaloff>:/icons/feather/settings.svg</iconset>
    </property>
    <property name="text">
@@ -445,7 +445,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/save.svg</normaloff>:/icons/feather/save.svg</iconset>
    </property>
    <property name="text">
@@ -457,7 +457,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/download.svg</normaloff>:/icons/feather/download.svg</iconset>
    </property>
    <property name="text">
@@ -469,7 +469,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/folder.svg</normaloff>:/icons/feather/folder.svg</iconset>
    </property>
    <property name="text">
@@ -481,7 +481,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/save.svg</normaloff>:/icons/feather/save.svg</iconset>
    </property>
    <property name="text">
@@ -507,7 +507,7 @@
   </action>
   <action name="actionNew">
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/file.svg</normaloff>:/icons/feather/file.svg</iconset>
    </property>
    <property name="text">
@@ -522,7 +522,7 @@
   </action>
   <action name="actionRuler">
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/gtango/ruler.svg</normaloff>:/icons/gtango/ruler.svg</iconset>
    </property>
    <property name="text">
@@ -554,7 +554,7 @@
   </action>
   <action name="actionView_RTI">
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/cast.svg</normaloff>:/icons/feather/cast.svg</iconset>
    </property>
    <property name="text">
@@ -581,7 +581,7 @@
   </action>
   <action name="actionShow_queue">
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/list.svg</normaloff>:/icons/feather/list.svg</iconset>
    </property>
    <property name="text">
@@ -590,7 +590,7 @@
   </action>
   <action name="actionPreferences">
    <property name="icon">
-    <iconset resource="icons.qrc">
+    <iconset>
      <normaloff>:/icons/feather/settings.svg</normaloff>:/icons/feather/settings.svg</iconset>
    </property>
    <property name="text">
@@ -598,8 +598,6 @@
    </property>
   </action>
  </widget>
- <resources>
-  <include location="icons.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

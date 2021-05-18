@@ -77,6 +77,10 @@ RtiExport::~RtiExport() {
 	delete ui;
 }
 
+void RtiExport::setTabIndex(int index) {
+	ui->export_frame->setCurrentIndex(index);
+}
+
 void RtiExport::setImages(QStringList _images) {
 	images = _images;
 }
