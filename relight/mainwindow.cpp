@@ -49,6 +49,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionNext,       SIGNAL(triggered(bool)),  this, SLOT(next()));
 	connect(ui->actionToggle_max_luma, SIGNAL(triggered(bool)), this, SLOT(toggleMaxLuma()));
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)),  this, SLOT(exportRTI()));
+	connect(ui->actionExport_Normals, SIGNAL(triggered(bool)),  this, SLOT(exportNormals()));
+
 	connect(ui->actionView_RTI, SIGNAL(triggered(bool)),  this, SLOT(viewRTI()));
 
 	connect(ui->actionShow_queue, SIGNAL(triggered(bool)),  this, SLOT(showQueue()));
@@ -900,7 +902,11 @@ void MainWindow::saveLPs() {
 	project.saveLP(basename + ".lp", directions);
 }
 
-void MainWindow::exportRTI() {
+void MainWindow::exportNormals() {
+	exportRTI(true);
+}
+
+void MainWindow::exportRTI(bool normals) {
 	if(project.balls.size())
 		project.computeDirections();
 
@@ -919,17 +925,22 @@ void MainWindow::exportRTI() {
 
 
 	//should init with saved preferences.
+	rtiexport->setTabIndex(normals? 1 : 0);
 	rtiexport->setImages(project.images());
 
 	rtiexport->showImage(imagePixmap->pixmap());
 	rtiexport->lights = project.directions();
 	rtiexport->path = project.dir.path();
 	rtiexport->setModal(true);
+
+
+
 	rtiexport->show();
 	//this needs to be called AFTER show, to ensure proportions are computed properly
 	rtiexport->setCrop(project.crop);
 	rtiexport->exec();
 	project.crop = rtiexport->crop;
+
 }
 
 void MainWindow::viewRTI() {

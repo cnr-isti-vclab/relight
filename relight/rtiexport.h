@@ -55,6 +55,8 @@ public:
 	void makeRti(QString output, QRect rect = QRect(0, 0, 0, 0), Format format = RELIGHT, bool means = false, bool normals = false, bool highNormals = false);
 
 public slots:
+	void setTabIndex(int index);
+
 	void changeBasis(int n);
 	void changePlanes(int n);
 	void createRTI(QString output);
@@ -77,7 +79,8 @@ public slots:
 signals:
 	void progressText(const QString &str);
 	void progress(int n);
-private:
+
+public:
 	Ui::RtiExport *ui;
 	HttpServer server;
 	bool viewAfter = false;
