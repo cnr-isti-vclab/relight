@@ -146,7 +146,8 @@ $ apt update && apt install \
     git \
     qtbase5-dev \
     libeigen3-dev \
-    libjpeg62-turbo-dev
+    libjpeg62-turbo-dev \
+    libomp-dev
 ```
 
 Clone this repository and build.
