@@ -93,28 +93,44 @@ void RtiTask::run() {
 		}
 
 		for(int plane = 0; plane < nplanes; plane++) {
-			QString command = QString("%1 %2/deepzoom.py \"%3\" %4").arg(python).arg(scriptdir).arg(plane).arg(quality);
-			cout << "Command: " << qPrintable(command) << endl;
-			if(QProcess::execute(command) < 0) {
+			QProcess process;
+			QStringList arguments;
+			arguments << QString("%1/deepzoom.py").arg(scriptdir);
+			arguments << QString("plane_%1").arg(plane);
+			arguments << QString::number(quality);
+			process.setWorkingDirectory(output);
+			process.start(python, arguments);
+			process.waitForFinished();
+			if(process.exitCode() != 0) {
+
+			//if(QProcess::execute(command) < 0) {
 				error = "Failed deepzoom";
 				status = FAILED;
 				break;
 			}
-			if(progressed("Deepzoom:", 100*(plane+1)/nplanes))
+			if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))
 				break;
 		}
 	}
 
 	if(format == "tarzoom") {
 		for(int plane = 0; plane < nplanes; plane++) {
-			QString command = QString("%1 %2/tarzoom.py \"%3\"").arg(python).arg(scriptdir).arg(plane);
-			cout << "Command: " << qPrintable(command) << endl;
-			if(QProcess::execute(command) < 0) {
-				error = "Failed deepzoom";
+
+			QProcess process;
+			process.setWorkingDirectory(output);
+
+			QStringList arguments;
+			arguments << QString("%1/tarzoom.py").arg(scriptdir);
+			arguments << QString("plane_%1").arg(plane);
+
+			process.start(python, arguments);
+			process.waitForFinished();
+			if(process.exitCode() != 0) {
+				error = "Failed tarzoom";
 				status = FAILED;
 				break;
 			}
-			if(progressed("Tarzoom:", 100*(plane+1)/nplanes))
+			if(!progressed("Tarzoom:", 100*(plane+1)/nplanes))
 				break;
 		}
 	}

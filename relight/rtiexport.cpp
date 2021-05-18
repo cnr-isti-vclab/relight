@@ -416,7 +416,7 @@ void RtiExport::createRTI1(QString output) {
 	else if(ui->formatDeepzoom->isChecked())
 		format = "deepzoom";
 	else if(ui->formatTarzoom->isChecked())
-		format = "deepzoom";
+		format = "tarzoom";
 
 	task->addParameter("format", Parameter::STRING, format);
 
