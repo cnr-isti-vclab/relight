@@ -120,7 +120,7 @@ void RtiExport::changeBasis(int n) {
 	case 5: //yrbf
 		break;
 	}
-	ui->chroma->setEnabled(n == 5);
+	ui->chroma->setEnabled(n == 5 || n == 6);
 	ui->planes->setEnabled(n >= 3);
 }
 
