@@ -98,6 +98,7 @@ private:
 	QSizeF deltas = QSizeF(1.0, 1.0);
 	QColor backgroundColor = Qt::black;
 	QColor croppingRectBorderColor = Qt::white;
+	float handleMargin = 20;
 
 };
 

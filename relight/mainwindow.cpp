@@ -940,7 +940,8 @@ void MainWindow::exportRTI(bool normals) {
 	rtiexport->setCrop(project.crop);
 	rtiexport->exec();
 	project.crop = rtiexport->crop;
-
+	if(ProcessQueue::instance().queue.size())
+		showQueue();
 }
 
 void MainWindow::viewRTI() {
