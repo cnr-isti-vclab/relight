@@ -374,6 +374,7 @@ void RtiExport::createRTI(bool view) {
 	if(output.isNull()) return;
 	viewAfter = view;
 	createRTI1(output);
+	close();
 }
 
 void RtiExport::createRTIandView() {
