@@ -273,7 +273,9 @@ void Ball::computeDirections() {
 		y *= r/d;
 		y *= -1; //cooordinates inverted!
 
-		float z = sqrt(1.0 - x*x - y*y);
+		float z2 = std::min(1.0, std::max(0.0, (1.0 - x*x - y*y)));
+		float z = sqrt(z2);
+
 		directions[i] = Vector3f(x, y, z);
 	}
 
