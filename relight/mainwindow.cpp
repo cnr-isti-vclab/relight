@@ -61,6 +61,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->saveLP,           SIGNAL(clicked(bool)),   this, SLOT(saveLPs()));
 
 	connect(ui->process,          SIGNAL(clicked(bool)),   this, SLOT(process()));
+	connect(ui->actionDetext_hilights,          SIGNAL(triggered(bool)),   this, SLOT(process()));
+
 	connect(ui->actionSave_LP,    SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
 	connect(ui->actionLoad_LP,    SIGNAL(triggered(bool)), this, SLOT(loadLP()));
 	connect(ui->showSpheres,      SIGNAL(clicked(bool)),   this, SLOT(showSpheres(bool)));
@@ -246,6 +248,8 @@ void MainWindow::enableActions() {
 	ui->actionExport_RTI->setEnabled(true);
 	ui->actionLoad_LP->setEnabled(true);
 	ui->actionSave_LP->setEnabled(true);
+	ui->actionZoom_in->setEnabled(true);
+	ui->actionZoom_out->setEnabled(true);
 
 	ui->addSphere->setEnabled(true);
 	ui->removeSphere->setEnabled(true);
