@@ -1060,8 +1060,8 @@ size_t RtiBuilder::save(const string &output, int quality) {
 
 			for(uint32_t x = 0; x < width; x++) {
 				if (savenormals)
-					normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], 0, doneworker->normals[x*3+1]));
-				//normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], doneworker->normals[x*3+1], doneworker->normals[x*3+2]));
+					//normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], 0, doneworker->normals[x*3+1]));
+					normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], doneworker->normals[x*3+1], doneworker->normals[x*3+2]));
 				if(savemeans)
 					means.setPixel(x, y- nworkers, qRgb(doneworker->means[x*3], doneworker->means[x*3+1], doneworker->means[x*3+2]));
 				if(savemedians)
@@ -1167,14 +1167,44 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 		resamplePixel(sample[x], resample[x]);
 
 
+	if (savenormals) {
+		Eigen::MatrixXf A(sample.nlights, width);
+		for(uint32_t x = 0; x < width; x++) {
+			for(uint32_t y = 0; y < sample.nlights; y++) {
+				A(y, x) = sample[y][x].mean(); //row cols
+			}
+		}
+		Eigen::MatrixXf b(sample.nlights, 3);
+		for(uint32_t y = 0; y < imageset.lights.size(); y++) {
+			b(y, 0) = imageset.lights[y][0];
+			b(y, 1) = imageset.lights[y][1];
+			b(y, 2) = imageset.lights[y][2];
+		}
+
+		Eigen::MatrixXf r = (A.transpose() * A).ldlt().solve(A.transpose() * b);
+		for(uint32_t x = 0; x < width; x++) {
+			Vector3f c(r(x, 0), r(x, 0), r(x, 2));
+			c.normalize();
+			for(uint32_t k = 0; k < 3; k++) {
+				normals[x*3+k] = floor(255*(c[k] + 1.0f)/2.0f);
+			}
+		}
+//		cout << "Here is the right hand side b:\n" << b << endl;
+//		cout << "The least-squares solution is:\n"
+//			 << A.bdcSvd(ComputeThinU | ComputeThinV).solve(b) << endl;
+	}
+
+
 	for(uint32_t x = 0; x < width; x++) {
 		vector<float> pri = toPrincipal(resample[x]);
 
 		if (savenormals) {
-			Vector3f n = getNormalThreeLights(pri);
+
+
+/*			Vector3f n = getNormalThreeLights(pri);
 			normals[x*3+0] = 255*n[0];
 			normals[x*3+1] = 255*n[1];
-			normals[x*3+2] = 255*n[2];
+			normals[x*3+2] = 255*n[2]; */
 		}
 
 		if(savemeans) {
