@@ -1060,8 +1060,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 
 			for(uint32_t x = 0; x < width; x++) {
 				if (savenormals)
-					normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], 0, doneworker->normals[x*3+1]));
-				//normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], doneworker->normals[x*3+1], doneworker->normals[x*3+2]));
+					normals.setPixel(x, y- nworkers, qRgb(doneworker->normals[x*3], doneworker->normals[x*3+1], doneworker->normals[x*3+2]));
 				if(savemeans)
 					means.setPixel(x, y- nworkers, qRgb(doneworker->means[x*3], doneworker->means[x*3+1], doneworker->means[x*3+2]));
 				if(savemedians)
@@ -1167,15 +1166,31 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 		resamplePixel(sample[x], resample[x]);
 
 
+	if (savenormals) {
+		Eigen::MatrixXf A(sample.nlights, 1);
+		Eigen::MatrixXf b(sample.nlights, 3);
+
+		for(uint32_t x = 0; x < width; x++) {
+			for(uint32_t y = 0; y < sample.nlights; y++)
+				A(y, 0) = sample[x][y].mean();
+
+			for(uint32_t y = 0; y < imageset.lights.size(); y++) {
+				b(y, 0) = imageset.lights[y][0];
+				b(y, 1) = imageset.lights[y][1];
+				b(y, 2) = imageset.lights[y][2];
+			}
+
+			Eigen::MatrixXf r = (A.transpose() * A).ldlt().solve(A.transpose() * b);
+			Vector3f c(r(0, 0), r(0, 1), r(0, 2));
+			c.normalize();
+			for(uint32_t k = 0; k < 3; k++)
+				normals[x*3+k] = floor(255*(c[k] + 1.0f)/2.0f);
+		}
+	}
+
+
 	for(uint32_t x = 0; x < width; x++) {
 		vector<float> pri = toPrincipal(resample[x]);
-
-		if (savenormals) {
-			Vector3f n = getNormalThreeLights(pri);
-			normals[x*3+0] = 255*n[0];
-			normals[x*3+1] = 255*n[1];
-			normals[x*3+2] = 255*n[2];
-		}
 
 		if(savemeans) {
 			Vector3f n = extractMean(sample[x], lights.size());
