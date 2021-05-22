@@ -78,6 +78,7 @@ public:
 	QueueWindow *queue = nullptr;
 	SettingsDialog *settings_dialog = nullptr;
 	QFutureWatcher<void> watcher;
+	bool highlightDetecting = false;
 
 
 	bool init();
