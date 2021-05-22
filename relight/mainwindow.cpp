@@ -733,6 +733,10 @@ void MainWindow::processCurrentSphere() {
 }
 
 void MainWindow::process() {
+	if(highlightDetecting)
+		return;
+	highlightDetecting = true;
+
 	progress = new QProgressDialog("Looking for highlights...", "Cancel", 0, project.size(), this);
 
 	QThreadPool::globalInstance()->setMaxThreadCount(1);
@@ -750,9 +754,12 @@ void MainWindow::process() {
 
 void MainWindow::cancelProcess() {
 	watcher.cancel();
+	highlightDetecting = false;
+
 }
 
 void MainWindow::finishedProcess() {
+	highlightDetecting = false;
 	if(notloaded.size() || flipped.size() || resolution.size()) {
 		if(notloaded.size())
 			QMessageBox::critical(this, "Houston we have a problem!", "Could not load images: " + notloaded.join(", "));
