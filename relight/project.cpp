@@ -313,9 +313,17 @@ void Project::save(QString filename) {
 
 
 	QJsonArray jmeasures;
-	for(Measure *measure: measures)
+	double length = 0;
+	double pixels = 0;
+	for(Measure *measure: measures) {
 		jmeasures.append(measure->toJson());
+		length += measure->length;
+		pixels += QLineF(measure->first->pos(), measure->second->pos()).length();
+	}
 	project.insert("measures", jmeasures);
+
+	if(length != 0)
+		project.insert("scale", length/pixels);
 
 	QJsonDocument doc(project);
 
