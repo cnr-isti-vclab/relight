@@ -736,8 +736,15 @@ void MainWindow::process() {
 	if(highlightDetecting)
 		return;
 	highlightDetecting = true;
-
-	progress = new QProgressDialog("Looking for highlights...", "Cancel", 0, project.size(), this);
+	if(!progress) {
+		progress = new QProgressDialog("Looking for highlights...", "Cancel", 0, project.size(), this);
+		connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
+		connect(&watcher, SIGNAL(progressValueChanged(int)), progress, SLOT(setValue(int)));
+		connect(progress, SIGNAL(canceled()), this, SLOT(cancelProcess()));
+		progress->setWindowModality(Qt::WindowModal);
+	}
+	progress->show();
+	progress->setMaximum(project.size());
 
 	QThreadPool::globalInstance()->setMaxThreadCount(1);
 	progress_jobs.clear();
@@ -746,16 +753,11 @@ void MainWindow::process() {
 	//0 -> ok, 1 -> could not open 2 -> flipped, 3-> wrong resolution
 	QFuture<void> future = QtConcurrent::map(progress_jobs, [&](int i) -> int { return processImage(i); });
 	watcher.setFuture(future);
-	connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
-	connect(&watcher, SIGNAL(progressValueChanged(int)), progress, SLOT(setValue(int)));
-	connect(progress, SIGNAL(canceled()), this, SLOT(cancelProcess()));
-	progress->setWindowModality(Qt::WindowModal);
 }
 
 void MainWindow::cancelProcess() {
 	watcher.cancel();
 	highlightDetecting = false;
-
 }
 
 void MainWindow::finishedProcess() {
