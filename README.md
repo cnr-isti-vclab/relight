@@ -137,7 +137,7 @@ SUPPORT_URL="https://www.debian.org/support"
 BUG_REPORT_URL="https://bugs.debian.org/"
 ```
 
-Install dependencies.
+Install dependencies. (replace libjpeg62-turbo0dev with libturbojpeg-dev in Ubuntu 2020)
 
 ```shell
 $ apt update && apt install \
