@@ -74,10 +74,11 @@ public:
 	//std::vector<bool> valid; //valid images.
 
 	std::vector<int> progress_jobs;
-	QProgressDialog *progress;
+	QProgressDialog *progress = nullptr;
 	QueueWindow *queue = nullptr;
 	SettingsDialog *settings_dialog = nullptr;
 	QFutureWatcher<void> watcher;
+	bool highlightDetecting = false;
 
 
 	bool init();
@@ -139,7 +140,8 @@ public slots:
 	void saveLPs();
 	void loadLP();
 	void loadLP(QString filename);
-	void exportRTI();
+	void exportRTI(bool normals = false);
+	void exportNormals();
 
 	void viewRTI();
 	void showQueue();

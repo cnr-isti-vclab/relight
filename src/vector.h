@@ -89,6 +89,9 @@ template <class T> struct Color3 {
 		g *= v;
 		b *= v;
 	}
+	float mean() {
+		return (r + g + b)/3;
+	}
 };
 typedef Color3<uint8_t>  Color3b;
 typedef Color3<uint16_t>  Color3us;

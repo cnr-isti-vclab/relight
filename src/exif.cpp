@@ -25,8 +25,8 @@ void IfdHeader::parse(QDataStream &stream, quint32 startPos) {
 			stream.device()->seek(startPos + offset);
 		}
 	}
-	if(tag == Exif::ExifIfdPointer)
-		cout << type << endl;
+	//if(tag == Exif::ExifIfdPointer)
+	//	cout << type << endl;
 	switch(type) {
 	case Undefined:
 	case Byte:

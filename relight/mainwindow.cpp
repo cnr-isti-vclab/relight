@@ -49,6 +49,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionNext,       SIGNAL(triggered(bool)),  this, SLOT(next()));
 	connect(ui->actionToggle_max_luma, SIGNAL(triggered(bool)), this, SLOT(toggleMaxLuma()));
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)),  this, SLOT(exportRTI()));
+	connect(ui->actionExport_Normals, SIGNAL(triggered(bool)),  this, SLOT(exportNormals()));
+
 	connect(ui->actionView_RTI, SIGNAL(triggered(bool)),  this, SLOT(viewRTI()));
 
 	connect(ui->actionShow_queue, SIGNAL(triggered(bool)),  this, SLOT(showQueue()));
@@ -59,6 +61,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->saveLP,           SIGNAL(clicked(bool)),   this, SLOT(saveLPs()));
 
 	connect(ui->process,          SIGNAL(clicked(bool)),   this, SLOT(process()));
+	connect(ui->actionDetext_hilights,          SIGNAL(triggered(bool)),   this, SLOT(process()));
+
 	connect(ui->actionSave_LP,    SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
 	connect(ui->actionLoad_LP,    SIGNAL(triggered(bool)), this, SLOT(loadLP()));
 	connect(ui->showSpheres,      SIGNAL(clicked(bool)),   this, SLOT(showSpheres(bool)));
@@ -244,6 +248,8 @@ void MainWindow::enableActions() {
 	ui->actionExport_RTI->setEnabled(true);
 	ui->actionLoad_LP->setEnabled(true);
 	ui->actionSave_LP->setEnabled(true);
+	ui->actionZoom_in->setEnabled(true);
+	ui->actionZoom_out->setEnabled(true);
 
 	ui->addSphere->setEnabled(true);
 	ui->removeSphere->setEnabled(true);
@@ -727,7 +733,18 @@ void MainWindow::processCurrentSphere() {
 }
 
 void MainWindow::process() {
-	progress = new QProgressDialog("Looking for highlights...", "Cancel", 0, project.size(), this);
+	if(highlightDetecting)
+		return;
+	highlightDetecting = true;
+	if(!progress) {
+		progress = new QProgressDialog("Looking for highlights...", "Cancel", 0, project.size(), this);
+		connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
+		connect(&watcher, SIGNAL(progressValueChanged(int)), progress, SLOT(setValue(int)));
+		connect(progress, SIGNAL(canceled()), this, SLOT(cancelProcess()));
+		progress->setWindowModality(Qt::WindowModal);
+	}
+	progress->show();
+	progress->setMaximum(project.size());
 
 	QThreadPool::globalInstance()->setMaxThreadCount(1);
 	progress_jobs.clear();
@@ -736,17 +753,15 @@ void MainWindow::process() {
 	//0 -> ok, 1 -> could not open 2 -> flipped, 3-> wrong resolution
 	QFuture<void> future = QtConcurrent::map(progress_jobs, [&](int i) -> int { return processImage(i); });
 	watcher.setFuture(future);
-	connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
-	connect(&watcher, SIGNAL(progressValueChanged(int)), progress, SLOT(setValue(int)));
-	connect(progress, SIGNAL(canceled()), this, SLOT(cancelProcess()));
-	progress->setWindowModality(Qt::WindowModal);
 }
 
 void MainWindow::cancelProcess() {
 	watcher.cancel();
+	highlightDetecting = false;
 }
 
 void MainWindow::finishedProcess() {
+	highlightDetecting = false;
 	if(notloaded.size() || flipped.size() || resolution.size()) {
 		if(notloaded.size())
 			QMessageBox::critical(this, "Houston we have a problem!", "Could not load images: " + notloaded.join(", "));
@@ -900,7 +915,11 @@ void MainWindow::saveLPs() {
 	project.saveLP(basename + ".lp", directions);
 }
 
-void MainWindow::exportRTI() {
+void MainWindow::exportNormals() {
+	exportRTI(true);
+}
+
+void MainWindow::exportRTI(bool normals) {
 	if(project.balls.size())
 		project.computeDirections();
 
@@ -919,17 +938,23 @@ void MainWindow::exportRTI() {
 
 
 	//should init with saved preferences.
+	rtiexport->setTabIndex(normals? 1 : 0);
 	rtiexport->setImages(project.images());
 
 	rtiexport->showImage(imagePixmap->pixmap());
 	rtiexport->lights = project.directions();
 	rtiexport->path = project.dir.path();
 	rtiexport->setModal(true);
+
+
+
 	rtiexport->show();
 	//this needs to be called AFTER show, to ensure proportions are computed properly
 	rtiexport->setCrop(project.crop);
 	rtiexport->exec();
 	project.crop = rtiexport->crop;
+	if(ProcessQueue::instance().queue.size())
+		showQueue();
 }
 
 void MainWindow::viewRTI() {

@@ -13,6 +13,7 @@
 #include "imageset.h"
 #include "jpeg_decoder.h"
 
+#include <assert.h>
 using namespace std;
 
 ImageSet::ImageSet(const char *path) {
@@ -83,6 +84,8 @@ bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip
 	img_ext << "*.jpg" << "*.JPG";
 	images = dir.entryList(img_ext);
 
+	if(skip_image >= 0)
+		images.removeAt(skip_image);
 
 	try {
 		std::vector<QString> filenames;
@@ -90,10 +93,9 @@ bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip
 
 		if(ignore_filenames) {
 			if(images.size() != int(filenames.size())) {
-				QString error = QString("Lp number of lights (%1) different from the number of images found (%2)").arg(filenames.size(), images.size());
+				QString error = QString("Lp number of lights (%1) different from the number of images found (%2)").arg(filenames.size()).arg(images.size());
 				throw error;
 			}
-
 		} else {
 			throw QString("TODO: unimplemented.");
 
@@ -290,7 +292,8 @@ QImage ImageSet::maxImage(std::function<bool(std::string stage, int percent)> *c
 }
 
 void ImageSet::decode(size_t img, unsigned char *buffer) {
-	throw "TO FIX for crop!";
+	//TODO FIX for crop!;
+	assert(width == image_width && height == image_height);
 	decoders[img]->readRows(height, buffer);
 }
 

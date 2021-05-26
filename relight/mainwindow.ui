@@ -253,6 +253,7 @@
     <addaction name="separator"/>
     <addaction name="actionRotate_all_right"/>
     <addaction name="actionRotate_all_right_2"/>
+    <addaction name="actionDetext_hilights"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -267,12 +268,13 @@
      <string>Calibration</string>
     </property>
     <addaction name="actionLens_parameters"/>
+    <addaction name="actionWhite_balance"/>
    </widget>
    <widget class="QMenu" name="menuExport">
     <property name="title">
      <string>Export</string>
     </property>
-    <addaction name="actionExport_RTI_2"/>
+    <addaction name="actionExport_RTI"/>
     <addaction name="actionExport_Normals"/>
     <addaction name="separator"/>
     <addaction name="actionShow_queue"/>
@@ -595,6 +597,16 @@
    </property>
    <property name="text">
     <string>Preferences...</string>
+   </property>
+  </action>
+  <action name="actionWhite_balance">
+   <property name="text">
+    <string>White balance...</string>
+   </property>
+  </action>
+  <action name="actionDetext_hilights">
+   <property name="text">
+    <string>Detect hilights</string>
    </property>
   </action>
  </widget>
