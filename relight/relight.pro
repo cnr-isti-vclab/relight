@@ -13,8 +13,8 @@ DEFINES += NOMINMAX
 win32:INCLUDEPATH += ../libjpeg/include
 win32:LIBS += ../libjpeg/lib/jpeg.lib
 
-unix:INCLUDEPATH += /usr/include/eigen3 /usr/include/python3.6m
-unix:LIBS += -ljpeg -liomp5 -lpython3.6m
+unix:INCLUDEPATH += /usr/include/eigen3
+unix:LIBS += -ljpeg -liomp5
 unix:QMAKE_CXXFLAGS += -fopenmp
 
 
@@ -27,10 +27,6 @@ mac:QMAKE_CXXFLAGS += -fopenmp
 mac:QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp -lomp -I/usr/local/include
 mac:QMAKE_LFLAGS += -lomp
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
-
-
-
-INCLUDEPATH += pybind11/include
 
 SOURCES += main.cpp \
     imagecropper.cpp \
