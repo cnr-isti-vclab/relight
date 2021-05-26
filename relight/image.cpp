@@ -40,7 +40,7 @@ void Image::readExif(Exif &exif) {
 	exposureTime = exif[Exif::ExposureTime].toDouble();
 	//ColorSpace
 
-	for(auto tag: exif.keys()) {
+	/*for(auto tag: exif.keys()) {
 		cout << qPrintable(exif.tagNames[tag]) << " = " << qPrintable(exif[tag].toString()) << endl;
-	}
+	}*/
 }

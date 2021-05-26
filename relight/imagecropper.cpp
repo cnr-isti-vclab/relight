@@ -317,36 +317,37 @@ namespace {
 
 CursorPosition ImageCropper::cursorPosition(const QRectF& _cropRect, const QPointF& _mousePosition)
 {
-	CursorPosition cursorPosition = CursorPositionUndefined;
 	//
-	if ( _cropRect.contains( _mousePosition ) ) {
+	float x = _mousePosition.x();
+	float y = _mousePosition.y();
+	QRectF outside = _cropRect.adjusted(-handleMargin, -handleMargin, handleMargin, handleMargin);
+	if(!outside.contains(_mousePosition))
+		return CursorPositionUndefined;
 
-		if (isPointNearSide(_cropRect.top(), _mousePosition.y()) &&
-			isPointNearSide(_cropRect.left(), _mousePosition.x())) {
-			cursorPosition = CursorPositionTopLeft;
-		} else if (isPointNearSide(_cropRect.bottom(), _mousePosition.y()) &&
-				   isPointNearSide(_cropRect.left(), _mousePosition.x())) {
-			cursorPosition = CursorPositionBottomLeft;
-		} else if (isPointNearSide(_cropRect.top(), _mousePosition.y()) &&
-				   isPointNearSide(_cropRect.right(), _mousePosition.x())) {
-			cursorPosition = CursorPositionTopRight;
-		} else if (isPointNearSide(_cropRect.bottom(), _mousePosition.y()) &&
-				   isPointNearSide(_cropRect.right(), _mousePosition.x())) {
-			cursorPosition = CursorPositionBottomRight;
-		} else if (isPointNearSide(_cropRect.left(), _mousePosition.x())) {
-			cursorPosition = CursorPositionLeft;
-		} else if (isPointNearSide(_cropRect.right(), _mousePosition.x())) {
-			cursorPosition = CursorPositionRight;
-		} else if (isPointNearSide(_cropRect.top(), _mousePosition.y())) {
-			cursorPosition = CursorPositionTop;
-		} else if (isPointNearSide(_cropRect.bottom(), _mousePosition.y())) {
-			cursorPosition = CursorPositionBottom;
-		} else {
-			cursorPosition = CursorPositionMiddle;
-		}
-	}
-	//
-	return cursorPosition;
+	int top = fabs(_cropRect.top() - y) < handleMargin;
+	int bottom = fabs(_cropRect.bottom() - y) < handleMargin;
+	int left = fabs(_cropRect.left() - x) < handleMargin;
+	int right = fabs(_cropRect.right() - x) < handleMargin;
+
+	if(top && left)
+		return CursorPositionTopLeft;
+	if(bottom && left)
+		return CursorPositionBottomLeft;
+	if(top && right)
+		return CursorPositionTopRight;
+	if(bottom && right)
+		return CursorPositionBottomRight;
+
+	if(left)
+		return CursorPositionLeft;
+	if(right)
+		return CursorPositionRight;
+	if(top)
+		return CursorPositionTop;
+	if(bottom)
+		return CursorPositionBottom;
+
+	return CursorPositionMiddle;
 }
 
 void ImageCropper::updateCursorIcon(const QPointF& _mousePosition)

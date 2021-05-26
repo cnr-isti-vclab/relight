@@ -77,6 +77,10 @@ RtiExport::~RtiExport() {
 	delete ui;
 }
 
+void RtiExport::setTabIndex(int index) {
+	ui->export_frame->setCurrentIndex(index);
+}
+
 void RtiExport::setImages(QStringList _images) {
 	images = _images;
 }
@@ -120,7 +124,7 @@ void RtiExport::changeBasis(int n) {
 	case 5: //yrbf
 		break;
 	}
-	ui->chroma->setEnabled(n == 5);
+	ui->chroma->setEnabled(n == 5 || n == 6);
 	ui->planes->setEnabled(n >= 3);
 }
 
@@ -370,6 +374,7 @@ void RtiExport::createRTI(bool view) {
 	if(output.isNull()) return;
 	viewAfter = view;
 	createRTI1(output);
+	close();
 }
 
 void RtiExport::createRTIandView() {
@@ -416,7 +421,7 @@ void RtiExport::createRTI1(QString output) {
 	else if(ui->formatDeepzoom->isChecked())
 		format = "deepzoom";
 	else if(ui->formatTarzoom->isChecked())
-		format = "deepzoom";
+		format = "tarzoom";
 
 	task->addParameter("format", Parameter::STRING, format);
 
