@@ -10,6 +10,7 @@
 #include "queuewindow.h"
 #include "httpserver.h"
 #include "settingsdialog.h"
+#include "domecalibration.h"
 
 #include <QInputDialog>
 #include <QFileDialog>
@@ -68,6 +69,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->showSpheres,      SIGNAL(clicked(bool)),   this, SLOT(showSpheres(bool)));
 
 	connect(ui->actionLens_parameters, SIGNAL(triggered(bool)), this, SLOT(editLensParameters()));
+	connect(ui->actionDome_geometry, SIGNAL(triggered(bool)), this, SLOT(domeCalibration()));
+	connect(ui->actionWhite_balance, SIGNAL(triggered(bool)), this, SLOT(whiteBalance()));
 
 	connect(ui->actionHelp,       SIGNAL(triggered(bool)), this, SLOT(showHelp()));
 
@@ -980,6 +983,18 @@ void MainWindow::editLensParameters() {
 	focal->setWindowModality(Qt::WindowModal);
 	bool result = focal->exec();
 	delete focal;
+}
+
+void MainWindow::whiteBalance() {
+
+}
+
+void MainWindow::domeCalibration() {
+	DomeCalibration *calibration = new DomeCalibration(this, project.dome);
+	calibration->setModal(true);
+	calibration->show();
+
+	project.dome = calibration->dome;
 }
 
 

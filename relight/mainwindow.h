@@ -148,6 +148,8 @@ public slots:
 
 
 	void editLensParameters();
+	void whiteBalance();
+	void domeCalibration();
 
 	void showHelp();
 

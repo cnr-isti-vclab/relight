@@ -4,6 +4,7 @@
 #include "measure.h"
 #include "ball.h"
 #include "lens.h"
+#include "dome.h"
 #include "image.h"
 #include <QDir>
 #include <QString>
@@ -17,7 +18,7 @@ public:
 	QDir dir;                  //image folder
 	QSize imgsize;             //images width and height (must be the same for all).
 	Lens lens;
-
+	Dome dome;
 
 	std::vector<Image> images1;
 	std::map<int, Ball *> balls;

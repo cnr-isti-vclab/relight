@@ -269,6 +269,7 @@
     </property>
     <addaction name="actionLens_parameters"/>
     <addaction name="actionWhite_balance"/>
+    <addaction name="actionDome_geometry"/>
    </widget>
    <widget class="QMenu" name="menuExport">
     <property name="title">
@@ -607,6 +608,11 @@
   <action name="actionDetext_hilights">
    <property name="text">
     <string>Detect hilights</string>
+   </property>
+  </action>
+  <action name="actionDome_geometry">
+   <property name="text">
+    <string>Dome geometry...</string>
    </property>
   </action>
  </widget>
