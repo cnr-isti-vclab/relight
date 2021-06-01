@@ -57,7 +57,10 @@ SOURCES += main.cpp \
     rtitask.cpp \
     settingsdialog.cpp \
     ../relight-cli/convert_rti.cpp \
-    ../src/legacy_rti.cpp
+    ../src/legacy_rti.cpp \
+    domecalibration.cpp \
+    dome.cpp \
+    ../src/lp.cpp
 
 
 HEADERS += \
@@ -90,7 +93,11 @@ HEADERS += \
     rtitask.h \
     settingsdialog.h \
     ../src/legacy_rti.h \
-    httplib.h
+    httplib.h \
+    domecalibration.h \
+    dome.h \
+    ../src/vector.h \
+    ../src/lp.h
 
 FORMS += \
     mainwindow.ui \
@@ -98,7 +105,8 @@ FORMS += \
     helpdialog.ui \
     focaldialog.ui \  
     queuewindow.ui \
-    settingsdialog.ui
+    settingsdialog.ui \
+    domecalibration.ui
 RESOURCES += \
     icons.qrc
 
