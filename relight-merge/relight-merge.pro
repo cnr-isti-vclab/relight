@@ -19,7 +19,7 @@ win32:LIBS += ../libjpeg/lib/jpeg.lib
 
 unix:INCLUDEPATH += /usr/include/eigen3 /usr/include/python3.6m
 unix:LIBS += -ljpeg -liomp5
-unix:QMAKE_CXXFLAGS += -fopenmp
+#unix:QMAKE_CXXFLAGS += -fopenmp
 
 mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/2.0.6/include \
     /usr/local/include \
