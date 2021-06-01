@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
 			}
 			enc.finish();
 		}
-		rti.planes.clear();
+		rti.planes = std::vector<std::vector<uint8_t>>();
 	}
 
 
