@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
 			enc.init(filename.toStdString().c_str(), width, height);
 
 
-			for(int y = height-1; y >= 0; y--) {
+			for(int y = 0; y < height; y++) {
 				for(int32_t x = 0; x < width; x++) {
 					int32_t p = y*width + x;
 					for(int k = 0; k < 3; k++)
