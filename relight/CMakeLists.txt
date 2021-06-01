@@ -52,6 +52,8 @@ set (RELIGHT_HEADERS
 	../src/exif.h
 	../src/material.h
 	../src/eigenpca.h
+	../src/lp.h
+	../src/vector.h
 	../relight-cli/rtibuilder.h
 	processqueue.h
 	queueitem.h
@@ -60,6 +62,8 @@ set (RELIGHT_HEADERS
 	task.h
 	script.h
 	rtitask.h
+	dome.h
+	domecalibration.h
 )
 
 set (RELIGHT_SOURCES
@@ -83,6 +87,7 @@ set (RELIGHT_SOURCES
 	../src/rti.cpp
 	../src/legacy_rti.cpp
 	../src/exif.cpp
+	../src/lp.cpp
 	helpdialog.cpp
 	focaldialog.cpp
 	settingsdialog.cpp
@@ -93,6 +98,8 @@ set (RELIGHT_SOURCES
 	task.cpp
 	script.cpp
 	rtitask.cpp
+	domecalibration.cpp
+	dome.cpp
 )
 
 set (RELIGHT_FORMS
@@ -102,6 +109,7 @@ set (RELIGHT_FORMS
 	queuewindow.ui
 	settingsdialog.ui
 	focaldialog.ui
+	domecalibration.ui
 )
 
 set (RELIGHT_RESOURCES
