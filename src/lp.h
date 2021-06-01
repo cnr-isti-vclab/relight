@@ -1,11 +1,11 @@
 #ifndef LP_H
 #define LP_H
 
+class QString;
 
-class Lp
-{
-public:
-	Lp();
-};
+#include "vector.h"
+#include <vector>
+
+void parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::vector<QString> &filenames);
 
 #endif // LP_H

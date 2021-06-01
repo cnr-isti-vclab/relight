@@ -39,7 +39,8 @@ SOURCES += main.cpp \
     ../src/rti.cpp \
     ../src/legacy_rti.cpp \
     rtibuilder.cpp \
-    convert_rti.cpp
+    convert_rti.cpp \
+    ../src/lp.cpp
 
 HEADERS += \
     ../src/getopt.h \
@@ -51,7 +52,8 @@ HEADERS += \
     ../src/rti.h \
     ../src/legacy_rti.h \
     ../src/eigenpca.h \
-    rtibuilder.h
+    rtibuilder.h \
+    ../src/lp.h
 
 
 DISTFILES += \
