@@ -21,7 +21,7 @@
 
 using namespace std;
 
-bool Rti::load(const char *filename) {
+bool Rti::load(const char *filename, bool loadPlanes) {
 
 	QDir dir;
 
@@ -136,9 +136,14 @@ bool Rti::load(const char *filename) {
 				}
 			}
 		}
-
 	}
+	if(loadPlanes)
+		return loadData(dir.path().toStdString().c_str());
+	return true;
+}
 
+bool Rti::loadData(const char *folder) {
+	QDir dir(folder);
 	int njpegs = (nplanes-1)/3 + 1;
 
 	std::vector<JpegDecoder *> planedecs(njpegs);

@@ -384,7 +384,6 @@ int main(int argc, char *argv[]) {
             cerr << "Directory for redraw not found!\n" << endl;
             return 1;
         }
-
 		for(size_t i = 0; i < builder.lights.size(); i++) {
 			Vector3f &rlight = builder.lights[i];
           //  rti.render(rlight[0], rlight[1], buffer.data());

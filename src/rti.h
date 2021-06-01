@@ -65,7 +65,8 @@ public:
 	std::string error; //for error reporting
 
 	Rti() {}
-	bool load(const char *filename);
+	bool load(const char *filename, bool loadPlanes = true);
+	bool loadData(const char *folder);
 //	bool save(const char *filename, Format format = JSON, ImgFormat img_format = JPEG, int quality = 90);
     void render(float lx, float ly, uint8_t *img, int stride = 3, uint32_t renderplanes = 0);
 	void clip(int left, int bottom, int right, int top); //right and top pixel excluded
