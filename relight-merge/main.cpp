@@ -121,6 +121,7 @@ int main(int argc, char *argv[]) {
 			}
 			enc.finish();
 		}
+		rti.planes.clear();
 	}
 
 
