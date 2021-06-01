@@ -180,6 +180,11 @@ bool Rti::loadData(const char *folder) {
 		}
 	}
 
+	for(int i = 0; i < planedecs.size(); i++) {
+		//planedecs[i]->finish();
+		delete planedecs[i];
+	}
+
 	headersize = 0;
 	QFileInfo i_info(dir.filePath("info.json"));
 	headersize += i_info.size();
