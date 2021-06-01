@@ -1,5 +1,4 @@
-QT -= gui
-
+QT += concurrent
 CONFIG += c++11 console
 CONFIG -= app_bundle
 
@@ -14,4 +13,36 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-SOURCES += main.cpp
+
+win32:INCLUDEPATH += ../libjpeg/include
+win32:LIBS += ../libjpeg/lib/jpeg.lib
+
+unix:INCLUDEPATH += /usr/include/eigen3 /usr/include/python3.6m
+unix:LIBS += -ljpeg -liomp5
+unix:QMAKE_CXXFLAGS += -fopenmp
+
+mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/2.0.6/include \
+    /usr/local/include \
+    /usr/local/include/eigen3
+mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/2.0.6/lib/ -ljpeg
+mac:LIBS += -framework Accelerate
+mac:QMAKE_CXXFLAGS += -fopenmp
+mac:QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp -lomp -I/usr/local/include
+mac:QMAKE_LFLAGS += -lomp
+mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
+
+SOURCES += main.cpp \
+    ../src/rti.cpp \
+    ../src/jpeg_decoder.cpp \
+    ../src/imageset.cpp \
+    ../src/lp.cpp \
+    ../src/jpeg_encoder.cpp \
+    ../relight-cli/rtibuilder.cpp
+
+HEADERS += \
+    ../src/rti.h \
+    ../src/jpeg_decoder.h \
+    ../src/imageset.h \
+    ../src/lp.h \
+    ../src/jpeg_encoder.h \
+    ../relight-cli/rtibuilder.h
