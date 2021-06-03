@@ -95,7 +95,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="process">
+         <widget class="QPushButton" name="detectHighlights">
           <property name="enabled">
            <bool>false</bool>
           </property>
@@ -222,7 +222,7 @@
     <addaction name="actionSave_as"/>
     <addaction name="separator"/>
     <addaction name="actionPreferences"/>
-    <addaction name="actionProcess"/>
+    <addaction name="actionDetectHighlights"/>
     <addaction name="actionLoad_LP"/>
     <addaction name="actionSave_LP"/>
     <addaction name="separator"/>
@@ -247,13 +247,13 @@
     </property>
     <addaction name="actionAdd_sphere_point"/>
     <addaction name="actionAdd_sphere_highlight"/>
+    <addaction name="actionDetectHighlights"/>
     <addaction name="separator"/>
     <addaction name="actionRuler"/>
     <addaction name="actionDelete_selected"/>
     <addaction name="separator"/>
     <addaction name="actionRotate_all_right"/>
     <addaction name="actionRotate_all_right_2"/>
-    <addaction name="actionDetext_hilights"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -431,9 +431,9 @@
     <string>About</string>
    </property>
   </action>
-  <action name="actionProcess">
+  <action name="actionDetectHighlights">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
@@ -603,11 +603,6 @@
   <action name="actionWhite_balance">
    <property name="text">
     <string>White balance...</string>
-   </property>
-  </action>
-  <action name="actionDetext_hilights">
-   <property name="text">
-    <string>Detect hilights</string>
    </property>
   </action>
   <action name="actionDome_geometry">
