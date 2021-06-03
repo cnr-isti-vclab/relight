@@ -233,6 +233,10 @@ void Project::load(QString filename) {
 		throw(QString("Can't load a project without a valid folder"));
 
 	lens.fromJson(obj["lens"].toObject());
+	lens.width = imgsize.width();
+	lens.height = imgsize.height();
+
+	dome.fromJson(obj["dome"].toObject());
 
 	for(auto img: obj["images"].toArray()) {
 		Image image;
@@ -297,6 +301,9 @@ void Project::save(QString filename) {
 	QJsonObject jlens = lens.toJson();
 	project.insert("lens", jlens);
 
+	QJsonObject jdome = dome.toJson();
+	project.insert("dome", jdome);
+
 	if(crop.isValid()) {
 		QJsonObject jcrop;
 		jcrop.insert("left", crop.left());
@@ -357,8 +364,26 @@ void Project::saveLP(QString filename, std::vector<Vector3f> &directions) {
 		Vector3f d = directions[i];
 		stream << images1[i].filename << " " << d[0] << " " << d[1] << " " << d[2] << "\n";
 	}
+	QFile obj("sphere.obj");
+	obj.open(QFile::WriteOnly);
+	QTextStream str(&obj);
+	for(size_t i = 0; i < directions.size(); i++) {
+		Vector3f d = directions[i];
+		str << "v " << d[0] << " " << d[1] << " " << d[2] << "\n";
+	}
 }
 
+float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, const Vector3f &center, float radius) {
+	float a = direction.norm();
+	float b = direction*(origin - center)*2.0f;
+	float c = center.squaredNorm() + origin.squaredNorm() + center*origin*2.0f - radius*radius;
+
+	float det = b*b - 4.0f*a*c;
+	if(det <= 0)
+		return 0;
+	float d = (-b + sqrt(det))/(2.0f*a);
+	return d;
+}
 void  Project::computeDirections() {
 	if(balls.size() == 0) {
 		QMessageBox::critical(nullptr, "Missing light directions.", "Light directions can be loaded from a .lp file or processing the spheres.");
@@ -369,9 +394,59 @@ void  Project::computeDirections() {
 	if(balls.size()) {
 		for(auto it: balls) {
 			Ball *ball = it.second;
-			ball->computeDirections();
+			ball->computeDirections(lens);
 			if(ball->directions.size() != size())
 				throw QString("Ball number of directions is different than images");
+
+			//if we have a focal length we can rotate the directions of the lights appropriately, unless in the center!
+			if(lens.focalLength && (ball->center != QPointF(0, 0))) {
+				//we need to take into account the fact thet the sphere is not centered.
+				//we adjust by the angle with the view direction of the highlight.
+
+
+				float bx = ball->center.x();
+				float by = ball->center.y();
+				Vector3f viewDir = lens.viewDirection(bx, by);
+				viewDir.normalize();
+				float angle = acos(Vector3f(0, 0, -1) * viewDir);
+				//cout << "angle: " << 180*angle/M_PI << endl;
+				Vector3f axis = Vector3f(viewDir[1], - viewDir[0], 0);
+				axis.normalize();
+				Vector3f &v17 = ball->directions[15];
+				Vector3f &v49 = ball->directions[47];
+				//cout << "V17: " << v17[0] << " " << v17[1] << " " << v17[2] << endl;
+				//cout << "v49: " << v49[0] << " " << v49[1] << " " << v49[2] << endl;
+				//cout << "Angle: " << v17.angle(Vector3f(-v49[0], -v49[1], v49[2]))*180/M_PI << endl;
+				Vector3f real = v17 ^ Vector3f(-v49[0], -v49[1], v49[2]);
+				real.normalize();
+
+				for(Vector3f &v: ball->directions)
+					v = v.rotate(axis, angle);
+				//cout << " " << endl;
+				//cout << "V17: " << v17[0] << " " << v17[1] << " " << v17[2] << endl;
+				//cout << "v49: " << v49[0] << " " << v49[1] << " " << v49[2] << endl;
+				//cout << "Angle: " << v17.angle(Vector3f(-v49[0], -v49[1], v49[2]))*180/M_PI << endl;
+
+				if(dome.domeDiameter) {
+				//find intersection between directions and sphere.
+					for(int i = 0; i < ball->directions.size(); i++) {
+						Vector3f &direction = ball->directions[i];
+						direction.normalize();
+						Vector3f origin = lens.viewDirection(ball->lights[i].x(), ball->lights[i].y());
+						//bring it back to surface plane
+						origin[2] = 0;
+						//normalize by width
+						origin /= lens.ccdWidth();
+
+						float radius = (dome.domeDiameter/dome.imageWidth)/2;
+						Vector3f center(0, 0, dome.verticalOffset/dome.imageWidth);
+						float distance = lineSphereDistance(origin, direction, center, radius);
+						Vector3f position = origin + direction*distance;
+						images1[i].position = position;
+						direction = (position - Vector3f(0, 0, dome.verticalOffset/dome.imageWidth))/radius;
+					}
+				}
+			}
 
 			for(size_t i = 0; i < ball->directions.size(); i++) {
 				Vector3f d = ball->directions[i];
@@ -388,5 +463,4 @@ void  Project::computeDirections() {
 		if(weights[i] > 0)
 			images1[i].direction = directions[i]/weights[i];
 	}
-
 }

@@ -77,3 +77,4 @@ void DomeCalibration::loadConfig() {
 void DomeCalibration::saveConfig() {
 
 }
+

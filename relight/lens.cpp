@@ -33,13 +33,13 @@ void Lens::fromJson(const QJsonObject &obj) {
 
 void Lens::readExif(Exif &exif) {
 	focalLength = exif[Exif::FocalLength].toDouble();
-	pixelSizeX = exif[Exif::PixelXDimension].toDouble();
-	pixelSizeY = exif[Exif::PixelYDimension].toDouble();
+	//pixelSizeX = exif[Exif::PixelXDimension].toDouble();
+	//pixelSizeY = exif[Exif::PixelYDimension].toDouble();
 
-	if(focalLength && pixelSizeX && pixelSizeY) {
+	/*if(focalLength && pixelSizeX && pixelSizeY) {
 		focal35equivalent = false;
 		return;
-	}
+	}*/
 
 	focalLength = exif[Exif::FocalLengthIn35mmFilm].toDouble();
 	if(focalLength) {

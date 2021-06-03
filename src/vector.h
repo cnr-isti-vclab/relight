@@ -23,18 +23,32 @@ public:
 	void operator+=(const Vector3 &b) { v[0] += b[0]; v[1] += b[1]; v[2] += b[2]; }
 
 	Vector3 operator-(const Vector3 &b) const { return Vector3(v[0]-b[0], v[1]-b[1], v[2]-b[2]);	}
+	void operator-=(const Vector3 &b) { v[0] -= b[0]; v[1] -= b[1]; v[2] -= b[2]; }
 
-	Vector3 operator*(float d) { return Vector3(v[0]*d, v[1]*d, v[2]*d); }
-	T operator*(const Vector3 &b) { return v[0]*b[0] + v[1]*b[1] + v[2]*b[2]; }
+	Vector3 operator*(float d) const { return Vector3(v[0]*d, v[1]*d, v[2]*d); }
+	T operator*(const Vector3 &b) const { return v[0]*b[0] + v[1]*b[1] + v[2]*b[2]; }
 	void operator*=(float d) { v[0] *= d; v[1] *= d; v[2] *= d; }
 
-	Vector3 operator/(float d) { return Vector3(v[0]/d, v[1]/d, v[2]/d); }
+	Vector3 operator/(float d) const { return Vector3(v[0]/d, v[1]/d, v[2]/d); }
 	void operator/=(float w) { v[0] /= w; v[1] /= w; v[2]/= w; }
 
-	double squaredNorm() { return v[0]*(double)v[0] + v[1]*(double)v[1] + v[2]*(double)v[2]; }
-	double norm() { return sqrt(squaredNorm()); }
+	double squaredNorm() const { return v[0]*(double)v[0] + v[1]*(double)v[1] + v[2]*(double)v[2]; }
+	double norm() const { return sqrt(squaredNorm()); }
 	void normalize() { *this /= float(norm()); }
-	bool isZero() { return v[0] == 0 && v[1] == 0 && v[2] == 0; }
+	bool isZero() const { return v[0] == 0 && v[1] == 0 && v[2] == 0; }
+	Vector3 operator^(const Vector3 &b) const {
+		return Vector3(
+			v[1]*b[2] - v[2]*b[1],
+			v[2]*b[0] - v[0]*b[2],
+			v[0]*b[1] - v[1]*b[0]
+		);
+	}
+	Vector3 rotate(const Vector3 &axis, float angle) const {
+		return (*this)*cos(angle) + (axis ^ (*this))*sin(angle) + axis*(axis*(*this))*(1 - cos(angle));
+	}
+	float angle(const Vector3 &b) {
+		return acos(((*this)*b)/(b.norm() * (*this).norm()));
+	}
 };
 
 typedef Vector3<uint16_t> Vector3us;

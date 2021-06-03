@@ -904,7 +904,7 @@ void MainWindow::saveLPs() {
 
 		Ball *ball = it.second;
 		filename = project.dir.filePath(filename);
-		ball->computeDirections();
+		ball->computeDirections(project.lens);
 		project.saveLP(filename, ball->directions);
 	}
 	QMessageBox::information(this, "Saved LPs", QString("Saved %1 .lp's in images folder.").arg(project.balls.size()));
@@ -991,7 +991,7 @@ void MainWindow::whiteBalance() {
 void MainWindow::domeCalibration() {
 	DomeCalibration *calibration = new DomeCalibration(this, project.dome);
 	calibration->setModal(true);
-	calibration->show();
+	calibration->exec();
 
 	project.dome = calibration->dome;
 }

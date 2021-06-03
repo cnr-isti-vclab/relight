@@ -10,7 +10,9 @@
 #include <assert.h>
 #include "mainwindow.h"
 #include "project.h"
+#include "lens.h"
 #include <iostream>
+
 
 using namespace std;
 
@@ -252,26 +254,32 @@ void Ball::findHighlight(QImage img, int n) {
 	lights[n] = bari;
 }
 
-void Ball::computeDirections() {
+void Ball::computeDirections(Lens &lens) {
 
 	directions.resize(lights.size());
+	Vector3f viewDir = lens.viewDirection(center.x(), center.y());
 	for(size_t i = 0; i < lights.size(); i++) {
 		if(lights[i].isNull()) {
 			directions[i] = Vector3f(0, 0, 0);
 			continue;
 		}
 
+
 		float x = lights[i].x();
 		float y = lights[i].y();
+		Vector3f dir = lens.viewDirection(x, y);
+
 		x = (x - inner.left() - smallradius)/radius;
-		y = (y - inner.top() - smallradius)/radius;
+		y = -(y - inner.top() - smallradius)/radius; //inverted y  coords
 
 		float d = sqrt(x*x + y*y);
 		float a = asin(d)*2;
+		//this takes into account large spheres
+		float delta = viewDir.angle(dir);
+		a += delta;
 		float r = sin(a);
 		x *= r/d;
 		y *= r/d;
-		y *= -1; //cooordinates inverted!
 
 		float z2 = std::min(1.0, std::max(0.0, (1.0 - x*x - y*y)));
 		float z = sqrt(z2);
