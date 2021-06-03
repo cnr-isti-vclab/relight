@@ -32,6 +32,7 @@ protected:
 };
 
 class QJsonObject;
+class Lens;
 
 class Ball {
 public:
@@ -67,7 +68,7 @@ public:
 	~Ball();
 	bool fit(QSize imgsize);
 	void findHighlight(QImage im, int n);
-	void computeDirections();
+	void computeDirections(Lens &lens);
 
 	void setActive(bool active);
 	void resetHighlight(size_t n); //reset light and direction of the detected highlight, of image n.

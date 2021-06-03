@@ -2,6 +2,7 @@
 #define LENS_H
 
 #include <vector>
+#include "../src/vector.h"
 
 class QJsonObject;
 class Exif;
@@ -30,6 +31,12 @@ public:
 			double w = pixelSizeX * width;
 			return focalLength * 35 / w;
 		}
+	}
+	//return vector from eye to pixel (z < 0)
+	Vector3f viewDirection(float x, float y) {
+		x -= width/2;
+		y -= height/2;
+		return Vector3f(x*pixelSizeX, -y*pixelSizeY, -focalLength);
 	}
 
 	double ccdWidth() {
