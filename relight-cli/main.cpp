@@ -31,7 +31,7 @@ void help() {
     cout << "\t-p <int>  : number of planes (default: 9)\n";
     cout << "\t-q <int>  : jpeg quality (default: 95)\n";
     cout << "\t-y <int>  : number of Y planes in YCC\n\n";
-	cout << "\t-3 <radius>: 3d light positions processing, ratio diameter_dome/image_width\n";
+	cout << "\t-3 <radius[:offset]>: 3d light positions processing, ratio diameter_dome/image_width\n               and optionally vertical offset of the center of the sphere to the surface.\n";
 
     //	cout << "\t-m <int>  : number of materials (default 8)\n";
 	cout << "\t-n        : extract normals\n";
@@ -196,10 +196,15 @@ int main(int argc, char *argv[]) {
 			/*		case 'd':c
             encoder.distortion = atof(optarg);
             break; */
-		case '3':  //assume lights positionals. (0, 0) is in the center of the image, (might add these values), and unit is image width
+		case '3': { //assume lights positionals. (0, 0) is in the center of the image, (might add these values), and unit is image width
 			builder.imageset.light3d = true;
 			builder.imageset.dome_radius = float(atof(optarg));
-			break;
+			QString params(optarg);
+			if(params.contains(':')) {
+				builder.imageset.vertical_offset = params.split(':')[1].toDouble();
+			}
+		}
+		break;
         case 'e':
             evaluate_error = true;
             break;

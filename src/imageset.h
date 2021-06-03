@@ -23,6 +23,7 @@ public:
 	std::vector<Vector3f> lights;
 	std::vector<Vector3f> lights3d;
 	float dome_radius = 4.0f;
+	float vertical_offset = 0.0f;
 	bool light3d = false;
 
 	
