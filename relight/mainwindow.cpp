@@ -52,7 +52,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)),  this, SLOT(exportRTI()));
 	connect(ui->actionExport_Normals, SIGNAL(triggered(bool)),  this, SLOT(exportNormals()));
 
-	connect(ui->actionView_RTI, SIGNAL(triggered(bool)),  this, SLOT(viewRTI()));
+	connect(ui->actionView_RTI,   SIGNAL(triggered(bool)),  this, SLOT(viewRTI()));
 
 	connect(ui->actionShow_queue, SIGNAL(triggered(bool)),  this, SLOT(showQueue()));
 
@@ -61,8 +61,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->removeSphere,     SIGNAL(clicked(bool)),   this, SLOT(removeSphere()));
 	connect(ui->saveLP,           SIGNAL(clicked(bool)),   this, SLOT(saveLPs()));
 
-	connect(ui->process,          SIGNAL(clicked(bool)),   this, SLOT(process()));
-	connect(ui->actionDetext_hilights,          SIGNAL(triggered(bool)),   this, SLOT(process()));
+	connect(ui->detectHighlights, SIGNAL(clicked(bool)),   this, SLOT(detectHighlights()));
+	connect(ui->actionDetectHighlights, SIGNAL(triggered(bool)),   this, SLOT(detectHighlights()));
 
 	connect(ui->actionSave_LP,    SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
 	connect(ui->actionLoad_LP,    SIGNAL(triggered(bool)), this, SLOT(loadLP()));
@@ -82,7 +82,6 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->sphereList, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(spheresContextMenu(QPoint)));
 
 
-	//connect(ui->actionProcess,  SIGNAL(triggered(bool)),            this, SLOT(process()));
 	connect(ui->actionDelete_selected,     SIGNAL(triggered(bool)),   this, SLOT(deleteSelected()));
 
 	connect(ui->imageList,     SIGNAL(currentItemChanged(QListWidgetItem *, QListWidgetItem *)), this, SLOT(openImage(QListWidgetItem *)));
@@ -297,7 +296,7 @@ bool MainWindow::init() {
 
 	ui->addSphere->setEnabled(true);
 	ui->removeSphere->setEnabled(true);
-	ui->process->setEnabled(true);
+	ui->detectHighlights->setEnabled(true);
 	ui->showSpheres->setEnabled(true);
 	ui->saveLP->setEnabled(true);
 	return true;
@@ -711,7 +710,7 @@ void MainWindow::spheresContextMenu(QPoint pos) {
 	ui->sphereList->setCurrentItem(item);
 
 	QMenu myMenu;
-	myMenu.addAction("Find highlights",  this, SLOT(processCurrentSphere()));
+	myMenu.addAction("Find highlights",  this, SLOT(detectCurrentSphereHighlight()));
 	myMenu.addAction("Insert", this, SLOT(addSphere()));
 	myMenu.addSeparator();
 	myMenu.addAction("RemoveThisSphere",  this, SLOT(removeSphere()));
@@ -721,7 +720,7 @@ void MainWindow::spheresContextMenu(QPoint pos) {
 }
 
 
-void MainWindow::processCurrentSphere() {
+void MainWindow::detectCurrentSphereHighlight() {
 	for(auto a: ui->sphereList->selectedItems()) {
 		int id = a->data(Qt::UserRole).toInt();
 		assert(project.balls.count(id));
@@ -732,18 +731,18 @@ void MainWindow::processCurrentSphere() {
 		}
 		sphere_to_process = id;
 	}
-	process();
+	detectHighlights();
 }
 
-void MainWindow::process() {
+void MainWindow::detectHighlights() {
 	if(highlightDetecting)
 		return;
 	highlightDetecting = true;
 	if(!progress) {
 		progress = new QProgressDialog("Looking for highlights...", "Cancel", 0, project.size(), this);
-		connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
+		connect(&watcher, SIGNAL(finished()), this, SLOT(finishedDetectHighlights()));
 		connect(&watcher, SIGNAL(progressValueChanged(int)), progress, SLOT(setValue(int)));
-		connect(progress, SIGNAL(canceled()), this, SLOT(cancelProcess()));
+		connect(progress, SIGNAL(canceled()), this, SLOT(cancelDetectHighlights()));
 		progress->setWindowModality(Qt::WindowModal);
 	}
 	progress->show();
@@ -754,16 +753,16 @@ void MainWindow::process() {
 	for(size_t i = 0; i < project.size(); i++)
 		progress_jobs.push_back(i);
 	//0 -> ok, 1 -> could not open 2 -> flipped, 3-> wrong resolution
-	QFuture<void> future = QtConcurrent::map(progress_jobs, [&](int i) -> int { return processImage(i); });
+	QFuture<void> future = QtConcurrent::map(progress_jobs, [&](int i) -> int { return detectHighlight(i); });
 	watcher.setFuture(future);
 }
 
-void MainWindow::cancelProcess() {
+void MainWindow::cancelDetectHighlights() {
 	watcher.cancel();
 	highlightDetecting = false;
 }
 
-void MainWindow::finishedProcess() {
+void MainWindow::finishedDetectHighlights() {
 	highlightDetecting = false;
 	if(notloaded.size() || flipped.size() || resolution.size()) {
 		if(notloaded.size())
@@ -796,7 +795,7 @@ void MainWindow::finishedProcess() {
 	openImage(selected[0]);
 }
 
-int MainWindow::processImage(int n) {
+int MainWindow::detectHighlight(int n) {
 	if(project.images1[size_t(n)].skip) return 0;
 
 	QString filename = project.images1[n].filename;

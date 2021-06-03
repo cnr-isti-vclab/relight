@@ -82,7 +82,7 @@ public:
 
 
 	bool init();
-	int processImage(int n);
+	int detectHighlight(int n);
 
 public slots:
 	void enableActions();
@@ -132,10 +132,10 @@ public slots:
 	void setupMeasures();
 
 	
-	void process();
-	void processCurrentSphere();
-	void cancelProcess();
-	void finishedProcess();
+	void detectHighlights();
+	void detectCurrentSphereHighlight();
+	void cancelDetectHighlights();
+	void finishedDetectHighlights();
 
 	void saveLPs();
 	void loadLP();
