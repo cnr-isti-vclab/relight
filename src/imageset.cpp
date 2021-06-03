@@ -145,8 +145,10 @@ void ImageSet::initLights() {
 		if(dome_radius) {
 			lights3d = lights;
 			//temporary if no better wayto get 3d positions
-			for(size_t i = 0; i < lights.size(); i++)
+			for(size_t i = 0; i < lights.size(); i++) {
 				lights3d[i] *= dome_radius;
+				lights3d[i][2] += vertical_offset;
+			}
 
 		} else {
 			lights.resize(lights3d.size());
