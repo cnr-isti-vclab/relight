@@ -38,6 +38,7 @@ void help() {
 	cout << "\t-m        : extract mean image\n";
 	cout << "\t-M        : extract median image (7/8th quantile) \n";
 
+	cout << "\t-w        : number of workers (default 8)\n";
 	cout << "\t-k <int>x<int>+<int>+<int>: Cropping extracts only the widthxheight+offx+offy part\n";
 
     cout << "\nIgnore exotic parameters below here\n\n";
@@ -205,6 +206,9 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		break;
+		case 'w':
+			builder.nworkers = std::min(atoi(optarg), 1);
+			break;
         case 'e':
             evaluate_error = true;
             break;

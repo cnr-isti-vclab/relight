@@ -1035,7 +1035,6 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		}
 	}
 
-	size_t nworkers = 8;
 	vector<Worker *> workers(height, nullptr);
 	for(size_t i = 0; i < nworkers; i++) {
 		workers[i] = new Worker(*this);
