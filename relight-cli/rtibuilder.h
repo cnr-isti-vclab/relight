@@ -28,6 +28,7 @@ public:
 	bool savemeans = false;
 	bool savemedians = false;
 	int crop[4] = { 0, 0, 0, 0 }; //left, top, width, height
+	size_t nworkers = 8;
 
 	std::function<bool(std::string stage, int percent)> *callback = nullptr;
 
