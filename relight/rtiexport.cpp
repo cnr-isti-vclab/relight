@@ -367,6 +367,7 @@ void RtiExport::createNormals() {
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);
+	close();
 }
 
 void RtiExport::createRTI(bool view) {

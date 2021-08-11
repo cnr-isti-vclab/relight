@@ -34,6 +34,8 @@ public:
 	}
 	//return vector from eye to pixel (z < 0)
 	Vector3f viewDirection(float x, float y) {
+		if(!focalLength)
+			return Vector3f(0, 0, -1);
 		x -= width/2;
 		y -= height/2;
 		return Vector3f(x*pixelSizeX, -y*pixelSizeY, -focalLength);
