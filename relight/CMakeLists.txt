@@ -7,9 +7,7 @@ find_package(
 	Qt5
 	COMPONENTS Core Gui Widgets Concurrent
 	REQUIRED)
-find_package(PythonLibs REQUIRED)
 find_package(OpenMP)
-add_subdirectory(pybind11)
 
 if (MSVC)
 	file(TO_CMAKE_PATH $ENV{JPEGTURBO_HOME} JPEGTURBO_HOME)
@@ -121,9 +119,8 @@ target_include_directories(
 	relight PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}
-		${EIGEN3_INCLUDE_DIR}
-		${PYTHON_INCLUDE_DIRS}
-		${PYBIND11_INCLUDE_DIR})
+		${EIGEN3_INCLUDE_DIR})
+		
 target_link_libraries(
 	relight PUBLIC
 		${JPEG_LIBRARIES}
@@ -131,8 +128,8 @@ target_link_libraries(
 		Qt5::Core
 		Qt5::Gui
 		Qt5::Widgets
-		Qt5::Concurrent
-		${PYTHON_LIBRARIES})
+		Qt5::Concurrent)
+		
 target_compile_definitions(relight PUBLIC _USE_MATH_DEFINES NOMINMAX)
 
 install (TARGETS relight DESTINATION .)
