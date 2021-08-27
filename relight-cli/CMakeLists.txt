@@ -26,6 +26,7 @@ SET(SOURCES
 	../src/jpeg_encoder.cpp
 	../src/rti.cpp
 	../src/legacy_rti.cpp
+	../src/lp.cpp
 	convert_rti.cpp
 )
 
