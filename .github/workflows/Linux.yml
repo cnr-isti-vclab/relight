@@ -6,7 +6,7 @@ on:
 jobs:
   linux_build:
     name: Build Relight (Linux)
-    runs-on: ubuntu-16.04 #in order to deploy, need to use oldest supported version
+    runs-on: ubuntu-18.04 #in order to deploy, need to use oldest supported version
 
     steps:
     - uses: actions/checkout@v2
@@ -16,7 +16,7 @@ jobs:
       uses: jurplel/install-qt-action@v2
     - name: Install dependencies
       run: |
-        #apt in 16.04 gets old version of eigen...
+        #apt in 16.04 gets old version of eigen... kept same download for 18.04
         wget http://mirrors.kernel.org/ubuntu/pool/universe/e/eigen3/libeigen3-dev_3.3.4-4_all.deb
         sudo dpkg -i libeigen3-dev*
         sudo apt-get install -y mesa-common-dev libglu1-mesa-dev libjpeg-dev
