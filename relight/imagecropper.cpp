@@ -66,7 +66,7 @@ void ImageCropper::setProportion(const QSizeF& _proportion) {
 			update();
 		}
 	}
-
+	emit areaChanged(croppedRect());
 }
 
 void ImageCropper::setProportionFixed(const bool _isFixed)
