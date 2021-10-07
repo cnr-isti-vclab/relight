@@ -100,7 +100,7 @@ void Exif::parse(QString &filename) {
 	QDataStream stream(&file);
 	stream.setByteOrder( QDataStream::BigEndian);
 	if(file.read(2) != "\xFF\xD8")
-		throw QString("Failed parsing file: " + filename);
+		throw QString("Not a jpeg file: " + filename);
 
 	while(file.read(2) != "\xFF\xE1" ) {
 		if(file.atEnd() )
