@@ -53,7 +53,8 @@ bool Project::setDir(QDir folder) {
 
 bool Project::scanDir() {
 	QStringList img_ext;
-	img_ext << "*.jpg" << "*.JPG" << "*.NEF" << "*.CR2";
+	//TODO add support for raw files (needs preprocessing?)
+	img_ext << "*.jpg" << "*.JPG"; // << "*.NEF" << "*.CR2";
 
 	QVector<QSize> resolutions;
 	vector<int> count;
@@ -96,15 +97,19 @@ bool Project::scanDir() {
 	QVector<double> focals;
 	count.clear();
 	for(Image &image: images1) {
-		Exif exif;//exif
-		exif.parse(image.filename);
-		image.readExif(exif);
-
-
 		Lens image_lens;
 		image_lens.width = lens.width;
 		image_lens.height = lens.height;
-		image_lens.readExif(exif);
+		try {
+			Exif exif;//exif
+			exif.parse(image.filename);
+			image.readExif(exif);
+			image_lens.readExif(exif);
+		} catch(QString err) {
+			//qMessageBox()
+			cout << qPrintable(err) << endl;
+		}
+
 		alllens.push_back(image_lens);
 		int index = focals.indexOf(image_lens.focal35());
 
