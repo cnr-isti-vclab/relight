@@ -25,5 +25,10 @@ jobs:
         cd relight
         mkdir build
         cd build
-        cmake ..
+        cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install/usr" ..
         make -j4
+        make install
+    - name: Deploy
+      run: |
+        cp deploy/linux/relight.desktop install/usr/share/applications/relight.desktop
+        deploy/linux/linuxdeployqt /usr/share/applications/relight.desktop -bundle-non-qt-libs -appimage
