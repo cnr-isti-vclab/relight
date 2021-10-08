@@ -16,10 +16,7 @@ jobs:
       uses: jurplel/install-qt-action@v2
     - name: Install dependencies
       run: |
-        #apt in 16.04 gets old version of eigen... kept same download for 18.04
-        wget http://mirrors.kernel.org/ubuntu/pool/universe/e/eigen3/libeigen3-dev_3.3.4-4_all.deb
-        sudo dpkg -i libeigen3-dev*
-        sudo apt-get install -y mesa-common-dev libglu1-mesa-dev libjpeg-dev
+        sudo apt-get install -y mesa-common-dev libglu1-mesa-dev libjpeg-dev libeigen3-dev
     - name: Configure and Build
       run: |
         cd relight
@@ -35,6 +32,7 @@ jobs:
         cp deploy/linux/relight.desktop relight/install/usr/share/applications/relight.desktop
         cp deploy/linux/relight.png relight/install/usr/share/icons/Yaru/512x512/apps/relight.png
         deploy/linux/linuxdeployqt relight/install/usr/share/applications/relight.desktop -bundle-non-qt-libs -appimage
+        rm relight/install/AppRun
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v2
       with:
