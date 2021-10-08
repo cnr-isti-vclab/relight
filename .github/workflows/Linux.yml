@@ -30,5 +30,6 @@ jobs:
         make install
     - name: Deploy
       run: |
+        mkdir -p relight/install/usr/share/applications/
         cp deploy/linux/relight.desktop relight/install/usr/share/applications/relight.desktop
         deploy/linux/linuxdeployqt relight/install/usr/share/applications/relight.desktop -bundle-non-qt-libs -appimage
