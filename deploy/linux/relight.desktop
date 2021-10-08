@@ -5,6 +5,7 @@ Name=ReLight
 GenericName=Image relighting
 Comment=Create and view relightable images
 Exec=usr/bin/relight %F
+Icon=relight
 Terminal=false
 Categories=Graphics;3DGraphics;Viewer;Qt;
 Name[en_US]=relight.desktop
