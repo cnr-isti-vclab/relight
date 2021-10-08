@@ -35,14 +35,8 @@ jobs:
         cp deploy/linux/relight.desktop relight/install/usr/share/applications/relight.desktop
         cp deploy/linux/relight.png relight/install/usr/share/icons/Yaru/256x256/apps/relight.png
         deploy/linux/linuxdeployqt relight/install/usr/share/applications/relight.desktop -bundle-non-qt-libs -appimage
-        mv relight/install/ReLight*.AppImage relight/ReLight.AppImage
-    - name: Upload Relight Portable
+    - name: Upload Relight Portable and AppImage
       uses: actions/upload-artifact@v2
       with:
         name: Relight_linux_portable
         path: relight/install/
-    - name: Upload Relight AppImage
-      uses: actions/upload-artifact@v2
-      with:
-        name: Relight_linux_appimage
-        path: relight/ReLight*.AppImage
