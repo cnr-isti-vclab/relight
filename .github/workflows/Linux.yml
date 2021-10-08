@@ -31,12 +31,17 @@ jobs:
     - name: Deploy
       run: |
         mkdir -p relight/install/usr/share/applications/
-        mkdir -p relight/install/usr/share/icons/Yaru/256x256/apps/
+        mkdir -p relight/install/usr/share/icons/Yaru/512x512/apps/
         cp deploy/linux/relight.desktop relight/install/usr/share/applications/relight.desktop
-        cp deploy/linux/relight.png relight/install/usr/share/icons/Yaru/256x256/apps/relight.png
+        cp deploy/linux/relight.png relight/install/usr/share/icons/Yaru/512x512/apps/relight.png
         deploy/linux/linuxdeployqt relight/install/usr/share/applications/relight.desktop -bundle-non-qt-libs -appimage
-    - name: Upload Relight Portable and AppImage
+    - name: Upload Relight Portable
       uses: actions/upload-artifact@v2
       with:
         name: Relight_linux_portable
         path: relight/install/
+    - name: Upload Relight AppImage
+      uses: actions/upload-artifact@v2
+      with:
+        name: Relight_linux_appimage
+        path: ReLight*.AppImage
