@@ -89,11 +89,11 @@ bool Ball::fit(QSize imgsize) {
 	if(centers.size() < 3)
 		return false;
 
-	float n = centers.size();
-	float sx = 0, sy = 0, sxy = 0, sx2 = 0, sy2 = 0, sx3 = 0, sy3 = 0, sx2y = 0, sxy2 = 0;
+	double n = centers.size();
+	double sx = 0, sy = 0, sxy = 0, sx2 = 0, sy2 = 0, sx3 = 0, sy3 = 0, sx2y = 0, sxy2 = 0;
 	for(size_t k = 0; k < centers.size(); k++) {
-		float x = centers[k].x();
-		float y = centers[k].y();
+		double x = centers[k].x();
+		double y = centers[k].y();
 		sx += x;
 		sy += y;
 		sxy += x*y;
@@ -105,29 +105,32 @@ bool Ball::fit(QSize imgsize) {
 		sxy2 += x*y*y;
 	}
 
-	float d11 = n*sxy - sx*sy;
-	float d20 = n*sx2 - sx*sx;
-	float d02 = n*sy2 - sy*sy;
-	float d30 = n*sx3 - sx2*sx;
-	float d03 = n*sy3 - sy2*sy;
-	float d21 = n*sx2y - sx2*sy;
-	float d12 = n*sxy2 - sx*sy2;
+	double d11 = n*sxy - sx*sy;
+	double d20 = n*sx2 - sx*sx;
+	double d02 = n*sy2 - sy*sy;
+	double d30 = n*sx3 - sx2*sx;
+	double d03 = n*sy3 - sy2*sy;
+	double d21 = n*sx2y - sx2*sy;
+	double d12 = n*sxy2 - sx*sy2;
 
-	float a = ((d30 + d12)*d02 - (d03 + d21)*d11)/(2*(d02*d20 - d11*d11));
-	float b = ((d03 + d21)*d20 - (d30 + d12)*d11)/(2*(d20*d02 - d11*d11));
+	double a = ((d30 + d12)*d02 - (d03 + d21)*d11)/(2*(d02*d20 - d11*d11));
+	double b = ((d03 + d21)*d20 - (d30 + d12)*d11)/(2*(d20*d02 - d11*d11));
 
-	float c = (sx2 +sy2  -2*a*sx - 2*b*sy)/n;
-	float r = sqrt(c + a*a + b*b);
+	double c = (sx2 +sy2  -2*a*sx - 2*b*sy)/n;
+	double r = sqrt(c + a*a + b*b);
 
 	center = QPointF(a, b);
 	radius = r;
+
+	cout << "Cernter: " << center.x() << " " << center.y() << endl;
+	cout << "Radius: " << radius << endl;
 
 	//float max_angle = (52.0/180.0)*M_PI; //60 deg  respect to the vertical
 	float max_angle = (50.0/180.0)*M_PI; //slightly over 45. hoping not to spot reflexes
 	smallradius = radius*sin(max_angle);
 
 	int startx = (int)floor(center.x() - smallradius);
-	int endx = ceil(center.x() + smallradius+1);
+	int endx = (int)ceil(center.x() + smallradius+1);
 
 	int starty = (int)floor(center.y() - smallradius);
 	int endy = (int)ceil(center.y() + smallradius+1);
