@@ -132,7 +132,20 @@ target_link_libraries(
 		
 target_compile_definitions(relight PUBLIC _USE_MATH_DEFINES NOMINMAX)
 
-install (TARGETS relight DESTINATION .)
+if(WIN32 OR APPLE)
+	set(INSTALL_TO_UNIX_LAYOUT OFF)
+else()
+	set(INSTALL_TO_UNIX_LAYOUT ON)
+endif()
+include(GNUInstallDirs)
+
+if (INSTALL_TO_UNIX_LAYOUT)
+	set(RELIGHT_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR})
+else()
+	set(RELIGHT_INSTALL_BIN_DIR .)
+endif()
+
+install (TARGETS relight DESTINATION ${RELIGHT_INSTALL_BIN_DIR})
 
 if (WIN32)
 	install(FILES ${JPEGTURBO_HOME}/bin/jpeg62.dll DESTINATION .)
