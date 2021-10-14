@@ -44,6 +44,9 @@ public:
 				return p;
 		throw QString("Missing parameter: " + id);
 	}
+
+	void runPythonScript(QString script, QStringList arguments, QString workingdir = QString());
+	void runScript(QString program, QString script, QStringList arguments, QString workingdir = QString());
 public slots:
 	void test() {}
 

@@ -122,9 +122,6 @@ bool Ball::fit(QSize imgsize) {
 	center = QPointF(a, b);
 	radius = r;
 
-	cout << "Cernter: " << center.x() << " " << center.y() << endl;
-	cout << "Radius: " << radius << endl;
-
 	//float max_angle = (52.0/180.0)*M_PI; //60 deg  respect to the vertical
 	float max_angle = (50.0/180.0)*M_PI; //slightly over 45. hoping not to spot reflexes
 	smallradius = radius*sin(max_angle);

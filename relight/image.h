@@ -23,6 +23,9 @@ public:
 	Image(QString s = ""): filename(s) {}
 
 	QJsonObject toJson();
+	bool hasLightDirection() {
+		return !direction.isZero() || !position.isZero();
+	}
 	void fromJson(const QJsonObject &obj);
 	void readExif(Exif &exif);
 	/*bool matchSize(QSize &imgsize) {

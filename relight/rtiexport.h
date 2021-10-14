@@ -46,26 +46,26 @@ public:
 	int width();
 	int height();
 
-	QVariant getOption(QString key);
-	void setOption(QString key, QVariant value);
-	bool callback(std::string s, int n);
+
 
 	enum Format { PTM, RTI, RELIGHT, DEEPZOOM, TARZOOM };
 
-	void makeRti(QString output, QRect rect = QRect(0, 0, 0, 0), Format format = RELIGHT, bool means = false, bool normals = false, bool highNormals = false);
+	//QVariant getOption(QString key);
+	//void setOption(QString key, QVariant value);
+	//bool callback(std::string s, int n);
+	//void makeRti(QString output, QRect rect = QRect(0, 0, 0, 0), Format format = RELIGHT, bool means = false, bool normals = false, bool highNormals = false);
 
 public slots:
 	void setTabIndex(int index);
 
 	void changeBasis(int n);
 	void changePlanes(int n);
-	void createRTI(QString output);
-	void createRTI1(QString output);
+
 	void createRTI(bool view = false);
+	void createRTI1(QString output);
+
 	void createNormals();
 	void createRTIandView();
-	void finishedProcess();
-	void cancelProcess();
 	void close();
 
 	void showCrop();

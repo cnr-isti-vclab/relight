@@ -146,7 +146,7 @@ Rti::ColorSpace  colorSpace(int index) {
 }
 
 
-bool RtiExport::callback(std::string s, int n) {
+/*bool RtiExport::callback(std::string s, int n) {
 	QString str(s.c_str());
 	emit progressText(str);
 	emit progress(n);
@@ -154,9 +154,9 @@ bool RtiExport::callback(std::string s, int n) {
 	if(cancel) 
 		return false;
 	return true;
-}
+} */
 
-void RtiExport::makeRti(QString output, QRect rect, Format format, bool means, bool normals, bool highNormals) {
+/*void RtiExport::makeRti(QString output, QRect rect, Format format, bool means, bool normals, bool highNormals) {
 	
 	try {
 		uint32_t ram = uint32_t(ui->ram->value());
@@ -213,85 +213,6 @@ void RtiExport::makeRti(QString output, QRect rect, Format format, bool means, b
 				}
 			}
 		}
-
-				/* This uses the pybind11 to initialize and run functions imported from a script
-				 *
-				 * wchar_t *argv[] = { L"ah!" };
-				Py_Initialize();
-				PySys_SetArgv(1, argv);
-
-				//will be needed to load local modules
-				//PyObject *sys_path = PySys_GetObject("path");
-				//PyList_Append(sys_path, PyString_FromString("./scripts"));
-
-
-
-
-				py::object Image = py::module_::import("pyvips").attr("Image");
-				py::object new_from_file = Image.attr("new_from_file");
-
-				for(int i = 0; i < builder.nplanes/3; i++) {
-					QString plane = QString("%1/plane_%2").arg(output).arg(i);
-					QString filename = plane + ".jpg";
-					py::object image = new_from_file(filename.toStdString(), "access"_a="sequential");
-					py::object dzsave = image.attr("dzsave");
-					dzsave(plane.toStdString(), "overlap"_a=0, "tile_size"_a=256, "depth"_a="onetile");
-					callback("Deepzoom creation...", 100*(i+1)/(builder.nplanes/3));
-				}*/
-
-			/*
-			try {
-				if(format == TARZOOM) {
-					py::scoped_interpreter guard{};
-
-					QFile file(":/scripts/build_tarzoom.py");
-					file.open(QFile::ReadOnly);
-					QString content = file.readAll();
-					py::object scope = py::module_::import("__main__").attr("__dict__");
-					scope["output"] = output.toStdString();
-
-					using namespace pybind11::literals;
-					py::module_ np = py::module_::import("numpy");  // like 'import numpy as np'
-					py::array_t<float> pylights({3, int(lights.size())});
-					memcpy(pylights.mutable_data(), lights.data(), lights.size()*4);
-
-					scope["lights"] = lights;
-					py::exec(content.toStdString(), scope);
-				}
-
-			} catch(py::error_already_set &e) {
-				cout << "Tarzoom: " << std::string(py::str(e.type())) << endl;
-				cout << std::string(py::str(e.value())) << endl;
-				return;
-			} catch(...) {
-//				QMessageBox
-			} */
-
-
-
-		if(highNormals) {
-			/*
-			try {
-				py::scoped_interpreter guard{};
-
-				QFile file(":/scripts/normalmap.py");
-				file.open(QFile::ReadOnly);
-				QString content = file.readAll();
-				py::object scope = py::module_::import("__main__").attr("__dict__");
-				scope["output"] = output.toStdString();
-				scope["output"] = 0;
-				py::exec(content.toStdString(), scope);
-
-			} catch(py::error_already_set &e) {
-				cout << "normalmap: " << std::string(py::str(e.type())) << endl;
-				cout << std::string(py::str(e.value())) << endl;
-				return;
-			} catch(...) {
-//				QMessageBox
-			} */
-
-		}
-
 	} catch(int status) {
 		if(status == 1) { //was canceled.
 			emit progressText("Canceling...");
@@ -306,7 +227,7 @@ void RtiExport::makeRti(QString output, QRect rect, Format format, bool means, b
 		QMessageBox::critical(this, "We have a problem 3!", "Unknown error!");
 		
 	}
-}
+} */
 
 
 void RtiExport::createNormals() {
@@ -333,11 +254,6 @@ void RtiExport::createNormals() {
 		jimages.push_back(image);
 	}
 	obj["images"] = jimages;
-
-	/*	QRect rect = QRect(0, 0, 0, 0);
-		if(ui->cropview->handleShown()) {
-			rect = ui->cropview->croppedRect();
-		} */
 
 	if(crop.isValid()) {
 		QJsonObject c;
@@ -432,55 +348,11 @@ void RtiExport::createRTI1(QString output) {
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);
-
-/*
-
-
-	RtiBuilder *builder = new RtiBuilder;
-	builder->samplingram = ram;
-	builder->type         = basis();
-	builder->colorspace   = colorSpace();
-	builder->nplanes      = uint32_t(ui->planes->value());
-	builder->yccplanes[0] = uint32_t(ui->chroma->value());
-	//builder->sigma =
-
-	if( builder->colorspace == Rti::MYCC) {
-		builder->yccplanes[1] = builder->yccplanes[2] = (builder->nplanes - builder->yccplanes[0])/2;
-		builder->nplanes = builder->yccplanes[0] + 2*builder->yccplanes[1];
-	}
-	builder->crop[0] = rect.left();
-	builder->crop[1] = rect.top();
-	builder->crop[2] = rect.width();
-	builder->crop[3] = rect.height();
-	builder->imageset.images = images;
-	builder->lights = builder->imageset.lights = lights;
-	builder->imageset.initImages(path.toStdString().c_str());
-	builder->imageset.crop(rect.left(), rect.top(), rect.width(), rect.height());
-
-	builder->width  = builder->imageset.width;
-	builder->height = builder->imageset.height;
-
-	builder->savemeans = false;
-	builder->savenormals = false;
-
-
-	QFuture<void> future = QtConcurrent::run([builder]() {
-		this->makeRti(output, rect, format
-
-	std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->callback(s, n); };
-
-	if(!builder->init(&callback)) {
-		QMessageBox::critical(this, "We have a problem!", QString(builder->error.c_str()));
-		return;
-	}
-
-	int quality= ui->quality->value();
-	builder->save(output.toStdString(), quality);
-
-*/
 }
 
-void RtiExport::createRTI(QString output) {
+
+/* OLD now unused, kept for progress bar and watcher */
+/*void RtiExport::createRTI(QString output) {
 	outputFolder = output;
 
 
@@ -528,7 +400,7 @@ void RtiExport::finishedProcess() {
 		server.start(outputFolder);
 		server.show();
 	}
-}
+} */
 
 void RtiExport::showCrop() {
 	ui->cropview->showHandle();
