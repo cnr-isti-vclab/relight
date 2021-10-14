@@ -76,38 +76,16 @@ void RtiTask::run() {
 		return;
 	}
 
-	QSettings settings;
-	QString scriptdir = settings.value("scripts_path").toString();
-	QString python = settings.value("python_path").toString();
-
 	QString format = (*this)["format"].value.toString();
-	if(format == "rti") {
+	if(format == "rti")
 		convertToRTI((output + ".rti").toLatin1().data(), output.toLatin1().data());
 
-	}
-	if(format == "deepzoom" || format == "tarzoom") {
-		if(python.isNull() || python.isEmpty()) {
-			error = "Set the Python executable in the File->Preferences dialog ";
-			status = FAILED;
-			return;
-		}
-
+	if(format == "deepzoom" || format == "tarzoom" || format == "itarzoom") {
 		for(int plane = 0; plane < nplanes; plane++) {
-			QProcess process;
-			QStringList arguments;
-			arguments << QString("%1/deepzoom.py").arg(scriptdir);
-			arguments << QString("plane_%1").arg(plane);
-			arguments << QString::number(quality);
-			process.setWorkingDirectory(output);
-			process.start(python, arguments);
-			process.waitForFinished();
-			if(process.exitCode() != 0) {
-
-			//if(QProcess::execute(command) < 0) {
-				error = "Failed deepzoom";
-				status = FAILED;
+			runPythonScript("deepzoom.py", QStringList() << QString("plane_%1").arg(plane) << QString::number(quality), output);
+			if(status == FAILED)
 				break;
-			}
+
 			if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))
 				break;
 		}
@@ -116,21 +94,23 @@ void RtiTask::run() {
 	if(format == "tarzoom") {
 		for(int plane = 0; plane < nplanes; plane++) {
 
-			QProcess process;
-			process.setWorkingDirectory(output);
-
-			QStringList arguments;
-			arguments << QString("%1/tarzoom.py").arg(scriptdir);
-			arguments << QString("plane_%1").arg(plane);
-
-			process.start(python, arguments);
-			process.waitForFinished();
-			if(process.exitCode() != 0) {
-				error = "Failed tarzoom";
-				status = FAILED;
+			runPythonScript("tarzoom.py", QStringList() << QString("plane_%1").arg(plane), output);
+			if(status == FAILED)
 				break;
-			}
+
 			if(!progressed("Tarzoom:", 100*(plane+1)/nplanes))
+				break;
+		}
+	}
+
+	if(format == "itarzoom") {
+		for(int plane = 0; plane < nplanes; plane++) {
+
+			runPythonScript("itarzoom.py", QStringList() << QString("plane_%1").arg(plane), output);
+			if(status == FAILED)
+				break;
+
+			if(!progressed("Itarzoom:", 100*(plane+1)/nplanes))
 				break;
 		}
 	}

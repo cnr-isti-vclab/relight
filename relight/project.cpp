@@ -417,24 +417,13 @@ void  Project::computeDirections() {
 				//cout << "angle: " << 180*angle/M_PI << endl;
 				Vector3f axis = Vector3f(viewDir[1], - viewDir[0], 0);
 				axis.normalize();
-				Vector3f &v17 = ball->directions[15];
-				Vector3f &v49 = ball->directions[47];
-				//cout << "V17: " << v17[0] << " " << v17[1] << " " << v17[2] << endl;
-				//cout << "v49: " << v49[0] << " " << v49[1] << " " << v49[2] << endl;
-				//cout << "Angle: " << v17.angle(Vector3f(-v49[0], -v49[1], v49[2]))*180/M_PI << endl;
-				Vector3f real = v17 ^ Vector3f(-v49[0], -v49[1], v49[2]);
-				real.normalize();
 
 				for(Vector3f &v: ball->directions)
 					v = v.rotate(axis, angle);
-				//cout << " " << endl;
-				//cout << "V17: " << v17[0] << " " << v17[1] << " " << v17[2] << endl;
-				//cout << "v49: " << v49[0] << " " << v49[1] << " " << v49[2] << endl;
-				//cout << "Angle: " << v17.angle(Vector3f(-v49[0], -v49[1], v49[2]))*180/M_PI << endl;
 
 				if(dome.domeDiameter) {
 				//find intersection between directions and sphere.
-					for(int i = 0; i < ball->directions.size(); i++) {
+					for(size_t i = 0; i < ball->directions.size(); i++) {
 						Vector3f &direction = ball->directions[i];
 						direction.normalize();
 						Vector3f origin = lens.viewDirection(ball->lights[i].x(), ball->lights[i].y());

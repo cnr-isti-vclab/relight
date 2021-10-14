@@ -275,24 +275,22 @@ bool MainWindow::init() {
 		auto *item = new QListWidgetItem(QString("%1 - %2").arg(count+1).arg(a.filename), ui->imageList);
 		item ->setData(Qt::UserRole, count);
 
-		QStandardItem *poListItem = new QStandardItem;
+		QStandardItem *listItem = new QStandardItem;
 		//if(!a.valid)
 		//	poListItem->setBackground(Qt::red);
-		poListItem->setText(QString("%1 - %2").arg(count+1).arg(a.filename));
-		poListItem->setCheckable(true);
+		listItem->setText(QString("%1 - %2").arg(count+1).arg(a.filename));
+		listItem->setCheckable(true);
 		// Uncheck the item
-		poListItem->setCheckState(a.valid ? Qt::Checked : Qt::Unchecked);
-		poListItem->setData(a.valid ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
-		poListItem->setData(count, Qt::UserRole+1);
-		imageModel->setItem(count, poListItem);
+		listItem->setCheckState(a.valid ? Qt::Checked : Qt::Unchecked);
+		listItem->setData(a.valid ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
+		listItem->setData(count, Qt::UserRole+1);
+		listItem->setBackground(a.hasLightDirection() ? Qt::darkGreen : QBrush());
+		imageModel->setItem(count, listItem);
 
 		count++;
 	}
 
 	openImage(ui->imageList->item(0), true);
-	//TODO: in background load and process the images
-
-//	addSphere();
 
 	ui->addSphere->setEnabled(true);
 	ui->removeSphere->setEnabled(true);
@@ -580,6 +578,8 @@ void MainWindow::updateHighlight() {
 
 		ball->highlight->setBrush(Qt::green);
 		ball->lights[n] = ball->highlight->pos();
+		QStandardItem *item = imageModel->item(currentImage);
+		item->setBackground(Qt::darkGreen);
 	}
 }
 
@@ -595,6 +595,9 @@ void MainWindow::deleteSelected() {
 		});
 		if(ball->highlight && ball->highlight->isSelected()) {
 			ball->resetHighlight(currentImage);
+			QStandardItem *item = imageModel->item(currentImage);
+			item->setBackground(QBrush());
+
 			showHighlights(currentImage);
 		}
 	}
