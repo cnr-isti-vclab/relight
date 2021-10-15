@@ -32,8 +32,14 @@ QStringList Script::arguments() {
 }
 
 void Script::run() {
-	QSettings settings;
-	QDir dir(settings.value("scripts_path").toString());
+	
+	QString scripts_path = QSettings().value("scripts_path").toString();
+	
+	if(scripts_path.isEmpty())
+		scripts_path = QSettings().value("tmp_scripts_path").toString();
+	
+	
+	QDir dir(scripts_path);
 	if(!dir.exists()) {
 		error = "Could not find script folder: " + dir.path();
 		status = FAILED;
@@ -57,7 +63,7 @@ void Script::run() {
 
 	QProcess process;
 	process.setProgram(python);
-	qDebug() << arguments();
+	qDebug() << scripts_path << script_path << arguments();
 	process.setArguments(QStringList() << script_path << arguments());
 	process.start();
 
