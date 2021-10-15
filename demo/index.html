@@ -94,7 +94,7 @@ async function init() {
 	});
 
 	lime.canvas.addLayer('RTI', layer); 
-
+	OpenLIME.Skin.setUrl('skin.svg');
 	let ui = new OpenLIME.UIBasic(lime, { skin: 'skin.svg' });
 	ui.actions.light.active = true;
 	ui.actions.layers.display = true;
