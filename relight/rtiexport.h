@@ -61,11 +61,10 @@ public slots:
 	void changeBasis(int n);
 	void changePlanes(int n);
 
-	void createRTI(bool view = false);
+	void createRTI();
 	void createRTI1(QString output);
 
 	void createNormals();
-	void createRTIandView();
 	void close();
 
 	void showCrop();
@@ -83,7 +82,6 @@ signals:
 public:
 	Ui::RtiExport *ui;
 	HttpServer server;
-	bool viewAfter = false;
 	QString outputFolder;
 };
 

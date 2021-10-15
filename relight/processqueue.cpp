@@ -60,25 +60,6 @@ void ProcessQueue::startNewProcess() {
 	task->start();
 	task->status = Task::RUNNING;
 	emit update();
-/*	Script &script = process.script;
-	QDir dir(process.script.dir);
-	if(!dir.exists()) {
-		process.error = "Could not find script folder: " + script.dir;
-		process.failed = true;
-	}
-
-	QString script_path = dir.filePath(script.filename);
-	QFileInfo info(script_path);
-	if(!info.exists()) {
-		process.error = "Could not the script: " + script_path;
-		process.failed = true;
-	}
-
-	qprocess = new QProcess();
-	qprocess->setProgram(script.interpreter);
-	qprocess->setArguments(QStringList() << script_path << script.arguments());
-	qprocess->start();
-	//qprocess->waitForFinished(-1); */
 }
 
 void ProcessQueue::addTask(Task *a, bool paused) {

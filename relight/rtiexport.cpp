@@ -33,7 +33,6 @@ RtiExport::RtiExport(QWidget *parent) :
 	connect(ui->planes, SIGNAL(valueChanged(int)), this, SLOT(changePlanes(int)));
 	connect(ui->build_rti, SIGNAL(clicked()), this, SLOT(createRTI()));
 	connect(ui->build_normals, SIGNAL(clicked()), this, SLOT(createNormals()));
-	connect(ui->preview, SIGNAL(clicked()), this, SLOT(createRTIandView()));
 //	connect(ui->close, SIGNAL(clicked()), this, SLOT(close()));
 	connect(this, SIGNAL(rejected()), this, SLOT(close()));
 	
@@ -286,16 +285,11 @@ void RtiExport::createNormals() {
 	close();
 }
 
-void RtiExport::createRTI(bool view) {
+void RtiExport::createRTI() {
 	QString output = QFileDialog::getSaveFileName(this, "Select an output directory", QString(), tr("Images (*.png)"));
 	if(output.isNull()) return;
-	viewAfter = view;
 	createRTI1(output);
 	close();
-}
-
-void RtiExport::createRTIandView() {
-	createRTI(true);
 }
 
 void RtiExport::createRTI1(QString output) {

@@ -13,7 +13,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
 	connect(ui->openPython, SIGNAL(clicked()), this, SLOT(openPython()));
 	connect(ui->openScripts, SIGNAL(clicked()), this, SLOT(openScripts()));
 	connect(ui->python, SIGNAL(editingFinished()), this, SLOT(setPython()));
-	connect(ui->python, SIGNAL(editingFinished()), this, SLOT(setPython()));
+	connect(ui->scripts, SIGNAL(editingFinished()), this, SLOT(setScripts()));
 	connect(ui->port, SIGNAL(editingFinished()), this, SLOT(setPort()));
 
 	QSettings settings;
@@ -30,16 +30,18 @@ void SettingsDialog::setPython() {
 	QString python = ui->python->text();
 	if(!checkPython(python))
 		return;
-	QSettings settings;
-	settings.setValue("python_path", python);
+
+	QSettings().setValue("python_path", python);
 	ui->python->setText(python);
 }
 void SettingsDialog::setScripts() {
 	QString scripts = ui->scripts->text();
-	if(!checkScripts(scripts))
+	if(!checkScripts(scripts)) {
+		ui->scripts->setText(QSettings().value("scripts_path").toString());
 		return;
-	QSettings settings;
-	settings.setValue("scripts_path", scripts);
+	}
+
+	QSettings().setValue("scripts_path", scripts);
 	ui->scripts->setText(scripts);
 }
 
@@ -69,8 +71,7 @@ void SettingsDialog::openScripts() {
 	if(!checkScripts(scripts))
 		return;
 
-	QSettings settings;
-	settings.setValue("scripts_path", scripts);
+	QSettings().setValue("scripts_path", scripts);
 	ui->scripts->setText(scripts);
 }
 

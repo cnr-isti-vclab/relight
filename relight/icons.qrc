@@ -77,4 +77,14 @@
         <file alias="skin.svg">../demo/skin.svg</file>
         <file alias="openlime.min.js">../demo/openlime.min.js</file>
     </qresource>
+    <qresource prefix="/scripts">
+        <file alias="deepzoom.py">../scripts/deepzoom.py</file>
+        <file alias="tarzoom.py">../scripts/tarzoom.py</file>
+        <file alias="itarzoom.py">../scripts/itarzoom.py</file>
+        <file alias="normals/normalmap.py">../scripts/normals/normalmap.py</file>
+        <file alias="normals/psutil.py">../scripts/normals/psutil.py</file>
+        <file alias="normals/rps.py">../scripts/normals/rps.py</file>
+        <file alias="normals/rpsnumerics.py">../scripts/normals/rpsnumerics.py</file>
+    </qresource>
+
 </RCC>

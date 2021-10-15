@@ -27,7 +27,7 @@
    <item>
     <widget class="QTabWidget" name="export_frame">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tabWidgetPage1">
       <attribute name="title">
@@ -262,13 +262,6 @@
         <widget class="QPushButton" name="build_rti">
          <property name="text">
           <string>Build</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="preview">
-         <property name="text">
-          <string>Build and view</string>
          </property>
         </widget>
        </item>

@@ -20,7 +20,9 @@ void Task::runPythonScript(QString script, QStringList arguments, QString workin
 }
 
 void Task::runScript(QString program, QString script, QStringList arguments, QString working) {
-	QDir dir(QSettings().value("scripts_path").toString());
+	QString scripts_path = QSettings().value("scripts_path").toString();
+
+	QDir dir(scripts_path);
 	if(!dir.exists()) {
 		error = "Could not find script folder: " + dir.path();
 		status = FAILED;
@@ -39,7 +41,6 @@ void Task::runScript(QString program, QString script, QStringList arguments, QSt
 	if(!working.isNull())
 		process.setWorkingDirectory(working);
 	process.setProgram(program);
-	qDebug() << arguments;
 	process.setArguments(QStringList() << script_path << arguments);
 	process.start();
 
