@@ -7,6 +7,7 @@
 #include <QProxyStyle>
 #include <QStyleFactory>
 #include <QPainter>
+#include <QSettings>
 
 #include <QTimer>
 #include <QIcon>
@@ -68,35 +69,30 @@ int main(int argc, char *argv[]) {
 	QFile style(":/darkorange/stylesheet.txt");
 	style.open(QFile::ReadOnly);
 	app.setStyleSheet(style.readAll());
-
 	app.setStyle(new MyProxyStyle());
-/*	qDebug() << QStyleFactory::keys();
-	//app.setStyle("Fusion");
-/()	QPalette palette = QPalette();
-	palette.setColor(QPalette::Window, QColor(53, 53, 53));
-	palette.setColor(QPalette::WindowText, Qt::white);
-	palette.setColor(QPalette::Base, QColor(25, 25, 25));
-	palette.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
-	palette.setColor(QPalette::ToolTipBase, Qt::black);
-	palette.setColor(QPalette::ToolTipText, Qt::white);
-	palette.setColor(QPalette::Text, Qt::white);
-	palette.setColor(QPalette::Button, QColor(53, 53, 53));
-	palette.setColor(QPalette::ButtonText, Qt::white);
-	palette.setColor(QPalette::BrightText, Qt::red);
-	palette.setColor(QPalette::Link, QColor(42, 130, 218));
-	palette.setColor(QPalette::Highlight, QColor(42, 130, 218));
-	palette.setColor(QPalette::HighlightedText, Qt::black);
-	app.setPalette(palette); */
 
-	//palette.setColor(QPalette::Disabled, QPalette::, QColor(127, 127, 127));
-	//palette.setColor(QPalette::Disabled, QPalette::Color, QColor(127, 127, 127));
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.start();
+
+
+	QString appath = app.applicationDirPath();
+	QDir appdir(appath);
+	if(1 || QSettings().value("scripts_path").toString().isEmpty()) {
+		QSettings().setValue("scripts_path", appath + "/scripts");
+
+		appdir.mkdir("scripts");
+		appdir.mkdir("scripts/normals");
+		QStringList files;
+		files << "deepzoom.py" << "tarzoom.py" << "itarzoom.py" << "rotate_rti.py"
+			<< "normals/normalmap.py" << "normals/psutil.py" << "normals/rpsnumerics.py" << "normals/rps.py";
+
+		for(QString file: files)
+			QFile::copy(":/scripts/" + file, appath + "/scripts/" + file);
+	}
 
 	auto mainwindow = new MainWindow();
 	mainwindow->showMaximized();
 	app.exec();
-
 
 	return 0;
 }

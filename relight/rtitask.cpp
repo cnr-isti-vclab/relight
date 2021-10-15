@@ -84,7 +84,7 @@ void RtiTask::run() {
 		for(int plane = 0; plane < nplanes; plane++) {
 			runPythonScript("deepzoom.py", QStringList() << QString("plane_%1").arg(plane) << QString::number(quality), output);
 			if(status == FAILED)
-				break;
+				return;
 
 			if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))
 				break;
@@ -96,7 +96,7 @@ void RtiTask::run() {
 
 			runPythonScript("tarzoom.py", QStringList() << QString("plane_%1").arg(plane), output);
 			if(status == FAILED)
-				break;
+				return;
 
 			if(!progressed("Tarzoom:", 100*(plane+1)/nplanes))
 				break;
@@ -108,7 +108,7 @@ void RtiTask::run() {
 
 			runPythonScript("itarzoom.py", QStringList() << QString("plane_%1").arg(plane), output);
 			if(status == FAILED)
-				break;
+				return;
 
 			if(!progressed("Itarzoom:", 100*(plane+1)/nplanes))
 				break;
