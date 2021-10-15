@@ -8,6 +8,7 @@
 #include <QStyleFactory>
 #include <QPainter>
 #include <QSettings>
+#include <QTemporaryDir>
 
 #include <QTimer>
 #include <QIcon>
@@ -73,22 +74,20 @@ int main(int argc, char *argv[]) {
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.start();
-
-
-	QString appath = app.applicationDirPath();
-	QDir appdir(appath);
-	if(1 || QSettings().value("scripts_path").toString().isEmpty()) {
-		QSettings().setValue("scripts_path", appath + "/scripts");
-
-		appdir.mkdir("scripts");
-		appdir.mkdir("scripts/normals");
-		QStringList files;
-		files << "deepzoom.py" << "tarzoom.py" << "itarzoom.py" << "rotate_rti.py"
-			<< "normals/normalmap.py" << "normals/psutil.py" << "normals/rpsnumerics.py" << "normals/rps.py";
-
-		for(QString file: files)
-			QFile::copy(":/scripts/" + file, appath + "/scripts/" + file);
+	
+	QTemporaryDir tmp;
+	if(!tmp.isValid()) {
+		qDebug() << "Could not create a temporary file for the scripts. Use File->Preferences";
 	}
+	QDir scripts(tmp.path());
+	QSettings().setValue("tmp_scripts_path", tmp.path());
+	scripts.mkdir("normals");
+	QStringList files;
+	files << "deepzoom.py" << "tarzoom.py" << "itarzoom.py" << "rotate_rti.py"
+		<< "normals/normalmap.py" << "normals/psutil.py" << "normals/rpsnumerics.py" << "normals/rps.py";
+
+	for(QString file: files)
+		QFile::copy(":/scripts/" + file, tmp.path() + "/" + file);
 
 	auto mainwindow = new MainWindow();
 	mainwindow->showMaximized();

@@ -36,7 +36,7 @@ void SettingsDialog::setPython() {
 }
 void SettingsDialog::setScripts() {
 	QString scripts = ui->scripts->text();
-	if(!checkScripts(scripts)) {
+	if(!scripts.isEmpty() && !checkScripts(scripts)) {
 		ui->scripts->setText(QSettings().value("scripts_path").toString());
 		return;
 	}
