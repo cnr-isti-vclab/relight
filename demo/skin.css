@@ -9,6 +9,34 @@
 	height:100%;
 }
 
+.openlime-scale {
+	position:absolute;
+	bottom:0px;
+	left:0px;
+	width:200px;
+	height:30px;
+	fill:white;
+}
+
+.openlime-scale > text {
+	font-size:24px;
+}
+.openlime-scale > line {
+	stroke:white;
+	stroke-width:2px;
+}
+
+.openlime-info {
+	position:absolute;
+	top:30%;
+	left:30%;
+	background-color:rgb(20, 20, 20, 0.9);
+	padding:0px 20px;
+	color:white;
+	border-radius:3px;
+	border:1px solid rgb(60, 60, 60);
+
+}
 
 
 .openlime-toolbar rect[style] {
@@ -41,7 +69,6 @@
 .openlime-toolbar .openlime-button:hover {
 	cursor:pointer;
 	opacity:50%;
-
 }
 
 
@@ -53,6 +80,35 @@
 }
 
 
+
+.openlime-help-window {
+	position:absolute;
+	top: 10%;
+	left: 30%;
+	right: 30%;
+	bottom: 10%;
+	color:#fff;
+	background: #222;
+	opacity:0.95;
+	padding:20px 40px;
+	border-radius:5px;	
+    font-family: "Open Sans",sans-serif;
+
+}
+
+.openlime-help-window .openlime-close {
+	position:absolute;
+	top:10px;
+	right:10px;
+	width:30px;
+	height:30px;
+	cursor:pointer;
+}
+.openlime-close:hover  * {
+	stroke:#fff !important;
+}
+
+/* layers menu */
 
 g.openlime-compact {
 	visibility:hidden !important;
@@ -109,51 +165,197 @@ g.openlime-expand {
 	display:flex;
 	flex-direction:column;
 	justify-content:start;
-	max-height:0%;
+	height:0;
+	max-height:0;
 	overflow:hidden;
 	transition: max-height 0.5s;
+	transition: height 0.5s;
 }
 
 .active + .openlime-list {
-	max-height:100%
+	height:auto; 
+	max-height:100%;
 }
 
 
 
 
 
-.openlime-layers-menu .openlime-button {
+.openlime-layers-menu .openlime-entry {
 	color: #ccc;
 	background-color: rgb(20, 20, 20, 0.8);
-	padding:12px 20px;
+	padding:8px 20px;
 	border-radius:3px;
 	cursor:pointer;
 	text-decoration:none;
 }
 
-.openlime-layers-menu .openlime-button:hover {
+.openlime-layers-menu .openlime-entry:hover,
+.openlime-layers-menu .openlime-entry:focus {
+
 	background-color: rgb(40, 40, 40); 
 	color:#fff;
 }
 
-.openlime-layers-menu .openlime-button:active {
+.openlime-layers-menu .openlime-entry:active {
 	position:relative;
 	top:1px;
 }
 
-.openlime-layers-menu .openlime-button.active,
-.openlime-layers-menu .openlime-button:active,
-.openlime-layers-menu .openlime-button:focus {
+.openlime-layers-menu .openlime-entry.active,
+.openlime-layers-menu .openlime-entry:active {
 	background-color: rgb(80, 80, 80); 
 	color:#fff;
 }
 
 
+.openlime-layers-menu .openlime-entry.selected {
+	background-color: rgb(80, 80, 80); 
+	color:#fff;
+}
 
-.openlime-layers-menu .openlime-list .openlime-button {
+
+.openlime-layers-menu .openlime-list .openlime-entry {
 	font-size:90%;
 	max-width:100%;
-	padding: 5px 20px 0px 20px;
+	padding: 5px 5px 0px 20px;
+}
+
+.openlime-layers-menu .openlime-tool {
+	padding:0px !important;
+}
+
+
+.openlime-list .openlime-tools {
+	flex-direction:row;
+}
+
+.openlime-annotations {
+	padding: 0px 5px;
+	margin:0px;
+}
+
+.openlime-list.openlime-annotations {
+	overflow:auto;
+}
+
+
+/* Works on Firefox */
+.openlime-list.openlime-annotations {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(80, 80, 80);
+}
+
+/* Works on Chrome, Edge, and Safari */
+.openlime-list.openlime-annotations::-webkit-scrollbar {
+  width: 10px;
+}
+
+.openlime-list.openlime-annotations::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.openlime-list.openlime-annotations::-webkit-scrollbar-thumb {
+  background-color: rgb(80, 80, 80);
+  border-radius: 10px;
+  border: 0px solid black;
+}
+
+/* editor */
+
+.openlime-annotation-edit.hidden { display: none; }
+.openlime-annotation-edit-tools svg, .openlime-tools svg { height:25px; cursor: pointer; margin-right: 10px } 
+.openlime-annotation-edit-tools { margin-top: 5px; }
+.openlime-tool { height: 25px; width:25px; }
+
+.openlime-annotation-edit select, .openlime-annotation-edit option { width: 40px; }
+.openlime-annotation-edit option:hover { background:red; }
+
+.openlime-eye, .openlime-eye-off { height:14px; float: right;}
+.openline-eye, .hidden .openlime-eye-off { display: block; }
+.openlime-eye-off, .hidden .openlime-eye { display: none; }
+ 
+.openlime-eye:hover, .openlime-eye-off:hover { color: #ffa; }
+
+/*.openlime-annotation-edit-tools .active {  background-color:rgb(80, 80, 80); } */
+
+.openlime-tool.active, .openlime-tool.active * { stroke:#fff !important; }
+.openlime-annotation-edit-tools .active * { stroke:#fff !important; }
+
+.openlime-overlay.erase {
+	cursor: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'><circle fill='rgba(255, 255, 255, 0.7)' cx='11' cy='11' r='10'/></svg>") 11 11, pointer;
+}
+.openlime-overlay.crosshair {
+	cursor: crosshair;
+}
+
+/* Editor select */
+
+.openlime-select  {
+	background: #888; 
+	position: relative; 
+	cursor: pointer;
+	display: inline-block;
+	height:24px;
+	width:100%;
+}
+
+.openlime-select-button {
+	position:absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	background-color: #888;
+	padding: 2px 15px;
+}
+.openlime-select-button:after {
+	content:"";
+	width: 0;
+	height: 0;
+	border: 7px solid transparent;
+	border-color: #fff transparent transparent transparent; 
+	position: absolute;
+	top: 8px;
+	right: 10px;
+}
+.openlime-select-button:hover {
+	background-color: #444;
+}
+
+.active .openlime-select-button {
+	background-color: #888;
+}
+.active .openlime-select-button:after {
+	top: 1px;	
+	border-color: transparent transparent #fff transparent; 
+
+}
+.openlime-select-menu { 
+	display: none;
+	position: absolute;
+	top: 100%;
+	right: 0;
+	left: 0;
+	z-index: 999;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.active .openlime-select-menu { display: block; }
+
+
+
+.openlime-select-menu li {
+	margin: 0;
+	padding: 2px 0;
+	text-indent: 15px;
+	/* border-top: 1px solid darken($select-background, 10); */
+/*	@include transition(all 0.15s ease-in); */
+}
+.openlime-select-menu li:hover {
+	color: #fff;
+	border: 1px #aaa;
 }
 
 
