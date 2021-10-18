@@ -12,7 +12,7 @@ using namespace std;
 void Task::runPythonScript(QString script, QStringList arguments, QString working) {
 	QString python = QSettings().value("python_path").toString();
 	if(python.isNull()) {
-		error = "Python executable not set";
+		error = "Python executable not set. See File -> Preferences -> Scripts.";
 		status = FAILED;
 		return;
 	}
