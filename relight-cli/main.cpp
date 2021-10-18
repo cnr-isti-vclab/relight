@@ -323,11 +323,20 @@ int main(int argc, char *argv[]) {
 
     if( builder.colorspace == Rti::MYCC) {
         if(builder.yccplanes[0] == 0) {
-            cerr << "Y nplanes in mycc must be specified (-y)!\n" << endl;
+			cerr << "Y nplanes in mycc must be specified (-y)!\n";
             return 1;
         }
+		if(builder.nplanes % 3 != 0) {
+			cerr << "Number of planes should be a multiple of 3 (9, 18, 21 etc)\n";
+			return 1;
+		}
+		if((builder.nplanes - builder.yccplanes[0]) % 2 != 0) {
+			cerr << "Total planes (-p) - luma planes (-y) should be an even number.\n";
+			return 1;
+		}
         builder.yccplanes[1] = builder.yccplanes[2] = (builder.nplanes - builder.yccplanes[0])/2;
         builder.nplanes = builder.yccplanes[0] + 2*builder.yccplanes[1];
+
     }
 
     std::string input = argv[optind++];

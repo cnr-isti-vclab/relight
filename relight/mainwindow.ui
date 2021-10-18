@@ -117,7 +117,7 @@
            <bool>false</bool>
           </property>
           <property name="toolTip">
-           <string>Load light directions .lp file</string>
+           <string>Show highlights</string>
           </property>
           <property name="text">
            <string/>
@@ -222,7 +222,6 @@
     <addaction name="actionSave_as"/>
     <addaction name="separator"/>
     <addaction name="actionPreferences"/>
-    <addaction name="actionDetectHighlights"/>
     <addaction name="actionLoad_LP"/>
     <addaction name="actionSave_LP"/>
     <addaction name="separator"/>
@@ -245,8 +244,7 @@
     <property name="title">
      <string>Edit</string>
     </property>
-    <addaction name="actionAdd_sphere_point"/>
-    <addaction name="actionAdd_sphere_highlight"/>
+    <addaction name="actionAdd_a_sphere"/>
     <addaction name="actionDetectHighlights"/>
     <addaction name="separator"/>
     <addaction name="actionRuler"/>
@@ -399,14 +397,12 @@
     <string>-</string>
    </property>
   </action>
-  <action name="actionAdd_sphere_point">
+  <action name="actionAdd_a_sphere">
    <property name="text">
-    <string>Add sphere point</string>
+    <string>Add a sphere</string>
    </property>
-  </action>
-  <action name="actionAdd_sphere_highlight">
-   <property name="text">
-    <string>Add sphere highlight</string>
+   <property name="toolTip">
+    <string>Add a new sphere</string>
    </property>
   </action>
   <action name="actionDelete_selected">

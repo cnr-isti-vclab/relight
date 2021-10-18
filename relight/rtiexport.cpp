@@ -293,6 +293,23 @@ void RtiExport::createRTI() {
 }
 
 void RtiExport::createRTI1(QString output) {
+	QString format;
+	if(ui->formatRTI->isChecked())
+		format = "rti";
+	else if(ui->formatRelight->isChecked())
+		format = "relight";
+	else if(ui->formatDeepzoom->isChecked())
+		format = "deepzoom";
+	else if(ui->formatTarzoom->isChecked())
+		format = "tarzoom";
+
+	if(format == "deepzoom" || format == "tarzoom" || format == "itarzoom") {
+		if(QSettings().value("python_path").toString().isEmpty()) {
+			QMessageBox::critical(this, "Python required", "Python executable needs to be set in the Preferences dialog, for web friendly RTI formats.");
+			return;
+		}
+	}
+
 	RtiTask *task = new RtiTask;
 	task->input_folder = path;
 	task->output = output;
@@ -324,15 +341,7 @@ void RtiExport::createRTI1(QString output) {
 	}
 
 	task->addParameter("quality", Parameter::INT, ui->quality->value());
-	QString format;
-	if(ui->formatRTI->isChecked())
-		format = "rti";
-	else if(ui->formatRelight->isChecked())
-		format = "relight";
-	else if(ui->formatDeepzoom->isChecked())
-		format = "deepzoom";
-	else if(ui->formatTarzoom->isChecked())
-		format = "tarzoom";
+
 
 	task->addParameter("format", Parameter::STRING, format);
 
