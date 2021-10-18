@@ -165,7 +165,11 @@
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QDoubleSpinBox" name="focalLength"/>
+       <widget class="QDoubleSpinBox" name="focalLength">
+        <property name="maximum">
+         <double>999.990000000000009</double>
+        </property>
+       </widget>
       </item>
       <item row="3" column="0">
        <widget class="QLabel" name="label_5">

@@ -52,14 +52,15 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)),  this, SLOT(exportRTI()));
 	connect(ui->actionExport_Normals, SIGNAL(triggered(bool)),  this, SLOT(exportNormals()));
 
-	connect(ui->actionView_RTI,   SIGNAL(triggered(bool)),  this, SLOT(viewRTI()));
+	connect(ui->actionView_RTI,     SIGNAL(triggered(bool)),  this, SLOT(viewRTI()));
 
-	connect(ui->actionShow_queue, SIGNAL(triggered(bool)),  this, SLOT(showQueue()));
+	connect(ui->actionShow_queue,   SIGNAL(triggered(bool)),  this, SLOT(showQueue()));
 
 
-	connect(ui->addSphere,        SIGNAL(clicked(bool)),   this, SLOT(addSphere()));
-	connect(ui->removeSphere,     SIGNAL(clicked(bool)),   this, SLOT(removeSphere()));
-	connect(ui->saveLP,           SIGNAL(clicked(bool)),   this, SLOT(saveLPs()));
+	connect(ui->actionAdd_a_sphere, SIGNAL(triggered(bool)),   this, SLOT(addSphere()));
+	connect(ui->addSphere,          SIGNAL(clicked(bool)),   this, SLOT(addSphere()));
+	connect(ui->removeSphere,       SIGNAL(clicked(bool)),   this, SLOT(removeSphere()));
+	connect(ui->saveLP,             SIGNAL(clicked(bool)),   this, SLOT(saveLPs()));
 
 	connect(ui->detectHighlights, SIGNAL(clicked(bool)),   this, SLOT(detectHighlights()));
 	connect(ui->actionDetectHighlights, SIGNAL(triggered(bool)),   this, SLOT(detectHighlights()));
