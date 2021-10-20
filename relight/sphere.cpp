@@ -47,20 +47,14 @@ void Sphere::resetHighlight(size_t n) {
 } */
 
 bool Sphere::fit(QSize imgsize) {
-	vector<QPointF> centers;
-//	for(QGraphicsEllipseItem *item: border) {
-//		centers.push_back( item->rect().center() + QPointF(item->x(), item->y()));
-//	}
-
-
-	if(centers.size() < 3)
+	if(border.size() < 3)
 		return false;
 
-	double n = centers.size();
+	double n = border.size();
 	double sx = 0, sy = 0, sxy = 0, sx2 = 0, sy2 = 0, sx3 = 0, sy3 = 0, sx2y = 0, sxy2 = 0;
-	for(size_t k = 0; k < centers.size(); k++) {
-		double x = centers[k].x();
-		double y = centers[k].y();
+	for(size_t k = 0; k < border.size(); k++) {
+		double x = border[k].x();
+		double y = border[k].y();
 		sx += x;
 		sy += y;
 		sxy += x*y;
@@ -104,10 +98,10 @@ bool Sphere::fit(QSize imgsize) {
 //	sphere =QImage(endx - startx, endy - starty, QImage::Format_ARGB32);
 //	sphere.fill(0);
 
-	if(startx < 0 || starty < 0 || endx >= imgsize.width() || endy >= imgsize.height()) {
+/*	if(startx < 0 || starty < 0 || endx >= imgsize.width() || endy >= imgsize.height()) {
 		fitted = false;
 		return false;
-	}
+	} */
 	fitted = true;
 	return true;
 }

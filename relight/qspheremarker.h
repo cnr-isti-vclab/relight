@@ -45,12 +45,18 @@ public:
 	explicit QSphereMarker(Sphere *sphere, QGraphicsView *_view, QWidget *parent = nullptr);
 	~QSphereMarker();
 
-	void addBorderPoint(QPointF pos);
 	void showHighlight(size_t n);
 	void updateHighlightPosition(size_t n);
+
+	void addBorderPoint(QPointF pos);
+	void updateBorderPoint(QGraphicsEllipseItem *point);
+
 	void deleteSelected();
 	void fit(QSize imgsize);
-	virtual void click(QPointF pos) {}
+	virtual void click(QPointF pos);
+	virtual void doubleClick(QPointF pos) { click(pos); }
+
+	void setEditing(bool value);
 	virtual void cancelEditing() {}
 
 	virtual void setSelected(bool value);
