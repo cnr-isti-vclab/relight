@@ -29,9 +29,9 @@ void Project::clear() {
 	imgsize = QSize();
 	images1.clear();
 
-	for(auto b: balls)
-		delete b.second;
-	balls.clear();
+	for(auto sphere: spheres)
+		delete sphere;
+	spheres.clear();
 
 	for(auto m: measures)
 		delete m;
@@ -268,11 +268,10 @@ void Project::load(QString filename) {
 	}
 
 	if(obj.contains("spheres")) {
-		int count =0 ;
 		for(auto sphere: obj["spheres"].toArray()) {
-			Ball *ball = new Ball;
-			ball->fromJson(sphere.toObject());
-			balls[count++] = ball;
+			Sphere *_sphere = new Sphere;
+			_sphere->fromJson(sphere.toObject());
+			spheres.push_back(_sphere);
 		}
 	}
 
@@ -319,8 +318,8 @@ void Project::save(QString filename) {
 	}
 
 	QJsonArray jspheres;
-	for(auto it: balls)
-		jspheres.append(it.second->toJson());
+	for(auto sphere: spheres)
+		jspheres.append(sphere->toJson());
 	project.insert("spheres", jspheres);
 
 
@@ -330,7 +329,7 @@ void Project::save(QString filename) {
 	for(Measure *measure: measures) {
 		jmeasures.append(measure->toJson());
 		length += measure->length;
-		pixels += QLineF(measure->first->pos(), measure->second->pos()).length();
+		pixels += QLineF(measure->first, measure->second).length();
 	}
 	project.insert("measures", jmeasures);
 
@@ -390,27 +389,26 @@ float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, cons
 	return d;
 }
 void  Project::computeDirections() {
-	if(balls.size() == 0) {
+	if(spheres.size() == 0) {
 		QMessageBox::critical(nullptr, "Missing light directions.", "Light directions can be loaded from a .lp file or processing the spheres.");
 		return;
 	}
 	vector<Vector3f> directions(size(), Vector3f(0, 0, 0));
 	vector<float> weights(size(), 0.0f);
-	if(balls.size()) {
-		for(auto it: balls) {
-			Ball *ball = it.second;
-			ball->computeDirections(lens);
-			if(ball->directions.size() != size())
-				throw QString("Ball number of directions is different than images");
+	if(spheres.size()) {
+		for(auto sphere: spheres) {
+			sphere->computeDirections(lens);
+			if(sphere->directions.size() != size())
+				throw QString("Sphere number of directions is different than images");
 
 			//if we have a focal length we can rotate the directions of the lights appropriately, unless in the center!
-			if(lens.focalLength && (ball->center != QPointF(0, 0))) {
+			if(lens.focalLength && (sphere->center != QPointF(0, 0))) {
 				//we need to take into account the fact thet the sphere is not centered.
 				//we adjust by the angle with the view direction of the highlight.
 
 
-				float bx = ball->center.x();
-				float by = ball->center.y();
+				float bx = sphere->center.x();
+				float by = sphere->center.y();
 				Vector3f viewDir = lens.viewDirection(bx, by);
 				viewDir.normalize();
 				float angle = acos(Vector3f(0, 0, -1) * viewDir);
@@ -418,15 +416,15 @@ void  Project::computeDirections() {
 				Vector3f axis = Vector3f(viewDir[1], - viewDir[0], 0);
 				axis.normalize();
 
-				for(Vector3f &v: ball->directions)
+				for(Vector3f &v: sphere->directions)
 					v = v.rotate(axis, angle);
 
 				if(dome.domeDiameter) {
 				//find intersection between directions and sphere.
-					for(size_t i = 0; i < ball->directions.size(); i++) {
-						Vector3f &direction = ball->directions[i];
+					for(size_t i = 0; i < sphere->directions.size(); i++) {
+						Vector3f &direction = sphere->directions[i];
 						direction.normalize();
-						Vector3f origin = lens.viewDirection(ball->lights[i].x(), ball->lights[i].y());
+						Vector3f origin = lens.viewDirection(sphere->lights[i].x(), sphere->lights[i].y());
 						//bring it back to surface plane
 						origin[2] = 0;
 						//normalize by width
@@ -442,8 +440,8 @@ void  Project::computeDirections() {
 				}
 			}
 
-			for(size_t i = 0; i < ball->directions.size(); i++) {
-				Vector3f d = ball->directions[i];
+			for(size_t i = 0; i < sphere->directions.size(); i++) {
+				Vector3f d = sphere->directions[i];
 				if(d.isZero())
 					continue;
 				directions[i] += d;
@@ -452,7 +450,7 @@ void  Project::computeDirections() {
 		}
 	}
 
-	//Simple mean for the balls directions (not certainly the smartest thing).
+	//Simple mean for the spheres directions (not certainly the smartest thing).
 	for(size_t i = 0; i < directions.size(); i++) {
 		if(weights[i] > 0)
 			images1[i].direction = directions[i]/weights[i];
