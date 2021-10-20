@@ -1,10 +1,10 @@
-#include "ball.h"
+#include "sphere.h"
 
-#include <QGraphicsEllipseItem>
-#include <QPen>
+
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QMessageBox>
+#include <QRunnable>
 
 #include <math.h>
 #include <assert.h>
@@ -16,49 +16,16 @@
 
 using namespace std;
 
-BorderPoint::~BorderPoint() {}
-
-QVariant BorderPoint::itemChange(GraphicsItemChange change, const QVariant &value)	{
-	if ((change == ItemPositionChange  && scene()) || change == ItemScenePositionHasChanged) {
-		RTIScene *s = (RTIScene *)scene();
-		emit s->borderPointMoved();
-	}
-	return QGraphicsItem::itemChange(change, value);
-}
 
 
-HighlightPoint::~HighlightPoint() {}
+Sphere::Sphere() {}
 
-QVariant HighlightPoint::itemChange(GraphicsItemChange change, const QVariant &value)	{
-	if ((change == ItemPositionChange  && scene()) || change == ItemScenePositionHasChanged) {
-		RTIScene *s = (RTIScene *)scene();
-		emit s->highlightMoved();
-	}
-	return QGraphicsItem::itemChange(change, value);
-}
-
-
-Ball::Ball() {}
-
-Ball::~Ball() {
-	if(circle)
-		delete circle;
-	if(smallcircle)
-		delete smallcircle;
-	if(highlight)
-		delete highlight;
-	for(auto b: border)
-		delete b;
-	if(sphere)
-		delete sphere;
-}
-
-void Ball::resetHighlight(size_t n) {
+void Sphere::resetHighlight(size_t n) {
 	lights[n] = QPointF();
 	directions[n] = Vector3f();
 }
 
-void Ball::setActive(bool _active) {
+/*void Sphere::setActive(bool _active) {
 	active = _active;
 	QPen pen;
 	pen.setCosmetic(true);
@@ -77,13 +44,13 @@ void Ball::setActive(bool _active) {
 	for(auto p: border)
 		p->setPen(pen);
 
-}
+} */
 
-bool Ball::fit(QSize imgsize) {
+bool Sphere::fit(QSize imgsize) {
 	vector<QPointF> centers;
-	for(QGraphicsEllipseItem *item: border) {
-		centers.push_back( item->rect().center() + QPointF(item->x(), item->y()));
-	}
+//	for(QGraphicsEllipseItem *item: border) {
+//		centers.push_back( item->rect().center() + QPointF(item->x(), item->y()));
+//	}
 
 
 	if(centers.size() < 3)
@@ -146,7 +113,7 @@ bool Ball::fit(QSize imgsize) {
 }
 
 
-void Ball::findHighlight(QImage img, int n) {
+void Sphere::findHighlight(QImage img, int n) {
 	if(n == 0) histogram.clear();
 	//TODO hack!
 	if(n == 0) {
@@ -199,7 +166,7 @@ void Ball::findHighlight(QImage img, int n) {
 
 	histogram.push_back(histo);
 	if(threshold < 200) {
-		//highlight in the mid greys? probably all the ball is in shadow.
+		//highlight in the mid greys? probably all the sphere is in shadow.
 		lights[n] = QPointF(0, 0);
 		return;
 	}
@@ -243,18 +210,18 @@ void Ball::findHighlight(QImage img, int n) {
 		radius *= 0.5;
 	}
 
-	if(!sphere) {
+/*	if(!sphere) {
 		sphere = new QGraphicsPixmapItem(QPixmap::fromImage(sphereImg));
 		sphere->setZValue(-0.5);
 		sphere->setPos(inner.topLeft());
 	} else {
 		sphere->setPixmap(QPixmap::fromImage(sphereImg));
-	}
+	} */
 
 	lights[n] = bari;
 }
 
-void Ball::computeDirections(Lens &lens) {
+void Sphere::computeDirections(Lens &lens) {
 
 	directions.resize(lights.size());
 	Vector3f viewDir = lens.viewDirection(center.x(), center.y());
@@ -289,43 +256,43 @@ void Ball::computeDirections(Lens &lens) {
 
 }
 
-QJsonObject Ball::toJson() {
-	QJsonObject ball;
+QJsonObject Sphere::toJson() {
+	QJsonObject sphere;
 	QJsonArray jcenter = { center.x(), center.y() };
-	ball["center"] = jcenter;
-	ball["radius"] = radius;
-	ball["smallradius"] = smallradius;
+	sphere["center"] = jcenter;
+	sphere["radius"] = radius;
+	sphere["smallradius"] = smallradius;
 	QJsonObject jinner;
 	jinner.insert("left", inner.left());
 	jinner.insert("top", inner.top());
 	jinner.insert("width", inner.width());
 	jinner.insert("height", inner.height());
-	ball["inner"] = jinner;
+	sphere["inner"] = jinner;
 
 	QJsonArray jlights;
 	for(QPointF l: lights) {
 		QJsonArray jlight = { l.x(), l.y() };
 		jlights.append(jlight);
 	}
-	ball["lights"] = jlights;
+	sphere["lights"] = jlights;
 
 	QJsonArray jdirections;
 	for(Vector3f l: directions) {
 		QJsonArray jdir = { l[0], l[1], l[2] };
 		jdirections.append(jdir);
 	}
-	ball["directions"] = jdirections;
+	sphere["directions"] = jdirections;
 
 	QJsonArray jborder;
-	for(BorderPoint *p: border) {
-		QJsonArray b = { p->pos().x(), p->pos().y() };
+	for(QPointF p: border) {
+		QJsonArray b = { p.x(), p.y() };
 		jborder.push_back(b);
 	}
-	ball["border"] = jborder;
-	return ball;
+	sphere["border"] = jborder;
+	return sphere;
 }
 
-void Ball::fromJson(QJsonObject obj) {
+void Sphere::fromJson(QJsonObject obj) {
 	auto jcenter = obj["center"].toArray();
 	center.setX(jcenter[0].toDouble());
 	center.setY(jcenter[1].toDouble());
@@ -355,20 +322,6 @@ void Ball::fromJson(QJsonObject obj) {
 	for(auto jborder: obj["border"].toArray()) {
 		auto b = jborder.toArray();
 		//TODO cleanp this code replicated in mainwindow.
-		QBrush blueBrush(Qt::blue);
-		QPen outlinePen(Qt::white);
-		outlinePen.setWidth(5);
-		outlinePen.setCosmetic(true);
-
-
-		auto borderPoint = new BorderPoint(-3, -3, 6, 6);
-		borderPoint->setPos(b[0].toDouble(), b[1].toDouble());
-		borderPoint->setPen(outlinePen);
-		borderPoint->setBrush(blueBrush);
-		borderPoint->setFlag(QGraphicsItem::ItemIsMovable);
-		borderPoint->setFlag(QGraphicsItem::ItemIsSelectable);
-		borderPoint->setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
-		borderPoint->setCursor(Qt::CrossCursor);
-		border.push_back(borderPoint);
+		border.push_back(QPointF(b[0].toDouble(), b[1].toDouble()));
 	}
 }

@@ -2,7 +2,7 @@
 #define PROJECT_H
 
 #include "measure.h"
-#include "ball.h"
+#include "sphere.h"
 #include "lens.h"
 #include "dome.h"
 #include "image.h"
@@ -21,7 +21,7 @@ public:
 	Dome dome;
 
 	std::vector<Image> images1;
-	std::map<int, Ball *> balls;
+	std::vector<Sphere *> spheres;
 	std::vector<Measure *> measures;
 	QRect crop;
 
@@ -33,6 +33,17 @@ public:
 	void save(QString filename);
 	void saveLP(QString filename, std::vector<Vector3f> &directions);
 	void computeDirections();
+
+	Measure *newMeasure() {
+		auto m = new Measure();
+		measures.push_back(m);
+		return m;
+	}
+	Sphere *newSphere() {
+		auto s = new Sphere();
+		spheres.push_back(s);
+		return s;
+	}
 
 	bool setDir(QDir folder);
 	bool scanDir(); //load images from project.dir, and return false if some problems with resolution.

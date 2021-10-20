@@ -20,7 +20,7 @@
 using namespace std;
 
 
-/* usage: dome_calibration <ball> [<color_table>] */
+/* usage: dome_calibration <sphere> [<color_table>] */
 
 
 void calibrateColors(QString dir) {

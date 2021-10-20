@@ -31,7 +31,6 @@ mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 SOURCES += main.cpp \
     imagecropper.cpp \
     mainwindow.cpp \
-    ball.cpp \
     graphics_view_zoom.cpp \
     rtiexport.cpp \
     ../relight-cli/rtibuilder.cpp \
@@ -60,13 +59,17 @@ SOURCES += main.cpp \
     ../src/legacy_rti.cpp \
     domecalibration.cpp \
     dome.cpp \
-    ../src/lp.cpp
+    ../src/lp.cpp \
+    qmarkerlist.cpp \
+    qmarker.cpp \
+    qmeasuremarker.cpp \
+    sphere.cpp \
+    qspheremarker.cpp
 
 
 HEADERS += \
     imagecropper.h \
     mainwindow.h \
-    ball.h \
     graphics_view_zoom.h \
     rtiexport.h \
     helpdialog.h \
@@ -97,7 +100,12 @@ HEADERS += \
     domecalibration.h \
     dome.h \
     ../src/vector.h \
-    ../src/lp.h
+    ../src/lp.h \
+    qmarker.h \
+    qmarkerlist.h \
+    qmeasuremarker.h \
+    sphere.h \
+    qspheremarker.h
 
 FORMS += \
     mainwindow.ui \

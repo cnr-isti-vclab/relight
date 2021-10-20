@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <QDir>
-#include "ball.h"
+#include "sphere.h"
 #include "project.h"
 
 #include <QProgressDialog>
@@ -95,7 +95,7 @@ public slots:
 
 	void clear(); //clear everything (project, images etc.)
 	void openImage(const QModelIndex &current);
-	void openImage(QListWidgetItem *, bool fit = false);
+	//void openImage(QListWidgetItem *, bool fit = false);
 	void openImage(int id, bool fit = false);
 	void imageChecked(QStandardItem *item);
 
@@ -108,14 +108,19 @@ public slots:
 	void updateHighlight();
 
 	void imagesContextMenu(QPoint);
-	void spheresContextMenu(QPoint);
+	///void spheresContextMenu(QPoint);
+	void markersContextMenu(QPoint);
 
 
-	void changeSphere(QListWidgetItem *current, QListWidgetItem *previous);
-	void setupSpheres();
-	void setupSphere(int id, Ball *ball);
-	int  addSphere();
-	void showSpheres(bool show);
+
+	//void changeSphere(QListWidgetItem *current, QListWidgetItem *previous);
+
+	//void setupSphere(int id, Sphere *sphere);
+
+	void newSphere();
+	void newMeasure();
+	void newWhite();
+	void newAlign();
 	
 	void toggleMaxLuma();
 	void computeMaxLuma();
@@ -127,8 +132,9 @@ public slots:
 	void removeSphere();
 	void showHighlights(size_t n);
 
-	void startMeasure();
-	void endMeasure();
+	//void startMeasure();
+	//void endMeasure();
+	void setupSpheres();
 	void setupMeasures();
 
 	
@@ -168,7 +174,7 @@ private:
 	RTIScene *scene = nullptr;
 	QGraphicsPixmapItem *imagePixmap = nullptr;
 
-	Measure *measure = nullptr; //tmporary measure.
+	//Measure *measure = nullptr; //tmporary measure.
 	
 	bool ignore_scene_changes = false;
 	int sphere_to_process = -1;
