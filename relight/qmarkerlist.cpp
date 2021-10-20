@@ -14,7 +14,7 @@ QMarkerList::QMarkerList(QWidget* parent): QFrame(parent) {
 
 	_layout = new QBoxLayout(QBoxLayout::TopToBottom);
 	_layout->setSizeConstraint(QLayout::SetMinimumSize);
-	_layout->setMargin(2);
+	_layout->setMargin(0);
 	_layout->setSpacing(0);
 	setLayout(_layout);
 
@@ -54,7 +54,6 @@ void QMarkerList::removeItem(QMarker* item) {
 	item->setParent(nullptr);
 	_layout->removeWidget(item);
 	_layout->update();
-
 }
 
 vector<QMarker*> QMarkerList::getItems(bool selected) const {

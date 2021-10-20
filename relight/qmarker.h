@@ -28,13 +28,17 @@ public:
 
 
 	virtual void setSelected(bool value = true);
-	virtual void setEditing(bool value = true) { editing = value;  }
+	virtual void setEditing(bool value = true);
 	virtual void cancelEditing() {}
 	virtual void click(QPointF) {}
 	virtual void doubleClick(QPointF) {}
 
 public slots:
-	virtual void onEdit() {}
+	virtual void onEdit() { setEditing(!editing); }
+	virtual void onRemove() { emit removed(); }
+
+signals:
+	void removed();
 
 protected:
 	void enterEvent(QEvent* event) override;

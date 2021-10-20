@@ -4,13 +4,14 @@
 #include <QGraphicsEllipseItem>
 #include <QPen>
 #include <QLabel>
+#include <QApplication>
 
 BorderPoint::~BorderPoint() {}
 
 QVariant BorderPoint::itemChange(GraphicsItemChange change, const QVariant &value)	{
 	if ((change == ItemPositionChange  && scene()) || change == ItemScenePositionHasChanged) {
 		RTIScene *s = (RTIScene *)scene();
-		emit s->borderPointMoved();
+		emit s->borderPointMoved(this);
 	}
 	return QGraphicsItem::itemChange(change, value);
 }
@@ -21,7 +22,7 @@ HighlightPoint::~HighlightPoint() {}
 QVariant HighlightPoint::itemChange(GraphicsItemChange change, const QVariant &value)	{
 	if ((change == ItemPositionChange  && scene()) || change == ItemScenePositionHasChanged) {
 		RTIScene *s = (RTIScene *)scene();
-		emit s->highlightMoved();
+		emit s->highlightMoved(this);
 	}
 	return QGraphicsItem::itemChange(change, value);
 }
@@ -89,13 +90,35 @@ void QSphereMarker::init() {
 	smallcircle->setVisible(true);
 }
 
-void QSphereMarker::fit(QSize imagesize) {
+void QSphereMarker::fit(QSize imagesize = QSize(0, 0)) {
 	if(sphere->border.size() < 3)
 		sphere->center = QPointF();
 	else
 		sphere->fit(imagesize);
 
 	init();
+}
+
+void QSphereMarker::setEditing(bool value) {
+	if(value)
+		QApplication::changeOverrideCursor(Qt::CrossCursor);
+	else
+		QApplication::restoreOverrideCursor();
+
+	QMarker::setEditing(value);
+}
+
+void QSphereMarker::click(QPointF pos) {
+	//min distance between border points in pixels.
+	double minBorderDist = 20;
+	for(QPointF p: sphere->border) {
+		if(sqrt(pow(p.x() - pos.x(), 2) + pow(p.y() - pos.y(), 2)) < minBorderDist)
+			return;
+	}
+
+	addBorderPoint(pos);
+	sphere->border.push_back(pos);
+	fit();
 }
 
 void QSphereMarker::addBorderPoint(QPointF pos) {
@@ -116,6 +139,15 @@ void QSphereMarker::addBorderPoint(QPointF pos) {
 	border.push_back(borderPoint);
 	scene->addItem(borderPoint);
 }
+void QSphereMarker::updateBorderPoint(QGraphicsEllipseItem *point) {
+	for(int i = 0; i < border.size(); i++) {
+		if(point != border[i])
+			continue;
+		sphere->border[i] = point->pos();
+		break;
+	}
+}
+
 
 void QSphereMarker::setSelected(bool value) {
 	QPen pen = circle->pen();

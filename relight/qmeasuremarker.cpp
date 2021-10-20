@@ -96,6 +96,7 @@ void QMeasureMarker::endMeasure() {
 
 void QMeasureMarker::onEdit() {
 
+	setEditing(false);
 	bool ok = true;
 	double length = QInputDialog::getDouble(this, "Enter a measurement", "The distance between the two points in mm.", 0.0, 0.0, 1000000.0, 1, &ok);
 	if(!ok)

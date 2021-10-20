@@ -40,7 +40,7 @@ public:
 		return m;
 	}
 	Sphere *newSphere() {
-		auto s = new Sphere();
+		auto s = new Sphere(images1.size());
 		spheres.push_back(s);
 		return s;
 	}

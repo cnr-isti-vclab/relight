@@ -56,8 +56,8 @@ public:
 	RTIScene(QObject *parent = Q_NULLPTR): QGraphicsScene(parent) {}
 
 signals:
-	void borderPointMoved();
-	void highlightMoved();
+	void borderPointMoved(QGraphicsEllipseItem *point);
+	void highlightMoved(QGraphicsEllipseItem *highlight);
 };
 
 class MainWindow : public QMainWindow {
@@ -93,34 +93,35 @@ public slots:
 	void saveProjectAs();
 	void preferences();
 
+
 	void clear(); //clear everything (project, images etc.)
 	void openImage(const QModelIndex &current);
-	//void openImage(QListWidgetItem *, bool fit = false);
 	void openImage(int id, bool fit = false);
 	void imageChecked(QStandardItem *item);
 
 	void next();
 	void previous();
-	void pointPicked(QPoint p);
+	void doubleClick(QPoint p);
 	void pointClick(QPoint p);
-	void deleteSelected();
-	void updateBorderPoints();
-	void updateHighlight();
-
-	void imagesContextMenu(QPoint);
-	///void spheresContextMenu(QPoint);
-	void markersContextMenu(QPoint);
 
 
 
-	//void changeSphere(QListWidgetItem *current, QListWidgetItem *previous);
+/* Markers */
 
-	//void setupSphere(int id, Sphere *sphere);
-
+	void updateBorderPoints(QGraphicsEllipseItem *point);
+	void updateHighlight(QGraphicsEllipseItem *highlight);
+	void showHighlights(size_t n);
+	void setupSpheres();
 	void newSphere();
+	void removeSphere();
+
+	void setupMeasures();
 	void newMeasure();
+	void removeMeasure();
+
 	void newWhite();
 	void newAlign();
+
 	
 	void toggleMaxLuma();
 	void computeMaxLuma();
@@ -129,15 +130,7 @@ public slots:
 	void lumaFinish();
 	
 
-	void removeSphere();
-	void showHighlights(size_t n);
 
-	//void startMeasure();
-	//void endMeasure();
-	void setupSpheres();
-	void setupMeasures();
-
-	
 	void detectHighlights();
 	void detectCurrentSphereHighlight();
 	void cancelDetectHighlights();
@@ -151,7 +144,6 @@ public slots:
 
 	void viewRTI();
 	void showQueue();
-
 
 	void editLensParameters();
 	void whiteBalance();
@@ -173,8 +165,6 @@ private:
 	HelpDialog *help = nullptr;
 	RTIScene *scene = nullptr;
 	QGraphicsPixmapItem *imagePixmap = nullptr;
-
-	//Measure *measure = nullptr; //tmporary measure.
 	
 	bool ignore_scene_changes = false;
 	int sphere_to_process = -1;

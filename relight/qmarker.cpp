@@ -11,11 +11,11 @@
 QMarker::QMarker(QGraphicsView *_view, QWidget *parent):
 	QWidget(parent), view(_view) {
 
-//	setProperty("selected", QVariant(true));
 	scene = view->scene();
 
 	label = new QLabel();
 	edit = new QToolButton();
+	edit->setCheckable(true);
 	edit->setIcon(QIcon(":/icons/feather/edit.svg"));
 	remove = new QToolButton();
 	remove->setIcon(QIcon(":/icons/feather/trash-2.svg"));
@@ -31,7 +31,7 @@ QMarker::QMarker(QGraphicsView *_view, QWidget *parent):
 	setAutoFillBackground(true);
 
 	connect(edit, SIGNAL(clicked()), this, SLOT(onEdit()));
-
+	connect(remove, SIGNAL(clicked()), this, SLOT(onRemove()));
 }
 
 void QMarker::setSelected(bool value) {
@@ -44,6 +44,11 @@ void QMarker::setSelected(bool value) {
 	label->setStyleSheet(selected ? "QLabel { color : #fff; }" : "/* */");
 }
 
+void QMarker::setEditing(bool value) {
+	editing = value;
+	this->edit->setChecked(editing);
+	//this->edit->setStyleSheet(editing ? "background-color: #999; color:#000; " : "/* */");
+}
 
 	/*
    call_once(initPalettes, [self = this]()
@@ -57,11 +62,7 @@ void QMarker::setSelected(bool value) {
 	  _SelectedBackground.setColor(QPalette::ColorRole::Base, _SelectedBackground.color(QPalette::Highlight));
    }); */
 
-QMarker::~QMarker() {
-/*	auto pos = std::find(_HighlightedItems.begin(), _HighlightedItems.end(), this);
-	if (pos != _HighlightedItems.end())
-		_HighlightedItems.erase(pos); */
-}
+QMarker::~QMarker() {}
 
 void QMarker::enterEvent(QEvent* event) {
 	QWidget::enterEvent(event);
