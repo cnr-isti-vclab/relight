@@ -96,7 +96,7 @@ bool getIntegers(FILE *file, vector<int> &a, unsigned int expected = 0) {
 bool LRti::load(const char *filename) {
 	FILE* file = fopen(filename, "rb");
 	if (file == nullptr) {
-		cerr << "Could not open file: " << filename << endl;
+		error = "Could not open file";
 		return false;
 	}
 	
@@ -108,7 +108,7 @@ bool LRti::load(const char *filename) {
 	else  if(version.compare(0, 7, "#HSH1.2", 7) == 0)
 		status = loadHSH(file);
 	else {
-		cerr << "Not a PTM or HSH file." << endl;
+		error = "Not a PTM or HSH file.";
 		return false;
 	}
 	
@@ -157,7 +157,7 @@ bool LRti::loadPTM(FILE* file) {
 		
 	} else {
 		type = UNKNOWN;
-		cerr << "Unsupported format: " << format << endl;
+		error = std::string("Unsupported format: ") +  format;
 		return false;
 	}
 	
@@ -165,7 +165,7 @@ bool LRti::loadPTM(FILE* file) {
 			!getInteger(file, height) ||
 			!getFloats(file, scale, 6) ||
 			!getFloats(file, bias, 6)) {
-		cerr << "File format invalid\n";
+		error =  "File format invalid";
 		return false;
 	}
 	for(auto &b: bias)
@@ -175,7 +175,7 @@ bool LRti::loadPTM(FILE* file) {
 		d.resize(width*height);
 	
 	if(type != PTM_LRGB && type != PTM_RGB) {
-		cerr << "Unsupported RGB (for now)" << endl;
+		error = "Unsupported RGB (for now)";
 		return false;
 	}
 	if(!compressed)
@@ -256,7 +256,7 @@ bool LRti::loadHSH(FILE* file) {
 	height = tmp[1];
 	int ncomponents = tmp[2];
 	if(ncomponents != 3) {
-		cerr << "Unsupported components != 3" << endl;
+		error =  "Unsupported components != 3";
 		return false;
 	}
 	
@@ -264,14 +264,14 @@ bool LRti::loadHSH(FILE* file) {
 	if(!getIntegers(file, basis, 3))
 		return false;
 	
-	int basis_terms = basis[0]; //number of terms in the basis
+	size_t basis_terms = basis[0]; //number of terms in the basis
 /*	//ignored
 	int basis_type = basis[1];
 	int basis_size = basis[2];
 */
 	
 	if(rti_type != 3) {
-		cerr << "Unsupported .rti if not HSH (for the moment)" << endl;
+		error =  "Unsupported .rti if not HSH (for the moment)";
 		return false;
 	}
 	type = HSH;
@@ -288,14 +288,14 @@ bool LRti::loadHSH(FILE* file) {
 	scale.resize(basis_terms);
 	
 	size_t read = fread(scale.data(), sizeof(float), basis_terms, file);  //max
-	if(read != basis_terms*sizeof(float)) {
-		cerr << "Failed reading basis." << endl;
+	if(read != basis_terms) {
+		error = "Failed reading scale.";
 		return false;
 	}
 		
 	read = fread(bias.data(),  sizeof(float), basis_terms, file); //min
-	if(read != basis_terms*sizeof(float)) {
-		cerr << "Failed reading basis." << endl;
+	if(read != basis_terms) {
+		error = "Failed reading bias.";
 		return false;
 	}
 
@@ -303,7 +303,7 @@ bool LRti::loadHSH(FILE* file) {
 	//in .rti system HSH its c*scale + bias
 	//we need to convert the coefficients to the uniform standard.
 	
-	for(int i = 0; i < basis_terms; i++)
+	for(size_t i = 0; i < basis_terms; i++)
 		bias[i] = -bias[i]/scale[i];
 
 	uint32_t line_size = width * basis_terms * 3;
@@ -317,7 +317,7 @@ bool LRti::loadHSH(FILE* file) {
 		int c = 0; //line position;
 		for(int x = 0; x < width; x++)
 			for(int k = 0; k < 3; k++)
-				for(int j = 0; j < basis_terms; j++)
+				for(size_t j = 0; j < basis_terms; j++)
 					data[j*3 + k][(Y*width + x)] = line[c++];
 	}
 	return true;

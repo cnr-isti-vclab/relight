@@ -1,15 +1,19 @@
 #ifndef PROJECT_H
 #define PROJECT_H
 
-#include "measure.h"
-#include "sphere.h"
+
 #include "lens.h"
 #include "dome.h"
 #include "image.h"
 #include <QDir>
 #include <QString>
+#include <QRect>
 
 class QJsonObject;
+class Sphere;
+class Measure;
+class Align;
+class White;
 
 
 class Project {
@@ -23,6 +27,8 @@ public:
 	std::vector<Image> images1;
 	std::vector<Sphere *> spheres;
 	std::vector<Measure *> measures;
+	std::vector<Align *> aligns;
+	std::vector<White *> whites;
 	QRect crop;
 
 	Project() {}
@@ -34,16 +40,10 @@ public:
 	void saveLP(QString filename, std::vector<Vector3f> &directions);
 	void computeDirections();
 
-	Measure *newMeasure() {
-		auto m = new Measure();
-		measures.push_back(m);
-		return m;
-	}
-	Sphere *newSphere() {
-		auto s = new Sphere(images1.size());
-		spheres.push_back(s);
-		return s;
-	}
+	Measure *newMeasure();
+	Sphere *newSphere();
+	Align *newAlign();
+	White *newWhite();
 
 	bool setDir(QDir folder);
 	bool scanDir(); //load images from project.dir, and return false if some problems with resolution.

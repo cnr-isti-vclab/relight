@@ -1,5 +1,9 @@
 #include "project.h"
 #include "../src/exif.h"
+#include "sphere.h"
+#include "measure.h"
+#include "align.h"
+#include "white.h"
 
 #include <QFile>
 #include <QTextStream>
@@ -282,6 +286,20 @@ void Project::load(QString filename) {
 			measures.push_back(measure);
 		}
 	}
+	if(obj.contains("aligns")) {
+		for(auto align: obj["aligns"].toArray()) {
+			Align *_align = new Align(0);
+			_align->fromJson(align.toObject());
+			aligns.push_back(_align);
+		}
+	}
+	if(obj.contains("whites")) {
+		for(auto white: obj["whites"].toArray()) {
+			White *_white = new White();
+			_white->fromJson(white.toObject());
+			whites.push_back(_white);
+		}
+	}
 }
 
 void Project::save(QString filename) {
@@ -333,6 +351,16 @@ void Project::save(QString filename) {
 	}
 	project.insert("measures", jmeasures);
 
+	QJsonArray jaligns;
+	for(auto align: aligns)
+		jaligns.append(align->toJson());
+	project.insert("aligns", jaligns);
+
+	QJsonArray jwhites;
+	for(auto white: whites)
+		jwhites.append(white->toJson());
+	project.insert("whitess", jwhites);
+
 	if(length != 0)
 		project.insert("scale", length/pixels);
 
@@ -342,6 +370,27 @@ void Project::save(QString filename) {
 	QFile file(filename);
 	file.open(QFile::WriteOnly | QFile::Truncate);
 	file.write(doc.toJson());
+}
+
+Measure *Project::newMeasure() {
+	auto m = new Measure();
+	measures.push_back(m);
+	return m;
+}
+Sphere *Project::newSphere() {
+	auto s = new Sphere(images1.size());
+	spheres.push_back(s);
+	return s;
+}
+Align *Project::newAlign() {
+	auto s = new Align(images1.size());
+	aligns.push_back(s);
+	return s;
+}
+White *Project::newWhite() {
+	auto s = new White();
+	whites.push_back(s);
+	return s;
 }
 
 
@@ -420,7 +469,7 @@ void  Project::computeDirections() {
 					v = v.rotate(axis, angle);
 
 				if(dome.domeDiameter) {
-				//find intersection between directions and sphere.
+				//find intersection between direAlignctions and sphere.
 					for(size_t i = 0; i < sphere->directions.size(); i++) {
 						Vector3f &direction = sphere->directions[i];
 						direction.normalize();

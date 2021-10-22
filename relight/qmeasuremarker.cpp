@@ -59,6 +59,14 @@ QMeasureMarker::QMeasureMarker( Measure *m, QGraphicsView *_view, QWidget *paren
 	}
 }
 
+QMeasureMarker::~QMeasureMarker() {
+	delete first;
+	delete second;
+	delete line;
+	delete text;
+}
+
+
 void QMeasureMarker::setSelected(bool value) {
 	QPen pen = first->pen();
 	pen.setWidth(value? 2 : 1);
@@ -71,32 +79,30 @@ void QMeasureMarker::setSelected(bool value) {
 
 
 void QMeasureMarker::startMeasure() {
-	setEditing();
+	setEditing(true);
 	measuring = FIRST_POINT;
-	QApplication::setOverrideCursor(Qt::CrossCursor);
-	//view->setCursor(Qt::CrossCursor);
-
 }
 
-QMeasureMarker::~QMeasureMarker() {
-	delete first;
-	delete second;
-	delete line;
-	delete text;
-}
-
-void QMeasureMarker::endMeasure() {
-	//view->unsetCursor();
-	QApplication::restoreOverrideCursor();
-	setEditing(false);
-	measuring = DONE;
-
-	onEdit();
-}
 
 void QMeasureMarker::onEdit() {
+	qDebug("measure editing");
+	setSelected(true);
+	setEditing(!editing);
 
-	setEditing(false);
+	if(!editing)
+		return;
+
+
+	if(measure->first.isNull()) {
+		measuring = FIRST_POINT;
+
+	} else {
+		askMeasure();
+		setEditing(false);
+	}
+}
+
+void QMeasureMarker::askMeasure() {
 	bool ok = true;
 	double length = QInputDialog::getDouble(this, "Enter a measurement", "The distance between the two points in mm.", 0.0, 0.0, 1000000.0, 1, &ok);
 	if(!ok)
@@ -128,12 +134,18 @@ void QMeasureMarker::click(QPointF pos) {
 		scene->addItem(second);
 		line->setLine(QLineF(measure->first, measure->second));
 		scene->addItem(line);
-		endMeasure();
+
+		setEditing(false);
+		measuring = DONE;
+
+		onEdit();
 		break;
 	default:
 		break;
 	}
 }
+
+
 
 void QMeasureMarker::cancelEditing() {
 	setEditing(false);
@@ -145,8 +157,6 @@ void QMeasureMarker::cancelEditing() {
 		line->setVisible(false);
 		text->setVisible(false);
 		measure->first = measure->second = QPointF(0, 0);
-		//view->unsetCursor();
-		QApplication::restoreOverrideCursor();
 	}
 }
 

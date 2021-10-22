@@ -34,7 +34,7 @@ endif()
 set (RELIGHT_HEADERS
 	imagecropper.h
 	mainwindow.h
-	ball.h
+	sphere.h
 	measure.h
 	graphics_view_zoom.h
 	rtiexport.h
@@ -63,13 +63,23 @@ set (RELIGHT_HEADERS
 	rtitask.h
 	dome.h
 	domecalibration.h
+	qmarker.h
+	qmarkerlist.h
+	qmeasuremarker.h
+	sphere.h
+	qspheremarker.h
+	align.h
+	qalignmarker.h
+	qwhitemarker.h
+	white.h
+	convertdialog.h
 )
 
 set (RELIGHT_SOURCES
 	main.cpp
 	imagecropper.cpp
 	mainwindow.cpp
-	ball.cpp
+	sphere.cpp
 	measure.cpp
 	graphics_view_zoom.cpp
 	rtiexport.cpp
@@ -99,6 +109,16 @@ set (RELIGHT_SOURCES
 	rtitask.cpp
 	domecalibration.cpp
 	dome.cpp
+	qmarkerlist.cpp
+	qmarker.cpp
+	qmeasuremarker.cpp
+	sphere.cpp
+	qspheremarker.cpp
+	align.cpp
+	qalignmarker.cpp
+	qwhitemarker.cpp
+	white.cpp
+	convertdialog.cpp
 )
 
 set (RELIGHT_FORMS
@@ -109,6 +129,7 @@ set (RELIGHT_FORMS
 	settingsdialog.ui
 	focaldialog.ui
 	domecalibration.ui
+	convertdialog
 )
 
 set (RELIGHT_RESOURCES

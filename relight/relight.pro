@@ -64,7 +64,12 @@ SOURCES += main.cpp \
     qmarker.cpp \
     qmeasuremarker.cpp \
     sphere.cpp \
-    qspheremarker.cpp
+    qspheremarker.cpp \
+    align.cpp \
+    qalignmarker.cpp \
+    qwhitemarker.cpp \
+    white.cpp \
+    convertdialog.cpp
 
 
 HEADERS += \
@@ -105,7 +110,12 @@ HEADERS += \
     qmarkerlist.h \
     qmeasuremarker.h \
     sphere.h \
-    qspheremarker.h
+    qspheremarker.h \
+    align.h \
+    qalignmarker.h \
+    qwhitemarker.h \
+    white.h \
+    convertdialog.h
 
 FORMS += \
     mainwindow.ui \
@@ -114,7 +124,8 @@ FORMS += \
     focaldialog.ui \  
     queuewindow.ui \
     settingsdialog.ui \
-    domecalibration.ui
+    domecalibration.ui \
+    convertdialog.ui
 RESOURCES += \
     icons.qrc
 

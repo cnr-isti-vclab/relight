@@ -51,7 +51,6 @@ void Task::runScript(QString program, QString script, QStringList arguments, QSt
 
 	QRegExp re("([^:]+):\\ (\\d+)\\%");
 
-	QString log;
 	do {
 		QString err = process.readAllStandardError();
 		QString out = process.readAllStandardOutput();
@@ -88,4 +87,5 @@ void Task::runScript(QString program, QString script, QStringList arguments, QSt
 		status = DONE;
 	} else
 		status = FAILED;
+	error = log;
 }

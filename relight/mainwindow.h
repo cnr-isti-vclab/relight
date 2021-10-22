@@ -24,6 +24,8 @@ class QStandardItemModel;
 class QStandardItem;
 class QueueWindow;
 class SettingsDialog;
+class ConvertDialog;
+
 namespace Ui {
 class MainWindow;
 }
@@ -77,6 +79,7 @@ public:
 	QProgressDialog *progress = nullptr;
 	QueueWindow *queue = nullptr;
 	SettingsDialog *settings_dialog = nullptr;
+	ConvertDialog *convert = nullptr;
 	QFutureWatcher<void> watcher;
 	bool highlightDetecting = false;
 
@@ -108,6 +111,11 @@ public slots:
 
 /* Markers */
 
+	void detectHighlights();
+	void detectCurrentSphereHighlight();
+	void cancelDetectHighlights();
+	void finishedDetectHighlights();
+
 	void updateBorderPoints(QGraphicsEllipseItem *point);
 	void updateHighlight(QGraphicsEllipseItem *highlight);
 	void showHighlights(size_t n);
@@ -119,8 +127,14 @@ public slots:
 	void newMeasure();
 	void removeMeasure();
 
-	void newWhite();
+	void setupAligns();
 	void newAlign();
+	void removeAlign();
+
+	void setupWhites();
+	void newWhite();
+	void removeWhite();
+
 
 	
 	void toggleMaxLuma();
@@ -131,16 +145,12 @@ public slots:
 	
 
 
-	void detectHighlights();
-	void detectCurrentSphereHighlight();
-	void cancelDetectHighlights();
-	void finishedDetectHighlights();
-
 	void saveLPs();
 	void loadLP();
 	void loadLP(QString filename);
 	void exportRTI(bool normals = false);
 	void exportNormals();
+	void convertRTI();
 
 	void viewRTI();
 	void showQueue();

@@ -34,19 +34,18 @@ public:
 	virtual void doubleClick(QPointF) {}
 
 public slots:
-	virtual void onEdit() { setEditing(!editing); }
+	virtual void onEdit() {
+		setEditing(!editing);
+	}
 	virtual void onRemove() { emit removed(); }
 
 signals:
 	void removed();
 
 protected:
+	//TODO highlight the background or something.
 	void enterEvent(QEvent* event) override;
 	void leaveEvent(QEvent* event) override;
-
-	void HighlightBackground(bool high);
-
-
 };
 
 
