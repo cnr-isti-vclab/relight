@@ -626,7 +626,7 @@ void MainWindow::finishedDetectHighlights() {
 		return;
 	}
 
-#ifdef NDEBUG
+/*
 	//histogram for highlight threshold
 	for(auto it: project.spheres) {
 		Sphere *sphere = it.second;
@@ -639,7 +639,7 @@ void MainWindow::finishedDetectHighlights() {
 		}
 		cout << endl;
 	}
-#endif
+*/
 	project.computeDirections();
 	showHighlights(currentImage);
 	/*QModelIndexList selected = ui->imageList1->selectionModel()->selectedIndexes();
