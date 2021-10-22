@@ -11,9 +11,12 @@
 #include "httpserver.h"
 #include "settingsdialog.h"
 #include "domecalibration.h"
+#include "convertdialog.h"
 
 #include "qmeasuremarker.h"
 #include "qspheremarker.h"
+#include "qalignmarker.h"
+#include "qwhitemarker.h"
 
 #include <QInputDialog>
 #include <QFileDialog>
@@ -48,24 +51,15 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionPreferences,    SIGNAL(triggered(bool)),  this, SLOT(preferences()));
 	connect(ui->actionExit,       SIGNAL(triggered(bool)),  this, SLOT(quit()));
 
-	connect(ui->actionRuler,      SIGNAL(triggered(bool)),  this, SLOT(startMeasure()));
 	connect(ui->actionPrevious,   SIGNAL(triggered(bool)),  this, SLOT(previous()));
 	connect(ui->actionNext,       SIGNAL(triggered(bool)),  this, SLOT(next()));
 	connect(ui->actionToggle_max_luma, SIGNAL(triggered(bool)), this, SLOT(toggleMaxLuma()));
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)),  this, SLOT(exportRTI()));
 	connect(ui->actionExport_Normals, SIGNAL(triggered(bool)),  this, SLOT(exportNormals()));
+	connect(ui->actionConvert_rti, SIGNAL(triggered(bool)),  this, SLOT(convertRTI()));
 
 	connect(ui->actionView_RTI,     SIGNAL(triggered(bool)),  this, SLOT(viewRTI()));
-
 	connect(ui->actionShow_queue,   SIGNAL(triggered(bool)),  this, SLOT(showQueue()));
-
-
-	connect(ui->actionAdd_a_sphere, SIGNAL(triggered(bool)),   this, SLOT(addSphere()));
-	connect(ui->addSphere,          SIGNAL(clicked(bool)),   this, SLOT(addSphere()));
-	connect(ui->removeSphere,       SIGNAL(clicked(bool)),   this, SLOT(removeSphere()));
-	connect(ui->saveLP,             SIGNAL(clicked(bool)),   this, SLOT(saveLPs()));
-
-	connect(ui->detectHighlights, SIGNAL(clicked(bool)),   this, SLOT(detectHighlights()));
 	connect(ui->actionDetectHighlights, SIGNAL(triggered(bool)),   this, SLOT(detectHighlights()));
 
 	connect(ui->actionSave_LP,    SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
@@ -239,13 +233,12 @@ void MainWindow::enableActions() {
 	ui->actionPrevious->setEnabled(true);
 	ui->actionNext->setEnabled(true);
 	ui->actionExport_RTI->setEnabled(true);
+	ui->actionExport_Normals->setEnabled(true);
 	ui->actionLoad_LP->setEnabled(true);
 	ui->actionSave_LP->setEnabled(true);
 	ui->actionZoom_in->setEnabled(true);
 	ui->actionZoom_out->setEnabled(true);
 
-	ui->addSphere->setEnabled(true);
-	ui->removeSphere->setEnabled(true);
 	if(project.hasDirections())
 		ui->actionSave_LP->setEnabled(true);
 
@@ -264,6 +257,7 @@ bool MainWindow::init() {
 
 	setupSpheres();
 	setupMeasures();
+	setupAligns();
 
 	//create the items (name and TODO thumbnail
 	int count = 0;
@@ -284,11 +278,6 @@ bool MainWindow::init() {
 	}
 
 	openImage(0);
-
-	ui->addSphere->setEnabled(true);
-	ui->removeSphere->setEnabled(true);
-	ui->detectHighlights->setEnabled(true);
-	ui->saveLP->setEnabled(true);
 	return true;
 }
 
@@ -491,18 +480,42 @@ void MainWindow::newSphere() {
 	marker->setEditing(true);
 }
 
-void MainWindow::removeSphere() {
-	auto marker = dynamic_cast<QSphereMarker *>(QObject::sender());
-	project.spheres.erase(std::remove(project.spheres.begin(), project.spheres.end(), marker->sphere), project.spheres.end());
-	delete marker;
-}
+
 
 void MainWindow::newMeasure() {
 	auto measure = project.newMeasure();
 	auto marker = new QMeasureMarker(measure, ui->graphicsView, this);
 	ui->markerList->addItem(marker);
 	ui->markerList->setSelected(marker);
+	connect(marker, SIGNAL(removed()), this, SLOT(removeMeasure()));
 	marker->startMeasure();
+}
+
+void MainWindow::newAlign() {
+	auto align = project.newAlign();
+	auto marker = new QAlignMarker(align, ui->graphicsView, this);
+	ui->markerList->addItem(marker);
+	ui->markerList->setSelected(marker);
+	connect(marker, SIGNAL(removed()), this, SLOT(removeAlign()));
+	marker->setEditing(true);
+}
+
+
+void MainWindow::newWhite() {
+	auto white = project.newWhite();
+	auto marker = new QWhiteMarker(white, ui->graphicsView, this);
+	ui->markerList->addItem(marker);
+	ui->markerList->setSelected(marker);
+	connect(marker, SIGNAL(removed()), this, SLOT(removeWhite()));
+	marker->setEditing(true);
+}
+
+
+
+void MainWindow::removeSphere() {
+	auto marker = dynamic_cast<QSphereMarker *>(QObject::sender());
+	project.spheres.erase(std::remove(project.spheres.begin(), project.spheres.end(), marker->sphere), project.spheres.end());
+	delete marker;
 }
 
 void MainWindow::removeMeasure() {
@@ -511,30 +524,47 @@ void MainWindow::removeMeasure() {
 	delete marker;
 }
 
-void MainWindow::newAlign() {
-
+void MainWindow::removeAlign() {
+	auto marker = dynamic_cast<QAlignMarker *>(QObject::sender());
+	project.aligns.erase(std::remove(project.aligns.begin(), project.aligns.end(), marker->align), project.aligns.end());
+	delete marker;
 }
 
-void MainWindow::newWhite() {
-
+void MainWindow::removeWhite() {
+	auto marker = dynamic_cast<QWhiteMarker *>(QObject::sender());
+	project.whites.erase(std::remove(project.whites.begin(), project.whites.end(), marker->white), project.whites.end());
+	delete marker;
 }
 
-void MainWindow::setupMeasures() {
-	for(auto m: project.measures) {
-		//m->setScene(scene);
-		//m->setVisible(true);
-
-		auto marker = new QMeasureMarker(m, ui->graphicsView, ui->markerList);
-		connect(marker, SIGNAL(removed()), this, SLOT(removeMeasure()));
-
-		ui->markerList->addItem(marker);
-	}
-}
 
 void MainWindow::setupSpheres() {
 	for(auto sphere: project.spheres) {
 		auto marker = new QSphereMarker(sphere, ui->graphicsView, ui->markerList);
 		connect(marker, SIGNAL(removed()), this, SLOT(removeSphere()));
+		ui->markerList->addItem(marker);
+	}
+}
+
+void MainWindow::setupMeasures() {
+	for(auto m: project.measures) {
+		auto marker = new QMeasureMarker(m, ui->graphicsView, ui->markerList);
+		connect(marker, SIGNAL(removed()), this, SLOT(removeMeasure()));
+		ui->markerList->addItem(marker);
+	}
+}
+
+void MainWindow::setupAligns() {
+	for(auto align: project.aligns) {
+		auto marker = new QAlignMarker(align, ui->graphicsView, ui->markerList);
+		connect(marker, SIGNAL(removed()), this, SLOT(removeAlign()));
+		ui->markerList->addItem(marker);
+	}
+}
+
+void MainWindow::setupWhites() {
+	for(auto white: project.whites) {
+		auto marker = new QWhiteMarker(white, ui->graphicsView, ui->markerList);
+		connect(marker, SIGNAL(removed()), this, SLOT(removeWhite()));
 		ui->markerList->addItem(marker);
 	}
 }
@@ -611,10 +641,11 @@ void MainWindow::finishedDetectHighlights() {
 	}
 #endif
 	project.computeDirections();
-	QModelIndexList selected = ui->imageList1->selectionModel()->selectedIndexes();
+	showHighlights(currentImage);
+	/*QModelIndexList selected = ui->imageList1->selectionModel()->selectedIndexes();
 	if(!selected.size())
 		return;
-	openImage(selected[0]);
+	openImage(selected[0]); */
 }
 
 int MainWindow::detectHighlight(int n) {
@@ -738,6 +769,12 @@ void MainWindow::exportNormals() {
 	exportRTI(true);
 }
 
+void MainWindow::convertRTI() {
+	if(!convert)
+		convert = new ConvertDialog(this);
+	convert->show();
+}
+
 void MainWindow::exportRTI(bool normals) {
 	if(project.spheres.size())
 		project.computeDirections();
@@ -809,7 +846,6 @@ void MainWindow::domeCalibration() {
 	DomeCalibration *calibration = new DomeCalibration(this, project.dome);
 	calibration->setModal(true);
 	calibration->exec();
-
 	project.dome = calibration->dome;
 }
 

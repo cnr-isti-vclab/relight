@@ -7,6 +7,8 @@
 #include <QHBoxLayout>
 #include <QGraphicsView>
 #include <QVariant>
+#include <QApplication>
+
 
 QMarker::QMarker(QGraphicsView *_view, QWidget *parent):
 	QWidget(parent), view(_view) {
@@ -34,6 +36,9 @@ QMarker::QMarker(QGraphicsView *_view, QWidget *parent):
 	connect(remove, SIGNAL(clicked()), this, SLOT(onRemove()));
 }
 
+QMarker::~QMarker() {}
+
+
 void QMarker::setSelected(bool value) {
 	if(selected == value)
 		return;
@@ -45,61 +50,27 @@ void QMarker::setSelected(bool value) {
 }
 
 void QMarker::setEditing(bool value) {
+	if(value == editing)
+		return;
+
 	editing = value;
 	this->edit->setChecked(editing);
 	//this->edit->setStyleSheet(editing ? "background-color: #999; color:#000; " : "/* */");
+
+	if(value)
+		QApplication::setOverrideCursor(Qt::CrossCursor);
+	else
+		QApplication::restoreOverrideCursor();
 }
 
-	/*
-   call_once(initPalettes, [self = this]()
-   {
-	  _DefaultBackground = self->palette();
 
-	  _HighBackground = self->palette();
-	  _HighBackground.setColor(QPalette::ColorRole::Base, _HighBackground.color(QPalette::Highlight).lighter(210));
-
-	  _SelectedBackground = self->palette();
-	  _SelectedBackground.setColor(QPalette::ColorRole::Base, _SelectedBackground.color(QPalette::Highlight));
-   }); */
-
-QMarker::~QMarker() {}
 
 void QMarker::enterEvent(QEvent* event) {
 	QWidget::enterEvent(event);
-	HighlightBackground(true);
 }
 
 void QMarker::leaveEvent(QEvent* event) {
 	QWidget::leaveEvent(event);
-	HighlightBackground(false);
 }
 
-void QMarker::HighlightBackground(bool high) {
-	/*
-   if (high)
-   {
-	  if (_HighlightedItems.size() > 0)
-	  {
-		 _HighlightedItems.back()->setPalette(_HighlightedItems.back()->_selected ? _SelectedBackground : _DefaultBackground);
-		 _HighlightedItems.back()->update();
-	  }
-
-	  _HighlightedItems.push_back(this);
-	  setPalette(_HighBackground);
-   }
-   else
-   {
-	  setPalette(_selected ? _SelectedBackground : _DefaultBackground);
-	  auto pos = std::find(_HighlightedItems.begin(), _HighlightedItems.end(), this);
-	  if (pos != _HighlightedItems.end())
-		 _HighlightedItems.erase(pos);
-
-	  if (_HighlightedItems.size() > 0)
-	  {
-		 _HighlightedItems.back()->setPalette(_HighBackground);
-		 _HighlightedItems.back()->update();
-	  }
-   }
-   update(); */
-}
 

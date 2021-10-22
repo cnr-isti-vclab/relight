@@ -21,6 +21,7 @@ public:
 	std::vector<float> scale;
 	std::vector<float> bias;
 	bool chromasubsampled = false;
+	std::string error;
 
 	LRti():  type(UNKNOWN), width(0), height(0) {}
 	bool load(const char *filename);

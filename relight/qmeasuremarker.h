@@ -5,30 +5,6 @@
 
 
 
-
-
-
-class White;
-
-class QRelightWhiteItem: public QMarker {
-public:
-	explicit QRelightWhiteItem(White *white, QGraphicsView *_view, QWidget *parent = nullptr);
-	White *white = nullptr;
-};
-
-
-class Align;
-
-class QRelightAlignItem: public QMarker {
-public:
-	explicit QRelightAlignItem(Align *align, QGraphicsView *_view, QWidget *parent = nullptr);
-	Align *align = nullptr;
-};
-
-
-
-
-
 class Measure;
 class QGraphicsPathItem;
 class QGraphicsLineItem;
@@ -45,9 +21,9 @@ public:
 	virtual void click(QPointF pos);
 	virtual void cancelEditing();
 
-	virtual void setSelected(bool value);
+	virtual void setSelected(bool value = true);
 	void startMeasure();
-	void endMeasure();
+	void askMeasure();
 
 public slots:
 	virtual void onEdit();

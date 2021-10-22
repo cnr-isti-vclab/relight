@@ -31,29 +31,12 @@ public:
 
 	explicit RtiExport(QWidget *parent = nullptr);
 	~RtiExport();
-	//Rti::Type basis();
-	//Rti::ColorSpace colorSpace();
 	
 	void setImages(QStringList images);
 	void setCrop(QRect rect);
 	void showImage(QPixmap pix);
-	
-	int quality();
-	int planes();
-	int chroma();
-	int top();
-	int left();
-	int width();
-	int height();
-
-
 
 	enum Format { PTM, RTI, RELIGHT, DEEPZOOM, TARZOOM };
-
-	//QVariant getOption(QString key);
-	//void setOption(QString key, QVariant value);
-	//bool callback(std::string s, int n);
-	//void makeRti(QString output, QRect rect = QRect(0, 0, 0, 0), Format format = RELIGHT, bool means = false, bool normals = false, bool highNormals = false);
 
 public slots:
 	void setTabIndex(int index);

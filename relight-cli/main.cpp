@@ -369,8 +369,14 @@ int main(int argc, char *argv[]) {
 			}
 		} if(info.suffix() == "json") {
 			return convertToRTI(input.c_str(), output.c_str());
-		} else if(info.suffix() == "rti" || info.suffix() == "ptm")
-			return convertRTI(input.c_str(), output.c_str(), quality);
+		} else if(info.suffix() == "rti" || info.suffix() == "ptm") {
+			try {
+				return convertRTI(input.c_str(), output.c_str(), quality);
+			} catch(QString error) {
+				cerr << qPrintable(error) << endl;
+				return 1;
+			}
+		}
 	} else {
 		if(!builder.initFromFolder(input, callback)) {
 			cerr << builder.error << " !\n" << endl;

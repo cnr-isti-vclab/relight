@@ -46,10 +46,11 @@ QSphereMarker::QSphereMarker( Sphere *s, QGraphicsView *_view, QWidget *parent):
 
 	highlight = new HighlightPoint(-4, -4, 4, 4);
 
-	QPen pen;
-	pen.setColor(Qt::transparent);
-	pen.setWidth(0);
+	QPen pen(Qt::red);
+	pen.setWidth(5);
+	pen.setCosmetic(true);
 	highlight->setPen(pen);
+	highlight->setBrush(Qt::red);
 	highlight->setBrush(Qt::green);
 	highlight->setFlag(QGraphicsItem::ItemIsMovable);
 	highlight->setFlag(QGraphicsItem::ItemIsSelectable);
@@ -99,14 +100,6 @@ void QSphereMarker::fit(QSize imagesize = QSize(0, 0)) {
 	init();
 }
 
-void QSphereMarker::setEditing(bool value) {
-	if(value)
-		QApplication::changeOverrideCursor(Qt::CrossCursor);
-	else
-		QApplication::restoreOverrideCursor();
-
-	QMarker::setEditing(value);
-}
 
 void QSphereMarker::click(QPointF pos) {
 	//min distance between border points in pixels.
@@ -140,7 +133,7 @@ void QSphereMarker::addBorderPoint(QPointF pos) {
 	scene->addItem(borderPoint);
 }
 void QSphereMarker::updateBorderPoint(QGraphicsEllipseItem *point) {
-	for(int i = 0; i < border.size(); i++) {
+	for(size_t i = 0; i < border.size(); i++) {
 		if(point != border[i])
 			continue;
 		sphere->border[i] = point->pos();
@@ -168,14 +161,18 @@ void QSphereMarker::showHighlight(size_t n) {
 	//QRectF mark(- QPointF(4, 4), QPointF(4, 4));
 	//sphere->highlight->setRect(mark);
 	highlight->setVisible(true);
+	QPen pen = highlight->pen();
 
 	if(!sphere->lights[n].isNull()) {
 		highlight->setPos(sphere->lights[n]);
 		highlight->setBrush(Qt::green);
+		pen.setColor(Qt::green);
 	} else {
 		highlight->setPos(sphere->inner.center());
 		highlight->setBrush(Qt::red);
+		pen.setColor(Qt::red);
 	}
+	highlight->setPen(pen);
 }
 
 void QSphereMarker::updateHighlightPosition(size_t n) {

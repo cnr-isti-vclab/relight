@@ -127,6 +127,13 @@
            </widget>
           </item>
           <item>
+           <widget class="QRadioButton" name="formatItarzoom">
+            <property name="text">
+             <string>Relight + ITarzoom</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QCheckBox" name="openlime">
             <property name="text">
              <string>Add Openlime viewer</string>

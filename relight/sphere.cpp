@@ -25,7 +25,11 @@ void Sphere::resetHighlight(size_t n) {
 	directions[n] = Vector3f();
 }
 
-/*void Sphere::setActive(bool _active) {
+/*void Sphere::setActive(booclass Align
+{
+public:
+	Align();
+};l _active) {
 	active = _active;
 	QPen pen;
 	pen.setCosmetic(true);

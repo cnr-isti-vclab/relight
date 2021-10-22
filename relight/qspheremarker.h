@@ -56,7 +56,6 @@ public:
 	virtual void click(QPointF pos);
 	virtual void doubleClick(QPointF pos) { click(pos); }
 
-	void setEditing(bool value);
 	virtual void cancelEditing() {}
 
 	virtual void setSelected(bool value);

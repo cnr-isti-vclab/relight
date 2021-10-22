@@ -1,5 +1,5 @@
-#ifndef BALL_H
-#define BALL_H
+#ifndef SPHERE_H
+#define SPHERE_H
 
 #include <QPoint>
 #include <QSize>
@@ -19,9 +19,7 @@ public:
 		directions.resize(n_lights);
 		//valid.resize(n_lights, false);
 	}
-	void run();
 
-	//bool active = false;
 
 	QPointF center;      //in pixel coordinates of the image
 	float radius;        //fitted radius
@@ -33,7 +31,6 @@ public:
 	std::vector<QPointF> border;
 	std::vector<QPointF> lights;       //2d pixel of the light spot for this sphere.
 	std::vector<Vector3f> directions;  //
-	//std::vector<bool> valid;
 
 	std::vector<std::vector<int>>histogram;
 
@@ -42,11 +39,10 @@ public:
 	void findHighlight(QImage im, int n);
 	void computeDirections(Lens &lens);
 
-	//void setActive(bool active);
 	void resetHighlight(size_t n); //reset light and direction of the detected highlight, of image n.
 
 	QJsonObject toJson();
 	void fromJson(QJsonObject obj);
 };
 
-#endif // BALL_H
+#endif // SPHERE_H
