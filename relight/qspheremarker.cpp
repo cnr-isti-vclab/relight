@@ -28,8 +28,8 @@ QVariant HighlightPoint::itemChange(GraphicsItemChange change, const QVariant &v
 }
 
 
-QSphereMarker::QSphereMarker( Sphere *s, QGraphicsView *_view, QWidget *parent):
-	QMarker(_view, parent), sphere(s) {
+SphereMarker::SphereMarker( Sphere *s, QGraphicsView *_view, QWidget *parent):
+	Marker(_view, parent), sphere(s) {
 
 	label->setText("Sphere");
 
@@ -67,7 +67,7 @@ QSphereMarker::QSphereMarker( Sphere *s, QGraphicsView *_view, QWidget *parent):
 
 }
 
-QSphereMarker::~QSphereMarker() {
+SphereMarker::~SphereMarker() {
 	delete circle;
 	delete smallcircle;
 	delete highlight;
@@ -75,7 +75,7 @@ QSphereMarker::~QSphereMarker() {
 		delete b;
 }
 
-void QSphereMarker::init() {
+void SphereMarker::init() {
 	circle->setVisible(false);
 	smallcircle->setVisible(false);
 
@@ -91,17 +91,17 @@ void QSphereMarker::init() {
 	smallcircle->setVisible(true);
 }
 
-void QSphereMarker::fit(QSize imagesize = QSize(0, 0)) {
+void SphereMarker::fit() {
 	if(sphere->border.size() < 3)
 		sphere->center = QPointF();
 	else
-		sphere->fit(imagesize);
+		sphere->fit();
 
 	init();
 }
 
 
-void QSphereMarker::click(QPointF pos) {
+void SphereMarker::click(QPointF pos) {
 	//min distance between border points in pixels.
 	double minBorderDist = 20;
 	for(QPointF p: sphere->border) {
@@ -114,7 +114,7 @@ void QSphereMarker::click(QPointF pos) {
 	fit();
 }
 
-void QSphereMarker::addBorderPoint(QPointF pos) {
+void SphereMarker::addBorderPoint(QPointF pos) {
 
 	QBrush blueBrush(Qt::white);
 	QPen outlinePen(Qt::white);
@@ -132,7 +132,7 @@ void QSphereMarker::addBorderPoint(QPointF pos) {
 	border.push_back(borderPoint);
 	scene->addItem(borderPoint);
 }
-void QSphereMarker::updateBorderPoint(QGraphicsEllipseItem *point) {
+void SphereMarker::updateBorderPoint(QGraphicsEllipseItem *point) {
 	for(size_t i = 0; i < border.size(); i++) {
 		if(point != border[i])
 			continue;
@@ -142,7 +142,7 @@ void QSphereMarker::updateBorderPoint(QGraphicsEllipseItem *point) {
 }
 
 
-void QSphereMarker::setSelected(bool value) {
+void SphereMarker::setSelected(bool value) {
 	QPen pen = circle->pen();
 	pen.setWidth(value? 2 : 1);
 	circle->setPen(pen);
@@ -151,10 +151,12 @@ void QSphereMarker::setSelected(bool value) {
 	pen.setWidth(value? 2 : 1);
 	smallcircle->setPen(pen);
 
-	QMarker::setSelected(value);
+	Marker::setSelected(value);
 }
 
-void QSphereMarker::showHighlight(size_t n) {
+void SphereMarker::showHighlight(size_t n) {
+	highlight->setVisible(sphere->fitted);
+
 	if(!sphere->fitted)
 		return;
 
@@ -175,28 +177,33 @@ void QSphereMarker::showHighlight(size_t n) {
 	highlight->setPen(pen);
 }
 
-void QSphereMarker::updateHighlightPosition(size_t n) {
+void SphereMarker::updateHighlightPosition(size_t n) {
 	highlight->setBrush(Qt::green);
+	QPen pen = highlight->pen();
+	pen.setColor(Qt::green);
+	highlight->setPen(pen);
 	sphere->lights[n] = highlight->pos();
 }
 
-void QSphereMarker::deleteSelected() {
-	return;
-		/*auto border = sphere->border;
-		sphere->border.clear();
-		std::copy_if (border.begin(), border.end(), std::back_inserter(sphere->border), [border](QGraphicsEllipseItem *e) {
-			bool remove = e->isSelected();
-			if(remove) delete e;
-			return !remove;
-		});
-		if(highlight->isSelected()) {
-			sphere->resetHighlight(currentImage);
-			QStandardItem *item = imageModel->item(currentImage);
-			item->setBackground(QBrush());
-
-			showHighlights(currentImage);
+void SphereMarker::deleteSelected(int currentImage) {
+	size_t j = 0;
+	for(size_t i = 0; i < border.size(); i++, j++) {
+		if(i != j) {
+			border[j] = border[i];
+			sphere->border[j] = sphere->border[i];
+		}
+		if(border[i]->isSelected()) {
+			delete border[i];
+			j--;
 		}
 	}
-	updateBorderPoints(); */
+	border.resize(j);
+	sphere->border.resize(j);
+
+	if(highlight->isSelected()) {
+		sphere->resetHighlight(currentImage);
+		showHighlight(currentImage);
+	}
+	fit();
 }
 

@@ -5,8 +5,10 @@
 #include <QLabel>
 #include <QGraphicsScene>
 
-QAlignMarker::QAlignMarker( Align *m, QGraphicsView *_view, QWidget *parent):
-	QMarker(_view, parent), align(m) {
+#include "aligndialog.h"
+
+AlignMarker::AlignMarker( Align *m, QGraphicsView *_view, QWidget *parent):
+	Marker(_view, parent), align(m) {
 
 	label->setText("Alignment");
 
@@ -21,26 +23,27 @@ QAlignMarker::QAlignMarker( Align *m, QGraphicsView *_view, QWidget *parent):
 	rect->setVisible(false);
 }
 
-QAlignMarker::~QAlignMarker() {
+AlignMarker::~AlignMarker() {
 	delete rect;
 }
 
-void QAlignMarker::setSelected(bool value) {
+void AlignMarker::setSelected(bool value) {
 	QPen pen = rect->pen();
 	pen.setWidth(value? 2 : 1);
 	rect->setPen(pen);
 
-	QMarker::setSelected(value);
+	Marker::setSelected(value);
 }
 
 
-void QAlignMarker::onEdit() {
+void AlignMarker::onEdit() {
 	//setSelected(false);
 }
 
-void QAlignMarker::click(QPointF pos) {
-	rect->setRect(QRectF(-64, -64, 128, 128).translated(pos));
+void AlignMarker::click(QPointF pos) {
+	rect->setRect(QRectF(-32, -32, 64, 64).translated(pos));
 	rect->setVisible(true);
-	align->rect = rect->rect();
+	align->rect = rect->rect().toRect();
 	setEditing(false);
+	emit showTable(this);
 }

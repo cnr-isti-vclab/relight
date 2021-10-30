@@ -12,6 +12,7 @@
 #include "settingsdialog.h"
 #include "domecalibration.h"
 #include "convertdialog.h"
+#include "aligndialog.h"
 
 #include "qmeasuremarker.h"
 #include "qspheremarker.h"
@@ -32,7 +33,6 @@
 
 #include <set>
 #include <iostream>
-
 #include <assert.h>
 using namespace std;
 
@@ -43,6 +43,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	settings = new QSettings;
 
 	ui->setupUi(this);
+
+	this->setWindowTitle("Relight");
 	connect(ui->actionNew,        SIGNAL(triggered(bool)),  this, SLOT(newProject()));
 	connect(ui->actionOpen,       SIGNAL(triggered(bool)),  this, SLOT(openProject()));
 
@@ -71,12 +73,19 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	connect(ui->actionHelp,       SIGNAL(triggered(bool)), this, SLOT(showHelp()));
 
-
 	connect(ui->newSphere, SIGNAL(clicked()), this, SLOT(newSphere()));
 	connect(ui->newWhite, SIGNAL(clicked()), this, SLOT(newWhite()));
 	connect(ui->newAlign, SIGNAL(clicked()), this, SLOT(newAlign()));
 	connect(ui->newMeasure, SIGNAL(clicked()), this, SLOT(newMeasure()));
 
+	connect(ui->actionNewSphere, SIGNAL(triggered()), this, SLOT(newSphere()));
+	connect(ui->actionNewWhite, SIGNAL(triggered()), this, SLOT(newWhite()));
+	connect(ui->actionNewAlign, SIGNAL(triggered()), this, SLOT(newAlign()));
+	connect(ui->actionNewMeasure, SIGNAL(triggered()), this, SLOT(newMeasure()));
+
+	connect(ui->actionDelete_selected, SIGNAL(triggered()), this, SLOT(deleteSelected()));
+
+	ui->actionDelete_selected->setShortcuts(QList<QKeySequence>() << Qt::Key_Delete << Qt::Key_Backspace);
 
 
 	scene = new RTIScene(this);
@@ -153,7 +162,7 @@ void MainWindow::newProject() {
 	if(!ok) {
 		//check if we can rotate a few images.
 		bool canrotate = false;
-		for(Image &image: project.images1) {
+		for(Image &image: project.images) {
 			if(image.size == project.imgsize)
 				continue;
 
@@ -242,11 +251,18 @@ void MainWindow::enableActions() {
 	if(project.hasDirections())
 		ui->actionSave_LP->setEnabled(true);
 
+	ui->actionDetectHighlights->setEnabled(true);
+	ui->actionDelete_selected->setEnabled(true);
 
 	ui->newSphere->setEnabled(true);
 	ui->newMeasure->setEnabled(true);
 	ui->newAlign->setEnabled(true);
 	ui->newWhite->setEnabled(true);
+
+	ui->actionNewSphere->setEnabled(true);
+	ui->actionNewMeasure->setEnabled(true);
+	ui->actionNewAlign->setEnabled(true);
+	ui->actionNewWhite->setEnabled(true);
 }
 
 bool MainWindow::init() {
@@ -262,7 +278,7 @@ bool MainWindow::init() {
 	//create the items (name and TODO thumbnail
 	int count = 0;
 	imageModel->clear();
-	for(Image &a: project.images1) {
+	for(Image &a: project.images) {
 
 		QStandardItem *item = new QStandardItem;
 		item->setText(QString("%1 - %2").arg(count+1).arg(a.filename));
@@ -283,7 +299,7 @@ bool MainWindow::init() {
 
 void MainWindow::imageChecked(QStandardItem *item) {
 	QModelIndex index = imageModel->indexFromItem(item);
-	Image &image = project.images1[index.row()];
+	Image &image = project.images[index.row()];
 	bool skip = !index.data(Qt::CheckStateRole).toBool();
 	if(!skip && !image.valid) {
 		QMessageBox::critical(this, "Can't include this image.", "This image has a different resolution or focal, cannot include in the processing");
@@ -300,7 +316,7 @@ void MainWindow::openImage(const QModelIndex &index) {
 }
 
 void MainWindow::openImage(int id, bool fit) {
-	QString filename = project.images1[id].filename;//item->text();
+	QString filename = project.images[id].filename;//item->text();
 
 	QImage img(project.dir.filePath(filename));
 	if(img.isNull()) {
@@ -331,7 +347,7 @@ void MainWindow::openImage(int id, bool fit) {
 void MainWindow::showHighlights(size_t n) {
 	ignore_scene_changes = true;
 	for(auto marker: ui->markerList->getItems()) {
-		auto m = dynamic_cast<QSphereMarker *>(marker);
+		auto m = dynamic_cast<SphereMarker *>(marker);
 		if(!m)
 			continue;
 		m->showHighlight(n);
@@ -367,7 +383,7 @@ void MainWindow::computeMaxLuma() {
 	lumaCancelling = false;
 	QFuture<void> future = QtConcurrent::run([this]() {
 		ImageSet imageset;
-		for(auto image: project.images1)
+		for(auto image: project.images)
 			imageset.images.push_back(image.filename);
 		imageset.initImages(this->project.dir.path().toStdString().c_str());
 		std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->lumaCallback(s, n); };
@@ -440,11 +456,11 @@ void MainWindow::doubleClick(QPoint p) {
 
 void MainWindow::updateBorderPoints(QGraphicsEllipseItem *point) {
 	for(auto marker: ui->markerList->getItems()) {
-		auto m = dynamic_cast<QSphereMarker *>(marker);
+		auto m = dynamic_cast<SphereMarker *>(marker);
 		if(!m)
 			continue;
 		m->updateBorderPoint(point);
-		m->fit(project.imgsize);
+		m->fit();
 	}
 }
 
@@ -453,7 +469,7 @@ void MainWindow::updateHighlight(QGraphicsEllipseItem *highlight) {
 		return;
 
 	for(auto marker: ui->markerList->getItems()) {
-		auto m = dynamic_cast<QSphereMarker *>(marker);
+		auto m = dynamic_cast<SphereMarker *>(marker);
 		if(!m)
 			continue;
 
@@ -473,7 +489,7 @@ void MainWindow::updateHighlight(QGraphicsEllipseItem *highlight) {
 
 void MainWindow::newSphere() {
 	auto sphere = project.newSphere();
-	auto marker = new QSphereMarker(sphere, ui->graphicsView, this);
+	auto marker = new SphereMarker(sphere, ui->graphicsView, this);
 	ui->markerList->addItem(marker);
 	ui->markerList->setSelected(marker);
 	connect(marker, SIGNAL(removed()), this, SLOT(removeSphere()));
@@ -484,7 +500,7 @@ void MainWindow::newSphere() {
 
 void MainWindow::newMeasure() {
 	auto measure = project.newMeasure();
-	auto marker = new QMeasureMarker(measure, ui->graphicsView, this);
+	auto marker = new MeasureMarker(measure, ui->graphicsView, this);
 	ui->markerList->addItem(marker);
 	ui->markerList->setSelected(marker);
 	connect(marker, SIGNAL(removed()), this, SLOT(removeMeasure()));
@@ -493,17 +509,22 @@ void MainWindow::newMeasure() {
 
 void MainWindow::newAlign() {
 	auto align = project.newAlign();
-	auto marker = new QAlignMarker(align, ui->graphicsView, this);
+	auto marker = new AlignMarker(align, ui->graphicsView, this);
 	ui->markerList->addItem(marker);
 	ui->markerList->setSelected(marker);
 	connect(marker, SIGNAL(removed()), this, SLOT(removeAlign()));
+	connect(marker, SIGNAL(showTable(AlignMarker *)), this, SLOT(showAlignDialog(AlignMarker *)));
 	marker->setEditing(true);
 }
 
+void MainWindow::showAlignDialog(AlignMarker *marker) {
+	AlignDialog *dialog = new AlignDialog(marker, &project, this);
+	dialog->show();
+}
 
 void MainWindow::newWhite() {
 	auto white = project.newWhite();
-	auto marker = new QWhiteMarker(white, ui->graphicsView, this);
+	auto marker = new WhiteMarker(white, ui->graphicsView, this);
 	ui->markerList->addItem(marker);
 	ui->markerList->setSelected(marker);
 	connect(marker, SIGNAL(removed()), this, SLOT(removeWhite()));
@@ -513,25 +534,25 @@ void MainWindow::newWhite() {
 
 
 void MainWindow::removeSphere() {
-	auto marker = dynamic_cast<QSphereMarker *>(QObject::sender());
+	auto marker = dynamic_cast<SphereMarker *>(QObject::sender());
 	project.spheres.erase(std::remove(project.spheres.begin(), project.spheres.end(), marker->sphere), project.spheres.end());
 	delete marker;
 }
 
 void MainWindow::removeMeasure() {
-	auto marker = dynamic_cast<QMeasureMarker *>(QObject::sender());
+	auto marker = dynamic_cast<MeasureMarker *>(QObject::sender());
 	project.measures.erase(std::remove(project.measures.begin(), project.measures.end(), marker->measure), project.measures.end());
 	delete marker;
 }
 
 void MainWindow::removeAlign() {
-	auto marker = dynamic_cast<QAlignMarker *>(QObject::sender());
+	auto marker = dynamic_cast<AlignMarker *>(QObject::sender());
 	project.aligns.erase(std::remove(project.aligns.begin(), project.aligns.end(), marker->align), project.aligns.end());
 	delete marker;
 }
 
 void MainWindow::removeWhite() {
-	auto marker = dynamic_cast<QWhiteMarker *>(QObject::sender());
+	auto marker = dynamic_cast<WhiteMarker *>(QObject::sender());
 	project.whites.erase(std::remove(project.whites.begin(), project.whites.end(), marker->white), project.whites.end());
 	delete marker;
 }
@@ -539,7 +560,7 @@ void MainWindow::removeWhite() {
 
 void MainWindow::setupSpheres() {
 	for(auto sphere: project.spheres) {
-		auto marker = new QSphereMarker(sphere, ui->graphicsView, ui->markerList);
+		auto marker = new SphereMarker(sphere, ui->graphicsView, ui->markerList);
 		connect(marker, SIGNAL(removed()), this, SLOT(removeSphere()));
 		ui->markerList->addItem(marker);
 	}
@@ -547,7 +568,7 @@ void MainWindow::setupSpheres() {
 
 void MainWindow::setupMeasures() {
 	for(auto m: project.measures) {
-		auto marker = new QMeasureMarker(m, ui->graphicsView, ui->markerList);
+		auto marker = new MeasureMarker(m, ui->graphicsView, ui->markerList);
 		connect(marker, SIGNAL(removed()), this, SLOT(removeMeasure()));
 		ui->markerList->addItem(marker);
 	}
@@ -555,7 +576,7 @@ void MainWindow::setupMeasures() {
 
 void MainWindow::setupAligns() {
 	for(auto align: project.aligns) {
-		auto marker = new QAlignMarker(align, ui->graphicsView, ui->markerList);
+		auto marker = new AlignMarker(align, ui->graphicsView, ui->markerList);
 		connect(marker, SIGNAL(removed()), this, SLOT(removeAlign()));
 		ui->markerList->addItem(marker);
 	}
@@ -563,12 +584,20 @@ void MainWindow::setupAligns() {
 
 void MainWindow::setupWhites() {
 	for(auto white: project.whites) {
-		auto marker = new QWhiteMarker(white, ui->graphicsView, ui->markerList);
+		auto marker = new WhiteMarker(white, ui->graphicsView, ui->markerList);
 		connect(marker, SIGNAL(removed()), this, SLOT(removeWhite()));
 		ui->markerList->addItem(marker);
 	}
 }
 
+
+void MainWindow::deleteSelected() {
+	for(auto marker: ui->markerList->getItems()) {
+		auto sphere = dynamic_cast<SphereMarker *>(marker);
+		if(sphere)
+			sphere->deleteSelected(currentImage);
+	}
+}
 
 void MainWindow::detectCurrentSphereHighlight() {
 	QMessageBox::critical(this, "detectCurrentSphereHighlight", "To be implemented");
@@ -649,19 +678,19 @@ void MainWindow::finishedDetectHighlights() {
 }
 
 int MainWindow::detectHighlight(int n) {
-	if(project.images1[size_t(n)].skip) return 0;
+	if(project.images[size_t(n)].skip) return 0;
 
-	QString filename = project.images1[n].filename;
+	QString filename = project.images[n].filename;
 	QImage img(project.dir.filePath(filename));
 	if(img.isNull()) {
-		notloaded.push_back(project.images1[n].filename);
+		notloaded.push_back(project.images[n].filename);
 		return 0;
 	}
 	if(img.size() != project.imgsize) {
 		if(img.size() == project.imgsize.transposed())
-			flipped.push_back(project.images1[n].filename);
+			flipped.push_back(project.images[n].filename);
 		else
-			resolution.push_back(project.images1[n].filename);
+			resolution.push_back(project.images[n].filename);
 		return 0;
 	}
 
@@ -733,14 +762,14 @@ void MainWindow::loadLP(QString lp) {
 
 	if(success) {
 		for(size_t i = 0; i < project.size(); i++)
-			project.images1[i].direction = ordered_dir[i];
+			project.images[i].direction = ordered_dir[i];
 	} else {
 		auto response = QMessageBox::question(this, "Light directions and images",
 			"Filenames in .lp do not match with images in the .lp directory. Do you want to just use the filename order?");
 		if(response == QMessageBox::Cancel || response == QMessageBox::No)
 			return;
 		for(size_t i = 0; i < project.size(); i++)
-			project.images1[i].direction = directions[i];
+			project.images[i].direction = directions[i];
 	}
 }
 void MainWindow::saveLPs() {
@@ -759,7 +788,7 @@ void MainWindow::saveLPs() {
 	project.computeDirections();
 
 	vector<Vector3f> directions;
-	for(auto img: project.images1)
+	for(auto img: project.images)
 		directions.push_back(img.direction);
 
 	project.saveLP(basename + ".lp", directions);
@@ -781,11 +810,11 @@ void MainWindow::exportRTI(bool normals) {
 
 	QStringList nodir;
 	for(size_t i = 0; i < project.size(); i++) {
-		if(project.images1[i].skip)
+		if(project.images[i].skip)
 			continue;
 
-		if(project.images1[i].direction.isZero())
-			nodir.push_back(project.images1[i].filename);
+		if(project.images[i].direction.isZero())
+			nodir.push_back(project.images[i].filename);
 	}
 	if(nodir.size()) {
 		QMessageBox::critical(this, "Could not export RTI.", "Some images lack a light direction: " + nodir.join(", "));
@@ -795,7 +824,7 @@ void MainWindow::exportRTI(bool normals) {
 
 	//should init with saved preferences.
 	rtiexport->setTabIndex(normals? 1 : 0);
-	rtiexport->setImages(project.images());
+	rtiexport->setImages(project.getImages());
 
 	rtiexport->showImage(imagePixmap->pixmap());
 	rtiexport->lights = project.directions();

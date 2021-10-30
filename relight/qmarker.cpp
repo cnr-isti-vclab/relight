@@ -10,7 +10,7 @@
 #include <QApplication>
 
 
-QMarker::QMarker(QGraphicsView *_view, QWidget *parent):
+Marker::Marker(QGraphicsView *_view, QWidget *parent):
 	QWidget(parent), view(_view) {
 
 	scene = view->scene();
@@ -36,10 +36,10 @@ QMarker::QMarker(QGraphicsView *_view, QWidget *parent):
 	connect(remove, SIGNAL(clicked()), this, SLOT(onRemove()));
 }
 
-QMarker::~QMarker() {}
+Marker::~Marker() {}
 
 
-void QMarker::setSelected(bool value) {
+void Marker::setSelected(bool value) {
 	if(selected == value)
 		return;
 	if(value == false && editing == true)
@@ -49,7 +49,7 @@ void QMarker::setSelected(bool value) {
 	label->setStyleSheet(selected ? "QLabel { color : #fff; }" : "/* */");
 }
 
-void QMarker::setEditing(bool value) {
+void Marker::setEditing(bool value) {
 	if(value == editing)
 		return;
 
@@ -65,11 +65,11 @@ void QMarker::setEditing(bool value) {
 
 
 
-void QMarker::enterEvent(QEvent* event) {
+void Marker::enterEvent(QEvent* event) {
 	QWidget::enterEvent(event);
 }
 
-void QMarker::leaveEvent(QEvent* event) {
+void Marker::leaveEvent(QEvent* event) {
 	QWidget::leaveEvent(event);
 }
 

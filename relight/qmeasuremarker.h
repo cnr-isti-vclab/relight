@@ -1,5 +1,5 @@
-#ifndef QMarker_H
-#define QMarker_H
+#ifndef Marker_H
+#define Marker_H
 
 #include "qmarker.h"
 
@@ -10,13 +10,13 @@ class QGraphicsPathItem;
 class QGraphicsLineItem;
 class QGraphicsTextItem;
 
-class QMeasureMarker: public QMarker {
+class MeasureMarker: public Marker {
 	Q_OBJECT
 public:
 	Measure *measure = nullptr;
 
-	explicit QMeasureMarker(Measure *m, QGraphicsView *_view, QWidget *parent = nullptr);
-	~QMeasureMarker();
+	explicit MeasureMarker(Measure *m, QGraphicsView *_view, QWidget *parent = nullptr);
+	~MeasureMarker();
 
 	virtual void click(QPointF pos);
 	virtual void cancelEditing();
@@ -42,4 +42,4 @@ protected:
 
 
 
-#endif // QMarker_H
+#endif // Marker_H

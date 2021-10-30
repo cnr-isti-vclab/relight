@@ -74,7 +74,7 @@
            <height>600</height>
           </size>
          </property>
-         <widget class="QMarkerList" name="markerList">
+         <widget class="ListMarker" name="markerList">
           <property name="geometry">
            <rect>
             <x>0</x>
@@ -273,10 +273,13 @@
     <property name="title">
      <string>Edit</string>
     </property>
-    <addaction name="actionAdd_a_sphere"/>
+    <addaction name="actionNewSphere"/>
+    <addaction name="actionNewMeasure"/>
+    <addaction name="actionNewWhite"/>
+    <addaction name="actionNewAlign"/>
+    <addaction name="separator"/>
     <addaction name="actionDetectHighlights"/>
     <addaction name="separator"/>
-    <addaction name="actionRuler"/>
     <addaction name="actionDelete_selected"/>
     <addaction name="separator"/>
     <addaction name="actionRotate_all_right"/>
@@ -338,7 +341,6 @@
    <addaction name="actionZoom_in"/>
    <addaction name="actionZoom_out"/>
    <addaction name="separator"/>
-   <addaction name="actionRuler"/>
    <addaction name="actionExport_RTI"/>
    <addaction name="actionShow_queue"/>
    <addaction name="actionView_RTI"/>
@@ -427,15 +429,25 @@
     <string>-</string>
    </property>
   </action>
-  <action name="actionAdd_a_sphere">
+  <action name="actionNewSphere">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/feather/highlight.svg</normaloff>:/icons/feather/highlight.svg</iconset>
+   </property>
    <property name="text">
     <string>Add a sphere</string>
    </property>
    <property name="toolTip">
-    <string>Add a new sphere</string>
+    <string>New sphere...</string>
    </property>
   </action>
   <action name="actionDelete_selected">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Delete selected item</string>
    </property>
@@ -459,7 +471,7 @@
   </action>
   <action name="actionDetectHighlights">
    <property name="enabled">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
@@ -549,13 +561,16 @@
     <string>Ctrl+N</string>
    </property>
   </action>
-  <action name="actionRuler">
+  <action name="actionNewMeasure">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/ruler.svg</normaloff>:/icons/gtango/ruler.svg</iconset>
+     <normaloff>:/icons/feather/ruler.svg</normaloff>:/icons/feather/ruler.svg</iconset>
    </property>
    <property name="text">
-    <string>Measure...</string>
+    <string>New Measure</string>
    </property>
    <property name="toolTip">
     <string>Take a measure</string>
@@ -644,10 +659,34 @@
     <string>Convert .rti...</string>
    </property>
   </action>
+  <action name="actionNewWhite">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/feather/white.svg</normaloff>:/icons/feather/white.svg</iconset>
+   </property>
+   <property name="text">
+    <string>New white balance sample</string>
+   </property>
+  </action>
+  <action name="actionNewAlign">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/feather/align.svg</normaloff>:/icons/feather/align.svg</iconset>
+   </property>
+   <property name="text">
+    <string>New align marker</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
-   <class>QMarkerList</class>
+   <class>ListMarker</class>
    <extends>QFrame</extends>
    <header>qmarkerlist.h</header>
    <container>1</container>

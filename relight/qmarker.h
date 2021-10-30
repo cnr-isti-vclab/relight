@@ -8,7 +8,7 @@ class QToolButton;
 class QGraphicsScene;
 class QGraphicsView;
 
-class QMarker : public QWidget {
+class Marker : public QWidget {
 	Q_OBJECT
 	Q_PROPERTY(bool selected MEMBER selected)
 
@@ -23,8 +23,8 @@ public:
 	bool selected = false;
 	bool editing = false;
 
-	explicit QMarker(QGraphicsView *view, QWidget *parent = nullptr);
-	~QMarker();
+	explicit Marker(QGraphicsView *view, QWidget *parent = nullptr);
+	~Marker();
 
 
 	virtual void setSelected(bool value = true);
@@ -37,7 +37,7 @@ public slots:
 	virtual void onEdit() {
 		setEditing(!editing);
 	}
-	virtual void onRemove() { emit removed(); }
+	virtual void onRemove() { setSelected(false); emit removed(); }
 
 signals:
 	void removed();
@@ -49,4 +49,4 @@ protected:
 };
 
 
-#endif // QMarker_H
+#endif // Marker_H

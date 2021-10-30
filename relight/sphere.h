@@ -35,7 +35,7 @@ public:
 	std::vector<std::vector<int>>histogram;
 
 	Sphere();
-	bool fit(QSize imgsize);
+	bool fit();
 	void findHighlight(QImage im, int n);
 	void computeDirections(Lens &lens);
 
