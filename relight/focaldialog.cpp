@@ -9,6 +9,8 @@ FocalDialog::FocalDialog(Project *_project, QWidget *parent) :
 
 	ui->setupUi(this);
 
+	this->setWindowTitle("Relight - Lens parameters");
+
 	Lens &lens = project->lens;
 
 	ui->width->setValue(lens.width);

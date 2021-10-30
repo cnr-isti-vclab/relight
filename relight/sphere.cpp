@@ -50,7 +50,7 @@ public:
 
 } */
 
-bool Sphere::fit(QSize imgsize) {
+bool Sphere::fit() {
 	if(border.size() < 3)
 		return false;
 

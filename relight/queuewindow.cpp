@@ -12,10 +12,13 @@ QueueWindow::QueueWindow(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::QueueWindow) {
 
+	ui->setupUi(this);
+
 	ProcessQueue &queue = ProcessQueue::instance();
 	connect(&queue, SIGNAL(update()), this, SLOT(update()));
 
-	ui->setupUi(this);
+	this->setWindowTitle("Relight - Queue list");
+
 
 	ui->list->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	connect(ui->list->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),

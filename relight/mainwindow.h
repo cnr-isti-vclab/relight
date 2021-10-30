@@ -25,6 +25,8 @@ class QStandardItem;
 class QueueWindow;
 class SettingsDialog;
 class ConvertDialog;
+class AlignDialog;
+class AlignMarker;
 
 namespace Ui {
 class MainWindow;
@@ -108,8 +110,9 @@ public slots:
 	void pointClick(QPoint p);
 
 
-
 /* Markers */
+
+	void deleteSelected();
 
 	void detectHighlights();
 	void detectCurrentSphereHighlight();
@@ -134,6 +137,8 @@ public slots:
 	void setupWhites();
 	void newWhite();
 	void removeWhite();
+
+	void showAlignDialog(AlignMarker *marker);
 
 
 	

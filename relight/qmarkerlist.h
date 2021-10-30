@@ -1,30 +1,30 @@
 /* Taken from https://github.com/pierrebai/QtAdditions */
 
-#ifndef QMarkerList_H
-#define QMarkerList_H
+#ifndef ListMarker_H
+#define ListMarker_H
 
 #include <QFrame>
 #include <vector>
 
 /* similar to a QListWidget, but with widgets inside */
 
-class QMarker;
+class Marker;
 class QBoxLayout;
 
-class QMarkerList: public QFrame {
+class ListMarker: public QFrame {
 	Q_OBJECT
 public:
-	explicit QMarkerList(QWidget *parent = nullptr);
+	explicit ListMarker(QWidget *parent = nullptr);
 
 	void clear();
-	QMarker* addItem(QMarker* item, int index = -1);
-	void removeItem(QMarker* item);
+	Marker* addItem(Marker* item, int index = -1);
+	void removeItem(Marker* item);
 
-	QMarker *itemAt(const QPoint& pt) const;
-	std::vector<QMarker*> getItems(bool selected = false) const;
-	std::vector<QMarker*> getSelectedItems() const;
+	Marker *itemAt(const QPoint& pt) const;
+	std::vector<Marker*> getItems(bool selected = false) const;
+	std::vector<Marker*> getSelectedItems() const;
 
-	void setSelected(QMarker *marker);
+	void setSelected(Marker *marker);
 
 protected:
 	void mouseReleaseEvent(QMouseEvent* event) override;

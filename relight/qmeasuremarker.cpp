@@ -12,8 +12,8 @@
 #include <QLabel>
 #include <QStyle>
 
-QMeasureMarker::QMeasureMarker( Measure *m, QGraphicsView *_view, QWidget *parent):
-	QMarker(_view, parent), measure(m) {
+MeasureMarker::MeasureMarker( Measure *m, QGraphicsView *_view, QWidget *parent):
+	Marker(_view, parent), measure(m) {
 
 	label->setText("Measure");
 
@@ -59,7 +59,7 @@ QMeasureMarker::QMeasureMarker( Measure *m, QGraphicsView *_view, QWidget *paren
 	}
 }
 
-QMeasureMarker::~QMeasureMarker() {
+MeasureMarker::~MeasureMarker() {
 	delete first;
 	delete second;
 	delete line;
@@ -67,24 +67,24 @@ QMeasureMarker::~QMeasureMarker() {
 }
 
 
-void QMeasureMarker::setSelected(bool value) {
+void MeasureMarker::setSelected(bool value) {
 	QPen pen = first->pen();
 	pen.setWidth(value? 2 : 1);
 	first->setPen(pen);
 	second->setPen(pen);
 	line->setPen(pen);
 
-	QMarker::setSelected(value);
+	Marker::setSelected(value);
 }
 
 
-void QMeasureMarker::startMeasure() {
+void MeasureMarker::startMeasure() {
 	setEditing(true);
 	measuring = FIRST_POINT;
 }
 
 
-void QMeasureMarker::onEdit() {
+void MeasureMarker::onEdit() {
 	qDebug("measure editing");
 	setSelected(true);
 	setEditing(!editing);
@@ -102,7 +102,7 @@ void QMeasureMarker::onEdit() {
 	}
 }
 
-void QMeasureMarker::askMeasure() {
+void MeasureMarker::askMeasure() {
 	bool ok = true;
 	double length = QInputDialog::getDouble(this, "Enter a measurement", "The distance between the two points in mm.", 0.0, 0.0, 1000000.0, 1, &ok);
 	if(!ok)
@@ -119,7 +119,7 @@ void QMeasureMarker::askMeasure() {
 	text->setVisible(length != 0);
 }
 
-void QMeasureMarker::click(QPointF pos) {
+void MeasureMarker::click(QPointF pos) {
 	switch(measuring) {
 	case FIRST_POINT:
 		measure->first = pos;
@@ -147,7 +147,7 @@ void QMeasureMarker::click(QPointF pos) {
 
 
 
-void QMeasureMarker::cancelEditing() {
+void MeasureMarker::cancelEditing() {
 	setEditing(false);
 	if(measuring != DONE) {
 		measuring = FIRST_POINT;

@@ -6,13 +6,13 @@
 class White;
 class QGraphicsRectItem;
 
-class QWhiteMarker: public QMarker {
+class WhiteMarker: public Marker {
 public:
 	White *white = nullptr;
 
 
-	explicit QWhiteMarker(White *m, QGraphicsView *_view, QWidget *parent = nullptr);
-	~QWhiteMarker();
+	explicit WhiteMarker(White *m, QGraphicsView *_view, QWidget *parent = nullptr);
+	~WhiteMarker();
 
 	virtual void click(QPointF pos);
 

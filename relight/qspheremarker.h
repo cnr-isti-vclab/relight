@@ -30,7 +30,7 @@ protected:
 
 
 
-class QSphereMarker: public QMarker {
+class SphereMarker: public Marker {
 	Q_OBJECT
 public:
 	Sphere *sphere = nullptr;
@@ -42,8 +42,8 @@ public:
 	QGraphicsPixmapItem *pixmap = nullptr;
 
 
-	explicit QSphereMarker(Sphere *sphere, QGraphicsView *_view, QWidget *parent = nullptr);
-	~QSphereMarker();
+	explicit SphereMarker(Sphere *sphere, QGraphicsView *_view, QWidget *parent = nullptr);
+	~SphereMarker();
 
 	void showHighlight(size_t n);
 	void updateHighlightPosition(size_t n);
@@ -51,8 +51,8 @@ public:
 	void addBorderPoint(QPointF pos);
 	void updateBorderPoint(QGraphicsEllipseItem *point);
 
-	void deleteSelected();
-	void fit(QSize imgsize);
+	void deleteSelected(int currentImage);
+	void fit();
 	virtual void click(QPointF pos);
 	virtual void doubleClick(QPointF pos) { click(pos); }
 

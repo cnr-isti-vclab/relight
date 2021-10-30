@@ -27,6 +27,8 @@ RtiExport::RtiExport(QWidget *parent) :
 	QDialog(parent),
 	ui(new Ui::RtiExport) {
 	ui->setupUi(this);
+
+	this->setWindowTitle("Relight- Export");
 	
 	ui->crop_frame->hide();
 	connect(ui->basis, SIGNAL(currentIndexChanged(int)), this, SLOT(changeBasis(int)));

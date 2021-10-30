@@ -11,6 +11,8 @@ DomeCalibration::DomeCalibration(QWidget *parent, Dome &_dome) :
 	dome(_dome),
 	ui(new Ui::DomeCalibration) {
 	ui->setupUi(this);
+
+	this->setWindowTitle("Relight - Dome calibration");
 	ui->imageWidth->setValue(dome.imageWidth);
 	ui->domeDiameter->setValue(dome.domeDiameter);
 	ui->verticalOffset->setValue(dome.verticalOffset);

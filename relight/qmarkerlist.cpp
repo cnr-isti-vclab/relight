@@ -6,7 +6,7 @@
 using namespace std;
 
 
-QMarkerList::QMarkerList(QWidget* parent): QFrame(parent) {
+ListMarker::ListMarker(QWidget* parent): QFrame(parent) {
 	setBackgroundRole(QPalette::ColorRole::Base);
 	setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum));
 	setMinimumSize(QSize(20, 20));
@@ -21,17 +21,17 @@ QMarkerList::QMarkerList(QWidget* parent): QFrame(parent) {
 	_layout->addStretch(0);
 }
 
-void QMarkerList::setSelected(QMarker *target) {
+void ListMarker::setSelected(Marker *target) {
 	for(auto marker: getItems())
 		marker->setSelected(marker == target);
 }
 
-void QMarkerList::clear() {
+void ListMarker::clear() {
 	for (auto child : getItems())
 		delete child;
 }
 
-QMarker* QMarkerList::addItem(QMarker* item, int index)
+Marker* ListMarker::addItem(Marker* item, int index)
 {
 	if (!item)
 		return nullptr;
@@ -50,40 +50,40 @@ QMarker* QMarkerList::addItem(QMarker* item, int index)
 	return item;
 }
 
-void QMarkerList::removeItem(QMarker* item) {
+void ListMarker::removeItem(Marker* item) {
 	item->setParent(nullptr);
 	_layout->removeWidget(item);
 	_layout->update();
 }
 
-vector<QMarker*> QMarkerList::getItems(bool selected) const {
-	vector<QMarker*> widgets;
+vector<Marker*> ListMarker::getItems(bool selected) const {
+	vector<Marker*> widgets;
 
 	const int c = _layout->count();
 	for (int i = 0; i < c; ++i)
-		if (auto w = dynamic_cast<QMarker*>(_layout->itemAt(i)->widget()))
+		if (auto w = dynamic_cast<Marker*>(_layout->itemAt(i)->widget()))
 			 if (!selected || w->selected)
 				widgets.push_back(w);
 
 	return widgets;
 }
 
-std::vector<QMarker*> QMarkerList::getSelectedItems() const {
+std::vector<Marker*> ListMarker::getSelectedItems() const {
 	return getItems(true);
 }
 
 
-void QMarkerList::mouseReleaseEvent(QMouseEvent* event) {
-	QMarker* widget = itemAt(event->pos());
+void ListMarker::mouseReleaseEvent(QMouseEvent* event) {
+	Marker* widget = itemAt(event->pos());
 	if (!widget)
 		return;
 
 	setSelected(widget);
 }
 
-QMarker* QMarkerList::itemAt(const QPoint& pt) const {
+Marker* ListMarker::itemAt(const QPoint& pt) const {
 	for (auto child = childAt(pt); child; child = child->parentWidget())
-		if (auto widget = dynamic_cast<QMarker*>(child))
+		if (auto widget = dynamic_cast<Marker*>(child))
 			return widget;
 
 	return nullptr;

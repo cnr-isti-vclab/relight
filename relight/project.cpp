@@ -31,7 +31,7 @@ Project::~Project() {
 void Project::clear() {
 	dir = QDir();
 	imgsize = QSize();
-	images1.clear();
+	images.clear();
 
 	for(auto sphere: spheres)
 		delete sphere;
@@ -74,9 +74,9 @@ bool Project::scanDir() {
 			count.push_back(1);
 		} else
 			count[index]++;
-		images1.push_back(image);
+		images.push_back(image);
 	}
-	if(!images1.size())
+	if(!images.size())
 		return false;
 
 	int max_n = 0;
@@ -88,7 +88,7 @@ bool Project::scanDir() {
 	}
 
 
-	for(Image &image: images1) {
+	for(Image &image: images) {
 		image.valid = image.size == imgsize;
 		image.skip = !image.valid;
 	}
@@ -100,7 +100,7 @@ bool Project::scanDir() {
 	QVector<Lens> alllens;
 	QVector<double> focals;
 	count.clear();
-	for(Image &image: images1) {
+	for(Image &image: images) {
 		Lens image_lens;
 		image_lens.width = lens.width;
 		image_lens.height = lens.height;
@@ -131,9 +131,9 @@ bool Project::scanDir() {
 			lens = alllens[i];
 		}
 	}
-	for(uint32_t i = 0; i < images1.size(); i++) {
-		images1[i].valid &= (lens.focal35() == alllens[i].focal35());
-		images1[i].skip = !images1[i].valid;
+	for(uint32_t i = 0; i < images.size(); i++) {
+		images[i].valid &= (lens.focal35() == alllens[i].focal35());
+		images[i].skip = !images[i].valid;
 	}
 
 	return resolutions.size() == 1 && focals.size() == 1;
@@ -183,7 +183,7 @@ double mutualInfo(QImage &a, QImage &b) {
 void Project::rotateImages() {
 	//find first image non rotated.
 	QString target_filename;
-	for(Image &image: images1) {
+	for(Image &image: images) {
 		if(image.size == imgsize)
 			target_filename = image.filename;
 	}
@@ -191,7 +191,7 @@ void Project::rotateImages() {
 	int width = 300;
 	QImage target(target_filename);
 	target = target.scaledToWidth(width);
-	for(Image &image: images1) {
+	for(Image &image: images) {
 		if(!image.isRotated(imgsize))
 			continue;
 
@@ -260,7 +260,7 @@ void Project::load(QString filename) {
 		image.valid = (size == imgsize);
 		if(!image.valid) image.skip = true;
 
-		images1.push_back(image);
+		images.push_back(image);
 	}
 
 	if(obj.contains("crop")) {
@@ -314,7 +314,7 @@ void Project::save(QString filename) {
 	project.insert("folder", path);
 
 	QJsonArray jimages;
-	for(auto &img: images1)
+	for(auto &img: images)
 		jimages.push_back(img.toJson());
 
 	project.insert("images", jimages);
@@ -378,12 +378,12 @@ Measure *Project::newMeasure() {
 	return m;
 }
 Sphere *Project::newSphere() {
-	auto s = new Sphere(images1.size());
+	auto s = new Sphere(images.size());
 	spheres.push_back(s);
 	return s;
 }
 Align *Project::newAlign() {
-	auto s = new Align(images1.size());
+	auto s = new Align(images.size());
 	aligns.push_back(s);
 	return s;
 }
@@ -415,7 +415,7 @@ void Project::saveLP(QString filename, std::vector<Vector3f> &directions) {
 	stream << directions.size() << "\n";
 	for(size_t i = 0; i < directions.size(); i++) {
 		Vector3f d = directions[i];
-		stream << images1[i].filename << " " << d[0] << " " << d[1] << " " << d[2] << "\n";
+		stream << images[i].filename << " " << d[0] << " " << d[1] << " " << d[2] << "\n";
 	}
 	QFile obj("sphere.obj");
 	obj.open(QFile::WriteOnly);
@@ -483,7 +483,7 @@ void  Project::computeDirections() {
 						Vector3f center(0, 0, dome.verticalOffset/dome.imageWidth);
 						float distance = lineSphereDistance(origin, direction, center, radius);
 						Vector3f position = origin + direction*distance;
-						images1[i].position = position;
+						images[i].position = position;
 						direction = (position - Vector3f(0, 0, dome.verticalOffset/dome.imageWidth))/radius;
 					}
 				}
@@ -502,6 +502,6 @@ void  Project::computeDirections() {
 	//Simple mean for the spheres directions (not certainly the smartest thing).
 	for(size_t i = 0; i < directions.size(); i++) {
 		if(weights[i] > 0)
-			images1[i].direction = directions[i]/weights[i];
+			images[i].direction = directions[i]/weights[i];
 	}
 }

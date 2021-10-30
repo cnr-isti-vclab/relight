@@ -69,7 +69,8 @@ SOURCES += main.cpp \
     qalignmarker.cpp \
     qwhitemarker.cpp \
     white.cpp \
-    convertdialog.cpp
+    convertdialog.cpp \
+    aligndialog.cpp
 
 
 HEADERS += \
@@ -115,7 +116,8 @@ HEADERS += \
     qalignmarker.h \
     qwhitemarker.h \
     white.h \
-    convertdialog.h
+    convertdialog.h \
+    aligndialog.h
 
 FORMS += \
     mainwindow.ui \
@@ -125,7 +127,8 @@ FORMS += \
     queuewindow.ui \
     settingsdialog.ui \
     domecalibration.ui \
-    convertdialog.ui
+    convertdialog.ui \
+    aligndialog.ui
 RESOURCES += \
     icons.qrc
 

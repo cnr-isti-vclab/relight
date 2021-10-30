@@ -13,7 +13,7 @@ public:
 		offsets.resize(n_lights);
 	}
 
-	QRectF rect;
+	QRect rect;
 	std::vector<QPointF> offsets; //from the center of the rect
 
 	QJsonObject toJson();

@@ -310,11 +310,11 @@ QCheckBox:disabled
 }
 
 
-QMarkerList {
+ListMarker {
     background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #4d4d4d, stop: 0.1 #646464, stop: 1 #5d5d5d);
 }
 
-QMarker > QLabel {
+Marker > QLabel {
     background: transparent;
 }
 
