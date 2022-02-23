@@ -70,6 +70,7 @@ set (RELIGHT_HEADERS
 	qspheremarker.h
 	align.h
 	qalignmarker.h
+	aligndialog.h
 	qwhitemarker.h
 	white.h
 	convertdialog.h
@@ -100,6 +101,7 @@ set (RELIGHT_SOURCES
 	helpdialog.cpp
 	focaldialog.cpp
 	settingsdialog.cpp
+	aligndialog.cpp
 	processqueue.cpp
 	queueitem.cpp
 	queuewindow.cpp
