@@ -11,6 +11,13 @@
 #include "httpserver.h"
 #include "settingsdialog.h"
 #include "domecalibration.h"
+#include "convertdialog.h"
+#include "aligndialog.h"
+
+#include "qmeasuremarker.h"
+#include "qspheremarker.h"
+#include "qalignmarker.h"
+#include "qwhitemarker.h"
 
 #include <QInputDialog>
 #include <QFileDialog>
@@ -26,7 +33,6 @@
 
 #include <set>
 #include <iostream>
-
 #include <assert.h>
 using namespace std;
 
@@ -37,6 +43,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	settings = new QSettings;
 
 	ui->setupUi(this);
+
+	this->setWindowTitle("Relight");
 	connect(ui->actionNew,        SIGNAL(triggered(bool)),  this, SLOT(newProject()));
 	connect(ui->actionOpen,       SIGNAL(triggered(bool)),  this, SLOT(openProject()));
 
@@ -45,29 +53,19 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionPreferences,    SIGNAL(triggered(bool)),  this, SLOT(preferences()));
 	connect(ui->actionExit,       SIGNAL(triggered(bool)),  this, SLOT(quit()));
 
-	connect(ui->actionRuler,      SIGNAL(triggered(bool)),  this, SLOT(startMeasure()));
 	connect(ui->actionPrevious,   SIGNAL(triggered(bool)),  this, SLOT(previous()));
 	connect(ui->actionNext,       SIGNAL(triggered(bool)),  this, SLOT(next()));
 	connect(ui->actionToggle_max_luma, SIGNAL(triggered(bool)), this, SLOT(toggleMaxLuma()));
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)),  this, SLOT(exportRTI()));
 	connect(ui->actionExport_Normals, SIGNAL(triggered(bool)),  this, SLOT(exportNormals()));
+	connect(ui->actionConvert_rti, SIGNAL(triggered(bool)),  this, SLOT(convertRTI()));
 
 	connect(ui->actionView_RTI,     SIGNAL(triggered(bool)),  this, SLOT(viewRTI()));
-
 	connect(ui->actionShow_queue,   SIGNAL(triggered(bool)),  this, SLOT(showQueue()));
-
-
-	connect(ui->actionAdd_a_sphere, SIGNAL(triggered(bool)),   this, SLOT(addSphere()));
-	connect(ui->addSphere,          SIGNAL(clicked(bool)),   this, SLOT(addSphere()));
-	connect(ui->removeSphere,       SIGNAL(clicked(bool)),   this, SLOT(removeSphere()));
-	connect(ui->saveLP,             SIGNAL(clicked(bool)),   this, SLOT(saveLPs()));
-
-	connect(ui->detectHighlights, SIGNAL(clicked(bool)),   this, SLOT(detectHighlights()));
 	connect(ui->actionDetectHighlights, SIGNAL(triggered(bool)),   this, SLOT(detectHighlights()));
 
 	connect(ui->actionSave_LP,    SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
 	connect(ui->actionLoad_LP,    SIGNAL(triggered(bool)), this, SLOT(loadLP()));
-	connect(ui->showSpheres,      SIGNAL(clicked(bool)),   this, SLOT(showSpheres(bool)));
 
 	connect(ui->actionLens_parameters, SIGNAL(triggered(bool)), this, SLOT(editLensParameters()));
 	connect(ui->actionDome_geometry, SIGNAL(triggered(bool)), this, SLOT(domeCalibration()));
@@ -75,25 +73,24 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	connect(ui->actionHelp,       SIGNAL(triggered(bool)), this, SLOT(showHelp()));
 
+	connect(ui->newSphere, SIGNAL(clicked()), this, SLOT(newSphere()));
+	connect(ui->newWhite, SIGNAL(clicked()), this, SLOT(newWhite()));
+	connect(ui->newAlign, SIGNAL(clicked()), this, SLOT(newAlign()));
+	connect(ui->newMeasure, SIGNAL(clicked()), this, SLOT(newMeasure()));
 
-	ui->imageList->setContextMenuPolicy(Qt::CustomContextMenu);
-	connect(ui->imageList, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(imagesContextMenu(QPoint)));
+	connect(ui->actionNewSphere, SIGNAL(triggered()), this, SLOT(newSphere()));
+	connect(ui->actionNewWhite, SIGNAL(triggered()), this, SLOT(newWhite()));
+	connect(ui->actionNewAlign, SIGNAL(triggered()), this, SLOT(newAlign()));
+	connect(ui->actionNewMeasure, SIGNAL(triggered()), this, SLOT(newMeasure()));
 
-	ui->sphereList->setContextMenuPolicy(Qt::CustomContextMenu);
-	connect(ui->sphereList, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(spheresContextMenu(QPoint)));
+	connect(ui->actionDelete_selected, SIGNAL(triggered()), this, SLOT(deleteSelected()));
 
-
-	connect(ui->actionDelete_selected,     SIGNAL(triggered(bool)),   this, SLOT(deleteSelected()));
-
-	connect(ui->imageList,     SIGNAL(currentItemChanged(QListWidgetItem *, QListWidgetItem *)), this, SLOT(openImage(QListWidgetItem *)));
-	connect(ui->sphereList,     SIGNAL(currentItemChanged(QListWidgetItem *, QListWidgetItem *)), this, SLOT(changeSphere(QListWidgetItem *, QListWidgetItem *)));
+	ui->actionDelete_selected->setShortcuts(QList<QKeySequence>() << Qt::Key_Delete << Qt::Key_Backspace);
 
 
 	scene = new RTIScene(this);
-	connect(scene, SIGNAL(borderPointMoved()), this, SLOT(updateBorderPoints()));
-	connect(scene, SIGNAL(highlightMoved()), this, SLOT(updateHighlight()));
-
-	//	connect(scene, SIGNAL(changed(QList<QRectF>)), this, SLOT(updateBalls()));
+	connect(scene, SIGNAL(borderPointMoved(QGraphicsEllipseItem *)), this, SLOT(updateBorderPoints(QGraphicsEllipseItem *)));
+	connect(scene, SIGNAL(highlightMoved(QGraphicsEllipseItem *)), this, SLOT(updateHighlight(QGraphicsEllipseItem *)));
 
 
 	ui->graphicsView->setScene(scene);
@@ -102,7 +99,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	QApplication::setOverrideCursor( Qt::ArrowCursor );
 
 	auto *gvz = new Graphics_view_zoom(ui->graphicsView);
-	connect(gvz, SIGNAL(dblClicked(QPoint)), this, SLOT(pointPicked(QPoint)));
+	connect(gvz, SIGNAL(dblClicked(QPoint)), this, SLOT(doubleClick(QPoint)));
 	connect(gvz, SIGNAL(clicked(QPoint)), this, SLOT(pointClick(QPoint)));
 	connect(ui->actionZoom_in,  SIGNAL(triggered(bool)), gvz, SLOT(zoomIn()));
 	connect(ui->actionZoom_out, SIGNAL(triggered(bool)), gvz, SLOT(zoomOut()));
@@ -117,8 +114,6 @@ MainWindow::MainWindow(QWidget *parent) :
 	// Register model item  changed signal
 	QItemSelectionModel *selectionModel = ui->imageList1->selectionModel();
 
-	//TODO remove QListWidget!
-	ui->imageList->setVisible(false);
 	connect(selectionModel, SIGNAL(currentChanged(const QModelIndex &, const QModelIndex &)),
 			this, SLOT(openImage(const QModelIndex &)));
 	connect( imageModel , SIGNAL(itemChanged(QStandardItem *)), this, SLOT( imageChecked(QStandardItem * )));
@@ -143,9 +138,9 @@ void MainWindow::clear() {
 	project_filename = QString();
 	if(imagePixmap)
 		delete imagePixmap;
-	ui->imageList->clear();
 	ui->graphicsView->resetMatrix();
-	ui->sphereList->clear();
+
+	ui->markerList->clear();
 	project.clear();
 }
 
@@ -167,7 +162,7 @@ void MainWindow::newProject() {
 	if(!ok) {
 		//check if we can rotate a few images.
 		bool canrotate = false;
-		for(Image &image: project.images1) {
+		for(Image &image: project.images) {
 			if(image.size == project.imgsize)
 				continue;
 
@@ -213,10 +208,8 @@ void MainWindow::openProject() {
 		return;
 	}
 	project_filename = project.dir.relativeFilePath(filename);
-	enableActions();
-	setupSpheres();
-	setupMeasures();
 	init();
+	enableActions();
 }
 
 void MainWindow::saveProject() {
@@ -249,16 +242,27 @@ void MainWindow::enableActions() {
 	ui->actionPrevious->setEnabled(true);
 	ui->actionNext->setEnabled(true);
 	ui->actionExport_RTI->setEnabled(true);
+	ui->actionExport_Normals->setEnabled(true);
 	ui->actionLoad_LP->setEnabled(true);
 	ui->actionSave_LP->setEnabled(true);
 	ui->actionZoom_in->setEnabled(true);
 	ui->actionZoom_out->setEnabled(true);
 
-	ui->addSphere->setEnabled(true);
-	ui->removeSphere->setEnabled(true);
-	ui->showSpheres->setEnabled(true);
 	if(project.hasDirections())
 		ui->actionSave_LP->setEnabled(true);
+
+	ui->actionDetectHighlights->setEnabled(true);
+	ui->actionDelete_selected->setEnabled(true);
+
+	ui->newSphere->setEnabled(true);
+	ui->newMeasure->setEnabled(true);
+	ui->newAlign->setEnabled(true);
+	ui->newWhite->setEnabled(true);
+
+	ui->actionNewSphere->setEnabled(true);
+	ui->actionNewMeasure->setEnabled(true);
+	ui->actionNewAlign->setEnabled(true);
+	ui->actionNewWhite->setEnabled(true);
 }
 
 bool MainWindow::init() {
@@ -267,43 +271,35 @@ bool MainWindow::init() {
 		delete imagePixmap;
 	settings->setValue("LastDir", project.dir.path());
 
-	ui->imageList->clear();
+	setupSpheres();
+	setupMeasures();
+	setupAligns();
 
 	//create the items (name and TODO thumbnail
 	int count = 0;
 	imageModel->clear();
-	for(Image &a: project.images1) {
-		auto *item = new QListWidgetItem(QString("%1 - %2").arg(count+1).arg(a.filename), ui->imageList);
-		item ->setData(Qt::UserRole, count);
+	for(Image &a: project.images) {
 
-		QStandardItem *listItem = new QStandardItem;
-		//if(!a.valid)
-		//	poListItem->setBackground(Qt::red);
-		listItem->setText(QString("%1 - %2").arg(count+1).arg(a.filename));
-		listItem->setCheckable(true);
+		QStandardItem *item = new QStandardItem;
+		item->setText(QString("%1 - %2").arg(count+1).arg(a.filename));
+		item->setCheckable(true);
 		// Uncheck the item
-		listItem->setCheckState(a.valid ? Qt::Checked : Qt::Unchecked);
-		listItem->setData(a.valid ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
-		listItem->setData(count, Qt::UserRole+1);
-		listItem->setBackground(a.hasLightDirection() ? Qt::darkGreen : QBrush());
-		imageModel->setItem(count, listItem);
+		item->setCheckState(a.valid ? Qt::Checked : Qt::Unchecked);
+		item->setData(a.valid ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
+		item->setData(count, Qt::UserRole+1);
+		item->setBackground(a.hasLightDirection() ? Qt::darkGreen : QBrush());
+		imageModel->setItem(count, item);
 
 		count++;
 	}
 
-	openImage(ui->imageList->item(0), true);
-
-	ui->addSphere->setEnabled(true);
-	ui->removeSphere->setEnabled(true);
-	ui->detectHighlights->setEnabled(true);
-	ui->showSpheres->setEnabled(true);
-	ui->saveLP->setEnabled(true);
+	openImage(0);
 	return true;
 }
 
 void MainWindow::imageChecked(QStandardItem *item) {
 	QModelIndex index = imageModel->indexFromItem(item);
-	Image &image = project.images1[index.row()];
+	Image &image = project.images[index.row()];
 	bool skip = !index.data(Qt::CheckStateRole).toBool();
 	if(!skip && !image.valid) {
 		QMessageBox::critical(this, "Can't include this image.", "This image has a different resolution or focal, cannot include in the processing");
@@ -319,16 +315,8 @@ void MainWindow::openImage(const QModelIndex &index) {
 	openImage(index.row(), false);
 }
 
-void MainWindow::openImage(QListWidgetItem *item, bool fit) {
-	if(!item)
-		return;
-	ui->imageList->setCurrentItem(item);
-	int id = item->data(Qt::UserRole).toInt();
-	openImage(id, fit);
-}
-
 void MainWindow::openImage(int id, bool fit) {
-	QString filename = project.images1[id].filename;//item->text();
+	QString filename = project.images[id].filename;//item->text();
 
 	QImage img(project.dir.filePath(filename));
 	if(img.isNull()) {
@@ -345,8 +333,6 @@ void MainWindow::openImage(int id, bool fit) {
 	imagePixmap = new QGraphicsPixmapItem(QPixmap::fromImage(img));
 	imagePixmap->setZValue(-1);
 	scene->addItem(imagePixmap);
-	//if(!project.imgsize.isValid())
-	//	project.imgsize = img.size();
 
 	if(fit) {
 		//find smallest problems
@@ -360,24 +346,11 @@ void MainWindow::openImage(int id, bool fit) {
 
 void MainWindow::showHighlights(size_t n) {
 	ignore_scene_changes = true;
-	for(auto it: project.balls) {
-		Ball *ball = it.second;
-		if(!ball->fitted)
+	for(auto marker: ui->markerList->getItems()) {
+		auto m = dynamic_cast<SphereMarker *>(marker);
+		if(!m)
 			continue;
-		if(!ball->highlight)
-			throw QString("Highlight should be already here!");
-
-		QRectF mark(- QPointF(4, 4), QPointF(4, 4));
-		ball->highlight->setRect(mark);
-		ball->highlight->setVisible(true);
-
-		if(!ball->lights[n].isNull()) {
-			ball->highlight->setPos(ball->lights[n]);
-			ball->highlight->setBrush(Qt::green);
-		} else {
-			ball->highlight->setPos(ball->inner.center());
-			ball->highlight->setBrush(Qt::red);
-		}
+		m->showHighlight(n);
 	}
 	ignore_scene_changes = false;
 }
@@ -410,7 +383,7 @@ void MainWindow::computeMaxLuma() {
 	lumaCancelling = false;
 	QFuture<void> future = QtConcurrent::run([this]() {
 		ImageSet imageset;
-		for(auto image: project.images1)
+		for(auto image: project.images)
 			imageset.images.push_back(image.filename);
 		imageset.initImages(this->project.dir.path().toStdString().c_str());
 		std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->lumaCallback(s, n); };
@@ -436,7 +409,7 @@ void MainWindow::toggleMaxLuma() {
 		return;
 	}
 	if(maxLuming)
-		openImage(ui->imageList->item(currentImage));
+		openImage(currentImage); //ui->imageList->item(currentImage));
 	else {
 		if(imagePixmap)
 			delete imagePixmap;
@@ -447,22 +420,10 @@ void MainWindow::toggleMaxLuma() {
 	maxLuming = !maxLuming;
 }
 
-void MainWindow::showSpheres(bool show) {
-	for(auto it: project.balls) {
-		Ball *ball = it.second;
-		if(!ball->sphere)
-			continue;
-		if(show)
-			scene->addItem(ball->sphere);
-		else
-			scene->removeItem(ball->sphere);
-	}
-}
-
 void MainWindow::previous() {
 	if(currentImage == 0)
 		return;
-	openImage(ui->imageList->item(currentImage-1));
+	openImage(currentImage -1); //ui->imageList->item(currentImage-1));
 
 }
 
@@ -470,272 +431,188 @@ void MainWindow::previous() {
 void MainWindow::next() {
 	if(currentImage == int(project.size()-1))
 		return;
-	openImage(ui->imageList->item(currentImage+1));
+	openImage(currentImage + 1); //ui->imageList->item(currentImage+1));
 }
 
-void MainWindow::startMeasure() {
-	measure = new Measure();
-	measure->setScene(scene);
-	QApplication::setOverrideCursor( Qt::CrossCursor );
-}
-void MainWindow::endMeasure() {
-	QApplication::setOverrideCursor( Qt::ArrowCursor );
-
-	bool ok = true;
-	double length = QInputDialog::getDouble(this, "Enter a measurement", "The distance between the two points in mm.", 0.0, 0.0, 1000000.0, 1, &ok);
-	if(!ok) {
-		delete measure;
-		return;
-	}
-
-	measure->setLength(length);
-	project.measures.push_back(measure);
-	measure = nullptr;
-}
 
 void MainWindow::pointClick(QPoint p) {
-	if(!measure)
-		return;
-
 	QPointF pos = ui->graphicsView->mapToScene(p);
-	
-	if(measure->measuring == Measure::FIRST_POINT) {
-		measure->setFirstPoint(pos);
 
-	} else if(measure->measuring == Measure::SECOND_POINT) {
-		measure->setSecondPoint(pos);
-		endMeasure();
-	}
-	
-}
-void MainWindow::pointPicked(QPoint p) {
-	//works only on images with correct resolution and lens.
-	Image image = project.images1[currentImage];
-	if(!image.valid)
-		return;
-
-	QPointF pos = ui->graphicsView->mapToScene(p);
-	
-	QBrush blueBrush(Qt::blue);
-
-	QPen outlinePen(Qt::white);
-	outlinePen.setCosmetic(true);
-	outlinePen.setWidth(5);
-	auto borderPoint = new BorderPoint(-3, -3, 6, 6);
-	borderPoint->setPos(pos.x(), pos.y());
-	borderPoint->setPen(outlinePen);
-	borderPoint->setBrush(blueBrush);
-	borderPoint->setFlag(QGraphicsItem::ItemIsMovable);
-	borderPoint->setFlag(QGraphicsItem::ItemIsSelectable);
-	borderPoint->setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
-	borderPoint->setCursor(Qt::CrossCursor);
-	scene->addItem(borderPoint);
-
-	if(!project.balls.size())
-		addSphere();
-
-	auto item = ui->sphereList->selectedItems()[0];
-	int id = item->data(Qt::UserRole).toInt();
-	assert(project.balls.count(id));
-	Ball *ball = project.balls[id];
-	ball->border.push_back(borderPoint);
-
-	updateBorderPoints();
-}
-
-void MainWindow::updateBorderPoints() {
-
-	for(auto &it: project.balls) {
-		//TODO make a ball function
-		Ball *ball = it.second;
-
-		ball->circle->setVisible(false);
-		ball->smallcircle->setVisible(false);
-
-		if(ball->border.size() >= 3) {
-			bool fitted = ball->fit(project.imgsize);
-			if(fitted) {
-				QPointF c = ball->center;
-				double R = double(ball->radius);
-				double r = double(ball->smallradius);
-				ball->circle->setRect(c.x()-R, c.y()-R, 2*R, 2*R);
-				ball->circle->setVisible(true);
-				ball->smallcircle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
-				ball->smallcircle->setVisible(true);
-
-			}
-		}
+	for(auto marker: ui->markerList->getItems()) {
+		if(marker->editing)
+			return marker->click(pos);
 	}
 }
 
-void MainWindow::updateHighlight() {
+void MainWindow::doubleClick(QPoint p) {
+
+	QPointF pos = ui->graphicsView->mapToScene(p);
+
+	for(auto marker: ui->markerList->getItems()) {
+		if(marker->editing)
+			return marker->doubleClick(pos);
+	}
+}
+
+void MainWindow::updateBorderPoints(QGraphicsEllipseItem *point) {
+	for(auto marker: ui->markerList->getItems()) {
+		auto m = dynamic_cast<SphereMarker *>(marker);
+		if(!m)
+			continue;
+		m->updateBorderPoint(point);
+		m->fit();
+	}
+}
+
+void MainWindow::updateHighlight(QGraphicsEllipseItem *highlight) {
 	if(ignore_scene_changes)
 		return;
 
-	size_t n = size_t(currentImage);
-	for(auto &it: project.balls) {
-		Ball *ball = it.second;
-		if(!ball->highlight) continue;
+	for(auto marker: ui->markerList->getItems()) {
+		auto m = dynamic_cast<SphereMarker *>(marker);
+		if(!m)
+			continue;
 
-		ball->highlight->setBrush(Qt::green);
-		ball->lights[n] = ball->highlight->pos();
+		if(!m->sphere->fitted)
+			continue;
+
+		if(m->highlight != highlight)
+			continue;
+
+		m->updateHighlightPosition(currentImage);
+
 		QStandardItem *item = imageModel->item(currentImage);
 		item->setBackground(Qt::darkGreen);
 	}
 }
 
-void MainWindow::deleteSelected() {
-	for(auto &it: project.balls) {
-		Ball *ball = it.second;
-		auto border = ball->border;
-		ball->border.clear();
-		std::copy_if (border.begin(), border.end(), std::back_inserter(ball->border), [border](QGraphicsEllipseItem *e) {
-			bool remove = e->isSelected();
-			if(remove) delete e;
-			return !remove;
-		});
-		if(ball->highlight && ball->highlight->isSelected()) {
-			ball->resetHighlight(currentImage);
-			QStandardItem *item = imageModel->item(currentImage);
-			item->setBackground(QBrush());
 
-			showHighlights(currentImage);
-		}
+void MainWindow::newSphere() {
+	auto sphere = project.newSphere();
+	auto marker = new SphereMarker(sphere, ui->graphicsView, this);
+	ui->markerList->addItem(marker);
+	ui->markerList->setSelected(marker);
+	connect(marker, SIGNAL(removed()), this, SLOT(removeSphere()));
+	marker->setEditing(true);
+}
+
+
+
+void MainWindow::newMeasure() {
+	auto measure = project.newMeasure();
+	auto marker = new MeasureMarker(measure, ui->graphicsView, this);
+	ui->markerList->addItem(marker);
+	ui->markerList->setSelected(marker);
+	connect(marker, SIGNAL(removed()), this, SLOT(removeMeasure()));
+	marker->startMeasure();
+}
+
+void MainWindow::newAlign() {
+	auto align = project.newAlign();
+	auto marker = new AlignMarker(align, ui->graphicsView, this);
+	ui->markerList->addItem(marker);
+	ui->markerList->setSelected(marker);
+	connect(marker, SIGNAL(removed()), this, SLOT(removeAlign()));
+	connect(marker, SIGNAL(showTable(AlignMarker *)), this, SLOT(showAlignDialog(AlignMarker *)));
+	marker->setEditing(true);
+}
+
+void MainWindow::showAlignDialog(AlignMarker *marker) {
+	AlignDialog *dialog = new AlignDialog(marker, &project, this);
+	dialog->show();
+}
+
+void MainWindow::newWhite() {
+	auto white = project.newWhite();
+	auto marker = new WhiteMarker(white, ui->graphicsView, this);
+	ui->markerList->addItem(marker);
+	ui->markerList->setSelected(marker);
+	connect(marker, SIGNAL(removed()), this, SLOT(removeWhite()));
+	marker->setEditing(true);
+}
+
+
+
+void MainWindow::removeSphere() {
+	auto marker = dynamic_cast<SphereMarker *>(QObject::sender());
+	project.spheres.erase(std::remove(project.spheres.begin(), project.spheres.end(), marker->sphere), project.spheres.end());
+	delete marker;
+}
+
+void MainWindow::removeMeasure() {
+	auto marker = dynamic_cast<MeasureMarker *>(QObject::sender());
+	project.measures.erase(std::remove(project.measures.begin(), project.measures.end(), marker->measure), project.measures.end());
+	delete marker;
+}
+
+void MainWindow::removeAlign() {
+	auto marker = dynamic_cast<AlignMarker *>(QObject::sender());
+	project.aligns.erase(std::remove(project.aligns.begin(), project.aligns.end(), marker->align), project.aligns.end());
+	delete marker;
+}
+
+void MainWindow::removeWhite() {
+	auto marker = dynamic_cast<WhiteMarker *>(QObject::sender());
+	project.whites.erase(std::remove(project.whites.begin(), project.whites.end(), marker->white), project.whites.end());
+	delete marker;
+}
+
+
+void MainWindow::setupSpheres() {
+	for(auto sphere: project.spheres) {
+		auto marker = new SphereMarker(sphere, ui->graphicsView, ui->markerList);
+		connect(marker, SIGNAL(removed()), this, SLOT(removeSphere()));
+		ui->markerList->addItem(marker);
 	}
-	updateBorderPoints();
-}
-
-void MainWindow::changeSphere(QListWidgetItem *current, QListWidgetItem */*previous*/) {
-
-	for(auto ball: project.balls)
-		ball.second->setActive(false);
-
-	if(!current)
-		return;
-
-	int current_id = current->data(Qt::UserRole).toInt();
-	if(!project.balls.count(current_id))
-		throw QString("A sphere was not properly deleted!");
-	project.balls[current_id]->setActive(true);
-}
-
-int MainWindow::addSphere() {
-	for(auto &ball: project.balls)
-		ball.second->setActive(false);
-
-	ignore_scene_changes = true;
-	std::set<int> used;
-
-	for(int i = 0; i < ui->sphereList->count(); ++i)
-		used.insert(ui->sphereList->item(i)->data(Qt::UserRole).toInt());
-
-	int id = 0;;
-	while(used.count(id))
-		id++;
-	Ball *ball = new Ball(project.size());
-	project.balls[id] = ball;
-	setupSphere(id, ball);
-	ignore_scene_changes = false;
-	return id;
 }
 
 void MainWindow::setupMeasures() {
 	for(auto m: project.measures) {
-		m->setScene(scene);
-		m->setVisible(true);
+		auto marker = new MeasureMarker(m, ui->graphicsView, ui->markerList);
+		connect(marker, SIGNAL(removed()), this, SLOT(removeMeasure()));
+		ui->markerList->addItem(marker);
 	}
 }
 
-void MainWindow::setupSpheres() {
-	for(auto b: project.balls) {
-		int id = b.first;
-		Ball *ball = b.second;
-		setupSphere(id, ball);
+void MainWindow::setupAligns() {
+	for(auto align: project.aligns) {
+		auto marker = new AlignMarker(align, ui->graphicsView, ui->markerList);
+		connect(marker, SIGNAL(removed()), this, SLOT(removeAlign()));
+		ui->markerList->addItem(marker);
 	}
 }
 
-void MainWindow::setupSphere(int id, Ball *ball) {
-	auto *item = new QListWidgetItem(QString("Shere %1").arg(id+1), ui->sphereList);
-	item->setSelected(true);
-	item ->setData(Qt::UserRole, id);
-
-	QPen outlinePen(Qt::yellow);
-	outlinePen.setCosmetic(true);
-	ball->circle = scene->addEllipse(0, 0, 1, 1, outlinePen);
-	ball->smallcircle = scene->addEllipse(0, 0, 1, 1, outlinePen);
-	if(ball->center.isNull()) {
-		ball->circle->setVisible(false);
-		ball->smallcircle->setVisible(false);
-	} else {
-		QPointF c = ball->center;
-		double R = double(ball->radius);
-		double r = double(ball->smallradius);
-		ball->circle->setRect(c.x()-R, c.y()-R, 2*R, 2*R);
-		ball->circle->setVisible(true);
-		ball->smallcircle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
-		ball->smallcircle->setVisible(true);
+void MainWindow::setupWhites() {
+	for(auto white: project.whites) {
+		auto marker = new WhiteMarker(white, ui->graphicsView, ui->markerList);
+		connect(marker, SIGNAL(removed()), this, SLOT(removeWhite()));
+		ui->markerList->addItem(marker);
 	}
-
-
-	auto high = new HighlightPoint(-2, -2, 2, 2);
-	high->setVisible(false);
-	QPen pen;
-	pen.setColor(Qt::transparent);
-	pen.setWidth(0);
-	high->setPen(pen);
-	high->setBrush(Qt::green);
-	high->setFlag(QGraphicsItem::ItemIsMovable);
-	high->setFlag(QGraphicsItem::ItemIsSelectable);
-	high->setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
-	ball->highlight = high;
-	scene->addItem(high);
-
-	for(auto b: ball->border)
-		scene->addItem(b);
 }
 
-void MainWindow::removeSphere() {
-	for(auto a: ui->sphereList->selectedItems()) {
-		int id = a->data(Qt::UserRole).toInt();
-		assert(project.balls.count(id));
-		Ball *ball = project.balls[id];
-		delete ball;
-		project.balls.erase(id);
+
+void MainWindow::deleteSelected() {
+	for(auto marker: ui->markerList->getItems()) {
+		auto sphere = dynamic_cast<SphereMarker *>(marker);
+		if(sphere)
+			sphere->deleteSelected(currentImage);
 	}
-	qDeleteAll(ui->sphereList->selectedItems());
 }
-
-void MainWindow::imagesContextMenu(QPoint) {
-
-}
-void MainWindow::spheresContextMenu(QPoint pos) {
-	auto *item = ui->sphereList->itemAt(pos);
-	if(!item) return;
-	ui->sphereList->setCurrentItem(item);
-
-	QMenu myMenu;
-	myMenu.addAction("Find highlights",  this, SLOT(detectCurrentSphereHighlight()));
-	myMenu.addAction("Insert", this, SLOT(addSphere()));
-	myMenu.addSeparator();
-	myMenu.addAction("RemoveThisSphere",  this, SLOT(removeSphere()));
-
-
-	myMenu.exec(mapToGlobal(pos));
-}
-
 
 void MainWindow::detectCurrentSphereHighlight() {
-	for(auto a: ui->sphereList->selectedItems()) {
+	QMessageBox::critical(this, "detectCurrentSphereHighlight", "To be implemented");
+
+	/*for(auto a: ui->sphereList->selectedItems()) {
 		int id = a->data(Qt::UserRole).toInt();
-		assert(project.balls.count(id));
-		Ball *ball = project.balls[id];
-		if(!ball->fitted) {
+		assert(project.spheres.count(id));
+		Sphere *sphere = project.spheres[id];
+		if(!sphere->fitted) {
 			QMessageBox::critical(this, "Sorry can't do.", "This sphere has no center or radius!");
 			return;
 		}
 		sphere_to_process = id;
 	}
-	detectHighlights();
+	detectHighlights(); */
 }
 
 void MainWindow::detectHighlights() {
@@ -778,52 +655,50 @@ void MainWindow::finishedDetectHighlights() {
 		return;
 	}
 
-#ifdef NDEBUG
+/*
 	//histogram for highlight threshold
-	for(auto it: project.balls) {
-		Ball *ball = it.second;
-		cout << "Ball " << it.first << "\n";
-		for(size_t i = 0; i < ball->histogram.size(); i++) {
+	for(auto it: project.spheres) {
+		Sphere *sphere = it.second;
+		cout << "Sphere " << it.first << "\n";
+		for(size_t i = 0; i < sphere->histogram.size(); i++) {
 			cout << "Light: " << i << " ";
-			for(int n: ball->histogram[i])
+			for(int n: sphere->histogram[i])
 				cout << n << " ";
 			cout << "\n";
 		}
 		cout << endl;
 	}
-#endif
+*/
 	project.computeDirections();
-	auto selected = ui->imageList->selectedItems();
-	if(selected.size() == 0)
+	showHighlights(currentImage);
+	/*QModelIndexList selected = ui->imageList1->selectionModel()->selectedIndexes();
+	if(!selected.size())
 		return;
-	openImage(selected[0]);
+	openImage(selected[0]); */
 }
 
 int MainWindow::detectHighlight(int n) {
-	if(project.images1[size_t(n)].skip) return 0;
+	if(project.images[size_t(n)].skip) return 0;
 
-	QString filename = project.images1[n].filename;
+	QString filename = project.images[n].filename;
 	QImage img(project.dir.filePath(filename));
 	if(img.isNull()) {
-		notloaded.push_back(project.images1[n].filename);
+		notloaded.push_back(project.images[n].filename);
 		return 0;
 	}
 	if(img.size() != project.imgsize) {
 		if(img.size() == project.imgsize.transposed())
-			flipped.push_back(project.images1[n].filename);
+			flipped.push_back(project.images[n].filename);
 		else
-			resolution.push_back(project.images1[n].filename);
+			resolution.push_back(project.images[n].filename);
 		return 0;
 	}
 
 
-	for(auto &it: project.balls) {
-		if(sphere_to_process != -1 && sphere_to_process != it.first)
-			continue;
-		if(it.second->fitted) {
-			it.second->findHighlight(img, n);
-		}
-	}
+	for(auto sphere: project.spheres)
+		if(sphere->fitted)
+			sphere->findHighlight(img, n);
+
 	return 1;
 }
 
@@ -887,35 +762,33 @@ void MainWindow::loadLP(QString lp) {
 
 	if(success) {
 		for(size_t i = 0; i < project.size(); i++)
-			project.images1[i].direction = ordered_dir[i];
+			project.images[i].direction = ordered_dir[i];
 	} else {
 		auto response = QMessageBox::question(this, "Light directions and images",
 			"Filenames in .lp do not match with images in the .lp directory. Do you want to just use the filename order?");
 		if(response == QMessageBox::Cancel || response == QMessageBox::No)
 			return;
 		for(size_t i = 0; i < project.size(); i++)
-			project.images1[i].direction = directions[i];
+			project.images[i].direction = directions[i];
 	}
 }
 void MainWindow::saveLPs() {
 	int count = 1;
 	QString basename = "sphere";
-	for(auto it: project.balls) {
+	for(auto sphere: project.spheres) {
 		QString filename = basename;
-		filename += QString::number(count);
+		filename += QString::number(count++);
 		filename += ".lp";
-		count++;
 
-		Ball *ball = it.second;
 		filename = project.dir.filePath(filename);
-		ball->computeDirections(project.lens);
-		project.saveLP(filename, ball->directions);
+		sphere->computeDirections(project.lens);
+		project.saveLP(filename, sphere->directions);
 	}
-	QMessageBox::information(this, "Saved LPs", QString("Saved %1 .lp's in images folder.").arg(project.balls.size()));
+	QMessageBox::information(this, "Saved LPs", QString("Saved %1 .lp's in images folder.").arg(project.spheres.size()));
 	project.computeDirections();
 
 	vector<Vector3f> directions;
-	for(auto img: project.images1)
+	for(auto img: project.images)
 		directions.push_back(img.direction);
 
 	project.saveLP(basename + ".lp", directions);
@@ -925,17 +798,23 @@ void MainWindow::exportNormals() {
 	exportRTI(true);
 }
 
+void MainWindow::convertRTI() {
+	if(!convert)
+		convert = new ConvertDialog(this);
+	convert->show();
+}
+
 void MainWindow::exportRTI(bool normals) {
-	if(project.balls.size())
+	if(project.spheres.size())
 		project.computeDirections();
 
 	QStringList nodir;
 	for(size_t i = 0; i < project.size(); i++) {
-		if(project.images1[i].skip)
+		if(project.images[i].skip)
 			continue;
 
-		if(project.images1[i].direction.isZero())
-			nodir.push_back(project.images1[i].filename);
+		if(project.images[i].direction.isZero())
+			nodir.push_back(project.images[i].filename);
 	}
 	if(nodir.size()) {
 		QMessageBox::critical(this, "Could not export RTI.", "Some images lack a light direction: " + nodir.join(", "));
@@ -945,7 +824,7 @@ void MainWindow::exportRTI(bool normals) {
 
 	//should init with saved preferences.
 	rtiexport->setTabIndex(normals? 1 : 0);
-	rtiexport->setImages(project.images());
+	rtiexport->setImages(project.getImages());
 
 	rtiexport->showImage(imagePixmap->pixmap());
 	rtiexport->lights = project.directions();
@@ -996,7 +875,6 @@ void MainWindow::domeCalibration() {
 	DomeCalibration *calibration = new DomeCalibration(this, project.dome);
 	calibration->setModal(true);
 	calibration->exec();
-
 	project.dome = calibration->dome;
 }
 

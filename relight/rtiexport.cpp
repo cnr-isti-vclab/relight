@@ -27,6 +27,8 @@ RtiExport::RtiExport(QWidget *parent) :
 	QDialog(parent),
 	ui(new Ui::RtiExport) {
 	ui->setupUi(this);
+
+	this->setWindowTitle("Relight- Export");
 	
 	ui->crop_frame->hide();
 	connect(ui->basis, SIGNAL(currentIndexChanged(int)), this, SLOT(changeBasis(int)));
@@ -302,6 +304,8 @@ void RtiExport::createRTI1(QString output) {
 		format = "deepzoom";
 	else if(ui->formatTarzoom->isChecked())
 		format = "tarzoom";
+	else if(ui->formatItarzoom->isChecked())
+		format = "itarzoom";
 
 	if(format == "deepzoom" || format == "tarzoom" || format == "itarzoom") {
 		if(QSettings().value("python_path").toString().isEmpty()) {
@@ -343,11 +347,23 @@ void RtiExport::createRTI1(QString output) {
 	task->addParameter("quality", Parameter::INT, ui->quality->value());
 
 
-	task->addParameter("format", Parameter::STRING, format);
+	QStringList steps;
+	steps << "relight";
+	if(format == "RTI")
+		steps << "toRTI";
 
-	task->addParameter("openlime", Parameter::BOOL, ui->openlime->isChecked());
+	if(format == "deepzoom")
+		steps << "deepzoom";
+	if(format == "tarzoom")
+		steps << "deepzoom" << "tarzoom";
+	if(format == "itarzoom")
+		steps << "deepzoom" << "tarzoom" << "itarzoom";
+	if(ui->openlime->isChecked())
+		steps << "openlime";
 
-
+	task->addParameter("steps", Parameter::STRINGLIST, steps);
+	//task->addParameter("format", Parameter::STRING, format);
+	//task->addParameter("openlime", Parameter::BOOL, ui->openlime->isChecked());
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);

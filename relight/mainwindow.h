@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <QDir>
-#include "ball.h"
+#include "sphere.h"
 #include "project.h"
 
 #include <QProgressDialog>
@@ -24,6 +24,10 @@ class QStandardItemModel;
 class QStandardItem;
 class QueueWindow;
 class SettingsDialog;
+class ConvertDialog;
+class AlignDialog;
+class AlignMarker;
+
 namespace Ui {
 class MainWindow;
 }
@@ -56,8 +60,8 @@ public:
 	RTIScene(QObject *parent = Q_NULLPTR): QGraphicsScene(parent) {}
 
 signals:
-	void borderPointMoved();
-	void highlightMoved();
+	void borderPointMoved(QGraphicsEllipseItem *point);
+	void highlightMoved(QGraphicsEllipseItem *highlight);
 };
 
 class MainWindow : public QMainWindow {
@@ -77,6 +81,7 @@ public:
 	QProgressDialog *progress = nullptr;
 	QueueWindow *queue = nullptr;
 	SettingsDialog *settings_dialog = nullptr;
+	ConvertDialog *convert = nullptr;
 	QFutureWatcher<void> watcher;
 	bool highlightDetecting = false;
 
@@ -93,29 +98,49 @@ public slots:
 	void saveProjectAs();
 	void preferences();
 
+
 	void clear(); //clear everything (project, images etc.)
 	void openImage(const QModelIndex &current);
-	void openImage(QListWidgetItem *, bool fit = false);
 	void openImage(int id, bool fit = false);
 	void imageChecked(QStandardItem *item);
 
 	void next();
 	void previous();
-	void pointPicked(QPoint p);
+	void doubleClick(QPoint p);
 	void pointClick(QPoint p);
+
+
+/* Markers */
+
 	void deleteSelected();
-	void updateBorderPoints();
-	void updateHighlight();
 
-	void imagesContextMenu(QPoint);
-	void spheresContextMenu(QPoint);
+	void detectHighlights();
+	void detectCurrentSphereHighlight();
+	void cancelDetectHighlights();
+	void finishedDetectHighlights();
 
-
-	void changeSphere(QListWidgetItem *current, QListWidgetItem *previous);
+	void updateBorderPoints(QGraphicsEllipseItem *point);
+	void updateHighlight(QGraphicsEllipseItem *highlight);
+	void showHighlights(size_t n);
 	void setupSpheres();
-	void setupSphere(int id, Ball *ball);
-	int  addSphere();
-	void showSpheres(bool show);
+	void newSphere();
+	void removeSphere();
+
+	void setupMeasures();
+	void newMeasure();
+	void removeMeasure();
+
+	void setupAligns();
+	void newAlign();
+	void removeAlign();
+
+	void setupWhites();
+	void newWhite();
+	void removeWhite();
+
+	void showAlignDialog(AlignMarker *marker);
+
+
 	
 	void toggleMaxLuma();
 	void computeMaxLuma();
@@ -124,28 +149,16 @@ public slots:
 	void lumaFinish();
 	
 
-	void removeSphere();
-	void showHighlights(size_t n);
-
-	void startMeasure();
-	void endMeasure();
-	void setupMeasures();
-
-	
-	void detectHighlights();
-	void detectCurrentSphereHighlight();
-	void cancelDetectHighlights();
-	void finishedDetectHighlights();
 
 	void saveLPs();
 	void loadLP();
 	void loadLP(QString filename);
 	void exportRTI(bool normals = false);
 	void exportNormals();
+	void convertRTI();
 
 	void viewRTI();
 	void showQueue();
-
 
 	void editLensParameters();
 	void whiteBalance();
@@ -167,8 +180,6 @@ private:
 	HelpDialog *help = nullptr;
 	RTIScene *scene = nullptr;
 	QGraphicsPixmapItem *imagePixmap = nullptr;
-
-	Measure *measure = nullptr; //tmporary measure.
 	
 	bool ignore_scene_changes = false;
 	int sphere_to_process = -1;

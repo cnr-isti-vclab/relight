@@ -60,6 +60,11 @@
         <file>feather/rotate-left.svg</file>
         <file>feather/rotate-right.svg</file>
         <file>feather/x.svg</file>
+        <file>feather/highlight.svg</file>
+        <file>feather/ruler.svg</file>
+        <file>feather/edit.svg</file>
+        <file>feather/align.svg</file>
+        <file>feather/white.svg</file>
     </qresource>
     <qresource prefix="/docs">
         <file>docs/help.html</file>
@@ -86,5 +91,4 @@
         <file alias="normals/rps.py">../scripts/normals/rps.py</file>
         <file alias="normals/rpsnumerics.py">../scripts/normals/rpsnumerics.py</file>
     </qresource>
-
 </RCC>

@@ -1,15 +1,19 @@
 #ifndef PROJECT_H
 #define PROJECT_H
 
-#include "measure.h"
-#include "ball.h"
+
 #include "lens.h"
 #include "dome.h"
 #include "image.h"
 #include <QDir>
 #include <QString>
+#include <QRect>
 
 class QJsonObject;
+class Sphere;
+class Measure;
+class Align;
+class White;
 
 
 class Project {
@@ -20,9 +24,11 @@ public:
 	Lens lens;
 	Dome dome;
 
-	std::vector<Image> images1;
-	std::map<int, Ball *> balls;
+	std::vector<Image> images;
+	std::vector<Sphere *> spheres;
 	std::vector<Measure *> measures;
+	std::vector<Align *> aligns;
+	std::vector<White *> whites;
 	QRect crop;
 
 	Project() {}
@@ -34,34 +40,39 @@ public:
 	void saveLP(QString filename, std::vector<Vector3f> &directions);
 	void computeDirections();
 
+	Measure *newMeasure();
+	Sphere *newSphere();
+	Align *newAlign();
+	White *newWhite();
+
 	bool setDir(QDir folder);
 	bool scanDir(); //load images from project.dir, and return false if some problems with resolution.
 	void rotateImages();
 	bool hasDirections() {
-		for(auto &im: images1)
+		for(auto &im: images)
 			if(!im.direction.isZero())
 				return true;
 		return false;
 	}
-	size_t size() { return images1.size(); }
+	size_t size() { return images.size(); }
 
-	QStringList images() {
+	QStringList getImages() {
 		QStringList imgs;
-		for(Image &img: images1)
+		for(Image &img: images)
 			if(!img.skip)
 				imgs.push_back(img.filename);
 		return imgs;
 	}
 	std::vector<Vector3f> directions() {
 		std::vector<Vector3f> dirs;
-		for(Image &img: images1)
+		for(Image &img: images)
 			if(!img.skip)
 				dirs.push_back(img.direction);
 		return dirs;
 	}
 	int indexOf(QString s) {
-		for(size_t i = 0; i < images1.size(); i++)
-			if(images1[i].filename == s)
+		for(size_t i = 0; i < images.size(); i++)
+			if(images[i].filename == s)
 				return i;
 		return -1;
 	}

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>635</width>
-    <height>800</height>
+    <width>1069</width>
+    <height>819</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,106 +25,108 @@
        </widget>
       </item>
       <item>
-       <widget class="QListWidget" name="sphereList">
+       <widget class="QScrollArea" name="scrollArea">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-          <horstretch>1</horstretch>
+          <horstretch>0</horstretch>
           <verstretch>1</verstretch>
          </sizepolicy>
         </property>
-        <property name="maximumSize">
+        <property name="minimumSize">
          <size>
-          <width>300</width>
-          <height>16777215</height>
+          <width>0</width>
+          <height>200</height>
          </size>
         </property>
-       </widget>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
-        <item>
-         <widget class="QPushButton" name="addSphere">
-          <property name="enabled">
-           <bool>false</bool>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>450</height>
+         </size>
+        </property>
+        <property name="widgetResizable">
+         <bool>true</bool>
+        </property>
+        <widget class="QWidget" name="scrollAreaWidgetContents">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>240</width>
+           <height>200</height>
+          </rect>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+           <horstretch>0</horstretch>
+           <verstretch>1</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>200</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>600</height>
+          </size>
+         </property>
+         <widget class="ListMarker" name="markerList">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>256</width>
+            <height>200</height>
+           </rect>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+            <horstretch>0</horstretch>
+            <verstretch>1</verstretch>
+           </sizepolicy>
           </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>0</height>
+            <height>200</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>40</width>
-            <height>16777215</height>
+            <width>16777215</width>
+            <height>600</height>
            </size>
           </property>
-          <property name="toolTip">
-           <string>Add a new sphere</string>
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
           </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="icons.qrc">
-            <normaloff>:/icons/gtango/list-add.svg</normaloff>:/icons/gtango/list-add.svg</iconset>
+          <property name="frameShadow">
+           <enum>QFrame::Plain</enum>
           </property>
          </widget>
-        </item>
+        </widget>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
         <item>
-         <widget class="QPushButton" name="removeSphere">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>40</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="toolTip">
-           <string>Remove selected spheres...</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="icons.qrc">
-            <normaloff>:/icons/gtango/list-remove.svg</normaloff>:/icons/gtango/list-remove.svg</iconset>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="detectHighlights">
+         <widget class="QPushButton" name="newSphere">
           <property name="enabled">
            <bool>false</bool>
           </property>
           <property name="toolTip">
-           <string>Find highlights</string>
+           <string>New sphere...</string>
           </property>
           <property name="text">
            <string/>
           </property>
           <property name="icon">
            <iconset resource="icons.qrc">
-            <normaloff>:/icons/gtango/applications-system.svg</normaloff>:/icons/gtango/applications-system.svg</iconset>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="showSpheres">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="toolTip">
-           <string>Show highlights</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="icons.qrc">
-            <normaloff>:/icons/gtango/spherelight.svg</normaloff>:/icons/gtango/spherelight.svg</iconset>
+            <normaloff>:/icons/feather/highlight.svg</normaloff>:/icons/feather/highlight.svg</iconset>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -132,19 +134,62 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="saveLP">
+         <widget class="QPushButton" name="newAlign">
           <property name="enabled">
            <bool>false</bool>
           </property>
           <property name="toolTip">
-           <string>Save light directions</string>
+           <string>New align region...</string>
           </property>
           <property name="text">
            <string/>
           </property>
           <property name="icon">
            <iconset resource="icons.qrc">
-            <normaloff>:/icons/gtango/document-save.svg</normaloff>:/icons/gtango/document-save.svg</iconset>
+            <normaloff>:/icons/feather/align.svg</normaloff>:/icons/feather/align.svg</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="newMeasure">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="toolTip">
+           <string>New measure...</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="icons.qrc">
+            <normaloff>:/icons/feather/ruler.svg</normaloff>:/icons/feather/ruler.svg</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="newWhite">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="toolTip">
+           <string>New white balance region...</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="icons.qrc">
+            <normaloff>:/icons/feather/white.svg</normaloff>:/icons/feather/white.svg</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -159,22 +204,6 @@
       </item>
       <item>
        <widget class="QListView" name="imageList1">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-          <horstretch>1</horstretch>
-          <verstretch>4</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>300</width>
-          <height>16777215</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QListWidget" name="imageList">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
           <horstretch>1</horstretch>
@@ -208,7 +237,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>635</width>
+     <width>1069</width>
      <height>22</height>
     </rect>
    </property>
@@ -244,10 +273,13 @@
     <property name="title">
      <string>Edit</string>
     </property>
-    <addaction name="actionAdd_a_sphere"/>
+    <addaction name="actionNewSphere"/>
+    <addaction name="actionNewMeasure"/>
+    <addaction name="actionNewWhite"/>
+    <addaction name="actionNewAlign"/>
+    <addaction name="separator"/>
     <addaction name="actionDetectHighlights"/>
     <addaction name="separator"/>
-    <addaction name="actionRuler"/>
     <addaction name="actionDelete_selected"/>
     <addaction name="separator"/>
     <addaction name="actionRotate_all_right"/>
@@ -275,6 +307,7 @@
     </property>
     <addaction name="actionExport_RTI"/>
     <addaction name="actionExport_Normals"/>
+    <addaction name="actionConvert_rti"/>
     <addaction name="separator"/>
     <addaction name="actionShow_queue"/>
    </widget>
@@ -308,7 +341,6 @@
    <addaction name="actionZoom_in"/>
    <addaction name="actionZoom_out"/>
    <addaction name="separator"/>
-   <addaction name="actionRuler"/>
    <addaction name="actionExport_RTI"/>
    <addaction name="actionShow_queue"/>
    <addaction name="actionView_RTI"/>
@@ -397,15 +429,25 @@
     <string>-</string>
    </property>
   </action>
-  <action name="actionAdd_a_sphere">
+  <action name="actionNewSphere">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/feather/highlight.svg</normaloff>:/icons/feather/highlight.svg</iconset>
+   </property>
    <property name="text">
     <string>Add a sphere</string>
    </property>
    <property name="toolTip">
-    <string>Add a new sphere</string>
+    <string>New sphere...</string>
    </property>
   </action>
   <action name="actionDelete_selected">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Delete selected item</string>
    </property>
@@ -429,7 +471,7 @@
   </action>
   <action name="actionDetectHighlights">
    <property name="enabled">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="icon">
     <iconset resource="icons.qrc">
@@ -519,13 +561,16 @@
     <string>Ctrl+N</string>
    </property>
   </action>
-  <action name="actionRuler">
+  <action name="actionNewMeasure">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/gtango/ruler.svg</normaloff>:/icons/gtango/ruler.svg</iconset>
+     <normaloff>:/icons/feather/ruler.svg</normaloff>:/icons/feather/ruler.svg</iconset>
    </property>
    <property name="text">
-    <string>Measure...</string>
+    <string>New Measure</string>
    </property>
    <property name="toolTip">
     <string>Take a measure</string>
@@ -574,6 +619,9 @@
    </property>
   </action>
   <action name="actionExport_Normals">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Export Normals...</string>
    </property>
@@ -606,7 +654,44 @@
     <string>Dome geometry...</string>
    </property>
   </action>
+  <action name="actionConvert_rti">
+   <property name="text">
+    <string>Convert .rti...</string>
+   </property>
+  </action>
+  <action name="actionNewWhite">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/feather/white.svg</normaloff>:/icons/feather/white.svg</iconset>
+   </property>
+   <property name="text">
+    <string>New white balance sample</string>
+   </property>
+  </action>
+  <action name="actionNewAlign">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/feather/align.svg</normaloff>:/icons/feather/align.svg</iconset>
+   </property>
+   <property name="text">
+    <string>New align marker</string>
+   </property>
+  </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ListMarker</class>
+   <extends>QFrame</extends>
+   <header>qmarkerlist.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="icons.qrc"/>
  </resources>
