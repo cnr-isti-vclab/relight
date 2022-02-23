@@ -15,8 +15,10 @@ using namespace std;
 
 int convertRTI(const char *file, const char *output, int quality) {
 	LRti lrti;
-	if(!lrti.load(file))
+	if(!lrti.load(file)) {
+		throw QString("Failed loading file %1: %2").arg(file).arg(lrti.error.c_str());
 		return 1;
+	}
 
 	RtiBuilder rti;
 	rti.width = lrti.width;
@@ -24,7 +26,7 @@ int convertRTI(const char *file, const char *output, int quality) {
 	rti.chromasubsampling = lrti.chromasubsampled;
 	switch(lrti.type) {
 	case LRti::UNKNOWN:
-		cerr << "Unknown RTI type!\n" << endl;
+		throw "Unknown RTI type!\n";
 		return 1;
 	case LRti::PTM_LRGB:
 		rti.type = Rti::PTM;
@@ -73,10 +75,8 @@ int convertRTI(const char *file, const char *output, int quality) {
 	QDir dir(output);
 	if(!dir.exists()) {
 		QDir here("./");
-		if(!here.mkdir(output)) {
-			cerr << "Could not create output dir!\n" << endl;
-			return 1;
-		}
+		if(!here.mkdir(output))
+			throw "Could not create output dir!\n";
 	}
 
 	rti.saveJSON(dir, quality);
@@ -90,10 +90,8 @@ int convertRTI(const char *file, const char *output, int quality) {
 
 int convertToRTI(const char *filename, const char *output) {
 	QFile file(filename);
-	if(!file.open(QFile::ReadOnly)) {
-		cerr << "Failed opening: " << filename << endl;
-		return 1;
-	}
+	if(!file.open(QFile::ReadOnly))
+		throw QString("Failed opening: %1").arg(filename);
 
 	QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
 	QJsonObject obj = doc.object();
@@ -117,10 +115,9 @@ int convertToRTI(const char *filename, const char *output) {
 	if(type == "ptm") {
 		if(colorspace == "rgb") {
 			lrti.type = LRti::PTM_RGB;
-			if(nplanes != 18) {
-				cerr << "Wrong number of planes (" << nplanes << ") was expecting 18." << endl;
-				return 1;
-			}
+			if(nplanes != 18)
+				throw QString("Wrong number of planes (%1) was expecting 18.").arg(nplanes);
+
 			int count = 0;
 			lrti.scale.resize(6);
 			lrti.bias.resize(6);
@@ -132,10 +129,9 @@ int convertToRTI(const char *filename, const char *output) {
 
 		} else if(colorspace == "lrgb") {
 			lrti.type = LRti::PTM_LRGB;
-			if(nplanes != 9) {
-				cerr << "Wrong number of planes (" << nplanes << ") was expecting 9." << endl;
-				return 1;
-			}
+			if(nplanes != 9)
+				throw QString("Wrong number of planes (%1) was expecting 9.").arg(nplanes);
+
 			int count = 3;
 			for(uint i = 0; i < 6; i++) {
 				lrti.scale[order[i]] = float(scale[count].toDouble());
@@ -145,15 +141,12 @@ int convertToRTI(const char *filename, const char *output) {
 			lrti.scale.resize(6);
 			lrti.bias.resize(6);
 		} else {
-			cerr << "Cannot convert PTM relight with colorspace: " << qPrintable(colorspace) << endl;
-			return 1;
+			throw QString("Cannot convert PTM relight with colorspace: %1").arg(colorspace);
 		}
 	} else if(type == "hsh" && colorspace == "rgb") {
 		lrti.type = LRti::HSH;
-		if(nplanes != 27 && nplanes != 12) {
-			cerr << "Wrong number of planes (" << nplanes << ") was expecting 12 or 27." << endl;
-			return 1;
-		}
+		if(nplanes != 27 && nplanes != 12)
+			throw QString("Wrong number of planes (%1) was expecting 12 or 27.").arg(nplanes);
 
 		for(size_t i = 0; i < lrti.scale.size(); i++) {
 			lrti.scale[i] = float(scale[int(i*3)].toDouble());
@@ -161,8 +154,7 @@ int convertToRTI(const char *filename, const char *output) {
 		}
 
 	} else {
-		cerr << "Cannot convert relight format: " << qPrintable(type) << " and colorspace: " << qPrintable(colorspace) << endl;
-		return 1;
+		throw QString("Cannot convert relight format: %1 and colorspace: %2").arg(type).arg(colorspace);
 	}
 
 	lrti.data.resize(nplanes);
@@ -171,10 +163,9 @@ int convertToRTI(const char *filename, const char *output) {
 	for(uint i = 0; i < nplanes/3; i++) {
 		QString imagepath = path + QString("/plane_%1.jpg").arg(i);
 		QFile image(imagepath);
-		if(!image.open(QFile::ReadOnly)) {
-			cerr << "Could not find or open file: " << qPrintable(imagepath) << endl;
-			return 1;
-		}
+		if(!image.open(QFile::ReadOnly))
+			throw QString("Could not find or open file: %1").arg(imagepath);
+
 		QByteArray buffer = image.readAll();
 		lrti.decodeJPEGfromFile(buffer.size(), (unsigned char *)buffer.data(), i*3, i*3+1, i*3+2);
 	}

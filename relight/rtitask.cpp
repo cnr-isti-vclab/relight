@@ -14,6 +14,7 @@
 using namespace std;
 
 int convertToRTI(const char *filename, const char *output);
+int convertRTI(const char *file, const char *output, int quality);
 
 RtiTask::RtiTask() {}
 
@@ -23,13 +24,43 @@ RtiTask::~RtiTask() {
 }
 
 
+void relight();
+void toRTI();
+void fromRTI();
+void deepzoom();
+void tarzoom();
+void itarzoom();
+
+
 void RtiTask::run() {
 	status = RUNNING;
+	QStringList steps = (*this)["steps"].value.toStringList();
+	for(auto step: steps) {
+		if(step == "relight")
+			relight();
+		else if(step == "toRTI")
+			toRTI();
+		else if(step == "fromRTI")
+			fromRTI();
+		else if(step == "deepzoom")
+			deepzoom();
+		else if(step == "tarzoom")
+			tarzoom();
+		else if(step == "itarzoom")
+			itarzoom();
+		else if(step == "openlime")
+			openlime();
+	}
+	if(status != FAILED)
+		status = DONE;
+}
+
+void  RtiTask::relight() {
 	builder = new RtiBuilder;
 	builder->samplingram = (*this)["ram"].value.toInt();
 	builder->type         = Rti::Type((*this)["type"].value.toInt());
 	builder->colorspace   = Rti::ColorSpace((*this)["colorspace"].value.toInt());
-	int nplanes = builder->nplanes      = (*this)["nplanes"].value.toInt();
+	builder->nplanes      = (*this)["nplanes"].value.toInt();
 	builder->yccplanes[0] = (*this)["yplanes"].value.toInt();
 	//builder->sigma =
 
@@ -75,63 +106,84 @@ void RtiTask::run() {
 		status = STOPPED;
 		return;
 	}
+}
 
-	QString format = (*this)["format"].value.toString();
-	if(format == "rti")
-		convertToRTI((output + ".rti").toLatin1().data(), output.toLatin1().data());
+void RtiTask::toRTI() {
+	convertToRTI((output + ".rti").toLatin1().data(), output.toLatin1().data());
+}
 
-	if(format == "deepzoom" || format == "tarzoom" || format == "itarzoom") {
-		for(int plane = 0; plane < nplanes; plane++) {
-			runPythonScript("deepzoom.py", QStringList() << QString("plane_%1").arg(plane) << QString::number(quality), output);
-			if(status == FAILED)
-				return;
-
-			if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))
-				break;
-		}
+void RtiTask::fromRTI() {
+	QString input = (*this)["input"].value.toString();
+	int quality= (*this)["quality"].value.toInt();
+	try {
+		convertRTI(input.toLatin1().data(), output.toLatin1().data(), quality);
+	} catch(QString err) {
+		error = err;
+		status = FAILED;
 	}
+}
 
-	if(format == "tarzoom") {
-		for(int plane = 0; plane < nplanes; plane++) {
+int nPlanes(QString output) {
+	QDir destination(output);
+	return destination.entryList(QStringList("plane_*.jpg"), QDir::Files).size();
+}
+void RtiTask::deepzoom() {
+	int nplanes = nPlanes(output);
+	int quality= (*this)["quality"].value.toInt();
+	//int nplanes = builder->nplanes      = (*this)["nplanes"].value.toInt();
+	for(int plane = 0; plane < nplanes; plane++) {
+		runPythonScript("deepzoom.py", QStringList() << QString("plane_%1").arg(plane) << QString::number(quality), output);
+		if(status == FAILED)
+			return;
 
-			runPythonScript("tarzoom.py", QStringList() << QString("plane_%1").arg(plane), output);
-			if(status == FAILED)
-				return;
-
-			if(!progressed("Tarzoom:", 100*(plane+1)/nplanes))
-				break;
-		}
+		if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))
+			break;
 	}
+}
 
-	if(format == "itarzoom") {
-		for(int plane = 0; plane < nplanes; plane++) {
 
-			runPythonScript("itarzoom.py", QStringList() << QString("plane_%1").arg(plane), output);
-			if(status == FAILED)
-				return;
+void RtiTask::tarzoom() {
+	int nplanes = nPlanes(output);
+	for(int plane = 0; plane < nplanes; plane++) {
+		runPythonScript("tarzoom.py", QStringList() << QString("plane_%1").arg(plane), output);
+		if(status == FAILED)
+			return;
 
-			if(!progressed("Itarzoom:", 100*(plane+1)/nplanes))
-				break;
-		}
+		if(!progressed("Tarzoom:", 100*(plane+1)/nplanes))
+			break;
 	}
+}
 
-	if((*this)["openlime"].value.toBool()) {
-		QStringList files = QStringList() << ":/demo/index.html"
-					  << ":/demo/openlime.min.js"
-					  << ":/demo/skin.css"
-					  << ":/demo/skin.svg";
-		QDir dir(output);
-		for(QString file: files) {
-			QFile fp(file);
-			fp.open(QFile::ReadOnly);
-			QFileInfo info(file);
-			QFile copy(dir.filePath(info.fileName()));
-			copy.open(QFile::WriteOnly);
-			copy.write(fp.readAll());
-		}
+void RtiTask::itarzoom() {
+	int nplanes = nPlanes(output);
+	QStringList args;
+	for(int i = 0; i < nplanes; i++)
+		args << QString("plane_%1.tzi").arg(i);
+	args << "planes";
+	runPythonScript("itarzoom.py", args, output);
+	cout << qPrintable(log) << endl;
+	if(status == FAILED)
+		return;
+
+	progressed("Itarzoom:", 100);
+
+}
+
+
+void RtiTask::openlime() {
+	QStringList files = QStringList() << ":/demo/index.html"
+									  << ":/demo/openlime.min.js"
+									  << ":/demo/skin.css"
+									  << ":/demo/skin.svg";
+	QDir dir(output);
+	for(QString file: files) {
+		QFile fp(file);
+		fp.open(QFile::ReadOnly);
+		QFileInfo info(file);
+		QFile copy(dir.filePath(info.fileName()));
+		copy.open(QFile::WriteOnly);
+		copy.write(fp.readAll());
 	}
-
-	status = DONE;
 }
 
 void RtiTask::pause() {
