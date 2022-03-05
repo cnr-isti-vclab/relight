@@ -29,7 +29,7 @@ public:
 	virtual void stop() override;
 
 public slots:
-	bool progressed(std::string str, int percent);
+    bool progressed(std::string str, int percent) override;
 
 	void relight();
 	void toRTI();
