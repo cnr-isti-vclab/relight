@@ -10,8 +10,9 @@ TEMPLATE = app
 DEFINES += _USE_MATH_DEFINES
 DEFINES += NOMINMAX
 
-win32:INCLUDEPATH += ../libjpeg/include
-win32:LIBS += ../libjpeg/lib/jpeg.lib
+win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
+    ../external/eigen-3.3.9/
+win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
 unix:INCLUDEPATH += /usr/include/eigen3
 unix:LIBS += -ljpeg -liomp5
@@ -32,6 +33,7 @@ SOURCES += main.cpp \
     imagecropper.cpp \
     mainwindow.cpp \
     graphics_view_zoom.cpp \
+    normalstask.cpp \
     rtiexport.cpp \
     ../relight-cli/rtibuilder.cpp \
     ../src/imageset.cpp \
