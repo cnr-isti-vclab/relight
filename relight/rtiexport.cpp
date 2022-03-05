@@ -17,6 +17,7 @@
 #include "../src/rti.h"
 #include "../relight-cli/rtibuilder.h"
 
+#include "normalstask.h"
 #include "rtitask.h"
 
 #include <functional>
@@ -235,55 +236,44 @@ void RtiExport::createNormals() {
 	QString output = QFileDialog::getSaveFileName(this, "Select an output file for normal:");
 	if(output.isNull()) return;
 	if(!output.endsWith(".png"))
-		output += ".png";
+        output += ".png";
 
-	Script *task = new Script();
-	task->script_filename = "normals/normalmap.py";
-	task->output = output;
-	task->input_folder = path;
-	task->label = "Normals"; //should use
+    // Get normal method
+    unsigned int method = 0; //least squares
+    if(ui->l2_solver->isChecked())
+        method = 0;
+    if(ui->sbl_solver->isChecked())
+        method = 4;
+    if(ui->rpca_solver->isChecked())
+        method = 5;
 
-	QJsonArray jlights;
-	for(auto light: lights) {
-		jlights.push_back(QJsonArray() << light[0] << light[1] << light[2]);
-	}
-	QJsonObject obj;
-	obj["lights"] =  jlights;
+    QJsonArray jlights;
+    for(auto light: lights) {
+        jlights.push_back(QJsonArray() << light[0] << light[1] << light[2]);
+    }
+    QJsonObject obj;
+    obj["lights"] =  jlights;
 
-	QJsonArray jimages;
-	for(auto image: images) {
-		jimages.push_back(image);
-	}
-	obj["images"] = jimages;
+    QJsonArray jimages;
+    for(auto image: images) {
+        jimages.push_back(image);
+    }
+    obj["images"] = jimages;
 
-	if(crop.isValid()) {
-		QJsonObject c;
-		c["x"] = crop.left();
-		c["y"] = crop.top();
-		c["width"] = crop.width();
-		c["height"] = crop.height();
-		obj["crop"] = c;
-	}
+    QJsonObject c;
+    if(crop.isValid()) {
+        c["x"] = crop.left();
+        c["y"] = crop.top();
+        c["width"] = crop.width();
+        c["height"] = crop.height();
+        obj["crop"] = c;
+    }
 
-	QJsonDocument doc;
-	doc.setObject(obj);
-
-	task->addParameter("json", Parameter::TMP_FILE, doc.toJson());
-	task->addParameter("output", Parameter::FILENAME, output);
-
-	int method = 0; //least squares
-	if(ui->l2_solver->isChecked())
-		method = 0;
-	if(ui->sbl_solver->isChecked())
-		method = 4;
-	if(ui->sbl_solver->isChecked())
-		method = 5;
-
-	task->addParameter("method", Parameter::INT, method);
-
-
+    // Create normals task and configure it
+    NormalsTask* normalsTask = new NormalsTask(path, output, method, c);
 	ProcessQueue &queue = ProcessQueue::instance();
-	queue.addTask(task);
+
+    queue.addTask(normalsTask);
 	close();
 }
 

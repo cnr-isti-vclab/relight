@@ -11,7 +11,8 @@ DEFINES += _USE_MATH_DEFINES
 DEFINES += NOMINMAX
 
 win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
-    ../external/eigen-3.3.9/
+    ../external/eigen-3.3.9/ \
+    ../src/
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
 unix:INCLUDEPATH += /usr/include/eigen3
@@ -79,6 +80,7 @@ HEADERS += \
     imagecropper.h \
     mainwindow.h \
     graphics_view_zoom.h \
+    normalstask.h \
     rtiexport.h \
     helpdialog.h \
     ../src/imageset.h \
