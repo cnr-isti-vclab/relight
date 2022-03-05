@@ -46,3 +46,7 @@ CMakeLists.txt.user
 Makefile
 *Qt*GCC*
 *Qt*Relaese
+build*
+.idea
+__pycache__
+*.bak
