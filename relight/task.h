@@ -49,9 +49,10 @@ public:
 	void runScript(QString program, QString script, QStringList arguments, QString workingdir = QString());
 public slots:
 	void test() {}
+    virtual bool progressed(std::string str, int percent){return false;};
 
 signals:
-	void progress(QString  str, int n);
+    void progress(QString  str, int n);
 };
 
 #endif // TASK_H
