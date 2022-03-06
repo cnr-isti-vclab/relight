@@ -247,31 +247,17 @@ void RtiExport::createNormals() {
     if(ui->rpca_solver->isChecked())
         method = 5;
 
-    QJsonArray jlights;
-    for(auto light: lights) {
-        jlights.push_back(QJsonArray() << light[0] << light[1] << light[2]);
-    }
-    QJsonObject obj;
-    obj["lights"] =  jlights;
-
-    QJsonArray jimages;
-    for(auto image: images) {
-        jimages.push_back(image);
-    }
-    obj["images"] = jimages;
-
     QJsonObject c;
     if(crop.isValid()) {
         c["x"] = crop.left();
         c["y"] = crop.top();
         c["width"] = crop.width();
         c["height"] = crop.height();
-        obj["crop"] = c;
     }
 
     // Create normals task and configure it
     NormalsTask* normalsTask = new NormalsTask(path, output, method, c);
-	ProcessQueue &queue = ProcessQueue::instance();
+    ProcessQueue &queue = ProcessQueue::instance();
 
     queue.addTask(normalsTask);
 	close();
