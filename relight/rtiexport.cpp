@@ -335,7 +335,16 @@ void RtiExport::createRTI1(QString output) {
 	task->addParameter("type", Parameter::INT,  basis(ui->basis->currentIndex()));
 	task->addParameter("colorspace", Parameter::INT, colorSpace(ui->basis->currentIndex()));
 	task->addParameter("nplanes", Parameter::INT, ui->planes->value());
-	task->addParameter("yplanes", Parameter::INT, ui->chroma->value());
+	
+	int chroma = ui->chroma->value();
+	int nplanes = ui->planes->value();
+	if(chroma*3 > nplanes) {
+		QMessageBox::critical(this, "Invalid value", "Chroma planes cannot be larger than number of planes / 3");
+		return;
+	}
+	int yplanes = nplanes - chroma*2;
+	
+	task->addParameter("yplanes", Parameter::INT, yplanes);
 
 
 	QRect rect = QRect(0, 0, 0, 0);
