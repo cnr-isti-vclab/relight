@@ -188,13 +188,13 @@
           <item row="3" column="1">
            <widget class="QSpinBox" name="chroma">
             <property name="minimum">
-             <number>4</number>
+             <number>1</number>
             </property>
             <property name="maximum">
              <number>27</number>
             </property>
             <property name="value">
-             <number>10</number>
+             <number>3</number>
             </property>
            </widget>
           </item>
