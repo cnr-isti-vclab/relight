@@ -48,7 +48,7 @@ public:
 	}
 	float angle(const Vector3 &b) {
 		return acos(((*this)*b)/(b.norm() * (*this).norm()));
-	}
+    }
 };
 
 typedef Vector3<uint16_t> Vector3us;
