@@ -9,6 +9,7 @@
 #include <QFuture>
 #include <QThreadPool>
 #include <QtConcurrent/QtConcurrent>
+#include <time.h>
 
 #include "rtiexport.h"
 #include "ui_rtiexport.h"
@@ -240,6 +241,11 @@ void RtiExport::createNormals() {
     if(output.isNull()) return;
     if(!output.endsWith(".png"))
         output += ".png";
+
+    int start = clock();
+    normals.resize(imageSet.width * imageSet.height * 3);
+    // Initialize imageset
+    imageSet.setCallback(nullptr);
 
     // Get normal method
     unsigned int method = 0; //least squares
