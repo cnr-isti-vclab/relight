@@ -10,6 +10,7 @@
 #include <QRect>
 #include "../src/relight_vector.h"
 #include "task.h"
+#include <QRunnable>
 
 class NormalsTask :  public Task
 {
