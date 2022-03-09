@@ -70,12 +70,16 @@ void NormalsTask::run()
         // Launch the task
         pool.queue(run);
         pool.waitForSpace();
+
+        progressed("Computing normals...", ((float)i / imageSet.height) * 100);
     }
 
     // Wait for the end of all the threads
     pool.finish();
     // Save the final result
     encoder.encode(normals.data(), imageSet.width, imageSet.height, m_OutputFolder.toStdString().c_str());
+
+    progressed("Cleaning up...", 99);
 
     // Avoid leaks
     for (int i=0; i<imageSet.height; i++)
@@ -84,6 +88,7 @@ void NormalsTask::run()
 
     int end = clock();
     qDebug() << "Time: " << ((double)(end - start) / CLOCKS_PER_SEC);
+    progressed("Finished", 100);
 }
 
 bool NormalsTask::progressed(std::string s, int percent)
