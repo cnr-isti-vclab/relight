@@ -77,6 +77,7 @@ SOURCES += main.cpp \
 
 
 HEADERS += \
+    ../src/threadpool.h \
     imagecropper.h \
     mainwindow.h \
     graphics_view_zoom.h \
