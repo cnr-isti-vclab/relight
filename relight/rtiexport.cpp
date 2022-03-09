@@ -15,6 +15,7 @@
 #include "httpserver.h"
 #include "scripts.h"
 #include "processqueue.h"
+#include "threadpool.h"
 
 #include "../src/rti.h"
 #include "../relight-cli/rtibuilder.h"
@@ -262,32 +263,34 @@ void RtiExport::createNormals() {
     if(ui->rpca_solver->isChecked())
         method = 5;
 
-    QJsonObject c;
-    if(crop.isValid()) {
-        c["x"] = crop.left();
-        c["y"] = crop.top();
-        c["width"] = crop.width();
-        c["height"] = crop.height();
+    if(!crop.isValid()) {
+        crop.setLeft(0);
+        crop.setWidth(imageSet.width);
+        crop.setTop(0);
+        crop.setHeight(imageSet.height);
     }
+    imageSet.crop(crop.left(), crop.top(), crop.width(), crop.height());
 
-    // Get Queue reference
-    QThreadPool* pool = QThreadPool::globalInstance();
-    pool->setMaxThreadCount(imageSet.height);
+    ThreadPool pool;
     PixelArray line;
+
+    pool.start(QThread::idealThreadCount());
 
     for (int i=0; i<imageSet.height; i++)
     {
-        uint32_t idx = i * 3 * imageSet.width;
         // Read a line
         imageSet.readLine(line);
+
+        uint32_t idx = i * 3 * imageSet.width;
+        NormalsTask* task = new NormalsTask(method, line, normals.data() + idx, imageSet.lights);
+        std::function<void(void)> run = [task](void)->void { return task->run();};
+
         // Create normals tasks and launch them
-        pool->start(new NormalsTask(method, line, normals.data() + idx, imageSet.lights));
+        pool.queue(run);
+        pool.waitForSpace();
     }
 
-    qDebug() << "Tasks submitted";
-    qDebug() << "N threads: " << pool->maxThreadCount();
-
-    pool->waitForDone();
+    pool.finish();
 
     qDebug() << "Normals generated";
     // Save the final result
