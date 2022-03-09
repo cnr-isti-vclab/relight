@@ -237,6 +237,10 @@ Rti::ColorSpace  colorSpace(int index) {
 
 void RtiExport::createNormals() {
     QString output = QFileDialog::getSaveFileName(this, "Select an output file for normal:");
+    if(output.isNull()) return;
+    if(!output.endsWith(".png"))
+        output += ".png";
+
     // Save the normal as jpg file
     JpegEncoder encoder;
     // ImageSet initialization
@@ -244,13 +248,9 @@ void RtiExport::createNormals() {
     // Normals vector
     std::vector<uint8_t> normals;
 
-    if(output.isNull()) return;
-    if(!output.endsWith(".png"))
-        output += ".png";
-
     int start = clock();
+    // Init
     normals.resize(imageSet.width * imageSet.height * 3);
-    // Initialize imageset
     imageSet.setCallback(nullptr);
 
     // Get normal method
