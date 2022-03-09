@@ -250,7 +250,7 @@ void RtiExport::createNormals() {
     if(ui->rpca_solver->isChecked())
         method = 5;
 
-    ProcessQueue queue;
+    ProcessQueue &queue = ProcessQueue::instance();
 
     queue.addTask(new NormalsTask(path, output, crop, method));
     queue.start();
