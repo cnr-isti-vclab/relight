@@ -7,22 +7,31 @@
 #include <vector>
 #include <future>
 
+/** NOTE
+ *  - Alla fine di un blocco, le unique_lock vengono automaticamente rilasciate dal distruttore
+ *
+ */
+
 
 struct ThreadPool {
 public:
-    std::condition_variable finished_task; //notified each time a task finish.
+    // Notified each time a task finishes.
+    std::condition_variable finished_task;
 
-    std::deque<std::packaged_task<void()>> work; //keep track of how many
+    // Queue of task that are currently being processed
+    std::deque<std::packaged_task<void()>> work;
+    // Mutex used to access the above queue
     std::mutex work_mutex;
 
 private:
+    // List of tasks to be processed
     std::vector<std::future<void>> tasks;
+    // Condition variable used to notify the thread_task function and tell it to work
     std::condition_variable task_waker;
 
 public:
-    ~ThreadPool() {
-        finish();
-    }
+    ThreadPool() {}
+    ~ThreadPool() { finish(); }
 
     template<class F, class R=std::result_of_t<F&()>>
     std::future<R> queue(F&& f) {
@@ -42,10 +51,10 @@ public:
 
     //initialize threads
     void start(std::size_t n_threads = 1){
+        m_MaxThreads = n_threads;
+
         for (std::size_t i = 0; i < n_threads; ++i)
-        {
             tasks.push_back( std::async(std::launch::async, [this]{ thread_task(); }) );
-        }
     }
 
     void abort() {
@@ -58,10 +67,10 @@ public:
         work.clear();
     }
 
-    void waitForFinished() {
-        std::unique_lock<std::mutex> lock(work_mutex);
-        while(1) {
-            if(work.empty())
+    void waitForSpace() {
+        while(true) {
+            std::unique_lock<std::mutex> lock(work_mutex);
+            if(work.size() < m_MaxThreads)
                 break;
             finished_task.wait(lock, [] { return true; });
         }
@@ -96,6 +105,8 @@ private:
             finished_task.notify_one();
         }
     }
+private:
+    uint32_t m_MaxThreads;
 };
 
 #endif // THREAD_POOL_H
