@@ -2,7 +2,7 @@
 #define DOME_H
 
 #include <vector>
-#include "../src/vector.h"
+#include "../src/relight_vector.h"
 
 class QJsonObject;
 
