@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <string>
-#include "vector.h"
+#include "relight_vector.h"
 
 #include <QStringList>
 #include <functional>

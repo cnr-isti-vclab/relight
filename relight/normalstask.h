@@ -3,11 +3,10 @@
 
 #endif // NORMALSTASK_H
 
-#include <vector.h>
+#include <relight_vector.h>
 #include <string>
 #include <QJsonObject>
 #include <QMutex>
-#include "vector.h"
 #include "task.h"
 
 class NormalsTask :  public Task
