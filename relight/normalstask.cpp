@@ -2,7 +2,7 @@
 #include "jpeg_decoder.h"
 #include "jpeg_encoder.h"
 #include "imageset.h"
-#include "threadpool.h"
+#include "relight_threadpool.h"
 
 #include <Eigen/Eigen>
 #include <Eigen/Core>
@@ -46,11 +46,9 @@ void NormalsTask::run()
     imageSet.crop(m_Crop.left(), m_Crop.top(), m_Crop.width(), m_Crop.height());
 
     // Thread pool used to handle the processors
-    ThreadPool pool;
+    RelightThreadPool pool;
     // Line in the imageset to be processed
     PixelArray line;
-    // Saving the workers in order to delete them at the end of the task
-    NormalsWorker** workers = new NormalsWorker*[imageSet.height];
 
     pool.start(QThread::idealThreadCount());
 
@@ -61,11 +59,12 @@ void NormalsTask::run()
 
         // Create the normal task and get the run lambda
         uint32_t idx = i * 3 * imageSet.width;
-        NormalsWorker* task = new NormalsWorker(m_Method, line, normals.data() + idx, imageSet.lights);
-        std::function<void(void)> run = [task](void)->void { return task->run();};
+        uint8_t* data = normals.data() + idx;
 
-        // Save the task to delete it later
-        workers[i] = task;
+        std::function<void(void)> run = [this, &line, &imageSet, data](void)->void {
+            NormalsWorker task(m_Method, line, data, imageSet.lights);
+            return task.run();
+        };
 
         // Launch the task
         pool.queue(run);
@@ -80,11 +79,6 @@ void NormalsTask::run()
     encoder.encode(normals.data(), imageSet.width, imageSet.height, m_OutputFolder.toStdString().c_str());
 
     progressed("Cleaning up...", 99);
-
-    // Avoid leaks
-    for (int i=0; i<imageSet.height; i++)
-        delete workers[i];
-    delete[] workers;
 
     int end = clock();
     qDebug() << "Time: " << ((double)(end - start) / CLOCKS_PER_SEC);
@@ -123,11 +117,12 @@ void NormalsWorker::run()
         solveRPCA();
         break;
     }
+
+    // Deallocate line
+    std::vector<Pixel>().swap(m_Row);
 }
 
-/**TODO:
- * - support cropping
- */
+
 void NormalsWorker::solveL2()
 {
     // Pixel data

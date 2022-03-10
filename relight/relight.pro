@@ -12,8 +12,12 @@ DEFINES += NOMINMAX
 
 win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
     ../external/eigen-3.3.9/ \
+    ../external/libvips/include \
+    ../external/glib-2.0/include \
+    ../external/glib-2.0/include/gio \
     ../src/
-win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
+win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib \
+    ../external/libvips/bin/libvips.lib
 
 unix:INCLUDEPATH += /usr/include/eigen3
 unix:LIBS += -ljpeg -liomp5
@@ -77,7 +81,6 @@ SOURCES += main.cpp \
 
 
 HEADERS += \
-    ../src/threadpool.h \
     imagecropper.h \
     mainwindow.h \
     graphics_view_zoom.h \
@@ -90,6 +93,7 @@ HEADERS += \
     ../src/material.h \
     ../src/eigenpca.h \
     ../relight-cli/rtibuilder.h \
+    ../src/relight_threadpool.h \
     project.h \
     measure.h \
     focaldialog.h \
@@ -110,7 +114,7 @@ HEADERS += \
     httplib.h \
     domecalibration.h \
     dome.h \
-    ../src/vector.h \
+    ../src/relight_vector.h \
     ../src/lp.h \
     qmarker.h \
     qmarkerlist.h \

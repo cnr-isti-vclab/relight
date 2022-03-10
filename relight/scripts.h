@@ -4,7 +4,7 @@
 #include <QStringList>
 #include <QRect>
 #include <vector>
-#include "../src/vector.h"
+#include "../src/relight_vector.h"
 
 namespace pybind11 {
 	class object;

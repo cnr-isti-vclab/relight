@@ -5,6 +5,7 @@
 #include <QRect>
 #include <vector>
 
+
 class QJsonObject;
 
 class Align {

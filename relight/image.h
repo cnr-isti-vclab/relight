@@ -3,7 +3,7 @@
 
 #include <QString>
 #include <QSize>
-#include "../src/vector.h"
+#include "../src/relight_vector.h"
 
 
 class QJsonObject;

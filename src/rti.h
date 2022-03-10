@@ -2,7 +2,7 @@
 #define RTI_H
 
 #include "material.h"
-#include "vector.h"
+#include "relight_vector.h"
 
 #include <vector>
 #include <string>
