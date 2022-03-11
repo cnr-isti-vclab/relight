@@ -1,5 +1,4 @@
-/*#include <vips/vips.h>
-#include <vips/arithmetic.h>*/
+#include <vips/vips.h>
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -235,8 +234,8 @@ Rti::ColorSpace  colorSpace(int index) {
     }
 } */
 
-/*
-void example(int argc, char** argv)
+
+void RtiExport::example(int argc, char** argv)
 {
     VipsImage *im;
     double avg;
@@ -245,7 +244,7 @@ void example(int argc, char** argv)
     vips_error_exit ("unable to start VIPS");
 
     if (argc != 2)
-    vips_error_exit ("usage: %s <filename>", g_get_prgname ());
+    vips_error_exit ("usage: %s <filename>", g_get_prgname());
 
     if (!(im = vips_image_new_from_file (argv[1], NULL)))
     vips_error_exit ("unable to open");
@@ -255,7 +254,7 @@ void example(int argc, char** argv)
 
     printf ("Hello World!\nPixel average of %s is %g\n", argv[1], avg);
 }
-*/
+
 
 void RtiExport::createNormals() {
     // Get export location

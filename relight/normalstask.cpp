@@ -118,7 +118,7 @@ void NormalsWorker::run()
         break;
     }
 
-    // Deallocate line
+    // Deallocate line (TODO: useless?)
     std::vector<Pixel>().swap(m_Row);
 }
 
