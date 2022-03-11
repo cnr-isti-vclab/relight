@@ -14,10 +14,12 @@ win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
     ../external/eigen-3.3.9/ \
     ../external/libvips/include \
     ../external/glib-2.0/include \
-    ../external/glib-2.0/include/gio \
     ../src/
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib \
+    ../external/libvips/bin/libglib-2.0.lib \
+    ../external/libvips/bin/libgobject-2.0.lib \
     ../external/libvips/bin/libvips.lib
+
 
 unix:INCLUDEPATH += /usr/include/eigen3
 unix:LIBS += -ljpeg -liomp5
