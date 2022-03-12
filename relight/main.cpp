@@ -1,3 +1,5 @@
+#include <vips/vips.h>
+
 #include <QGuiApplication>
 #include <QApplication>
 #include <QString>
@@ -57,7 +59,7 @@ public:
 };
 
 int main(int argc, char *argv[]) {
-
+    VIPS_INIT(argv[0]);
 	QApplication app(argc, argv);
 
 	QCoreApplication::setOrganizationName("VCG");
