@@ -1,3 +1,6 @@
+#include <vips/vips.h>
+
+#include <QDebug>
 #include <QFileInfo>
 #include <QFile>
 #include <QDir>
@@ -130,15 +133,26 @@ int nPlanes(QString output) {
 void RtiTask::deepzoom() {
 	int nplanes = nPlanes(output);
 	int quality= (*this)["quality"].value.toInt();
+
+    qDebug() << "Deep zooming";
 	//int nplanes = builder->nplanes      = (*this)["nplanes"].value.toInt();
-	for(int plane = 0; plane < nplanes; plane++) {
-		runPythonScript("deepzoom.py", QStringList() << QString("plane_%1").arg(plane) << QString::number(quality), output);
-		if(status == FAILED)
-			return;
+
+    const double bgDouble[4] = {0.0, 0.0, 0.0, 0.0};
+    VipsArrayDouble* backgroundColor = vips_array_double_new(bgDouble, 0);
+
+    for(int plane = 0; plane < nplanes; plane++)
+    {
+        QString fileName = (QStringList() << QString("plane_%1").arg(plane) << QString(".jpg")).join("");
+        VipsImage* image = vips_image_new_from_file(fileName.toStdString().c_str());
+
+        vips_dzsave(image, fileName.toStdString().c_str(), "dz_planes", VIPS_FOREIGN_DZ_LAYOUT_DZ,
+                    QString(".jpg[Q=%1]").arg(quality).toStdString().c_str(), 0, 256, backgroundColor, "onetile");
+
+        qDebug() << "Deep zoomed plane";
 
 		if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))
 			break;
-	}
+    }
 }
 
 

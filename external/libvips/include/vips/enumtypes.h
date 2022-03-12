@@ -5,7 +5,7 @@
 #define VIPS_ENUM_TYPES_H
 
 G_BEGIN_DECLS
-/* enumerations from "/data/mxe/tmp-vips-all-i686-w64-mingw32.shared.posix.all/vips-8.12.2/libvips/include/vips/arithmetic.h" */
+/* enumerations from "/data/mxe/tmp-vips-web-x86_64-w64-mingw32.static.posix.web/vips-8.12.2/libvips/include/vips/arithmetic.h" */
 GType vips_operation_math_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_OPERATION_MATH (vips_operation_math_get_type())
 GType vips_operation_math2_get_type (void) G_GNUC_CONST;
@@ -22,15 +22,15 @@ GType vips_operation_complex2_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_OPERATION_COMPLEX2 (vips_operation_complex2_get_type())
 GType vips_operation_complexget_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_OPERATION_COMPLEXGET (vips_operation_complexget_get_type())
-/* enumerations from "/data/mxe/tmp-vips-all-i686-w64-mingw32.shared.posix.all/vips-8.12.2/libvips/include/vips/basic.h" */
+/* enumerations from "/data/mxe/tmp-vips-web-x86_64-w64-mingw32.static.posix.web/vips-8.12.2/libvips/include/vips/basic.h" */
 GType vips_precision_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_PRECISION (vips_precision_get_type())
-/* enumerations from "/data/mxe/tmp-vips-all-i686-w64-mingw32.shared.posix.all/vips-8.12.2/libvips/include/vips/colour.h" */
+/* enumerations from "/data/mxe/tmp-vips-web-x86_64-w64-mingw32.static.posix.web/vips-8.12.2/libvips/include/vips/colour.h" */
 GType vips_intent_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_INTENT (vips_intent_get_type())
 GType vips_pcs_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_PCS (vips_pcs_get_type())
-/* enumerations from "/data/mxe/tmp-vips-all-i686-w64-mingw32.shared.posix.all/vips-8.12.2/libvips/include/vips/conversion.h" */
+/* enumerations from "/data/mxe/tmp-vips-web-x86_64-w64-mingw32.static.posix.web/vips-8.12.2/libvips/include/vips/conversion.h" */
 GType vips_extend_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_EXTEND (vips_extend_get_type())
 GType vips_compass_direction_get_type (void) G_GNUC_CONST;
@@ -47,13 +47,13 @@ GType vips_interesting_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_INTERESTING (vips_interesting_get_type())
 GType vips_blend_mode_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_BLEND_MODE (vips_blend_mode_get_type())
-/* enumerations from "/data/mxe/tmp-vips-all-i686-w64-mingw32.shared.posix.all/vips-8.12.2/libvips/include/vips/convolution.h" */
+/* enumerations from "/data/mxe/tmp-vips-web-x86_64-w64-mingw32.static.posix.web/vips-8.12.2/libvips/include/vips/convolution.h" */
 GType vips_combine_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_COMBINE (vips_combine_get_type())
-/* enumerations from "/data/mxe/tmp-vips-all-i686-w64-mingw32.shared.posix.all/vips-8.12.2/libvips/include/vips/draw.h" */
+/* enumerations from "/data/mxe/tmp-vips-web-x86_64-w64-mingw32.static.posix.web/vips-8.12.2/libvips/include/vips/draw.h" */
 GType vips_combine_mode_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_COMBINE_MODE (vips_combine_mode_get_type())
-/* enumerations from "/data/mxe/tmp-vips-all-i686-w64-mingw32.shared.posix.all/vips-8.12.2/libvips/include/vips/foreign.h" */
+/* enumerations from "/data/mxe/tmp-vips-web-x86_64-w64-mingw32.static.posix.web/vips-8.12.2/libvips/include/vips/foreign.h" */
 GType vips_foreign_flags_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_FOREIGN_FLAGS (vips_foreign_flags_get_type())
 GType vips_fail_on_get_type (void) G_GNUC_CONST;
@@ -84,7 +84,7 @@ GType vips_foreign_dz_container_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_FOREIGN_DZ_CONTAINER (vips_foreign_dz_container_get_type())
 GType vips_foreign_heif_compression_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_FOREIGN_HEIF_COMPRESSION (vips_foreign_heif_compression_get_type())
-/* enumerations from "/data/mxe/tmp-vips-all-i686-w64-mingw32.shared.posix.all/vips-8.12.2/libvips/include/vips/image.h" */
+/* enumerations from "/data/mxe/tmp-vips-web-x86_64-w64-mingw32.static.posix.web/vips-8.12.2/libvips/include/vips/image.h" */
 GType vips_demand_style_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_DEMAND_STYLE (vips_demand_style_get_type())
 GType vips_image_type_get_type (void) G_GNUC_CONST;
@@ -97,24 +97,24 @@ GType vips_coding_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_CODING (vips_coding_get_type())
 GType vips_access_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_ACCESS (vips_access_get_type())
-/* enumerations from "/data/mxe/tmp-vips-all-i686-w64-mingw32.shared.posix.all/vips-8.12.2/libvips/include/vips/morphology.h" */
+/* enumerations from "/data/mxe/tmp-vips-web-x86_64-w64-mingw32.static.posix.web/vips-8.12.2/libvips/include/vips/morphology.h" */
 GType vips_operation_morphology_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_OPERATION_MORPHOLOGY (vips_operation_morphology_get_type())
-/* enumerations from "/data/mxe/tmp-vips-all-i686-w64-mingw32.shared.posix.all/vips-8.12.2/libvips/include/vips/object.h" */
+/* enumerations from "/data/mxe/tmp-vips-web-x86_64-w64-mingw32.static.posix.web/vips-8.12.2/libvips/include/vips/object.h" */
 GType vips_argument_flags_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_ARGUMENT_FLAGS (vips_argument_flags_get_type())
-/* enumerations from "/data/mxe/tmp-vips-all-i686-w64-mingw32.shared.posix.all/vips-8.12.2/libvips/include/vips/operation.h" */
+/* enumerations from "/data/mxe/tmp-vips-web-x86_64-w64-mingw32.static.posix.web/vips-8.12.2/libvips/include/vips/operation.h" */
 GType vips_operation_flags_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_OPERATION_FLAGS (vips_operation_flags_get_type())
-/* enumerations from "/data/mxe/tmp-vips-all-i686-w64-mingw32.shared.posix.all/vips-8.12.2/libvips/include/vips/region.h" */
+/* enumerations from "/data/mxe/tmp-vips-web-x86_64-w64-mingw32.static.posix.web/vips-8.12.2/libvips/include/vips/region.h" */
 GType vips_region_shrink_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_REGION_SHRINK (vips_region_shrink_get_type())
-/* enumerations from "/data/mxe/tmp-vips-all-i686-w64-mingw32.shared.posix.all/vips-8.12.2/libvips/include/vips/resample.h" */
+/* enumerations from "/data/mxe/tmp-vips-web-x86_64-w64-mingw32.static.posix.web/vips-8.12.2/libvips/include/vips/resample.h" */
 GType vips_kernel_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_KERNEL (vips_kernel_get_type())
 GType vips_size_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_SIZE (vips_size_get_type())
-/* enumerations from "/data/mxe/tmp-vips-all-i686-w64-mingw32.shared.posix.all/vips-8.12.2/libvips/include/vips/util.h" */
+/* enumerations from "/data/mxe/tmp-vips-web-x86_64-w64-mingw32.static.posix.web/vips-8.12.2/libvips/include/vips/util.h" */
 GType vips_token_get_type (void) G_GNUC_CONST;
 #define VIPS_TYPE_TOKEN (vips_token_get_type())
 G_END_DECLS

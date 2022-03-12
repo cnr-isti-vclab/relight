@@ -39,7 +39,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif /*__cplusplus*/
-
 /* If you read MSB first, you get these two values.  
  * intel order: byte 0 = b6 
  * SPARC order: byte 0 = 08
