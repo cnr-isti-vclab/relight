@@ -134,25 +134,53 @@ void RtiTask::deepzoom() {
 	int nplanes = nPlanes(output);
 	int quality= (*this)["quality"].value.toInt();
 
-    qDebug() << "Deep zooming";
-	//int nplanes = builder->nplanes      = (*this)["nplanes"].value.toInt();
+    // Create DeepZoom directory in output folder if it doesn't exist
+    QString dzOutFolder = QString("%1\\DeepZoom").arg(output);
+    if (!QDir(dzOutFolder).exists())
+        QDir().mkdir(dzOutFolder);
 
-    const double bgDouble[4] = {0.0, 0.0, 0.0, 0.0};
-    VipsArrayDouble* backgroundColor = vips_array_double_new(bgDouble, 0);
-
+    // Deep zoom every plane
     for(int plane = 0; plane < nplanes; plane++)
     {
-        QString fileName = (QStringList() << QString("plane_%1").arg(plane) << QString(".jpg")).join("");
-        VipsImage* image = vips_image_new_from_file(fileName.toStdString().c_str());
+        // Load image, setup output folder for this plane
+        QString fileName = (QStringList() << QString("%1/plane_%2").arg(output).arg(plane) << QString(".jpg")).join("");
+        VipsImage* image = vips_image_new_from_file(fileName.toStdString().c_str(), NULL);
+        QString folderName = QString("%1\\dz_plane_%2").arg(dzOutFolder).arg(plane).toStdString().c_str();
 
-        vips_dzsave(image, fileName.toStdString().c_str(), "dz_planes", VIPS_FOREIGN_DZ_LAYOUT_DZ,
-                    QString(".jpg[Q=%1]").arg(quality).toStdString().c_str(), 0, 256, backgroundColor, "onetile");
+        qDebug() << "Image path: " << fileName;
+        qDebug() << "Save path: " << folderName;
 
-        qDebug() << "Deep zoomed plane";
+        // Call dzsave and create the deepzoom tiles
+        if (vips_dzsave(image, folderName.toStdString().c_str(),
+            "overlap", 0,
+            "tile_size", 256,
+            "layout", VIPS_FOREIGN_DZ_LAYOUT_DZ,
+            "depth", VIPS_FOREIGN_DZ_DEPTH_ONETILE,
+            "suffix", QString(".jpg[Q=%1]").arg(quality).toStdString().c_str(),
+            NULL) != 0)
+        {
+            // Notify error
+            qDebug() << "LIBVIPS ERROR: ";
+            const char* cError = vips_error_buffer();
+            vips_error_exit(cError);
+        }
 
+        // Update progress bar
 		if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))
 			break;
     }
+
+    /**
+    if (vips_dzsave(ImOutTotal, "C:\\VIPS_Imaging\\Colon\\My_Tiles",
+
+        //"compression" , 1,
+        NULL))   //Here the run-time throw the exception!!!
+    {
+        const char* cError = vips_error_buffer();
+
+        vips_error_exit(cError);
+    }
+     */
 }
 
 
