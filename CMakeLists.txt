@@ -5,3 +5,5 @@ project(relight)
 set (CMAKE_CXX_STANDARD 11)
 
 add_subdirectory(relight)
+add_subdirectory(relight-cli)
+add_subdirectory(relight-merge)

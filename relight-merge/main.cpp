@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 		RtiBuilder &rti = rtis[i];
 		bool success = rti.load(argv[i+1], false);
 		if(!success) {
-			cerr << "Could not load rtr: " << argv[i+1] << endl;
+			cerr << "Could not load rti: " << argv[i+1] << endl;
 			return -1;
 		}
 		//check all RTI have the same parameters
