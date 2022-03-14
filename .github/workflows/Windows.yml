@@ -30,6 +30,22 @@ jobs:
         cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
         nmake
         nmake install
+
+        cd ../../relight-cli
+        mkdir build
+        mkdir install
+        cd build
+        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
+        nmake
+        nmake install
+
+        cd ../../relight-merge
+        mkdir build
+        mkdir install
+        cd build
+        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
+        nmake
+        nmake install
     - name: Deploy
       run: |
         cd relight/install
