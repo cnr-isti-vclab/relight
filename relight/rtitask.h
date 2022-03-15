@@ -1,6 +1,10 @@
 #ifndef RTITASK_H
 #define RTITASK_H
 
+#define LIB_VIPS_ERR {const char* cError = vips_error_buffer(); \
+    error = cError; \
+    status = FAILED;}
+
 #include "task.h"
 #include <QMutex>
 
