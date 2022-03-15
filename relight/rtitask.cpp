@@ -134,24 +134,21 @@ void RtiTask::deepzoom() {
 	int nplanes = nPlanes(output);
 	int quality= (*this)["quality"].value.toInt();
 
-    // Create DeepZoom directory in output folder if it doesn't exist
-    QString dzOutFolder = QString("%1\\DeepZoom").arg(output);
-    if (!QDir(dzOutFolder).exists())
-        QDir().mkdir(dzOutFolder);
-
     // Deep zoom every plane
     for(int plane = 0; plane < nplanes; plane++)
     {
         // Load image, setup output folder for this plane
         QString fileName = (QStringList() << QString("%1/plane_%2").arg(output).arg(plane) << QString(".jpg")).join("");
         VipsImage* image = vips_image_new_from_file(fileName.toStdString().c_str(), NULL);
-        QString folderName = QString("%1\\dz_plane_%2").arg(dzOutFolder).arg(plane).toStdString().c_str();
+        if (image == NULL)
+            LIB_VIPS_ERR
+        QString folderName = QString("%1\\plane_%2").arg(output).arg(plane).toStdString().c_str();
 
-        qDebug() << "Image path: " << fileName;
-        qDebug() << "Save path: " << folderName;
+        //qDebug() << "Image path: " << fileName;
+        //qDebug() << "Save path: " << folderName;
 
         // Call dzsave and create the deepzoom tiles
-        if (vips_dzsave(image, folderName.toStdString().c_str(),
+        if (image == NULL || vips_dzsave(image, folderName.toStdString().c_str(),
             "overlap", 0,
             "tile_size", 256,
             "layout", VIPS_FOREIGN_DZ_LAYOUT_DZ,
@@ -159,10 +156,7 @@ void RtiTask::deepzoom() {
             "suffix", QString(".jpg[Q=%1]").arg(quality).toStdString().c_str(),
             NULL) != 0)
         {
-            // Notify error
-            qDebug() << "LIBVIPS ERROR: ";
-            const char* cError = vips_error_buffer();
-            vips_error_exit(cError);
+            LIB_VIPS_ERR
         }
 
         // Update progress bar
@@ -186,7 +180,24 @@ void RtiTask::deepzoom() {
 
 void RtiTask::tarzoom() {
 	int nplanes = nPlanes(output);
-	for(int plane = 0; plane < nplanes; plane++) {
+    // For each plane file
+    for(int plane = 0; plane < nplanes; plane++)
+    {
+		/** TODO: handle errors in deep zoom, stick to old names */
+        /** Run a single tarzoom script:
+         *
+         *  - Keep an index object containing the data about the tarzoom
+         *  - Read the dzi contents
+         *  - Create a .tzb file
+         *  - Find all the folders that end with "_files" (deep zoom folders)
+         *  - For each of those folders:
+         *      - Get all the folders (0 to 5)
+         *      - For each of those folders:
+         *          - files = [(f.name, f.path) for f in os.scandir(level[1]) if f.is_file()]
+         *          - Has this been tested? Shouldn't it be ... scandir(level) ... ?
+         *          - For each of those files:
+         *              - Computations in the file
+         */
 		runPythonScript("tarzoom.py", QStringList() << QString("plane_%1").arg(plane), output);
 		if(status == FAILED)
 			return;
