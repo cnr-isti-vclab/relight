@@ -1,8 +1,8 @@
 #include "normalstask.h"
-#include "jpeg_decoder.h"
-#include "jpeg_encoder.h"
-#include "imageset.h"
-#include "relight_threadpool.h"
+#include "../src/jpeg_decoder.h"
+#include "../src/jpeg_encoder.h"
+#include "../src/imageset.h"
+#include "../src/relight_threadpool.h"
 
 #include <Eigen/Eigen>
 #include <Eigen/Core>
