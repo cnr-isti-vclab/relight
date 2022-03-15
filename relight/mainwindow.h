@@ -5,6 +5,7 @@
 #include <QDir>
 #include "sphere.h"
 #include "project.h"
+#include "zoom.h"
 
 #include <QProgressDialog>
 #include <QGraphicsScene>
@@ -156,6 +157,8 @@ public slots:
 	void exportRTI(bool normals = false);
 	void exportNormals();
 	void convertRTI();
+    void deepZoom();
+    void tarZoom();
 
 	void viewRTI();
 	void showQueue();
@@ -178,6 +181,7 @@ private:
 	QSettings *settings = nullptr;
 	RtiExport *rtiexport = nullptr;
 	HelpDialog *help = nullptr;
+    Zoom* zoom = nullptr;
 	RTIScene *scene = nullptr;
 	QGraphicsPixmapItem *imagePixmap = nullptr;
 	

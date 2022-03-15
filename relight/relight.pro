@@ -4,6 +4,7 @@ QMAKE_CXXFLAGS += -std=c++17
 
 TARGET = relight
 CONFIG -= app_bundle
+UI_DIR = $$PWD
 
 TEMPLATE = app
 
@@ -79,7 +80,8 @@ SOURCES += main.cpp \
     qwhitemarker.cpp \
     white.cpp \
     convertdialog.cpp \
-    aligndialog.cpp
+    aligndialog.cpp \
+    zoom.cpp
 
 
 HEADERS += \
@@ -103,7 +105,8 @@ HEADERS += \
     image.h \
     ../src/exif.h \
     httpserver.h \
-    scripts.h \ 
+    scripts.h \
+    zoom.h  \
     processqueue.h \
     queuewindow.h \
     queueitem.h \
@@ -134,7 +137,8 @@ FORMS += \
     mainwindow.ui \
     rtiexport.ui \
     helpdialog.ui \
-    focaldialog.ui \  
+    focaldialog.ui \
+    zoomdialog.ui   \
     queuewindow.ui \
     settingsdialog.ui \
     domecalibration.ui \
