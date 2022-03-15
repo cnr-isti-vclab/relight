@@ -39,7 +39,7 @@ SET(HEADERS
 	../src/jpeg_decoder.h
 	../src/jpeg_encoder.h
 	../src/material.h
-	../src/vector.h
+	../src/relight_vector.h
 	../src/rti.h
 	../src/legacy_rti.h
 )
