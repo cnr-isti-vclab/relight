@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>480</width>
-    <height>265</height>
+    <height>312</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -88,7 +88,7 @@
           <property name="title">
            <string>Deepzoom parameters</string>
           </property>
-          <widget class="QTextEdit" name="outputRtiFolder">
+          <widget class="QTextEdit" name="outputRtiFolderDz">
            <property name="geometry">
             <rect>
              <x>200</x>
@@ -124,7 +124,7 @@ p, li { white-space: pre-wrap; }
             <string>RTI folder:</string>
            </property>
           </widget>
-          <widget class="QPushButton" name="buttonBrowseRti">
+          <widget class="QPushButton" name="buttonBrowseRtiDz">
            <property name="geometry">
             <rect>
              <x>120</x>
@@ -150,7 +150,7 @@ p, li { white-space: pre-wrap; }
             <string>Output folder:</string>
            </property>
           </widget>
-          <widget class="QTextEdit" name="outputOutputFolder">
+          <widget class="QTextEdit" name="outputOutputFolderDz">
            <property name="geometry">
             <rect>
              <x>200</x>
@@ -173,7 +173,7 @@ p, li { white-space: pre-wrap; }
             <string>Select a folder</string>
            </property>
           </widget>
-          <widget class="QPushButton" name="buttonBrowseOutput">
+          <widget class="QPushButton" name="buttonBrowseOutputDz">
            <property name="geometry">
             <rect>
              <x>120</x>
@@ -305,7 +305,7 @@ p, li { white-space: pre-wrap; }
             <string>Deepzoom folder:</string>
            </property>
           </widget>
-          <widget class="QPushButton" name="broseOutputButton_2">
+          <widget class="QPushButton" name="buttonBrowseOutputTz">
            <property name="geometry">
             <rect>
              <x>120</x>
@@ -331,7 +331,7 @@ p, li { white-space: pre-wrap; }
             <enum>Qt::Horizontal</enum>
            </property>
           </widget>
-          <widget class="QTextEdit" name="textEdit_3">
+          <widget class="QTextEdit" name="outputRtiFolderTz">
            <property name="geometry">
             <rect>
              <x>200</x>
@@ -354,7 +354,7 @@ p, li { white-space: pre-wrap; }
             <string>Select a folder</string>
            </property>
           </widget>
-          <widget class="QPushButton" name="broseRtiButton_2">
+          <widget class="QPushButton" name="buttonBrowseRtiTz">
            <property name="geometry">
             <rect>
              <x>120</x>
@@ -380,7 +380,7 @@ p, li { white-space: pre-wrap; }
             <string>Output folder:</string>
            </property>
           </widget>
-          <widget class="QTextEdit" name="textEdit_4">
+          <widget class="QTextEdit" name="outputOutputFolderTz">
            <property name="geometry">
             <rect>
              <x>200</x>
@@ -420,6 +420,19 @@ p, li { white-space: pre-wrap; }
          </attribute>
         </widget>
        </widget>
+       <widget class="QPushButton" name="buttonConfirm">
+        <property name="geometry">
+         <rect>
+          <x>140</x>
+          <y>240</y>
+          <width>171</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Generate files</string>
+        </property>
+       </widget>
       </widget>
      </item>
     </layout>
@@ -427,19 +440,22 @@ p, li { white-space: pre-wrap; }
   </layout>
  </widget>
  <tabstops>
-  <tabstop>buttonBrowseRti</tabstop>
-  <tabstop>outputRtiFolder</tabstop>
-  <tabstop>buttonBrowseOutput</tabstop>
-  <tabstop>outputOutputFolder</tabstop>
+  <tabstop>buttonBrowseRtiDz</tabstop>
+  <tabstop>outputRtiFolderDz</tabstop>
+  <tabstop>buttonBrowseOutputDz</tabstop>
+  <tabstop>outputOutputFolderDz</tabstop>
   <tabstop>inputJpegQuality</tabstop>
   <tabstop>inputTileSize</tabstop>
   <tabstop>inputOverlap</tabstop>
   <tabstop>zoomTab</tabstop>
-  <tabstop>broseRtiButton_2</tabstop>
-  <tabstop>textEdit_3</tabstop>
-  <tabstop>broseOutputButton_2</tabstop>
-  <tabstop>textEdit_4</tabstop>
+  <tabstop>buttonBrowseRtiTz</tabstop>
+  <tabstop>outputRtiFolderTz</tabstop>
+  <tabstop>buttonBrowseOutputTz</tabstop>
+  <tabstop>outputOutputFolderTz</tabstop>
  </tabstops>
  <resources/>
  <connections/>
+ <slots>
+  <slot>buttonBrowseRtiPressed()</slot>
+ </slots>
 </ui>
