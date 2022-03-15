@@ -55,7 +55,7 @@ set (RELIGHT_HEADERS
 	../src/material.h
 	../src/eigenpca.h
 	../src/lp.h
-	../src/vector.h
+	../src/relight_vector.h
 	../relight-cli/rtibuilder.h
 	processqueue.h
 	queueitem.h
