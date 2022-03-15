@@ -21,8 +21,8 @@ win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib \
     ../external/libvips/bin/libvips.lib
 
 
-unix:INCLUDEPATH += /usr/include/eigen3
-unix:LIBS += -ljpeg -liomp5
+unix:INCLUDEPATH += /usr/include/eigen3 /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include
+unix:LIBS += -ljpeg -liomp5 -lvips
 unix:QMAKE_CXXFLAGS += -fopenmp
 
 

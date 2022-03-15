@@ -36,8 +36,6 @@ public:
 	void setCrop(QRect rect);
 	void showImage(QPixmap pix);
 
-    void example(int argc, char** argv);
-
 	enum Format { PTM, RTI, RELIGHT, DEEPZOOM, TARZOOM };
 
 public slots:
