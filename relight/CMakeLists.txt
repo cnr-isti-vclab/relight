@@ -22,6 +22,11 @@ if (MSVC)
 else()
 	find_package (JPEG REQUIRED)
 	find_package(Eigen3 REQUIRED)
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(glib REQUIRED IMPORTED_TARGET glib-2.0)
+	pkg_check_modules(vips REQUIRED IMPORTED_TARGET glib-2.0)
+	set(VIPS_LIBRARIES ${vips_LIBDIR}/libvips.so)
+	message(STATUS "test ${vips_LIBDIR}")
 endif()
 
 set(CMAKE_AUTOMOC ON)
@@ -64,6 +69,7 @@ set (RELIGHT_HEADERS
 	task.h
 	script.h
 	rtitask.h
+	normalstask.h
 	dome.h
 	domecalibration.h
 	qmarker.h
@@ -112,6 +118,7 @@ set (RELIGHT_SOURCES
 	task.cpp
 	script.cpp
 	rtitask.cpp
+	normalstask.cpp
 	domecalibration.cpp
 	dome.cpp
 	qmarkerlist.cpp
@@ -146,7 +153,9 @@ target_include_directories(
 	relight PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}
-		${EIGEN3_INCLUDE_DIR})
+		${EIGEN3_INCLUDE_DIR}
+		${glib_INCLUDEDIR}
+		${vips_INCLUDEDIR})
 		
 target_link_libraries(
 	relight PUBLIC
@@ -155,8 +164,13 @@ target_link_libraries(
 		Qt5::Core
 		Qt5::Gui
 		Qt5::Widgets
-		Qt5::Concurrent)
-		
+		Qt5::Concurrent
+		PkgConfig::glib
+		${VIPS_LIBRARIES})
+
+ 
+
+
 target_compile_definitions(relight PUBLIC _USE_MATH_DEFINES NOMINMAX)
 
 if(WIN32 OR APPLE)
