@@ -105,7 +105,7 @@
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:7.8pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;C:\Users\nicol\Desktop\Uni\Tesi\Test\coinpalms\sas.png&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="placeholderText">
             <string>Select a folder</string>
@@ -167,7 +167,7 @@ p, li { white-space: pre-wrap; }
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:7.8pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;C:\Users\nicol\Desktop\Uni\Tesi\Test\coinpalms\sas.png&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="placeholderText">
             <string>Select a folder</string>
@@ -208,6 +208,12 @@ p, li { white-space: pre-wrap; }
              <height>24</height>
             </rect>
            </property>
+           <property name="text">
+            <string>95</string>
+           </property>
+           <property name="placeholderText">
+            <string>1 to 100</string>
+           </property>
           </widget>
           <widget class="QLabel" name="label_4">
            <property name="geometry">
@@ -230,6 +236,9 @@ p, li { white-space: pre-wrap; }
              <width>71</width>
              <height>24</height>
             </rect>
+           </property>
+           <property name="text">
+            <string>256</string>
            </property>
           </widget>
           <widget class="Line" name="line">
@@ -266,6 +275,9 @@ p, li { white-space: pre-wrap; }
              <width>71</width>
              <height>24</height>
             </rect>
+           </property>
+           <property name="text">
+            <string>0</string>
            </property>
           </widget>
          </widget>
