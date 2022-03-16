@@ -56,7 +56,11 @@ void RtiTask::run() {
 }
 
 void  RtiTask::relight() {
+
 	builder = new RtiBuilder;
+	builder->nworkers = QSettings().value("nworkers", 8).toInt();
+	builder->samplingram = QSettings().value("ram", 512).toInt();
+
 	builder->samplingram = (*this)["ram"].value.toInt();
 	builder->type         = Rti::Type((*this)["type"].value.toInt());
 	builder->colorspace   = Rti::ColorSpace((*this)["colorspace"].value.toInt());
