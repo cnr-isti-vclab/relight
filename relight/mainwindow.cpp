@@ -293,7 +293,7 @@ bool MainWindow::init() {
 		count++;
 	}
 
-	openImage(0);
+	openImage(0, true);
 	return true;
 }
 
