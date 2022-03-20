@@ -9,7 +9,7 @@
 #include <QRect>
 
 #include "rtitask.h"
-#include "zoom.h"
+#include "zoomdialog.h"
 #include "../src/rti.h"
 #include "../relight-cli/rtibuilder.h"
 

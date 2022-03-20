@@ -5,7 +5,7 @@
 #include <QDir>
 #include "sphere.h"
 #include "project.h"
-#include "zoom.h"
+#include "zoomdialog.h"
 
 #include <QProgressDialog>
 #include <QGraphicsScene>
@@ -181,7 +181,7 @@ private:
 	QSettings *settings = nullptr;
 	RtiExport *rtiexport = nullptr;
 	HelpDialog *help = nullptr;
-    Zoom* zoom = nullptr;
+    ZoomDialog* zoom = nullptr;
 	RTIScene *scene = nullptr;
 	QGraphicsPixmapItem *imagePixmap = nullptr;
 	

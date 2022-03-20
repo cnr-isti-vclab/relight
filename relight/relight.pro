@@ -81,7 +81,8 @@ SOURCES += main.cpp \
     white.cpp \
     convertdialog.cpp \
     aligndialog.cpp \
-    zoom.cpp
+    zoomdialog.cpp \
+    zoomtask.cpp
 
 
 HEADERS += \
@@ -106,7 +107,6 @@ HEADERS += \
     ../src/exif.h \
     httpserver.h \
     scripts.h \
-    zoom.h  \
     processqueue.h \
     queuewindow.h \
     queueitem.h \
@@ -131,7 +131,9 @@ HEADERS += \
     qwhitemarker.h \
     white.h \
     convertdialog.h \
-    aligndialog.h
+    aligndialog.h \
+    zoomdialog.h \
+    zoomtask.h
 
 FORMS += \
     mainwindow.ui \
