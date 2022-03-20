@@ -12,12 +12,14 @@ void ZoomTask::run()
     int tilesize = hasParameter("tilesize") ? (*this)["tilesize"].value.toInt() : -1;
 
     // General error checking
-    if (outFolder.compare("")) {
+    if (outFolder.compare("") == 0) {
         error = "Unspecified output folder";
         status = FAILED;
-    }else if (inFolder.compare("")) {
+        return;
+    }else if (inFolder.compare("") == 0) {
         error = "Unspecified input folder";
         status = FAILED;
+        return;
     }
 
     switch (m_ZoomType)
@@ -27,12 +29,15 @@ void ZoomTask::run()
         if (quality == -1) {
             error = "Unspecified jpeg quality for DeepZoom";
             status = FAILED;
+            return;
         }else if (overlap == -1) {
             error = "Unspecified overlap for DeepZoom";
             status = FAILED;
+            return;
         } else if (tilesize == -1) {
             error = "Unspecified tile size for DeepZoom";
             status = FAILED;
+            return;
         } else {
             // Launching deep zoom
             deepZoom(inFolder, outFolder, quality, overlap, tilesize);
@@ -49,6 +54,8 @@ void ZoomTask::run()
     case ZoomType::None:
         break;
     }
+
+    status = DONE;
 }
 
 void ZoomTask::deepZoom(QString inputFolder, QString output, uint32_t quality, uint32_t overlap, uint32_t tileSize)

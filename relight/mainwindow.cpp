@@ -889,11 +889,10 @@ void MainWindow::deepZoom()
     zoom->setTabIndex(0);
 
     // TODO: prefill values
+    zoom->setModal(true);
     zoom->show();
-    //this needs to be called AFTER show, to ensure proportions are computed properly
-    /*rtiexport->setCrop(project.crop);
-    rtiexport->exec();
-    project.crop = rtiexport->crop;*/
+    zoom->exec();
+
     if(ProcessQueue::instance().queue.size())
         showQueue();
 }

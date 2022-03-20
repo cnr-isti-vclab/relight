@@ -6,11 +6,8 @@
 #include "zoomdialog.h"
 
 /** TODO
- * - Togli megacommenti
- * - Rebase su depython
  * - Verificare che ci siano i piani nella cartella di input
  * - Lambda per slot semplici
- * - Modal per quando viene mostrata l'interfaccia
  */
 
 ZoomDialog::ZoomDialog(QWidget* parent) : QDialog(parent), m_Ui(new Ui::ZoomDialog), m_OutputFolder(""), m_InputFolder(""),
@@ -72,7 +69,7 @@ void ZoomDialog::buttonBrowseInputClicked()
 
     // It's likely that the input folder is also the output folder, but don't automatically update it if the user
     // has explicitly set a different output folder
-    if (m_OutputFolder == "")
+    if (m_OutputFolder.compare("") == 0)
     {
         m_OutputFolder = input;
         m_Ui->outputOutputFolderDz->setText(m_InputFolder);
