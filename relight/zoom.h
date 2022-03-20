@@ -8,13 +8,12 @@
 #include <QString>
 #include <QStringList>
 
-int getNPlanes(QString& output) {
+static inline int getNPlanes(QString& output) {
     QDir destination(output);
     return destination.entryList(QStringList("plane_*.jpg"), QDir::Files).size();
 }
 
-
-const char* deepZoom(QString inputFolder, QString output, uint32_t quality, uint32_t overlap,
+static inline const char* deepZoom(QString inputFolder, QString output, uint32_t quality, uint32_t overlap,
               uint32_t tileSize, std::function<bool(std::string s, int n)> progressed)
 {
     int nplanes = getNPlanes(output);
