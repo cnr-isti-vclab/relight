@@ -3,12 +3,6 @@
 
 #include "task.h"
 
-
-#define LIB_VIPS_ERR {const char* cError = vips_error_buffer(); \
-    error = cError; \
-    status = FAILED;}
-
-
 class ZoomTask : public Task
 {
 public:
@@ -23,7 +17,6 @@ public:
     virtual void stop() override {}
     virtual bool progressed(std::string s, int percent) override;
 
-    void deepZoom(QString inputFolder, QString outputFolder, uint32_t quality, uint32_t overlap, uint32_t tileSize);
     void tarZoom(QString inputFolder, QString outputFolder);
     void itarZoom(QString inputFolder, QString outputFolder);
 

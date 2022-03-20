@@ -132,6 +132,7 @@ HEADERS += \
     white.h \
     convertdialog.h \
     aligndialog.h \
+    zoom.h \
     zoomdialog.h \
     zoomtask.h
 

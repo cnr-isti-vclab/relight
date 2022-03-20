@@ -2,12 +2,13 @@
 #include <QDebug>
 #include <ui_zoomdialog.h>
 #include <QIntValidator>
+#include <functional>
+#include <QLineEdit>
 #include "processqueue.h"
 #include "zoomdialog.h"
 
 /** TODO
  * - Verificare che ci siano i piani nella cartella di input
- * - Lambda per slot semplici
  */
 
 ZoomDialog::ZoomDialog(QWidget* parent) : QDialog(parent), m_Ui(new Ui::ZoomDialog), m_OutputFolder(""), m_InputFolder(""),
@@ -23,7 +24,15 @@ ZoomDialog::ZoomDialog(QWidget* parent) : QDialog(parent), m_Ui(new Ui::ZoomDial
     // Deep zoom
     connect(m_Ui->buttonBrowseRtiDz, SIGNAL(clicked()), this, SLOT(buttonBrowseInputClicked()));
     connect(m_Ui->buttonBrowseOutputDz, SIGNAL(clicked()), this, SLOT(buttonBrowseOutputClicked()));
-    connect(m_Ui->inputJpegQuality, SIGNAL(textChanged(const QString&)), this, SLOT(inputQualityChanged(const QString&)));
+    connect(m_Ui->inputJpegQuality, &QLineEdit::textChanged, this, [=](const QString& newValue) {
+        this->m_JpegQuality = newValue.toUInt();
+    });
+    connect(m_Ui->inputOverlap, &QLineEdit::textChanged, this, [=](const QString& newValue) {
+        this->m_Overlap = newValue.toUInt();
+    });
+    connect(m_Ui->inputTileSize, &QLineEdit::textChanged, this, [=](const QString& newValue) {
+        this->m_TileSize = newValue.toUInt();
+    });
 
     // Tarzoom
     connect(m_Ui->buttonBrowseRtiTz, SIGNAL(clicked()), this, SLOT(buttonBrowseInputClicked()));
@@ -75,21 +84,6 @@ void ZoomDialog::buttonBrowseInputClicked()
         m_Ui->outputOutputFolderDz->setText(m_InputFolder);
         m_Ui->outputOutputFolderTz->setText(m_InputFolder);
     }
-}
-
-void ZoomDialog::inputQualityChanged(const QString& newValue)
-{
-    m_JpegQuality = newValue.toUInt();
-}
-
-void ZoomDialog::inputTileSizeChanged(const QString& newValue)
-{
-    m_TileSize = newValue.toUInt();
-}
-
-void ZoomDialog::inputOverlapChanged(const QString& newValue)
-{
-    m_Overlap = newValue.toUInt();
 }
 
 void ZoomDialog::buttonConfirmClicked()

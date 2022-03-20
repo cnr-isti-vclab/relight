@@ -1,5 +1,6 @@
 #include <vips/vips.h>
 #include <QDir>
+#include "zoom.h"
 #include "zoomtask.h"
 
 void ZoomTask::run()
@@ -7,9 +8,12 @@ void ZoomTask::run()
     // Parameter retrieval
     QString outFolder = hasParameter("output") ? (*this)["output"].value.toString() : "";
     QString inFolder = hasParameter("input") ? (*this)["input"].value.toString() : "";
+
     int quality = hasParameter("quality") ? (*this)["quality"].value.toInt() : -1;
     int overlap = hasParameter("overlap") ? (*this)["overlap"].value.toInt() : -1;
     int tilesize = hasParameter("tilesize") ? (*this)["tilesize"].value.toInt() : -1;
+
+    std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
 
     // General error checking
     if (outFolder.compare("") == 0) {
@@ -40,7 +44,13 @@ void ZoomTask::run()
             return;
         } else {
             // Launching deep zoom
-            deepZoom(inFolder, outFolder, quality, overlap, tilesize);
+            const char* zoomError = deepZoom(inFolder, outFolder, quality, overlap, tilesize, callback);
+            if (zoomError != NULL)
+            {
+                error = zoomError;
+                status = FAILED;
+                return;
+            }
         }
         break;
     case ZoomType::Tarzoom:
@@ -56,38 +66,6 @@ void ZoomTask::run()
     }
 
     status = DONE;
-}
-
-void ZoomTask::deepZoom(QString inputFolder, QString output, uint32_t quality, uint32_t overlap, uint32_t tileSize)
-{
-    int nplanes = getNPlanes(output);
-
-    // Deep zoom every plane
-    for(int plane = 0; plane < nplanes; plane++)
-    {
-        // Load image, setup output folder for this plane
-        QString fileName = (QStringList() << QString("%1/plane_%2").arg(output).arg(plane) << QString(".jpg")).join("");
-        VipsImage* image = vips_image_new_from_file(fileName.toStdString().c_str(), NULL);
-        if (image == NULL)
-            LIB_VIPS_ERR
-        QString folderName = QString("%1\\plane_%2").arg(output).arg(plane).toStdString().c_str();
-
-        // Call dzsave and create the deepzoom tiles
-        if (image == NULL || vips_dzsave(image, folderName.toStdString().c_str(),
-            "overlap", overlap,
-            "tile_size", tileSize,
-            "layout", VIPS_FOREIGN_DZ_LAYOUT_DZ,
-            "depth", VIPS_FOREIGN_DZ_DEPTH_ONETILE,
-            "suffix", QString(".jpg[Q=%1]").arg(quality).toStdString().c_str(),
-            NULL) != 0)
-        {
-            LIB_VIPS_ERR
-        }
-
-        // Update progress bar
-        if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))
-            break;
-    }
 }
 
 bool ZoomTask::progressed(std::string s, int percent)
@@ -107,9 +85,4 @@ void ZoomTask::tarZoom(QString inputFolder, QString outputFolder)
 void ZoomTask::itarZoom(QString inputFolder, QString outputFolder)
 {
 
-}
-
-int ZoomTask::getNPlanes(QString& output) {
-    QDir destination(output);
-    return destination.entryList(QStringList("plane_*.jpg"), QDir::Files).size();
 }
