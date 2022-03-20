@@ -242,11 +242,6 @@ void RtiExport::createNormals() {
     if(!output.endsWith(".png"))
         output += ".png";
 
-    int start = clock();
-    normals.resize(imageSet.width * imageSet.height * 3);
-    // Initialize imageset
-    imageSet.setCallback(nullptr);
-
     // Get normal method
     unsigned int method = 0; //least squares
     if(ui->l2_solver->isChecked())
