@@ -3,7 +3,7 @@
 
 #include "graphics_view_zoom.h"
 #include "rtiexport.h"
-#include "zoom.h"
+#include "zoomdialog.h"
 #include "../src/imageset.h"
 #include "helpdialog.h"
 #include "focaldialog.h"
@@ -113,7 +113,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
 	rtiexport = new RtiExport(this);
-    zoom = new Zoom(this);
+    zoom = new ZoomDialog(this);
 	help = new HelpDialog(this);
 	imageModel = new QStandardItemModel(ui->imageList1);
 	ui->imageList1->setModel(imageModel);
