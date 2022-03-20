@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>480</width>
+    <width>600</width>
     <height>312</height>
    </rect>
   </property>
@@ -47,7 +47,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>441</width>
+          <width>561</width>
           <height>231</height>
          </rect>
         </property>
@@ -81,7 +81,7 @@
            <rect>
             <x>10</x>
             <y>0</y>
-            <width>421</width>
+            <width>541</width>
             <height>191</height>
            </rect>
           </property>
@@ -93,7 +93,7 @@
             <rect>
              <x>200</x>
              <y>30</y>
-             <width>201</width>
+             <width>341</width>
              <height>31</height>
             </rect>
            </property>
@@ -155,7 +155,7 @@ p, li { white-space: pre-wrap; }
             <rect>
              <x>200</x>
              <y>70</y>
-             <width>201</width>
+             <width>341</width>
              <height>31</height>
             </rect>
            </property>
@@ -189,7 +189,7 @@ p, li { white-space: pre-wrap; }
           <widget class="QLabel" name="label_3">
            <property name="geometry">
             <rect>
-             <x>30</x>
+             <x>120</x>
              <y>130</y>
              <width>71</width>
              <height>21</height>
@@ -202,7 +202,7 @@ p, li { white-space: pre-wrap; }
           <widget class="QLineEdit" name="inputJpegQuality">
            <property name="geometry">
             <rect>
-             <x>120</x>
+             <x>210</x>
              <y>130</y>
              <width>71</width>
              <height>24</height>
@@ -218,7 +218,7 @@ p, li { white-space: pre-wrap; }
           <widget class="QLabel" name="label_4">
            <property name="geometry">
             <rect>
-             <x>210</x>
+             <x>300</x>
              <y>130</y>
              <width>71</width>
              <height>21</height>
@@ -231,7 +231,7 @@ p, li { white-space: pre-wrap; }
           <widget class="QLineEdit" name="inputTileSize">
            <property name="geometry">
             <rect>
-             <x>280</x>
+             <x>370</x>
              <y>130</y>
              <width>71</width>
              <height>24</height>
@@ -244,7 +244,7 @@ p, li { white-space: pre-wrap; }
           <widget class="Line" name="line">
            <property name="geometry">
             <rect>
-             <x>30</x>
+             <x>120</x>
              <y>110</y>
              <width>341</width>
              <height>16</height>
@@ -257,7 +257,7 @@ p, li { white-space: pre-wrap; }
           <widget class="QLabel" name="label_5">
            <property name="geometry">
             <rect>
-             <x>30</x>
+             <x>120</x>
              <y>160</y>
              <width>71</width>
              <height>21</height>
@@ -270,7 +270,7 @@ p, li { white-space: pre-wrap; }
           <widget class="QLineEdit" name="inputOverlap">
            <property name="geometry">
             <rect>
-             <x>120</x>
+             <x>210</x>
              <y>160</y>
              <width>71</width>
              <height>24</height>
@@ -297,7 +297,7 @@ p, li { white-space: pre-wrap; }
            <rect>
             <x>10</x>
             <y>0</y>
-            <width>421</width>
+            <width>541</width>
             <height>411</height>
            </rect>
           </property>
@@ -333,7 +333,7 @@ p, li { white-space: pre-wrap; }
           <widget class="Line" name="line_2">
            <property name="geometry">
             <rect>
-             <x>30</x>
+             <x>120</x>
              <y>110</y>
              <width>341</width>
              <height>16</height>
@@ -348,7 +348,7 @@ p, li { white-space: pre-wrap; }
             <rect>
              <x>200</x>
              <y>30</y>
-             <width>201</width>
+             <width>341</width>
              <height>31</height>
             </rect>
            </property>
@@ -397,7 +397,7 @@ p, li { white-space: pre-wrap; }
             <rect>
              <x>200</x>
              <y>70</y>
-             <width>201</width>
+             <width>341</width>
              <height>31</height>
             </rect>
            </property>
@@ -435,7 +435,7 @@ p, li { white-space: pre-wrap; }
        <widget class="QPushButton" name="buttonConfirm">
         <property name="geometry">
          <rect>
-          <x>140</x>
+          <x>220</x>
           <y>240</y>
           <width>171</width>
           <height>31</height>
