@@ -9,7 +9,7 @@
 #include <QRect>
 
 #include "rtitask.h"
-#include "zoomdialog.h"
+#include "zoom.h"
 #include "../src/rti.h"
 #include "../relight-cli/rtibuilder.h"
 
@@ -31,7 +31,6 @@ RtiTask::~RtiTask() {
 void relight();
 void toRTI();
 void fromRTI();
-void deepzoom();
 void tarzoom();
 void itarzoom();
 
@@ -39,6 +38,7 @@ void itarzoom();
 void RtiTask::run() {
 	status = RUNNING;
 	QStringList steps = (*this)["steps"].value.toStringList();
+    std::function<bool(std::string s, int d)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
 	for(auto step: steps) {
 		if(step == "relight")
 			relight();
@@ -47,7 +47,7 @@ void RtiTask::run() {
 		else if(step == "fromRTI")
 			fromRTI();
 		else if(step == "deepzoom")
-			deepzoom();
+            deepZoom(input_folder, output, 95, 0, 256, callback);
 		else if(step == "tarzoom")
 			tarzoom();
 		else if(step == "itarzoom")
@@ -128,23 +128,8 @@ void RtiTask::fromRTI() {
 }
 
 int nPlanes(QString output) {
-	QDir destination(output);
-	return destination.entryList(QStringList("plane_*.jpg"), QDir::Files).size();
-}
-void RtiTask::deepzoom() {
-
-
-    /**
-    if (vips_dzsave(ImOutTotal, "C:\\VIPS_Imaging\\Colon\\My_Tiles",
-
-        //"compression" , 1,
-        NULL))   //Here the run-time throw the exception!!!
-    {
-        const char* cError = vips_error_buffer();
-
-        vips_error_exit(cError);
-    }
-     */
+    QDir destination(output);
+    return destination.entryList(QStringList("plane_*.jpg"), QDir::Files).size();
 }
 
 

@@ -37,8 +37,7 @@ public slots:
 
 	void relight();
 	void toRTI();
-	void fromRTI();
-	void deepzoom();
+    void fromRTI();
 	void tarzoom();
 	void itarzoom();
 	void openlime();

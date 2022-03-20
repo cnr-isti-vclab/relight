@@ -21,9 +21,6 @@ public:
     void itarZoom(QString inputFolder, QString outputFolder);
 
 private:
-    int getNPlanes(QString& output);
-
-private:
     ZoomType m_ZoomType;
 };
 
