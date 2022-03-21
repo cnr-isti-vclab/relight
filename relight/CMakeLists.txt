@@ -25,8 +25,6 @@ else()
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(glib REQUIRED IMPORTED_TARGET glib-2.0)
 	pkg_check_modules(vips REQUIRED IMPORTED_TARGET glib-2.0)
-	set(VIPS_LIBRARIES ${vips_LIBDIR}/libvips.so)
-	message(STATUS "test ${vips_LIBDIR}")
 endif()
 
 set(CMAKE_AUTOMOC ON)
@@ -166,7 +164,7 @@ target_link_libraries(
 		Qt5::Widgets
 		Qt5::Concurrent
 		PkgConfig::glib
-		${VIPS_LIBRARIES})
+		PkgConfig::vips)
 
  
 
