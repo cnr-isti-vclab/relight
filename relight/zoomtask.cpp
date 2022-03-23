@@ -55,11 +55,11 @@ void ZoomTask::run()
         break;
     case ZoomType::Tarzoom:
         // Launghing tar zoom
-        tarZoom(inFolder, outFolder);
+        {QString zoomError = tarZoom(inFolder, outFolder, callback);}
         break;
     case ZoomType::ITarzoom:
         // Launghing itar zoom
-        tarZoom(inFolder, outFolder);
+        //itarZoom(inFolder, outFolder);
         break;
     case ZoomType::None:
         break;
@@ -75,14 +75,4 @@ bool ZoomTask::progressed(std::string s, int percent)
     if(status == STOPPED)
         return false;
     return true;
-}
-
-void ZoomTask::tarZoom(QString inputFolder, QString outputFolder)
-{
-
-}
-
-void ZoomTask::itarZoom(QString inputFolder, QString outputFolder)
-{
-
 }

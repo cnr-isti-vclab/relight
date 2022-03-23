@@ -1,4 +1,4 @@
-QT += core gui widgets concurrent
+QT += core gui widgets concurrent xml
 
 QMAKE_CXXFLAGS += -std=c++17
 

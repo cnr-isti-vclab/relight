@@ -17,9 +17,6 @@ public:
     virtual void stop() override {}
     virtual bool progressed(std::string s, int percent) override;
 
-    void tarZoom(QString inputFolder, QString outputFolder);
-    void itarZoom(QString inputFolder, QString outputFolder);
-
 private:
     ZoomType m_ZoomType;
 };
