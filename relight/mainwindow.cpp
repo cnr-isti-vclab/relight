@@ -899,7 +899,15 @@ void MainWindow::deepZoom()
 
 void MainWindow::tarZoom()
 {
+    zoom->setTabIndex(1);
 
+    // TODO: prefill values
+    zoom->setModal(true);
+    zoom->show();
+    zoom->exec();
+
+    if(ProcessQueue::instance().queue.size())
+        showQueue();
 }
 
 

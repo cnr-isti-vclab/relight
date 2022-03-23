@@ -9,6 +9,10 @@
 #include <QString>
 #include <QStringList>
 #include <QDomDocument>
+#include <QDebug>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QJsonDocument>
 
 typedef struct _TarzoomData
 {
@@ -82,21 +86,52 @@ inline QString deepZoom(QString inputFolder, QString output, uint32_t quality, u
     return "OK";
 }
 
-inline QString tarZoom(QString inputFolder, QString output)
+/** TODO:
+ *  - simplify levelName / levelPath thing
+ * @brief tarZoom
+ * @param inputFolder
+ * @param output
+ * @return
+ */
+inline QString tarZoom(QString inputFolder, QString output, std::function<bool(std::string s, int n)> progressed)
 {
     // Find number of planes
     int nPlanes = getNFiles(inputFolder, "dzi");
     if (nPlanes == 0)
         return "No dzi files in input folder";
 
+    // Tzi json data
+    QJsonObject index;
+    // Data contained in the dzi
+    TarzoomData data;
+    // Output files and paths
+    QString outPath = QString("%1/%2.tzb").arg(output).arg(inputFolder.mid(inputFolder.lastIndexOf("/")));
+    QString outIndexPath = QString("%1/%2.tzi").arg(output).arg(inputFolder.mid(inputFolder.lastIndexOf("/")));
+    QFile outFile(outPath);
+    QFile outIndexFile(outIndexPath);
+
     std::vector<float> offsets;
-    QRegExp positionRegExp("(\\d+)_(\\d+).jp.*g");
+    int offset = 0;
+
+    offsets.push_back(offset);
+    if (!outFile.open(QIODevice::WriteOnly))
+        return QString("Couldn't open output file %1").arg(outPath);
+    if (!outIndexFile.open(QIODevice::WriteOnly))
+        return QString("Couldn't open output index file %1").arg(outIndexPath);
+
+    // Setup index file
+    QString dziPath = QString("%1/plane_0.dzi").arg(inputFolder);
+    QString err = getTarzoomPlaneData(dziPath, data);
+    index.insert("tilesize", data.tilesize);
+    index.insert("overlap", data.overlap);
+    index.insert("format", "jpg");
+    index.insert("nlevels", QDir(QString("%1/plane_0_files").arg(inputFolder)).entryList(QDir::AllDirs | QDir::NoDotAndDotDot).size());
 
     // Convert each plane
     for (int i=0; i<nPlanes; i++)
     {
-        TarzoomData data;
         QDir planeFolder(QString("%1/plane_%2_files").arg(inputFolder).arg(i));
+        qDebug() << planeFolder.path();
         QString dziPath = QString("%1/plane_%2.dzi").arg(inputFolder).arg(i);
         QString err = getTarzoomPlaneData(dziPath, data);
 
@@ -104,35 +139,47 @@ inline QString tarZoom(QString inputFolder, QString output)
         if (err.compare("OK") != 0)
             return err;
 
-        for (QDir level : planeFolder.entryList())
+        for (QString levelName : planeFolder.entryList(QDir::AllDirs | QDir::NoDotAndDotDot))
         {
-            QStringList files = level.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
-            int maxX = 0, maxY = 0;
+            QString levelPath = QString("%1/%2").arg(planeFolder.path()).arg(levelName);
+            QDir level(levelPath);
+            QStringList files = level.entryList(QDir::Files);
 
-            for (QString filePath : files)
+            for (QString fileName : files)
             {
-                // Get x and y for current file
-                int x, y;
                 // Open the file
+                QString filePath = QString("%1/%2").arg(levelPath).arg(fileName);
                 QFile currFile(filePath);
                 if (!currFile.open(QIODevice::ReadOnly))
                     return QString("Couldn't open image file %1 for processing").arg(filePath);
 
-                // Read all the contents and use the regex to find x and y
-                QTextStream textStream(&currFile);
-                QString fileContents = textStream.readAll();
+                // Add the file, keep track of the offsets
+                offset += currFile.size();
+                offsets.push_back(offset);
+                outFile.write(currFile.readAll());
 
-                positionRegExp.indexIn(fileContents);
-                x = positionRegExp.cap(0).toUInt();
-                y = positionRegExp.cap(1).toUInt();
-
-                maxX = MAX(x, maxX);
-                maxY = MAX(y, maxY);
+                currFile.close();
             }
         }
 
+        // Update progress bar
+        if(!progressed("Deepzoom:", 100*(i+1)/nPlanes))
+            break;
     }
-    return NULL;
+
+    outFile.close();
+
+    // Add offsets to index
+    QJsonArray offsetsJson;
+    for (int i=0; i<offsets.size(); i++)
+        offsetsJson.push_back(offsets[i]);
+    index.insert("offsets", offsetsJson);
+
+    // Write the index data
+    outIndexFile.write(QJsonDocument(index).toJson());
+    outIndexFile.close();
+
+    return "OK";
 }
 
 #endif // ZOOM_H
