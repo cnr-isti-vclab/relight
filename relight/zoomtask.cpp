@@ -44,8 +44,8 @@ void ZoomTask::run()
             return;
         } else {
             // Launching deep zoom
-            const char* zoomError = deepZoom(inFolder, outFolder, quality, overlap, tilesize, callback);
-            if (zoomError != NULL)
+            QString zoomError = deepZoom(inFolder, outFolder, quality, overlap, tilesize, callback);
+            if (zoomError.compare("OK") != 0)
             {
                 error = zoomError;
                 status = FAILED;

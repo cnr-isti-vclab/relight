@@ -7,10 +7,6 @@
 #include "processqueue.h"
 #include "zoomdialog.h"
 
-/** TODO
- * - Verificare che ci siano i piani nella cartella di input
- */
-
 ZoomDialog::ZoomDialog(QWidget* parent) : QDialog(parent), m_Ui(new Ui::ZoomDialog), m_OutputFolder(""), m_InputFolder(""),
     m_ZoomType(ZoomTask::ZoomType::None), m_ZoomString("None"), m_JpegQuality(95), m_Overlap(0), m_TileSize(256)
 {
