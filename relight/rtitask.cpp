@@ -138,7 +138,6 @@ void RtiTask::tarzoom() {
     // For each plane file
     for(int plane = 0; plane < nplanes; plane++)
     {
-		/** TODO: handle errors in deep zoom, stick to old names */
         /** Run a single tarzoom script:
          *
          *  - Keep an index object containing the data about the tarzoom

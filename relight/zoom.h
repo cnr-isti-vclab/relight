@@ -5,18 +5,52 @@
 #include <functional>
 #include <QDir>
 #include <QMessageBox>
+#include <QXmlSimpleReader>
 #include <QString>
 #include <QStringList>
+#include <QDomDocument>
 
-static inline int getNPlanes(QString& output) {
-    QDir destination(output);
-    return destination.entryList(QStringList("plane_*.jpg"), QDir::Files).size();
+typedef struct _TarzoomData
+{
+    int overlap;
+    int tilesize;
+    int width;
+    int height;
+} TarzoomData;
+
+inline int getNFiles(const QString& folder, const QString& format)
+{
+    QDir destination(folder);
+    return destination.entryList(QStringList(QString("plane_*.%1").arg(format)), QDir::Files).size();
 }
 
-static inline const char* deepZoom(QString inputFolder, QString output, uint32_t quality, uint32_t overlap,
+inline QString getTarzoomPlaneData(const QString& path, TarzoomData& data)
+{
+    QDomDocument dziXml;
+    QFile dziFile(path);
+
+    if (!dziFile.open(QIODevice::ReadOnly))
+        return QString("Couldn't open file %1").arg(path);
+    if (!dziXml.setContent(&dziFile)) {
+        dziFile.close();
+        return QString("Couldn't read file %1 as an XML document").arg(path);
+    }
+
+    QDomNode imageNode = dziXml.namedItem("Image");
+    QDomNode sizeNode = imageNode.firstChild();
+
+    data.overlap = imageNode.attributes().namedItem("Overlap").nodeValue().toInt();
+    data.tilesize = imageNode.attributes().namedItem("TileSize").nodeValue().toInt();
+    data.width = sizeNode.attributes().namedItem("Width").nodeValue().toInt();
+    data.height = sizeNode.attributes().namedItem("Height").nodeValue().toInt();
+
+    return "OK";
+}
+
+inline QString deepZoom(QString inputFolder, QString output, uint32_t quality, uint32_t overlap,
               uint32_t tileSize, std::function<bool(std::string s, int n)> progressed)
 {
-    int nplanes = getNPlanes(output);
+    int nplanes = getNFiles(output, "jpg");
 
     // Deep zoom every plane
     for(int plane = 0; plane < nplanes; plane++)
@@ -45,6 +79,59 @@ static inline const char* deepZoom(QString inputFolder, QString output, uint32_t
             break;
     }
 
+    return "OK";
+}
+
+inline QString tarZoom(QString inputFolder, QString output)
+{
+    // Find number of planes
+    int nPlanes = getNFiles(inputFolder, "dzi");
+    if (nPlanes == 0)
+        return "No dzi files in input folder";
+
+    std::vector<float> offsets;
+    QRegExp positionRegExp("(\\d+)_(\\d+).jp.*g");
+
+    // Convert each plane
+    for (int i=0; i<nPlanes; i++)
+    {
+        TarzoomData data;
+        QDir planeFolder(QString("%1/plane_%2_files").arg(inputFolder).arg(i));
+        QString dziPath = QString("%1/plane_%2.dzi").arg(inputFolder).arg(i);
+        QString err = getTarzoomPlaneData(dziPath, data);
+
+        // Error while reading current dzi file
+        if (err.compare("OK") != 0)
+            return err;
+
+        for (QDir level : planeFolder.entryList())
+        {
+            QStringList files = level.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
+            int maxX = 0, maxY = 0;
+
+            for (QString filePath : files)
+            {
+                // Get x and y for current file
+                int x, y;
+                // Open the file
+                QFile currFile(filePath);
+                if (!currFile.open(QIODevice::ReadOnly))
+                    return QString("Couldn't open image file %1 for processing").arg(filePath);
+
+                // Read all the contents and use the regex to find x and y
+                QTextStream textStream(&currFile);
+                QString fileContents = textStream.readAll();
+
+                positionRegExp.indexIn(fileContents);
+                x = positionRegExp.cap(0).toUInt();
+                y = positionRegExp.cap(1).toUInt();
+
+                maxX = MAX(x, maxX);
+                maxY = MAX(y, maxY);
+            }
+        }
+
+    }
     return NULL;
 }
 
