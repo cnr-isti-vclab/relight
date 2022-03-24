@@ -12,6 +12,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: true
+        setup-python: false
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
     - name: Install dependencies
