@@ -22,10 +22,12 @@ if (MSVC)
 else()
 	find_package (JPEG REQUIRED)
 	find_package(Eigen3 REQUIRED)
-	find_package(PkgConfig REQUIRED)
-	pkg_check_modules(glib REQUIRED IMPORTED_TARGET glib-2.0)
-	pkg_check_modules(vips REQUIRED IMPORTED_TARGET glib-2.0)
 endif()
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(glib REQUIRED IMPORTED_TARGET glib-2.0)
+pkg_check_modules(vips REQUIRED IMPORTED_TARGET vips)
+
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
