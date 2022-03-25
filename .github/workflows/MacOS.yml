@@ -17,6 +17,7 @@ jobs:
       uses: jurplel/install-qt-action@v2
       with:
          setup-python: false
+         version: 6.2.2
 
     - name: Install dependencies
       run: |

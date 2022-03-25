@@ -138,7 +138,7 @@ void MainWindow::clear() {
 	project_filename = QString();
 	if(imagePixmap)
 		delete imagePixmap;
-	ui->graphicsView->resetMatrix();
+	ui->graphicsView->resetTransform();
 
 	ui->markerList->clear();
 	project.clear();
