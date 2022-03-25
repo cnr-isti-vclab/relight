@@ -4,6 +4,14 @@ project(relight)
 
 set (CMAKE_CXX_STANDARD 11)
 
+option(USE_QT_5 "Set to use Qt5" OFF)
+
+if (USE_QT_5)
+	set(RELIGHT_QT Qt5)
+else()
+	set(RELIGHT_QT Qt6)
+endif()
+
 add_subdirectory(relight)
 add_subdirectory(relight-cli)
 add_subdirectory(relight-merge)
