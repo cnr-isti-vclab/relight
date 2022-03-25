@@ -98,7 +98,7 @@ inline QString tarZoom(QString inputFolder, QString output, std::function<bool(s
     // Find number of planes
     int nPlanes = getNFiles(inputFolder, "dzi");
     if (nPlanes == 0)
-        return "No dzi files in input folder";
+        return QString("No dzi files in input folder %1").arg(inputFolder);
 
     // Tzi json data
     QJsonObject index;
