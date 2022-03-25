@@ -31,7 +31,6 @@ RtiTask::~RtiTask() {
 void relight();
 void toRTI();
 void fromRTI();
-void tarzoom();
 void itarzoom();
 
 
@@ -39,6 +38,7 @@ void RtiTask::run() {
 	status = RUNNING;
 	QStringList steps = (*this)["steps"].value.toStringList();
     std::function<bool(std::string s, int d)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
+    QString err;
 	for(auto step: steps) {
 		if(step == "relight")
 			relight();
@@ -47,9 +47,9 @@ void RtiTask::run() {
 		else if(step == "fromRTI")
 			fromRTI();
 		else if(step == "deepzoom")
-            deepZoom(input_folder, output, 95, 0, 256, callback);
-		else if(step == "tarzoom")
-			tarzoom();
+            err = deepZoom(input_folder, output, 95, 0, 256, callback);
+        else if(step == "tarzoom")
+            err = tarZoom(output, output, callback);
 		else if(step == "itarzoom")
 			itarzoom();
 		else if(step == "openlime")
@@ -57,6 +57,9 @@ void RtiTask::run() {
 	}
 	if(status != FAILED)
 		status = DONE;
+    else
+        error = err;
+    qDebug() << "zoom error: " << err;
 }
 
 void  RtiTask::relight() {
@@ -130,35 +133,6 @@ void RtiTask::fromRTI() {
 int nPlanes(QString output) {
     QDir destination(output);
     return destination.entryList(QStringList("plane_*.jpg"), QDir::Files).size();
-}
-
-
-void RtiTask::tarzoom() {
-	int nplanes = nPlanes(output);
-    // For each plane file
-    for(int plane = 0; plane < nplanes; plane++)
-    {
-        /** Run a single tarzoom script:
-         *
-         *  - Keep an index object containing the data about the tarzoom
-         *  - Read the dzi contents
-         *  - Create a .tzb file
-         *  - Find all the folders that end with "_files" (deep zoom folders)
-         *  - For each of those folders:
-         *      - Get all the folders (0 to 5)
-         *      - For each of those folders:
-         *          - files = [(f.name, f.path) for f in os.scandir(level[1]) if f.is_file()]
-         *          - Has this been tested? Shouldn't it be ... scandir(level) ... ?
-         *          - For each of those files:
-         *              - Computations in the file
-         */
-		runPythonScript("tarzoom.py", QStringList() << QString("plane_%1").arg(plane), output);
-		if(status == FAILED)
-			return;
-
-		if(!progressed("Tarzoom:", 100*(plane+1)/nplanes))
-			break;
-	}
 }
 
 void RtiTask::itarzoom() {
