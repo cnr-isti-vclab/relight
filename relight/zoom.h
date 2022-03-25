@@ -100,40 +100,40 @@ inline QString tarZoom(QString inputFolder, QString output, std::function<bool(s
     if (nPlanes == 0)
         return QString("No dzi files in input folder %1").arg(inputFolder);
 
-    // Tzi json data
-    QJsonObject index;
-    // Data contained in the dzi
-    TarzoomData data;
-    // Output files and paths
-    QString outPath = QString("%1/%2.tzb").arg(output).arg(inputFolder.mid(inputFolder.lastIndexOf("/")));
-    QString outIndexPath = QString("%1/%2.tzi").arg(output).arg(inputFolder.mid(inputFolder.lastIndexOf("/")));
-    QFile outFile(outPath);
-    QFile outIndexFile(outIndexPath);
-
-    std::vector<float> offsets;
-    int offset = 0;
-
-    offsets.push_back(offset);
-    if (!outFile.open(QIODevice::WriteOnly))
-        return QString("Couldn't open output file %1").arg(outPath);
-    if (!outIndexFile.open(QIODevice::WriteOnly))
-        return QString("Couldn't open output index file %1").arg(outIndexPath);
-
-    // Setup index file
-    QString dziPath = QString("%1/plane_0.dzi").arg(inputFolder);
-    QString err = getTarzoomPlaneData(dziPath, data);
-    index.insert("tilesize", data.tilesize);
-    index.insert("overlap", data.overlap);
-    index.insert("format", "jpg");
-    index.insert("nlevels", QDir(QString("%1/plane_0_files").arg(inputFolder)).entryList(QDir::AllDirs | QDir::NoDotAndDotDot).size());
-
     // Convert each plane
     for (int i=0; i<nPlanes; i++)
     {
-        QDir planeFolder(QString("%1/plane_%2_files").arg(inputFolder).arg(i));
-        qDebug() << planeFolder.path();
+        // Tzi json data
+        QJsonObject index;
+        // Data contained in the dzi
+        TarzoomData data;
+        // Output files and paths
+        QString outPath = QString("%1/plane_%2.tzb").arg(output).arg(i);
+        QString outIndexPath = QString("%1/plane_%2.tzi").arg(output).arg(i);
+        QFile outFile(outPath);
+        QFile outIndexFile(outIndexPath);
+
+        std::vector<float> offsets;
+        int offset = 0;
+
+        offsets.push_back(offset);
+        if (!outFile.open(QIODevice::WriteOnly))
+            return QString("Couldn't open output file %1").arg(outPath);
+        if (!outIndexFile.open(QIODevice::WriteOnly))
+            return QString("Couldn't open output index file %1").arg(outIndexPath);
+
+        // Setup index file
         QString dziPath = QString("%1/plane_%2.dzi").arg(inputFolder).arg(i);
         QString err = getTarzoomPlaneData(dziPath, data);
+        if (err.compare("OK") != 0)
+            return err;
+
+        index.insert("tilesize", data.tilesize);
+        index.insert("overlap", data.overlap);
+        index.insert("format", "jpg");
+        index.insert("nlevels", QDir(QString("%1/plane_0_files").arg(inputFolder)).entryList(QDir::AllDirs | QDir::NoDotAndDotDot).size());
+
+        QDir planeFolder(QString("%1/plane_%2_files").arg(inputFolder).arg(i));
 
         // Error while reading current dzi file
         if (err.compare("OK") != 0)
@@ -143,6 +143,7 @@ inline QString tarZoom(QString inputFolder, QString output, std::function<bool(s
         {
             QString levelPath = QString("%1/%2").arg(planeFolder.path()).arg(levelName);
             QDir level(levelPath);
+            level.setSorting(QDir::Name);
             QStringList files = level.entryList(QDir::Files);
 
             for (QString fileName : files)
@@ -162,22 +163,22 @@ inline QString tarZoom(QString inputFolder, QString output, std::function<bool(s
             }
         }
 
+        outFile.close();
+
+        // Add offsets to index
+        QJsonArray offsetsJson;
+        for (int i=0; i<offsets.size(); i++)
+            offsetsJson.push_back(offsets[i]);
+        index.insert("offsets", offsetsJson);
+
+        // Write the index data
+        outIndexFile.write(QJsonDocument(index).toJson());
+        outIndexFile.close();
+
         // Update progress bar
         if(!progressed("Deepzoom:", 100*(i+1)/nPlanes))
             break;
     }
-
-    outFile.close();
-
-    // Add offsets to index
-    QJsonArray offsetsJson;
-    for (int i=0; i<offsets.size(); i++)
-        offsetsJson.push_back(offsets[i]);
-    index.insert("offsets", offsetsJson);
-
-    // Write the index data
-    outIndexFile.write(QJsonDocument(index).toJson());
-    outIndexFile.close();
 
     return "OK";
 }
