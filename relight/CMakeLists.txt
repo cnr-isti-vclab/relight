@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_FIND_FRAMEWORK LAST)
 
 find_package(
-	Qt5
+	Qt6
 	COMPONENTS Core Gui Widgets Concurrent
 	REQUIRED)
 find_package(OpenMP)
@@ -13,9 +13,6 @@ find_package(OpenMP)
 if (MSVC)
 	file(TO_CMAKE_PATH $ENV{JPEGTURBO_HOME} JPEGTURBO_HOME)
 	file(TO_CMAKE_PATH $ENV{EIGEN_HOME} EIGEN_HOME)
-	
-	set (CMAKE_PREFIX_PATH "C:\\Qt\\Qt5.12.12\\5.12.12\\msvc2017_64\\bin")
-	set (Qt5_DIR "C:\\Qt\\Qt5.12.12\\5.12.12\\msvc2017_64\\lib\\cmake\\Qt5")
 	set(JPEG_INCLUDE_DIR ${JPEGTURBO_HOME}/include)
 	set(JPEG_LIBRARIES ${JPEGTURBO_HOME}/lib/jpeg.lib)
 	set(EIGEN3_INCLUDE_DIR ${EIGEN_HOME})
@@ -34,9 +31,17 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 if (APPLE)
-	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X deployment version" FORCE)
+	set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version" FORCE)
 	SET(CMAKE_INSTALL_RPATH $ORIGIN/../Frameworks)
 	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+	
+	# MacOS - PkgConfig::vips is broken... Need to remove "/usr/include" (which may not exist) from the target
+	# PkgConfig::vips
+	get_target_property(_target_cxx_flags PkgConfig::vips INTERFACE_INCLUDE_DIRECTORIES)
+	if(_target_cxx_flags)
+		list(REMOVE_ITEM _target_cxx_flags "/usr/include")
+		set_target_properties(PkgConfig::vips PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${_target_cxx_flags}")
+	endif()
 endif()
 
 set (RELIGHT_HEADERS
@@ -161,10 +166,10 @@ target_link_libraries(
 	relight PUBLIC
 		${JPEG_LIBRARIES}
 		OpenMP::OpenMP_CXX
-		Qt5::Core
-		Qt5::Gui
-		Qt5::Widgets
-		Qt5::Concurrent
+		Qt6::Core
+		Qt6::Gui
+		Qt6::Widgets
+		Qt6::Concurrent
 		PkgConfig::glib
 		PkgConfig::vips)
 

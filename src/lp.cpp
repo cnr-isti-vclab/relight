@@ -1,6 +1,7 @@
 #include "lp.h"
 
 #include <QFile>
+#include <QRegularExpression>
 #include <QTextStream>
 
 using namespace std;
@@ -21,7 +22,7 @@ void parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::vector<QSt
 		QString filename;
 		Vector3f light;
 		QString line = stream.readLine();
-		QStringList tokens = line.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+		QStringList tokens = line.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
 		if(tokens.size() != 4)
 			throw QString("Invalid line in .lp: " + line);
 

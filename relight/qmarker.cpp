@@ -65,7 +65,7 @@ void Marker::setEditing(bool value) {
 
 
 
-void Marker::enterEvent(QEvent* event) {
+void Marker::enterEvent(QEnterEvent *event) {
 	QWidget::enterEvent(event);
 }
 
