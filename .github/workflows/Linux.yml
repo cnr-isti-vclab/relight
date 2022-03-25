@@ -19,24 +19,9 @@ jobs:
         sudo apt-get install -y mesa-common-dev libglu1-mesa-dev libjpeg-dev libeigen3-dev libvips-dev libglib2.0-dev
     - name: Configure and Build
       run: |
-        cd relight
         mkdir build
         cd build
-        cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install/usr" ..
-        make -j4
-        make install
-
-        cd ../../relight-cli
-        mkdir build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install/usr" ..
-        make -j4
-        make install
-
-        cd ../../relight-merge
-        mkdir build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install/usr" ..
+        cmake -DUSE_QT_5=ON -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install/usr" ..
         make -j4
         make install
     - name: Deploy

@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_FIND_FRAMEWORK LAST)
 
 find_package(
-	Qt6
+	${RELIGHT_QT}
 	COMPONENTS Core Gui Concurrent
 	REQUIRED)
 find_package(OpenMP)
@@ -64,9 +64,9 @@ target_link_libraries(
 	relight-merge PUBLIC
 		${JPEG_LIBRARIES}
 		OpenMP::OpenMP_CXX
-		Qt6::Core
-		Qt6::Gui
-		Qt6::Concurrent)
+		${RELIGHT_QT}::Core
+		${RELIGHT_QT}::Gui
+		${RELIGHT_QT}::Concurrent)
 
 target_compile_definitions(relight-merge PUBLIC _USE_MATH_DEFINES NOMINMAX)
 
