@@ -46,10 +46,14 @@ void RtiTask::run() {
 			toRTI();
 		else if(step == "fromRTI")
 			fromRTI();
-		else if(step == "deepzoom")
-            err = deepZoom(input_folder, output, 95, 0, 256, callback);
-        else if(step == "tarzoom")
-            err = tarZoom(output, output, callback);
+        else if(step == "deepzoom") {
+            if ((err = deepZoom(input_folder, output, 95, 0, 256, callback)).compare("OK") != 0)
+                status = FAILED;
+        }
+        else if(step == "tarzoom") {
+            if ((err = tarZoom(output, output, callback)).compare("OK") != 0)
+                status = FAILED;
+        }
 		else if(step == "itarzoom")
 			itarzoom();
 		else if(step == "openlime")
