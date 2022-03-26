@@ -707,9 +707,6 @@
    </property>
   </action>
   <action name="actionItarzoom">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
    <property name="text">
     <string>Itarzoom</string>
    </property>

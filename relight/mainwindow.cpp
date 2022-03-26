@@ -71,6 +71,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionShow_queue,   SIGNAL(triggered(bool)),  this, SLOT(showQueue()));
     connect(ui->actionDeepzoom, SIGNAL(triggered(bool)), this, SLOT(deepZoom()));
     connect(ui->actionTarzoom, SIGNAL(triggered(bool)), this, SLOT(tarZoom()));
+    connect(ui->actionItarzoom, SIGNAL(triggered(bool)), this, SLOT(itarZoom()));
 
     // Edit menu
 	connect(ui->actionDetectHighlights, SIGNAL(triggered(bool)),   this, SLOT(detectHighlights()));
@@ -888,7 +889,6 @@ void MainWindow::deepZoom()
 {
     zoom->setTabIndex(0);
 
-    // TODO: prefill values
     zoom->setModal(true);
     zoom->show();
     zoom->exec();
@@ -901,7 +901,18 @@ void MainWindow::tarZoom()
 {
     zoom->setTabIndex(1);
 
-    // TODO: prefill values
+    zoom->setModal(true);
+    zoom->show();
+    zoom->exec();
+
+    if(ProcessQueue::instance().queue.size())
+        showQueue();
+}
+
+void MainWindow::itarZoom()
+{
+    zoom->setTabIndex(2);
+
     zoom->setModal(true);
     zoom->show();
     zoom->exec();

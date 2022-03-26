@@ -159,6 +159,7 @@ public slots:
 	void convertRTI();
     void deepZoom();
     void tarZoom();
+    void itarZoom();
 
 	void viewRTI();
 	void showQueue();
