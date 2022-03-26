@@ -18,14 +18,7 @@ public:
     void setTabIndex(int index);
     void setZoomType(ZoomTask::ZoomType type) {m_ZoomType = type;};
 
-    void setOutputFolder(const QString& output) {m_OutputFolder = output;}
-    void setInputFolder(const QString& input) {m_InputFolder = input;}
-    void setJpegQuality(int quality) {m_JpegQuality = quality;}
-    void setOverlap(int overlap) {m_Overlap = overlap;}
-    void setTileSize(int tilesize) {m_TileSize = tilesize;}
-
 private slots:
-    void buttonBrowseOutputClicked();
     void buttonBrowseInputClicked();
     void buttonConfirmClicked();
 

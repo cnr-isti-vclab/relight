@@ -20,6 +20,7 @@ typedef struct _ZoomData
     int tilesize;
     int width;
     int height;
+    int nlevels;
 } ZoomData;
 
 inline int getNFiles(const QString& folder, const QString& format)
@@ -52,7 +53,7 @@ inline QString getTarzoomPlaneData(const QString& path, ZoomData& data)
     return "OK";
 }
 
-inline QString getItarzoomPlaneData(const QString& path, ZoomData& data, QJsonArray offsets)
+inline QString getItarzoomPlaneData(const QString& path, ZoomData& data, QJsonArray& offsets)
 {
     ZoomData ret;
     QFile inputFile(path);
@@ -75,6 +76,7 @@ inline QString getItarzoomPlaneData(const QString& path, ZoomData& data, QJsonAr
     ret.tilesize = inputObject.value("tilesize").toInt();
     ret.height = inputObject.value("height").toInt();
     ret.width = inputObject.value("width").toInt();
+    ret.nlevels = inputObject.value("nlevels").toInt();
     offsets = inputObject.value("offsets").toArray();
 
     return "OK";
@@ -200,14 +202,14 @@ inline QString tarZoom(QString inputFolder, QString output, std::function<bool(s
         outIndexFile.close();
 
         // Update progress bar
-        if(!progressed("Deepzoom:", 100*(i+1)/nPlanes))
+        if(!progressed("Tarzoom:", 100*(i+1)/nPlanes))
             break;
     }
 
     return "OK";
 }
 
-inline QString itarZoom(const QString& inputFolder, const QString& output)
+inline QString itarZoom(const QString& inputFolder, const QString& output, std::function<bool(std::string s, int n)> progressed)
 {
     // Find number of planes
     int nPlanes = getNFiles(inputFolder, "tzb");
@@ -226,9 +228,26 @@ inline QString itarZoom(const QString& inputFolder, const QString& output)
     QFile outFile(outPath);
     QFile outIndexFile(outIndexPath);
 
+    if (!outFile.open(QIODevice::WriteOnly))
+        return QString("Couldn't open output file %1").arg(outPath);
+    if (!outIndexFile.open(QIODevice::WriteOnly))
+        return QString("Couldn't open output index file %1").arg(outIndexPath);
+
     // Output Json objects
     QJsonObject tzi;
     QJsonObject tzb;
+    bool tziSetup = false;
+
+    // Vector of files in the right order
+    std::vector<QFile*> files;
+    // Final tzi sizes
+    std::vector<std::vector<uint32_t>> tzbSizes;
+    int nSizes = 0;
+    // Final tzi offsets
+    QJsonArray tzbOffsets;
+
+    tzbOffsets.append(0);
+    tzbSizes.resize(nPlanes);
 
     // Convert each plane
     for (int i=0; i<nPlanes; i++)
@@ -241,73 +260,63 @@ inline QString itarZoom(const QString& inputFolder, const QString& output)
         std::vector<uint32_t> sizes;
 
         // Get tzi data
-        getItarzoomPlaneData(QString("%1/plane_%2.tzi").arg(inputFolder).arg(i), data, offsets);
-        // Convert offsets to sizes
+        QString err = getItarzoomPlaneData(QString("%1/plane_%2.tzi").arg(inputFolder).arg(i), data, offsets);
+        if (err.compare("OK") != 0)
+            return err;
+
+        // Convert offsets to sizes and add them to the tzi
         for (int j=0; j<offsets.size() - 1; j++)
             sizes.push_back(offsets[j + 1].toInt() - offsets[j].toInt());
+        tzbSizes[i].insert(tzbSizes[i].end(), sizes.begin(), sizes.end());
+        nSizes += sizes.size();
 
-        if (!outFile.open(QIODevice::WriteOnly))
-            return QString("Couldn't open output file %1").arg(outPath);
-        if (!outIndexFile.open(QIODevice::WriteOnly))
-            return QString("Couldn't open output index file %1").arg(outIndexPath);
-
-        // Setup index file
-        QString dziPath = QString("%1/plane_%2.dzi").arg(inputFolder).arg(i);
-        QString err = getTarzoomPlaneData(dziPath, data);
-        if (err.compare("OK") != 0)
-            return err;
-
-        tzi.insert("tilesize", data.tilesize);
-        tzi.insert("overlap", data.overlap);
-        tzi.insert("format", "jpg");
-        tzi.insert("nlevels", QDir(QString("%1/plane_0_files").arg(inputFolder)).entryList(QDir::AllDirs | QDir::NoDotAndDotDot).size());
-
-        QDir planeFolder(QString("%1/plane_%2_files").arg(inputFolder).arg(i));
-
-        // Error while reading current dzi file
-        if (err.compare("OK") != 0)
-            return err;
-
-        for (QString levelName : planeFolder.entryList(QDir::AllDirs | QDir::NoDotAndDotDot))
-        {
-            QString levelPath = QString("%1/%2").arg(planeFolder.path()).arg(levelName);
-            QDir level(levelPath);
-            level.setSorting(QDir::Name);
-            QStringList files = level.entryList(QDir::Files);
-
-            for (QString fileName : files)
-            {
-                // Open the file
-                QString filePath = QString("%1/%2").arg(levelPath).arg(fileName);
-                QFile currFile(filePath);
-                if (!currFile.open(QIODevice::ReadOnly))
-                    return QString("Couldn't open image file %1 for processing").arg(filePath);
-
-                // Add the file, keep track of the offsets
-                offset += currFile.size();
-                offsets.push_back(offset);
-                outFile.write(currFile.readAll());
-
-                currFile.close();
-            }
+        if (!tziSetup) {
+            tzi.insert("tilesize", data.tilesize);
+            tzi.insert("overlap", data.overlap);
+            tzi.insert("format", "jpg");
+            tzi.insert("nlevels", data.nlevels);
+            tzi.insert("mode", "interleaved");
+            tzi.insert("stride", nPlanes);
+            tziSetup = true;
         }
 
-        outFile.close();
-
-        // Add offsets to index
-        QJsonArray offsetsJson;
-        for (int i=0; i<offsets.size(); i++)
-            offsetsJson.push_back(offsets[i]);
-        index.insert("offsets", offsetsJson);
-
-        // Write the index data
-        outIndexFile.write(QJsonDocument(index).toJson());
-        outIndexFile.close();
+        // Append file to final tzb
+        QString tzbPath = QString("%1/plane_%2.tzb").arg(inputFolder).arg(i);
+        files.push_back(new QFile(tzbPath));
 
         // Update progress bar
-        if(!progressed("Deepzoom:", 100*(i+1)/nPlanes))
+        if(!progressed("Itarzoom:", 50*(i+1)/nPlanes))
             break;
     }
+
+    int offset = 0;
+    for (int i=0; i<nSizes; i++)
+    {
+        // Get tzbSizes[i] bytes from the i%nPlanes file and write them on the final file
+        int fileIdx = i % nPlanes;
+        if (!files[fileIdx]->open(QIODevice::ReadOnly))
+            return QString("Error while opening .tzb file %1").arg(files[fileIdx]->fileName());
+        // Take a size from vector 0 first, then from vector 1 etc, then get the next one from vector0,
+        // then from vector1 etc
+        outFile.write(files[fileIdx]->read(tzbSizes[fileIdx][i / nPlanes]));
+        files[fileIdx]->close();
+
+        offset += tzbSizes[fileIdx][i / nPlanes];
+        tzbOffsets.append(offset);
+
+        if(!progressed("Itarzoom:", 50 + 50*(i+1)/tzbSizes.size()))
+            break;
+    }
+
+    tzi.insert("offsets", tzbOffsets);
+    outIndexFile.write(QJsonDocument(tzi).toJson());
+
+    outFile.close();
+    outIndexFile.close();
+
+    // Clean file pointers
+    for (int i=0; i<files.size(); i++)
+        delete files[i];
 
     return "OK";
 }

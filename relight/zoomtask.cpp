@@ -14,6 +14,7 @@ void ZoomTask::run()
     int tilesize = hasParameter("tilesize") ? (*this)["tilesize"].value.toInt() : -1;
 
     std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
+    QString zoomError;
 
     // General error checking
     if (outFolder.compare("") == 0) {
@@ -44,27 +45,26 @@ void ZoomTask::run()
             return;
         } else {
             // Launching deep zoom
-            QString zoomError = deepZoom(inFolder, outFolder, quality, overlap, tilesize, callback);
-            if (zoomError.compare("OK") != 0)
-            {
-                error = zoomError;
-                status = FAILED;
-                return;
-            }
+            zoomError = deepZoom(inFolder, outFolder, quality, overlap, tilesize, callback);
         }
         break;
     case ZoomType::Tarzoom:
         // Launghing tar zoom
-        {QString zoomError = tarZoom(inFolder, outFolder, callback);}
+        zoomError = tarZoom(inFolder, outFolder, callback);
         break;
     case ZoomType::ITarzoom:
         // Launghing itar zoom
-        //itarZoom(inFolder, outFolder);
+        zoomError = itarZoom(inFolder, outFolder, callback);
         break;
     case ZoomType::None:
         break;
     }
 
+    if (zoomError.compare("OK") != 0) {
+        error = zoomError;
+        status = FAILED;
+        return;
+    }
     status = DONE;
 }
 
