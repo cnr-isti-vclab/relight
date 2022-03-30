@@ -79,7 +79,8 @@ SOURCES += main.cpp \
     qwhitemarker.cpp \
     white.cpp \
     convertdialog.cpp \
-    aligndialog.cpp
+    aligndialog.cpp \
+    ../src/deepzoom.cpp
 
 
 HEADERS += \
@@ -128,7 +129,8 @@ HEADERS += \
     qwhitemarker.h \
     white.h \
     convertdialog.h \
-    aligndialog.h
+    aligndialog.h \
+    ../src/deepzoom.h
 
 FORMS += \
     mainwindow.ui \

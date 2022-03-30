@@ -44,7 +44,7 @@ signals:
 
 protected:
 	//TODO highlight the background or something.
-	void enterEvent(QEnterEvent* event) override;
+	void enterEvent(QEvent* event) override;
 	void leaveEvent(QEvent* event) override;
 };
 
