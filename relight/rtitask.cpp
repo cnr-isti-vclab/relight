@@ -142,7 +142,7 @@ void RtiTask::deepzoom() {
         VipsImage* image = vips_image_new_from_file(fileName.toStdString().c_str(), NULL);
         if (image == NULL)
             LIB_VIPS_ERR
-        QString folderName = QString("%1\\plane_%2").arg(output).arg(plane).toStdString().c_str();
+		QString folderName = QString("%1/plane_%2").arg(output).arg(plane).toStdString().c_str();
 
         //qDebug() << "Image path: " << fileName;
         //qDebug() << "Save path: " << folderName;
