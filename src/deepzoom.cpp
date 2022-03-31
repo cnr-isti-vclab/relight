@@ -2,6 +2,8 @@
 #include "jpeg_encoder.h"
 #include "jpeg_decoder.h"
 
+#include <QDir>
+
 #include <iostream>
 #include <fstream>
 
@@ -28,7 +30,7 @@ vector<uint8_t>  TileRow::scaleLines( std::vector<uint8_t> &line0, std::vector<u
 	return scaled;
 }
 
-TileRow::TileRow(int _tileside, int _overlap, fs::path _path, int _width, int _height) {
+TileRow::TileRow(int _tileside, int _overlap, QString _path, int _width, int _height) {
 	tileside = _tileside;
 	overlap = _overlap;
 	path = _path;
@@ -69,7 +71,6 @@ std::vector<uint8_t> TileRow::addLine(std::vector<uint8_t> newline) {
 		nextRow();
 	}
 
-
 	std::swap(lastLine, newline);
 	return scaled;
 }
@@ -96,8 +97,8 @@ void TileRow::nextRow() {
 		Tile tile;
 		tile.width = end - start;
 		tile.encoder = new JpegEncoder;
-		fs::path filepath = path / (to_string(col) + "_" + to_string(current_row) + ".jpg");
-		tile.encoder->init(filepath.c_str(), tile.width, h);
+		QString filepath = QString("%1/%2_%3.jpg").arg(path).arg(col).arg(current_row); //path + "/" +  QString::number(col) + "_" + QString::numberto_string(current_row) + ".jpg");
+		tile.encoder->init(filepath.toStdString().c_str(), tile.width, h);
 		push_back(tile);
 
 		col++;
@@ -114,18 +115,20 @@ void TileRow::nextRow() {
 
 
 
-bool DeepZoom::build(const std::string &filename, const string &_folder, int _tileside, int _overlap) {
-	output = _folder;
+
+
+bool DeepZoom::build(QString input, QString _output, int _tileside, int _overlap) {
+	output = _output;
 	tileside = _tileside;
 	overlap = _overlap;
 
 	//create folder filename-ext_files and text file
 
 	JpegDecoder decoder;
-	bool ok = decoder.init(filename.c_str(), width, height);
+	bool ok = decoder.init(input.toStdString().c_str(), width, height);
 	if(!ok) return false;
 
-	fs::create_directory(output + "_files");
+	QDir().mkdir(output + "_files");
 
 	initRows();
 
@@ -142,11 +145,8 @@ bool DeepZoom::build(const std::string &filename, const string &_folder, int _ti
 		}
 	}
 
-	//define current row. and all its parents.
-	FILE *fp = fopen((output + ".dzi").c_str(), "wb");
-
 	std::ofstream out;
-	out.open(output + ".dzi");
+	out.open(output.toStdString() + ".dzi");
 	out << R"(<?xml version="1.0" encoding="UTF-8"?>
 <Image xmlns="http://schemas.microsoft.com/deepzoom/2008"
   Format="jpg"
@@ -173,14 +173,14 @@ int DeepZoom::nLevels() {
 }
 
 void DeepZoom::initRows() {
-	fs::path path(output + "_files");
+	QString path = output + "_files";
 	int w = width;
 	int h = height;
 	int level = nLevels()-1;
 	while(level >= 0) {
 		//create folder.
-		fs::path level_path = path / to_string(level);
-		fs::create_directory(level_path);
+		QString level_path = path + "/" + QString::number(level);
+		QDir().mkdir(level_path);
 
 		TileRow row(tileside, overlap, level_path, w, h);
 		rows.push_back(row);

@@ -141,7 +141,7 @@ void RtiTask::deepzoom() {
 		QString folderName = QString("%1/plane_%2").arg(output).arg(plane).toStdString().c_str();
 
 		DeepZoom deepzoom;
-		deepzoom.build(fileName.toStdString(), folderName.toStdString(), 256, 0);
+		deepzoom.build(fileName, folderName, 256, 0);
 
 
         // Update progress bar
