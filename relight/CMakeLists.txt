@@ -21,11 +21,6 @@ else()
 	find_package(Eigen3 REQUIRED)
 endif()
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(glib REQUIRED IMPORTED_TARGET glib-2.0)
-pkg_check_modules(vips REQUIRED IMPORTED_TARGET vips)
-
-
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
@@ -34,15 +29,7 @@ if (APPLE)
 	set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version" FORCE)
 	SET(CMAKE_INSTALL_RPATH $ORIGIN/../Frameworks)
 	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-	
-	# MacOS - PkgConfig::vips is broken... Need to remove "/usr/include" (which may not exist) from the target
-	# PkgConfig::vips
-	get_target_property(_target_cxx_flags PkgConfig::vips INTERFACE_INCLUDE_DIRECTORIES)
-	if(_target_cxx_flags)
-		list(REMOVE_ITEM _target_cxx_flags "/usr/include")
-		set_target_properties(PkgConfig::vips PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${_target_cxx_flags}")
 	endif()
-endif()
 
 set (RELIGHT_HEADERS
 	imagecropper.h
@@ -66,6 +53,7 @@ set (RELIGHT_HEADERS
 	../src/eigenpca.h
 	../src/lp.h
 	../src/relight_vector.h
+	../src/deepzoom.h
 	../relight-cli/rtibuilder.h
 	processqueue.h
 	queueitem.h
@@ -112,6 +100,7 @@ set (RELIGHT_SOURCES
 	../src/legacy_rti.cpp
 	../src/exif.cpp
 	../src/lp.cpp
+	../src/deepzoom.cpp
 	helpdialog.cpp
 	focaldialog.cpp
 	settingsdialog.cpp
@@ -159,9 +148,8 @@ target_include_directories(
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}
 		${EIGEN3_INCLUDE_DIR}
-		${glib_INCLUDEDIR}
-		${vips_INCLUDEDIR})
-		
+	)
+	
 target_link_libraries(
 	relight PUBLIC
 		${JPEG_LIBRARIES}
@@ -170,8 +158,7 @@ target_link_libraries(
 		${RELIGHT_QT}::Gui
 		${RELIGHT_QT}::Widgets
 		${RELIGHT_QT}::Concurrent
-		PkgConfig::glib
-		PkgConfig::vips)
+	)
 
  
 
