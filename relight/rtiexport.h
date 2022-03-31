@@ -6,7 +6,7 @@
 #include <QFutureWatcher>
 
 #include "httpserver.h"
-#include "../src/vector.h"
+#include "../src/relight_vector.h"
 
 namespace Ui {
 	class RtiExport;

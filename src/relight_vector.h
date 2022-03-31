@@ -1,5 +1,5 @@
-#ifndef VECTOR_H
-#define VECTOR_H
+#ifndef RELIGHTVECTOR_H
+#define RELIGHTVECTOR_H
 
 #include <cstdint>
 #include <stddef.h>
@@ -48,7 +48,7 @@ public:
 	}
 	float angle(const Vector3 &b) {
 		return acos(((*this)*b)/(b.norm() * (*this).norm()));
-	}
+    }
 };
 
 typedef Vector3<uint16_t> Vector3us;
@@ -98,11 +98,25 @@ template <class T> struct Color3 {
 		rgb.r = rgb.b + g;
 		return rgb;
 	}
+    Color3 clip() {
+        return Color3(r / 255, g / 255, b / 255);
+    }
 	void operator*=(float v) {
 		r *= v;
 		g *= v;
 		b *= v;
 	}
+    void operator/=(float v) {
+        r /= v;
+        g /= v;
+        b /= v;
+    }
+    Color3 operator/(float v) {
+        return Color3(r / v, g / v, b / v);
+    }
+    Color3 operator*(float v) {
+        return Color3(r / v, g / v, b / v);
+    }
 	float mean() {
 		return (r + g + b)/3;
 	}
@@ -147,4 +161,4 @@ public:
 	//float *rawdata() { return (float *)data(); }
 };
 
-#endif // VECTOR_H
+#endif // RELIGHTVECTOR_H

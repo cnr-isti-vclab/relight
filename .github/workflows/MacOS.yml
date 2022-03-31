@@ -6,45 +6,35 @@ on:
 jobs:
   macos_build:
     name: Build Relight (MacOS)
-    runs-on: macos-latest
+    runs-on: macos-10.15
 
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: true
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
+      with:
+         setup-python: false
     - name: Install dependencies
       run: |
         brew install eigen libjpeg libomp
     - name: Configure and Build
       run: |
-        cd relight
+
         mkdir build
         cd build
-        cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
+        cmake -DUSE_QT_5=ON -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
         make -j4
         make install
 
-        cd ../../relight-cli
-        mkdir build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
-        make -j4
-        make install
-
-        cd ../../relight-merge
-        mkdir build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
-        make -j4
-        make install
     - name: Deploy
       run: |
-        cd relight/install
+        cd install
         macdeployqt relight.app
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v1
       with:
         name: Relight_macos_portable
-        path: relight/install
+        path: install

@@ -68,7 +68,7 @@ void Script::run() {
 	process.start();
 
 
-	QRegExp re("([^:]+):\\ (\\d+)\\%");
+	QRegularExpression re("([^:]+):\\ (\\d+)\\%");
 
 	QString log;
 	do {
@@ -79,11 +79,11 @@ void Script::run() {
 
 		if(!out.isEmpty()) {
 			QString line = out.split("\n").front();
-			int pos = re.indexIn(line);
+			int pos = line.indexOf(re);
 
 			if(pos >= 0) {
-				QString text = re.capturedTexts()[1];
-				int percent = re.capturedTexts()[2].toInt();
+                QString text = re.match(line).capturedTexts()[1];
+				int percent = re.match(line).capturedTexts()[2].toInt();
 				emit progress(text, percent);
 			}
 		}
