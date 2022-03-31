@@ -15,7 +15,8 @@ jobs:
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
-
+      with:
+         setup-python: false
     - name: Install dependencies
       run: |
         brew install eigen libjpeg libomp
