@@ -1,3 +1,4 @@
+#include <QDebug>
 #include <QFileInfo>
 #include <QFile>
 #include <QDir>
@@ -7,6 +8,7 @@
 
 #include "rtitask.h"
 #include "../src/rti.h"
+#include "../src/deepzoom.h"
 #include "../relight-cli/rtibuilder.h"
 
 
@@ -134,21 +136,57 @@ int nPlanes(QString output) {
 void RtiTask::deepzoom() {
 	int nplanes = nPlanes(output);
 	int quality= (*this)["quality"].value.toInt();
-	//int nplanes = builder->nplanes      = (*this)["nplanes"].value.toInt();
-	for(int plane = 0; plane < nplanes; plane++) {
-		runPythonScript("deepzoom.py", QStringList() << QString("plane_%1").arg(plane) << QString::number(quality), output);
-		if(status == FAILED)
-			return;
 
+    // Deep zoom every plane
+    for(int plane = 0; plane < nplanes; plane++)
+    {
+        // Load image, setup output folder for this plane
+        QString fileName = (QStringList() << QString("%1/plane_%2").arg(output).arg(plane) << QString(".jpg")).join("");
+		QString folderName = QString("%1/plane_%2").arg(output).arg(plane).toStdString().c_str();
+
+		DeepZoom deepzoom;
+		deepzoom.build(fileName, folderName, 256, 0);
+
+
+        // Update progress bar
 		if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))
 			break;
-	}
+    }
+
+    /**
+    if (vips_dzsave(ImOutTotal, "C:\\VIPS_Imaging\\Colon\\My_Tiles",
+
+        //"compression" , 1,
+        NULL))   //Here the run-time throw the exception!!!
+    {
+        const char* cError = vips_error_buffer();
+
+        vips_error_exit(cError);
+    }
+     */
 }
 
 
 void RtiTask::tarzoom() {
 	int nplanes = nPlanes(output);
-	for(int plane = 0; plane < nplanes; plane++) {
+    // For each plane file
+    for(int plane = 0; plane < nplanes; plane++)
+    {
+		/** TODO: handle errors in deep zoom, stick to old names */
+        /** Run a single tarzoom script:
+         *
+         *  - Keep an index object containing the data about the tarzoom
+         *  - Read the dzi contents
+         *  - Create a .tzb file
+         *  - Find all the folders that end with "_files" (deep zoom folders)
+         *  - For each of those folders:
+         *      - Get all the folders (0 to 5)
+         *      - For each of those folders:
+         *          - files = [(f.name, f.path) for f in os.scandir(level[1]) if f.is_file()]
+         *          - Has this been tested? Shouldn't it be ... scandir(level) ... ?
+         *          - For each of those files:
+         *              - Computations in the file
+         */
 		runPythonScript("tarzoom.py", QStringList() << QString("plane_%1").arg(plane), output);
 		if(status == FAILED)
 			return;

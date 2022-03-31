@@ -23,35 +23,20 @@ jobs:
         echo "EIGEN_HOME=${{ github.workspace }}\external\eigen-3.3.9" >> $GITHUB_ENV
     - name: Configure and Build
       run: |
-        cd relight
+
         mkdir build
         mkdir install
         cd build
-        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
-        nmake
+        cmake -DUSE_QT_5=ON -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
+        nmake 
         nmake install
 
-        cd ../../relight-cli
-        mkdir build
-        mkdir install
-        cd build
-        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
-        nmake
-        nmake install
-
-        cd ../../relight-merge
-        mkdir build
-        mkdir install
-        cd build
-        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
-        nmake
-        nmake install
     - name: Deploy
       run: |
-        cd relight/install
+        cd install
         windeployqt relight.exe
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v1
       with:
         name: Relight_windows_portable
-        path: relight/install
+        path: install

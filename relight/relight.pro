@@ -10,8 +10,10 @@ TEMPLATE = app
 DEFINES += _USE_MATH_DEFINES
 DEFINES += NOMINMAX
 
-win32:INCLUDEPATH += ../libjpeg/include
-win32:LIBS += ../libjpeg/lib/jpeg.lib
+win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
+    ../external/eigen-3.3.9/ \
+    ../src/
+win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
 unix:INCLUDEPATH += /usr/include/eigen3
 unix:LIBS += -ljpeg -liomp5
@@ -32,6 +34,7 @@ SOURCES += main.cpp \
     imagecropper.cpp \
     mainwindow.cpp \
     graphics_view_zoom.cpp \
+    normalstask.cpp \
     rtiexport.cpp \
     ../relight-cli/rtibuilder.cpp \
     ../src/imageset.cpp \
@@ -70,13 +73,15 @@ SOURCES += main.cpp \
     qwhitemarker.cpp \
     white.cpp \
     convertdialog.cpp \
-    aligndialog.cpp
+    aligndialog.cpp \
+    ../src/deepzoom.cpp
 
 
 HEADERS += \
     imagecropper.h \
     mainwindow.h \
     graphics_view_zoom.h \
+    normalstask.h \
     rtiexport.h \
     helpdialog.h \
     ../src/imageset.h \
@@ -85,6 +90,7 @@ HEADERS += \
     ../src/material.h \
     ../src/eigenpca.h \
     ../relight-cli/rtibuilder.h \
+    ../src/relight_threadpool.h \
     project.h \
     measure.h \
     focaldialog.h \
@@ -105,7 +111,7 @@ HEADERS += \
     httplib.h \
     domecalibration.h \
     dome.h \
-    ../src/vector.h \
+    ../src/relight_vector.h \
     ../src/lp.h \
     qmarker.h \
     qmarkerlist.h \
@@ -117,7 +123,8 @@ HEADERS += \
     qwhitemarker.h \
     white.h \
     convertdialog.h \
-    aligndialog.h
+    aligndialog.h \
+    ../src/deepzoom.h
 
 FORMS += \
     mainwindow.ui \

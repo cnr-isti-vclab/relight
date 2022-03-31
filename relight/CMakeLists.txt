@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_FIND_FRAMEWORK LAST)
 
 find_package(
-	Qt5
+	${RELIGHT_QT}
 	COMPONENTS Core Gui Widgets Concurrent
 	REQUIRED)
 find_package(OpenMP)
@@ -26,10 +26,10 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 if (APPLE)
-	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X deployment version" FORCE)
+	set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version" FORCE)
 	SET(CMAKE_INSTALL_RPATH $ORIGIN/../Frameworks)
 	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-endif()
+	endif()
 
 set (RELIGHT_HEADERS
 	imagecropper.h
@@ -52,7 +52,8 @@ set (RELIGHT_HEADERS
 	../src/material.h
 	../src/eigenpca.h
 	../src/lp.h
-	../src/vector.h
+	../src/relight_vector.h
+	../src/deepzoom.h
 	../relight-cli/rtibuilder.h
 	processqueue.h
 	queueitem.h
@@ -61,6 +62,7 @@ set (RELIGHT_HEADERS
 	task.h
 	script.h
 	rtitask.h
+	normalstask.h
 	dome.h
 	domecalibration.h
 	qmarker.h
@@ -98,6 +100,7 @@ set (RELIGHT_SOURCES
 	../src/legacy_rti.cpp
 	../src/exif.cpp
 	../src/lp.cpp
+	../src/deepzoom.cpp
 	helpdialog.cpp
 	focaldialog.cpp
 	settingsdialog.cpp
@@ -109,6 +112,7 @@ set (RELIGHT_SOURCES
 	task.cpp
 	script.cpp
 	rtitask.cpp
+	normalstask.cpp
 	domecalibration.cpp
 	dome.cpp
 	qmarkerlist.cpp
@@ -143,17 +147,22 @@ target_include_directories(
 	relight PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}
-		${EIGEN3_INCLUDE_DIR})
-		
+		${EIGEN3_INCLUDE_DIR}
+	)
+	
 target_link_libraries(
 	relight PUBLIC
 		${JPEG_LIBRARIES}
 		OpenMP::OpenMP_CXX
-		Qt5::Core
-		Qt5::Gui
-		Qt5::Widgets
-		Qt5::Concurrent)
-		
+		${RELIGHT_QT}::Core
+		${RELIGHT_QT}::Gui
+		${RELIGHT_QT}::Widgets
+		${RELIGHT_QT}::Concurrent
+	)
+
+ 
+
+
 target_compile_definitions(relight PUBLIC _USE_MATH_DEFINES NOMINMAX)
 
 if(WIN32 OR APPLE)
