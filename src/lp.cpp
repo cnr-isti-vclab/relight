@@ -22,8 +22,8 @@ void parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::vector<QSt
 		QString filename;
 		Vector3f light;
 		QString line = stream.readLine();
-		QStringList tokens = line.split(QRegularExpression("\\s+"), QString::SplitBehavior::SkipEmptyParts);
-		if(tokens.size() != 4)
+		QStringList tokens = line.split(QRegularExpression("\\s+"));//, QString::SplitBehavior::SkipEmptyParts);
+		if(tokens.size() < 4)
 			throw QString("Invalid line in .lp: " + line);
 
 		filename = tokens[0];
