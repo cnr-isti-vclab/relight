@@ -15,41 +15,25 @@ jobs:
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
-      with:
-         setup-python: false
-#         version: 6.2.2
 
     - name: Install dependencies
       run: |
         brew install eigen libjpeg libomp
     - name: Configure and Build
       run: |
-        cd relight
+
         mkdir build
         cd build
         cmake -DUSE_QT_5=ON -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
         make -j4
         make install
 
-        cd ../../relight-cli
-        mkdir build
-        cd build
-        cmake -DUSE_QT_5=ON -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
-        make -j4
-        make install
-
-        cd ../../relight-merge
-        mkdir build
-        cd build
-        cmake -DUSE_QT_5=ON -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
-        make -j4
-        make install
     - name: Deploy
       run: |
-        cd relight/install
+        cd install
         macdeployqt relight.app
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v1
       with:
         name: Relight_macos_portable
-        path: relight/install
+        path: install
