@@ -25,18 +25,22 @@ public:
 
 class TileRow: public std::vector<Tile> {
 public:
+	int written = 0;
 	fs::path path;
 	int tileside;
+	int overlap;
 
 	int width; //total width of the level;
 	int height; //total height of the level;
 
 	int current_row = -1;
 	int current_line = 0; //keep track of which line we are going to write in the tiles
+	int end_tile = 0;
 	std::vector<uint8_t> lastLine;
+	std::vector<std::vector<uint8_t>> overlapping;
 
 	TileRow() {}
-	TileRow(int _tileside, fs::path path, int width, int height);
+	TileRow(int _tileside, int _overlap, fs::path path, int width, int height);
 	//create a new row
 	void nextRow();
 	void finishRow();
