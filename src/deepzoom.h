@@ -4,14 +4,7 @@
 #include <string>
 #include <vector>
 
-#if __cplusplus < 201703L // C++ less than 17
-#include <experimental/filesystem>
-	namespace fs = std::experimental::filesystem;
-#else
-#include <filesystem>
-	namespace fs = std::filesystem;
-#endif
-
+#include <QString>
 
 class JpegEncoder;
 
@@ -24,7 +17,7 @@ public:
 
 class TileRow: public std::vector<Tile> {
 public:
-	fs::path path;
+	QString path;
 	int tileside;
 	int overlap;
 
@@ -39,7 +32,7 @@ public:
 
 
 	TileRow() {}
-	TileRow(int _tileside, int _overlap, fs::path path, int width, int height);
+	TileRow(int _tileside, int _overlap, QString path, int width, int height);
 	void nextRow();
 	void finishRow();
 
@@ -58,8 +51,8 @@ public:
 	int tileside = 254;
 	int overlap = 1;
 	int width, height;
-	std::string output;
-	bool build(const std::string &filename, const std::string &output, int tile_size = 254, int overlap = 1);
+	QString output;
+	bool build(QString filename, QString basename, int tile_size = 254, int overlap = 1);
 
 private:
 	std::vector<TileRow> rows;      //one row per level
@@ -68,7 +61,7 @@ private:
 
 	int nLevels();
 	void initRows();
-	TileRow createTileRow(fs::path level_path, int width, int height);
+	TileRow createTileRow(QString level_path, int width, int height);
 };
 
 #endif // DEEPZOOM_H

@@ -27,7 +27,7 @@ jobs:
         mkdir build
         mkdir install
         cd build
-        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
+        cmake -DUSE_QT_5=ON -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
         nmake
         nmake install
 
@@ -35,7 +35,7 @@ jobs:
         mkdir build
         mkdir install
         cd build
-        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
+        cmake -DUSE_QT_5=ON -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
         nmake
         nmake install
 
@@ -43,7 +43,7 @@ jobs:
         mkdir build
         mkdir install
         cd build
-        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
+        cmake -DUSE_QT_5=ON -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
         nmake
         nmake install
     - name: Deploy
