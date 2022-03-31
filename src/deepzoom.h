@@ -15,6 +15,7 @@
 
 
 class JpegEncoder;
+
 class Tile {
 public:
 	int width;
@@ -31,7 +32,8 @@ public:
 	int height; //total height of the level;
 
 	int current_row = -1;
-	int current_line = -1; //keep track of which line we are going to write in the tiles
+	int current_line = 0; //keep track of which line we are going to write in the tiles
+	std::vector<uint8_t> lastLine;
 
 	TileRow() {}
 	TileRow(int _tileside, fs::path path, int width, int height);
@@ -40,8 +42,9 @@ public:
 	void finishRow();
 
 	//returns resized line once every 2 lines.
-	std::vector<uint8_t> addLine(std::vector<uint8_t> &line);
-	std::vector<uint8_t> lastLine;
+	std::vector<uint8_t> addLine(std::vector<uint8_t> line);
+	std::vector<uint8_t> scaleLines( std::vector<uint8_t> &line0, std::vector<uint8_t> &line1);
+
 };
 
 class DeepZoom {
@@ -49,8 +52,8 @@ public:
 	int tileside = 256;
 	int overlap = 0;
 	int width, height;
-	std::string folder;
-	bool build(const std::string &filename, const std::string &folder, int tile_size = 256, int overlap = 0);
+	std::string output;
+	bool build(const std::string &filename, const std::string &output, int tile_size = 256, int overlap = 0);
 
 private:
 	std::vector<TileRow> rows;
