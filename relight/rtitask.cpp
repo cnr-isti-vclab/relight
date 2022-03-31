@@ -1,5 +1,3 @@
-#include <vips/vips.h>
-
 #include <QDebug>
 #include <QFileInfo>
 #include <QFile>
@@ -10,6 +8,7 @@
 
 #include "rtitask.h"
 #include "../src/rti.h"
+#include "../src/deepzoom.h"
 #include "../relight-cli/rtibuilder.h"
 
 
@@ -139,25 +138,11 @@ void RtiTask::deepzoom() {
     {
         // Load image, setup output folder for this plane
         QString fileName = (QStringList() << QString("%1/plane_%2").arg(output).arg(plane) << QString(".jpg")).join("");
-        VipsImage* image = vips_image_new_from_file(fileName.toStdString().c_str(), NULL);
-        if (image == NULL)
-            LIB_VIPS_ERR
 		QString folderName = QString("%1/plane_%2").arg(output).arg(plane).toStdString().c_str();
 
-        //qDebug() << "Image path: " << fileName;
-        //qDebug() << "Save path: " << folderName;
+		DeepZoom deepzoom;
+		deepzoom.build(fileName.toStdString(), folderName.toStdString(), 256, 0);
 
-        // Call dzsave and create the deepzoom tiles
-        if (image == NULL || vips_dzsave(image, folderName.toStdString().c_str(),
-            "overlap", 0,
-            "tile_size", 256,
-            "layout", VIPS_FOREIGN_DZ_LAYOUT_DZ,
-            "depth", VIPS_FOREIGN_DZ_DEPTH_ONETILE,
-            "suffix", QString(".jpg[Q=%1]").arg(quality).toStdString().c_str(),
-            NULL) != 0)
-        {
-            LIB_VIPS_ERR
-        }
 
         // Update progress bar
 		if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))

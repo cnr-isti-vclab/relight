@@ -13,7 +13,6 @@
 #endif
 
 
-
 class JpegEncoder;
 
 class Tile {
@@ -25,49 +24,51 @@ public:
 
 class TileRow: public std::vector<Tile> {
 public:
-	int written = 0;
 	fs::path path;
 	int tileside;
 	int overlap;
 
-	int width; //total width of the level;
-	int height; //total height of the level;
+	int width;  //total width of the scaled image;
+	int height; //total height of the scaled image;
 
 	int current_row = -1;
-	int current_line = 0; //keep track of which line we are going to write in the tiles
-	int end_tile = 0;
-	std::vector<uint8_t> lastLine;
-	std::vector<std::vector<uint8_t>> overlapping;
+	int current_line = 0;                          //keeps track of which image line we are processing
+	int end_tile = 0;                              //wich line ends the current tile
+	std::vector<uint8_t> lastLine;                 //keep previous line for scaling
+	std::vector<std::vector<uint8_t>> overlapping; //overlapped regions is kept, to be inserted in the new row
+
 
 	TileRow() {}
 	TileRow(int _tileside, int _overlap, fs::path path, int width, int height);
-	//create a new row
 	void nextRow();
 	void finishRow();
 
-	//returns resized line once every 2 lines.
+	//returns resized line once every 2 lines or empty array
 	std::vector<uint8_t> addLine(std::vector<uint8_t> line);
+	//scale 2 lines into a single line half the length for smaller level
 	std::vector<uint8_t> scaleLines( std::vector<uint8_t> &line0, std::vector<uint8_t> &line1);
+private:
+	//actually write the line to the jpegs
+	void writeLine(std::vector<uint8_t> newline);
 
 };
 
 class DeepZoom {
 public:
-	int tileside = 256;
-	int overlap = 0;
+	int tileside = 254;
+	int overlap = 1;
 	int width, height;
 	std::string output;
-	bool build(const std::string &filename, const std::string &output, int tile_size = 256, int overlap = 0);
+	bool build(const std::string &filename, const std::string &output, int tile_size = 254, int overlap = 1);
 
 private:
-	std::vector<TileRow> rows;
+	std::vector<TileRow> rows;      //one row per level
 	std::vector<int> heights;
 	std::vector<int> widths;
 
-
+	int nLevels();
 	void initRows();
 	TileRow createTileRow(fs::path level_path, int width, int height);
-	int nLevels();
 };
 
 #endif // DEEPZOOM_H

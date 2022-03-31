@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}*/
 	DeepZoom deep;
-	if(!deep.build(argv[1], argv[2], 255, 50)) {
+	if(!deep.build(argv[1], argv[2], 254, 1)) {
 		cerr << "Something failed!" << endl;
 	}
 	return 0;

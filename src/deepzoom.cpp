@@ -8,16 +8,18 @@
 #include <assert.h>
 using namespace std;
 
+/* start of tiles is 0, side-overlap,, 2*side - overlap etc
+ * sizes are         side+overlap, side+2*overla, whatever remains
+ */
+
 vector<uint8_t>  TileRow::scaleLines( std::vector<uint8_t> &line0, std::vector<uint8_t> &line1) {
-	assert(line0.size() == width*3);
-	assert(line0.size() == line1.size());
 	std::vector<uint8_t> scaled;
 
 	int w = width >> 1;
 	scaled.resize(w*3);
-	for(int k = 0; k < 3; k++) {
-		for(size_t i = 0; i < w; i++) {
-			int j = i*2*3;
+	for(int i = 0; i < w; i++) {
+		for(int k = 0; k < 3; k++) {
+			int j = i*6;
 			int c = (int)line0[j+k] + (int)line1[j+k] + (int)line0[j+3+k] + (int)line1[j+3+k];
 			c /= 4;
 			scaled[i*3+k] = (uint8_t)c;
@@ -36,7 +38,15 @@ TileRow::TileRow(int _tileside, int _overlap, fs::path _path, int _width, int _h
 	nextRow();
 }
 
-
+void TileRow::writeLine(std::vector<uint8_t> newline) {
+	//write line to jpeg
+	int col = 0;
+	for(Tile &tile: *this) {
+		int x = std::max(0, col*tileside - overlap);
+		tile.encoder->writeRows(newline.data() + x*3, 1);
+		col++;
+	}
+}
 std::vector<uint8_t> TileRow::addLine(std::vector<uint8_t> newline) {
 
 	vector<uint8_t> scaled;
@@ -44,24 +54,18 @@ std::vector<uint8_t> TileRow::addLine(std::vector<uint8_t> newline) {
 		scaled = scaleLines(lastLine, newline);
 	}
 
-	//write line to jpeg
-	written++;
-	int x = 0;
-	for(Tile &tile: *this) {
-		tile.encoder->writeRows(newline.data() + x*3, 1);
-		x += tileside;
-	}
+	writeLine(newline);
 
 	current_line++;
 
-	if(current_line - end_tile > 0) //past tile, save overlapped region
+	if(current_line > end_tile -2*overlap) //past tile, save overlapped region
 		overlapping.push_back(newline);
 
-	if(current_line == end_tile + overlap || current_line == height) {
+	if(current_line == end_tile) {
 		finishRow();
 	}
 
-	if(current_line == end_tile + overlap && current_line  != height) {
+	if(current_line == end_tile && current_line  != height) {
 		nextRow();
 	}
 
@@ -75,43 +79,35 @@ void TileRow::finishRow() {
 		tile.encoder->finish();
 		delete tile.encoder;
 	}
-	written = 0;
 	clear();
 }
 
 void TileRow::nextRow() {
 	current_row++;
 
-	int h = std::min(tileside + overlap, height - current_row*tileside);
+	int start_tile = std::max(0, current_row*tileside - overlap);
+	end_tile = std::min(height, (current_row+1)*tileside + overlap);
+	int h = end_tile - start_tile;
 
-	int x = 0;
 	int col = 0;
+	int start = 0;
 	do {
-
+		int end = std::min((col+1)*tileside + overlap, width);
 		Tile tile;
-		tile.width = std::min(tileside+overlap, width - x);
+		tile.width = end - start;
 		tile.encoder = new JpegEncoder;
 		fs::path filepath = path / (to_string(col) + "_" + to_string(current_row) + ".jpg");
 		tile.encoder->init(filepath.c_str(), tile.width, h);
 		push_back(tile);
 
-		x += tileside;
 		col++;
+		start = std::max(0, col*tileside - overlap);
 
-	} while(x < width);
+	} while(start < width);
 
 	for(auto &line: overlapping) {
-		written++;
-		int x = 0;
-		for(Tile &tile: *this) {
-			tile.encoder->writeRows(line.data() + x*3, 1);
-			x += tileside;
-		}
+		writeLine(line);
 	}
-
-	//current_line -= overlapping.size();
-	end_tile += tileside;
-
 	overlapping.clear();
 
 }
@@ -153,11 +149,11 @@ bool DeepZoom::build(const std::string &filename, const string &_folder, int _ti
 	out.open(output + ".dzi");
 	out << R"(<?xml version="1.0" encoding="UTF-8"?>
 <Image xmlns="http://schemas.microsoft.com/deepzoom/2008"
-  Format="jpeg"
+  Format="jpg"
 	)";
 	out << "  Overlap=\"" << overlap << "\"\n";
 	out << "  TileSize=\"" << tileside << "\">\n";
-	out << "  <Size Height=\"" << width << "\" Width=\"3184\"/>\n";
+	out << "  <Size Height=\"" << height << "\" Width=\"" << width << "\"/>\n";
 	out << "</Image>\n";
 	out.close();
 
