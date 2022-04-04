@@ -13,17 +13,11 @@ DEFINES += NOMINMAX
 
 win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
     ../external/eigen-3.3.9/ \
-    ../external/libvips/include \
-    ../external/glib-2.0/include \
     ../src/
-win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib \
-    ../external/libvips/bin/libglib-2.0.lib \
-    ../external/libvips/bin/libgobject-2.0.lib \
-    ../external/libvips/bin/libvips.lib
+win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
-
-unix:INCLUDEPATH += /usr/include/eigen3 /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include
-unix:LIBS += -ljpeg -liomp5 -lvips
+unix:INCLUDEPATH += /usr/include/eigen3
+unix:LIBS += -ljpeg -liomp5
 unix:QMAKE_CXXFLAGS += -fopenmp
 
 
@@ -83,6 +77,7 @@ SOURCES += main.cpp \
     aligndialog.cpp \
     zoomdialog.cpp \
     zoomtask.cpp
+    ../src/deepzoom.cpp
 
 
 HEADERS += \
@@ -135,6 +130,7 @@ HEADERS += \
     zoom.h \
     zoomdialog.h \
     zoomtask.h
+    ../src/deepzoom.h
 
 FORMS += \
     mainwindow.ui \
