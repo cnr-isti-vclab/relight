@@ -32,6 +32,7 @@ mac:QMAKE_LFLAGS += -lomp
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 
 SOURCES += main.cpp \
+    ../src/deepzoom.cpp \
     imagecropper.cpp \
     mainwindow.cpp \
     graphics_view_zoom.cpp \
@@ -76,11 +77,12 @@ SOURCES += main.cpp \
     convertdialog.cpp \
     aligndialog.cpp \
     zoomdialog.cpp \
-    zoomtask.cpp
+    zoomtask.cpp \
     ../src/deepzoom.cpp
 
 
 HEADERS += \
+    ../src/deepzoom.h \
     imagecropper.h \
     mainwindow.h \
     graphics_view_zoom.h \
@@ -129,7 +131,7 @@ HEADERS += \
     aligndialog.h \
     zoom.h \
     zoomdialog.h \
-    zoomtask.h
+    zoomtask.h \
     ../src/deepzoom.h
 
 FORMS += \

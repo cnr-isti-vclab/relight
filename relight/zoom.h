@@ -1,7 +1,6 @@
 #ifndef ZOOM_H
 #define ZOOM_H
 
-#include <vips/vips.h>
 #include <functional>
 #include <QDir>
 #include <QMessageBox>
@@ -14,6 +13,22 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 
+#include <deepzoom.h>
+
+/** TODO
+ * - Cancellare file precedenti
+ * - Overlap default 1
+ * - Tilesize default 254
+ * - Controllare presenza path uscita prima di lanciare il task
+ */
+
+/** DSTRETCH
+ *  - Dstrech di una singola immagine
+ *  - Dstretch delle normali
+ *      - Parametrizzazione xyz (rgb)
+ *      - Parametrizzazione azimuth,elevation
+ *
+ */
 typedef struct _ZoomData
 {
     int overlap;
@@ -87,27 +102,14 @@ inline QString deepZoom(QString inputFolder, QString output, uint32_t quality, u
 {
     int nplanes = getNFiles(output, "jpg");
 
+
     // Deep zoom every plane
     for(int plane = 0; plane < nplanes; plane++)
     {
         // Load image, setup output folder for this plane
         QString fileName = (QStringList() << QString("%1/plane_%2").arg(output).arg(plane) << QString(".jpg")).join("");
-        VipsImage* image = vips_image_new_from_file(fileName.toStdString().c_str(), NULL);
-        if (image == NULL)
-            return vips_error_buffer();
-
-        QString folderName = QString("%1\\plane_%2").arg(output).arg(plane).toStdString().c_str();
-
-        // Call dzsave and create the deepzoom tiles
-        if (image == NULL || vips_dzsave(image, folderName.toStdString().c_str(),
-            "overlap", overlap,
-            "tile_size", tileSize,
-            "layout", VIPS_FOREIGN_DZ_LAYOUT_DZ,
-            "depth", VIPS_FOREIGN_DZ_DEPTH_ONETILE,
-            "suffix", QString(".jpg[Q=%1]").arg(quality).toStdString().c_str(), NULL) != 0)
-        {
-            return vips_error_buffer();
-        }
+        DeepZoom dz;
+        dz.build(fileName, output + "/" + QString("plane%1").arg(plane), tileSize, overlap);
 
         // Update progress bar
         if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))
