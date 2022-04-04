@@ -189,7 +189,7 @@ p, li { white-space: pre-wrap; }
             </rect>
            </property>
            <property name="text">
-            <string>256</string>
+            <string>254</string>
            </property>
           </widget>
           <widget class="Line" name="line">
@@ -228,7 +228,7 @@ p, li { white-space: pre-wrap; }
             </rect>
            </property>
            <property name="text">
-            <string>0</string>
+            <string>1</string>
            </property>
           </widget>
          </widget>

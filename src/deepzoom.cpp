@@ -3,12 +3,18 @@
 #include "jpeg_decoder.h"
 
 #include <QDir>
+#include <QDebug>
 
 #include <iostream>
 #include <fstream>
 
 #include <assert.h>
 using namespace std;
+
+/** BUGS
+ * - Wrong output path
+ * - Crashing after first plane
+ */
 
 /* start of tiles is 0, side-overlap,, 2*side - overlap etc
  * sizes are         side+overlap, side+2*overla, whatever remains
@@ -134,7 +140,7 @@ bool DeepZoom::build(QString input, QString _output, int _tileside, int _overlap
 
 	//for each level
 	//line by line
-	for(int y = 0; y < height; y++) {
+    for(int y = 0; y < height; y++) {
 		std::vector<uint8_t> line(width*3);
 		decoder.readRows(1, line.data());
 

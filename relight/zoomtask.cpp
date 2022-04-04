@@ -1,4 +1,3 @@
-#include <vips/vips.h>
 #include <QDir>
 #include "zoom.h"
 #include "zoomtask.h"
