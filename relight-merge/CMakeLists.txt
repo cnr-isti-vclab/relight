@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_FIND_FRAMEWORK LAST)
 
 find_package(
-	Qt5
+	${RELIGHT_QT}
 	COMPONENTS Core Gui Concurrent
 	REQUIRED)
 find_package(OpenMP)
@@ -24,7 +24,7 @@ endif()
 set(CMAKE_AUTOMOC ON)
 
 if (APPLE)
-	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X deployment version" FORCE)
+	set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version" FORCE)
 	SET(CMAKE_INSTALL_RPATH $ORIGIN/../Frameworks)
 	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
@@ -64,9 +64,9 @@ target_link_libraries(
 	relight-merge PUBLIC
 		${JPEG_LIBRARIES}
 		OpenMP::OpenMP_CXX
-		Qt5::Core
-		Qt5::Gui
-		Qt5::Concurrent)
+		${RELIGHT_QT}::Core
+		${RELIGHT_QT}::Gui
+		${RELIGHT_QT}::Concurrent)
 
 target_compile_definitions(relight-merge PUBLIC _USE_MATH_DEFINES NOMINMAX)
 

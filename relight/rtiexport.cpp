@@ -1,5 +1,3 @@
-#include <vips/vips.h>
-
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QProgressDialog>
@@ -279,7 +277,7 @@ void RtiExport::createRTI1(QString output) {
 	else if(ui->formatItarzoom->isChecked())
 		format = "itarzoom";
 
-	if(format == "deepzoom" || format == "tarzoom" || format == "itarzoom") {
+	if(format == "tarzoom" || format == "itarzoom") {
 		if(QSettings().value("python_path").toString().isEmpty()) {
 			QMessageBox::critical(this, "Python required", "Python executable needs to be set in the Preferences dialog, for web friendly RTI formats.");
 			return;
