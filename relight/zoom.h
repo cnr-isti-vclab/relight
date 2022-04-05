@@ -13,12 +13,11 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 
+#include <QRegularExpression>
 #include <deepzoom.h>
 
 /** TODO
  * - Cancellare file precedenti
- * - Overlap default 1
- * - Tilesize default 254
  * - Controllare presenza path uscita prima di lanciare il task
  */
 
@@ -109,7 +108,7 @@ inline QString deepZoom(QString inputFolder, QString output, uint32_t quality, u
         // Load image, setup output folder for this plane
         QString fileName = (QStringList() << QString("%1/plane_%2").arg(output).arg(plane) << QString(".jpg")).join("");
         DeepZoom dz;
-        dz.build(fileName, output + "/" + QString("plane%1").arg(plane), tileSize, overlap);
+        dz.build(fileName, output + "/" + QString("plane_%1").arg(plane), tileSize, overlap);
 
         // Update progress bar
         if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))
@@ -125,6 +124,9 @@ inline QString tarZoom(QString inputFolder, QString output, std::function<bool(s
     int nPlanes = getNFiles(inputFolder, "dzi");
     if (nPlanes == 0)
         return QString("No dzi files in input folder %1").arg(inputFolder);
+
+    // Regex to find the indexes of the images
+    QRegularExpression regex("(\\d+)_(\\d+).jp.*g");
 
     // Convert each plane
     for (int i=0; i<nPlanes; i++)
@@ -167,27 +169,45 @@ inline QString tarZoom(QString inputFolder, QString output, std::function<bool(s
         if (err.compare("OK") != 0)
             return err;
 
-        for (QString levelName : planeFolder.entryList(QDir::AllDirs | QDir::NoDotAndDotDot))
+        for (QString& levelName : planeFolder.entryList(QDir::AllDirs | QDir::NoDotAndDotDot))
         {
-            QString levelPath = QString("%1/%2").arg(planeFolder.path()).arg(levelName);
+            QString levelPath = QString("%1/%2").arg(planeFolder.path(), levelName);
             QDir level(levelPath);
             level.setSorting(QDir::Name);
             QStringList files = level.entryList(QDir::Files);
+            std::vector<QFile*> orderedFiles;
 
-            for (QString fileName : files)
+            int maxX = floor((float)data.width / data.tilesize + 1);
+            int maxY = floor((float)data.height / data.tilesize + 1);
+            orderedFiles.resize(maxX * maxY);
+
+            for (QString& fileName : files)
             {
-                // Open the file
-                QString filePath = QString("%1/%2").arg(levelPath).arg(fileName);
-                QFile currFile(filePath);
-                if (!currFile.open(QIODevice::ReadOnly))
-                    return QString("Couldn't open image file %1 for processing").arg(filePath);
+                QRegularExpressionMatch match = regex.match(fileName);
+                int x = match.captured(1).toUInt();
+                int y = match.captured(2).toUInt();
 
-                // Add the file, keep track of the offsets
-                offset += currFile.size();
-                offsets.push_back(offset);
-                outFile.write(currFile.readAll());
+                // Save the file for later
+                QString filePath = QString("%1/%2").arg(levelPath, fileName);
+                orderedFiles[x + maxX * y] = new QFile(filePath);
+            }
 
-                currFile.close();
+            for (int i=0; i<orderedFiles.size(); i++)
+            {
+                QFile* file = orderedFiles[i];
+                if (file != nullptr)
+                {
+                    if (!file->open(QIODevice::ReadOnly))
+                        return QString("Couldn't open image file %1 for processing").arg(file->fileName());
+
+                    // Add the file, keep track of the offsets
+                    offset += file->size();
+                    offsets.push_back(offset);
+                    outFile.write(file->readAll());
+
+                    file->close();
+                    delete file;
+                }
             }
         }
 
