@@ -1,6 +1,7 @@
-#include <QDir>
 #include "zoom.h"
 #include "zoomtask.h"
+
+#include <QDirIterator>
 
 void ZoomTask::run()
 {
@@ -11,6 +12,7 @@ void ZoomTask::run()
     int quality = hasParameter("quality") ? (*this)["quality"].value.toInt() : -1;
     int overlap = hasParameter("overlap") ? (*this)["overlap"].value.toInt() : -1;
     int tilesize = hasParameter("tilesize") ? (*this)["tilesize"].value.toInt() : -1;
+    bool deleteFiles = hasParameter("deletefiles") ? (*this)["deletefiles"].value.toBool() : false;
 
     std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
     QString zoomError;
@@ -48,11 +50,11 @@ void ZoomTask::run()
         }
         break;
     case ZoomType::Tarzoom:
-        // Launghing tar zoom
+        // Launching tar zoom
         zoomError = tarZoom(inFolder, outFolder, callback);
         break;
     case ZoomType::ITarzoom:
-        // Launghing itar zoom
+        // Launching itar zoom
         zoomError = itarZoom(inFolder, outFolder, callback);
         break;
     case ZoomType::None:
@@ -64,7 +66,67 @@ void ZoomTask::run()
         status = FAILED;
         return;
     }
+
+    if (deleteFiles)
+        deletePrevFiles(inFolder);
     status = DONE;
+}
+
+
+void ZoomTask::deletePrevFiles(QDir folder)
+{
+    QRegularExpression dzRegex("plane_\\d+_files");
+    QRegularExpression tzRegex("plane_\\d+.tz(i|b)");
+    QStringList names;
+
+    if (m_ZoomType == ZoomType::Tarzoom)
+    {
+        // Delete deepzoom folders
+        names = folder.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+
+        for (QString& fileName : names)
+        {
+            if (dzRegex.match(fileName).hasMatch())
+            {
+                QDir dir(QString("%1/%2").arg(folder.absolutePath(), fileName));
+                QDirIterator it(dir.absolutePath(), QStringList() << "*.jpg", QDir::Files,  QDirIterator::Subdirectories);
+
+                for (QString s : it.next())
+                {
+                    QFile file(s);
+                    file.setPermissions(QFileDevice::ReadOther | QFileDevice::WriteOther | QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+                }
+                 dir.removeRecursively();
+            }
+        }
+
+        // Delete .dzi files
+        names = folder.entryList(QDir::Files);
+        for (QString& fileName : names)
+        {
+            if (fileName.endsWith(".dzi"))
+            {
+                QFile file(QString("%1/%2").arg(folder.absolutePath(), fileName));
+                file.setPermissions(QFileDevice::ReadOther | QFileDevice::WriteOther | QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+                file.remove();
+            }
+        }
+    }
+    else if (m_ZoomType == ZoomType::ITarzoom)
+    {
+        // Delete tarzoom files
+        names = folder.entryList(QDir::Files);
+
+        for (QString& fileName : names)
+        {
+            if (tzRegex.match(fileName).hasMatch())
+            {
+                QFile file(QString("%1/%2").arg(folder.absolutePath(), fileName));
+                file.setPermissions(QFileDevice::ReadOther | QFileDevice::WriteOther | QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+                file.remove();
+            }
+        }
+    }
 }
 
 bool ZoomTask::progressed(std::string s, int percent)

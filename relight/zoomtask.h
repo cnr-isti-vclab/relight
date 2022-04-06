@@ -1,6 +1,7 @@
 #ifndef ZOOMTASK_H
 #define ZOOMTASK_H
 
+#include <QDir>
 #include "task.h"
 
 class ZoomTask : public Task
@@ -17,6 +18,8 @@ public:
     virtual void stop() override {}
     virtual bool progressed(std::string s, int percent) override;
 
+private:
+    void deletePrevFiles(QDir folder);
 private:
     ZoomType m_ZoomType;
 };
