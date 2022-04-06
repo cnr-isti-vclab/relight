@@ -37,6 +37,7 @@ private:
     int m_JpegQuality;
     int m_Overlap;
     int m_TileSize;
+    bool m_DeleteFiles;
 };
 
 #endif // ZOOMDIALOG_H

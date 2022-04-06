@@ -25,6 +25,9 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
+  <property name="layoutDirection">
+   <enum>Qt::LeftToRight</enum>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
     <layout class="QGridLayout" name="gridLayout_2">
@@ -64,7 +67,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="Deepzoom">
          <property name="sizePolicy">
@@ -249,7 +252,7 @@ p, li { white-space: pre-wrap; }
             <x>10</x>
             <y>10</y>
             <width>561</width>
-            <height>161</height>
+            <height>171</height>
            </rect>
           </property>
           <property name="title">
@@ -266,19 +269,6 @@ p, li { white-space: pre-wrap; }
            </property>
            <property name="text">
             <string>Deepzoom folder:</string>
-           </property>
-          </widget>
-          <widget class="Line" name="line_2">
-           <property name="geometry">
-            <rect>
-             <x>120</x>
-             <y>80</y>
-             <width>341</width>
-             <height>16</height>
-            </rect>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
            </property>
           </widget>
           <widget class="QTextEdit" name="outputRtiFolderTz">
@@ -315,6 +305,25 @@ p, li { white-space: pre-wrap; }
            </property>
            <property name="text">
             <string>Browse...</string>
+           </property>
+          </widget>
+          <widget class="QCheckBox" name="checkboxTzDeleteInput">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>80</y>
+             <width>121</width>
+             <height>22</height>
+            </rect>
+           </property>
+           <property name="layoutDirection">
+            <enum>Qt::RightToLeft</enum>
+           </property>
+           <property name="text">
+            <string>Delete input files</string>
+           </property>
+           <property name="tristate">
+            <bool>false</bool>
            </property>
           </widget>
          </widget>
@@ -393,17 +402,23 @@ p, li { white-space: pre-wrap; }
             <string>Browse...</string>
            </property>
           </widget>
-          <widget class="Line" name="line_3">
+          <widget class="QCheckBox" name="checkboxIzDeleteInput">
            <property name="geometry">
             <rect>
-             <x>120</x>
+             <x>10</x>
              <y>80</y>
-             <width>341</width>
-             <height>16</height>
+             <width>121</width>
+             <height>22</height>
             </rect>
            </property>
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+           <property name="layoutDirection">
+            <enum>Qt::RightToLeft</enum>
+           </property>
+           <property name="text">
+            <string>Delete input files</string>
+           </property>
+           <property name="tristate">
+            <bool>false</bool>
            </property>
           </widget>
          </widget>
@@ -413,7 +428,7 @@ p, li { white-space: pre-wrap; }
         <property name="geometry">
          <rect>
           <x>210</x>
-          <y>230</y>
+          <y>240</y>
           <width>171</width>
           <height>31</height>
          </rect>

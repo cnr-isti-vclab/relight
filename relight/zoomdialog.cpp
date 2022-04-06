@@ -8,7 +8,7 @@
 #include "zoomdialog.h"
 
 ZoomDialog::ZoomDialog(QWidget* parent) : QDialog(parent), m_Ui(new Ui::ZoomDialog), m_OutputFolder(""), m_InputFolder(""),
-    m_ZoomType(ZoomTask::ZoomType::None), m_ZoomString("None"), m_JpegQuality(95), m_Overlap(0), m_TileSize(256)
+    m_ZoomType(ZoomTask::ZoomType::None), m_ZoomString("None"), m_JpegQuality(95), m_Overlap(1), m_TileSize(254)
 {
     m_Ui->setupUi(this);
 
@@ -33,6 +33,18 @@ ZoomDialog::ZoomDialog(QWidget* parent) : QDialog(parent), m_Ui(new Ui::ZoomDial
         this->m_TileSize = newValue.toUInt();
     });
 
+    // Delete files checkbox
+    connect(m_Ui->checkboxTzDeleteInput, &QCheckBox::toggled, this, [=](bool newValue) {
+        this->m_DeleteFiles = newValue;
+    });
+    connect(m_Ui->checkboxIzDeleteInput, &QCheckBox::toggled, this, [=](bool newValue) {
+        this->m_DeleteFiles = newValue;
+    });
+
+    // Tab changing
+    connect(m_Ui->zoomTab, &QTabWidget::currentChanged, this, [=](int newIdx) {
+        this->m_ZoomType = (ZoomTask::ZoomType)newIdx;
+    });
     // Confirm button
     connect(m_Ui->buttonConfirm, SIGNAL(clicked()), this, SLOT(buttonConfirmClicked()));
 }
@@ -47,6 +59,7 @@ void ZoomDialog::doZoom()
     task->addParameter("quality", Parameter::Type::INT, m_JpegQuality);
     task->addParameter("overlap", Parameter::Type::INT, m_Overlap);
     task->addParameter("tilesize", Parameter::Type::INT, m_TileSize);
+    task->addParameter("deletefiles", Parameter::Type::BOOL, m_DeleteFiles);
 
     queue.addTask(task);
 }
