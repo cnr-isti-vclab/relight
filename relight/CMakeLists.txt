@@ -6,7 +6,7 @@ set(CMAKE_FIND_FRAMEWORK LAST)
 
 find_package(
 	${RELIGHT_QT}
-	COMPONENTS Core Gui Widgets Concurrent
+	COMPONENTS Core Gui Widgets Concurrent Xml
 	REQUIRED)
 find_package(OpenMP)
 
