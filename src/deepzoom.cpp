@@ -11,11 +11,6 @@
 #include <assert.h>
 using namespace std;
 
-/** BUGS
- * - Wrong output path
- * - Crashing after first plane
- */
-
 /* start of tiles is 0, side-overlap,, 2*side - overlap etc
  * sizes are         side+overlap, side+2*overla, whatever remains
  */
