@@ -76,6 +76,10 @@ set (RELIGHT_HEADERS
 	qwhitemarker.h
 	white.h
 	convertdialog.h
+	zoom.h
+	zoomtask.h
+	zoomdialog.h
+	
 )
 
 set (RELIGHT_SOURCES
@@ -125,6 +129,9 @@ set (RELIGHT_SOURCES
 	qwhitemarker.cpp
 	white.cpp
 	convertdialog.cpp
+	zoom.cpp
+	zoomtask.cpp
+	zoomdialog.cpp
 )
 
 set (RELIGHT_FORMS
