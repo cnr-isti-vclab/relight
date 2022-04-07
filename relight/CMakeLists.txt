@@ -129,7 +129,6 @@ set (RELIGHT_SOURCES
 	qwhitemarker.cpp
 	white.cpp
 	convertdialog.cpp
-	zoom.cpp
 	zoomtask.cpp
 	zoomdialog.cpp
 )
