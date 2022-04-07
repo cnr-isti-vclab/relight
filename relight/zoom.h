@@ -14,7 +14,7 @@
 #include <QJsonDocument>
 
 #include <QRegularExpression>
-#include <deepzoom.h>
+#include "../src/deepzoom.h"
 #include <deque>
 
 /** DSTRETCH
