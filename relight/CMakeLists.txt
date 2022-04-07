@@ -164,6 +164,7 @@ target_link_libraries(
 		${RELIGHT_QT}::Gui
 		${RELIGHT_QT}::Widgets
 		${RELIGHT_QT}::Concurrent
+		${RELIGHT_QT}::Xml
 	)
 
  
