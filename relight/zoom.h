@@ -1,6 +1,7 @@
 #ifndef ZOOM_H
 #define ZOOM_H
 
+#include <cmath>
 #include <functional>
 #include <QDir>
 #include <QMessageBox>
@@ -17,13 +18,6 @@
 #include "../src/deepzoom.h"
 #include <deque>
 
-/** DSTRETCH
- *  - Dstrech di una singola immagine
- *  - Dstretch delle normali
- *      - Parametrizzazione xyz (rgb)
- *      - Parametrizzazione azimuth,elevation
- *
- */
 typedef struct _ZoomData
 {
     int overlap;
@@ -172,8 +166,8 @@ inline QString tarZoom(QString inputFolder, QString output, std::function<bool(s
             QStringList files = level.entryList(QDir::Files);
             std::vector<QFile*> orderedFiles;
 
-            int maxX = floor((float)data.width / data.tilesize + 1);
-            int maxY = floor((float)data.height / data.tilesize + 1);
+            int maxX = std::floor((float)data.width / data.tilesize + 1);
+            int maxY = std::floor((float)data.height / data.tilesize + 1);
             orderedFiles.resize(maxX * maxY);
 
             for (QString& fileName : files)
