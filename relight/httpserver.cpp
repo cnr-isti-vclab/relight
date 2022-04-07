@@ -16,7 +16,8 @@ HttpServer::HttpServer() {
 	addFile("/index.html",      ":/demo/index.html",      "text/html");
 	addFile("/skin.css",        ":/demo/skin.css",        "text/css");
 	addFile("/skin.svg",        ":/demo/skin.svg",        "image/svg+xml");
-	addFile("/openlime.min.js", ":/demo/openlime.min.js", "text/javascript");
+    addFile("/openlime.min.js", ":/demo/openlime.min.js", "text/javascript");
+    addFile("/openlime.js", ":/demo/openlime.js", "text/javascript");
 }
 HttpServer::~HttpServer() {
 	if(server)

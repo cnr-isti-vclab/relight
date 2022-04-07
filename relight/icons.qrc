@@ -81,6 +81,7 @@
         <file alias="openlime.min.js">../demo/openlime.min.js</file>
         <file alias="skin.css">../demo/skin.css</file>
         <file alias="skin.svg">../demo/skin.svg</file>
+        <file alias="openlime.js">../demo/openlime.js</file>
     </qresource>
     <qresource prefix="/scripts">
         <file alias="deepzoom.py">../scripts/deepzoom.py</file>

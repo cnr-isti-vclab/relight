@@ -15,11 +15,7 @@
 
 #include <QRegularExpression>
 #include <deepzoom.h>
-
-/** TODO
- * - Cancellare file precedenti
- * - Controllare presenza path uscita prima di lanciare il task
- */
+#include <deque>
 
 /** DSTRETCH
  *  - Dstrech di una singola immagine
@@ -69,7 +65,6 @@ inline QString getTarzoomPlaneData(const QString& path, ZoomData& data)
 
 inline QString getItarzoomPlaneData(const QString& path, ZoomData& data, QJsonArray& offsets)
 {
-    ZoomData ret;
     QFile inputFile(path);
     QJsonDocument inputJson;
     QJsonObject inputObject;
@@ -86,11 +81,11 @@ inline QString getItarzoomPlaneData(const QString& path, ZoomData& data, QJsonAr
 
     // Read the relevant data
     inputObject = inputJson.object();
-    ret.overlap = inputObject.value("overlap").toInt();
-    ret.tilesize = inputObject.value("tilesize").toInt();
-    ret.height = inputObject.value("height").toInt();
-    ret.width = inputObject.value("width").toInt();
-    ret.nlevels = inputObject.value("nlevels").toInt();
+    data.overlap = inputObject.value("overlap").toInt();
+    data.tilesize = inputObject.value("tilesize").toInt();
+    data.height = inputObject.value("height").toInt();
+    data.width = inputObject.value("width").toInt();
+    data.nlevels = inputObject.value("nlevels").toInt();
     offsets = inputObject.value("offsets").toArray();
 
     return "OK";
@@ -263,7 +258,7 @@ inline QString itarZoom(const QString& inputFolder, const QString& output, std::
     // Vector of files in the right order
     std::vector<QFile*> files;
     // Final tzi sizes
-    std::vector<std::vector<uint32_t>> tzbSizes;
+    std::vector<std::deque<uint32_t>> tzbSizes;
     int nSizes = 0;
     // Final tzi offsets
     QJsonArray tzbOffsets;
@@ -274,12 +269,12 @@ inline QString itarZoom(const QString& inputFolder, const QString& output, std::
     // Convert each plane
     for (int i=0; i<nPlanes; i++)
     {
-        // Data contained in the dzi
+        // Data contained in the tzi
         ZoomData data;
         // Tarzoom vector of offset
         QJsonArray offsets;
         // Offset to size convertion
-        std::vector<uint32_t> sizes;
+        std::deque<uint32_t> sizes;
 
         // Get tzi data
         QString err = getItarzoomPlaneData(QString("%1/plane_%2.tzi").arg(inputFolder).arg(i), data, offsets);
@@ -299,12 +294,16 @@ inline QString itarZoom(const QString& inputFolder, const QString& output, std::
             tzi.insert("nlevels", data.nlevels);
             tzi.insert("mode", "interleaved");
             tzi.insert("stride", nPlanes);
+            tzi.insert("width", data.width);
+            tzi.insert("height", data.height);
             tziSetup = true;
         }
 
         // Append file to final tzb
         QString tzbPath = QString("%1/plane_%2.tzb").arg(inputFolder).arg(i);
         files.push_back(new QFile(tzbPath));
+        if (!files[i]->open(QIODevice::ReadOnly))
+            return QString("Error while opening .tzb file %1").arg(files[i]->fileName());
 
         // Update progress bar
         if(!progressed("Itarzoom:", 50*(i+1)/nPlanes))
@@ -316,14 +315,12 @@ inline QString itarZoom(const QString& inputFolder, const QString& output, std::
     {
         // Get tzbSizes[i] bytes from the i%nPlanes file and write them on the final file
         int fileIdx = i % nPlanes;
-        if (!files[fileIdx]->open(QIODevice::ReadOnly))
-            return QString("Error while opening .tzb file %1").arg(files[fileIdx]->fileName());
         // Take a size from vector 0 first, then from vector 1 etc, then get the next one from vector0,
         // then from vector1 etc
-        outFile.write(files[fileIdx]->read(tzbSizes[fileIdx][i / nPlanes]));
-        files[fileIdx]->close();
+        outFile.write(files[fileIdx]->read(tzbSizes[fileIdx][0]));
+        offset += tzbSizes[fileIdx][0];
 
-        offset += tzbSizes[fileIdx][i / nPlanes];
+        tzbSizes[fileIdx].pop_front();
         tzbOffsets.append(offset);
 
         if(!progressed("Itarzoom:", 50 + 50*(i+1)/tzbSizes.size()))

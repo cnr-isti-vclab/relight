@@ -9,6 +9,9 @@ void ZoomTask::run()
     QString outFolder = hasParameter("output") ? (*this)["output"].value.toString() : "";
     QString inFolder = hasParameter("input") ? (*this)["input"].value.toString() : "";
 
+    this->output = outFolder;
+    this->input_folder = inFolder;
+
     int quality = hasParameter("quality") ? (*this)["quality"].value.toInt() : -1;
     int overlap = hasParameter("overlap") ? (*this)["overlap"].value.toInt() : -1;
     int tilesize = hasParameter("tilesize") ? (*this)["tilesize"].value.toInt() : -1;
