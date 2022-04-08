@@ -7,6 +7,7 @@
 #include <QRect>
 
 #include "rtitask.h"
+#include "zoom.h"
 #include "../src/rti.h"
 #include "../src/deepzoom.h"
 #include "../relight-cli/rtibuilder.h"
@@ -29,14 +30,14 @@ RtiTask::~RtiTask() {
 void relight();
 void toRTI();
 void fromRTI();
-void deepzoom();
-void tarzoom();
 void itarzoom();
 
 
 void RtiTask::run() {
 	status = RUNNING;
 	QStringList steps = (*this)["steps"].value.toStringList();
+    std::function<bool(std::string s, int d)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
+    QString err;
 	for(auto step: steps) {
 		if(step == "relight")
 			relight();
@@ -44,17 +45,26 @@ void RtiTask::run() {
 			toRTI();
 		else if(step == "fromRTI")
 			fromRTI();
-		else if(step == "deepzoom")
-			deepzoom();
-		else if(step == "tarzoom")
-			tarzoom();
-		else if(step == "itarzoom")
-			itarzoom();
+        else if(step == "deepzoom") {
+            if ((err = deepZoom(input_folder, output, 95, 0, 256, callback)).compare("OK") != 0)
+                status = FAILED;
+        }
+        else if(step == "tarzoom") {
+            if ((err = tarZoom(output, output, callback)).compare("OK") != 0)
+                status = FAILED;
+        }
+        else if(step == "itarzoom") {
+            if ((err = itarZoom(output, output, callback)).compare("OK") != 0)
+                status = FAILED;
+        }
 		else if(step == "openlime")
 			openlime();
 	}
 	if(status != FAILED)
 		status = DONE;
+    else
+        error = err;
+    qDebug() << "zoom error: " << err;
 }
 
 void  RtiTask::relight() {
@@ -133,84 +143,6 @@ int nPlanes(QString output) {
 	QDir destination(output);
 	return destination.entryList(QStringList("plane_*.jpg"), QDir::Files).size();
 }
-void RtiTask::deepzoom() {
-	int nplanes = nPlanes(output);
-	int quality= (*this)["quality"].value.toInt();
-
-    // Deep zoom every plane
-    for(int plane = 0; plane < nplanes; plane++)
-    {
-        // Load image, setup output folder for this plane
-        QString fileName = (QStringList() << QString("%1/plane_%2").arg(output).arg(plane) << QString(".jpg")).join("");
-		QString folderName = QString("%1/plane_%2").arg(output).arg(plane).toStdString().c_str();
-
-		DeepZoom deepzoom;
-		deepzoom.build(fileName, folderName, 256, 0);
-
-
-        // Update progress bar
-		if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))
-			break;
-    }
-
-    /**
-    if (vips_dzsave(ImOutTotal, "C:\\VIPS_Imaging\\Colon\\My_Tiles",
-
-        //"compression" , 1,
-        NULL))   //Here the run-time throw the exception!!!
-    {
-        const char* cError = vips_error_buffer();
-
-        vips_error_exit(cError);
-    }
-     */
-}
-
-
-void RtiTask::tarzoom() {
-	int nplanes = nPlanes(output);
-    // For each plane file
-    for(int plane = 0; plane < nplanes; plane++)
-    {
-		/** TODO: handle errors in deep zoom, stick to old names */
-        /** Run a single tarzoom script:
-         *
-         *  - Keep an index object containing the data about the tarzoom
-         *  - Read the dzi contents
-         *  - Create a .tzb file
-         *  - Find all the folders that end with "_files" (deep zoom folders)
-         *  - For each of those folders:
-         *      - Get all the folders (0 to 5)
-         *      - For each of those folders:
-         *          - files = [(f.name, f.path) for f in os.scandir(level[1]) if f.is_file()]
-         *          - Has this been tested? Shouldn't it be ... scandir(level) ... ?
-         *          - For each of those files:
-         *              - Computations in the file
-         */
-		runPythonScript("tarzoom.py", QStringList() << QString("plane_%1").arg(plane), output);
-		if(status == FAILED)
-			return;
-
-		if(!progressed("Tarzoom:", 100*(plane+1)/nplanes))
-			break;
-	}
-}
-
-void RtiTask::itarzoom() {
-	int nplanes = nPlanes(output);
-	QStringList args;
-	for(int i = 0; i < nplanes; i++)
-		args << QString("plane_%1.tzi").arg(i);
-	args << "planes";
-	runPythonScript("itarzoom.py", args, output);
-	cout << qPrintable(log) << endl;
-	if(status == FAILED)
-		return;
-
-	progressed("Itarzoom:", 100);
-
-}
-
 
 void RtiTask::openlime() {
 	QStringList files = QStringList() << ":/demo/index.html"
@@ -226,26 +158,6 @@ void RtiTask::openlime() {
 		copy.open(QFile::WriteOnly);
 		copy.write(fp.readAll());
 	}
-}
-
-void RtiTask::pause() {
-	mutex.lock();
-	status = PAUSED;
-}
-
-void RtiTask::resume() {
-	if(status == PAUSED) {
-		status = RUNNING;
-		mutex.unlock();
-	}
-}
-
-void RtiTask::stop() {
-	if(status == PAUSED) { //we were already locked then.
-		status = STOPPED;
-		mutex.unlock();
-	}
-	status = STOPPED;
 }
 
 bool RtiTask::progressed(std::string s, int percent) {

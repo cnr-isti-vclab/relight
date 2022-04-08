@@ -6,7 +6,7 @@ set(CMAKE_FIND_FRAMEWORK LAST)
 
 find_package(
 	${RELIGHT_QT}
-	COMPONENTS Core Gui Widgets Concurrent
+	COMPONENTS Core Gui Widgets Concurrent Xml
 	REQUIRED)
 find_package(OpenMP)
 
@@ -76,6 +76,10 @@ set (RELIGHT_HEADERS
 	qwhitemarker.h
 	white.h
 	convertdialog.h
+	zoom.h
+	zoomtask.h
+	zoomdialog.h
+	
 )
 
 set (RELIGHT_SOURCES
@@ -125,6 +129,8 @@ set (RELIGHT_SOURCES
 	qwhitemarker.cpp
 	white.cpp
 	convertdialog.cpp
+	zoomtask.cpp
+	zoomdialog.cpp
 )
 
 set (RELIGHT_FORMS
@@ -158,6 +164,7 @@ target_link_libraries(
 		${RELIGHT_QT}::Gui
 		${RELIGHT_QT}::Widgets
 		${RELIGHT_QT}::Concurrent
+		${RELIGHT_QT}::Xml
 	)
 
  
