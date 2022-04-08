@@ -24,6 +24,7 @@
 
 void NormalsTask::run()
 {
+    status = RUNNING;
     // Save the normal as jpg file
     JpegEncoder encoder;
     // ImageSet initialization
@@ -87,6 +88,13 @@ void NormalsTask::run()
 
 bool NormalsTask::progressed(std::string s, int percent)
 {
+    if(status == PAUSED) {
+        mutex.lock();  //mutex should be already locked. this talls the
+        mutex.unlock();
+    }
+    if(status == STOPPED)
+        return false;
+
     QString str(s.c_str());
     emit progress(str, percent);
     if(status == STOPPED)
@@ -94,10 +102,10 @@ bool NormalsTask::progressed(std::string s, int percent)
     return true;
 }
 
-//////////////////////////////////////////////////////// NORMALS WORKER //////////////////////////////////////////////////////////
-/// \brief NormalsWorker: generates the normals for a given line in the image set, depending on the method specified when
-///         creating the Worker.
-///
+/**
+ *   \brief NormalsWorker: generates the normals for a given line in the image set, depending on the method specified when
+ *          creating the Worker.
+**/
 
 
 void NormalsWorker::run()

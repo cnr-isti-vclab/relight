@@ -4,6 +4,13 @@
 #include <QDir>
 #include "task.h"
 
+/** TODO
+ *  -   Copy info.json to output folder if it's different from the input folder
+ *  -   Properly show task info in the process queue: trying to delete a task shows the info for some reason
+ *  -   Make resume and stop actually work
+ */
+
+
 class ZoomTask : public Task
 {
 public:

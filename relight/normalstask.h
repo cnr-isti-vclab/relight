@@ -20,9 +20,6 @@ public:
     virtual ~NormalsTask(){};
 
     virtual void run() override;
-    virtual void resume() override {};
-    virtual void pause() override {};
-    virtual void stop() override {};
 
 public slots:
     bool progressed(std::string str, int percent) override;
