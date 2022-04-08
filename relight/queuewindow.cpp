@@ -93,7 +93,7 @@ void QueueWindow::remove() {
 		tasks.push_back(item->task->label);
 	}
 	int answer = QMessageBox::question(this, "Removing tasks",
-									   QString("Are you sure you want to remove this tasks:?\n") + tasks.join("\n"),
+                                       QString("Are you sure you want to remove this task:?\n") + tasks.join("\n"),
 									   QMessageBox::Cancel, QMessageBox::Ok);
 	if(answer == QMessageBox::No)
 		return;
@@ -133,7 +133,7 @@ void QueueWindow::update() {
 		tasks.insert(item->id);
 	}
 	ProcessQueue &queue = ProcessQueue::instance();
-	//add all task not already presetn.
+    //add all task not already present.
 	for(Task *task: queue.queue) {
 		if(!tasks.contains(task->id)) {
 			QueueItem *item = new QueueItem(task, ui->list);
