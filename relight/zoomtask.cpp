@@ -21,6 +21,23 @@ void ZoomTask::run()
     std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
     QString zoomError;
 
+    // Try copying info.json to the output folder to allow for casting
+    if (outFolder.compare(inFolder) != 0)
+    {
+        // Overwrite previous file if it exists
+        QFile outInfo(QString("%1/info.json").arg(outFolder));
+        if (outInfo.exists())
+        {
+            outInfo.setPermissions(QFileDevice::WriteOther | QFileDevice::WriteOwner);
+            outInfo.remove();
+        }
+
+        // Copy file
+        QFile inInfo(QString("%1/info.json").arg(inFolder));
+        if (inInfo.exists())
+            inInfo.copy(QString("%1/info.json").arg(outFolder));
+    }
+
     // General error checking
     if (outFolder.compare("") == 0) {
         error = "Unspecified output folder";
