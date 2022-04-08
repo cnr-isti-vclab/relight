@@ -4,6 +4,11 @@
 #include <QDir>
 #include "task.h"
 
+/** TODO
+ *  -   Properly show task info in the process queue: trying to delete a task shows the info for some reason
+ */
+
+
 class ZoomTask : public Task
 {
 public:
@@ -13,9 +18,6 @@ public:
     ~ZoomTask(){};
 
     virtual void run() override;
-    virtual void pause() override {}
-    virtual void resume() override {}
-    virtual void stop() override {}
     virtual bool progressed(std::string s, int percent) override;
 
 private:

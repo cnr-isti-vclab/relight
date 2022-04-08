@@ -156,26 +156,6 @@ void RtiTask::openlime() {
 	}
 }
 
-void RtiTask::pause() {
-	mutex.lock();
-	status = PAUSED;
-}
-
-void RtiTask::resume() {
-	if(status == PAUSED) {
-		status = RUNNING;
-		mutex.unlock();
-	}
-}
-
-void RtiTask::stop() {
-	if(status == PAUSED) { //we were already locked then.
-		status = STOPPED;
-		mutex.unlock();
-	}
-	status = STOPPED;
-}
-
 bool RtiTask::progressed(std::string s, int percent) {
 	QString str(s.c_str());
 	emit progress(str, percent);

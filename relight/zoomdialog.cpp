@@ -54,8 +54,8 @@ void ZoomDialog::doZoom()
     ProcessQueue& queue = ProcessQueue::instance();
     ZoomTask* task = new ZoomTask(this, m_ZoomType);
 
-    task->addParameter("output", Parameter::Type::STRING, m_OutputFolder);
-    task->addParameter("input", Parameter::Type::STRING, m_InputFolder);
+    task->input_folder = m_InputFolder;
+    task->output = m_OutputFolder;
     task->addParameter("quality", Parameter::Type::INT, m_JpegQuality);
     task->addParameter("overlap", Parameter::Type::INT, m_Overlap);
     task->addParameter("tilesize", Parameter::Type::INT, m_TileSize);
