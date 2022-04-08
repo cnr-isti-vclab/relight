@@ -31,7 +31,6 @@ private:
     QString m_OutputFolder;
     QRect m_Crop;
     uint32_t m_Method;
-    QMutex m_Mutex;
 };
 
 class NormalsWorker
