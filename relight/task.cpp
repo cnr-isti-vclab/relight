@@ -90,3 +90,23 @@ void Task::runScript(QString program, QString script, QStringList arguments, QSt
 		status = FAILED;
 	error = log;
 }
+
+void Task::pause() {
+    mutex.lock();
+    status = PAUSED;
+}
+
+void Task::resume() {
+    if(status == PAUSED) {
+        status = RUNNING;
+        mutex.unlock();
+    }
+}
+
+void Task::stop() {
+    if(status == PAUSED) { //we were already locked then.
+        status = STOPPED;
+        mutex.unlock();
+    }
+    status = STOPPED;
+}

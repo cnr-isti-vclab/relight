@@ -88,14 +88,14 @@ inline QString getItarzoomPlaneData(const QString& path, ZoomData& data, QJsonAr
 inline QString deepZoom(QString inputFolder, QString output, uint32_t quality, uint32_t overlap,
               uint32_t tileSize, std::function<bool(std::string s, int n)> progressed)
 {
-    int nplanes = getNFiles(output, "jpg");
+    int nplanes = getNFiles(inputFolder, "jpg");
 
 
     // Deep zoom every plane
     for(int plane = 0; plane < nplanes; plane++)
     {
         // Load image, setup output folder for this plane
-        QString fileName = (QStringList() << QString("%1/plane_%2").arg(output).arg(plane) << QString(".jpg")).join("");
+        QString fileName = (QStringList() << QString("%1/plane_%2").arg(inputFolder).arg(plane) << QString(".jpg")).join("");
         DeepZoom dz;
         dz.build(fileName, output + "/" + QString("plane_%1").arg(plane), tileSize, overlap);
 
