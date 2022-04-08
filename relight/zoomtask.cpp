@@ -5,6 +5,7 @@
 
 void ZoomTask::run()
 {
+    status = RUNNING;
     // Parameter retrieval
     QString outFolder = hasParameter("output") ? (*this)["output"].value.toString() : "";
     QString inFolder = hasParameter("input") ? (*this)["input"].value.toString() : "";
@@ -134,6 +135,13 @@ void ZoomTask::deletePrevFiles(QDir folder)
 
 bool ZoomTask::progressed(std::string s, int percent)
 {
+    if(status == PAUSED) {
+        mutex.lock();
+        mutex.unlock();
+    }
+    if(status == STOPPED)
+        return false;
+
     QString str(s.c_str());
     emit progress(str, percent);
     if(status == STOPPED)
