@@ -2,15 +2,21 @@
 
 void DStretchTask::run()
 {
-
+    status = RUNNING;
 }
 
-void DStretchTask::pause()
+bool DStretchTask::progressed(std::string s, int percent)
 {
+    if(status == PAUSED) {
+        mutex.lock();
+        mutex.unlock();
+    }
+    if(status == STOPPED)
+        return false;
 
-}
-
-void DStretchTask::stop()
-{
-
+    QString str(s.c_str());
+    emit progress(str, percent);
+    if(status == STOPPED)
+        return false;
+    return true;
 }

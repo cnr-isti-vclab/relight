@@ -3,6 +3,7 @@
 #include <dstretchtask.h>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <ProcessQueue.h>
 
 DStretchDialog::DStretchDialog(QWidget *parent) :
     QDialog(parent),
@@ -42,5 +43,10 @@ void DStretchDialog::buttonGenerateClicked()
 
     m_OutputFile = output;
 
-    DStretchTask task;
+    DStretchTask* task = new DStretchTask(this);
+    task->output = output;
+    task->input_folder = m_InputFile;
+
+    ProcessQueue& instance = ProcessQueue::instance();
+    instance.addTask(task);
 }

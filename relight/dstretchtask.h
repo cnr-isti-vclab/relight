@@ -10,8 +10,7 @@ public:
     virtual ~DStretchTask(){}
 
     virtual void run() override;
-    virtual void pause() override;
-    virtual void stop() override;
+    virtual bool progressed(std::string str, int percent) override;
 };
 
 #endif // DSTRETCHTASK_H
