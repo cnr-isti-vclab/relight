@@ -3,7 +3,6 @@
 
 #include "graphics_view_zoom.h"
 #include "rtiexport.h"
-#include "zoomdialog.h"
 #include "../src/imageset.h"
 #include "helpdialog.h"
 #include "focaldialog.h"
@@ -85,6 +84,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionNewAlign, SIGNAL(triggered()), this, SLOT(newAlign()));
     connect(ui->actionNewMeasure, SIGNAL(triggered()), this, SLOT(newMeasure()));
 
+    connect(ui->actionDStretch, SIGNAL(triggered()), this, SLOT(dStretch()));
     connect(ui->actionDelete_selected, SIGNAL(triggered()), this, SLOT(deleteSelected()));
     ui->actionDelete_selected->setShortcuts(QList<QKeySequence>() << Qt::Key_Delete << Qt::Key_Backspace);
 
@@ -115,6 +115,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	rtiexport = new RtiExport(this);
     zoom = new ZoomDialog(this);
+    dstretch = new DStretchDialog(this);
 	help = new HelpDialog(this);
 	imageModel = new QStandardItemModel(ui->imageList1);
 	ui->imageList1->setModel(imageModel);
@@ -915,6 +916,16 @@ void MainWindow::itarZoom()
     zoom->setModal(true);
     zoom->show();
     zoom->exec();
+
+    if(ProcessQueue::instance().queue.size())
+        showQueue();
+}
+
+void MainWindow::dStretch()
+{
+    dstretch->setModal(true);
+    dstretch->show();
+    dstretch->exec();
 
     if(ProcessQueue::instance().queue.size())
         showQueue();
