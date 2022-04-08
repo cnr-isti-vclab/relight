@@ -6,12 +6,6 @@
 void ZoomTask::run()
 {
     status = RUNNING;
-    // Parameter retrieval
-    QString outFolder = hasParameter("output") ? (*this)["output"].value.toString() : "";
-    QString inFolder = hasParameter("input") ? (*this)["input"].value.toString() : "";
-
-    this->output = outFolder;
-    this->input_folder = inFolder;
 
     int quality = hasParameter("quality") ? (*this)["quality"].value.toInt() : -1;
     int overlap = hasParameter("overlap") ? (*this)["overlap"].value.toInt() : -1;
@@ -22,10 +16,10 @@ void ZoomTask::run()
     QString zoomError;
 
     // Try copying info.json to the output folder to allow for casting
-    if (outFolder.compare(inFolder) != 0)
+    if (output.compare(input_folder) != 0)
     {
         // Overwrite previous file if it exists
-        QFile outInfo(QString("%1/info.json").arg(outFolder));
+        QFile outInfo(QString("%1/info.json").arg(output));
         if (outInfo.exists())
         {
             outInfo.setPermissions(QFileDevice::WriteOther | QFileDevice::WriteOwner);
@@ -33,17 +27,17 @@ void ZoomTask::run()
         }
 
         // Copy file
-        QFile inInfo(QString("%1/info.json").arg(inFolder));
+        QFile inInfo(QString("%1/info.json").arg(input_folder));
         if (inInfo.exists())
-            inInfo.copy(QString("%1/info.json").arg(outFolder));
+            inInfo.copy(QString("%1/info.json").arg(output));
     }
 
     // General error checking
-    if (outFolder.compare("") == 0) {
+    if (output.compare("") == 0) {
         error = "Unspecified output folder";
         status = FAILED;
         return;
-    }else if (inFolder.compare("") == 0) {
+    }else if (input_folder.compare("") == 0) {
         error = "Unspecified input folder";
         status = FAILED;
         return;
@@ -67,16 +61,16 @@ void ZoomTask::run()
             return;
         } else {
             // Launching deep zoom
-            zoomError = deepZoom(inFolder, outFolder, quality, overlap, tilesize, callback);
+            zoomError = deepZoom(input_folder, output, quality, overlap, tilesize, callback);
         }
         break;
     case ZoomType::Tarzoom:
         // Launching tar zoom
-        zoomError = tarZoom(inFolder, outFolder, callback);
+        zoomError = tarZoom(input_folder, output, callback);
         break;
     case ZoomType::ITarzoom:
         // Launching itar zoom
-        zoomError = itarZoom(inFolder, outFolder, callback);
+        zoomError = itarZoom(input_folder, output, callback);
         break;
     case ZoomType::None:
         break;
@@ -89,7 +83,7 @@ void ZoomTask::run()
     }
 
     if (deleteFiles)
-        deletePrevFiles(inFolder);
+        deletePrevFiles(input_folder);
     status = DONE;
 }
 
