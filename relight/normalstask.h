@@ -10,6 +10,7 @@
 #include <QRect>
 #include "../src/relight_vector.h"
 #include "task.h"
+#include <QRunnable>
 
 class NormalsTask :  public Task
 {
@@ -19,9 +20,6 @@ public:
     virtual ~NormalsTask(){};
 
     virtual void run() override;
-    virtual void resume() override {};
-    virtual void pause() override {};
-    virtual void stop() override {};
 
 public slots:
     bool progressed(std::string str, int percent) override;
@@ -30,7 +28,6 @@ private:
     QString m_OutputFolder;
     QRect m_Crop;
     uint32_t m_Method;
-    QMutex m_Mutex;
 };
 
 class NormalsWorker

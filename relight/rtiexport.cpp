@@ -7,6 +7,7 @@
 #include <QFuture>
 #include <QThreadPool>
 #include <QtConcurrent/QtConcurrent>
+#include <time.h>
 
 #include "rtiexport.h"
 #include "ui_rtiexport.h"

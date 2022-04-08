@@ -1,9 +1,10 @@
-QT += core gui widgets concurrent
+QT += core gui widgets concurrent xml
 
 QMAKE_CXXFLAGS += -std=c++17
 
 TARGET = relight
 CONFIG -= app_bundle
+UI_DIR = $$PWD
 
 TEMPLATE = app
 
@@ -31,6 +32,7 @@ mac:QMAKE_LFLAGS += -lomp
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 
 SOURCES += main.cpp \
+    ../src/deepzoom.cpp \
     imagecropper.cpp \
     mainwindow.cpp \
     graphics_view_zoom.cpp \
@@ -74,10 +76,13 @@ SOURCES += main.cpp \
     white.cpp \
     convertdialog.cpp \
     aligndialog.cpp \
+    zoomdialog.cpp \
+    zoomtask.cpp \
     ../src/deepzoom.cpp
 
 
 HEADERS += \
+    ../src/deepzoom.h \
     imagecropper.h \
     mainwindow.h \
     graphics_view_zoom.h \
@@ -98,7 +103,7 @@ HEADERS += \
     image.h \
     ../src/exif.h \
     httpserver.h \
-    scripts.h \ 
+    scripts.h \
     processqueue.h \
     queuewindow.h \
     queueitem.h \
@@ -124,13 +129,17 @@ HEADERS += \
     white.h \
     convertdialog.h \
     aligndialog.h \
+    zoom.h \
+    zoomdialog.h \
+    zoomtask.h \
     ../src/deepzoom.h
 
 FORMS += \
     mainwindow.ui \
     rtiexport.ui \
     helpdialog.ui \
-    focaldialog.ui \  
+    focaldialog.ui \
+    zoomdialog.ui   \
     queuewindow.ui \
     settingsdialog.ui \
     domecalibration.ui \

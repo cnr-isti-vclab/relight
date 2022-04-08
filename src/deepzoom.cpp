@@ -3,6 +3,7 @@
 #include "jpeg_decoder.h"
 
 #include <QDir>
+#include <QDebug>
 
 #include <iostream>
 #include <fstream>
@@ -134,7 +135,7 @@ bool DeepZoom::build(QString input, QString _output, int _tileside, int _overlap
 
 	//for each level
 	//line by line
-	for(int y = 0; y < height; y++) {
+    for(int y = 0; y < height; y++) {
 		std::vector<uint8_t> line(width*3);
 		decoder.readRows(1, line.data());
 
