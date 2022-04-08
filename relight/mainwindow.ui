@@ -278,6 +278,7 @@
     <addaction name="actionNewWhite"/>
     <addaction name="actionNewAlign"/>
     <addaction name="separator"/>
+    <addaction name="actionDStretch"/>
     <addaction name="actionDetectHighlights"/>
     <addaction name="separator"/>
     <addaction name="actionDelete_selected"/>
@@ -709,6 +710,11 @@
   <action name="actionItarzoom">
    <property name="text">
     <string>Itarzoom</string>
+   </property>
+  </action>
+  <action name="actionDStretch">
+   <property name="text">
+    <string>D-Stretch</string>
    </property>
   </action>
  </widget>
