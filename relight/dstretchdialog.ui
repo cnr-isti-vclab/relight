@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
+    <width>550</width>
     <height>300</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
     <rect>
      <x>10</x>
      <y>0</y>
-     <width>371</width>
+     <width>531</width>
      <height>281</height>
     </rect>
    </property>
@@ -28,7 +28,7 @@
    <widget class="QPushButton" name="buttonBrowse">
     <property name="geometry">
      <rect>
-      <x>260</x>
+      <x>90</x>
       <y>40</y>
       <width>80</width>
       <height>25</height>
@@ -41,24 +41,95 @@
    <widget class="QPushButton" name="buttonGenerate">
     <property name="geometry">
      <rect>
-      <x>160</x>
-      <y>220</y>
+      <x>230</x>
+      <y>240</y>
       <width>80</width>
       <height>25</height>
      </rect>
     </property>
     <property name="text">
-     <string>DStretch</string>
+     <string>Save file</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="textFilePath">
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>180</x>
       <y>40</y>
-      <width>241</width>
+      <width>341</width>
       <height>24</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>40</y>
+      <width>55</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>File path</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>80</y>
+      <width>81</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::RightToLeft</enum>
+    </property>
+    <property name="text">
+     <string>1000</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>80</y>
+      <width>81</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Min samples:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_3">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>80</y>
+      <width>91</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Sampling rate:</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_2">
+    <property name="geometry">
+     <rect>
+      <x>270</x>
+      <y>80</y>
+      <width>31</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::RightToLeft</enum>
+    </property>
+    <property name="text">
+     <string>98</string>
     </property>
    </widget>
   </widget>

@@ -60,6 +60,7 @@ template <class T> struct Color3 {
 	T r, g, b;
 	Color3() {}
 	Color3(T _r, T _g, T _b): r(_r), g(_g), b(_b) {}
+    // Unsafe, maybe redefine color as a vector and have r(), g() and b() methods?
 	T &operator[](int n) { return ((T *)this)[n]; }
 
 	//This is actually worse than the approximate ycc below.
