@@ -46,7 +46,10 @@ void DStretchDialog::buttonGenerateClicked()
     DStretchTask* task = new DStretchTask(this);
     task->output = output;
     task->input_folder = m_InputFile;
+    task->addParameter("sample_rate", Parameter::INT, 1000);
 
     ProcessQueue& instance = ProcessQueue::instance();
     instance.addTask(task);
+
+    close();
 }
