@@ -1,6 +1,7 @@
 #ifndef DSTRETCHTASK_H
 #define DSTRETCHTASK_H
 
+#include <Eigen/Eigen>
 #include <task.h>
 
 class DStretchTask : public Task
