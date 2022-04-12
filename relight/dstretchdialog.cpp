@@ -3,16 +3,21 @@
 #include <dstretchtask.h>
 #include <QFileDialog>
 #include <QMessageBox>
-#include <ProcessQueue.h>
+#include <processqueue.h>
+#include <qlineedit.h>
+#include <QIntValidator>
 
 DStretchDialog::DStretchDialog(QWidget *parent) :
     QDialog(parent),
     m_Ui(new Ui::dstretchdialog)
 {
     m_Ui->setupUi(this);
+    // MAX: 3200
+    m_Ui->textMinSamples->setValidator(new QIntValidator(1000, 4000, this));
 
     connect(m_Ui->buttonBrowse, SIGNAL(clicked()), this, SLOT(buttonBrowseClicked()));
     connect(m_Ui->buttonGenerate, SIGNAL(clicked()), this, SLOT(buttonGenerateClicked()));
+    connect(m_Ui->textMinSamples, &QLineEdit::textChanged, [=](QString text){m_NSamples = text.toUInt();});
 }
 
 DStretchDialog::~DStretchDialog()
@@ -46,7 +51,7 @@ void DStretchDialog::buttonGenerateClicked()
     DStretchTask* task = new DStretchTask(this);
     task->output = output;
     task->input_folder = m_InputFile;
-    task->addParameter("sample_rate", Parameter::INT, 1000);
+    task->addParameter("min_samples", Parameter::INT, m_NSamples);
 
     ProcessQueue& instance = ProcessQueue::instance();
     instance.addTask(task);

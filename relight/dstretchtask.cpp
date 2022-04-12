@@ -14,10 +14,12 @@
 
 void DStretchTask::run()
 {
+    uint32_t minSamples;
+
     status = RUNNING;
     // Get sample rate
-    if (hasParameter("sample_rate"))
-        m_SampleRate = (*this)["sample_rate"].value.toInt();
+    if (hasParameter("min_samples"))
+        minSamples = (*this)["min_samples"].value.toInt();
     else {
         error = "Unspecified sample rate";
         status = FAILED;
@@ -29,7 +31,8 @@ void DStretchTask::run()
     // Vector used to store samples
     std::vector<Color3b> samples;
     // Final data to be saved
-    std::vector<uint8_t> dstretched;
+    std::vector<int> dstretched;
+    std::vector<uint8_t> dstretchedBytes;
     // Size of the image
     int width, height;
     // Jpeg encoder and decoder to handle output and input
@@ -45,10 +48,13 @@ void DStretchTask::run()
     // Channel means
     Eigen::VectorXd means(3);
     means.fill(0);
+    // Max and min values for channels (used to rescale the output)
+    int mins[] = {256, 256, 256};
+    int maxs[] = {-1, -1, -1};
 
     // TODO: make sure at least nSamples are sampled
-    uint32_t samplesHorizontal = std::ceil(std::sqrt(1000) * ((float)width / height));
-    uint32_t samplesVertical = std::ceil(std::sqrt(1000) * ((float)height / width));
+    uint32_t samplesHorizontal = std::ceil(std::sqrt(minSamples) * ((float)width / height));
+    uint32_t samplesVertical = std::ceil(std::sqrt(minSamples) * ((float)height / width));
     uint32_t rowSkip = height / samplesVertical;
     uint32_t colSkip = width / samplesHorizontal;
 
@@ -64,9 +70,8 @@ void DStretchTask::run()
             // Getting the samples
             for (int col=0; col<pixels.size(); col+=colSkip*3)
             {
-                means(0) += pixels[col];
-                means(1) += pixels[col +1];
-                means(2) += pixels[col +2];
+                for (int i=0; i<3; i++)
+                    means(i) += pixels[i];
 
                 Color3b color(pixels[col], pixels[col+1], pixels[col+2]);
                 samples.push_back(color);
@@ -132,19 +137,31 @@ void DStretchTask::run()
         decoder.readRows(1, pixels.data());
         for (int k=0; k<pixels.size(); k+=3)
         {
-            currPixel(0) = pixels[k] - means(0);
-            currPixel(1) = pixels[k+1] - means(1);
-            currPixel(2) = pixels[k+2] - means(2);
+            for (int j=0; j<3; j++)
+                currPixel(j) = pixels[k+j];
 
-            currPixel = transformation * currPixel + means;
+            currPixel -= means;
+            currPixel = transformation * currPixel + means + offset;
 
-            dstretched.push_back(currPixel(0));
-            dstretched.push_back(currPixel(1));
-            dstretched.push_back(currPixel(2));
+            for (int j=0; j<3; j++)
+            {
+                dstretched.push_back(currPixel[j]);
+                mins[j] = std::min<int>(mins[j], currPixel[j]);
+                maxs[j] = std::max<int>(maxs[j], currPixel[j]);
+            }
         }
+
+        progressed("Transforming...", (i * 100) / height);
     }
 
-    encoder.writeRows(dstretched.data(), height);
+    for (int k=0; k<dstretched.size(); k++)
+    {
+        uint32_t channelIdx = k % 3;
+        dstretchedBytes.push_back(255 * ((float)(dstretched[k] - mins[channelIdx]) / (maxs[channelIdx] - mins[channelIdx])));
+        progressed("Scaling...", (k * 100) / dstretched.size());
+    }
+
+    encoder.writeRows(dstretchedBytes.data(), height);
     encoder.finish();
 
     status = DONE;

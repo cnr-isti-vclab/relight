@@ -14,7 +14,6 @@ public:
     virtual bool progressed(std::string str, int percent) override;
 
 private:
-    uint32_t m_SampleRate;
 };
 
 #endif // DSTRETCHTASK_H
