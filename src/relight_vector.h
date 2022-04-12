@@ -112,6 +112,9 @@ template <class T> struct Color3 {
         g /= v;
         b /= v;
     }
+    bool operator==(const Color3<uint8_t>& other) const {
+        return r == other.r && g == other.g && b == other.b;
+    }
     Color3 operator/(float v) {
         return Color3(r / v, g / v, b / v);
     }

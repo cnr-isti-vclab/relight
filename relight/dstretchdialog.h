@@ -22,6 +22,7 @@ private:
 
     QString m_InputFile = "";
     QString m_OutputFile = "";
+    uint32_t m_NSamples = 1000;
 };
 
 #endif // DSTRETCHDIALOG_H
