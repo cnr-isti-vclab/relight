@@ -30,29 +30,33 @@ void DStretchTask::run()
     std::vector<uint8_t> pixels;
     // Vector used to store samples
     std::vector<Color3b> samples;
+
     // Final data to be saved
     std::vector<int> dstretched;
     std::vector<uint8_t> dstretchedBytes;
-    // Size of the image
-    int width, height;
     // Jpeg encoder and decoder to handle output and input
     JpegDecoder decoder;
     JpegEncoder encoder;
 
-    decoder.init(input_folder.toStdString().c_str(), width, height);
-    encoder.init(output.toStdString().c_str(), width, height);
-    pixels.resize(width * 3);
-
+    // Size of the image
+    int width, height;
     // Covariance matrix
     Eigen::MatrixXd covariance(3, 3);
     // Channel means
     Eigen::VectorXd means(3);
-    means.fill(0);
+
     // Max and min values for channels (used to rescale the output)
     int mins[] = {256, 256, 256};
     int maxs[] = {-1, -1, -1};
 
-    // TODO: make sure at least nSamples are sampled
+    // Initialization
+    decoder.init(input_folder.toStdString().c_str(), width, height);
+    encoder.init(output.toStdString().c_str(), width, height);
+    pixels.resize(width * 3);
+
+    means.fill(0);
+
+    // Compute the distances between a sample and another one so that at least minSamples are taken
     uint32_t samplesHorizontal = std::ceil(std::sqrt(minSamples) * ((float)width / height));
     uint32_t samplesVertical = std::ceil(std::sqrt(minSamples) * ((float)height / width));
     uint32_t rowSkip = height / samplesVertical;
@@ -66,27 +70,28 @@ void DStretchTask::run()
 
         if (row % rowSkip == 0)
         {
-            qDebug() << "Row: " << row;
             // Getting the samples
             for (int col=0; col<pixels.size(); col+=colSkip*3)
             {
                 for (int i=0; i<3; i++)
-                    means(i) += pixels[i];
+                    means(i) += pixels[col + i];
 
                 Color3b color(pixels[col], pixels[col+1], pixels[col+2]);
                 samples.push_back(color);
             }
         }
 
-        progressed("Sampling...", (row * 100) / width);
+        if (row % 10 == 0)
+            progressed("Sampling...", (row * 100) / width);
     }
 
     // Compute the mean of the channels
     for (int i=0; i<3; i++)
         means(i) /= samples.size();
 
-    long long sumChannel[]= {0,0,0};
-    long double sumX[][3] = {{0,0,0},{0,0,0},{0,0,0}};
+    // Compute the sums needed to compute the covariance
+    long sumChannel[]= {0,0,0};
+    double sumX[][3] = {{0,0,0},{0,0,0},{0,0,0}};
 
     for (int k=0; k<samples.size(); k++)
         for (int i=0; i<3; i++)
@@ -95,18 +100,12 @@ void DStretchTask::run()
     for (int l=0; l<3; l++)
         for (int m=0; m<3; m++)
             for (int k=0; k<samples.size(); k++)
-                sumX[l][m] += (samples[k][l] * samples[k][m]) / (samples.size()-1);
+                sumX[l][m] += samples[k][l] * samples[k][m];
 
-    double reducer = ((long double)1.0f/((samples.size()-1) * samples.size()));
+    // Compute the covariance
     for (int l=0; l<3; l++)
-    {
         for (int m=0; m<3; m++)
-        {
-            long double channelLreduced = reducer * sumChannel[l];
-            long double bothChannels = channelLreduced * sumChannel[m];
-            covariance(l, m) = sumX[l][m] - bothChannels;
-        }
-    }
+            covariance(l,m) = ((double)(1.0f/(samples.size() - 1))) * (sumX[l][m] - ((double)1.0f/samples.size())*sumChannel[l]*sumChannel[m]);
 
     // Compute the rotation
     Eigen::EigenSolver<Eigen::MatrixXd> solver(covariance, true);
@@ -117,11 +116,9 @@ void DStretchTask::run()
     for (int i=0; i<3; i++)
         sigma(i, i) = std::sqrt(sigma(i,i));
 
-    qDebug() << eigenValues(0) << "," << eigenValues(1) << "," << eigenValues(2) << "," ;
     // Compute the stretching factor
     for (int i=0; i<3; i++)
         eigenValues(i) = 1.0f / std::sqrt(eigenValues(i) >= 0 ? eigenValues(i) : -eigenValues(i));
-    qDebug() << eigenValues(0) << "," << eigenValues(1) << "," << eigenValues(2) << "," ;
 
     // Compute the final transformation matrix
     Eigen::MatrixXd transformation = sigma * rotation * eigenValues.asDiagonal() * rotation.transpose();
@@ -151,16 +148,20 @@ void DStretchTask::run()
             }
         }
 
-        progressed("Transforming...", (i * 100) / height);
+        if (i % 100 == 0)
+            progressed("Transforming...", (i * 100) / height);
     }
 
     for (int k=0; k<dstretched.size(); k++)
     {
         uint32_t channelIdx = k % 3;
         dstretchedBytes.push_back(255 * ((float)(dstretched[k] - mins[channelIdx]) / (maxs[channelIdx] - mins[channelIdx])));
-        progressed("Scaling...", (k * 100) / dstretched.size());
+
+        if (k % 100 == 0)
+            progressed("Scaling...", (k * 100) / dstretched.size());
     }
 
+    progressed("Saving...", 50);
     encoder.writeRows(dstretchedBytes.data(), height);
     encoder.finish();
 
