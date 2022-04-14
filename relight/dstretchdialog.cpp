@@ -13,7 +13,7 @@ DStretchDialog::DStretchDialog(QWidget *parent) :
 {
     m_Ui->setupUi(this);
     // MAX: 3200
-    m_Ui->textMinSamples->setValidator(new QIntValidator(1000, 4000, this));
+    m_Ui->textMinSamples->setValidator(new QIntValidator(1000, 10000000, this));
 
     connect(m_Ui->buttonBrowse, SIGNAL(clicked()), this, SLOT(buttonBrowseClicked()));
     connect(m_Ui->buttonGenerate, SIGNAL(clicked()), this, SLOT(buttonGenerateClicked()));
