@@ -44,6 +44,7 @@ void ImageSet::parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::
 bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip_image) {
 
 	QDir dir(_path);
+    this->path = QString(_path);
 	QStringList lps = dir.entryList(QStringList() << "*.lp");
 	if(lps.size() == 0) {
 		cerr << "Could not find .lp file";
@@ -96,6 +97,7 @@ bool ImageSet::initFromProject(const char *filename) {
 
 	QFileInfo info(filename);
 	QDir folder = info.dir();
+    path = QString(folder.absolutePath());
 	folder.cd(obj["folder"].toString());
 
 	for(auto img: obj["images"].toArray()) {

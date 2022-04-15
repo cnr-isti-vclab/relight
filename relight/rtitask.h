@@ -29,6 +29,7 @@ public slots:
     bool progressed(std::string str, int percent) override;
 
 	void relight();
+    void dstretch();
 	void toRTI();
     void fromRTI();
 	void openlime();

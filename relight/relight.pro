@@ -85,6 +85,7 @@ SOURCES += main.cpp \
 
 HEADERS += \
     ../src/deepzoom.h \
+    dstretch.h \
     dstretchdialog.h \
     dstretchtask.h \
     imagecropper.h \
