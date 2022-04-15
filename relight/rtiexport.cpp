@@ -277,18 +277,10 @@ void RtiExport::createRTI1(QString output) {
 	else if(ui->formatItarzoom->isChecked())
 		format = "itarzoom";
 
-	if(format == "tarzoom" || format == "itarzoom") {
-		if(QSettings().value("python_path").toString().isEmpty()) {
-			QMessageBox::critical(this, "Python required", "Python executable needs to be set in the Preferences dialog, for web friendly RTI formats.");
-			return;
-		}
-	}
-
 	RtiTask *task = new RtiTask;
 	task->input_folder = path;
 	task->output = output;
-	task->label = "RTI"; //should use
-
+    task->label = "RTI"; //should use
 
 	uint32_t ram = uint32_t(ui->ram->value());
 	task->addParameter("ram", Parameter::INT, ram);
@@ -313,9 +305,7 @@ void RtiExport::createRTI1(QString output) {
 		return;
 	}
 	int yplanes = nplanes - chroma*2;
-	
 	task->addParameter("yplanes", Parameter::INT, yplanes);
-
 
 	QRect rect = QRect(0, 0, 0, 0);
 	if(ui->cropview->handleShown()) {
@@ -327,7 +317,10 @@ void RtiExport::createRTI1(QString output) {
 
 
 	QStringList steps;
-	steps << "relight";
+    if (ui->chkDStretch->isChecked())
+        steps << "dstretch";
+    steps << "relight";
+
 	if(format == "RTI")
 		steps << "toRTI";
 

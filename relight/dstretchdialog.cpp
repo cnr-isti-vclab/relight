@@ -49,6 +49,10 @@ void DStretchDialog::buttonGenerateClicked()
     m_OutputFile = output;
 
     DStretchTask* task = new DStretchTask(this);
+    QStringList files;
+
+    files << m_InputFile;
+
     task->output = output;
     task->input_folder = m_InputFile;
     task->addParameter("min_samples", Parameter::INT, m_NSamples);
