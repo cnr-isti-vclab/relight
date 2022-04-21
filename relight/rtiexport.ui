@@ -27,7 +27,7 @@
    <item>
     <widget class="QTabWidget" name="export_frame">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tabWidgetPage1">
       <attribute name="title">
@@ -251,6 +251,12 @@
            <widget class="QCheckBox" name="chkDStretch">
             <property name="text">
              <string>Decorrelation Stretch</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+            <property name="tristate">
+             <bool>false</bool>
             </property>
            </widget>
           </item>
