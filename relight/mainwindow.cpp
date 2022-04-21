@@ -310,7 +310,7 @@ void MainWindow::imageChecked(QStandardItem *item) {
 	Image &image = project.images[index.row()];
 	bool skip = !index.data(Qt::CheckStateRole).toBool();
 	if(!skip && !image.valid) {
-		QMessageBox::critical(this, "Can't include this image.", "This image has a different resolution or focal, cannot include in the processing");
+		QMessageBox::critical(this, "Can't include this image.", "This image has a different width or height (or a different focal length). It cannot be used to create an RTI.");
 		item->setCheckState(Qt::Unchecked);
 		return;
 	}
