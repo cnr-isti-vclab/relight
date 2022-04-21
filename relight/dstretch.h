@@ -7,6 +7,7 @@
 #include <Eigen/Eigen>
 #include <Eigen/Eigenvalues>
 #include <QString>
+#include <QDebug>
 
 inline void dstretchSingle(QString fileName, QString output, int minSamples, std::function<bool(std::string s, int n)> progressed)
 {
@@ -150,8 +151,11 @@ inline void dstretchSingle(QString fileName, QString output, int minSamples, std
     encoder.finish();
 }
 
+
 inline void dstretchSet(QString inputFolder, QString output, int minSamples, std::function<bool(std::string s, int n)> progressed)
 {
+    output = output.mid(0, output.lastIndexOf("/"));
+    qDebug() << "SETT";
     ImageSet set;
     // Vector used to temporarily store a line of pixels
     PixelArray pixels;
@@ -159,8 +163,8 @@ inline void dstretchSet(QString inputFolder, QString output, int minSamples, std
     std::vector<Color3f> samples;
 
     // Final data to be saved
-    std::vector<int>* dstretched = new std::vector<int>[set.images.size()];
-    std::vector<uint8_t>* dstretchedBytes = new std::vector<uint8_t>[set.images.size()];;
+    std::vector<std::vector<int>> dstretched;
+    std::vector<std::vector<uint8_t>> dstretchedBytes;
 
     // Size of the image
     int width, height;
@@ -170,15 +174,33 @@ inline void dstretchSet(QString inputFolder, QString output, int minSamples, std
     Eigen::VectorXd means(3);
 
     // Max and min values for channels (used to rescale the output)
-    int mins[] = {256, 256, 256};
-    int maxs[] = {-1, -1, -1};
+    int** mins, **maxs;
 
-    set.initFromFolder(inputFolder.toStdString().c_str());
     set.setCallback(nullptr);
+    set.initFromFolder(inputFolder.toStdString().c_str());
+
+    mins = new int*[set.images.size()];
+    maxs = new int*[set.images.size()];
+    for (int i=0; i<set.images.size(); i++)
+    {
+        mins[i] = new int[3];
+        maxs[i] = new int[3];
+
+        for (int j=0; j<3; j++)
+        {
+            mins[i][j] = 2048;
+            maxs[i][j] = -2048;
+        }
+    }
+
+
     width = set.width;
     height = set.height;
     pixels.resize(width, set.images.size());
     means.fill(0);
+
+    dstretched.resize(set.images.size());
+    dstretchedBytes.resize(set.images.size());
 
     // Compute the distances between a sample and another one so that at least minSamples are taken
     uint32_t samplesHorizontal = std::ceil(std::sqrt(minSamples) * ((float)width / height));
@@ -200,10 +222,10 @@ inline void dstretchSet(QString inputFolder, QString output, int minSamples, std
                 for (int l=0; l<pixels.nlights; l++)
                     for (int i=0; i<3; i++)
                         // For each light we have a line, take the col pixel from that line and add the i channel
-                        means(i) += pixels[l][col][i];
+                        means(i) += pixels[col][l][i];
 
                 for (int l=0; l<pixels.nlights; l++)
-                    samples.push_back(pixels[l][col]);
+                    samples.push_back(pixels[col][l]);
             }
         }
 
@@ -253,23 +275,24 @@ inline void dstretchSet(QString inputFolder, QString output, int minSamples, std
 
     // Start up the encoders
     JpegEncoder* encoders = new JpegEncoder[set.images.size()];
-    for (int i=0; i<set.images.size(); i++)
-        encoders->init(QString(set.path + "/img_%1").arg(i).toStdString().c_str(), width, height);
 
     // Transform and scale all the images in different files
     Eigen::VectorXd currPixel(3);
     PixelArray line;
+    set.restart();
 
     for (int i=0; i<height; i++)
     {
+        // Read a line
         set.readLine(line);
 
+        // Transform all the pixels of all the images, store the result in a vector tied to the right image
         for (int im=0; im<set.images.size(); im++)
         {
-            for (int k=0; k<line[im].size(); k++)
+            for (int k=0; k<line.size(); k++)
             {
                 for (int j=0; j<3; j++)
-                    currPixel(j) = line[im][k][j];
+                    currPixel(j) = line[k][im][j];
 
                 currPixel -= means;
                 currPixel = transformation * currPixel + means + offset;
@@ -277,29 +300,28 @@ inline void dstretchSet(QString inputFolder, QString output, int minSamples, std
                 for (int j=0; j<3; j++)
                 {
                     dstretched[im].push_back(currPixel[j]);
-                    mins[j] = std::min<int>(mins[j], currPixel[j]);
-                    maxs[j] = std::max<int>(maxs[j], currPixel[j]);
+                    mins[im][j] = std::min<int>(mins[im][j], currPixel[j]);
+                    maxs[im][j] = std::max<int>(maxs[im][j], currPixel[j]);
                 }
             }
-
-            if (i % 100 == 0)
-                progressed("Transforming...", (i * 100) / height);
         }
+
+        if (i % 10 == 0)
+            progressed("Transforming...", (i * 100) / height);
     }
+
+    qDebug() << "Out files: " << QString(output + "/img_%1.jpg").arg(1).toStdString().c_str();
 
     for (int im=0; im<set.images.size(); im++)
     {
         for (int k=0; k<dstretched[im].size(); k++)
         {
             uint32_t channelIdx = k % 3;
-            dstretchedBytes[im].push_back(255 * ((float)(dstretched[im][k] - mins[channelIdx]) / (maxs[channelIdx] - mins[channelIdx])));
-
-            if (k % 100 == 0)
-                progressed("Scaling...", (k * 100) / dstretched[im].size());
+            dstretchedBytes[im].push_back(255 * ((float)(dstretched[im][k] - mins[im][channelIdx]) / (maxs[im][channelIdx] - mins[im][channelIdx])));
         }
 
-        encoders[im].writeRows(dstretchedBytes[im].data(), height);
-        encoders[im].finish();
+        encoders[im].encode(dstretchedBytes[im].data(), width, height, (inputFolder + "/" + set.images[im]).toStdString().c_str());
+        progressed("Scaling...", (im * 100) / set.images.size());
     }
 }
 

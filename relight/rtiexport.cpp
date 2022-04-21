@@ -278,15 +278,15 @@ void RtiExport::createRTI1(QString output) {
 		format = "itarzoom";
 
 	RtiTask *task = new RtiTask;
-	task->input_folder = path;
+    task->input_folder = path;
 	task->output = output;
     task->label = "RTI"; //should use
 
 	uint32_t ram = uint32_t(ui->ram->value());
 	task->addParameter("ram", Parameter::INT, ram);
 	task->addParameter("path", Parameter::FOLDER, path);
-	task->addParameter("output", Parameter::FOLDER, output);
-	task->addParameter("images", Parameter::STRINGLIST, images);
+    task->addParameter("output", Parameter::FOLDER, output);
+    task->addParameter("images", Parameter::STRINGLIST, images);
 
 	QList<QVariant> slights;
 	for(auto light: lights)
@@ -319,6 +319,7 @@ void RtiExport::createRTI1(QString output) {
 	QStringList steps;
     if (ui->chkDStretch->isChecked())
         steps << "dstretch";
+
     steps << "relight";
 
 	if(format == "RTI")
@@ -331,8 +332,7 @@ void RtiExport::createRTI1(QString output) {
 	if(format == "itarzoom")
 		steps << "deepzoom" << "tarzoom" << "itarzoom";
 	if(ui->openlime->isChecked())
-		steps << "openlime";
-
+        steps << "openlime";
 	task->addParameter("steps", Parameter::STRINGLIST, steps);
 	//task->addParameter("format", Parameter::STRING, format);
 	//task->addParameter("openlime", Parameter::BOOL, ui->openlime->isChecked());
