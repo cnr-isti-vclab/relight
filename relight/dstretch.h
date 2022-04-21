@@ -163,7 +163,7 @@ inline void dstretchSet(QString inputFolder, QString output, int minSamples, std
     std::vector<Color3f> samples;
 
     // Final data to be saved
-    std::vector<std::vector<int>> dstretched;
+    std::vector<std::vector<float>> dstretched;
     std::vector<std::vector<uint8_t>> dstretchedBytes;
 
     // Size of the image
@@ -174,25 +174,10 @@ inline void dstretchSet(QString inputFolder, QString output, int minSamples, std
     Eigen::VectorXd means(3);
 
     // Max and min values for channels (used to rescale the output)
-    int** mins, **maxs;
+    float mins[3], maxs[3];
 
     set.setCallback(nullptr);
     set.initFromFolder(inputFolder.toStdString().c_str());
-
-    mins = new int*[set.images.size()];
-    maxs = new int*[set.images.size()];
-    for (int i=0; i<set.images.size(); i++)
-    {
-        mins[i] = new int[3];
-        maxs[i] = new int[3];
-
-        for (int j=0; j<3; j++)
-        {
-            mins[i][j] = 2048;
-            maxs[i][j] = -2048;
-        }
-    }
-
 
     width = set.width;
     height = set.height;
@@ -300,8 +285,8 @@ inline void dstretchSet(QString inputFolder, QString output, int minSamples, std
                 for (int j=0; j<3; j++)
                 {
                     dstretched[im].push_back(currPixel[j]);
-                    mins[im][j] = std::min<int>(mins[im][j], currPixel[j]);
-                    maxs[im][j] = std::max<int>(maxs[im][j], currPixel[j]);
+                    mins[j] = std::min<int>(mins[j], currPixel[j]);
+                    maxs[j] = std::max<int>(maxs[j], currPixel[j]);
                 }
             }
         }
@@ -317,7 +302,7 @@ inline void dstretchSet(QString inputFolder, QString output, int minSamples, std
         for (int k=0; k<dstretched[im].size(); k++)
         {
             uint32_t channelIdx = k % 3;
-            dstretchedBytes[im].push_back(255 * ((float)(dstretched[im][k] - mins[im][channelIdx]) / (maxs[im][channelIdx] - mins[im][channelIdx])));
+            dstretchedBytes[im].push_back(255 * ((float)(dstretched[im][k] - mins[channelIdx]) / (maxs[channelIdx] - mins[channelIdx])));
         }
 
         encoders[im].encode(dstretchedBytes[im].data(), width, height, (inputFolder + "/" + set.images[im]).toStdString().c_str());
