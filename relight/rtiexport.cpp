@@ -287,14 +287,8 @@ void RtiExport::createNormals() {
 	close();
 }
 
-void RtiExport::createRTI() {
-	QString output = QFileDialog::getSaveFileName(this, "Select an output directory", QString(), tr("Images (*.png)"));
-	if(output.isNull()) return;
-	createRTI1(output);
-	close();
-}
 
-void RtiExport::createRTI1(QString output) {
+void RtiExport::createRTI() {
 	QString format;
 	if(ui->formatRTI->isChecked())
 		format = "rti";
@@ -306,13 +300,15 @@ void RtiExport::createRTI1(QString output) {
 		format = "tarzoom";
 	else if(ui->formatItarzoom->isChecked())
 		format = "itarzoom";
-
-	if(format == "deepzoom" || format == "tarzoom" || format == "itarzoom") {
-		if(QSettings().value("python_path").toString().isEmpty()) {
-			QMessageBox::critical(this, "Python required", "Python executable needs to be set in the Preferences dialog, for web friendly RTI formats.");
-			return;
-		}
-	}
+	
+	QString output;
+	if(format == "rti") {
+		output = QFileDialog::getSaveFileName(this, "Select a file name", QString(), tr("RTI file (*.rti)"));
+		if(!output.endsWith(".rti"))
+			output += ".rti";
+	} else 
+		output = QFileDialog::getSaveFileName(this, "Select an output folder", QString());
+	if(output.isNull()) return;
 
 	RtiTask *task = new RtiTask;
 	task->input_folder = path;
@@ -357,25 +353,27 @@ void RtiExport::createRTI1(QString output) {
 
 
 	QStringList steps;
-	steps << "relight";
-	if(format == "RTI")
+	
+	if(format == "rti")
 		steps << "toRTI";
-
-	if(format == "deepzoom")
-		steps << "deepzoom";
-	if(format == "tarzoom")
-		steps << "deepzoom" << "tarzoom";
-	if(format == "itarzoom")
-		steps << "deepzoom" << "tarzoom" << "itarzoom";
-	if(ui->openlime->isChecked())
-		steps << "openlime";
+	else {
+		steps << "relight";
+		if(format == "deepzoom")
+			steps << "deepzoom";
+		if(format == "tarzoom")
+			steps << "deepzoom" << "tarzoom";
+		if(format == "itarzoom")
+			steps << "deepzoom" << "tarzoom" << "itarzoom";
+		if(ui->openlime->isChecked())
+			steps << "openlime";
+	}
 
 	task->addParameter("steps", Parameter::STRINGLIST, steps);
-	//task->addParameter("format", Parameter::STRING, format);
-	//task->addParameter("openlime", Parameter::BOOL, ui->openlime->isChecked());
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);
+	
+	close();
 }
 
 

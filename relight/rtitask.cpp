@@ -4,6 +4,7 @@
 #include <QProcess>
 #include <QSettings>
 #include <QRect>
+#include <QTemporaryDir>
 
 #include "rtitask.h"
 #include "../src/rti.h"
@@ -55,8 +56,9 @@ void RtiTask::run() {
 		status = DONE;
 }
 
-void  RtiTask::relight() {
+void  RtiTask::relight(bool commonMinMax) {
 	builder = new RtiBuilder;
+	builder->commonMinMax = commonMinMax;
 	builder->samplingram = (*this)["ram"].value.toInt();
 	builder->type         = Rti::Type((*this)["type"].value.toInt());
 	builder->colorspace   = Rti::ColorSpace((*this)["colorspace"].value.toInt());
@@ -109,7 +111,20 @@ void  RtiTask::relight() {
 }
 
 void RtiTask::toRTI() {
-	convertToRTI((output + ".rti").toLatin1().data(), output.toLatin1().data());
+	QString filename = output;
+	QTemporaryDir tmp;
+	if(!tmp.isValid()) {
+		cerr << "OOOPSS" << endl;
+		return;
+	}
+	output = tmp.path();
+	relight(true);
+	try {
+		convertToRTI(tmp.filePath("info.json").toLatin1().data(), filename.toLatin1().data());
+	} catch(QString err) {
+		error = err;
+		status = FAILED;
+	}
 }
 
 void RtiTask::fromRTI() {

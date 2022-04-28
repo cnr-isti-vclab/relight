@@ -31,7 +31,7 @@ public:
 public slots:
 	bool progressed(std::string str, int percent);
 
-	void relight();
+	void relight(bool commonMinMax = false); //use true for .rti and .ptm
 	void toRTI();
 	void fromRTI();
 	void deepzoom();
