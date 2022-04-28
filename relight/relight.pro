@@ -1,17 +1,20 @@
-QT += core gui widgets concurrent
+QT += core gui widgets concurrent xml
 
 QMAKE_CXXFLAGS += -std=c++17
 
 TARGET = relight
 CONFIG -= app_bundle
+UI_DIR = $$PWD
 
 TEMPLATE = app
 
 DEFINES += _USE_MATH_DEFINES
 DEFINES += NOMINMAX
 
-win32:INCLUDEPATH += ../libjpeg/include
-win32:LIBS += ../libjpeg/lib/jpeg.lib
+win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
+    ../external/eigen-3.3.9/ \
+    ../src/
+win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
 unix:INCLUDEPATH += /usr/include/eigen3
 unix:LIBS += -ljpeg -liomp5
@@ -32,19 +35,23 @@ SOURCES += main.cpp \
     imagecropper.cpp \
     mainwindow.cpp \
     graphics_view_zoom.cpp \
+    normalstask.cpp \
     rtiexport.cpp \
     ../relight-cli/rtibuilder.cpp \
     ../src/imageset.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/jpeg_encoder.cpp \
     ../src/rti.cpp \
+    ../src/legacy_rti.cpp \
+    ../src/deepzoom.cpp \
+    ../src/exif.cpp \
+    dome.cpp \
     helpdialog.cpp \
     project.cpp \
     measure.cpp \
     focaldialog.cpp \
     lens.cpp \
     image.cpp \
-    ../src/exif.cpp \
     httpserver.cpp \
     scripts.cpp \
     processqueue.cpp \
@@ -56,9 +63,7 @@ SOURCES += main.cpp \
     rtitask.cpp \
     settingsdialog.cpp \
     ../relight-cli/convert_rti.cpp \
-    ../src/legacy_rti.cpp \
     domecalibration.cpp \
-    dome.cpp \
     ../src/lp.cpp \
     qmarkerlist.cpp \
     qmarker.cpp \
@@ -70,13 +75,18 @@ SOURCES += main.cpp \
     qwhitemarker.cpp \
     white.cpp \
     convertdialog.cpp \
-    aligndialog.cpp
+    aligndialog.cpp \
+    zoomdialog.cpp \
+    zoomtask.cpp
+
 
 
 HEADERS += \
+    ../src/deepzoom.h \
     imagecropper.h \
     mainwindow.h \
     graphics_view_zoom.h \
+    normalstask.h \
     rtiexport.h \
     helpdialog.h \
     ../src/imageset.h \
@@ -85,6 +95,7 @@ HEADERS += \
     ../src/material.h \
     ../src/eigenpca.h \
     ../relight-cli/rtibuilder.h \
+    ../src/relight_threadpool.h \
     project.h \
     measure.h \
     focaldialog.h \
@@ -92,7 +103,7 @@ HEADERS += \
     image.h \
     ../src/exif.h \
     httpserver.h \
-    scripts.h \ 
+    scripts.h \
     processqueue.h \
     queuewindow.h \
     queueitem.h \
@@ -105,7 +116,7 @@ HEADERS += \
     httplib.h \
     domecalibration.h \
     dome.h \
-    ../src/vector.h \
+    ../src/relight_vector.h \
     ../src/lp.h \
     qmarker.h \
     qmarkerlist.h \
@@ -117,13 +128,18 @@ HEADERS += \
     qwhitemarker.h \
     white.h \
     convertdialog.h \
-    aligndialog.h
+    aligndialog.h \
+    zoom.h \
+    zoomdialog.h \
+    zoomtask.h \
+    ../src/deepzoom.h
 
 FORMS += \
     mainwindow.ui \
     rtiexport.ui \
     helpdialog.ui \
-    focaldialog.ui \  
+    focaldialog.ui \
+    zoomdialog.ui   \
     queuewindow.ui \
     settingsdialog.ui \
     domecalibration.ui \

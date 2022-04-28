@@ -1,3 +1,4 @@
+#include <QDebug>
 #include <QFileInfo>
 #include <QFile>
 #include <QDir>
@@ -7,7 +8,9 @@
 #include <QTemporaryDir>
 
 #include "rtitask.h"
+#include "zoom.h"
 #include "../src/rti.h"
+#include "../src/deepzoom.h"
 #include "../relight-cli/rtibuilder.h"
 
 
@@ -28,14 +31,14 @@ RtiTask::~RtiTask() {
 void relight();
 void toRTI();
 void fromRTI();
-void deepzoom();
-void tarzoom();
 void itarzoom();
 
 
 void RtiTask::run() {
 	status = RUNNING;
 	QStringList steps = (*this)["steps"].value.toStringList();
+    std::function<bool(std::string s, int d)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
+    QString err;
 	for(auto step: steps) {
 		if(step == "relight")
 			relight();
@@ -43,22 +46,35 @@ void RtiTask::run() {
 			toRTI();
 		else if(step == "fromRTI")
 			fromRTI();
-		else if(step == "deepzoom")
-			deepzoom();
-		else if(step == "tarzoom")
-			tarzoom();
-		else if(step == "itarzoom")
-			itarzoom();
+        else if(step == "deepzoom") {
+            if ((err = deepZoom(input_folder, output, 95, 0, 256, callback)).compare("OK") != 0)
+                status = FAILED;
+        }
+        else if(step == "tarzoom") {
+            if ((err = tarZoom(output, output, callback)).compare("OK") != 0)
+                status = FAILED;
+        }
+        else if(step == "itarzoom") {
+            if ((err = itarZoom(output, output, callback)).compare("OK") != 0)
+                status = FAILED;
+        }
 		else if(step == "openlime")
 			openlime();
 	}
 	if(status != FAILED)
 		status = DONE;
+    else
+        error = err;
+    qDebug() << "zoom error: " << err;
 }
 
 void  RtiTask::relight(bool commonMinMax) {
 	builder = new RtiBuilder;
 	builder->commonMinMax = commonMinMax;
+
+	builder->nworkers = QSettings().value("nworkers", 8).toInt();
+	builder->samplingram = QSettings().value("ram", 512).toInt();
+
 	builder->samplingram = (*this)["ram"].value.toInt();
 	builder->type         = Rti::Type((*this)["type"].value.toInt());
 	builder->colorspace   = Rti::ColorSpace((*this)["colorspace"].value.toInt());
@@ -142,48 +158,6 @@ int nPlanes(QString output) {
 	QDir destination(output);
 	return destination.entryList(QStringList("plane_*.jpg"), QDir::Files).size();
 }
-void RtiTask::deepzoom() {
-	int nplanes = nPlanes(output);
-	int quality= (*this)["quality"].value.toInt();
-	//int nplanes = builder->nplanes      = (*this)["nplanes"].value.toInt();
-	for(int plane = 0; plane < nplanes; plane++) {
-		runPythonScript("deepzoom.py", QStringList() << QString("plane_%1").arg(plane) << QString::number(quality), output);
-		if(status == FAILED)
-			return;
-
-		if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))
-			break;
-	}
-}
-
-
-void RtiTask::tarzoom() {
-	int nplanes = nPlanes(output);
-	for(int plane = 0; plane < nplanes; plane++) {
-		runPythonScript("tarzoom.py", QStringList() << QString("plane_%1").arg(plane), output);
-		if(status == FAILED)
-			return;
-
-		if(!progressed("Tarzoom:", 100*(plane+1)/nplanes))
-			break;
-	}
-}
-
-void RtiTask::itarzoom() {
-	int nplanes = nPlanes(output);
-	QStringList args;
-	for(int i = 0; i < nplanes; i++)
-		args << QString("plane_%1.tzi").arg(i);
-	args << "planes";
-	runPythonScript("itarzoom.py", args, output);
-	cout << qPrintable(log) << endl;
-	if(status == FAILED)
-		return;
-
-	progressed("Itarzoom:", 100);
-
-}
-
 
 void RtiTask::openlime() {
 	QStringList files = QStringList() << ":/demo/index.html"
@@ -199,26 +173,6 @@ void RtiTask::openlime() {
 		copy.open(QFile::WriteOnly);
 		copy.write(fp.readAll());
 	}
-}
-
-void RtiTask::pause() {
-	mutex.lock();
-	status = PAUSED;
-}
-
-void RtiTask::resume() {
-	if(status == PAUSED) {
-		status = RUNNING;
-		mutex.unlock();
-	}
-}
-
-void RtiTask::stop() {
-	if(status == PAUSED) { //we were already locked then.
-		status = STOPPED;
-		mutex.unlock();
-	}
-	status = STOPPED;
 }
 
 bool RtiTask::progressed(std::string s, int percent) {

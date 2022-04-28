@@ -10,7 +10,7 @@
 #include <QImage>
 
 #include "jpeg_decoder.h"
-#include "vector.h"
+#include "relight_vector.h"
 #include "imageset.h"
 
 #include <math.h>

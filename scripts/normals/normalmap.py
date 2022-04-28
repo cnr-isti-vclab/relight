@@ -1,12 +1,12 @@
-import glob
+# In scripts folder
 import rps
 import psutil
-
-import ast
-import os
+# Arguments
 import sys
 
+# Save file
 import json
+# Math
 import numpy as np
 
 

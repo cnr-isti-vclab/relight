@@ -2,6 +2,7 @@
 #define TASK_H
 
 #include <QThread>
+#include <QMutex>
 
 #include "parameter.h"
 
@@ -25,9 +26,9 @@ public:
 
 	Task(QObject *parent = Q_NULLPTR): QThread(parent) {}
 	virtual ~Task() {}
-	virtual void stop() = 0;
-	virtual void pause() = 0;
-	virtual void resume() = 0;
+    virtual void stop();
+    virtual void pause();
+    virtual void resume();
 
 	void addParameter(const QString &id, Parameter::Type type, QVariant value) {
 		parameters.append(Parameter(id, type, value));
@@ -49,9 +50,12 @@ public:
 	void runScript(QString program, QString script, QStringList arguments, QString workingdir = QString());
 public slots:
 	void test() {}
+    virtual bool progressed(std::string str, int percent){return false;};
 
 signals:
-	void progress(QString  str, int n);
+    void progress(QString  str, int n);
+protected:
+    QMutex mutex;
 };
 
 #endif // TASK_H
