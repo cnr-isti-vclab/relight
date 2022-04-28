@@ -16,28 +16,29 @@ jobs:
       uses: jurplel/install-qt-action@v2
     - name: Install dependencies
       run: |
-        sudo apt-get install -y mesa-common-dev libglu1-mesa-dev libjpeg-dev libeigen3-dev
+        sudo apt-get install -y mesa-common-dev libglu1-mesa-dev libjpeg-dev libeigen3-dev libvips-dev libglib2.0-dev
     - name: Configure and Build
       run: |
-        cd relight
         mkdir build
         cd build
-        cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install/usr" ..
+        cmake -DUSE_QT_5=ON -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install/usr" ..
         make -j4
         make install
+
     - name: Deploy
       run: |
-        mkdir -p relight/install/usr/share/applications/
-        mkdir -p relight/install/usr/share/icons/Yaru/512x512/apps/
-        cp deploy/linux/relight.desktop relight/install/usr/share/applications/relight.desktop
-        cp deploy/linux/relight.png relight/install/usr/share/icons/Yaru/512x512/apps/relight.png
-        deploy/linux/linuxdeployqt relight/install/usr/share/applications/relight.desktop -bundle-non-qt-libs -appimage
-        rm relight/install/AppRun
+        mkdir -p install/usr/share/applications/
+        mkdir -p install/usr/share/icons/Yaru/512x512/apps/
+        cp deploy/linux/relight.desktop install/usr/share/applications/relight.desktop
+        cp deploy/linux/relight.png install/usr/share/icons/Yaru/512x512/apps/relight.png
+        deploy/linux/linuxdeployqt install/usr/share/applications/relight.desktop -bundle-non-qt-libs -appimage
+        rm install/AppRun
+
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v2
       with:
         name: Relight_linux_portable
-        path: relight/install/
+        path: install/
     - name: Upload Relight AppImage
       uses: actions/upload-artifact@v2
       with:

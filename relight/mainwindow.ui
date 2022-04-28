@@ -52,7 +52,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>240</width>
+           <width>237</width>
            <height>200</height>
           </rect>
          </property>
@@ -238,7 +238,7 @@
      <x>0</x>
      <y>0</y>
      <width>1069</width>
-     <height>22</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -305,9 +305,22 @@
     <property name="title">
      <string>Export</string>
     </property>
+    <widget class="QMenu" name="menuZoom">
+     <property name="title">
+      <string>&amp;Zoom...</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>feather/zoom-in.svg</normaloff>feather/zoom-in.svg</iconset>
+     </property>
+     <addaction name="actionDeepzoom"/>
+     <addaction name="actionTarzoom"/>
+     <addaction name="actionItarzoom"/>
+    </widget>
     <addaction name="actionExport_RTI"/>
     <addaction name="actionExport_Normals"/>
     <addaction name="actionConvert_rti"/>
+    <addaction name="menuZoom"/>
     <addaction name="separator"/>
     <addaction name="actionShow_queue"/>
    </widget>
@@ -681,6 +694,21 @@
    </property>
    <property name="text">
     <string>New align marker</string>
+   </property>
+  </action>
+  <action name="actionDeepzoom">
+   <property name="text">
+    <string>Deepzoom</string>
+   </property>
+  </action>
+  <action name="actionTarzoom">
+   <property name="text">
+    <string>Tarzoom</string>
+   </property>
+  </action>
+  <action name="actionItarzoom">
+   <property name="text">
+    <string>Itarzoom</string>
    </property>
   </action>
  </widget>

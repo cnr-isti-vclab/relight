@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.12)
-project(relight)
+project(relight-cli)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_FIND_FRAMEWORK LAST)
 
 find_package(
-	Qt5
+	${RELIGHT_QT}
 	COMPONENTS Core Gui Concurrent
 	REQUIRED)
 find_package(OpenMP)
@@ -21,8 +21,10 @@ else()
 	find_package(Eigen3 REQUIRED)
 endif()
 
+set(CMAKE_AUTOMOC ON)
+
 if (APPLE)
-	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X deployment version" FORCE)
+	set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version" FORCE)
 	SET(CMAKE_INSTALL_RPATH $ORIGIN/../Frameworks)
 	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
@@ -37,7 +39,7 @@ SET(HEADERS
 	../src/jpeg_decoder.h
 	../src/jpeg_encoder.h
 	../src/material.h
-	../src/vector.h
+	../src/relight_vector.h
 	../src/rti.h
 	../src/legacy_rti.h
 )
@@ -57,11 +59,6 @@ SET(SOURCES
 
 
 
-
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_AUTOMOC ON)
-
 add_executable(relight-cli MACOSX_BUNDLE ${HEADERS} ${SOURCES})
 target_include_directories(
 	relight-cli PUBLIC 
@@ -73,9 +70,9 @@ target_link_libraries(
 	relight-cli PUBLIC
 		${JPEG_LIBRARIES}
 		OpenMP::OpenMP_CXX
-		Qt5::Core
-		Qt5::Gui
-		Qt5::Concurrent)
+		${RELIGHT_QT}::Core
+		${RELIGHT_QT}::Gui
+		${RELIGHT_QT}::Concurrent)
 
 target_compile_definitions(relight-cli PUBLIC _USE_MATH_DEFINES NOMINMAX)
 
@@ -86,14 +83,16 @@ else()
 endif()
 include(GNUInstallDirs)
 
-INSTALL(TARGETS relight-cli
-	RUNTIME DESTINATION bin
-    BUNDLE DESTINATION bin
-	LIBRARY DESTINATION lib
-	ARCHIVE DESTINATION lib)
+if (INSTALL_TO_UNIX_LAYOUT)
+	set(RELIGHT_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR})
+else()
+	set(RELIGHT_INSTALL_BIN_DIR .)
+endif()
 
-install (TARGETS relight-cli DESTINATION ${RELIGHT_INSTALL_BIN_DIR})
+install (TARGETS relight-cli 
+	DESTINATION ${RELIGHT_INSTALL_BIN_DIR} 
+	BUNDLE DESTINATION ${RELIGHT_INSTALL_BIN_DIR} )
 
-
-
-
+if (WIN32)
+	install(FILES ${JPEGTURBO_HOME}/bin/jpeg62.dll DESTINATION .)
+endif()

@@ -3,6 +3,7 @@
 
 #include "graphics_view_zoom.h"
 #include "rtiexport.h"
+#include "zoomdialog.h"
 #include "../src/imageset.h"
 #include "helpdialog.h"
 #include "focaldialog.h"
@@ -44,6 +45,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	ui->setupUi(this);
 
+    // File menu
 	this->setWindowTitle("Relight");
 	connect(ui->actionNew,        SIGNAL(triggered(bool)),  this, SLOT(newProject()));
 	connect(ui->actionOpen,       SIGNAL(triggered(bool)),  this, SLOT(openProject()));
@@ -53,40 +55,46 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->actionPreferences,    SIGNAL(triggered(bool)),  this, SLOT(preferences()));
 	connect(ui->actionExit,       SIGNAL(triggered(bool)),  this, SLOT(quit()));
 
+    connect(ui->actionSave_LP,    SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
+    connect(ui->actionLoad_LP,    SIGNAL(triggered(bool)), this, SLOT(loadLP()));
+
+    // View menu
 	connect(ui->actionPrevious,   SIGNAL(triggered(bool)),  this, SLOT(previous()));
 	connect(ui->actionNext,       SIGNAL(triggered(bool)),  this, SLOT(next()));
 	connect(ui->actionToggle_max_luma, SIGNAL(triggered(bool)), this, SLOT(toggleMaxLuma()));
+    connect(ui->actionView_RTI,     SIGNAL(triggered(bool)),  this, SLOT(viewRTI()));
+
+    // Export menu
 	connect(ui->actionExport_RTI, SIGNAL(triggered(bool)),  this, SLOT(exportRTI()));
 	connect(ui->actionExport_Normals, SIGNAL(triggered(bool)),  this, SLOT(exportNormals()));
 	connect(ui->actionConvert_rti, SIGNAL(triggered(bool)),  this, SLOT(convertRTI()));
-
-	connect(ui->actionView_RTI,     SIGNAL(triggered(bool)),  this, SLOT(viewRTI()));
 	connect(ui->actionShow_queue,   SIGNAL(triggered(bool)),  this, SLOT(showQueue()));
+    connect(ui->actionDeepzoom, SIGNAL(triggered(bool)), this, SLOT(deepZoom()));
+    connect(ui->actionTarzoom, SIGNAL(triggered(bool)), this, SLOT(tarZoom()));
+    connect(ui->actionItarzoom, SIGNAL(triggered(bool)), this, SLOT(itarZoom()));
+
+    // Edit menu
 	connect(ui->actionDetectHighlights, SIGNAL(triggered(bool)),   this, SLOT(detectHighlights()));
+    connect(ui->newSphere, SIGNAL(clicked()), this, SLOT(newSphere()));
+    connect(ui->newWhite, SIGNAL(clicked()), this, SLOT(newWhite()));
+    connect(ui->newAlign, SIGNAL(clicked()), this, SLOT(newAlign()));
+    connect(ui->newMeasure, SIGNAL(clicked()), this, SLOT(newMeasure()));
 
-	connect(ui->actionSave_LP,    SIGNAL(triggered(bool)), this, SLOT(saveLPs()));
-	connect(ui->actionLoad_LP,    SIGNAL(triggered(bool)), this, SLOT(loadLP()));
+    connect(ui->actionNewSphere, SIGNAL(triggered()), this, SLOT(newSphere()));
+    connect(ui->actionNewWhite, SIGNAL(triggered()), this, SLOT(newWhite()));
+    connect(ui->actionNewAlign, SIGNAL(triggered()), this, SLOT(newAlign()));
+    connect(ui->actionNewMeasure, SIGNAL(triggered()), this, SLOT(newMeasure()));
 
+    connect(ui->actionDelete_selected, SIGNAL(triggered()), this, SLOT(deleteSelected()));
+    ui->actionDelete_selected->setShortcuts(QList<QKeySequence>() << Qt::Key_Delete << Qt::Key_Backspace);
+
+    // Calibration menu
 	connect(ui->actionLens_parameters, SIGNAL(triggered(bool)), this, SLOT(editLensParameters()));
 	connect(ui->actionDome_geometry, SIGNAL(triggered(bool)), this, SLOT(domeCalibration()));
 	connect(ui->actionWhite_balance, SIGNAL(triggered(bool)), this, SLOT(whiteBalance()));
 
+    // Help menu
 	connect(ui->actionHelp,       SIGNAL(triggered(bool)), this, SLOT(showHelp()));
-
-	connect(ui->newSphere, SIGNAL(clicked()), this, SLOT(newSphere()));
-	connect(ui->newWhite, SIGNAL(clicked()), this, SLOT(newWhite()));
-	connect(ui->newAlign, SIGNAL(clicked()), this, SLOT(newAlign()));
-	connect(ui->newMeasure, SIGNAL(clicked()), this, SLOT(newMeasure()));
-
-	connect(ui->actionNewSphere, SIGNAL(triggered()), this, SLOT(newSphere()));
-	connect(ui->actionNewWhite, SIGNAL(triggered()), this, SLOT(newWhite()));
-	connect(ui->actionNewAlign, SIGNAL(triggered()), this, SLOT(newAlign()));
-	connect(ui->actionNewMeasure, SIGNAL(triggered()), this, SLOT(newMeasure()));
-
-	connect(ui->actionDelete_selected, SIGNAL(triggered()), this, SLOT(deleteSelected()));
-
-	ui->actionDelete_selected->setShortcuts(QList<QKeySequence>() << Qt::Key_Delete << Qt::Key_Backspace);
-
 
 	scene = new RTIScene(this);
 	connect(scene, SIGNAL(borderPointMoved(QGraphicsEllipseItem *)), this, SLOT(updateBorderPoints(QGraphicsEllipseItem *)));
@@ -106,6 +114,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
 	rtiexport = new RtiExport(this);
+    zoom = new ZoomDialog(this);
 	help = new HelpDialog(this);
 	imageModel = new QStandardItemModel(ui->imageList1);
 	ui->imageList1->setModel(imageModel);
@@ -138,7 +147,7 @@ void MainWindow::clear() {
 	project_filename = QString();
 	if(imagePixmap)
 		delete imagePixmap;
-	ui->graphicsView->resetMatrix();
+	ui->graphicsView->resetTransform();
 
 	ui->markerList->clear();
 	project.clear();
@@ -181,8 +190,7 @@ void MainWindow::newProject() {
 	img_ext << "*.lp";
 	QStringList lps = QDir(dir).entryList(img_ext);
 	if(lps.size() > 1) {
-	} else if(lps.size() == 1) {
-		int answer = QMessageBox::question(this, "Found an .lp file", "Do you wish to load the .lp file?", QMessageBox::Yes, QMessageBox::No);
+		int answer = QMessageBox::question(this, "Found an .lp file: " + lps[0], "Do you wish to load " + lps[0] + "?", QMessageBox::Yes, QMessageBox::No);
 		if(answer != QMessageBox::No)
 			loadLP(lps[0]);
 	}
@@ -293,7 +301,7 @@ bool MainWindow::init() {
 		count++;
 	}
 
-	openImage(0);
+	openImage(0, true);
 	return true;
 }
 
@@ -302,7 +310,7 @@ void MainWindow::imageChecked(QStandardItem *item) {
 	Image &image = project.images[index.row()];
 	bool skip = !index.data(Qt::CheckStateRole).toBool();
 	if(!skip && !image.valid) {
-		QMessageBox::critical(this, "Can't include this image.", "This image has a different resolution or focal, cannot include in the processing");
+		QMessageBox::critical(this, "Can't include this image.", "This image has a different width or height (or a different focal length). It cannot be used to create an RTI.");
 		item->setCheckState(Qt::Unchecked);
 		return;
 	}
@@ -836,8 +844,6 @@ void MainWindow::exportRTI(bool normals) {
 	rtiexport->path = project.dir.path();
 	rtiexport->setModal(true);
 
-
-
 	rtiexport->show();
 	//this needs to be called AFTER show, to ensure proportions are computed properly
 	rtiexport->setCrop(project.crop);
@@ -881,6 +887,42 @@ void MainWindow::domeCalibration() {
 	calibration->setModal(true);
 	calibration->exec();
 	project.dome = calibration->dome;
+}
+
+void MainWindow::deepZoom()
+{
+    zoom->setTabIndex(0);
+
+    zoom->setModal(true);
+    zoom->show();
+    zoom->exec();
+
+    if(ProcessQueue::instance().queue.size())
+        showQueue();
+}
+
+void MainWindow::tarZoom()
+{
+    zoom->setTabIndex(1);
+
+    zoom->setModal(true);
+    zoom->show();
+    zoom->exec();
+
+    if(ProcessQueue::instance().queue.size())
+        showQueue();
+}
+
+void MainWindow::itarZoom()
+{
+    zoom->setTabIndex(2);
+
+    zoom->setModal(true);
+    zoom->show();
+    zoom->exec();
+
+    if(ProcessQueue::instance().queue.size())
+        showQueue();
 }
 
 

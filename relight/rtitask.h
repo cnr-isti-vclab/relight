@@ -22,25 +22,18 @@ public:
 	enum Steps { RELIGHT, DEEPZOOM, TARZOOM, ITARZOOM };
 
 	RtiTask();
-	virtual ~RtiTask();
-	virtual void run() override;
-	virtual void pause() override;
-	virtual void resume() override;
-	virtual void stop() override;
+    virtual ~RtiTask();
+    virtual void run() override;
 
 public slots:
-	bool progressed(std::string str, int percent);
+    bool progressed(std::string str, int percent) override;
 
 	void relight(bool commonMinMax = false); //use true for .rti and .ptm
 	void toRTI();
-	void fromRTI();
-	void deepzoom();
-	void tarzoom();
-	void itarzoom();
+    void fromRTI();
 	void openlime();
 
 private:
-	QMutex mutex;
 	RtiBuilder *builder = nullptr;
 
 };

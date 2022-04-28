@@ -1,6 +1,7 @@
 #include "task.h"
 
 #include <QDir>
+#include <QRegularExpression>
 #include <QFileInfo>
 #include <QSettings>
 #include <QProcess>
@@ -49,7 +50,7 @@ void Task::runScript(QString program, QString script, QStringList arguments, QSt
 	process.start();
 
 
-	QRegExp re("([^:]+):\\ (\\d+)\\%");
+	QRegularExpression re("([^:]+):\\ (\\d+)\\%");
 
 	do {
 		QString err = process.readAllStandardError();
@@ -59,20 +60,20 @@ void Task::runScript(QString program, QString script, QStringList arguments, QSt
 
 		if(!out.isEmpty()) {
 			QString line = out.split("\n").front();
-			int pos = re.indexIn(line);
+			int pos = line.indexOf(re);
 
 			if(pos >= 0) {
-				QString text = re.capturedTexts()[1];
-				int percent = re.capturedTexts()[2].toInt();
+                QString text = re.match(line).capturedTexts()[1];
+				int percent = re.match(line).capturedTexts()[2].toInt();
 				emit progress(text, percent);
 			}
 		}
 		if(err.size())
-			qDebug() << "Err: " << qPrintable(err) << endl;
+            qDebug() << "Err: " << qPrintable(err) << "\n";
 		if(out.size())
-			qDebug() << "Out: " << qPrintable(out) << endl;
+			qDebug() << "Out: " << qPrintable(out) << "\n";
 		if(status == PAUSED) {
-			qDebug() << "DOn't know how to pause a process!" << endl;
+			qDebug() << "DOn't know how to pause a process!" << "\n";
 		}
 		if(status == STOPPED) {
 			process.kill();
@@ -88,4 +89,24 @@ void Task::runScript(QString program, QString script, QStringList arguments, QSt
 	} else
 		status = FAILED;
 	error = log;
+}
+
+void Task::pause() {
+    mutex.lock();
+    status = PAUSED;
+}
+
+void Task::resume() {
+    if(status == PAUSED) {
+        status = RUNNING;
+        mutex.unlock();
+    }
+}
+
+void Task::stop() {
+    if(status == PAUSED) { //we were already locked then.
+        status = STOPPED;
+        mutex.unlock();
+    }
+    status = STOPPED;
 }
