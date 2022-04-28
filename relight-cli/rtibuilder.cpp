@@ -549,6 +549,18 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 			plane.max = std::max(principal[p], plane.max);
 		}
 	}
+	//compute common min max for 3 colors
+	if(commonMinMax && colorspace == RGB) {
+		auto &planes = material.planes;
+		for(int i = 0; i < nplanes; i += 3) {
+			float min = std::min(planes[i+0].min, std::min(planes[i+1].min, planes[i+2].min));
+			float max = std::max(planes[i+0].max, std::max(planes[i+1].max, planes[i+2].max));
+			for(int k = 0; k < 3; k++) {
+				planes[i+k].min = min;
+				planes[i+k].max = max;
+			}
+		}
+	}
 }
 
 void RtiBuilder::finalizeMaterial() {

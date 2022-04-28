@@ -24,6 +24,7 @@ public:
 	int skip_image = -1;
 	//TODO: might want to use an euristic to get the best compromise to miniminze jpeg compression artifacts.
 	float rangecompress = 0.5f; //betwee 0 and 1, where 0 is maximally compressed
+	bool commonMinMax = false; //use the same min and max for RGB planes only used for exporting .rti and .ptm
 	bool savenormals = false;
 	bool savemeans = false;
 	bool savemedians = false;
