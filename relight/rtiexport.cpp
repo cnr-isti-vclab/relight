@@ -235,10 +235,10 @@ Rti::ColorSpace  colorSpace(int index) {
 
 void RtiExport::createNormals() {
     // Get export location
-    QString output = QFileDialog::getSaveFileName(this, "Select an output file for normal:");
+	QString output = QFileDialog::getSaveFileName(this, "Select an output file for normal:", "normals.png", "Images (*.png, *.jpg)");
     if(output.isNull()) return;
-    if(!output.endsWith(".png"))
-        output += ".png";
+	if(!output.endsWith(".png") && !output.endsWith(".jpg"))
+		output += ".png";
 
     // Get normal method
     unsigned int method = 0; //least squares
@@ -250,8 +250,15 @@ void RtiExport::createNormals() {
         method = 5;
 
     ProcessQueue &queue = ProcessQueue::instance();
+	NormalsTask *task = new NormalsTask(path, output, crop, method);
 
-    queue.addTask(new NormalsTask(path, output, crop, method));
+	QList<QVariant> slights;
+	for(auto light: lights)
+		for(int k = 0; k < 3; k++)
+			slights << QVariant(light[k]);
+	task->addParameter("lights", Parameter::DOUBLELIST, slights);
+
+	queue.addTask(task);
     queue.start();
 
     close();

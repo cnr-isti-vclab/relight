@@ -44,12 +44,6 @@ void ImageSet::parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::
 bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip_image) {
 
 	QDir dir(_path);
-	QStringList lps = dir.entryList(QStringList() << "*.lp");
-	if(lps.size() == 0) {
-		cerr << "Could not find .lp file";
-		return false;
-	}
-	QString sphere_path = dir.filePath(lps[0]);
 
 	QStringList img_ext;
 	img_ext << "*.jpg" << "*.JPG";
@@ -58,31 +52,37 @@ bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip
 	if(skip_image >= 0)
 		images.removeAt(skip_image);
 
-	try {
-		std::vector<QString> filenames;
-		parseLP(sphere_path, lights, filenames, skip_image);
+	QStringList lps = dir.entryList(QStringList() << "*.lp");
+	if(lps.size() > 0) {
 
-		if(ignore_filenames) {
-			if(images.size() != int(filenames.size())) {
-				QString error = QString("Lp number of lights (%1) different from the number of images found (%2)").arg(filenames.size()).arg(images.size());
-				throw error;
+		QString sphere_path = dir.filePath(lps[0]);
+		try {
+			std::vector<QString> filenames;
+			parseLP(sphere_path, lights, filenames, skip_image);
+
+			if(ignore_filenames) {
+				if(images.size() != int(filenames.size())) {
+					QString error = QString("Lp number of lights (%1) different from the number of images found (%2)").arg(filenames.size()).arg(images.size());
+					throw error;
+				}
+			} else {
+				throw QString("TODO: unimplemented.");
+
+				//TODO check and remove absolute parth of the image;
+				/*QString filepath = dir.filePath(images[i]);
+				QFileInfo info(filepath);
+				if(!info.exists()) {
+					cerr << "Could not find image: " << qPrintable(s) << endl;
+					return false;
+				}*/
 			}
-		} else {
-			throw QString("TODO: unimplemented.");
-
-			//TODO check and remove absolute parth of the image;
-			/*QString filepath = dir.filePath(images[i]);
-			QFileInfo info(filepath);
-			if(!info.exists()) {
-				cerr << "Could not find image: " << qPrintable(s) << endl;
-				return false;
-			}*/
+		} catch(QString error) {
+			cerr << qPrintable(error) << endl;
+			return false;
 		}
-	} catch(QString error) {
-		cerr << qPrintable(error) << endl;
-		return false;
+		initLights();
 	}
-	initLights();
+
 	return initImages(_path);
 }
 
@@ -281,7 +281,7 @@ Vector3f ImageSet::relativeLight(const Vector3f &light, int x, int y){
 void ImageSet::readLine(PixelArray &pixels) {
 	if(current_line == 0)
 		skipToTop();
-	pixels.resize(width, lights.size());
+	pixels.resize(width, images.size());
 	for(uint32_t x = 0; x < pixels.size(); x++) {
 		Pixel &pixel = pixels[x];
 		pixel.x = x + left;
@@ -302,6 +302,7 @@ void ImageSet::readLine(PixelArray &pixels) {
 	}
 	//compensate intensity.
 	if(light3d) {
+		assert(lights3d.size() == images.size());
 		for(Pixel &pixel: pixels) {
 			for(size_t i = 0; i < lights3d.size(); i++) {
 				Vector3f l = relativeLight(lights3d[i], pixel.x, pixel.y);
