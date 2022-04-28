@@ -11,6 +11,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QDebug>
+#include <QImage>
 #include <vector>
 #include <iostream>
 #include <time.h>
@@ -25,17 +26,22 @@
 void NormalsTask::run()
 {
     status = RUNNING;
-    // Save the normal as jpg file
-    JpegEncoder encoder;
-    // ImageSet initialization
+	// ImageSet initialization
     ImageSet imageSet(m_InputFolder.toStdString().c_str());
+
+	QList<QVariant> qlights = (*this)["lights"].value.toList();
+	std::vector<Vector3f> lights(qlights.size()/3);
+	for(int i = 0; i < qlights.size(); i+= 3)
+		for(int k = 0; k < 3; k++)
+			lights[i/3][k] = qlights[i+k].toDouble();
+	imageSet.lights = lights;
+
     // Normals vector
-    std::vector<uint8_t> normals;
+
 
     int start = clock();
     // Init
-    normals.resize(imageSet.width * imageSet.height * 3);
-    imageSet.setCallback(nullptr);
+	imageSet.setCallback(nullptr);
 
     // Set the crop
     if(!m_Crop.isValid()) {
@@ -45,6 +51,8 @@ void NormalsTask::run()
         m_Crop.setHeight(imageSet.height);
     }
     imageSet.crop(m_Crop.left(), m_Crop.top(), m_Crop.width(), m_Crop.height());
+
+	std::vector<uint8_t> normals(imageSet.width * imageSet.height * 3);
 
     // Thread pool used to handle the processors
     RelightThreadPool pool;
@@ -77,8 +85,8 @@ void NormalsTask::run()
     // Wait for the end of all the threads
     pool.finish();
     // Save the final result
-    encoder.encode(normals.data(), imageSet.width, imageSet.height, m_OutputFolder.toStdString().c_str());
-
+	QImage img(normals.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
+	img.save(m_OutputFolder);
     progressed("Cleaning up...", 99);
 
     int end = clock();

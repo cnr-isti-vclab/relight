@@ -27,7 +27,7 @@
    <item>
     <widget class="QTabWidget" name="export_frame">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tabWidgetPage1">
       <attribute name="title">
@@ -297,6 +297,9 @@
           </item>
           <item row="2" column="0">
            <widget class="QRadioButton" name="sbl_solver">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>Sparse Baesian</string>
             </property>
@@ -304,6 +307,9 @@
           </item>
           <item row="3" column="0">
            <widget class="QRadioButton" name="rpca_solver">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>Robust PCA</string>
             </property>
