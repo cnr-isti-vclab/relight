@@ -61,7 +61,7 @@ public:
 
 signals:
 	void borderPointMoved(QGraphicsEllipseItem *point);
-	void highlightMoved(QGraphicsEllipseItem *highlight);
+	void highlightMoved(QGraphicsPathItem *highlight);
 };
 
 class MainWindow : public QMainWindow {
@@ -120,7 +120,7 @@ public slots:
 	void finishedDetectHighlights();
 
 	void updateBorderPoints(QGraphicsEllipseItem *point);
-	void updateHighlight(QGraphicsEllipseItem *highlight);
+	void updateHighlight(QGraphicsPathItem *highlight);
 	void showHighlights(size_t n);
 	void setupSpheres();
 	void newSphere();
