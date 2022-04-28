@@ -1,4 +1,4 @@
-#ifndef QSPHEREMARKER_H
+﻿#ifndef QSPHEREMARKER_H
 #define QSPHEREMARKER_H
 
 #include "qmarker.h"
@@ -18,10 +18,27 @@ protected:
 	QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 };
 
-class HighlightPoint: public QGraphicsEllipseItem {
+/*class HighlightPoint: public QGraphicsEllipseItem {
 public:
 	HighlightPoint(qreal x, qreal y, qreal w, qreal h, QGraphicsItem *parent = Q_NULLPTR):
 		QGraphicsEllipseItem(x, y, w, h, parent) {}
+	virtual ~HighlightPoint();
+
+protected:
+	QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+};*/
+
+class HighlightPoint: public QGraphicsPathItem {
+public:
+	HighlightPoint(qreal x, qreal y, qreal w, qreal h, QGraphicsItem *parent = Q_NULLPTR):
+		QGraphicsPathItem(parent) {
+		QPainterPath path;
+		path.moveTo(x, y);
+		path.lineTo(w, h);
+		path.moveTo(x, h);
+		path.lineTo(w, y);
+		setPath(path);
+	}
 	virtual ~HighlightPoint();
 
 protected:

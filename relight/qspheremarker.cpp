@@ -47,7 +47,7 @@ SphereMarker::SphereMarker( Sphere *s, QGraphicsView *_view, QWidget *parent):
 	highlight = new HighlightPoint(-4, -4, 4, 4);
 
 	QPen pen(Qt::red);
-	pen.setWidth(5);
+	pen.setWidth(2);
 	pen.setCosmetic(true);
 	highlight->setPen(pen);
 	highlight->setBrush(Qt::red);
