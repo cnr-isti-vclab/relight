@@ -216,6 +216,12 @@ void MainWindow::openProject() {
 		return;
 	}
 	project_filename = project.dir.relativeFilePath(filename);
+	if(project.missing.size() != 0) {
+		if(project.missing.size() == project.images.size()) {
+
+		}
+	}
+
 	init();
 	enableActions();
 }
