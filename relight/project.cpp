@@ -262,11 +262,9 @@ void Project::load(QString filename) {
 			//throw QString("Could not find the image: " + image.filename) + " in folder: " + dir.absolutePath();
 			continue;
 		}
-		QImageReader reader(image.filename);
-		QSize size = reader.size();
-		image.valid = (size == imgsize);
-		if(!image.valid) image.skip = true;
 	}
+
+	checkImages();
 
 	if(obj.contains("crop")) {
 		QJsonObject c = obj["crop"].toObject();
@@ -306,6 +304,16 @@ void Project::load(QString filename) {
 		}
 	}
 }
+
+void Project::checkImages() {
+	for(Image &image:images) {
+		QImageReader reader(image.filename);
+		QSize size = reader.size();
+		image.valid = (size == imgsize);
+		if(!image.valid) image.skip = true;
+	}
+}
+
 
 void Project::save(QString filename) {
 
