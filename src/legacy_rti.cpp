@@ -553,11 +553,16 @@ bool LRti::encodeUniversal(const char *filename, int quality) {
 
 	int nplanes = data.size();
 	unsigned char *buffer = new unsigned char[nplanes*width*height];
-	for(int i = 0; i < data.size(); i++) {	
-		for(int k = 0; k < data[0].size(); k++) {
-			buffer[k*nplanes + i] = data[i][k];
+	for(int i = 0; i < data.size(); i++) {
+		for(int y = 0; y < height; y++) {
+			for(int x = 0; x < width; x++) {
+				int k0 = x + y*width;
+				int k1 = x + (height -y -1)*width;
+				buffer[k0*nplanes + i] = data[i][k1];
+			}
 		}
 	}
+
 	fwrite(buffer, 1, nplanes*width*height, file);
 	delete []buffer;
 	
