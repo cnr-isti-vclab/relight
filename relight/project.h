@@ -64,6 +64,9 @@ public:
 				imgs.push_back(img.filename);
 		return imgs;
 	}
+	//check size and validity
+	void checkImages();
+
 	std::vector<Vector3f> directions() {
 		std::vector<Vector3f> dirs;
 		for(Image &img: images)

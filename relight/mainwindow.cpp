@@ -218,7 +218,17 @@ void MainWindow::openProject() {
 	project_filename = project.dir.relativeFilePath(filename);
 	if(project.missing.size() != 0) {
 		if(project.missing.size() == project.images.size()) {
-
+			QString imagefolder = QFileDialog::getExistingDirectory(this, "Could not find the images, please select the image folder:", project.dir.absolutePath());
+			if(imagefolder.isNull()) {
+				newProject();
+				return;
+			}
+			QDir dir(imagefolder);
+			for(Image &image: project.images) {
+				QFileInfo info(image.filename);
+				image.filename = project.dir.relativeFilePath(dir.filePath(info.fileName()));
+			}
+			project.checkImages();
 		}
 	}
 
@@ -295,7 +305,8 @@ bool MainWindow::init() {
 	for(Image &a: project.images) {
 
 		QStandardItem *item = new QStandardItem;
-		item->setText(QString("%1 - %2").arg(count+1).arg(a.filename));
+		QFileInfo info(a.filename);
+		item->setText(QString("%1 - %2").arg(count+1).arg(info.fileName()));
 		item->setCheckable(true);
 		// Uncheck the item
 		item->setCheckState(a.valid ? Qt::Checked : Qt::Unchecked);
