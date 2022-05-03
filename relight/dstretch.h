@@ -1,6 +1,7 @@
 #ifndef DSTRETCH_H
 #define DSTRETCH_H
 
+#include <QFile>
 #include <imageset.h>
 #include "jpeg_decoder.h"
 #include "jpeg_encoder.h"
@@ -8,9 +9,24 @@
 #include <Eigen/Eigenvalues>
 #include <QString>
 #include <QDebug>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QJsonDocument>
+
+/** info.json:
+ *  - Nome del file
+ *  - Matrice di trasformazione
+ *  - samples
+ */
 
 inline void dstretchSingle(QString fileName, QString output, int minSamples, std::function<bool(std::string s, int n)> progressed)
 {
+    // info.json
+    QFile info(output.mid(0, output.lastIndexOf("/")) + "/dstretch_info.json");
+    QJsonObject infoObject;
+    QJsonArray samplesJson;
+    QJsonArray transformJson;
+    QJsonDocument outputJson;
     // Vector used to temporarily store a line of pixels
     std::vector<uint8_t> pixels;
     // Vector used to store samples
@@ -60,9 +76,10 @@ inline void dstretchSingle(QString fileName, QString output, int minSamples, std
             {
                 for (int i=0; i<3; i++)
                     means(i) += pixels[col + i];
-
                 Color3b color(pixels[col], pixels[col+1], pixels[col+2]);
+
                 samples.push_back(color);
+                samplesJson.push_back(QJsonArray({color.r, color.b, color.g}));
             }
         }
 
@@ -149,6 +166,20 @@ inline void dstretchSingle(QString fileName, QString output, int minSamples, std
     progressed("Saving...", 50);
     encoder.writeRows(dstretchedBytes.data(), height);
     encoder.finish();
+
+    // Prepare and save the info.json file
+    info.open(QIODevice::WriteOnly);
+    info.setPermissions(QFileDevice::WriteOther | QFileDevice::WriteOwner);
+    infoObject["image_name"] = fileName.mid(fileName.lastIndexOf("/")+1, fileName.size());
+    for (int i=0; i<3; i++)
+        for (int j=0; j<3; j++)
+            transformJson.push_back(transformation(i,j));
+    infoObject["transformation"] = transformJson;
+    infoObject["samples"] = samplesJson;
+
+    outputJson.setObject(infoObject);
+    info.write(outputJson.toJson());
+    info.close();
 }
 
 
@@ -174,7 +205,7 @@ inline void dstretchSet(QString inputFolder, QString output, int minSamples, std
     Eigen::VectorXd means(3);
 
     // Max and min values for channels (used to rescale the output)
-    float mins[3], maxs[3];
+    float mins[] = {2048, 2048, 2048}, maxs[] = {-2048,-2048,-2048};
 
     set.setCallback(nullptr);
     set.initFromFolder(inputFolder.toStdString().c_str());
@@ -280,7 +311,7 @@ inline void dstretchSet(QString inputFolder, QString output, int minSamples, std
                     currPixel(j) = line[k][im][j];
 
                 currPixel -= means;
-                currPixel = transformation * currPixel + means + offset;
+                currPixel = transformation * currPixel/* + means + offset*/;
 
                 for (int j=0; j<3; j++)
                 {
@@ -308,13 +339,9 @@ inline void dstretchSet(QString inputFolder, QString output, int minSamples, std
         encoders[im].encode(dstretchedBytes[im].data(), width, height, (inputFolder + "/" + set.images[im]).toStdString().c_str());
         progressed("Scaling...", (im * 100) / set.images.size());
     }
+
+    // TODO resize instead of push_back
 }
-
-inline void dstretch()
-{
-
-}
-
 
 #endif // DSTRETCH_H
 
