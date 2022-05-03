@@ -42,8 +42,8 @@ void RtiTask::run() {
 	for(auto step: steps) {
 		if(step == "relight")
 			relight();
-		else if(step == "toRTI")
-			toRTI();
+		else if(step == "rti")
+			relight(true, true);
 		else if(step == "fromRTI")
 			fromRTI();
         else if(step == "deepzoom") {
@@ -68,7 +68,7 @@ void RtiTask::run() {
     qDebug() << "zoom error: " << err;
 }
 
-void  RtiTask::relight(bool commonMinMax) {
+void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 	builder = new RtiBuilder;
 	builder->commonMinMax = commonMinMax;
 
@@ -116,8 +116,11 @@ void  RtiTask::relight(bool commonMinMax) {
 			status = FAILED;
 			return;
 		}
-
-		builder->save(output.toStdString(), quality);
+		if(saveLegacy) {
+			if(builder->type == Rti::HSH)
+				builder->saveUniversal(output.toStdString());
+		} else
+			builder->save(output.toStdString(), quality);
 
 	} catch(std::string e) {
 		error = e.c_str();
