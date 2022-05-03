@@ -332,7 +332,7 @@ void RtiExport::createRTI() {
 	QStringList steps;
 	
 	if(format == "rti")
-		steps << "toRTI";
+		steps << "rti";
 	else {
 		steps << "relight";
 		if(format == "deepzoom")

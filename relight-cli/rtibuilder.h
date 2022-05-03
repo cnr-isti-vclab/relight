@@ -40,6 +40,7 @@ public:
 	bool init(std::function<bool(std::string stage, int percent)> *_callback = nullptr);
 
 	size_t save(const std::string &output, int quality = 95);
+	size_t saveUniversal(const std::string &output);
 	bool saveJSON(QDir &dir, int quality);
 
 
