@@ -156,10 +156,11 @@ target_link_libraries(
 		${RELIGHT_QT}::Xml
 	)
 
- 
-
-
 target_compile_definitions(relight PUBLIC _USE_MATH_DEFINES NOMINMAX)
+
+target_compile_definitions(relight
+	PUBLIC
+		RELIGHT_VERSION=${RELIGHT_VERSION})
 
 if(WIN32 OR APPLE)
 	set(INSTALL_TO_UNIX_LAYOUT OFF)
