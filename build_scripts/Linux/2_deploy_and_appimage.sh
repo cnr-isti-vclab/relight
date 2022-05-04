@@ -49,13 +49,6 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/usr/lib
 $SCRIPTS_PATH/resources/linuxdeploy --appdir=$INSTALL_PATH \
   --plugin qt --output appimage
 
-#get version
-IFS=' ' #space delimiter
-chmod +x $INSTALL_PATH/AppRun
-$INSTALL_PATH/AppRun --version
-STR_VERSION=$($INSTALL_PATH/AppRun --version)
-echo "Version message: " $STR_VERSION
-read -a strarr <<< "$STR_VERSION"
-RELIGHT_VERSION=${strarr[1]} #get the relight version from the string
+RELIGHT_VERSION=$(cat RELIGHT_VERSION) #get the relight version from the string
 
 mv ReLight-*.AppImage ReLight$RELIGHT_VERSION-linux.AppImage
