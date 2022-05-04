@@ -25,6 +25,15 @@ else()
 	find_package (JPEG REQUIRED)
 endif()
 
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/RELIGHT_VERSION")
+	# version is read from RELIGHT_VERSION file
+	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/RELIGHT_VERSION" RELIGHT_VERSION)
+else() # should never happen
+	set(RELIGHT_VERSION "test")
+endif()
+
+message("ReLight Version: " ${RELIGHT_VERSION})
+
 add_subdirectory(relight)
 add_subdirectory(relight-cli)
 add_subdirectory(relight-merge)

@@ -1,0 +1,27 @@
+name: CreateRelease
+
+on:
+  #[push, pull_request] #just for test release scripts
+  workflow_dispatch: #manual run
+    inputs:
+      version:
+        description: 'New ReLight Version'
+        required: true
+        default: 'YYYY.MM'
+
+
+jobs:
+  update_ml_version:
+    name: Update RELIGHT_VERSION
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Update ReLight version
+      run : |
+        echo ${{ github.event.inputs.version }} | tr -d '\n'> RELIGHT_VERSION
+    - name: commit RELIGHT_VERSION change
+      uses: stefanzweifel/git-auto-commit-action@v4.1.1
+      with:
+        commit_message: Automatic update RELIGHT_VERSION to ${{ github.event.inputs.version }}

@@ -48,3 +48,11 @@ chmod +x $INSTALL_PATH/usr/bin/relight-merge
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/usr/lib
 $SCRIPTS_PATH/resources/linuxdeploy --appdir=$INSTALL_PATH \
   --plugin qt --output appimage
+
+#get version
+IFS=' ' #space delimiter
+STR_VERSION=$($INSTALL_PATH/AppRun --version)
+read -a strarr <<< "$STR_VERSION"
+RELIGHT_VERSION=${strarr[1]} #get the relight version from the string
+
+mv ReLight-*.AppImage ReLight$ML_VERSION-linux.AppImage
