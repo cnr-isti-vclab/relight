@@ -22,13 +22,7 @@ jobs:
         bash build_scripts/${{ runner.os }}/1_build.sh
     - name: Deploy
       run: |
-        mkdir -p install/usr/share/applications/
-        mkdir -p install/usr/share/icons/Yaru/512x512/apps/
-        cp deploy/linux/relight.desktop install/usr/share/applications/relight.desktop
-        cp deploy/linux/relight.png install/usr/share/icons/Yaru/512x512/apps/relight.png
-        deploy/linux/linuxdeployqt install/usr/share/applications/relight.desktop -bundle-non-qt-libs -appimage
-        rm install/AppRun
-
+        bash build_scripts/${{ runner.os }}/2_deploy.sh
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v2
       with:
