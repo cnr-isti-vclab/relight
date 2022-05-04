@@ -47,7 +47,9 @@ Makefile
 *Qt*GCC*
 *Qt*Relaese
 build*
+install/
 !build_scripts
+*.AppImage
 .idea
 __pycache__
 *.bak
