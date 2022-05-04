@@ -55,4 +55,4 @@ STR_VERSION=$($INSTALL_PATH/AppRun --version)
 read -a strarr <<< "$STR_VERSION"
 RELIGHT_VERSION=${strarr[1]} #get the relight version from the string
 
-mv ReLight-*.AppImage ReLight$ML_VERSION-linux.AppImage
+mv ReLight-*.AppImage ReLight$RELIGHT_VERSION-linux.AppImage
