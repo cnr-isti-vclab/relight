@@ -1,6 +1,6 @@
 #!/bin/bash
 # This is a script shell for deploying a relight-portable folder, and an appimage.
-# Requires a properly built MeshLab (see 1_build.sh).
+# Requires a properly built relight (see 1_build.sh).
 #
 # Without given arguments, the folder that will be deployed is relight/install, which
 # should be the path where relight has been installed (default output of 1_build.sh).
@@ -45,6 +45,6 @@ chmod +x $INSTALL_PATH/usr/bin/relight
 chmod +x $INSTALL_PATH/usr/bin/relight-cli
 chmod +x $INSTALL_PATH/usr/bin/relight-merge
 
-#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/usr/lib/meshlab
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/usr/lib
 $SCRIPTS_PATH/resources/linuxdeploy --appdir=$INSTALL_PATH \
   --plugin qt --output appimage
