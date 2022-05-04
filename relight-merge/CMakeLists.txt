@@ -10,17 +10,6 @@ find_package(
 	REQUIRED)
 find_package(OpenMP)
 
-if (MSVC)
-	file(TO_CMAKE_PATH $ENV{JPEGTURBO_HOME} JPEGTURBO_HOME)
-	file(TO_CMAKE_PATH $ENV{EIGEN_HOME} EIGEN_HOME)
-	set(JPEG_INCLUDE_DIR ${JPEGTURBO_HOME}/include)
-	set(JPEG_LIBRARIES ${JPEGTURBO_HOME}/lib/jpeg.lib)
-	set(EIGEN3_INCLUDE_DIR ${EIGEN_HOME})
-else()
-	find_package (JPEG REQUIRED)
-	find_package(Eigen3 REQUIRED)
-endif()
-
 set(CMAKE_AUTOMOC ON)
 
 if (APPLE)
