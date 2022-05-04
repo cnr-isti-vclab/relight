@@ -51,6 +51,8 @@ $SCRIPTS_PATH/resources/linuxdeploy --appdir=$INSTALL_PATH \
 
 #get version
 IFS=' ' #space delimiter
+chmod +x $INSTALL_PATH/AppRun
+$INSTALL_PATH/AppRun --version
 STR_VERSION=$($INSTALL_PATH/AppRun --version)
 echo "Version message: " $STR_VERSION
 read -a strarr <<< "$STR_VERSION"
