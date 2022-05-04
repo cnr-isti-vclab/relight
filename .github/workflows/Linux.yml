@@ -19,12 +19,7 @@ jobs:
         bash build_scripts/${{ runner.os }}/0_setup_env_ubuntu.sh
     - name: Configure and Build
       run: |
-        mkdir build
-        cd build
-        cmake -DUSE_QT_5=ON -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install/usr" ..
-        make -j4
-        make install
-
+        bash build_scripts/${{ runner.os }}/1_build.sh
     - name: Deploy
       run: |
         mkdir -p install/usr/share/applications/
