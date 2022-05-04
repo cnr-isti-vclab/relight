@@ -33,7 +33,7 @@ done
 mkdir -p $INSTALL_PATH/usr/share/applications/
 mkdir -p $INSTALL_PATH/usr/share/icons/Yaru/512x512/apps/
 cp $SCRIPTS_PATH/resources/relight.desktop $INSTALL_PATH/usr/share/applications/relight.desktop
-cp $SCRIPTS_PATH/resources/relight.png $INSTALL_PATH/usr/share/icons/Yaru/512x512/apps/relight.png
+cp $SCRIPTS_PATH/../relight.png $INSTALL_PATH/usr/share/icons/Yaru/512x512/apps/relight.png
 
 if [ ! -z "$QT_DIR" ]
 then
