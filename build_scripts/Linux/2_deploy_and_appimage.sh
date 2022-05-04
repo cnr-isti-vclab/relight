@@ -52,6 +52,7 @@ $SCRIPTS_PATH/resources/linuxdeploy --appdir=$INSTALL_PATH \
 #get version
 IFS=' ' #space delimiter
 STR_VERSION=$($INSTALL_PATH/AppRun --version)
+echo "Version message: " $STR_VERSION
 read -a strarr <<< "$STR_VERSION"
 RELIGHT_VERSION=${strarr[1]} #get the relight version from the string
 
