@@ -16,7 +16,7 @@ jobs:
       uses: jurplel/install-qt-action@v2
     - name: Install dependencies
       run: |
-        sudo apt-get install -y mesa-common-dev libglu1-mesa-dev libjpeg-dev libeigen3-dev libvips-dev libglib2.0-dev
+        bash build_scripts/${{ runner.os }}/0_setup_env_ubuntu.sh
     - name: Configure and Build
       run: |
         mkdir build
