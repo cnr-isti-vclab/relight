@@ -22,7 +22,7 @@ jobs:
         bash build_scripts/${{ runner.os }}/1_build.sh
     - name: Deploy
       run: |
-        bash build_scripts/${{ runner.os }}/2_deploy.sh
+        bash build_scripts/${{ runner.os }}/2_deploy_and_appimage.sh
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v2
       with:
