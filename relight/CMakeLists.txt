@@ -137,7 +137,7 @@ set (RELIGHT_RESOURCES
 	icons.qrc
 )
 
-add_executable(relight MACOSX_BUNDLE ${RELIGHT_HEADERS} ${RELIGHT_SOURCES} ${RELIGHT_FORMS} ${RELIGHT_RESOURCES})
+add_executable(relight ${MACOSX_EXE_TARGET_OPTION} ${RELIGHT_HEADERS} ${RELIGHT_SOURCES} ${RELIGHT_FORMS} ${RELIGHT_RESOURCES})
 target_include_directories(
 	relight PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
@@ -161,13 +161,6 @@ target_compile_definitions(relight PUBLIC _USE_MATH_DEFINES NOMINMAX)
 target_compile_definitions(relight
 	PUBLIC
 		RELIGHT_VERSION=${RELIGHT_VERSION})
-
-if(WIN32 OR APPLE)
-	set(INSTALL_TO_UNIX_LAYOUT OFF)
-else()
-	set(INSTALL_TO_UNIX_LAYOUT ON)
-endif()
-include(GNUInstallDirs)
 
 if (INSTALL_TO_UNIX_LAYOUT)
 	set(RELIGHT_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR})

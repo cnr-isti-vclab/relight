@@ -4,6 +4,7 @@ project(relight)
 set (CMAKE_CXX_STANDARD 11)
 
 option(USE_QT_5 "Set to use Qt5" ON)
+option(MACOSX_MAKE_BUNDLE "If using macos, all targets will be placed in a relight macosx app bundle" ON)
 
 if (USE_QT_5)
 	set(RELIGHT_QT Qt5)
@@ -11,6 +12,11 @@ else()
 	set(RELIGHT_QT Qt6)
 endif()
 
+if (MACOSX_MAKE_BUNDLE)
+	set(MACOSX_EXE_TARGET_OPTION MACOSX_BUNDLE)
+else()
+	set(MACOSX_EXE_TARGET_OPTION "")
+endif()
 
 find_package(Eigen3)
 if (NOT Eigen3_FOUND)
@@ -33,6 +39,15 @@ else() # should never happen
 endif()
 
 message("ReLight Version: " ${RELIGHT_VERSION})
+
+# install options
+
+if(WIN32 OR APPLE)
+	set(INSTALL_TO_UNIX_LAYOUT OFF)
+else()
+	set(INSTALL_TO_UNIX_LAYOUT ON)
+endif()
+include(GNUInstallDirs)
 
 add_subdirectory(relight)
 add_subdirectory(relight-cli)

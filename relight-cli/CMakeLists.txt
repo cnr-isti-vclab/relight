@@ -48,7 +48,7 @@ SET(SOURCES
 
 
 
-add_executable(relight-cli MACOSX_BUNDLE ${HEADERS} ${SOURCES})
+add_executable(relight-cli ${HEADERS} ${SOURCES})
 target_include_directories(
 	relight-cli PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
@@ -65,17 +65,14 @@ target_link_libraries(
 
 target_compile_definitions(relight-cli PUBLIC _USE_MATH_DEFINES NOMINMAX)
 
-if(WIN32 OR APPLE)
-	set(INSTALL_TO_UNIX_LAYOUT OFF)
-else()
-	set(INSTALL_TO_UNIX_LAYOUT ON)
-endif()
-include(GNUInstallDirs)
-
 if (INSTALL_TO_UNIX_LAYOUT)
 	set(RELIGHT_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR})
 else()
-	set(RELIGHT_INSTALL_BIN_DIR .)
+	if (APPLE AND MACOSX_MAKE_BUNDLE)
+		set(RELIGHT_INSTALL_BIN_DIR ${CMAKE_INSTALL_PREFIX}/relight.app/Contents/MacOS/)
+	else()
+		set(RELIGHT_INSTALL_BIN_DIR ${CMAKE_INSTALL_PREFIX})
+	endif()
 endif()
 
 install (TARGETS relight-cli 
@@ -83,5 +80,5 @@ install (TARGETS relight-cli
 	BUNDLE DESTINATION ${RELIGHT_INSTALL_BIN_DIR} )
 
 if (WIN32)
-	install(FILES ${JPEGTURBO_HOME}/bin/jpeg62.dll DESTINATION .)
+	install(FILES ${JPEGTURBO_HOME}/bin/jpeg62.dll DESTINATION ${CMAKE_INSTALL_PREFIX})
 endif()
