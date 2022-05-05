@@ -6,7 +6,7 @@ on:
 jobs:
   macos_build:
     name: Build Relight (MacOS)
-    runs-on: macos-10.15
+    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -15,11 +15,9 @@ jobs:
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
-      with:
-         setup-python: false
     - name: Install dependencies
       run: |
-        brew install eigen libjpeg libomp
+        bash build_scripts/${{ runner.os }}/0_setup_env.sh
     - name: Configure and Build
       run: |
 

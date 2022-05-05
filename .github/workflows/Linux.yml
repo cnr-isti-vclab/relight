@@ -17,8 +17,6 @@ jobs:
     - name: Install dependencies
       run: |
         bash build_scripts/${{ runner.os }}/0_setup_env_ubuntu.sh
-        #needed by qt 5.15 on linux
-        sudo apt-get install libxcb-icccm4-dev libxcb-image0-dev libxcb-keysyms1-dev libxcb-render-util0-dev libxcb-xinerama0-dev
     - name: Configure and Build
       run: |
         bash build_scripts/${{ runner.os }}/1_build.sh
