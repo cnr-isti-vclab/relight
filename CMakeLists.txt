@@ -40,6 +40,8 @@ endif()
 
 message("ReLight Version: " ${RELIGHT_VERSION})
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/relight_tools.cmake)
+
 # install options
 
 if(WIN32 OR APPLE)
