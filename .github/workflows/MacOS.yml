@@ -23,8 +23,7 @@ jobs:
         bash build_scripts/${{ runner.os }}/1_build.sh
     - name: Deploy
       run: |
-        cd install
-        macdeployqt relight.app
+        bash build_scripts/${{ runner.os }}/2_deploy.sh
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v1
       with:
