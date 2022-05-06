@@ -1,0 +1,12 @@
+{
+  "title": "ReLight",
+  "icon": "SOURCE_PATH/build_scripts/relight.icns",
+  "background": "dmg_background.png",
+  "window" : { "size" : { "width" : 500, "height" : 400 } },
+  "contents": [
+    { "x": 112, "y": 100, "type": "file", "path": "INST_PATH/ReLightRL_VERSION.app" },
+    { "x": 385, "y": 100, "type": "link", "path": "/Applications" },
+    { "x": 250, "y": 280, "type": "file", "path": "LICENSE.txt" },
+    { "x": 385, "y": 280, "type": "file", "path": "readme.txt" }
+  ]
+}
