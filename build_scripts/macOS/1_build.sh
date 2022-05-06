@@ -1,10 +1,9 @@
 #!/bin/bash
-
-# this is a script shell for compiling relight in a Linux environment.
+# this is a script shell for compiling relight in a MacOS environment.
 # Requires a Qt environment which is set-up properly, and an accessible
 # cmake binary.
 #
-# Without given arguments, relight will be built in the relight/build
+# Without given arguments, relight will be built in the meshlab/src/build
 # directory, and installed in $BUILD_PATH/../install.
 #
 # You can give as argument the BUILD_PATH and the INSTALL_PATH in the
@@ -13,12 +12,11 @@
 # -b and -i arguments are also supported.
 
 #default paths wrt the script folder
-SCRIPTS_PATH="$(dirname "$(realpath "$0")")"
-SOURCE_PATH=$SCRIPTS_PATH/../../
+SCRIPTS_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+SOURCE_PATH=$SCRIPTS_PATH/../..
 BUILD_PATH=$SOURCE_PATH/build
-INSTALL_PATH=$SOURCE_PATH/install/usr/
+INSTALL_PATH=$SOURCE_PATH/install
 CORES="-j4"
-QT_DIR=""
 
 #check parameters
 for i in "$@"
@@ -29,15 +27,11 @@ case $i in
         shift # past argument=value
         ;;
     -i=*|--install_path=*)
-        INSTALL_PATH="${i#*=}"/usr/
+        INSTALL_PATH="${i#*=}"
         shift # past argument=value
         ;;
     -j*)
         CORES=$i
-        shift # past argument=value
-        ;;
-    -qt=*|--qt_dir=*)
-        QT_DIR=${i#*=}
         shift # past argument=value
         ;;
     *)
@@ -58,15 +52,7 @@ then
     mkdir -p $INSTALL_PATH
 fi
 
-BUILD_PATH=$(realpath $BUILD_PATH)
-INSTALL_PATH=$(realpath $INSTALL_PATH)
-
 cd $BUILD_PATH
-if [ ! -z "$QT_DIR" ]
-then
-    export Qt5_DIR=$QT_DIR
-fi
-
 cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH $SOURCE_PATH
 make $CORES
 make install

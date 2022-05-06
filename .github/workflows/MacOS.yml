@@ -20,13 +20,7 @@ jobs:
         bash build_scripts/${{ runner.os }}/0_setup_env.sh
     - name: Configure and Build
       run: |
-
-        mkdir build
-        cd build
-        cmake -DUSE_QT_5=ON -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
-        make -j4
-        make install
-
+        bash build_scripts/${{ runner.os }}/1_build.sh
     - name: Deploy
       run: |
         cd install
