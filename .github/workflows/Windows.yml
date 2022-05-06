@@ -33,7 +33,7 @@ jobs:
         cd install
         windeployqt relight.exe
     - name: Upload Relight Portable
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
         name: Relight_windows_portable
         path: install
