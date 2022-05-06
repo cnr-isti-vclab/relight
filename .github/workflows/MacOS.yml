@@ -28,12 +28,12 @@ jobs:
       run: |
         bash build_scripts/${{ runner.os }}/3_dmg.sh
     - name: Upload Relight Portable
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
         name: relight_macos_portable
         path: install/ReLight*.app
     - name: Upload Relight DMG
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
         name: relight_macos_dmg
         path: install/ReLight*.dmg
