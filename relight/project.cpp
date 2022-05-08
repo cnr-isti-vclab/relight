@@ -306,7 +306,7 @@ void Project::load(QString filename) {
 }
 
 void Project::checkImages() {
-	for(Image &image:images) {
+		for(Image &image:images) {
 		QImageReader reader(image.filename);
 		QSize size = reader.size();
 		image.valid = (size == imgsize);
@@ -323,7 +323,7 @@ void Project::save(QString filename) {
 
 	//as a folder for images compute the relative path to the saving file location!
 	QFileInfo info(filename);
-	QString path = dir.relativeFilePath(info.absoluteDir().absolutePath());
+	QString path = info.absoluteDir().relativeFilePath(dir.absolutePath());
 	project.insert("folder", path);
 
 	QJsonArray jimages;
