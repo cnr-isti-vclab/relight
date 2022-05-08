@@ -19,7 +19,7 @@ class White;
 class Project {
 public:
 
-	QDir dir;                  //image folder
+	QDir dir;                  //image folder, path relative to project
 	QSize imgsize;             //images width and height (must be the same for all).
 	Lens lens;
 	Dome dome;
@@ -46,6 +46,7 @@ public:
 	Align *newAlign();
 	White *newWhite();
 
+	//set image folder
 	bool setDir(QDir folder);
 	bool scanDir(); //load images from project.dir, and return false if some problems with resolution.
 	void rotateImages();

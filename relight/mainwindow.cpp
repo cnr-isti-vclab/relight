@@ -215,7 +215,7 @@ void MainWindow::openProject() {
 		QMessageBox::critical(this, "Could not load the project: " + filename, "Error: " + e);
 		return;
 	}
-	project_filename = project.dir.relativeFilePath(filename);
+	project_filename = filename; //project.dir.relativeFilePath(filename);
 	if(project.missing.size() != 0) {
 		if(project.missing.size() == project.images.size()) {
 			QString imagefolder = QFileDialog::getExistingDirectory(this, "Could not find the images, please select the image folder:", project.dir.absolutePath());
@@ -223,11 +223,8 @@ void MainWindow::openProject() {
 				newProject();
 				return;
 			}
-			QDir dir(imagefolder);
-			for(Image &image: project.images) {
-				QFileInfo info(image.filename);
-				image.filename = project.dir.relativeFilePath(dir.filePath(info.fileName()));
-			}
+			project.dir.setPath(imagefolder);
+			QDir::setCurrent(imagefolder);
 			project.checkImages();
 		}
 	}
