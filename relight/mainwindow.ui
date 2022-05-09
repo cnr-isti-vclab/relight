@@ -20,7 +20,7 @@
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <widget class="QLabel" name="label_2">
@@ -588,10 +588,10 @@
      <normaloff>:/icons/feather/ruler.svg</normaloff>:/icons/feather/ruler.svg</iconset>
    </property>
    <property name="text">
-    <string>New Measure</string>
+    <string>Set scale</string>
    </property>
    <property name="toolTip">
-    <string>Take a measure</string>
+    <string>Pick a known length and set dataset scale.</string>
    </property>
   </action>
   <action name="actionToggle_max_luma">
