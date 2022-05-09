@@ -6,7 +6,7 @@ on:
 jobs:
   macos_build:
     name: Build Relight (MacOS)
-    runs-on: macos-10.15
+    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -15,26 +15,25 @@ jobs:
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
-      with:
-         setup-python: false
     - name: Install dependencies
       run: |
-        brew install eigen libjpeg libomp
+        bash build_scripts/${{ runner.os }}/0_setup_env.sh
     - name: Configure and Build
       run: |
-
-        mkdir build
-        cd build
-        cmake -DUSE_QT_5=ON -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
-        make -j4
-        make install
-
+        bash build_scripts/${{ runner.os }}/1_build.sh
     - name: Deploy
       run: |
-        cd install
-        macdeployqt relight.app
+        bash build_scripts/${{ runner.os }}/2_deploy.sh
+    - name: DMG
+      run: |
+        bash build_scripts/${{ runner.os }}/3_dmg.sh
     - name: Upload Relight Portable
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
-        name: Relight_macos_portable
-        path: install
+        name: relight_macos_portable
+        path: install/ReLight*.app
+    - name: Upload Relight DMG
+      uses: actions/upload-artifact@v2
+      with:
+        name: relight_macos_dmg
+        path: install/ReLight*.dmg

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=ReLight
+GenericName=Image relighting
+Comment=Create and view relightable images
+Exec=relight %F
+Icon=relight
+Terminal=false
+Categories=Graphics;3DGraphics;Viewer;Qt;
+Name[en_US]=relight.desktop

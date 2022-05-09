@@ -42,11 +42,13 @@ Thumbs.db
 CMakeFiles
 CMakeCache.txt
 CMakeLists.txt.user
-*.cmake
 Makefile
 *Qt*GCC*
 *Qt*Relaese
 build*
+install/
+!build_scripts
+*.AppImage
 .idea
 __pycache__
 *.bak

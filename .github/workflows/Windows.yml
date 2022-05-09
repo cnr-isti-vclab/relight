@@ -19,16 +19,13 @@ jobs:
       shell: bash
       run: |
         echo "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC" >> $GITHUB_ENV
-        echo "JPEGTURBO_HOME=${{ github.workspace }}\external\libjpeg-turbo-2.0.6" >> $GITHUB_ENV
-        echo "EIGEN_HOME=${{ github.workspace }}\external\eigen-3.3.9" >> $GITHUB_ENV
     - name: Configure and Build
       run: |
-
         mkdir build
         mkdir install
         cd build
         cmake -DUSE_QT_5=ON -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
-        nmake 
+        nmake
         nmake install
 
     - name: Deploy
@@ -36,7 +33,7 @@ jobs:
         cd install
         windeployqt relight.exe
     - name: Upload Relight Portable
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
         name: Relight_windows_portable
         path: install
