@@ -26,6 +26,11 @@ void parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::vector<QSt
 		if(tokens.size() < 4)
 			throw QString("Invalid line in .lp: " + line);
 
+		//join possible filenames with spaces. (if you are using tabs you deserve nothing).
+		while(tokens.size() > 4) {
+			tokens[1] = tokens[0] + ' ' + tokens[1];
+			tokens.pop_front();
+		}
 		filename = tokens[0];
 		for(int k = 0; k < 3; k++) {
 			bool ok;

@@ -189,7 +189,7 @@ void MainWindow::newProject() {
 	QStringList img_ext;
 	img_ext << "*.lp";
 	QStringList lps = QDir(dir).entryList(img_ext);
-	if(lps.size() > 1) {
+	if(lps.size() > 0) {
 		int answer = QMessageBox::question(this, "Found an .lp file: " + lps[0], "Do you wish to load " + lps[0] + "?", QMessageBox::Yes, QMessageBox::No);
 		if(answer != QMessageBox::No)
 			loadLP(lps[0]);
