@@ -11,7 +11,7 @@ on:
 
 
 jobs:
-  update_ml_version:
+  update_rl_version:
     name: Update RELIGHT_VERSION
     runs-on: ubuntu-latest
     steps:
@@ -24,4 +24,88 @@ jobs:
     - name: commit RELIGHT_VERSION change
       uses: stefanzweifel/git-auto-commit-action@v4.1.1
       with:
-        commit_message: Automatic update RELIGHT_VERSION to ${{ github.event.inputs.version }}
+        commit_message: Set ReLight version to ${{ github.event.inputs.version }}
+
+  linux_build:
+    needs: [update_rl_version]
+    name: Build Relight (Linux)
+    runs-on: ubuntu-18.04 #in order to deploy, need to use oldest supported version
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+    - name: Install dependencies
+      run: |
+        bash build_scripts/${{ runner.os }}/0_setup_env_ubuntu.sh
+    - name: Configure and Build
+      run: |
+        bash build_scripts/${{ runner.os }}/1_build.sh
+    - name: Deploy
+      run: |
+        bash build_scripts/${{ runner.os }}/2_deploy_and_appimage.sh
+    - name: Upload Relight Portable
+      uses: actions/upload-artifact@v2
+      with:
+        name: relight_linux_portable
+        path: install/
+    - name: Upload Relight AppImage
+      uses: actions/upload-artifact@v2
+      with:
+        name: relight_linux_appimage
+        path: ReLight*.AppImage
+
+  macos_build:
+    needs: [update_rl_version]
+    name: Build Relight (MacOS)
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+    - name: Install dependencies
+      run: |
+        bash build_scripts/${{ runner.os }}/0_setup_env.sh
+    - name: Configure and Build
+      run: |
+        bash build_scripts/${{ runner.os }}/1_build.sh
+    - name: Deploy
+      run: |
+        bash build_scripts/${{ runner.os }}/2_deploy.sh
+    - name: Import Cert and Key
+      uses: apple-actions/import-codesign-certs@v1
+      with:
+        p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
+        p12-password: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+    - name: Sign
+      run: |
+        codesign --options "runtime" --timestamp --force --deep --sign ${{ secrets.MACOS_CERT_ID }} install/relight.app
+    - name: Notarize
+      uses: devbotsxyz/xcode-notarize@v1
+      with:
+        product-path: "install/relight.app"
+        appstore-connect-username: ${{ secrets.MACOS_NOTARIZATION_USER }}
+        appstore-connect-password: ${{ secrets.MACOS_NOTARIZATION_PSSW }}
+    - name: "Staple Release"
+      uses: devbotsxyz/xcode-staple@v1
+      with:
+        product-path: "install/relight.app"
+    - name: DMG
+      run: |
+        bash build_scripts/${{ runner.os }}/3_dmg.sh
+    - name: Upload Relight Portable
+      uses: actions/upload-artifact@v2
+      with:
+        name: relight_macos_portable
+        path: install/ReLight*.app
+    - name: Upload Relight DMG
+      uses: actions/upload-artifact@v2
+      with:
+        name: relight_macos_dmg
+        path: install/ReLight*.dmg

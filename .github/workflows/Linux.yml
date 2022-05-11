@@ -26,10 +26,10 @@ jobs:
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v2
       with:
-        name: Relight_linux_portable
+        name: relight_linux_portable
         path: install/
     - name: Upload Relight AppImage
       uses: actions/upload-artifact@v2
       with:
-        name: Relight_linux_appimage
+        name: relight_linux_appimage
         path: ReLight*.AppImage
