@@ -34,6 +34,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
+        ref: master
         submodules: true
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
@@ -65,6 +66,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
+        ref: master
         submodules: true
 
     - name: Install Qt
@@ -118,6 +120,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
+        ref: master
         submodules: true
     - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
@@ -225,8 +228,8 @@ jobs:
         prerelease: false
         title: "ReLight-${{ github.event.inputs.version }}"
         files: |
-          ReLight${{steps.envs.outputs.ml_version}}-linux.tar.gz
+          ReLight${{ github.event.inputs.version }}-linux.tar.gz
           relight_linux_appimage/ReLight${{ github.event.inputs.version }}-linux.AppImage
-          ReLight${{steps.envs.outputs.ml_version}}-macos.tar.gz
+          ReLight${{ github.event.inputs.version }}-macos.tar.gz
           relight_macos_dmg/ReLight${{ github.event.inputs.version }}-macos.dmg
-          ReLight${{steps.envs.outputs.ml_version}}-windows.zip
+          ReLight${{ github.event.inputs.version }}-windows.zip
