@@ -28,23 +28,12 @@ jobs:
       shell: bash
       run: |
         bash build_scripts/${{ runner.os }}/1_build.sh
-
-        #mkdir build
-        #mkdir install
-        #cd build
-        #cmake -DUSE_QT_5=ON -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX="../install" ..
-        #nmake
-        #nmake install
-
     - name: Deploy
       shell: C:\shells\msys2bash.cmd {0}
       run: |
         bash build_scripts/${{ runner.os }}/2_deploy.sh
-
-        #cd install
-        #windeployqt relight.exe
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v2
       with:
-        name: Relight_windows_portable
+        name: relight_windows_portable
         path: install
