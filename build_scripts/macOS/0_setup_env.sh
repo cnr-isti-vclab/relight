@@ -36,5 +36,3 @@ if [ "$INSTALL_QT" = true ] ; then
 else
     echo "=== jumping installation of qt packages..."
 fi
-
-
