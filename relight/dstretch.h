@@ -2,7 +2,7 @@
 #define DSTRETCH_H
 
 #include <QFile>
-#include <imageset.h>
+#include "../src/imageset.h"
 #include "jpeg_decoder.h"
 #include "jpeg_encoder.h"
 #include <Eigen/Eigen>
