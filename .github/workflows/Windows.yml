@@ -6,7 +6,6 @@ on:
 env:
   QT_VERSION: 5.15.2
 
-
 jobs:
   windows_build:
     name: Build Relight (Windows)

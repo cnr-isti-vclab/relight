@@ -3,6 +3,9 @@ name: Linux
 on:
   [push, pull_request]
 
+env:
+  QT_VERSION: 5.15.2
+
 jobs:
   linux_build:
     name: Build Relight (Linux)
@@ -12,8 +15,17 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: true
+    - name: Cache Qt
+      id: cache-qt
+      uses: actions/cache@v1
+      with:
+        path: ../Qt
+        key: ${{ runner.os }}-QtCache-${{ env.QT_VERSION }}
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
+      with:
+        cached: ${{ steps.cache-qt.outputs.cache-hit }}
+        version: ${{ env.QT_VERSION }}
     - name: Install dependencies
       run: |
         bash build_scripts/${{ runner.os }}/0_setup_env_ubuntu.sh
