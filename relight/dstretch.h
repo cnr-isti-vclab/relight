@@ -3,8 +3,8 @@
 
 #include <QFile>
 #include "../src/imageset.h"
-#include "jpeg_decoder.h"
-#include "jpeg_encoder.h"
+#include "../src/jpeg_decoder.h"
+#include "../src/jpeg_encoder.h"
 #include <Eigen/Eigen>
 #include <Eigen/Eigenvalues>
 #include <QString>
