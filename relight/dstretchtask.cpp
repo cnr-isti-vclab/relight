@@ -1,7 +1,7 @@
 #include "dstretchtask.h"
-#include "relight_vector.h"
-#include "jpeg_encoder.h"
-#include "jpeg_decoder.h"
+#include "../src/relight_vector.h"
+#include "../src/jpeg_encoder.h"
+#include "../src/jpeg_decoder.h"
 #include "dstretch.h"
 #include <cmath>
 #include <Eigen/Eigen>
