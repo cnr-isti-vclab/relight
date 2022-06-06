@@ -8,6 +8,7 @@
 
 SCRIPTS_PATH="$(dirname "$(realpath "$0")")"
 INSTALL_PATH=$SCRIPTS_PATH/../../install
+QT_DIR=""
 
 #checking for parameters
 for i in "$@"
@@ -17,13 +18,17 @@ case $i in
         INSTALL_PATH="${i#*=}"
         shift # past argument=value
         ;;
+    -qt=*|--qt_dir=*)
+        QT_DIR=${i#*=}/bin/
+        shift # past argument=value
+        ;;
     *)
-          # unknown option
-    ;;
+        # unknown option
+        ;;
 esac
 done
 
-windeployqt $INSTALL_PATH/relight.exe
+${QT_DIR}windeployqt $INSTALL_PATH/relight.exe
 
 if [ ! -f $INSTALL_PATH/vc_redist.x64.exe ]
 then
