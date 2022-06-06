@@ -242,28 +242,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="verticalGroupBox">
-         <property name="title">
-          <string>Options</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_5">
-          <item>
-           <widget class="QCheckBox" name="chkDStretch">
-            <property name="text">
-             <string>Decorrelation Stretch</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-            <property name="tristate">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
         <widget class="QPushButton" name="crop">
          <property name="text">
           <string>Crop...</string>
