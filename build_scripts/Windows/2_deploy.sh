@@ -35,6 +35,3 @@ then
     echo "Downloading vc_redist because it was missing..."
     wget https://aka.ms/vs/17/release/vc_redist.x64.exe --output-document=$INSTALL_PATH/vc_redist.x64.exe
 fi
-
-#at this point, distrib folder contains all the files necessary to execute meshlab
-echo "$INSTALL_PATH is now a self contained relight application"

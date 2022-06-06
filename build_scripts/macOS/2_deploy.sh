@@ -13,6 +13,7 @@ SCRIPTS_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 SOURCE_PATH=$SCRIPTS_PATH/../..
 INSTALL_PATH=$SOURCE_PATH/install
+QT_DIR=""
 
 #checking for parameters
 for i in "$@"
@@ -22,10 +23,14 @@ case $i in
         INSTALL_PATH="${i#*=}"
         shift # past argument=value
         ;;
+    -qt=*|--qt_dir=*)
+        QT_DIR=${i#*=}/bin/
+        shift # past argument=value
+        ;;
     *)
         # unknown option
         ;;
 esac
 done
 
-macdeployqt $INSTALL_PATH/relight.app
+${QT_DIR}macdeployqt $INSTALL_PATH/relight.app

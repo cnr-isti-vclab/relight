@@ -17,6 +17,7 @@ SOURCE_PATH=$SCRIPTS_PATH/../..
 BUILD_PATH=$SOURCE_PATH/build
 INSTALL_PATH=$SOURCE_PATH/install
 CORES="-j4"
+QT_DIR=""
 
 #check parameters
 for i in "$@"
@@ -32,6 +33,10 @@ case $i in
         ;;
     -j*)
         CORES=$i
+        shift # past argument=value
+        ;;
+    -qt=*|--qt_dir=*)
+        QT_DIR=${i#*=}
         shift # past argument=value
         ;;
     *)
@@ -53,6 +58,11 @@ then
 fi
 
 cd $BUILD_PATH
+if [ ! -z "$QT_DIR" ]
+then
+    export Qt5_DIR=$QT_DIR
+fi
+
 cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH $SOURCE_PATH
 make $CORES
 make install
