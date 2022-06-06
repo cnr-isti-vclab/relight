@@ -266,6 +266,13 @@ void RtiExport::createNormals() {
 
 
 void RtiExport::createRTI() {
+    QString output = QFileDialog::getSaveFileName(this, "Select an output directory", QString(), tr("Images (*.png)"));
+    if(output.isNull()) return;
+    createRTI(output);
+    close();
+}
+
+void RtiExport::createRTI(QString output) {
 	QString format;
 	if(ui->formatRTI->isChecked())
 		format = "rti";
