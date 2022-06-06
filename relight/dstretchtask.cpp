@@ -27,7 +27,7 @@ void DStretchTask::run()
         return;
     }
 
-    dstretchSingle(input_folder, output, minSamples, callback);
+    dstretchImage(input_folder, output, minSamples, callback);
     status = DONE;
 }
 

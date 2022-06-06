@@ -79,7 +79,7 @@ set (RELIGHT_HEADERS
 	zoom.h
 	zoomtask.h
 	zoomdialog.h
-	
+	dstretch.h
 )
 
 set (RELIGHT_SOURCES

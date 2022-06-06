@@ -316,10 +316,7 @@ void RtiExport::createRTI1(QString output) {
 	task->addParameter("quality", Parameter::INT, ui->quality->value());
 
 
-	QStringList steps;
-    if (ui->chkDStretch->isChecked())
-        steps << "dstretch";
-
+    QStringList steps;
     steps << "relight";
 
 	if(format == "RTI")

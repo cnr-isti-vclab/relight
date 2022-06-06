@@ -31,9 +31,7 @@ void RtiTask::run() {
 	QStringList steps = (*this)["steps"].value.toStringList();
     std::function<bool(std::string s, int d)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
     QString err;
-	for(auto step: steps) {
-        if (step == "dstretch")
-            dstretchSet(input_folder, output, 1000, callback);
+    for(auto step: steps) {
 		if(step == "relight")
 			relight();
 		else if(step == "toRTI")
