@@ -10,8 +10,9 @@
 
 class LRti {
 public:
-	enum Type { UNKNOWN = 0, PTM_LRGB = 1, PTM_RGB = 2, HSH  = 3};
-	enum PTMFormat { RAW = 0, JPEG = 1, JPEGLS = 2 };
+	enum Type { UNKNOWN = 0, PTM_LRGB = 1, PTM_RGB = 2, HSH_RGB  = 3};
+	enum Encoding { RAW = 0, JPEG = 1, JPEGLS = 2 };
+	enum Format { PTM = 0, HSH = 1, UNIVERSAL = 2 };
 
 	Type type;
 
@@ -29,8 +30,9 @@ public:
 	void clip(int left, int bottom, int right, int top);
 	LRti clipped(int left, int bottom, int right, int top);
 
-	bool encode(PTMFormat format, int &size, uint8_t *&buffer, int quality = 90);
-	bool encode(PTMFormat format, const char *filename, int quality = 90);
+	bool encode(Encoding encoding, int &size, uint8_t *&buffer, int quality = 95);
+	bool encode(Encoding encoding, const char *filename, int quality = 95);
+	bool encodeUniversal(const char *filename, int quality = 95);
 
 	bool encodeJPEGtoFile(int startplane, int quality, const char *filename);
 	//used to load relight planes into this class.

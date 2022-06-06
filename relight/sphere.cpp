@@ -5,6 +5,7 @@
 #include <QJsonArray>
 #include <QMessageBox>
 #include <QRunnable>
+#include <QGradient>
 
 #include <math.h>
 #include <assert.h>
@@ -118,12 +119,14 @@ void Sphere::findHighlight(QImage img, int n) {
 		sphereImg = QImage(inner.width(), inner.height(), QImage::Format_ARGB32);
 		sphereImg.fill(0);
 	}
-	uchar threshold = 230;
+	uchar threshold = 240;
 
 	vector<int> histo;
 
+	//lower threshold until we find something.
 	QPointF bari(0, 0); //in image coords
 	int count = 0;
+	int iter = 0;
 	while(count < 10 && threshold > 100) {
 		bari = QPointF(0, 0);
 		count = 0;
@@ -142,12 +145,11 @@ void Sphere::findHighlight(QImage img, int n) {
 				int g = qGray(c);
 
 				int mg = qGray(sphereImg.pixel(X, Y));
-				assert(X < sphereImg.width());
-				assert(Y < sphereImg.height());
 				if(g > mg) sphereImg.setPixel(X, Y, qRgb(g, g, g));
 
 				if(g < threshold) continue;
-
+				//sphereImg.setPixel(X, Y, qRgb(threshold, 0, 0));
+				
 				bari += QPointF(x, y);
 				count++;
 
@@ -159,8 +161,15 @@ void Sphere::findHighlight(QImage img, int n) {
 			bari.rx() /= count;
 			bari.ry() /= count;
 		}
+		sphereImg.setPixel(int(bari.x()) - inner.left(), int(bari.y()) - inner.top(), qRgb(255, 255, 255));
+		
+		
 		threshold -= 10;
+		iter++;
 	}
+	
+	//threshold now is 10 lower so we get more points.
+	threshold += 10;
 
 	histogram.push_back(histo);
 	if(threshold < 200) {
@@ -169,15 +178,16 @@ void Sphere::findHighlight(QImage img, int n) {
 		return;
 	}
 
+	iter = 0;
 	//find biggest spot by removing outliers.
-	int radius = ceil(0.5*inner.width());
+	double radius = ceil(0.5*inner.width());
 	while(radius > ceil(0.02*inner.width())) {
 		QPointF newbari(0, 0); //in image coords
 		double weight = 0.0;
-		int starty = std::max(inner.top(),    int(floor(bari.ry())) - radius);
-		int endy   = std::min(inner.bottom(), int( ceil(bari.ry())) + radius);
-		int startx = std::max(inner.left(),   int(floor(bari.rx())) - radius);
-		int endx   = std::min(inner.right(),  int( ceil(bari.rx())) + radius);
+		int starty = std::max(inner.top(),    int(floor(bari.ry()) - radius));
+		int endy   = std::min(inner.bottom(), int( ceil(bari.ry()) + radius));
+		int startx = std::max(inner.left(),   int(floor(bari.rx()) - radius));
+		int endx   = std::min(inner.right(),  int( ceil(bari.rx()) + radius));
 		for(int y = starty; y < endy; y++) {
 			for(int x = startx; x < endx; x++) {
 
@@ -191,22 +201,19 @@ void Sphere::findHighlight(QImage img, int n) {
 
 				QRgb c = img.pixel(x, y);
 				int g = qGray(c);
-
-				int mg = qGray(sphereImg.pixel(X, Y));
-				assert(X < sphereImg.width());
-				assert(Y < sphereImg.height());
-				if(g > mg) sphereImg.setPixel(X, Y, qRgb(g, g, g));
-
 				if(g < threshold) continue;
-
+				
 				newbari += QPointF(x*double(g), y*double(g));
 				weight += g;
 			}
 		}
-		if(!weight) break;
+		iter++;
+		if(weight == 0.0) break;
 		bari = newbari/weight;
 		radius *= 0.5;
 	}
+	sphereImg.setPixel(int(bari.x()) - inner.left(), int(bari.y()) - inner.top(), qRgb(0, 255, 0));
+	
 
 /*	if(!sphere) {
 		sphere = new QGraphicsPixmapItem(QPixmap::fromImage(sphereImg));
@@ -215,7 +222,6 @@ void Sphere::findHighlight(QImage img, int n) {
 	} else {
 		sphere->setPixmap(QPixmap::fromImage(sphereImg));
 	} */
-
 	lights[n] = bari;
 }
 

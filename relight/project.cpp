@@ -32,6 +32,7 @@ void Project::clear() {
 	dir = QDir();
 	imgsize = QSize();
 	images.clear();
+	missing.clear();
 
 	for(auto sphere: spheres)
 		delete sphere;
@@ -250,17 +251,21 @@ void Project::load(QString filename) {
 	for(auto img: obj["images"].toArray()) {
 		Image image;
 		image.fromJson(img.toObject());
+		images.push_back(image);
+	}
 
+	for(int i = 0; i < images.size(); i++) {
+		Image &image = images[i];
 		QFileInfo imginfo(image.filename);
-		if(!imginfo.exists())
-			throw QString("Could not find the image: " + image.filename) + " in folder: " + dir.absolutePath();
-
+		if(!imginfo.exists()) {
+			missing.push_back(i);
+			//throw QString("Could not find the image: " + image.filename) + " in folder: " + dir.absolutePath();
+			continue;
+		}
 		QImageReader reader(image.filename);
 		QSize size = reader.size();
 		image.valid = (size == imgsize);
 		if(!image.valid) image.skip = true;
-
-		images.push_back(image);
 	}
 
 	if(obj.contains("crop")) {

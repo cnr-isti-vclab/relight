@@ -221,7 +221,7 @@ bool LRti::decodeRAW(const string &version, FILE *file) {
 		vector<unsigned char> line(line_size);
 		
 		for(int k = 0; k < 3; k++) {
-		
+			
 			for(int y = 0; y < height; y++) {
 				if(fread(line.data(), 1, line_size, file) != line_size)
 					return false;
@@ -265,7 +265,7 @@ bool LRti::loadHSH(FILE* file) {
 		return false;
 	
 	size_t basis_terms = basis[0]; //number of terms in the basis
-/*	//ignored
+	/*	//ignored
 	int basis_type = basis[1];
 	int basis_size = basis[2];
 */
@@ -274,7 +274,7 @@ bool LRti::loadHSH(FILE* file) {
 		error =  "Unsupported .rti if not HSH (for the moment)";
 		return false;
 	}
-	type = HSH;
+	type = HSH_RGB;
 	
 	data.resize(basis_terms*3);
 	for(auto &a: data)
@@ -292,23 +292,23 @@ bool LRti::loadHSH(FILE* file) {
 		error = "Failed reading scale.";
 		return false;
 	}
-		
+	
 	read = fread(bias.data(),  sizeof(float), basis_terms, file); //min
 	if(read != basis_terms) {
 		error = "Failed reading bias.";
 		return false;
 	}
-
+	
 	//in OUR system we want to write (c - bias)*scale
 	//in .rti system HSH its c*scale + bias
 	//we need to convert the coefficients to the uniform standard.
 	
 	for(size_t i = 0; i < basis_terms; i++)
 		bias[i] = -bias[i]/scale[i];
-
+	
 	uint32_t line_size = width * basis_terms * 3;
 	vector<unsigned char> line(line_size);
-
+	
 	//for each pixel is 9 for red... 9 for green, 9 for blue
 	for(int y = 0; y < height; y++)	{
 		int Y = height -1 -y;
@@ -377,9 +377,9 @@ template <class C> std::ostringstream &join(std::vector<C> &v, std::ostringstrea
 	return stream;
 }
 
-bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
+bool LRti::encode(Encoding encoding, int &size, uint8_t *&buffer, int quality) {
 	std::string f;
-	switch(format) {
+	switch(encoding) {
 	case RAW:
 		if(type == PTM_LRGB) f = "PTM_FORMAT_LRGB";
 		else if(type == PTM_RGB) f = "PTM_FORMAT_RGB";
@@ -401,7 +401,7 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 	vector<uint8_t *> buffers(9, nullptr);
 	vector<int> sizes(9, 0);
 	
-	switch(format) {
+	switch(encoding) {
 	case RAW:
 		//no need to allocate buffer
 		for(auto &d: data)
@@ -421,11 +421,11 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 	stream << f << "\n";
 	stream << width << "\n" << height << "\n";
 	join(scale, stream) << "\n";
-	for(auto &b: bias)
-		b = floor(b*255.0 + 0.5);
+	//for(auto &b: bias)
+	//	b = floor(b*255.0 + 0.5);
 	join(bias, stream) << "\n";
 	
-	switch(format) {
+	switch(encoding) {
 	case RAW:
 		break;
 	case JPEG:
@@ -449,7 +449,7 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 	memcpy(buffer, stream.str().c_str(), pos);
 	
 	uint8_t *start = buffer + pos;
-	switch(format) {
+	switch(encoding) {
 	case RAW:
 		if(type == PTM_LRGB) {
 			for(int y = 0; y < height; y++) {
@@ -459,7 +459,7 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 						start[i*6 + k] = data[k][i];
 				}
 			}
-
+			
 			start += height*width*6;
 			for(int y = 0; y < height; y++) {
 				for(int32_t x = 0; x < width; x++) {
@@ -468,7 +468,7 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 						start[i*3 + k] = data[6 + k][i];
 				}
 			}
-
+			
 		} else if(type == PTM_RGB) {
 			//data is in groups of 6 coeffs for each component
 			//
@@ -482,7 +482,7 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 					}
 				}
 			}
-
+			
 		} else {
 			throw "Unimplemented";
 		}
@@ -504,7 +504,7 @@ bool LRti::encode(PTMFormat format, int &size, uint8_t *&buffer, int quality) {
 	return true;
 }
 
-bool LRti::encode(PTMFormat format, const char *filename, int quality) {
+bool LRti::encode(Encoding encoding, const char *filename, int quality) {
 	FILE *file = fopen(filename, "wb");
 	if(!file) {
 		cerr << "Could not open file: " << filename << endl;
@@ -512,12 +512,64 @@ bool LRti::encode(PTMFormat format, const char *filename, int quality) {
 	}
 	uint8_t *buffer = nullptr;
 	int size = 0;
-	bool ok  = encode(format, size, buffer, quality);
+	bool ok  = encode(encoding, size, buffer, quality);
 	if(!ok) return false;
 	fwrite(buffer, 1, size, file);
 	fclose(file);
 	return true;
 }
+
+
+bool LRti::encodeUniversal(const char *filename, int quality) {
+	FILE *file = fopen(filename, "wb");
+	if(!file) {
+		cerr << "Could not open file: " << filename << endl;
+		return false;
+	}
+	
+	std::ostringstream stream;
+	vector<int> rtiTypes = { -1, 1, 1, 3 }; //1 stands for PTM, 3 stands for HSH
+	vector<int> basisTerms = { -1, 6, 6, 9 };
+	vector<int> colorspaces = { -1, 1, 2, 2 };
+	vector<string> header = { "", "PTM1.2", "PTM1.2", "HSH1.2" };
+	stream << "#" << header[type] << "\n";
+	stream << rtiTypes[type] << "\n";
+	stream <<  width << " " << height << " " << 3 << "\n";
+	stream << basisTerms[type] << " " << colorspaces[type] << " " << 1 << endl;
+	
+	fwrite(stream.str().data(), 1, stream.str().size(), file);
+	
+	vector<float> gbias(basisTerms[type]); 
+	vector<float> gscale(basisTerms[type]); 
+	
+	for(int i = 0; i < gbias.size(); i++) {
+		gbias[i] = -bias[i];
+		gscale[i] = scale[i];
+	}
+	fwrite(gscale.data(), sizeof(float), gscale.size(), file);
+	fwrite(gbias.data(), sizeof(float), gbias.size(), file);
+	
+	
+
+	int nplanes = data.size();
+	unsigned char *buffer = new unsigned char[nplanes*width*height];
+	for(int i = 0; i < data.size(); i++) {
+		for(int y = 0; y < height; y++) {
+			for(int x = 0; x < width; x++) {
+				int k0 = x + y*width;
+				int k1 = x + (height -y -1)*width;
+				buffer[k0*nplanes + i] = data[i][k1];
+			}
+		}
+	}
+
+	fwrite(buffer, 1, nplanes*width*height, file);
+	delete []buffer;
+	
+	fclose(file);
+	return true;
+}
+
 
 /* JPEG
  * write to file, we need to reverse the order of the Y */
@@ -534,16 +586,16 @@ bool LRti::encodeJPEGtoFile(int startplane, int quality, const char *filename) {
 		order = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 	JpegEncoder enc;
 	enc.setQuality(quality);
-
+	
 	enc.setColorSpace(JCS_RGB, 3);
 	
 	//enc.setJpegColorSpace(JCS_YCbCr);
 	enc.setJpegColorSpace(JCS_RGB);
 	
 	//lets avoid make another copy in memory.
-
+	
 	enc.init(filename, width, height);
-
+	
 	vector<uint8_t> line(width*3);
 	for(int y = height-1; y >= 0; y--) {
 		for(int32_t x = 0; x < width; x++) {
@@ -560,10 +612,10 @@ bool LRti::encodeJPEGtoFile(int startplane, int quality, const char *filename) {
 		}
 		enc.writeRows(line.data(), 1);
 	}
-
+	
 	//return size, if needed.
 	enc.finish();
-
+	
 	return true;
 }
 
@@ -582,9 +634,9 @@ bool LRti::encodeJPEG(vector<int> &sizes, vector<uint8_t *> &buffers, int qualit
 				delete []buffers[i];
 			return false;
 		}
-				std::ostringstream filename;
-		 filename << "coeff_" << k << ".jpg";
-		 
+		std::ostringstream filename;
+		filename << "coeff_" << k << ".jpg";
+		
 		FILE *file = fopen(filename.str().c_str(), "wb");
 		fwrite(buffers[k], 1, sizes[k], file);
 		fclose(file);
@@ -661,7 +713,7 @@ bool LRti::decodeJPEG(FILE *file) {
 			return false;
 		
 		bool decoded = decodeJPEG(buffer.size(), buffer.data(), s);
-
+		
 		if(!decoded)
 			return false;
 		int w = width;
@@ -677,7 +729,7 @@ bool LRti::decodeJPEG(FILE *file) {
 			size_t readed = fread(overs.data(), 1, overs.size(), file);
 			if(readed!= overs.size())
 				throw "Failed reading jpeg";
-
+			
 			for(int i = 0; i < overflows[s]; i += 5) {
 				//I wonder why the position is stored big endian.
 				int p = overs[i]*256*256*256 + overs[i+1]*256*256 + overs[i+2]*256 + overs[i+3];
@@ -696,12 +748,12 @@ bool LRti::decodeJPEG(size_t size, unsigned char *buffer, unsigned int plane) {
 	JpegDecoder dec;
 	dec.setColorSpace(JCS_GRAYSCALE);
 	dec.setJpegColorSpace(JCS_GRAYSCALE);
-
+	
 	if(!dec.decode(buffer, size, img, w, h) || w != width || h != height) {
 		cerr << "Failed decoding jpeg or different size." << endl;
 		return false;
 	}
-
+	
 	chromasubsampled = dec.chromaSubsampled();
 	data[plane].resize(int(w*h));
 	memcpy(data[plane].data(), img, int(w*h));
@@ -713,14 +765,19 @@ bool LRti::decodeJPEGfromFile(size_t size, unsigned char *buffer, unsigned int p
 	vector<unsigned int> invorder;
 	if(type == PTM_LRGB) {
 		invorder = {6,7,8, 5,3,4, 0,2,1};
-
+		
 	} else if(type == PTM_RGB) {
 		invorder = { 5,11,17,  3,9,15,  4,10,16,  0,6,12,  2,8,14, 1,7,13 };
+	} else if(type == HSH_RGB){
+		invorder = {0, 9, 18,  1, 10, 19,  2, 11, 20,  3, 12, 21,  4, 13, 22,  
+					5, 14, 23,  6, 15, 24,  7, 16, 25,  8, 17, 26 };
 	} else {
-		invorder = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+		error = "Unsupported RTI type";
+		return false;
+		
 	}
-
-
+	
+	
 	uint8_t *img = nullptr;
 	int w, h;
 	JpegDecoder dec;
@@ -731,25 +788,25 @@ bool LRti::decodeJPEGfromFile(size_t size, unsigned char *buffer, unsigned int p
 	plane0 = invorder[plane0];
 	plane1 = invorder[plane1];
 	plane2 = invorder[plane2];
-
+	
 	chromasubsampled = dec.chromaSubsampled();
 	data[plane0].resize(int(w*h));
 	data[plane1].resize(int(w*h));
 	data[plane2].resize(int(w*h));
-
-
+	
+	
 	for(int y = 0; y < height; y++) {
 		for(int x = 0; x < width; x++) {
 			unsigned int i = int(x + y*width);
 			unsigned int j = int(x + (height - 1 -y)*width);
-
+			
 			data[plane0][j] = img[i*3+0];
 			data[plane1][j] = img[i*3+1];
 			data[plane2][j] = img[i*3+2];
 		}
 	}
-
+	
 	delete []img;
 	return true;
-
+	
 }

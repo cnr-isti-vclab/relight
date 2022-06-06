@@ -28,8 +28,7 @@ public:
 public slots:
     bool progressed(std::string str, int percent) override;
 
-	void relight();
-    void dstretch();
+	void relight(bool commonMinMax = false); //use true for .rti and .ptm
 	void toRTI();
     void fromRTI();
 	void openlime();

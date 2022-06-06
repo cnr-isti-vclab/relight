@@ -98,7 +98,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	scene = new RTIScene(this);
 	connect(scene, SIGNAL(borderPointMoved(QGraphicsEllipseItem *)), this, SLOT(updateBorderPoints(QGraphicsEllipseItem *)));
-	connect(scene, SIGNAL(highlightMoved(QGraphicsEllipseItem *)), this, SLOT(updateHighlight(QGraphicsEllipseItem *)));
+	connect(scene, SIGNAL(highlightMoved(QGraphicsPathItem *)), this, SLOT(updateHighlight(QGraphicsPathItem *)));
 
 
 	ui->graphicsView->setScene(scene);
@@ -217,6 +217,12 @@ void MainWindow::openProject() {
 		return;
 	}
 	project_filename = project.dir.relativeFilePath(filename);
+	if(project.missing.size() != 0) {
+		if(project.missing.size() == project.images.size()) {
+
+		}
+	}
+
 	init();
 	enableActions();
 }
@@ -302,7 +308,7 @@ bool MainWindow::init() {
 		count++;
 	}
 
-	openImage(0);
+	openImage(0, true);
 	return true;
 }
 
@@ -311,7 +317,7 @@ void MainWindow::imageChecked(QStandardItem *item) {
 	Image &image = project.images[index.row()];
 	bool skip = !index.data(Qt::CheckStateRole).toBool();
 	if(!skip && !image.valid) {
-		QMessageBox::critical(this, "Can't include this image.", "This image has a different resolution or focal, cannot include in the processing");
+		QMessageBox::critical(this, "Can't include this image.", "This image has a different width or height (or a different focal length). It cannot be used to create an RTI.");
 		item->setCheckState(Qt::Unchecked);
 		return;
 	}
@@ -473,7 +479,7 @@ void MainWindow::updateBorderPoints(QGraphicsEllipseItem *point) {
 	}
 }
 
-void MainWindow::updateHighlight(QGraphicsEllipseItem *highlight) {
+void MainWindow::updateHighlight(QGraphicsPathItem *highlight) {
 	if(ignore_scene_changes)
 		return;
 
@@ -663,15 +669,19 @@ void MainWindow::finishedDetectHighlights() {
 			QMessageBox::critical(this, "Houston we have a problem!", "These images are probably just rotated: " + flipped.join(", "));
 		return;
 	}
+	int count = 0;
+	for(Sphere *sphere: project.spheres) {
+		sphere->sphereImg.save(QString("sphere_%1.png").arg(count));
+		count++;
+	}
 
 /*
 	//histogram for highlight threshold
-	for(auto it: project.spheres) {
-		Sphere *sphere = it.second;
+	for(auto it: project.spheres) {		Sphere *sphere = it.second;
 		cout << "Sphere " << it.first << "\n";
 		for(size_t i = 0; i < sphere->histogram.size(); i++) {
 			cout << "Light: " << i << " ";
-			for(int n: sphere->histogram[i])
+			for(int n: spher5e->histogram[i])
 				cout << n << " ";
 			cout << "\n";
 		}
@@ -705,8 +715,9 @@ int MainWindow::detectHighlight(int n) {
 
 
 	for(auto sphere: project.spheres)
-		if(sphere->fitted)
+		if(sphere->fitted) {
 			sphere->findHighlight(img, n);
+		}
 
 	return 1;
 }

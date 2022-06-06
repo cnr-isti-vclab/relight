@@ -38,7 +38,7 @@ int convertRTI(const char *file, const char *output, int quality) {
 		rti.colorspace = Rti::RGB;
 		rti.nplanes = 18;
 		break;
-	case LRti::HSH:
+	case LRti::HSH_RGB:
 		rti.type = Rti::HSH;
 		rti.colorspace = Rti::RGB;
 		rti.nplanes = lrti.scale.size()*3;
@@ -110,9 +110,10 @@ int convertToRTI(const char *filename, const char *output) {
 	QJsonArray scale = material["scale"].toArray();
 	QJsonArray bias = material["bias"].toArray();
 
-	vector<uint> order = { 5,3,4, 0,2,1};
+	vector<uint> order;
 
 	if(type == "ptm") {
+		order = { 5,3,4, 0,2,1};
 		if(colorspace == "rgb") {
 			lrti.type = LRti::PTM_RGB;
 			if(nplanes != 18)
@@ -144,7 +145,8 @@ int convertToRTI(const char *filename, const char *output) {
 			throw QString("Cannot convert PTM relight with colorspace: %1").arg(colorspace);
 		}
 	} else if(type == "hsh" && colorspace == "rgb") {
-		lrti.type = LRti::HSH;
+		order = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+		lrti.type = LRti::HSH_RGB;
 		if(nplanes != 27 && nplanes != 12)
 			throw QString("Wrong number of planes (%1) was expecting 12 or 27.").arg(nplanes);
 
@@ -167,15 +169,17 @@ int convertToRTI(const char *filename, const char *output) {
 			throw QString("Could not find or open file: %1").arg(imagepath);
 
 		QByteArray buffer = image.readAll();
-		lrti.decodeJPEGfromFile(buffer.size(), (unsigned char *)buffer.data(), i*3, i*3+1, i*3+2);
+		bool ok = lrti.decodeJPEGfromFile(buffer.size(), (unsigned char *)buffer.data(), i*3, i*3+1, i*3+2);
+		if(!ok)
+			throw QString(lrti.error.c_str());
 	}
 
 
-	LRti::PTMFormat ptmformat = LRti::JPEG;
+	LRti::Encoding encoding = LRti::JPEG;
 	//RTIViewer does not support RGB PTM  in JPEG format.
 	if(type == "ptm" && colorspace == "rgb")
-		ptmformat = LRti::RAW;
-	lrti.encode(ptmformat, output, quality);
+		encoding = LRti::RAW;
+	lrti.encodeUniversal(output, quality);
 
 	return 0;
 }

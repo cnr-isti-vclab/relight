@@ -45,7 +45,6 @@ public slots:
 	void changePlanes(int n);
 
 	void createRTI();
-	void createRTI1(QString output);
 
 	void createNormals();
 	void close();
