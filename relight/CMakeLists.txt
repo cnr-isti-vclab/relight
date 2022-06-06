@@ -80,6 +80,7 @@ set (RELIGHT_HEADERS
 	zoomtask.h
 	zoomdialog.h
 	dstretch.h
+	dstretchtask.h
 	dstretchdialog.h
 )
 
@@ -132,6 +133,7 @@ set (RELIGHT_SOURCES
 	convertdialog.cpp
 	zoomtask.cpp
 	zoomdialog.cpp
+	dstretchtask.cpp
 	dstretchdialog.cpp
 )
 
