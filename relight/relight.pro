@@ -45,13 +45,16 @@ SOURCES += main.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/jpeg_encoder.cpp \
     ../src/rti.cpp \
+    ../src/legacy_rti.cpp \
+    ../src/deepzoom.cpp \
+    ../src/exif.cpp \
+    dome.cpp \
     helpdialog.cpp \
     project.cpp \
     measure.cpp \
     focaldialog.cpp \
     lens.cpp \
     image.cpp \
-    ../src/exif.cpp \
     httpserver.cpp \
     scripts.cpp \
     processqueue.cpp \
@@ -63,9 +66,7 @@ SOURCES += main.cpp \
     rtitask.cpp \
     settingsdialog.cpp \
     ../relight-cli/convert_rti.cpp \
-    ../src/legacy_rti.cpp \
     domecalibration.cpp \
-    dome.cpp \
     ../src/lp.cpp \
     qmarkerlist.cpp \
     qmarker.cpp \
@@ -79,8 +80,8 @@ SOURCES += main.cpp \
     convertdialog.cpp \
     aligndialog.cpp \
     zoomdialog.cpp \
-    zoomtask.cpp \
-    ../src/deepzoom.cpp
+    zoomtask.cpp
+
 
 
 HEADERS += \

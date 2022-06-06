@@ -15,11 +15,15 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
 	connect(ui->python, SIGNAL(editingFinished()), this, SLOT(setPython()));
 	connect(ui->scripts, SIGNAL(editingFinished()), this, SLOT(setScripts()));
 	connect(ui->port, SIGNAL(editingFinished()), this, SLOT(setPort()));
+	connect(ui->ram, SIGNAL(editingFinished()), this, SLOT(setRam()));
+	connect(ui->nworkers, SIGNAL(editingFinished()), this, SLOT(setWorkers()));
 
 	QSettings settings;
 	ui->python->setText(settings.value("python_path").toString());
 	ui->scripts->setText(settings.value("scripts_path").toString());
 	ui->port->setValue(settings.value("port", 8080).toInt());
+	ui->ram->setValue(settings.value("ram", 512).toInt());
+	ui->nworkers->setValue(settings.value("nworkers", 8).toInt());
 }
 
 SettingsDialog::~SettingsDialog() {
@@ -50,6 +54,20 @@ void SettingsDialog::setPort() {
 	QSettings settings;
 	settings.setValue("port", port);
 }
+
+void SettingsDialog::setRam() {
+	int ram = ui->ram->value();
+	QSettings settings;
+	settings.setValue("ram", ram);
+}
+
+
+void SettingsDialog::setWorkers() {
+	int nworkers = ui->nworkers->value();
+	QSettings settings;
+	settings.setValue("nworkers", nworkers);
+}
+
 
 void SettingsDialog::openPython() {
 	QString python = QFileDialog::getOpenFileName(this, "Select python 3 executable");

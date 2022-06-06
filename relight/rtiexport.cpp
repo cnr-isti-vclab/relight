@@ -235,10 +235,10 @@ Rti::ColorSpace  colorSpace(int index) {
 
 void RtiExport::createNormals() {
     // Get export location
-    QString output = QFileDialog::getSaveFileName(this, "Select an output file for normal:");
+	QString output = QFileDialog::getSaveFileName(this, "Select an output file for normal:", "normals.png", "Images (*.png, *.jpg)");
     if(output.isNull()) return;
-    if(!output.endsWith(".png"))
-        output += ".png";
+	if(!output.endsWith(".png") && !output.endsWith(".jpg"))
+		output += ".png";
 
     // Get normal method
     unsigned int method = 0; //least squares
@@ -250,21 +250,22 @@ void RtiExport::createNormals() {
         method = 5;
 
     ProcessQueue &queue = ProcessQueue::instance();
+	NormalsTask *task = new NormalsTask(path, output, crop, method);
 
-    queue.addTask(new NormalsTask(path, output, crop, method));
+	QList<QVariant> slights;
+	for(auto light: lights)
+		for(int k = 0; k < 3; k++)
+			slights << QVariant(light[k]);
+	task->addParameter("lights", Parameter::DOUBLELIST, slights);
+
+	queue.addTask(task);
     queue.start();
 
     close();
 }
 
-void RtiExport::createRTI() {
-    QString output = QFileDialog::getSaveFileName(this, "Select an output directory", QString(), tr("Images (*.png)"));
-    if(output.isNull()) return;
-    createRTI1(output);
-    close();
-}
 
-void RtiExport::createRTI1(QString output) {
+void RtiExport::createRTI() {
 	QString format;
 	if(ui->formatRTI->isChecked())
 		format = "rti";
@@ -316,26 +317,28 @@ void RtiExport::createRTI1(QString output) {
 	task->addParameter("quality", Parameter::INT, ui->quality->value());
 
 
-    QStringList steps;
-    steps << "relight";
-
-	if(format == "RTI")
+	QStringList steps;
+	
+	if(format == "rti")
 		steps << "toRTI";
+	else {
+		steps << "relight";
+		if(format == "deepzoom")
+			steps << "deepzoom";
+		if(format == "tarzoom")
+			steps << "deepzoom" << "tarzoom";
+		if(format == "itarzoom")
+			steps << "deepzoom" << "tarzoom" << "itarzoom";
+		if(ui->openlime->isChecked())
+			steps << "openlime";
+	}
 
-	if(format == "deepzoom")
-		steps << "deepzoom";
-	if(format == "tarzoom")
-		steps << "deepzoom" << "tarzoom";
-	if(format == "itarzoom")
-		steps << "deepzoom" << "tarzoom" << "itarzoom";
-	if(ui->openlime->isChecked())
-        steps << "openlime";
 	task->addParameter("steps", Parameter::STRINGLIST, steps);
-	//task->addParameter("format", Parameter::STRING, format);
-	//task->addParameter("openlime", Parameter::BOOL, ui->openlime->isChecked());
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);
+	
+	close();
 }
 
 

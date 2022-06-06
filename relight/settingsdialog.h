@@ -21,6 +21,8 @@ public slots:
 	void setPython();
 	void setScripts();
 	void setPort();
+	void setRam();
+	void setWorkers();
 
 private:
 	bool checkPython(QString python);

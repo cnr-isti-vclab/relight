@@ -25,6 +25,7 @@ public:
 	Dome dome;
 
 	std::vector<Image> images;
+	std::vector<int> missing; //missing images on load
 	std::vector<Sphere *> spheres;
 	std::vector<Measure *> measures;
 	std::vector<Align *> aligns;
