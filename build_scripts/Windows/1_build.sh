@@ -13,9 +13,10 @@
 
 #default paths wrt the script folder
 SCRIPTS_PATH="$(dirname "$(realpath "$0")")"
-SOURCE_PATH=$SCRIPTS_PATH/../../
+SOURCE_PATH=$SCRIPTS_PATH/../..
 BUILD_PATH=$SOURCE_PATH/build
 INSTALL_PATH=$SOURCE_PATH/install
+QT_DIR=""
 
 #check parameters
 for i in "$@"
@@ -27,6 +28,10 @@ case $i in
         ;;
     -i=*|--install_path=*)
         INSTALL_PATH="${i#*=}"
+        shift # past argument=value
+        ;;
+    -qt=*|--qt_dir=*)
+        QT_DIR=${i#*=}
         shift # past argument=value
         ;;
     *)
@@ -51,6 +56,11 @@ BUILD_PATH=$(realpath $BUILD_PATH)
 INSTALL_PATH=$(realpath $INSTALL_PATH)
 
 cd $BUILD_PATH
+if [ ! -z "$QT_DIR" ]
+then
+    export Qt5_DIR=$QT_DIR
+fi
+
 cmake -GNinja -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH $SOURCE_PATH
 ninja
 ninja install
