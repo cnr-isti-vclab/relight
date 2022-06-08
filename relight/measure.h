@@ -4,6 +4,7 @@
 
 
 #include <QPointF>
+#include <QLineF>
 
 class QJsonObject;
 
@@ -21,6 +22,16 @@ public:
 	void setFirstPoint(QPointF p);
 	void setSecondPoint(QPointF p);
 	void setLength(double d);
+	bool isValid() {
+		if(first.isNull() || second.isNull())
+			return false;
+		if(QLineF(first, second ).length() ==0)
+			return false;
+		return length > 0;
+	}
+	float pixelSize() {
+		return length/QLineF(first, second ).length();
+	}
 };
 
 #endif // MEASURE_H
