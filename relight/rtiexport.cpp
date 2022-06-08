@@ -298,6 +298,7 @@ void RtiExport::createRTI() {
 	task->addParameter("path", Parameter::FOLDER, path);
 	task->addParameter("output", Parameter::FOLDER, output);
 	task->addParameter("images", Parameter::STRINGLIST, images);
+	task->addParameter("pixelSize", Parameter::DOUBLE, pixelSize);
 
 	QList<QVariant> slights;
 	for(auto light: lights)

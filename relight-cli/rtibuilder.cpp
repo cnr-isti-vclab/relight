@@ -92,10 +92,21 @@ bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(std::st
 }
 
 
-bool RtiBuilder::initFromProject(const std::string &filename, std::function<bool(std::string stage, int percent)> *_callback) {
+bool RtiBuilder::initFromProject(const std::string &_filename, std::function<bool(std::string stage, int percent)> *_callback) {
 	callback = _callback;
+	QString filename (_filename.c_str());
 	try {
-		imageset.initFromProject(filename.c_str());
+		QFile file(filename);
+		if(!file.open(QFile::ReadOnly))
+			throw QString("Failed opening: ") + QString(filename);
+
+		QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+		QJsonObject obj = doc.object();
+		if(obj.contains("pixelSizeInMM"))
+			pixelSize = obj["pixelSizeInMM"].toDouble();
+
+
+		imageset.initFromProject(obj, filename);
 		//overwrite project crop if specified in builder.
 		if(crop[2] != 0) //some width specified
 			imageset.crop(crop[0], crop[1], crop[2], crop[3]);
@@ -669,6 +680,8 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 	QTextStream stream(&info);
 	stream << "{\n\"width\": " << width << ", \"height\": " << height << ",\n"
 		   << "\"format\": \"jpg\",\n";
+	if(pixelSize > 0)
+		stream << "\"pixelSizeInMM\": " << pixelSize << ",\n";
 	stream << "\"type\":\"";
 	switch(type) {
 	case PTM: stream << "ptm"; break;

@@ -86,13 +86,13 @@ bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip
 	return initImages(_path);
 }
 
-bool ImageSet::initFromProject(const char *filename) {
-	QFile file(filename);
+bool ImageSet::initFromProject(QJsonObject &obj, const QString &filename) {
+	/*QFile file(filename);
 	if(!file.open(QFile::ReadOnly))
 		throw QString("Failed opening: ") + QString(filename);
 
 	QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-	QJsonObject obj = doc.object();
+	QJsonObject obj = doc.object(); */
 
 	QFileInfo info(filename);
 	QDir folder = info.dir();
