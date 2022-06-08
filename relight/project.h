@@ -31,6 +31,7 @@ public:
 	std::vector<Align *> aligns;
 	std::vector<White *> whites;
 	QRect crop;
+	float pixelSize = 0; //if computed from measures
 
 	Project() {}
 	~Project();
@@ -40,6 +41,7 @@ public:
 	void save(QString filename);
 	void saveLP(QString filename, std::vector<Vector3f> &directions);
 	void computeDirections();
+	void computePixelSize();
 
 	Measure *newMeasure();
 	Sphere *newSphere();

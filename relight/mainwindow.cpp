@@ -860,6 +860,9 @@ void MainWindow::exportRTI(bool normals) {
 
 
 	//should init with saved preferences.
+	project.computePixelSize();
+	rtiexport->pixelSize = project.pixelSize;
+
 	rtiexport->setTabIndex(normals? 1 : 0);
 	rtiexport->setImages(project.getImages());
 

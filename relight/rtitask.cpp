@@ -74,6 +74,7 @@ void RtiTask::run() {
 
 void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 	builder = new RtiBuilder;
+	builder->pixelSize =(*this)["pixelSize"].value.toDouble();
 	builder->commonMinMax = commonMinMax;
 
 	builder->nworkers = QSettings().value("nworkers", 8).toInt();

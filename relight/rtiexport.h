@@ -22,6 +22,7 @@ class RtiExport : public QDialog
 public:
 	QStringList images;
 	std::vector<Vector3f> lights;
+	float pixelSize = 0;
 	QRect crop;
 	QString path;
 
