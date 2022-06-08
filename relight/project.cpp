@@ -390,6 +390,17 @@ Measure *Project::newMeasure() {
 	measures.push_back(m);
 	return m;
 }
+void Project::computePixelSize() {
+	pixelSize = 0;
+	float count = 0;
+	for(Measure *m: measures)
+		if(m->isValid()) {
+			pixelSize += m->pixelSize();
+			count++;
+		}
+	pixelSize /= count;
+}
+
 Sphere *Project::newSphere() {
 	auto s = new Sphere(images.size());
 	spheres.push_back(s);
