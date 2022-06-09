@@ -235,7 +235,7 @@ Rti::ColorSpace  colorSpace(int index) {
 
 void RtiExport::createNormals() {
     // Get export location
-	QString output = QFileDialog::getSaveFileName(this, "Select an output file for normal:", "normals.png", "Images (*.png, *.jpg)");
+	QString output = QFileDialog::getSaveFileName(this, "Select an output file for normal:", "normals.png", "Images (*.png *.jpg)");
     if(output.isNull()) return;
 	if(!output.endsWith(".png") && !output.endsWith(".jpg"))
 		output += ".png";
