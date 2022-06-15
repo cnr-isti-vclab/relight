@@ -10,17 +10,6 @@ find_package(
 	REQUIRED)
 find_package(OpenMP)
 
-if (MSVC)
-	file(TO_CMAKE_PATH $ENV{JPEGTURBO_HOME} JPEGTURBO_HOME)
-	file(TO_CMAKE_PATH $ENV{EIGEN_HOME} EIGEN_HOME)
-	set(JPEG_INCLUDE_DIR ${JPEGTURBO_HOME}/include)
-	set(JPEG_LIBRARIES ${JPEGTURBO_HOME}/lib/jpeg.lib)
-	set(EIGEN3_INCLUDE_DIR ${EIGEN_HOME})
-else()
-	find_package (JPEG REQUIRED)
-	find_package(Eigen3 REQUIRED)
-endif()
-
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
@@ -29,7 +18,7 @@ if (APPLE)
 	set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version" FORCE)
 	SET(CMAKE_INSTALL_RPATH $ORIGIN/../Frameworks)
 	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-	endif()
+endif()
 
 set (RELIGHT_HEADERS
 	imagecropper.h
@@ -153,7 +142,7 @@ set (RELIGHT_RESOURCES
 	icons.qrc
 )
 
-add_executable(relight MACOSX_BUNDLE ${RELIGHT_HEADERS} ${RELIGHT_SOURCES} ${RELIGHT_FORMS} ${RELIGHT_RESOURCES})
+add_executable(relight ${MACOSX_EXE_TARGET_OPTION} ${RELIGHT_HEADERS} ${RELIGHT_SOURCES} ${RELIGHT_FORMS} ${RELIGHT_RESOURCES})
 target_include_directories(
 	relight PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
@@ -172,17 +161,27 @@ target_link_libraries(
 		${RELIGHT_QT}::Xml
 	)
 
- 
-
-
 target_compile_definitions(relight PUBLIC _USE_MATH_DEFINES NOMINMAX)
 
-if(WIN32 OR APPLE)
-	set(INSTALL_TO_UNIX_LAYOUT OFF)
-else()
-	set(INSTALL_TO_UNIX_LAYOUT ON)
+target_compile_definitions(relight
+	PUBLIC
+		RELIGHT_VERSION=${RELIGHT_VERSION})
+
+if (APPLE)
+	set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../build_scripts/relight.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../build_scripts/relight.icns DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/relight.app/Contents/Resources/")
+	set_target_properties(relight PROPERTIES 
+		MACOSX_BUNDLE_ICON_FILE relight.icns
+		MACOSX_BUNDLE_BUNDLE_VERSION "${RELIGHT_VERSION}"
+		MACOSX_BUNDLE_SHORT_VERSION_STRING "${RELIGHT_VERSION}"
+		MACOSX_BUNDLE_INFO_STRING "ReLight ${RELIGHT_VERSION}"
+		MACOSX_BUNDLE_COPYRIGHT "Copyright VCG-ISTI-CNR © 2005-2022. All rights reserved."
+		)
+	
+	set_additional_settings_info_plist(
+		TARGET relight
+		FILE ${CMAKE_CURRENT_BINARY_DIR}/relight.app/Contents/Info.plist)
 endif()
-include(GNUInstallDirs)
 
 if (INSTALL_TO_UNIX_LAYOUT)
 	set(RELIGHT_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR})

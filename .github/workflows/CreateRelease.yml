@@ -1,0 +1,263 @@
+name: CreateRelease
+
+on:
+  #[push, pull_request] #just for test release scripts
+  workflow_dispatch: #manual run
+    inputs:
+      version:
+        description: 'New ReLight Version'
+        required: true
+        default: 'X.Y.Z'
+
+env:
+  QT_VERSION: 5.15.2
+
+jobs:
+  update_rl_version:
+    name: Update RELIGHT_VERSION
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Update ReLight version
+      run : |
+        echo ${{ github.event.inputs.version }} | tr -d '\n'> RELIGHT_VERSION
+    - name: commit RELIGHT_VERSION change
+      uses: stefanzweifel/git-auto-commit-action@v4.1.1
+      with:
+        commit_message: Set ReLight version to ${{ github.event.inputs.version }}
+
+  linux_build:
+    needs: [update_rl_version]
+    name: Build Relight (Linux)
+    runs-on: ubuntu-18.04 #in order to deploy, need to use oldest supported version
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: master
+        submodules: true
+    - name: Cache Qt
+      id: cache-qt
+      uses: actions/cache@v1
+      with:
+        path: ../Qt
+        key: ${{ runner.os }}-QtCache-${{ env.QT_VERSION }}
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        cached: ${{ steps.cache-qt.outputs.cache-hit }}
+        version: ${{ env.QT_VERSION }}
+    - name: Install dependencies
+      run: |
+        bash build_scripts/${{ runner.os }}/0_setup_env_ubuntu.sh
+    - name: Configure and Build
+      run: |
+        bash build_scripts/${{ runner.os }}/1_build.sh
+    - name: Deploy
+      run: |
+        bash build_scripts/${{ runner.os }}/2_deploy_and_appimage.sh
+    - name: Upload Relight Portable
+      uses: actions/upload-artifact@v2
+      with:
+        name: relight_linux_portable
+        path: install/
+    - name: Upload Relight AppImage
+      uses: actions/upload-artifact@v2
+      with:
+        name: relight_linux_appimage
+        path: ReLight*.AppImage
+
+  macos_build:
+    needs: [update_rl_version]
+    name: Build Relight (MacOS)
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: master
+        submodules: true
+    - name: Cache Qt
+      id: cache-qt
+      uses: actions/cache@v1
+      with:
+        path: ../Qt
+        key: ${{ runner.os }}-QtCache-${{ env.QT_VERSION }}
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        cached: ${{ steps.cache-qt.outputs.cache-hit }}
+        version: ${{ env.QT_VERSION }}
+    - name: Install dependencies
+      run: |
+        bash build_scripts/${{ runner.os }}/0_setup_env.sh
+    - name: Configure and Build
+      run: |
+        bash build_scripts/${{ runner.os }}/1_build.sh
+    - name: Deploy
+      run: |
+        bash build_scripts/${{ runner.os }}/2_deploy.sh
+    - name: Import Cert and Key
+      uses: apple-actions/import-codesign-certs@v1
+      with:
+        p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
+        p12-password: ${{ secrets.MACOS_CERTIFICATE_PSSW }}
+    - name: Sign
+      run: |
+        codesign --options "runtime" --timestamp --force --deep --sign ${{ secrets.MACOS_CERT_ID }} install/relight.app
+    - name: Notarize
+      uses: devbotsxyz/xcode-notarize@v1
+      with:
+        product-path: "install/relight.app"
+        appstore-connect-username: ${{ secrets.MACOS_NOTARIZATION_USER }}
+        appstore-connect-password: ${{ secrets.MACOS_NOTARIZATION_PSSW }}
+    - name: "Staple Release"
+      uses: devbotsxyz/xcode-staple@v1
+      with:
+        product-path: "install/relight.app"
+    - name: DMG
+      run: |
+        bash build_scripts/${{ runner.os }}/3_dmg.sh
+    - name: Upload Relight Portable
+      uses: actions/upload-artifact@v2
+      with:
+        name: relight_macos_portable
+        path: install/ReLight*.app
+    - name: Upload Relight DMG
+      uses: actions/upload-artifact@v2
+      with:
+        name: relight_macos_dmg
+        path: install/ReLight*.dmg
+
+  windows_build:
+    needs: [update_rl_version]
+    name: Build Relight (Windows)
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: master
+        submodules: true
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+    - name: Cache Qt
+      id: cache-qt
+      uses: actions/cache@v1
+      with:
+        path: ../Qt
+        key: ${{ runner.os }}-QtCache-${{ env.QT_VERSION }}
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        cached: ${{ steps.cache-qt.outputs.cache-hit }}
+        version: ${{ env.QT_VERSION }}
+    - name: Setup env variables
+      shell: bash
+      run: |
+        echo "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\VC" >> $GITHUB_ENV
+    - name: Install wget
+      run: |
+        $env:PATH = "${{ env.PATH }};C:\msys64\mingw64\bin;C:\msys64\usr\bin"
+        pacman.exe -S --noconfirm --noprogressbar wget unzip
+    - name: Set Certificate
+      run: |
+        New-Item -ItemType directory -Path certificate
+        Set-Content -Path certificate\certificate.txt -Value '${{ secrets.WIN_CERTIFICATE }}'
+        certutil -decode certificate\certificate.txt certificate\certificate.pfx
+    - name: Configure and Build
+      shell: bash
+      run: |
+        bash build_scripts/${{ runner.os }}/1_build.sh
+    - name: Sign Portable content
+      run: |
+        .\build_scripts\Windows\resources\windows_sign_dlls.ps1 -pssw '${{ secrets.WIN_CERTIFICATE_PSSW }}' -path 'install\'
+    - name: Deploy
+      shell: C:\shells\msys2bash.cmd {0}
+      run: |
+        bash build_scripts/${{ runner.os }}/2_deploy.sh -qt=${{ env.Qt5_DIR }}
+    - name: Upload Relight Portable
+      uses: actions/upload-artifact@v2
+      with:
+        name: relight_windows_portable
+        path: install
+
+  #after building ReLight for the three platforms, we create a release in github
+  create_release:
+    name: Create Release
+    needs: [linux_build, macos_build, windows_build]
+    runs-on: ubuntu-latest
+    steps:
+
+    #Download Linux Packages
+    - name: Download Linux ZIP
+      uses: actions/download-artifact@v2
+      with:
+        name: relight_linux_portable
+        path: relight_linux_portable
+    - name: Download Linux AppImage
+      uses: actions/download-artifact@v2
+      with:
+        name: relight_linux_appimage
+        path: relight_linux_appimage
+    - name: Change Permissions
+      run: |
+        chmod +x relight_linux_portable/usr/bin/relight
+        chmod +x relight_linux_portable/usr/bin/relight-cli
+        chmod +x relight_linux_portable/usr/bin/relight-merge
+        chmod +x relight_linux_portable/AppRun
+    - name: Create ReLight Portable Linux Archive
+      run: |
+        cd relight_linux_portable
+        tar -cvzf ../ReLight${{ github.event.inputs.version }}-linux.tar.gz *
+        cd ..
+
+    #Download MacOS Package
+    - name: Download MacOS DMG
+      uses: actions/download-artifact@v2
+      with:
+        name: relight_macos_dmg
+        path: relight_macos_dmg
+    - name: Download MacOS Portable
+      uses: actions/download-artifact@v2
+      with:
+        name: relight_macos_portable
+        path: relight_macos_portable
+    - name: Change Permissions
+      run: |
+        chmod +x relight_macos_portable/ReLight*.app/Contents/MacOS/relight
+        chmod +x relight_macos_portable/ReLight*.app/Contents/MacOS/relight-cli
+        chmod +x relight_macos_portable/ReLight*.app/Contents/MacOS/relight-merge
+    - name: Create ReLoight Portable MacOS
+      run: |
+        cd relight_macos_portable
+        tar -cvzf ../ReLight${{ github.event.inputs.version }}-macos.tar.gz *
+        cd ..
+
+    #Download Windows Packages
+    - name: Download Windows ZIP
+      uses: actions/download-artifact@v2
+      with:
+        name: relight_windows_portable
+        path: relight_windows_portable
+    - name: Create ReLight Portable Windows Archive
+      run: |
+        cd relight_windows_portable
+        zip -r ../ReLight${{ github.event.inputs.version }}-windows.zip *
+        cd ..
+
+    #Create release and upload
+    - uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "ReLight-${{ github.event.inputs.version }}"
+        prerelease: false
+        title: "ReLight-${{ github.event.inputs.version }}"
+        files: |
+          ReLight${{ github.event.inputs.version }}-linux.tar.gz
+          relight_linux_appimage/ReLight${{ github.event.inputs.version }}-linux.AppImage
+          ReLight${{ github.event.inputs.version }}-macos.tar.gz
+          relight_macos_dmg/ReLight${{ github.event.inputs.version }}-macos.dmg
+          ReLight${{ github.event.inputs.version }}-windows.zip

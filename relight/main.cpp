@@ -19,6 +19,8 @@
 #include <vector>
 using namespace std;
 
+#define RELIGHT_STRINGIFY0(v) #v
+#define RELIGHT_STRINGIFY(v) RELIGHT_STRINGIFY0(v)
 
 /* usage: dome_calibration <sphere> [<color_table>] */
 
@@ -62,7 +64,15 @@ int main(int argc, char *argv[]) {
 	QCoreApplication::setOrganizationName("VCG");
 	QCoreApplication::setOrganizationDomain("vcg.isti.cnr.it");
 	QCoreApplication::setApplicationName("Relight");
+	QCoreApplication::setApplicationVersion(RELIGHT_STRINGIFY(RELIGHT_VERSION));
 
+	if (argc > 1) {
+		if (std::string(argv[1]) == std::string("--version") ||
+			std::string(argv[1]) == std::string("-v")) {
+			std::cout << "ReLight " << RELIGHT_STRINGIFY(RELIGHT_VERSION) << std::endl;
+			return 0;
+		}
+	}
 
 	//	AutoStyle autostyle;
 	//	app.connect(&autostyle, SIGNAL(resetStyle(QString)), SLOT(setStyleSheet(QString)));

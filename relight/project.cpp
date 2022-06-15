@@ -262,11 +262,9 @@ void Project::load(QString filename) {
 			//throw QString("Could not find the image: " + image.filename) + " in folder: " + dir.absolutePath();
 			continue;
 		}
-		QImageReader reader(image.filename);
-		QSize size = reader.size();
-		image.valid = (size == imgsize);
-		if(!image.valid) image.skip = true;
 	}
+
+	checkImages();
 
 	if(obj.contains("crop")) {
 		QJsonObject c = obj["crop"].toObject();
@@ -307,6 +305,16 @@ void Project::load(QString filename) {
 	}
 }
 
+void Project::checkImages() {
+		for(Image &image:images) {
+		QImageReader reader(image.filename);
+		QSize size = reader.size();
+		image.valid = (size == imgsize);
+		if(!image.valid) image.skip = true;
+	}
+}
+
+
 void Project::save(QString filename) {
 
 	QJsonObject project;
@@ -315,7 +323,7 @@ void Project::save(QString filename) {
 
 	//as a folder for images compute the relative path to the saving file location!
 	QFileInfo info(filename);
-	QString path = dir.relativeFilePath(info.absoluteDir().absolutePath());
+	QString path = info.absoluteDir().relativeFilePath(dir.absolutePath());
 	project.insert("folder", path);
 
 	QJsonArray jimages;
@@ -382,6 +390,17 @@ Measure *Project::newMeasure() {
 	measures.push_back(m);
 	return m;
 }
+void Project::computePixelSize() {
+	pixelSize = 0;
+	float count = 0;
+	for(Measure *m: measures)
+		if(m->isValid()) {
+			pixelSize += m->pixelSize();
+			count++;
+		}
+	pixelSize /= count;
+}
+
 Sphere *Project::newSphere() {
 	auto s = new Sphere(images.size());
 	spheres.push_back(s);

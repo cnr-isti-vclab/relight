@@ -104,7 +104,7 @@ void MeasureMarker::onEdit() {
 
 void MeasureMarker::askMeasure() {
 	bool ok = true;
-	double length = QInputDialog::getDouble(this, "Enter a measurement", "The distance between the two points in mm.", 0.0, 0.0, 1000000.0, 1, &ok);
+	double length = QInputDialog::getDouble(this, "Set up scale (px/mm)", "Specify the distance between the two points in mm.", 0.0, 0.0, 1000000.0, 1, &ok);
 	if(!ok)
 		return;
 

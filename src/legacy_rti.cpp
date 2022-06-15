@@ -769,8 +769,11 @@ bool LRti::decodeJPEGfromFile(size_t size, unsigned char *buffer, unsigned int p
 	} else if(type == PTM_RGB) {
 		invorder = { 5,11,17,  3,9,15,  4,10,16,  0,6,12,  2,8,14, 1,7,13 };
 	} else if(type == HSH_RGB){
-		invorder = {0, 9, 18,  1, 10, 19,  2, 11, 20,  3, 12, 21,  4, 13, 22,  
-					5, 14, 23,  6, 15, 24,  7, 16, 25,  8, 17, 26 };
+		if(data.size() == 27)
+			invorder = {0, 9, 18,  1, 10, 19,  2, 11, 20,  3, 12, 21,  4, 13, 22,
+						5, 14, 23,  6, 15, 24,  7, 16, 25,  8, 17, 26 };
+		else
+			invorder = { 0, 4, 8, 1, 5, 9, 2, 6, 10, 3, 7, 11 };
 	} else {
 		error = "Unsupported RTI type";
 		return false;

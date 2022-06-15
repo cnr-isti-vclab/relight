@@ -35,34 +35,39 @@ void RtiTask::run() {
     for(auto step: steps) {
 		if(step == "relight")
 			relight();
-		else if(step == "toRTI")
-			toRTI();
+		else if(step == "rti")
+			relight(true, true);
 		else if(step == "fromRTI")
 			fromRTI();
+		//TODO! deepZOOM should set error and status?
         else if(step == "deepzoom") {
-            if ((err = deepZoom(input_folder, output, 95, 0, 256, callback)).compare("OK") != 0)
+			if ((err = deepZoom(input_folder, output, 95, 0, 256, callback)).compare("OK") != 0) {
+				error = err;
                 status = FAILED;
+			}
         }
         else if(step == "tarzoom") {
-            if ((err = tarZoom(output, output, callback)).compare("OK") != 0)
+			if ((err = tarZoom(output, output, callback)).compare("OK") != 0) {
+				error = err;
                 status = FAILED;
+			}
         }
         else if(step == "itarzoom") {
-            if ((err = itarZoom(output, output, callback)).compare("OK") != 0)
+			if ((err = itarZoom(output, output, callback)).compare("OK") != 0) {
+				error = err;
                 status = FAILED;
+			}
         }
 		else if(step == "openlime")
 			openlime();
 	}
 	if(status != FAILED)
 		status = DONE;
-    else
-        error = err;
-    qDebug() << "zoom error: " << err;
 }
 
-void  RtiTask::relight(bool commonMinMax) {
+void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 	builder = new RtiBuilder;
+	builder->pixelSize =(*this)["pixelSize"].value.toDouble();
 	builder->commonMinMax = commonMinMax;
 
 	builder->nworkers = QSettings().value("nworkers", 8).toInt();
@@ -109,8 +114,11 @@ void  RtiTask::relight(bool commonMinMax) {
 			status = FAILED;
 			return;
 		}
-
-		builder->save(output.toStdString(), quality);
+		if(saveLegacy) {
+			if(builder->type == Rti::HSH)
+				builder->saveUniversal(output.toStdString());
+		} else
+			builder->save(output.toStdString(), quality);
 
 	} catch(std::string e) {
 		error = e.c_str();

@@ -18,7 +18,10 @@
     <number>20</number>
    </property>
    <item row="3" column="0">
-    <widget class="QGroupBox" name="groupBox_2">
+    <widget class="QGroupBox" name="principal_point">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="title">
       <string>Principal Point</string>
      </property>
@@ -57,7 +60,10 @@
     </widget>
    </item>
    <item row="4" column="0">
-    <widget class="QGroupBox" name="groupBox_4">
+    <widget class="QGroupBox" name="lens_distortion">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="title">
       <string>Lens distortion</string>
      </property>

@@ -235,7 +235,7 @@ Rti::ColorSpace  colorSpace(int index) {
 
 void RtiExport::createNormals() {
     // Get export location
-	QString output = QFileDialog::getSaveFileName(this, "Select an output file for normal:", "normals.png", "Images (*.png, *.jpg)");
+	QString output = QFileDialog::getSaveFileName(this, "Select an output file for normal:", "normals.png", "Images (*.png *.jpg)");
     if(output.isNull()) return;
 	if(!output.endsWith(".png") && !output.endsWith(".jpg"))
 		output += ".png";
@@ -293,8 +293,9 @@ void RtiExport::createRTI(QString output) {
 	uint32_t ram = uint32_t(ui->ram->value());
 	task->addParameter("ram", Parameter::INT, ram);
 	task->addParameter("path", Parameter::FOLDER, path);
-    task->addParameter("output", Parameter::FOLDER, output);
-    task->addParameter("images", Parameter::STRINGLIST, images);
+	task->addParameter("output", Parameter::FOLDER, output);
+	task->addParameter("images", Parameter::STRINGLIST, images);
+	task->addParameter("pixelSize", Parameter::DOUBLE, pixelSize);
 
 	QList<QVariant> slights;
 	for(auto light: lights)
@@ -327,7 +328,7 @@ void RtiExport::createRTI(QString output) {
 	QStringList steps;
 	
 	if(format == "rti")
-		steps << "toRTI";
+		steps << "rti";
 	else {
 		steps << "relight";
 		if(format == "deepzoom")
