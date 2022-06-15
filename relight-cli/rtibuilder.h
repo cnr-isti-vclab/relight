@@ -18,6 +18,7 @@ typedef std::vector<std::vector<std::pair<int, float>>> Resamplemap;
 class RtiBuilder: public Rti {
 public:
 	ImageSet imageset;
+	float pixelSize = 0;
 	uint32_t samplingram = 500;
 	uint32_t nsamples = 1<<16; //TODO change to rate
 	float rangescale = 1.5;
@@ -40,6 +41,7 @@ public:
 	bool init(std::function<bool(std::string stage, int percent)> *_callback = nullptr);
 
 	size_t save(const std::string &output, int quality = 95);
+	size_t saveUniversal(const std::string &output);
 	bool saveJSON(QDir &dir, int quality);
 
 

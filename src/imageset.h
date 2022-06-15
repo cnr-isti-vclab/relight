@@ -9,6 +9,7 @@
 #include <functional>
 #include <string>
 
+class QJsonObject;
 class JpegDecoder;
 class QImage;
 
@@ -39,7 +40,7 @@ public:
 
 
 	bool initFromFolder(const char *path, bool ignore_filenames = true, int skip_image = -1);
-	bool initFromProject(const char *filename);
+	bool initFromProject(QJsonObject &obj, const QString &filename);
 	void initLights();
 	bool initImages(const char *path); //require lights and images to be available, path points to the dir of the images.
 	

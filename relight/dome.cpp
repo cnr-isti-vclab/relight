@@ -68,7 +68,12 @@ void Dome::fromJson(const QJsonObject &obj) {
 	imageWidth     = obj["imageWidth"].toDouble();
 	domeDiameter   = obj["domeDiameter"].toDouble();
 	verticalOffset = obj["verticalOffset"].toDouble();
-	lightConfiguration = LightConfiguration(lightConfigs.indexOf(obj["lightConfiguration"].toString()));
+	if(obj.contains("lightConfiguration")) {
+		lightConfiguration = DIRECTIONAL;
+		int index = lightConfigs.indexOf(obj["lightConfiguration"].toString());
+		if(index >= 0)
+			lightConfiguration = LightConfiguration(index);
+	}
 	::fromJson(obj["directions"].toArray(), directions);
 	::fromJson(obj["positions"].toArray(), positions);
 	::fromJson(obj["ledAdjust"].toArray(), ledAdjust);

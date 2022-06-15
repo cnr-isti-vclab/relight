@@ -33,6 +33,7 @@ void help() {
     cout << "\t-y <int>  : number of Y planes in YCC\n\n";
 	cout << "\t-3 <radius[:offset]>: 3d light positions processing, ratio diameter_dome/image_width\n               and optionally vertical offset of the center of the sphere to the surface.\n";
 
+	cout << "\t-P <pixel size in MM>: this number is saved in .json output\n";
     //	cout << "\t-m <int>  : number of materials (default 8)\n";
 	cout << "\t-n        : extract normals\n";
 	cout << "\t-m        : extract mean image\n";
@@ -132,7 +133,14 @@ int main(int argc, char *argv[]) {
                 cerr << "Invalid resolution (must be 0 or >= 2 && <= 10)!\n" << endl;
                 return 1;
             }
-        }
+		}
+			break;
+		case 'P':
+			builder.pixelSize = atof(optarg);
+			if(builder.pixelSize <= 0) {
+				cerr << "Invalidi parameter pixelSize (-p): " << optarg << endl;
+				return 1;
+			}
             break;
         case 'b': {
             string b = optarg;

@@ -190,7 +190,7 @@ void MainWindow::newProject() {
 	QStringList img_ext;
 	img_ext << "*.lp";
 	QStringList lps = QDir(dir).entryList(img_ext);
-	if(lps.size() > 1) {
+	if(lps.size() > 0) {
 		int answer = QMessageBox::question(this, "Found an .lp file: " + lps[0], "Do you wish to load " + lps[0] + "?", QMessageBox::Yes, QMessageBox::No);
 		if(answer != QMessageBox::No)
 			loadLP(lps[0]);
@@ -216,10 +216,17 @@ void MainWindow::openProject() {
 		QMessageBox::critical(this, "Could not load the project: " + filename, "Error: " + e);
 		return;
 	}
-	project_filename = project.dir.relativeFilePath(filename);
+	project_filename = filename; //project.dir.relativeFilePath(filename);
 	if(project.missing.size() != 0) {
 		if(project.missing.size() == project.images.size()) {
-
+			QString imagefolder = QFileDialog::getExistingDirectory(this, "Could not find the images, please select the image folder:", project.dir.absolutePath());
+			if(imagefolder.isNull()) {
+				newProject();
+				return;
+			}
+			project.dir.setPath(imagefolder);
+			QDir::setCurrent(imagefolder);
+			project.checkImages();
 		}
 	}
 
@@ -296,7 +303,8 @@ bool MainWindow::init() {
 	for(Image &a: project.images) {
 
 		QStandardItem *item = new QStandardItem;
-		item->setText(QString("%1 - %2").arg(count+1).arg(a.filename));
+		QFileInfo info(a.filename);
+		item->setText(QString("%1 - %2").arg(count+1).arg(info.fileName()));
 		item->setCheckable(true);
 		// Uncheck the item
 		item->setCheckState(a.valid ? Qt::Checked : Qt::Unchecked);
@@ -394,27 +402,37 @@ void MainWindow::lumaFinish() {
 }
 
 void MainWindow::computeMaxLuma() {
-	
-	lumaCancelling = false;
-	QFuture<void> future = QtConcurrent::run([this]() {
+	bool parallelLuma = false;
+
+	if(parallelLuma) {
+		lumaCancelling = false;
+		QFuture<void> future = QtConcurrent::run([this]() {
+			ImageSet imageset;
+			for(auto image: project.images)
+				imageset.images.push_back(image.filename);
+			imageset.initImages(this->project.dir.path().toStdString().c_str());
+			std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->lumaCallback(s, n); };
+			this->maxLuma = imageset.maxImage(&callback);
+		} );
+		watcher.setFuture(future);
+		connect(&watcher, SIGNAL(finished()), this, SLOT(lumaFinish()));
+
+		progress = new QProgressDialog("Building max luma image", "Cancel", 0, 100, this);
+		progress->setAutoClose(false);
+		progress->setAutoReset(false);
+		progress->setWindowModality(Qt::WindowModal);
+		connect(progress, SIGNAL(canceled()), this, SLOT(lumaCancel()));
+		connect(this, SIGNAL(lumaProgress(int)), progress, SLOT(setValue(int)));
+		connect(this, SIGNAL(lumaProgressText(const QString &)), progress, SLOT(setLabelText(const QString &)));
+		progress->show();
+	} else {
 		ImageSet imageset;
 		for(auto image: project.images)
 			imageset.images.push_back(image.filename);
 		imageset.initImages(this->project.dir.path().toStdString().c_str());
-		std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->lumaCallback(s, n); };
-		this->maxLuma = imageset.maxImage(&callback); 
-	} );
-	watcher.setFuture(future);
-	connect(&watcher, SIGNAL(finished()), this, SLOT(lumaFinish()));
-
-	progress = new QProgressDialog("Building max luma image", "Cancel", 0, 100, this);
-	progress->setAutoClose(false);
-	progress->setAutoReset(false);
-	progress->setWindowModality(Qt::WindowModal);
-	connect(progress, SIGNAL(canceled()), this, SLOT(lumaCancel()));
-	connect(this, SIGNAL(lumaProgress(int)), progress, SLOT(setValue(int)));
-	connect(this, SIGNAL(lumaProgressText(const QString &)), progress, SLOT(setLabelText(const QString &)));
-	progress->show();
+		std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return true; };
+		this->maxLuma = imageset.maxImage(&callback);
+	}
 }
 
 void MainWindow::toggleMaxLuma() {
@@ -843,6 +861,9 @@ void MainWindow::exportRTI(bool normals) {
 
 
 	//should init with saved preferences.
+	project.computePixelSize();
+	rtiexport->pixelSize = project.pixelSize;
+
 	rtiexport->setTabIndex(normals? 1 : 0);
 	rtiexport->setImages(project.getImages());
 

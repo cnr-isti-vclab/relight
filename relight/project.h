@@ -19,7 +19,7 @@ class White;
 class Project {
 public:
 
-	QDir dir;                  //image folder
+	QDir dir;                  //image folder, path relative to project
 	QSize imgsize;             //images width and height (must be the same for all).
 	Lens lens;
 	Dome dome;
@@ -31,6 +31,7 @@ public:
 	std::vector<Align *> aligns;
 	std::vector<White *> whites;
 	QRect crop;
+	float pixelSize = 0; //if computed from measures
 
 	Project() {}
 	~Project();
@@ -40,12 +41,14 @@ public:
 	void save(QString filename);
 	void saveLP(QString filename, std::vector<Vector3f> &directions);
 	void computeDirections();
+	void computePixelSize();
 
 	Measure *newMeasure();
 	Sphere *newSphere();
 	Align *newAlign();
 	White *newWhite();
 
+	//set image folder
 	bool setDir(QDir folder);
 	bool scanDir(); //load images from project.dir, and return false if some problems with resolution.
 	void rotateImages();
@@ -64,6 +67,9 @@ public:
 				imgs.push_back(img.filename);
 		return imgs;
 	}
+	//check size and validity
+	void checkImages();
+
 	std::vector<Vector3f> directions() {
 		std::vector<Vector3f> dirs;
 		for(Image &img: images)

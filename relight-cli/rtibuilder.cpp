@@ -92,10 +92,21 @@ bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(std::st
 }
 
 
-bool RtiBuilder::initFromProject(const std::string &filename, std::function<bool(std::string stage, int percent)> *_callback) {
+bool RtiBuilder::initFromProject(const std::string &_filename, std::function<bool(std::string stage, int percent)> *_callback) {
 	callback = _callback;
+	QString filename (_filename.c_str());
 	try {
-		imageset.initFromProject(filename.c_str());
+		QFile file(filename);
+		if(!file.open(QFile::ReadOnly))
+			throw QString("Failed opening: ") + QString(filename);
+
+		QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+		QJsonObject obj = doc.object();
+		if(obj.contains("pixelSizeInMM"))
+			pixelSize = obj["pixelSizeInMM"].toDouble();
+
+
+		imageset.initFromProject(obj, filename);
 		//overwrite project crop if specified in builder.
 		if(crop[2] != 0) //some width specified
 			imageset.crop(crop[0], crop[1], crop[2], crop[3]);
@@ -669,6 +680,8 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 	QTextStream stream(&info);
 	stream << "{\n\"width\": " << width << ", \"height\": " << height << ",\n"
 		   << "\"format\": \"jpg\",\n";
+	if(pixelSize > 0)
+		stream << "\"pixelSizeInMM\": " << pixelSize << ",\n";
 	stream << "\"type\":\"";
 	switch(type) {
 	case PTM: stream << "ptm"; break;
@@ -878,6 +891,103 @@ public:
 		b.processLine(sample, resample, line, normals, means, medians);
 	}
 };
+
+size_t RtiBuilder::saveUniversal(const std::string &output) {
+	//Universal .rti format requires min/max to be 1 per r, g and b;
+	assert(commonMinMax == true);
+
+	//update scale bias and range in Rti structure
+	scale.resize(nplanes);
+	bias.resize(nplanes);
+
+	for(uint32_t p = 0; p < nplanes; p++) {
+		scale[p] = material.planes[p].scale;
+		bias[p]  = material.planes[p].bias;
+	}
+
+	FILE *file = fopen(output.c_str(), "wb");
+	if(!file) {
+		cerr << "Could not open file: " << output << endl;
+		return false;
+	}
+
+	assert(this->type == RtiBuilder::HSH);
+
+	std::ostringstream stream;
+	stream << "#HSH1.2\n";
+	stream << "3\n"; //stands for HSH
+	stream <<  width << " " << height << " 3\n";
+	stream << nplanes/3 << " 2 1\n";
+
+	fwrite(stream.str().data(), 1, stream.str().size(), file);
+
+	//bias and scale are shared among rgb for the corresponding harmonic
+	vector<float> gbias(nplanes/3);
+	vector<float> gscale(nplanes/3);
+
+	for(int i = 0; i < gbias.size(); i++) {
+		gbias[i] = -bias[i*3]*scale[i*3];
+		gscale[i] = scale[i*3];
+	}
+	fwrite(gscale.data(), sizeof(float), gscale.size(), file);
+	fwrite(gbias.data(), sizeof(float), gbias.size(), file);
+
+
+	//second reading.
+	imageset.restart();
+
+	vector<Worker *> workers(height, nullptr);
+	for(size_t i = 0; i < nworkers; i++) {
+		workers[i] = new Worker(*this);
+	}
+	vector<QFuture<void>> futures(height);
+
+	QThreadPool pool;
+	pool.setMaxThreadCount(nworkers);
+
+	vector<uint8_t> line(width*nplanes);
+
+	for(uint32_t y = 0; y < height + nworkers; y++) {
+		if(callback && y > 0) {
+			bool keep_going = (*callback)("Saving:", 100*(y)/(height + nworkers-1));
+			if(!keep_going) {
+				cout << "TODO: clean up directory, we are already saving!" << endl;
+				break;
+			}
+		}
+		if(y >= nworkers) {
+			futures[y - nworkers].waitForFinished();
+
+			Worker *doneworker = workers[y - nworkers];
+
+			//worker line is organized for jpeg saving (so plane 1, 2, 3 in line[0] as data rgbrgrg etc.
+			for(int j = 0; j < doneworker->line.size(); j++) {
+				for(int x = 0; x < width; x++) {
+					line[x*nplanes + j + 0*nplanes/3] = doneworker->line[j][x*3+0];
+					line[x*nplanes + j + 1*nplanes/3] = doneworker->line[j][x*3+1];
+					line[x*nplanes + j + 2*nplanes/3] = doneworker->line[j][x*3+2];
+				}
+			}
+			fwrite(line.data(), 1, line.size(), file);
+			if(y < height)
+				workers[y] = doneworker;
+			else
+				delete doneworker;
+		}
+
+		if(y < height) {
+			Worker *worker = workers[y];
+			assert(worker != nullptr);
+			imageset.readLine(worker->sample);
+
+			futures[y] = QtConcurrent::run(&pool, [worker](){worker->run(); });
+		}
+	}
+	int64_t total = ftell(file);
+	fclose(file);
+	return total;
+}
+
 
 size_t RtiBuilder::save(const string &output, int quality) {
 	uint32_t dim = ndimensions*3;
