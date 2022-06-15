@@ -16,7 +16,8 @@
 inline void dstretchImage(QString fileName, QString output, int minSamples, std::function<bool(std::string s, int n)> progressed)
 {
     // info.json
-    QFile info(output.mid(0, output.lastIndexOf("/")) + "/dstretch.json");
+    QString infoFileName = output.mid(output.lastIndexOf("/") + 1, output.length()).split(".")[0];
+    QFile info(output.mid(0, output.lastIndexOf("/")) + "/" + infoFileName + ".dstretch");
     QJsonObject infoObject;
     QJsonArray samplesJson;
     QJsonArray transformJson;
