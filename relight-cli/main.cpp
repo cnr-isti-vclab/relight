@@ -22,9 +22,9 @@ using namespace std;
 void help() {
 	cout << "Create an RTI from a set of images and a set of light directions (.lp) in a folder.\n";
 	cout << "It is also possible to convert from .ptm or .rti to relight format and viceversa.\n\n";
-	cout << "Usage: relight-cli [-mrdqp]<input folder> [output folder]\n\n";
-	cout << "       relight-cli [-q]<input.ptm|.rti> [output folder]\n\n";
-	cout << "       relight-cli [-q]<input.json> [output.ptm]\n\n";
+	cout << "Usage: relight-cli [-bpqy3PnmMwkrsSRBcCeE]<input folder> [output folder]\n\n";
+	cout << "       relight-cli [-q] <input.ptm|.rti> [output folder]\n\n";
+	cout << "       relight-cli [-q] <input.json> [output.ptm]\n\n";
     cout << "\tinput folder containing a .lp with number of photos and light directions\n";
     cout << "\toptional output folder (default ./)\n\n";
     cout << "\t-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear\n";
@@ -353,7 +353,11 @@ int main(int argc, char *argv[]) {
         output = argv[optind++];
 
     if(relighted) {
-        test(input, output, light);
+		if(redrawdir.isNull()) {
+			cerr << "Specify an output image filename using -D option\n" << endl;
+			return -1;
+		}
+		test(input, redrawdir.toStdString(), light);
         return 1;
     }
 
