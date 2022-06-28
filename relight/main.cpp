@@ -59,6 +59,16 @@ public:
 };
 
 int main(int argc, char *argv[]) {
+	std::setlocale(LC_NUMERIC,"C");
+
+
+//	std::setlocale(LC_NUMERIC, "en_US.UTF-8");
+	//std::locale::global(std::locale(std::locale("en_US"), "C", std::locale::numeric));
+
+	std::cout << std::locale("").name() << '\n';
+	printf("%lf\n", 1.2);
+	//cout << 1.2 << endl;
+
 	QApplication app(argc, argv);
 
 	QCoreApplication::setOrganizationName("VCG");

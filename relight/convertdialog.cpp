@@ -23,7 +23,7 @@ ConvertDialog::~ConvertDialog() {
 }
 
 void ConvertDialog::selectInput() {
-	QString filename = QFileDialog::getOpenFileName(this, "Select a .rti file", QString(), tr("Light directions (*.rti)"));
+	QString filename = QFileDialog::getOpenFileName(this, "Select a .rti or .ptm file", QString(), tr("Relightable image (*.rti *.ptm)"));
 	ui->filename->setText(filename);
 }
 

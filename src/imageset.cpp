@@ -35,7 +35,7 @@ void ImageSet::parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::
 	for(Vector3f &light: lights)
 		light.normalize();
 
-	if(skip_image >= 0 && skip_image < lights.size()) {
+	if(skip_image >= 0 && skip_image < int(lights.size())) {
 		lights.erase(lights.begin() + skip_image);
 		filenames.erase(filenames.begin() + skip_image);
 	}
