@@ -563,7 +563,7 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 	//compute common min max for 3 colors
 	if(commonMinMax && colorspace == RGB) {
 		auto &planes = material.planes;
-		for(int i = 0; i < nplanes; i += 3) {
+		for(uint32_t i = 0; i < nplanes; i += 3) {
 			float min = std::min(planes[i+0].min, std::min(planes[i+1].min, planes[i+2].min));
 			float max = std::max(planes[i+0].max, std::max(planes[i+1].max, planes[i+2].max));
 			for(int k = 0; k < 3; k++) {
@@ -891,6 +891,126 @@ public:
 		b.processLine(sample, resample, line, normals, means, medians);
 	}
 };
+
+size_t RtiBuilder::savePTM(const std::string &output) {
+	//.ptm format requires min/max to be 1 per r, g and b;
+	assert(commonMinMax == true);
+
+	//.ptm coeff order is x*x, y*y, x*y, x, y, 1
+	//while in relight it is: 1, x, y, xx, xy, yy,
+	int coeffRemap[6] = { 3, 5, 4, 1, 2, 0};
+
+
+	//update scale bias and range in Rti structure
+	scale.resize(nplanes);
+	bias.resize(nplanes);
+
+	for(uint32_t p = 0; p < nplanes; p++) {
+		scale[p] = material.planes[p].scale;
+		bias[p]  = material.planes[p].bias;
+	}
+
+	FILE *file = fopen(output.c_str(), "wb");
+	if(!file) {
+		cerr << "Could not open file: " << output << endl;
+		return false;
+	}
+
+	assert(this->type == RtiBuilder::PTM);
+
+	std::ostringstream stream;
+
+	stream << "PTM_1.2\n";
+	stream << "PTM_FORMAT_RGB\n"; //PTM_FORMAT_JPEG_LRGB for JPEG
+	stream <<  width << "\n" << height << "\n";
+
+
+	//bias and scale are shared among rgb for the corresponding harmonic
+	vector<int> gbias(nplanes/3);
+	vector<float> gscale(nplanes/3);
+
+	for(size_t i = 0; i < gbias.size(); i++) {
+		int j = coeffRemap[i];
+		gbias[i] = static_cast<int>(bias[j*3]*255.0);
+		//if(i != 5 && i != 3) gbias[i] = 0;
+		gscale[i] = scale[j*3];
+	}
+	for(float s: gscale)
+		stream << s << " ";
+	stream << "\n";
+	for(float b: gbias)
+		stream << b << " ";
+	stream << "\n";
+
+	fwrite(stream.str().data(), 1, stream.str().size(), file);
+
+	//second reading.
+	imageset.restart();
+
+	vector<Worker *> workers(height, nullptr);
+	for(size_t i = 0; i < nworkers; i++) {
+		workers[i] = new Worker(*this);
+	}
+	vector<QFuture<void>> futures(height);
+
+	QThreadPool pool;
+	pool.setMaxThreadCount(nworkers);
+
+	vector<uint8_t> line(width*nplanes/3);
+
+	//PTM RGB data is stored as such: first Red plane, then Green then Blue ``plane,
+	//for each pixel 6 coefficients
+
+	size_t data_start = ftell(file);
+	size_t component_size = width*height*6;
+	size_t line_size = width*6;
+
+	for(uint32_t y = 0; y < height + nworkers; y++) {
+		if(callback && y > 0) {
+			bool keep_going = (*callback)("Saving:", 100*(y)/(height + nworkers-1));
+			if(!keep_going) {
+				cout << "TODO: clean up directory, we are already saving!" << endl;
+				break;
+			}
+		}
+		if(y >= nworkers) {
+			futures[y - nworkers].waitForFinished();
+
+			Worker *doneworker = workers[y - nworkers];
+
+			uint32_t row = y - nworkers;
+			//worker line is organized for jpeg saving (so plane 1, 2, 3 in line[0] as data rgbrgbrgb etc.
+			for(int c = 0; c < 3; c++) {
+				fseek(file, data_start + component_size*c + line_size*(height - row-1), SEEK_SET);
+
+				for(uint32_t x = 0; x < width; x++) {
+					for(uint32_t j = 0; j < doneworker->line.size(); j++) { //these are 6 rgb
+						//if(j != 5 && j != 3)
+						//	line[x*nplanes/3 + j] = 0;
+						//else
+							line[x*nplanes/3 + j] = doneworker->line[coeffRemap[j]][x*3 + c];
+					}
+				}
+				fwrite(line.data(), 1, line.size(), file);
+			}
+			if(y < height)
+				workers[y] = doneworker;
+			else
+				delete doneworker;
+		}
+
+		if(y < height) {
+			Worker *worker = workers[y];
+			assert(worker != nullptr);
+			imageset.readLine(worker->sample);
+
+			futures[y] = QtConcurrent::run(&pool, [worker](){worker->run(); });
+		}
+	}
+	int64_t total = ftell(file);
+	fclose(file);
+	return total;
+}
 
 size_t RtiBuilder::saveUniversal(const std::string &output) {
 	//Universal .rti format requires min/max to be 1 per r, g and b;
