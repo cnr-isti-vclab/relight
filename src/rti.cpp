@@ -372,6 +372,7 @@ std::vector<float> Rti::lightWeights(float lx, float ly) {
 }
 
 std::vector<float> Rti::lightWeightsPtm(float lx, float ly) {
+	// 1, x, y, xx, xy, yy,   xxx xxy xyy yyy etc.
 	if(colorspace == RGB)
 		assert(nplanes %3 == 0);
 
