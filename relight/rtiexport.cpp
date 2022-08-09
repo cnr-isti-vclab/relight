@@ -306,6 +306,9 @@ void RtiExport::createRTI(QString output) {
 		format = "tarzoom";
 	else if(ui->formatItarzoom->isChecked())
 		format = "itarzoom";
+		
+	Rti::Type type = basis(ui->basis->currentIndex());
+
 
 	RtiTask *task = new RtiTask;
     task->input_folder = path;
