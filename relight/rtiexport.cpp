@@ -266,10 +266,32 @@ void RtiExport::createNormals() {
 
 
 void RtiExport::createRTI() {
-    QString output = QFileDialog::getSaveFileName(this, "Select an output directory", QString(), tr("Images (*.png)"));
-    if(output.isNull()) return;
-    createRTI(output);
-    close();
+
+	QString output;
+
+	Rti::Type type = basis(ui->basis->currentIndex());
+	if(format == "rti") {
+		if(type == Rti::HSH) {
+			output = QFileDialog::getSaveFileName(this, "Select a file name", QString(), tr("RTI file (*.rti)"));
+      if(output.isNull()) return;
+
+			if(!output.endsWith(".rti"))
+			output += ".rti";
+      
+		} else if(type == Rti::PTM) {
+			output = QFileDialog::getSaveFileName(this, "Select a file name", QString(), tr("PTM file (*.ptm)"));
+     	if(output.isNull()) return;
+
+			if(!output.endsWith(".ptm"))
+			output += ".ptm";
+		}
+	} else {
+		output = QFileDialog::getSaveFileName(this, "Select an output folder", QString());
+   	if(output.isNull()) return;
+  }
+
+  createRTI(output);
+  close();
 }
 
 void RtiExport::createRTI(QString output) {
@@ -303,7 +325,7 @@ void RtiExport::createRTI(QString output) {
 			slights << QVariant(light[k]);
 	task->addParameter("lights", Parameter::DOUBLELIST, slights);
 
-	task->addParameter("type", Parameter::INT,  basis(ui->basis->currentIndex()));
+	task->addParameter("type", Parameter::INT,  type);
 	task->addParameter("colorspace", Parameter::INT, colorSpace(ui->basis->currentIndex()));
 	task->addParameter("nplanes", Parameter::INT, ui->planes->value());
 	
@@ -345,8 +367,6 @@ void RtiExport::createRTI(QString output) {
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);
-	
-	close();
 }
 
 

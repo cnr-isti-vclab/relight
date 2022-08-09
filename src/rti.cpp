@@ -307,7 +307,7 @@ void Rti::render(float lx, float ly, uint8_t *buffer, int stride, uint32_t rende
 			//compare the two values
 			for(uint32_t x = 0; x < width; x++) {
 
-				uint32_t off = 3*(nplanes+1);
+				uint32_t off = 0;//3*(nplanes+1);
 				Color3f c(0.0f, 0.0f, 0.0f);
 				c[0] = lweights[off + 0];
 				c[1] = lweights[off + 1];
@@ -372,6 +372,7 @@ std::vector<float> Rti::lightWeights(float lx, float ly) {
 }
 
 std::vector<float> Rti::lightWeightsPtm(float lx, float ly) {
+	// 1, x, y, xx, xy, yy,   xxx xxy xyy yyy etc.
 	if(colorspace == RGB)
 		assert(nplanes %3 == 0);
 
