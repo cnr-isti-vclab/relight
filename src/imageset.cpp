@@ -96,6 +96,7 @@ bool ImageSet::initFromProject(QJsonObject &obj, const QString &filename) {
 
 	QFileInfo info(filename);
 	QDir folder = info.dir();
+    path = QString(folder.absolutePath());
 	folder.cd(obj["folder"].toString());
 
 	for(auto img: obj["images"].toArray()) {

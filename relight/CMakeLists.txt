@@ -68,7 +68,9 @@ set (RELIGHT_HEADERS
 	zoom.h
 	zoomtask.h
 	zoomdialog.h
-	
+	dstretch.h
+	dstretchtask.h
+	dstretchdialog.h
 )
 
 set (RELIGHT_SOURCES
@@ -120,6 +122,8 @@ set (RELIGHT_SOURCES
 	convertdialog.cpp
 	zoomtask.cpp
 	zoomdialog.cpp
+	dstretchtask.cpp
+	dstretchdialog.cpp
 )
 
 set (RELIGHT_FORMS
@@ -130,7 +134,8 @@ set (RELIGHT_FORMS
 	settingsdialog.ui
 	focaldialog.ui
 	domecalibration.ui
-	convertdialog
+	convertdialog.ui
+	dstretchdialog.ui
 )
 
 set (RELIGHT_RESOURCES
