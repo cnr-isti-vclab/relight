@@ -270,28 +270,28 @@ void RtiExport::createRTI() {
 	QString output;
 
 	Rti::Type type = basis(ui->basis->currentIndex());
-	if(format == "rti") {
+	if(ui->formatRTI->isChecked()) {
 		if(type == Rti::HSH) {
 			output = QFileDialog::getSaveFileName(this, "Select a file name", QString(), tr("RTI file (*.rti)"));
-      if(output.isNull()) return;
+			if(output.isNull()) return;
 
 			if(!output.endsWith(".rti"))
 			output += ".rti";
       
 		} else if(type == Rti::PTM) {
 			output = QFileDialog::getSaveFileName(this, "Select a file name", QString(), tr("PTM file (*.ptm)"));
-     	if(output.isNull()) return;
+			if(output.isNull()) return;
 
 			if(!output.endsWith(".ptm"))
 			output += ".ptm";
 		}
 	} else {
 		output = QFileDialog::getSaveFileName(this, "Select an output folder", QString());
-   	if(output.isNull()) return;
-  }
+		if(output.isNull()) return;
+	}
 
-  createRTI(output);
-  close();
+	createRTI(output);
+	close();
 }
 
 void RtiExport::createRTI(QString output) {
