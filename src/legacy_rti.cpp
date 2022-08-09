@@ -9,6 +9,9 @@
 #include <assert.h>
 #include <math.h>
 
+#include <QString>
+#include <QStringList>
+
 using namespace std;
 
 //DEBUG
@@ -59,7 +62,20 @@ bool getFloats(FILE *file, vector<float> &a, unsigned int expected = 0) {
 	char buffer[256];
 	if(fgets(buffer, 256, file) == nullptr)
 		return false;
-	buffer[255] = '0';
+	buffer[255] = 0;
+
+	QString str = buffer;
+	QStringList parts = str.split(' ');
+	parts.pop_back(); //remove \n
+	for(int i = 0; i < parts.size(); i++) {
+		bool ok;
+		float s = parts[i].toDouble(&ok);
+		a.push_back(s);
+		if(!ok) return false;
+	}
+
+/* strdod depends on the locale! the .ptm does not.
+
 	char *start = buffer;
 	char *end = start;
 	while(1) {
@@ -68,7 +84,7 @@ bool getFloats(FILE *file, vector<float> &a, unsigned int expected = 0) {
 			break;
 		start = end;
 		a.push_back(n);
-	}
+	} */
 	if(expected != 0)
 		return expected == a.size();
 	return a.size() > 0;
@@ -161,10 +177,9 @@ bool LRti::loadPTM(FILE* file) {
 		return false;
 	}
 	
-	if(!getInteger(file, width) ||
-			!getInteger(file, height) ||
-			!getFloats(file, scale, 6) ||
-			!getFloats(file, bias, 6)) {
+	if(!getInteger(file, width) || !getInteger(file, height) ||
+		!getFloats(file, scale, 6) || !getFloats(file, bias, 6)) {
+
 		error =  "File format invalid";
 		return false;
 	}

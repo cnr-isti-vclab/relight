@@ -117,6 +117,10 @@ void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 		if(saveLegacy) {
 			if(builder->type == Rti::HSH)
 				builder->saveUniversal(output.toStdString());
+			else if(builder->type == Rti::PTM)
+				builder->savePTM(output.toStdString());
+			else
+				throw "Legacy RTI and PTM formats are supported only for HSH and PTM basis";
 		} else
 			builder->save(output.toStdString(), quality);
 
