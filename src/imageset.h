@@ -26,6 +26,7 @@ public:
 	float dome_radius = 4.0f;
 	float vertical_offset = 0.0f;
 	bool light3d = false;
+    QString path;
 
 	
 	

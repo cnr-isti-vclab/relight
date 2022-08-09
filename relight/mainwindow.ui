@@ -289,6 +289,7 @@
     <addaction name="separator"/>
     <addaction name="actionRotate_all_right"/>
     <addaction name="actionRotate_all_right_2"/>
+    <addaction name="actionDStretch"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -714,6 +715,11 @@
   <action name="actionItarzoom">
    <property name="text">
     <string>Itarzoom</string>
+   </property>
+  </action>
+  <action name="actionDStretch">
+   <property name="text">
+    <string>D-Stretch</string>
    </property>
   </action>
  </widget>

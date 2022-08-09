@@ -32,6 +32,9 @@ mac:QMAKE_LFLAGS += -lomp
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 
 SOURCES += main.cpp \
+    ../src/deepzoom.cpp \
+    dstretchdialog.cpp \
+    dstretchtask.cpp \
     imagecropper.cpp \
     mainwindow.cpp \
     graphics_view_zoom.cpp \
@@ -83,6 +86,9 @@ SOURCES += main.cpp \
 
 HEADERS += \
     ../src/deepzoom.h \
+    dstretch.h \
+    dstretchdialog.h \
+    dstretchtask.h \
     imagecropper.h \
     mainwindow.h \
     graphics_view_zoom.h \
@@ -135,6 +141,7 @@ HEADERS += \
     ../src/deepzoom.h
 
 FORMS += \
+    dstretchdialog.ui \
     mainwindow.ui \
     rtiexport.ui \
     helpdialog.ui \

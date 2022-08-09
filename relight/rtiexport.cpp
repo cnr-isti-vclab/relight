@@ -266,6 +266,35 @@ void RtiExport::createNormals() {
 
 
 void RtiExport::createRTI() {
+
+	QString output;
+
+	Rti::Type type = basis(ui->basis->currentIndex());
+	if(ui->formatRTI->isChecked()) {
+		if(type == Rti::HSH) {
+			output = QFileDialog::getSaveFileName(this, "Select a file name", QString(), tr("RTI file (*.rti)"));
+			if(output.isNull()) return;
+
+			if(!output.endsWith(".rti"))
+			output += ".rti";
+      
+		} else if(type == Rti::PTM) {
+			output = QFileDialog::getSaveFileName(this, "Select a file name", QString(), tr("PTM file (*.ptm)"));
+			if(output.isNull()) return;
+
+			if(!output.endsWith(".ptm"))
+			output += ".ptm";
+		}
+	} else {
+		output = QFileDialog::getSaveFileName(this, "Select an output folder", QString());
+		if(output.isNull()) return;
+	}
+
+	createRTI(output);
+	close();
+}
+
+void RtiExport::createRTI(QString output) {
 	QString format;
 	if(ui->formatRTI->isChecked())
 		format = "rti";
@@ -277,31 +306,14 @@ void RtiExport::createRTI() {
 		format = "tarzoom";
 	else if(ui->formatItarzoom->isChecked())
 		format = "itarzoom";
-	
-	QString output;
-
-
+		
 	Rti::Type type = basis(ui->basis->currentIndex());
-	if(format == "rti") {
-		if(type == Rti::HSH) {
-			output = QFileDialog::getSaveFileName(this, "Select a file name", QString(), tr("RTI file (*.rti)"));
-			if(!output.endsWith(".rti"))
-			output += ".rti";
-		} else if(type == Rti::PTM) {
-			output = QFileDialog::getSaveFileName(this, "Select a file name", QString(), tr("PTM file (*.ptm)"));
-			if(!output.endsWith(".ptm"))
-			output += ".ptm";
-		}
-	} else 
-		output = QFileDialog::getSaveFileName(this, "Select an output folder", QString());
 
-	if(output.isNull()) return;
 
 	RtiTask *task = new RtiTask;
-	task->input_folder = path;
+    task->input_folder = path;
 	task->output = output;
-	task->label = "RTI"; //should use
-
+    task->label = "RTI"; //should use
 
 	uint32_t ram = uint32_t(ui->ram->value());
 	task->addParameter("ram", Parameter::INT, ram);
@@ -327,9 +339,7 @@ void RtiExport::createRTI() {
 		return;
 	}
 	int yplanes = nplanes - chroma*2;
-	
 	task->addParameter("yplanes", Parameter::INT, yplanes);
-
 
 	QRect rect = QRect(0, 0, 0, 0);
 	if(ui->cropview->handleShown()) {
@@ -360,8 +370,6 @@ void RtiExport::createRTI() {
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);
-	
-	close();
 }
 
 

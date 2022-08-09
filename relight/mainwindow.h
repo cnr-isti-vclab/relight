@@ -5,6 +5,7 @@
 #include <QDir>
 #include "sphere.h"
 #include "project.h"
+#include "dstretchdialog.h"
 #include "zoomdialog.h"
 
 #include <QProgressDialog>
@@ -155,11 +156,13 @@ public slots:
 	void loadLP();
 	void loadLP(QString filename);
 	void exportRTI(bool normals = false);
+
 	void exportNormals();
 	void convertRTI();
     void deepZoom();
     void tarZoom();
     void itarZoom();
+    void dStretch();
 
 	void viewRTI();
 	void showQueue();
@@ -183,6 +186,7 @@ private:
 	RtiExport *rtiexport = nullptr;
 	HelpDialog *help = nullptr;
     ZoomDialog* zoom = nullptr;
+    DStretchDialog* dstretch = nullptr;
 	RTIScene *scene = nullptr;
 	QGraphicsPixmapItem *imagePixmap = nullptr;
 	
