@@ -32,7 +32,6 @@ mac:QMAKE_LFLAGS += -lomp
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 
 SOURCES += main.cpp \
-    ../src/deepzoom.cpp \
     dstretchdialog.cpp \
     dstretchtask.cpp \
     imagecropper.cpp \
