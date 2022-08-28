@@ -183,7 +183,7 @@ bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_call
 		nsamples = resample.npixels();
 
 		pickBases(resample);
-	} catch(std::exception e) {
+	} catch(std::exception &e) {
 		error = "Could not create a base.";
 		return false;
 	} catch(...) {
@@ -385,19 +385,12 @@ MaterialBuilder RtiBuilder::pickBasePTM(std::vector<Vector3f> &lights) {
 		assert(nplanes == 9);
 		//we could generalize for different polinomials
 		
-		//nplanes should be 9 here!
 		std::vector<float> &proj = mat.proj;
-		proj.resize(nplanes*dim, 0.0);
-		for(uint32_t p = 0; p < nplanes; p++) {
+		proj.resize((nplanes-3)*ndimensions, 0.0);
+		for(uint32_t p = 0; p < nplanes-3; p++) {
 			for(uint32_t k = 0; k < lights.size(); k++) {
-				uint32_t off = k*3 + p*dim;
-				if(p >= 3) {
-					proj[off+0] = float(0.2125*iA(p-3, k));
-					proj[off+1] = float(0.7154*iA(p-3, k));
-					proj[off+2] = float(0.0721*iA(p-3, k));
-				} else {
-					proj[off + p] = 1.0f/lights.size();
-				}
+				uint32_t off = k + p*ndimensions;
+				proj[off] = float(iA(p, k));
 			}
 		}
 	} else {
@@ -583,10 +576,17 @@ void RtiBuilder::finalizeMaterial() {
 	//tested different scales for different coefficients (taking into account quantization for instance)
 	// for all datasets the quality/space is worse.
 	//rangecompress allows better quality at a large cost.
+	int c = 0;
 	for(Material::Plane &plane: material.planes) {
 		plane.scale = rangecompress*(plane.max - plane.min) + (1 - rangecompress)*maxscale;
 		plane.bias = -plane.min/plane.scale;
 		plane.scale /= 255.0f;
+		if(colorspace == LRGB && c < 3) { //no need to scale the base image.
+			plane.scale = 1;
+			plane.bias = 0;
+			plane.scale = 1;
+		}
+		c++;
 	}
 
 	if(callback && !(*callback)("Coefficients quantization:", 100))
@@ -1322,61 +1322,6 @@ size_t RtiBuilder::save(const string &output, int quality) {
 
 			futures[y] = QtConcurrent::run(&pool, [worker](){worker->run(); });
 		}
-
-
-
-
-
-
-		//classify samples
-		//lower error but increase size of the files (why?)
-		//getPixelBestMaterial(resample, indices);
-		//getPixelMaterial(resample, indices);
-		/*
-		for(uint32_t x = 0; x < width; x++) {
-			uint32_t m = indices[x];
-			Material &mat = materials[m];
-			
-			segments.setPixel(x, y, m);
-			
-			vector<float> pri = toPrincipal(m, (float *)(resample(x)));
-
-			if (savenormals) {
-				Vector3f n = getNormalThreeLights(pri);
-				normals.setPixel(x, y, qRgb(255 * n[0], 255 * n[1], 255 * n[2]));
-			}
-
-			if(savemeans) {
-				Vector3f n = extractMean(sample(x), lights.size());
-				means.setPixel(x, y, qRgb(n[0], n[1], n[2]));
-			}
-
-			if(savemedians) {
-				Vector3f n = extractMedian(sample(x), lights.size());
-				medians.setPixel(x, y, qRgb(n[0], n[1], n[2]));
-			}
-
-			if(colorspace == LRGB){
-
-				for(uint32_t j = 0; j < nplanes/3; j++) {
-					for(uint32_t c = 0; c < 3; c++) {
-						uint32_t p = j*3 + c;
-						if(j >= 1)
-							pri[p] = mat.planes[p].quantize(pri[p]);
-						line[j][x*3 + c] = pri[p];
-					}
-				}
-				
-			} else {
-
-				for(uint32_t j = 0; j < nplanes/3; j++) {
-					for(uint32_t c = 0; c < 3; c++) {
-						uint32_t p = j*3 + c;
-						line[j][x*3 + c] = mat.planes[p].quantize(pri[p]);
-					}
-				}
-			}
-		}*/
 	}
 
 	size_t total = 0;
@@ -1448,7 +1393,6 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 		}
 
 		if(colorspace == LRGB){
-
 			for(uint32_t j = 0; j < nplanes/3; j++) {
 				for(uint32_t c = 0; c < 3; c++) {
 					uint32_t p = j*3 + c;
@@ -1838,41 +1782,29 @@ std::vector<float> RtiBuilder::toPrincipal(Pixel &pixel, MaterialBuilder &materi
 
 	if(colorspace == LRGB) {
 
-		for(size_t p = 0; p < nplanes; p++) {
-			for(size_t k = 0; k < dim; k++) {
-				res[p] += v[k] * materialbuilder.proj[k + p*dim];
-			}
-		}
-
-		//get average luminance
-		vector<float> luma(ndimensions);
-		float max = 0.0;
+		//get average color, but penalize top and raking lights.
+		Color3f mean(0, 0, 0);
+		float weight = 0;
 		for(uint32_t i = 0; i < ndimensions; i++) {
-			luma[i] = (0.2125f*v[i*3+0] + 0.7154f*v[i*3+1] + 0.0721f*v[i*3+2])/(255.0f);
-			max = std::max(luma[i], max);
+			Color3f &c = pixel[i];
+			float w = 0.25 - pow(asin(lights[i][2])/(M_PI/2) - 0.5, 2);
+			mean += c*w;
+			weight += w;
 		}
-		if(max > 0)
-			for(float &l: luma)
-				l /= max;
+		mean /= weight;
 
-		float r = 0.0, g = 0.0, b = 0.0, y = 0.0;
-		for(uint32_t i = 0; i < ndimensions; i++) {
-			r += (v[i*3+0]/255.0)*(luma[i]);
-			g += (v[i*3+1]/255.0)*(luma[i]);
-			b += (v[i*3+2]/255.0f)*(luma[i]);
-			y += luma[i]*luma[i];
-		}
-		res[0] = std::max(0.0, std::min(255.0, 255.0*r/y));
-		res[1] = std::max(0.0, std::min(255.0, 255.0*g/y));
-		res[2] = std::max(0.0, std::min(255.0, 255.0*b/y));
+		float luma = (mean[0] + mean[1] + mean[2])/255; //actually 3 times luma, but balances in the equation below.
 
-		//		double totluma = (res[0]+ res[1] + res[2])/(3.0 * 255.0);
+		//fit luminosity.
+		for(size_t p = 3; p < nplanes; p++)
+			for(size_t k = 0; k < ndimensions; k++)
+				res[p] += ((v[k*3] + v[k*3+1] + v[k*3+2])/luma)* materialbuilder.proj[k + (p-3)*ndimensions];
 
-		double totluma = (0.2125*res[0]+ 0.7154*res[1] + 0.0721*res[2])/255.0;
+		res[0] = mean[0];
+		res[1] = mean[1];
+		res[2] = mean[2];
 
-		for(uint32_t p = 3; p < nplanes; p++)
-			res[p] /= totluma;
-
+		
 
 	} else { //RGB, YCC
 		vector<float> col(dim);

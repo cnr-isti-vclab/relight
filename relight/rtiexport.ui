@@ -27,7 +27,7 @@
    <item>
     <widget class="QTabWidget" name="export_frame">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tabWidgetPage1">
       <attribute name="title">
@@ -49,6 +49,14 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="currentIndex">
+          <number>3</number>
+         </property>
+         <item>
+          <property name="text">
+           <string>LPTM 9 - Polinomial tecture map</string>
+          </property>
+         </item>
          <item>
           <property name="text">
            <string>PTM 18 - Polinomial texture map</string>
