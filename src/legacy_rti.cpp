@@ -138,11 +138,15 @@ bool LRti::loadPTM(FILE* file) {
 	
 	string version, format;
 	
-	if(!getLine(file, version))
+	if(!getLine(file, version)) {
+		error = "File too short!";
 		return false;
+	}
 	
-	if(!getLine(file, format))
+	if(!getLine(file, format)) {
+		error = "File too short!";
 		return false;
+	}
 	
 	/*	PTM_FORMAT_RGB
 	PTM_FORMAT_LUM
@@ -194,12 +198,12 @@ bool LRti::loadPTM(FILE* file) {
 		return false;
 	}
 	if(!compressed)
-		decodeRAW(version, file);
+		return decodeRAW(version, file);
 	
-	else
-		decodeJPEG(file);
+	else {
+		return decodeJPEG(file);
+	}
 	
-	return true;
 }
 
 bool LRti::decodeRAW(const string &version, FILE *file) {
@@ -212,8 +216,10 @@ bool LRti::decodeRAW(const string &version, FILE *file) {
 		
 		vector<unsigned char> line(line_size);
 		for(int y = 0; y < height; y++) {
-			if(fread(line.data(), 1, line_size, file) != line_size)
+			if(fread(line.data(), 1, line_size, file) != line_size) {
+				error = "File is truncated.";
 				return false;
+			}
 			int c = 0;
 			for(int x = 0; x < width; x++)
 				for(int k = 0; k < multiplexed; k++)
@@ -222,8 +228,10 @@ bool LRti::decodeRAW(const string &version, FILE *file) {
 		
 		if(ptm12) {
 			for(int y = 0; y < height; y++) {
-				if(fread(line.data(), 1, width*3, file) != (uint32_t)width*3)
+				if(fread(line.data(), 1, width*3, file) != (uint32_t)width*3) {
+					error = "File is truncated.";
 					return false;
+				}
 				
 				int c = 0;
 				for(int x = 0; x < width; x++)
@@ -238,8 +246,10 @@ bool LRti::decodeRAW(const string &version, FILE *file) {
 		for(int k = 0; k < 3; k++) {
 			
 			for(int y = 0; y < height; y++) {
-				if(fread(line.data(), 1, line_size, file) != line_size)
+				if(fread(line.data(), 1, line_size, file) != line_size) {
+					error = "File is truncated.";
 					return false;
+				}
 				int c = 0;
 				for(int x = 0; x < width; x++)
 					for(int j = 0; j < 6; j++)
@@ -260,12 +270,16 @@ bool LRti::loadHSH(FILE* file) {
 	skipComments(file);
 	
 	int rti_type = 0;
-	if(!getInteger(file, rti_type))
+	if(!getInteger(file, rti_type)) {
+		error = "Expecting an integer as an rti type";
 		return false;
+	}
 	
 	vector<int> tmp;
-	if(!getIntegers(file, tmp, 3))
+	if(!getIntegers(file, tmp, 3)) {
+		error = "Expecting 3 integers as width height and number of components";
 		return false;
+	}
 	
 	width = tmp[0];
 	height = tmp[1];
@@ -276,8 +290,10 @@ bool LRti::loadHSH(FILE* file) {
 	}
 	
 	vector<int> basis;
-	if(!getIntegers(file, basis, 3))
+	if(!getIntegers(file, basis, 3)) {
+		error = "Expecting 3 integer as bases info";
 		return false;
+	}
 	
 	size_t basis_terms = basis[0]; //number of terms in the basis
 	/*	//ignored
@@ -674,7 +690,7 @@ bool LRti::decodeJPEG(FILE *file) {
 	switch(type) {
 	case PTM_LRGB: ncoeffs = 9; break;
 	case PTM_RGB: ncoeffs = 18; break;
-	default: cerr << "Not supported!\n"; exit(0);
+	default: error = "Type not supported"; return false;
 	}
 	
 	if(!getInteger(file, quality) ||
@@ -685,13 +701,13 @@ bool LRti::decodeJPEG(FILE *file) {
 			!getIntegers(file, reference, ncoeffs) ||
 			!getIntegers(file, sizes, ncoeffs) ||
 			!getIntegers(file, overflows, ncoeffs)) {
-		cerr << "File format invalid\n";
+		error = "File format invalid";
 		return false;
 	}
 	//check transform and motions are 0
 	for(unsigned int k = 0; k < ncoeffs; k++) {
 		if(transform[k] != 0 || motionx[k] != 0 || motiony[k] != 0) {
-			cerr << "Transform and motion array unsupported." << endl;
+			error = "Transform and motion array unsupported.";
 			return false;
 		}
 	}
@@ -712,7 +728,7 @@ bool LRti::decodeJPEG(FILE *file) {
 	fseek(file, 0L, SEEK_END);
 	unsigned int tot_size = ftell(file);
 	if(tot_size < (unsigned int)(pos[ncoeffs])) {
-		cerr << "File is truncated." << endl;
+		error = "File is truncated.";
 		return false;
 	}
 	
@@ -724,8 +740,10 @@ bool LRti::decodeJPEG(FILE *file) {
 		fseek(file, pos[s], SEEK_SET);
 		vector<uint8_t> buffer(sizes[s]);
 		int readed = fread(buffer.data(), 1, size_t(sizes[s]), file);
-		if(readed != sizes[s])
+		if(readed != sizes[s]) {
+			error = "File is truncated.";
 			return false;
+		}
 		
 		bool decoded = decodeJPEG(buffer.size(), buffer.data(), s);
 		
@@ -742,8 +760,10 @@ bool LRti::decodeJPEG(FILE *file) {
 		if(overflows[s] > 0) {
 			vector<uint8_t> overs(overflows[s]);
 			size_t readed = fread(overs.data(), 1, overs.size(), file);
-			if(readed!= overs.size())
-				throw "Failed reading jpeg";
+			if(readed!= overs.size()) {
+				error =  "Failed reading jpeg";
+				return false;
+			}
 			
 			for(int i = 0; i < overflows[s]; i += 5) {
 				//I wonder why the position is stored big endian.
