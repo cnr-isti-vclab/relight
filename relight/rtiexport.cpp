@@ -112,24 +112,27 @@ void RtiExport::showImage(QPixmap pix) {
 
 void RtiExport::changeBasis(int n) {
     switch(n) {
-    case 0: //ptm
+	case 0: //ptm
+		ui->planes->setValue(9);
+		break;
+	case 1: //ptm
         ui->planes->setValue(18);
         break;
-    case 1: //hsh 4
+	case 2: //hsh 4
         ui->planes->setValue(12);
         break;
-    case 2: //hsh 27
+	case 3: //hsh 27
         ui->planes->setValue(27);
         break;
-    case 3: //bilinear
+	case 4: //bilinear
         break;
-    case 4: //rbf
+	case 5: //rbf
         break;
-    case 5: //yrbf
+	case 6: //yrbf
         break;
     }
-    ui->chroma->setEnabled(n == 5 || n == 6);
-    ui->planes->setEnabled(n >= 3);
+	ui->chroma->setEnabled(n == 6 || n == 7);
+	ui->planes->setEnabled(n >= 4);
 }
 
 void RtiExport::changePlanes(int n) {
@@ -138,15 +141,14 @@ void RtiExport::changePlanes(int n) {
 
 Rti::Type basis(int index) {
     //int b =  ui->basis->currentIndex();
-    Rti::Type table[] =       { Rti::PTM, Rti::HSH, Rti::HSH, Rti::BILINEAR,  Rti::RBF, Rti::BILINEAR, Rti::RBF, Rti::DMD, Rti::SH, Rti::H };
+	Rti::Type table[] =       { Rti::PTM, Rti::PTM, Rti::HSH, Rti::HSH, Rti::BILINEAR,  Rti::RBF, Rti::BILINEAR, Rti::RBF,  /* to do! */ Rti::DMD, Rti::SH, Rti::H };
     return table[index];
 }
 
 Rti::ColorSpace  colorSpace(int index) {
     //int b =  ui->basis->currentIndex();
-    Rti::ColorSpace table[] = { Rti::RGB, Rti::RGB, Rti::RGB, Rti::MRGB,     Rti::MRGB, Rti::MYCC, Rti::MYCC };
+	Rti::ColorSpace table[] = { Rti::LRGB, Rti::RGB, Rti::RGB, Rti::RGB, Rti::MRGB,     Rti::MRGB, Rti::MYCC, Rti::MYCC };
     return table[index];
-
 }
 
 

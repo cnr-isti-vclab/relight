@@ -101,7 +101,18 @@ template <class T> struct Color3 {
 	}
     Color3 clip() {
         return Color3(r / 255, g / 255, b / 255);
-    }
+	}
+	void operator+=(const Color3 &c) {
+		r += c.r;
+		g += c.g;
+		b += c.b;
+	}
+	void operator-=(const Color3 &c) {
+		r -= c.r;
+		g -= c.g;
+		b -= c.b;
+	}
+
 	void operator*=(float v) {
 		r *= v;
 		g *= v;
@@ -119,7 +130,7 @@ template <class T> struct Color3 {
         return Color3(r / v, g / v, b / v);
     }
     Color3 operator*(float v) {
-        return Color3(r / v, g / v, b / v);
+		return Color3(r * v, g * v, b * v);
     }
 	float mean() {
 		return (r + g + b)/3;
