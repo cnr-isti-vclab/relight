@@ -921,19 +921,24 @@ size_t RtiBuilder::savePTM(const std::string &output) {
 	std::ostringstream stream;
 
 	stream << "PTM_1.2\n";
-	stream << "PTM_FORMAT_RGB\n"; //PTM_FORMAT_JPEG_LRGB for JPEG
+	assert(colorspace == RGB || colorspace == LRGB);
+	if(colorspace == RGB)
+		stream << "PTM_FORMAT_RGB\n"; //PTM_FORMAT_JPEG_LRGB for JPEG
+	else
+		stream << "PTM_FORMAT_LRGB\n"; //PTM_FORMAT_JPEG_LRGB for JPEG
+
 	stream <<  width << "\n" << height << "\n";
 
 
 	//bias and scale are shared among rgb for the corresponding harmonic
-	vector<int> gbias(nplanes/3);
-	vector<float> gscale(nplanes/3);
+	vector<int> gbias(6);
+	vector<float> gscale(6);
 
 	for(size_t i = 0; i < gbias.size(); i++) {
 		int j = coeffRemap[i];
-		gbias[i] = static_cast<int>(bias[j*3]*255.0);
+		gbias[i] = static_cast<int>(bias[j+3]*255.0);
 		//if(i != 5 && i != 3) gbias[i] = 0;
-		gscale[i] = scale[j*3];
+		gscale[i] = scale[j+3];
 	}
 	for(float s: gscale)
 		stream << s << " ";
@@ -956,7 +961,7 @@ size_t RtiBuilder::savePTM(const std::string &output) {
 	QThreadPool pool;
 	pool.setMaxThreadCount(nworkers);
 
-	vector<uint8_t> line(width*nplanes/3);
+	vector<uint8_t> line(width*6);
 
 	//PTM RGB data is stored as such: first Red plane, then Green then Blue ``plane,
 	//for each pixel 6 coefficients
@@ -979,19 +984,32 @@ size_t RtiBuilder::savePTM(const std::string &output) {
 			Worker *doneworker = workers[y - nworkers];
 
 			uint32_t row = y - nworkers;
-			//worker line is organized for jpeg saving (so plane 1, 2, 3 in line[0] as data rgbrgbrgb etc.
-			for(int c = 0; c < 3; c++) {
-				fseek(file, data_start + component_size*c + line_size*(height - row-1), SEEK_SET);
+			if(colorspace == RGB) {
+				//worker line is organized for jpeg saving (so plane 1, 2, 3 in line[0] as data rgbrgbrgb etc.
+				for(int c = 0; c < 3; c++) {
+					fseek(file, data_start + component_size*c + line_size*(height - row-1), SEEK_SET);
 
+					for(uint32_t x = 0; x < width; x++) {
+						for(uint32_t j = 0; j < doneworker->line.size(); j++) { //these are 6 rgb
+							line[x*6 + j] = doneworker->line[coeffRemap[j]][x*3 + c];
+						}
+					}
+					fwrite(line.data(), 1, line.size(), file);
+				}
+			} else { //data is organized first for each pixel the 6 luma coefficient (remapped), then the RGB base image. (PTM 1.2)
 				for(uint32_t x = 0; x < width; x++) {
-					for(uint32_t j = 0; j < doneworker->line.size(); j++) { //these are 6 rgb
-						//if(j != 5 && j != 3)
-						//	line[x*nplanes/3 + j] = 0;
-						//else
-							line[x*nplanes/3 + j] = doneworker->line[coeffRemap[j]][x*3 + c];
+					for(uint32_t j = 0; j < 6; j++) { //these are 2 rgb
+						int k = coeffRemap[j];
+						int jpeg = 1+k/3;
+						int component = k%3;
+						line[x*6 + j] = doneworker->line[jpeg][x*3 + component];
 					}
 				}
-				fwrite(line.data(), 1, line.size(), file);
+				fseek(file, data_start + line_size*(height - row-1), SEEK_SET);
+				fwrite(line.data(), 1, width*6, file);
+
+				fseek(file, data_start + line_size*height + 3*width*(height - row-1), SEEK_SET);
+				fwrite(doneworker->line[0].data(), 1, width*3, file);
 			}
 			if(y < height)
 				workers[y] = doneworker;
@@ -1011,6 +1029,8 @@ size_t RtiBuilder::savePTM(const std::string &output) {
 	fclose(file);
 	return total;
 }
+
+
 
 size_t RtiBuilder::saveUniversal(const std::string &output) {
 	//Universal .rti format requires min/max to be 1 per r, g and b;
