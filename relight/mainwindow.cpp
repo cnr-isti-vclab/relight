@@ -45,7 +45,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->setupUi(this);
 
     // File menu
-	this->setWindowTitle("Relight");
+	this->setWindowTitle("RelightLab");
 	connect(ui->actionNew,        SIGNAL(triggered(bool)),  this, SLOT(newProject()));
 	connect(ui->actionOpen,       SIGNAL(triggered(bool)),  this, SLOT(openProject()));
 

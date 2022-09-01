@@ -63,13 +63,13 @@ int main(int argc, char *argv[]) {
 
 	QCoreApplication::setOrganizationName("VCG");
 	QCoreApplication::setOrganizationDomain("vcg.isti.cnr.it");
-	QCoreApplication::setApplicationName("Relight");
+	QCoreApplication::setApplicationName("RelightLab");
 	QCoreApplication::setApplicationVersion(RELIGHT_STRINGIFY(RELIGHT_VERSION));
 
 	if (argc > 1) {
 		if (std::string(argv[1]) == std::string("--version") ||
 			std::string(argv[1]) == std::string("-v")) {
-			std::cout << "ReLight " << RELIGHT_STRINGIFY(RELIGHT_VERSION) << std::endl;
+			std::cout << "ReLightLab " << RELIGHT_STRINGIFY(RELIGHT_VERSION) << std::endl;
 			return 0;
 		}
 	}
