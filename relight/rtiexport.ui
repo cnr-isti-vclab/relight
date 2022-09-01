@@ -50,16 +50,16 @@
           </sizepolicy>
          </property>
          <property name="currentIndex">
-          <number>3</number>
+          <number>0</number>
          </property>
          <item>
           <property name="text">
-           <string>LPTM 9 - Polinomial tecture map</string>
+           <string>LPTM 9 - Polynomial texture map</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>PTM 18 - Polinomial texture map</string>
+           <string>PTM 18 - Polynomial texture map</string>
           </property>
          </item>
          <item>
@@ -69,7 +69,7 @@
          </item>
          <item>
           <property name="text">
-           <string>HSH 27 - Hemispherical Harmonics</string>
+           <string>HSH 27 - Hemispherical harmonics</string>
           </property>
          </item>
          <item>

@@ -383,7 +383,7 @@ MaterialBuilder RtiBuilder::pickBasePTM(std::vector<Vector3f> &lights) {
 	
 	if(colorspace == LRGB) {
 		assert(nplanes == 9);
-		//we could generalize for different polinomials
+		//we could generalize for different polynomials
 		
 		std::vector<float> &proj = mat.proj;
 		proj.resize((nplanes-3)*ndimensions, 0.0);
