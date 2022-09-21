@@ -3,8 +3,11 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QProgressBar>
+#include <QMessageBox>
+#include <QFileInfo>
 #include "task.h"
 #include "httpserver.h"
+
 
 #include <iostream>
 using namespace std;
@@ -50,8 +53,10 @@ QueueItem::QueueItem(Task *_task, QListWidget *parent): QListWidgetItem(parent) 
 //	progressbar->hide();
 	grid->addWidget(progressbar, 3, 1, 1, 1);
 
+
 	cast = new QPushButton();
 	cast->setIcon(QIcon(":/icons/feather/cast.svg"));
+	cast->setEnabled(false);
 	grid->addWidget(cast, 0, 2, 4, 1);
 
 	connect(cast, SIGNAL(clicked(bool)), this, SLOT(casting()));
@@ -78,6 +83,11 @@ void QueueItem::update() {
 	case Task::DONE:
 		status->setText("Done");
 		progressbar->setValue(100);
+		{
+			QFileInfo info(task->output);
+			if(info.isDir())
+				cast->setEnabled(true);
+		}
 		break;
 	case Task::STOPPED:
 		status->setText("Stopped");
@@ -97,9 +107,13 @@ void QueueItem::setSelected(bool selected) {
 }
 
 void QueueItem::casting() {
-	HttpServer &server = HttpServer::instance();
-	server.stop();
-	server.port = 8880;
-	server.start(task->output);
-	server.show();
+	try {
+		HttpServer &server = HttpServer::instance();
+		server.stop();
+		server.port = 8880;
+		server.start(task->output);
+		server.show();
+	} catch(QString error) {
+		QMessageBox::critical(nullptr, "Could not cast!", error);
+	}
 }
