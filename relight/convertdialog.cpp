@@ -39,7 +39,7 @@ void ConvertDialog::convert() {
 	}
 
 
-	QString output = QFileDialog::getSaveFileName(this, "Select an output directory for relight", QString(), tr("Images (*.png)"));
+	QString output = QFileDialog::getSaveFileName(this, "Select an output directory for relight", QString());
 	if(output.isEmpty())
 		return;
 
