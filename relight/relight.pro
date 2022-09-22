@@ -59,7 +59,6 @@ SOURCES += main.cpp \
     processqueue.cpp \
     queuewindow.cpp \
     queueitem.cpp \
-    script.cpp \
     parameter.cpp \
     task.cpp \
     rtitask.cpp \
@@ -112,7 +111,6 @@ HEADERS += \
     processqueue.h \
     queuewindow.h \
     queueitem.h \
-    script.h \
     parameter.h \
     task.h \
     rtitask.h \

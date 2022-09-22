@@ -307,14 +307,6 @@ void ImageCropper::mouseReleaseEvent(QMouseEvent* _event)
 // ********
 // Private section
 
-namespace {
-	static bool isPointNearSide (const int _sideCoordinate, const int _pointCoordinate)
-	{
-		static const int indent = 10;
-		return (_sideCoordinate - indent) < _pointCoordinate && _pointCoordinate < (_sideCoordinate + indent);
-	}
-}
-
 CursorPosition ImageCropper::cursorPosition(const QRectF& _cropRect, const QPointF& _mousePosition)
 {
 	//

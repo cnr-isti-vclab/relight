@@ -149,15 +149,14 @@ void NormalsWorker::solveL2()
     unsigned int normalIdx = 0;
 
     // Fill the lights matrix
-    for (int i=0; i<m_Lights.size(); i++)
-        for (int j=0; j<3; j++)
+	for (size_t i = 0; i < m_Lights.size(); i++)
+		for (int j = 0; j < 3; j++)
             mLights(i, j) = m_Lights[i][j];
 
     // For each pixel in the line solve the system
-    for (int p=0; p<m_Row.size(); p++)
-    {
+	for (size_t p = 0; p < m_Row.size(); p++) {
         // Fill the pixel vector
-        for (int m=0; m<m_Lights.size(); m++)
+		for (size_t m = 0; m < m_Lights.size(); m++)
             mPixel(m, 0) = m_Row[p][m].mean();
 
         // Solve

@@ -23,6 +23,7 @@ public:
 
 	int width;  //total width of the scaled image;
 	int height; //total height of the scaled image;
+	int quality; //0 100 jpeg quality.
 
 	int current_row = -1;
 	int current_line = 0;                          //keeps track of which image line we are processing
@@ -32,7 +33,7 @@ public:
 
 
 	TileRow() {}
-	TileRow(int _tileside, int _overlap, QString path, int width, int height);
+	TileRow(int _tileside, int _overlap, QString path, int width, int height, int quality = 95);
 	void nextRow();
 	void finishRow();
 
@@ -51,6 +52,7 @@ public:
 	int tileside = 254;
 	int overlap = 1;
 	int width, height;
+	int quality; //0 100 jpeg quality
 	QString output;
 	bool build(QString filename, QString basename, int tile_size = 254, int overlap = 1);
 

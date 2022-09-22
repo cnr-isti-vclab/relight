@@ -180,7 +180,7 @@ bool Rti::loadData(const char *folder) {
 		}
 	}
 
-	for(int i = 0; i < planedecs.size(); i++) {
+	for(size_t i = 0; i < planedecs.size(); i++) {
 		//planedecs[i]->finish();
 		delete planedecs[i];
 	}
@@ -503,8 +503,8 @@ std::vector<float> Rti::lightWeightsSh(float lx, float ly) {
 	return lweights;
 }
 
-std::vector<float> Rti::lightWeightsH(float lx, float ly) {
-	float lz = sqrt(1.0f - lx*lx - ly*ly);
+std::vector<float> Rti::lightWeightsH(float /*lx*/, float /*ly*/) {
+//	float lz = sqrt(1.0f - lx*lx - ly*ly);
 	//TODO
 	throw 1;
 }

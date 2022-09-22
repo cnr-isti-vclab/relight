@@ -551,7 +551,7 @@ bool LRti::encode(Encoding encoding, const char *filename, int quality) {
 }
 
 
-bool LRti::encodeUniversal(const char *filename, int quality) {
+bool LRti::encodeUniversal(const char *filename, int /*quality*/) {
 	FILE *file = fopen(filename, "wb");
 	if(!file) {
 		cerr << "Could not open file: " << filename << endl;
@@ -573,7 +573,7 @@ bool LRti::encodeUniversal(const char *filename, int quality) {
 	vector<float> gbias(basisTerms[type]); 
 	vector<float> gscale(basisTerms[type]); 
 	
-	for(int i = 0; i < gbias.size(); i++) {
+	for(size_t i = 0; i < gbias.size(); i++) {
 		gbias[i] = -bias[i];
 		gscale[i] = scale[i];
 	}
@@ -584,7 +584,7 @@ bool LRti::encodeUniversal(const char *filename, int quality) {
 
 	int nplanes = data.size();
 	unsigned char *buffer = new unsigned char[nplanes*width*height];
-	for(int i = 0; i < data.size(); i++) {
+	for(size_t i = 0; i < data.size(); i++) {
 		for(int y = 0; y < height; y++) {
 			for(int x = 0; x < width; x++) {
 				int k0 = x + y*width;

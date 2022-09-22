@@ -96,7 +96,8 @@ inline QString deepZoom(QString inputFolder, QString output, uint32_t quality, u
     {
         // Load image, setup output folder for this plane
         QString fileName = (QStringList() << QString("%1/plane_%2").arg(inputFolder).arg(plane) << QString(".jpg")).join("");
-        DeepZoom dz;
+		DeepZoom dz;
+		dz.quality = quality;
         dz.build(fileName, output + "/" + QString("plane_%1").arg(plane), tileSize, overlap);
 
         // Update progress bar
@@ -181,7 +182,7 @@ inline QString tarZoom(QString inputFolder, QString output, std::function<bool(s
                 orderedFiles[x + maxX * y] = new QFile(filePath);
             }
 
-            for (int i=0; i<orderedFiles.size(); i++)
+			for (size_t i = 0; i < orderedFiles.size(); i++)
             {
                 QFile* file = orderedFiles[i];
                 if (file != nullptr)
@@ -204,7 +205,7 @@ inline QString tarZoom(QString inputFolder, QString output, std::function<bool(s
 
         // Add offsets to index
         QJsonArray offsetsJson;
-        for (int i=0; i<offsets.size(); i++)
+		for (size_t i = 0; i < offsets.size(); i++)
             offsetsJson.push_back(offsets[i]);
         index.insert("offsets", offsetsJson);
 
@@ -328,8 +329,8 @@ inline QString itarZoom(const QString& inputFolder, const QString& output, std::
     outIndexFile.close();
 
     // Clean file pointers
-    for (int i=0; i<files.size(); i++)
-        delete files[i];
+	for(QFile *file: files)
+		delete file;
 
     return "OK";
 }
