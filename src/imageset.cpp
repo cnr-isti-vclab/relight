@@ -303,7 +303,7 @@ void ImageSet::readLine(PixelArray &pixels) {
 	}
 	//compensate intensity.
 	if(light3d) {
-		assert(lights3d.size() == images.size());
+		assert(lights3d.size() == size_t(images.size()));
 		for(Pixel &pixel: pixels) {
 			for(size_t i = 0; i < lights3d.size(); i++) {
 				Vector3f l = relativeLight(lights3d[i], pixel.x, pixel.y);
@@ -378,7 +378,7 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 
 			uint32_t x = 0;
 			for(int k: selection) {
-				sample[x].x = k+ left;
+				sample[x].x = k + left;
 				sample[x].y = image_height - 1 - y;
 				x++;
 			}
@@ -396,11 +396,8 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 			}
 		}
 
-		uint32_t x = 0;
-		for(int k: selection) {
+		for(uint32_t x = 0; x < selection.size(); x++)
 			resampler(sample[x], resample[offset + x]);
-			x++;
-		}
 
 		offset += samplexrow;
 	}

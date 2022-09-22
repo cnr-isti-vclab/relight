@@ -67,7 +67,7 @@ void AlignDialog::resized() {
 	int cols = ui->view->width() / sx;
 	if(cols == 0) cols  = 1;
 	int rows = 1 + (thumbs.size() -1) / cols;
-	for(int i = 0; i < thumbs.size(); i++) {
+	for(size_t i = 0; i < thumbs.size(); i++) {
 		int row = i /cols;
 		int col = i - row * cols;
 		int x = margin + sx *col;
@@ -78,7 +78,7 @@ void AlignDialog::resized() {
 	scene->setSceneRect(0, 0, cols *sx, rows *sy );
 }
 
-void AlignDialog::resizeEvent(QResizeEvent *e) {
+void AlignDialog::resizeEvent(QResizeEvent */*e*/) {
 	resized();
 }
 

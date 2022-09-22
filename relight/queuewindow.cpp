@@ -103,7 +103,6 @@ void QueueWindow::remove() {
 		if(item->task->status == Task::PAUSED ||item->task->status == Task::RUNNING) {
 			queue.stop();
 		}
-		int id = item->id;
 		delete ui->list->takeItem(index.row());
 		queue.removeTask(item->id);
 	}

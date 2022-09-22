@@ -254,11 +254,11 @@ void Project::load(QString filename) {
 		images.push_back(image);
 	}
 
-	for(int i = 0; i < images.size(); i++) {
+	for(size_t i = 0; i < images.size(); i++) {
 		Image &image = images[i];
 		QFileInfo imginfo(image.filename);
 		if(!imginfo.exists()) {
-			missing.push_back(i);
+			missing.push_back(int(i));
 			//throw QString("Could not find the image: " + image.filename) + " in folder: " + dir.absolutePath();
 			continue;
 		}

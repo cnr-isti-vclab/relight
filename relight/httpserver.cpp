@@ -26,7 +26,7 @@ HttpServer::~HttpServer() {
 }
 
 void HttpServer::addFile(const std::string &url, const std::string &path, const  std::string &mime) {
-	server->Get(url.c_str(), [path, mime](const Request& req, Response& res) {
+	server->Get(url.c_str(), [path, mime](const Request& /*req*/, Response& res) {
 		QFile file(path.c_str());
 		file.open(QFile::ReadOnly);
 		res.set_content(file.readAll().data(), mime.c_str());
@@ -55,7 +55,7 @@ void HttpServer::stop() {
 	try {
 		if(t.joinable())
 			t.join();
-	} catch(std::system_error error) {
+	} catch(std::system_error &error) {
 		cout << "What? " << error.what() << endl;
 	}
 }

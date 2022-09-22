@@ -55,16 +55,13 @@ inline void dstretchImage(QString fileName, QString output, int minSamples, std:
     uint32_t colSkip = std::max<uint32_t>(1, width / samplesHorizontal);
 
     // Sample each line
-    for (int row=0; row<height; row++)
-    {
+	for (int row=0; row<height; row++) {
         // Read the line
         decoder.readRows(1, pixels.data());
 
-        if (row % rowSkip == 0)
-        {
+		if (row % rowSkip == 0) {
             // Getting the samples
-            for (int col=0; col<pixels.size(); col+=colSkip*3)
-            {
+			for (size_t col=0; col<pixels.size(); col+=colSkip*3) {
                 Color3b color(pixels[col], pixels[col+1], pixels[col+2]);
 
                 samples.push_back(color);
@@ -80,13 +77,13 @@ inline void dstretchImage(QString fileName, QString output, int minSamples, std:
     long sumChannel[]= {0,0,0};
     double sumX[][3] = {{0,0,0},{0,0,0},{0,0,0}};
 
-    for (int k=0; k<samples.size(); k++)
-        for (int i=0; i<3; i++)
+	for (size_t k = 0; k < samples.size(); k++)
+		for (int i = 0; i < 3; i++)
             sumChannel[i] += samples[k][i];
 
-    for (int l=0; l<3; l++)
-        for (int m=0; m<3; m++)
-            for (int k=0; k<samples.size(); k++)
+	for (int l = 0; l < 3; l++)
+		for (int m = 0; m < 3; m++)
+			for (size_t k = 0; k < samples.size(); k++)
                 sumX[l][m] += samples[k][l] * samples[k][m];
 
     // Compute the covariance
@@ -114,18 +111,15 @@ inline void dstretchImage(QString fileName, QString output, int minSamples, std:
     decoder.init(fileName.toStdString().c_str(), width, height);
     Eigen::VectorXd currPixel(3);
 
-    for (int i=0; i<height; i++)
-    {
+	for (int i = 0; i < height; i++) {
         decoder.readRows(1, pixels.data());
-        for (int k=0; k<pixels.size(); k+=3)
-        {
+		for (size_t k = 0; k < pixels.size(); k+=3) {
             for (int j=0; j<3; j++)
                 currPixel(j) = pixels[k+j];
 
             currPixel = transformation * currPixel;
 
-            for (int j=0; j<3; j++)
-            {
+			for (int j = 0; j < 3; j++) {
                 dstretched.push_back(currPixel[j]);
                 mins[j] = std::min<int>(mins[j], currPixel[j]);
                 maxs[j] = std::max<int>(maxs[j], currPixel[j]);
@@ -136,7 +130,7 @@ inline void dstretchImage(QString fileName, QString output, int minSamples, std:
             progressed("Transforming...", (i * 100) / height);
     }
 
-    for (int k=0; k<dstretched.size(); k++)
+	for (size_t k =0; k < dstretched.size(); k++)
     {
         uint32_t channelIdx = k % 3;
         dstretchedBytes.push_back(255 * ((float)(dstretched[k] - mins[channelIdx]) / (maxs[channelIdx] - mins[channelIdx])));

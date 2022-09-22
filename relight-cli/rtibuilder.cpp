@@ -1065,7 +1065,7 @@ size_t RtiBuilder::saveUniversal(const std::string &output) {
 	vector<float> gbias(nplanes/3);
 	vector<float> gscale(nplanes/3);
 
-	for(int i = 0; i < gbias.size(); i++) {
+	for(size_t i = 0; i < gbias.size(); i++) {
 		gbias[i] = -bias[i*3]*scale[i*3];
 		gscale[i] = scale[i*3];
 	}
@@ -1101,8 +1101,8 @@ size_t RtiBuilder::saveUniversal(const std::string &output) {
 			Worker *doneworker = workers[y - nworkers];
 
 			//worker line is organized for jpeg saving (so plane 1, 2, 3 in line[0] as data rgbrgrg etc.
-			for(int j = 0; j < doneworker->line.size(); j++) {
-				for(int x = 0; x < width; x++) {
+			for(size_t j = 0; j < doneworker->line.size(); j++) {
+				for(uint32_t x = 0; x < width; x++) {
 					line[x*nplanes + j + 0*nplanes/3] = doneworker->line[j][x*3+0];
 					line[x*nplanes + j + 1*nplanes/3] = doneworker->line[j][x*3+1];
 					line[x*nplanes + j + 2*nplanes/3] = doneworker->line[j][x*3+2];

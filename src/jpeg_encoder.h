@@ -49,7 +49,7 @@ private:
 	bool optimize = true;
 	bool subsample = false;
 
-	int quality = 90;
+	int quality = 95;
 };
 
 #endif // JPEGENCODER_H_

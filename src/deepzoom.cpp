@@ -31,12 +31,13 @@ vector<uint8_t>  TileRow::scaleLines( std::vector<uint8_t> &line0, std::vector<u
 	return scaled;
 }
 
-TileRow::TileRow(int _tileside, int _overlap, QString _path, int _width, int _height) {
+TileRow::TileRow(int _tileside, int _overlap, QString _path, int _width, int _height, int _quality) {
 	tileside = _tileside;
 	overlap = _overlap;
 	path = _path;
 	width = _width;
 	height = _height;
+	quality = _quality;
 	end_tile = 0;
 	nextRow();
 }
@@ -97,7 +98,8 @@ void TileRow::nextRow() {
 		int end = std::min((col+1)*tileside + overlap, width);
 		Tile tile;
 		tile.width = end - start;
-		tile.encoder = new JpegEncoder;
+		tile.encoder = new JpegEncoder();
+		tile.encoder->setQuality(quality);
 		QString filepath = QString("%1/%2_%3.jpg").arg(path).arg(col).arg(current_row); //path + "/" +  QString::number(col) + "_" + QString::numberto_string(current_row) + ".jpg");
 		tile.encoder->init(filepath.toStdString().c_str(), tile.width, h);
 		push_back(tile);
@@ -183,7 +185,7 @@ void DeepZoom::initRows() {
 		QString level_path = path + "/" + QString::number(level);
 		QDir().mkdir(level_path);
 
-		TileRow row(tileside, overlap, level_path, w, h);
+		TileRow row(tileside, overlap, level_path, w, h, quality);
 		rows.push_back(row);
 
 		widths.push_back(w);

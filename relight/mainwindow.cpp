@@ -405,6 +405,7 @@ void MainWindow::computeMaxLuma() {
 	bool parallelLuma = false;
 
 	if(parallelLuma) {
+
 		lumaCancelling = false;
 		QFuture<void> future = QtConcurrent::run([this]() {
 			ImageSet imageset;
@@ -426,11 +427,12 @@ void MainWindow::computeMaxLuma() {
 		connect(this, SIGNAL(lumaProgressText(const QString &)), progress, SLOT(setLabelText(const QString &)));
 		progress->show();
 	} else {
+
 		ImageSet imageset;
 		for(auto image: project.images)
 			imageset.images.push_back(image.filename);
 		imageset.initImages(this->project.dir.path().toStdString().c_str());
-		std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return true; };
+		std::function<bool(std::string s, int n)> callback = [this](std::string /*s*/, int /*n*/)->bool { return true; };
 		this->maxLuma = imageset.maxImage(&callback);
 	}
 }
@@ -902,7 +904,7 @@ void MainWindow::showQueue() {
 void MainWindow::editLensParameters() {
 	FocalDialog *focal = new FocalDialog(&project, this);
 	focal->setWindowModality(Qt::WindowModal);
-	bool result = focal->exec();
+	focal->exec();
 	delete focal;
 }
 
