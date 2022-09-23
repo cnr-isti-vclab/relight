@@ -11,7 +11,9 @@
 
 class QJsonObject;
 class JpegDecoder;
+class LibRaw;
 class QImage;
+
 
 class ImageSet {
 public:
@@ -59,7 +61,10 @@ public:
 
 protected:
 	std::function<bool(std::string stage, int percent)> *callback;
+	void readImageRows(int img, int rows, uint8_t *buffer);
+	void skipImageRows(int img, int rows, uint8_t *buffer);
 	std::vector<JpegDecoder *> decoders;
+	std::vector<LibRaw *> processors;
 };
 
 #endif // IMAGESET_H

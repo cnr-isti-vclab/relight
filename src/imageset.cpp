@@ -13,6 +13,7 @@
 #include "lp.h"
 #include "imageset.h"
 #include "jpeg_decoder.h"
+#include "libraw/libraw.h"
 
 
 #include <assert.h>
@@ -46,7 +47,7 @@ bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip
 	QDir dir(_path);
 
 	QStringList img_ext;
-	img_ext << "*.jpg" << "*.JPG";
+	img_ext << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG" << "*.nef" << "*.NEF";
 	images = dir.entryList(img_ext);
 
 	if(skip_image >= 0)
@@ -202,18 +203,33 @@ bool ImageSet::initImages(const char *_path) {
 	for(int i = 0; i < images.size(); i++) {
 		QString filepath = dir.filePath(images[i]);
 		int w, h;
-		JpegDecoder *dec = new JpegDecoder;
-		if(!dec->init(filepath.toStdString().c_str(), w, h))
-			throw QString("Failed decoding image: " + filepath);
+		if(filepath.toUpper().endsWith(".JPG") || filepath.toUpper().endsWith(".JPEG")) {
+
+			JpegDecoder *dec = new JpegDecoder;
+			if(!dec->init(filepath.toStdString().c_str(), w, h))
+				throw QString("Failed decoding image: " + filepath);
+			decoders.push_back(dec);
+
+		} else {
+			LibRaw *dec = new LibRaw;
+			int res = dec->open_file(filepath.toLatin1().data());
+			if(res < 0)
+				throw QString("Failed decoding image: " + filepath);
+			w = dec->imgdata.sizes.width;
+			h = dec->imgdata.sizes.height;
+			processors.push_back(dec);
+		}
 
 		if(width && (width != w || height != h))
 			throw QString("Inconsistent image size for " + filepath);
 
 		right = image_width = width = w;
 		bottom = image_height = height = h;
-
-		decoders.push_back(dec);
 	}
+
+	if(processors.size() != 0 && decoders.size() != 0)
+		throw QString("The folder contains both jpeg and raw images");
+
 	return true;
 }
 
@@ -250,9 +266,10 @@ QImage ImageSet::maxImage(std::function<bool(std::string stage, int percent)> *c
 				throw 1;
 		}
 		uint8_t *rowmax = image.scanLine(y);
-		for(uint32_t i = 0; i < decoders.size(); i++) {
-			JpegDecoder *dec = decoders[i];
-			dec->readRows(1, row);
+		for(int i = 0; i < images.size(); i++) {
+			readImageRows(i, 1, row);
+			//JpegDecoder *dec = decoders[i];
+			//dec->readRows(1, row);
 			
 			for(int x = 0; x < image_width; x++) {
 				rowmax[x*3 + 0] = std::max(rowmax[x*3 + 0], row[x*3 + 0]);
@@ -268,7 +285,8 @@ QImage ImageSet::maxImage(std::function<bool(std::string stage, int percent)> *c
 void ImageSet::decode(size_t img, unsigned char *buffer) {
 	//TODO FIX for crop!;
 	assert(width == image_width && height == image_height);
-	decoders[img]->readRows(height, buffer);
+	readImageRows(img, height, buffer);
+	//decoders[img]->readRows(height, buffer);
 }
 
 //adjust light for pixel, light is 3d light already in image coords
@@ -282,6 +300,7 @@ Vector3f ImageSet::relativeLight(const Vector3f &light, int x, int y){
 void ImageSet::readLine(PixelArray &pixels) {
 	if(current_line == 0)
 		skipToTop();
+
 	pixels.resize(width, images.size());
 	for(uint32_t x = 0; x < pixels.size(); x++) {
 		Pixel &pixel = pixels[x];
@@ -292,8 +311,9 @@ void ImageSet::readLine(PixelArray &pixels) {
 	//TODO: no need to allocate EVERY time.
 	std::vector<uint8_t> row(image_width*3);
 
-	for(size_t i = 0; i < decoders.size(); i++) {
-		decoders[i]->readRows(1, row.data());
+	for(int i = 0; i < images.size(); i++) {
+		readImageRows(i, 1, row.data());
+		//decoders[i]->readRows(1, row.data());
 
 		for(int x = left; x < right; x++) {
 			pixels[x - left][i].r = row[x*3 + 0];
@@ -358,9 +378,10 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 		//read one row per image at a time
 		auto &selection = sampler.result(samplexrow, width);
 
-		for(uint32_t i = 0; i < decoders.size(); i++) {
-			JpegDecoder *dec = decoders[i];
-			dec->readRows(1, row.data());
+		for(int i = 0; i < images.size(); i++) {
+			readImageRows(i, 1, row.data());
+			//JpegDecoder *dec = decoders[i];
+			//dec->readRows(1, row.data());
 			uint32_t x = 0;
 			for(int k: selection) {
 				Color3f &pixel = sample[x][i];
@@ -416,11 +437,28 @@ void ImageSet::skipToTop() {
 
 	for(uint32_t i = 0; i < decoders.size(); i++) {
 		for(int y = 0; y < top; y++)
-			decoders[i]->readRows(1, row.data());
+			skipImageRows(i, 1, row.data());
+			//decoders[i]->readRows(1, row.data());
 		
 		if(callback && !(*callback)(std::string("Skipping cropped lines..."), 100*i/(decoders.size()-1)))
 			throw std::string("Cancelled");
 	}
 	current_line += top;
 }
+
+void ImageSet::readImageRows(int img, int rows, uint8_t *buffer) {
+	if(decoders.size()) {
+		decoders[img]->readRows(rows, buffer);
+		return;
+	}
+
+}
+
+void ImageSet::skipImageRows(int img, int rows, uint8_t *buffer) {
+	if(decoders.size()) {
+		readImageRows(img, rows, buffer);
+		return;
+	}
+}
+
 

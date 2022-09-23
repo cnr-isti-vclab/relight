@@ -40,7 +40,8 @@ SOURCES += main.cpp \
     ../src/legacy_rti.cpp \
     rtibuilder.cpp \
     convert_rti.cpp \
-    ../src/lp.cpp
+    ../src/lp.cpp \
+    miniz.c
 
 HEADERS += \
     ../src/getopt.h \
@@ -53,7 +54,9 @@ HEADERS += \
     ../src/legacy_rti.h \
     ../src/eigenpca.h \
     rtibuilder.h \
-    ../src/lp.h
+    ../src/lp.h \
+    miniz.h \
+    tiny_dng_loader.h
 
 
 DISTFILES += \

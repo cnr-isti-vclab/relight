@@ -32,6 +32,11 @@ public:
 			return focalLength * 35 / w;
 		}
 	}
+	double setFocal35(float focal) {
+		focal35equivalent = true;
+		focalLength = focal;
+		pixelSizeY = pixelSizeX = 35/width;
+	}
 	//return vector from eye to pixel (z < 0)
 	Vector3f viewDirection(float x, float y) {
 		if(!focalLength)

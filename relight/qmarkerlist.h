@@ -24,7 +24,7 @@ public:
 	std::vector<Marker*> getItems(bool selected = false) const;
 	std::vector<Marker*> getSelectedItems() const;
 
-	void setSelected(Marker *marker);
+	void setSelected(Marker *marker = nullptr);
 
 protected:
 	void mouseReleaseEvent(QMouseEvent* event) override;

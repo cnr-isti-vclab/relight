@@ -1,5 +1,6 @@
 #include "project.h"
 #include "../src/exif.h"
+#include "libraw/libraw.h"
 #include "sphere.h"
 #include "measure.h"
 #include "align.h"
@@ -56,18 +57,30 @@ bool Project::setDir(QDir folder) {
 	return true;
 }
 
+bool isJpeg(QString path) {
+	return path.toUpper().endsWith(".JPG") || path.toUpper().endsWith(".JPEG");
+}
 bool Project::scanDir() {
 	QStringList img_ext;
-	//TODO add support for raw files (needs preprocessing?)
-	img_ext << "*.jpg" << "*.JPG"; // << "*.NEF" << "*.CR2";
+	//TODO scanDir and imageset have a lot of overlap! Clean up this mess.
+	img_ext << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG" << "*.NEF" << "*.CR2";
 
 	QVector<QSize> resolutions;
 	vector<int> count;
 	for(QString &s: QDir(dir).entryList(img_ext)) {
 		Image image(s);
 
-		QImageReader reader(s);
-		image.size = reader.size();
+		if(isJpeg(s)) {
+			QImageReader reader(s);
+			image.size = reader.size();
+		} else {
+			LibRaw reader;
+			int res = reader.open_file(s.toLatin1().data());
+			if(res != 0)
+				continue;
+			image.size.setWidth(reader.imgdata.sizes.width);
+			image.size.setHeight(reader.imgdata.sizes.height);
+		}
 
 		int index = resolutions.indexOf(image.size);
 		if(index == -1) {
@@ -106,10 +119,18 @@ bool Project::scanDir() {
 		image_lens.width = lens.width;
 		image_lens.height = lens.height;
 		try {
-			Exif exif;//exif
-			exif.parse(image.filename);
-			image.readExif(exif);
-			image_lens.readExif(exif);
+			if(isJpeg(image.filename)) {
+				Exif exif;//exif
+				exif.parse(image.filename);
+				image.readExif(exif);
+				image_lens.readExif(exif);
+			} else {
+				LibRaw reader;
+				reader.open_file(image.filename.toLatin1().data());
+				image.exposureTime = reader.imgdata.other.shutter; //or shutter? what is what
+				image_lens.setFocal35(reader.imgdata.other.focal_len);
+				//found no way to get the width of the sensor and recover pixelSize
+			}
 		} catch(QString err) {
 			//qMessageBox()
 			cout << qPrintable(err) << endl;
@@ -139,6 +160,7 @@ bool Project::scanDir() {
 
 	return resolutions.size() == 1 && focals.size() == 1;
 }
+
 double mutualInfo(QImage &a, QImage &b) {
 	uint32_t histogram[256*256];
 	memset(histogram, 0, 256*256*4);

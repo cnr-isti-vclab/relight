@@ -33,7 +33,7 @@ void calibrateColors(QString dir) {
 	}
 
 	QStringList img_ext;
-	img_ext << "*.jpg" << "*.JPG" << "*.NEF" << "*.CR2";
+	img_ext << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG" << "*.nef" << "*.NEF" << "*.CR2";
 	QStringList colors = colors_dir.entryList(img_ext);
 	if(!colors.size()) {
 		cerr << "Could not find images in directory: " << qPrintable(dir) << endl;

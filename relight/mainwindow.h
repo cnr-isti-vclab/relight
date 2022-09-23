@@ -111,6 +111,8 @@ public slots:
 	void doubleClick(QPoint p);
 	void pointClick(QPoint p);
 
+	void esc();
+
 
 /* Markers */
 
