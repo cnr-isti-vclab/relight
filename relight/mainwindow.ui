@@ -14,8 +14,8 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
+   <layout class="QVBoxLayout" name="verticalLayout_2">
+    <item>
      <widget class="QSplitter" name="splitter">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
@@ -56,13 +56,13 @@
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>0</y>
+             <y>-2</y>
              <width>240</width>
              <height>200</height>
             </rect>
            </property>
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+            <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
              <horstretch>0</horstretch>
              <verstretch>1</verstretch>
             </sizepolicy>
@@ -79,17 +79,23 @@
              <height>600</height>
             </size>
            </property>
-           <widget class="ListMarker" name="markerList">
-            <property name="geometry">
-             <rect>
-              <x>0</x>
-              <y>0</y>
-              <width>600</width>
-              <height>200</height>
-             </rect>
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <property name="leftMargin">
+             <number>0</number>
             </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="ListMarker" name="markerList">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
+               <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
               <horstretch>0</horstretch>
               <verstretch>1</verstretch>
              </sizepolicy>
@@ -103,7 +109,7 @@
             <property name="maximumSize">
              <size>
               <width>16777215</width>
-              <height>600</height>
+                <height>1024</height>
              </size>
             </property>
             <property name="frameShape">
@@ -113,6 +119,8 @@
              <enum>QFrame::Plain</enum>
             </property>
            </widget>
+            </item>
+           </layout>
           </widget>
          </widget>
         </item>
@@ -217,7 +225,7 @@
           </property>
           <property name="maximumSize">
            <size>
-            <width>600</width>
+            <width>1024</width>
             <height>16777215</height>
            </size>
           </property>
@@ -227,7 +235,7 @@
       </widget>
       <widget class="QGraphicsView" name="graphicsView">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
          <horstretch>4</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>

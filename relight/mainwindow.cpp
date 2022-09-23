@@ -28,6 +28,7 @@
 #include <QListView>
 #include <QStandardItemModel>
 #include <QItemSelectionModel>
+#include <QShortcut>
 
 #include <QtConcurrent/QtConcurrent>
 
@@ -87,6 +88,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionDStretch, SIGNAL(triggered()), this, SLOT(dStretch()));
     connect(ui->actionDelete_selected, SIGNAL(triggered()), this, SLOT(deleteSelected()));
     ui->actionDelete_selected->setShortcuts(QList<QKeySequence>() << Qt::Key_Delete << Qt::Key_Backspace);
+
+	QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Escape), this);
+	QObject::connect(shortcut, &QShortcut::activated, this, &MainWindow::esc);
 
     // Calibration menu
 	connect(ui->actionLens_parameters, SIGNAL(triggered(bool)), this, SLOT(editLensParameters()));
@@ -285,6 +289,10 @@ void MainWindow::enableActions() {
 	ui->actionNewMeasure->setEnabled(true);
 	ui->actionNewAlign->setEnabled(true);
 	ui->actionNewWhite->setEnabled(true);
+}
+
+void MainWindow::esc() {
+	ui->markerList->setSelected();
 }
 
 bool MainWindow::init() {
