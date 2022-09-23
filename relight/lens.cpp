@@ -50,6 +50,4 @@ void Lens::readExif(Exif &exif) {
 	//FocalPlaneYResolution
 	//FocalPlaneResolutionUnit
 	//FocalLength
-
-
 }
