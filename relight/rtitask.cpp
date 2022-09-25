@@ -41,7 +41,7 @@ void RtiTask::run() {
 			fromRTI();
 		//TODO! deepZOOM should set error and status?
         else if(step == "deepzoom") {
-			if ((err = deepZoom(input_folder, output, 95, 0, 256, callback)).compare("OK") != 0) {
+			if ((err = deepZoom(output, output, 95, 0, 256, callback)).compare("OK") != 0) {
 				error = err;
                 status = FAILED;
 			}
