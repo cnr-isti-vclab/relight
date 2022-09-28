@@ -269,9 +269,10 @@ void RtiExport::createNormals() {
 
 void RtiExport::createRTI() {
 
-	QString output;
 
 	Rti::Type type = basis(ui->basis->currentIndex());
+
+	QString output;
 	if(ui->formatRTI->isChecked()) {
 		if(type == Rti::HSH) {
 			output = QFileDialog::getSaveFileName(this, "Select a file name", QString(), tr("RTI file (*.rti)"));
@@ -292,11 +293,6 @@ void RtiExport::createRTI() {
 		if(output.isNull()) return;
 	}
 
-	createRTI(output);
-	close();
-}
-
-void RtiExport::createRTI(QString output) {
 	QString format;
 	if(ui->formatRTI->isChecked())
 		format = "rti";
@@ -308,9 +304,6 @@ void RtiExport::createRTI(QString output) {
 		format = "tarzoom";
 	else if(ui->formatItarzoom->isChecked())
 		format = "itarzoom";
-		
-	Rti::Type type = basis(ui->basis->currentIndex());
-
 
 	RtiTask *task = new RtiTask;
     task->input_folder = path;
@@ -372,6 +365,8 @@ void RtiExport::createRTI(QString output) {
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);
+
+	close();
 }
 
 

@@ -56,7 +56,7 @@
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>-2</y>
+             <y>0</y>
              <width>240</width>
              <height>200</height>
             </rect>
@@ -94,31 +94,31 @@
             </property>
             <item>
              <widget class="ListMarker" name="markerList">
-            <property name="sizePolicy">
+              <property name="sizePolicy">
                <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-              <horstretch>0</horstretch>
-              <verstretch>1</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>200</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>200</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
                 <height>1024</height>
-             </size>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Plain</enum>
-            </property>
-           </widget>
+               </size>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Plain</enum>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -321,11 +321,11 @@
     </property>
     <widget class="QMenu" name="menuZoom">
      <property name="title">
-      <string>&amp;Zoom...</string>
+      <string>&amp;Deepzoom convert...</string>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>feather/zoom-in.svg</normaloff>feather/zoom-in.svg</iconset>
+      <iconset resource="icons.qrc">
+       <normaloff>:/icons/feather/image.svg</normaloff>:/icons/feather/image.svg</iconset>
      </property>
      <addaction name="actionDeepzoom"/>
      <addaction name="actionTarzoom"/>
