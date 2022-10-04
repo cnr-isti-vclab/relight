@@ -125,10 +125,6 @@ void SphereMarker::addBorderPoint(QPointF pos) {
 	borderPoint->setPos(pos);
 	borderPoint->setPen(outlinePen);
 	borderPoint->setBrush(blueBrush);
-	borderPoint->setFlag(QGraphicsItem::ItemIsMovable);
-	borderPoint->setFlag(QGraphicsItem::ItemIsSelectable);
-	borderPoint->setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
-	borderPoint->setCursor(Qt::CrossCursor);
 	border.push_back(borderPoint);
 	scene->addItem(borderPoint);
 }

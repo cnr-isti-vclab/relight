@@ -89,8 +89,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionDelete_selected, SIGNAL(triggered()), this, SLOT(deleteSelected()));
     ui->actionDelete_selected->setShortcuts(QList<QKeySequence>() << Qt::Key_Delete << Qt::Key_Backspace);
 
-	QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Escape), this);
-	QObject::connect(shortcut, &QShortcut::activated, this, &MainWindow::esc);
+	QObject::connect(new QShortcut(QKeySequence(Qt::Key_Escape), this), &QShortcut::activated, this, &MainWindow::esc);
+	QObject::connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Z), this), &QShortcut::activated, this, &MainWindow::undo);
+	QObject::connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_Z), this), &QShortcut::activated, this, &MainWindow::redo);
 
     // Calibration menu
 	connect(ui->actionLens_parameters, SIGNAL(triggered(bool)), this, SLOT(editLensParameters()));
@@ -108,7 +109,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->graphicsView->setScene(scene);
 	ui->graphicsView->setDragMode(QGraphicsView::ScrollHandDrag);
 	ui->graphicsView->setInteractive(true);
-	QApplication::setOverrideCursor( Qt::ArrowCursor );
+	//QApplication::setOverrideCursor( Qt::ArrowCursor );
 
 	auto *gvz = new Graphics_view_zoom(ui->graphicsView);
 	connect(gvz, SIGNAL(dblClicked(QPoint)), this, SLOT(doubleClick(QPoint)));
@@ -293,6 +294,35 @@ void MainWindow::enableActions() {
 
 void MainWindow::esc() {
 	ui->markerList->setSelected();
+}
+
+void MainWindow::undo(){
+	Action action = history.undo();
+	switch(action.type) {
+	case Action::NO_ACTION: return;
+	case Action::ADD_SPHERE: {        //a sphere was added: remove it.
+		assert(action.sphere_id >= 0 && action.sphere_id < project.spheres.size());
+		Sphere *sphere = project.spheres[action.sphere_id];
+		auto markers = ui->markerList->getItems();
+		for(auto marker: markers) {
+			auto m = dynamic_cast<SphereMarker *>(marker);
+			if(m && m->sphere == sphere) {
+				ui->markerList->removeItem(marker);
+				break;
+			}
+		}
+		project.spheres.erase(std::next(project.spheres.begin(), action.sphere_id));
+		delete sphere;
+		}
+		break;
+	}
+}
+
+void MainWindow::redo() {
+	Action action = history.redo();
+	if(action.type = Action::NO_ACTION)
+		return;
+
 }
 
 bool MainWindow::init() {
@@ -504,6 +534,9 @@ void MainWindow::updateBorderPoints(QGraphicsEllipseItem *point) {
 			continue;
 		m->updateBorderPoint(point);
 		m->fit();
+		int sphere_id = project.indexOf(m->sphere);
+		assert(sphere_id != -1);
+		history.push(Action(Action::MOVE_BORDER, sphere_id, *(m->sphere)));
 	}
 }
 
@@ -537,6 +570,7 @@ void MainWindow::newSphere() {
 	ui->markerList->setSelected(marker);
 	connect(marker, SIGNAL(removed()), this, SLOT(removeSphere()));
 	marker->setEditing(true);
+	history.push(Action(Action::ADD_SPHERE, project.indexOf(sphere), *sphere));
 }
 
 
@@ -574,10 +608,10 @@ void MainWindow::newWhite() {
 	marker->setEditing(true);
 }
 
-
-
 void MainWindow::removeSphere() {
 	auto marker = dynamic_cast<SphereMarker *>(QObject::sender());
+	int sphere_id = project.indexOf(marker->sphere);
+	history.push(Action(Action::REMOVE_SPHERE, sphere_id, *(marker->sphere)));
 	project.spheres.erase(std::remove(project.spheres.begin(), project.spheres.end(), marker->sphere), project.spheres.end());
 	delete marker;
 }

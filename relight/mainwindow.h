@@ -7,6 +7,7 @@
 #include "project.h"
 #include "dstretchdialog.h"
 #include "zoomdialog.h"
+#include "history.h"
 
 #include <QProgressDialog>
 #include <QGraphicsScene>
@@ -76,6 +77,8 @@ public:
 	Project project;
 	QString project_filename;
 
+	History history;
+
 	int currentImage = -1;
 	//std::vector<bool> valid; //valid images.
 
@@ -112,6 +115,8 @@ public slots:
 	void pointClick(QPoint p);
 
 	void esc();
+	void undo();
+	void redo();
 
 
 /* Markers */

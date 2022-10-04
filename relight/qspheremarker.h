@@ -11,7 +11,13 @@ class Sphere;
 class BorderPoint: public QGraphicsEllipseItem {
 public:
 	BorderPoint(qreal x, qreal y, qreal w, qreal h, QGraphicsItem *parent = Q_NULLPTR):
-		QGraphicsEllipseItem(x, y, w, h, parent) {}
+		QGraphicsEllipseItem(x, y, w, h, parent) {
+		setCursor(Qt::CrossCursor);
+		setFlag(QGraphicsItem::ItemIsMovable);
+		setFlag(QGraphicsItem::ItemIsSelectable);
+		setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
+
+	}
 	virtual ~BorderPoint();
 
 protected:
