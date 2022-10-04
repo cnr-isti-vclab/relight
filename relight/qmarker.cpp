@@ -40,10 +40,11 @@ Marker::~Marker() {}
 
 
 void Marker::setSelected(bool value) {
+	if(value == false)
+		setEditing(false);
+
 	if(selected == value)
 		return;
-	if(value == false && editing == true)
-		setEditing(false);
 
 	selected = value;
 	label->setStyleSheet(selected ? "QLabel { color : #fff; }" : "/* */");

@@ -34,6 +34,7 @@ mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 SOURCES += main.cpp \
     dstretchdialog.cpp \
     dstretchtask.cpp \
+    history.cpp \
     imagecropper.cpp \
     mainwindow.cpp \
     graphics_view_zoom.cpp \
@@ -87,6 +88,7 @@ HEADERS += \
     dstretch.h \
     dstretchdialog.h \
     dstretchtask.h \
+    history.h \
     imagecropper.h \
     mainwindow.h \
     graphics_view_zoom.h \

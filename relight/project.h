@@ -83,7 +83,13 @@ public:
 				return i;
 		return -1;
 	}
-
+	int indexOf(Sphere *sphere) {
+		for(size_t i = 0; i < spheres.size(); i++) {
+			if(sphere == spheres[i])
+				return i;
+		}
+		return -1;
+	}
 
 };
 
