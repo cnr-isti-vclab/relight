@@ -64,6 +64,7 @@ set (RELIGHT_HEADERS
 	aligndialog.h
 	qwhitemarker.h
 	white.h
+	history.h
 	convertdialog.h
 	zoom.h
 	zoomtask.h
@@ -119,6 +120,7 @@ set (RELIGHT_SOURCES
 	qalignmarker.cpp
 	qwhitemarker.cpp
 	white.cpp
+	history.cpp
 	convertdialog.cpp
 	zoomtask.cpp
 	zoomdialog.cpp
