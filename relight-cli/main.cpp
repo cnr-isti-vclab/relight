@@ -129,8 +129,8 @@ int main(int argc, char *argv[]) {
         case 'r': {
             int res = atoi(optarg);
             builder.resolution = res = atoi(optarg);
-            if(res < 0 || res == 1 || res == 2 || res > 10) {
-                cerr << "Invalid resolution (must be 0 or >= 2 && <= 10)!\n" << endl;
+            if(res < 0 || res == 1 || res == 2 || res > 20) {
+                cerr << "Invalid resolution (must be 0 or >= 2 && <= 20)!\n" << endl;
                 return 1;
             }
 		}
