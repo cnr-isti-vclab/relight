@@ -4,6 +4,96 @@
     (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.OpenLIME = global.OpenLIME || {}));
 })(this, (function (exports) { 'use strict';
 
+    // HELPERS
+    window.structuredClone = typeof(structuredClone) == "function" ? structuredClone : function (value) { return  JSON.parse(JSON.stringify(value)); };
+
+    // Utilities
+    class Util {
+
+        static createSVGElement(tag, attributes) {
+            let e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+            if (attributes)
+                for (const [key, value] of Object.entries(attributes))
+                    e.setAttribute(key, value);
+            return e;
+        }
+        
+        static SVGFromString(text) {
+    		const parser = new DOMParser();
+    		return parser.parseFromString(text, "image/svg+xml").documentElement;
+    	}
+
+        static async loadSVG(url) {
+            let response = await fetch(url);
+            if (!response.ok) {
+                const message = `An error has occured: ${response.status}`;
+                throw new Error(message);
+            }
+            let data = await response.text();
+            let result = null;
+            if(Util.isSVGString(data)) {
+                result = Util.SVGFromString(data);
+            } else {
+                const message = `${url} is not an SVG file`;
+                throw new Error(message);
+            }
+            return result;
+        };
+
+        static async loadHTML(url) {
+            let response = await fetch(url);
+            if (!response.ok) {
+                const message = `An error has occured: ${response.status}`;
+                throw new Error(message);
+            }
+            let data = await response.text();
+            return data;
+        };
+        
+        static async loadJSON(url) {
+            let response = await fetch(url);
+            if (!response.ok) {
+                const message = `An error has occured: ${response.status}`;
+                throw new Error(message);
+            }
+            let data = await response.json();
+            return data;
+        }
+        
+        static async loadImage(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.addEventListener('load', () => resolve(img));
+                img.addEventListener('error', (err) => reject(err));
+                img.src = url;
+            });
+        }
+        
+        static async appendImg(container, url, imgClass = null) {
+            const img = await Util.loadImage(url);
+            if (imgClass) img.classList.add(imgClass);
+            container.appendChild(img);
+        }
+        
+        static async appendImgs(container, urls, imgClass = null) {
+            for (const u of urls) {
+                const img = await Util.loadImage(u);
+                if (imgClass) img.classList.add(imgClass);
+                container.appendChild(img);
+            }
+        }
+        
+        static isSVGString(input) {
+            const regex = /^\s*(?:<\?xml[^>]*>\s*)?(?:<!doctype svg[^>]*\s*(?:\[?(?:\s*<![^>]*>\s*)*\]?)*[^>]*>\s*)?(?:<svg[^>]*>[^]*<\/svg>|<svg[^/>]*\/\s*>)\s*$/i;
+            if (input == undefined || input == null)
+                return false;
+            input = input.toString().replace(/\s*<!Entity\s+\S*\s*(?:"|')[^"]+(?:"|')\s*>/img, '');
+            input = input.replace(/<!--([\s\S]*?)-->/g, '');
+            return Boolean(input) && regex.test(input);
+        }
+
+    }
+
     /**
      * The bounding box is a rectangular box that is wrapped as tightly as possible around a geometric element. It is oriented parallel to the axes.
      * It is defined by two opposite vertices. The class It includes a comprehensive set of functions for various processing tasks related to bounding boxes.
@@ -77,9 +167,12 @@
          * @param {BoundingBox} box The bounding box to be merged. 
          */
         mergeBox(box) {
-    		if (box == null) {
+    		if (box == null)
                 return;
-            } else {
+
+            if(this.isEmpty())
+                Object.assign(this, box);
+            else {
                 this.xLow = Math.min(this.xLow,  box.xLow);
                 this.yLow = Math.min(this.yLow,  box.yLow);
                 this.xHigh = Math.max(this.xHigh, box.xHigh);
@@ -153,7 +246,7 @@
         corner(i) {
             // To avoid the switch
             let v = this.toArray();
-            return [ v[0 + (i&0x1)<<1],  v[1 + (i&0x2)] ];
+            return {x: v[0 + (i&0x1)<<1], y: v[1 + (i&0x2)] };
         }
 
         intersects(box) {
@@ -272,8 +365,8 @@
     	 */
     	static rotate(x, y, a) {
     		a = Math.PI*(a/180);
-    		let ex =  Math.cos(a)*x + Math.sin(a)*y;
-    		let ey = -Math.sin(a)*x + Math.cos(a)*y;
+    		let ex =  Math.cos(a)*x - Math.sin(a)*y;
+    		let ey =  Math.sin(a)*x + Math.cos(a)*y;
     		return {x:ex, y:ey};
     	}
 
@@ -303,7 +396,7 @@
     		let box = new BoundingBox();
     		for(let i = 0; i < 4; i++) {
     			let c = lbox.corner(i);
-    			let p = this.apply(c[0], c[1]);
+    			let p = this.apply(c.x, c.y);
     			box.mergePoint(p);
     		}
     		return box;
@@ -383,7 +476,7 @@
     		let zy = 2/viewport.dy;
 
     		let dx =  zx * this.x + (2/viewport.dx)*(viewport.w/2-viewport.x)-1;
-    		let dy = -zy * this.y + (2/viewport.dy)*(viewport.h/2-viewport.y)-1;
+    		let dy =  zy * this.y + (2/viewport.dy)*(viewport.h/2-viewport.y)-1;
 
     		let a = Math.PI *this.a/180;
     		let matrix = [
@@ -416,6 +509,11 @@
             return [(p[0] + viewport.x - viewport.w/2 - this.x) / this.z,
                     (p[1] - viewport.y - viewport.h/2 + this.y) / this.z];
         }
+
+    	print(str="", precision=0) {
+        	const p = precision;
+        	console.log(str + " x:" + this.x.toFixed(p) + ", y:" + this.y.toFixed(p) + ", z:" + this.z.toFixed(p) + ", a:" + this.a.toFixed(p) + ", t:" + this.t.toFixed(p));
+    	}
     }
 
     function addSignals(proto, ...signals) {
@@ -514,7 +612,7 @@
     	}
 
     	/**
-    	 * Sets the viewport and updates the camera position as close as possible to the.
+    	 * Sets the viewport and updates the camera position as close as possible to the previuos one.
     	 * @param {Viewport} view The new viewport (in CSS coordinates). 
     	 */
     	setViewport(view) {
@@ -562,12 +660,8 @@
     	 */
     	sceneToCanvas(x, y, transform) {
     		let r = Transform.rotate(x, y, transform.a);
-    		x = r.x * transform.z;
-    		y = r.y * transform.z;
-    		x += transform.x;
-    		y += transform.y;
-    		x += this.viewport / 2;
-    		y += this.viewport / 2;
+    		x = r.x * transform.z + transform.x - this.viewport.x + this.viewport.w/2;
+    		y = r.y * transform.z - transform.y + this.viewport.y + this.viewport.h/2;
     		return { x: x, y: y };
     	}
 
@@ -632,8 +726,8 @@
     	pan(dt, dx, dy) {
     		let now = performance.now();
     		let m = this.getCurrentTransform(now);
-    		m.dx += dx; //FIXME what is m.dx?
-    		m.dy += dy;
+    		m.x += dx;
+    		m.y += dy;
     		this.setPosition(dt, m.x, m.y, m.z, m.a);
     	}
 
@@ -709,6 +803,7 @@
     	 * @returns {Transform} The current transform
     	 */
     	getCurrentTransform(time) {
+    		if(time > this.target.t) this.easing = 'linear';
     		return Transform.interpolate(this.source, this.target, time, this.easing);
     	}
 
@@ -813,6 +908,391 @@
                 priority: null,
                 size: null
             });
+        }
+    }
+
+    /**
+     * Contain functions to pass between different coordinate system.
+     * Here described the coordinate system in sequence
+     * - CanvasHTML: Html coordinates: 0,0 left,top to width height at bottom right (y Down)
+     * - CanvasContext: Same as Html, but scaled by devicePixelRatio (y Down) (required for WebGL, not for SVG)
+     * - Viewport: 0,0 left,bottom to (width,height) at top right (y Up)
+     * - Center: 0,0 at viewport center (y Up)
+     * - Scene: 0,0 at dataset center (y Up). The dataset is placed here through the camera transform 
+     * - Layer: 0,0 at Layer center (y Up). Layer is placed over the dataset by the layer transform
+     * - Image: 0,0 at left,top (y Down)
+     * - Layout: 0,0 at left,top (y Down). Depends on layout
+     */
+    class CoordinateSystem {
+        
+        /**
+         * Transform point from Viewport to CanvasHTML
+         * @param {*} p point in Viewport: 0,0 at left,bottom
+         * @param {Camera} camera Camera which contains viewport information
+         * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
+         * @returns  point in CanvasHtml: 0,0 left,top
+         */
+         static fromViewportToCanvasHtml(p, camera, useGL) {
+            const viewport = this.getViewport(camera, useGL);
+            let result = this.invertY(p, viewport);
+            return useGL ? this.scale(result, 1/window.devicePixelRatio) : result;
+        }
+
+        /**
+         * Transform point from CanvasHTML to GLViewport
+         * @param {*} p point in CanvasHtml: 0,0 left,top y Down
+         * @param {Camera} camera Camera
+         * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
+         * @returns  point in GLViewport: 0,0 left,bottom, scaled by devicePixelRatio
+         */
+         static fromCanvasHtmlToViewport(p, camera, useGL) {
+            let result = useGL ? this.scale(p, window.devicePixelRatio) : p;
+            const viewport = this.getViewport(camera, useGL);
+            return this.invertY(result, viewport);
+        }
+
+        
+        /**
+         * Transform a point from Viewport to Layer coordinates
+         * @param {*} p point {x,y} in Viewport (0,0 left,bottom, y Up)
+         * @param {Camera} camera camera
+         * @param {Transform} layerT layer transform
+         * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
+         * @returns point in Layer coordinates (0, 0 at layer center, y Up)
+         */
+         static fromViewportToLayer(p, camera, layerT, useGL) {
+           // M = InvLayerT * InvCameraT  * Tr(-Vw/2, -Vh/2)
+           const cameraT = this.getCurrentTransform(camera, useGL);
+           const invCameraT = cameraT.inverse();
+           const invLayerT = layerT.inverse();
+           const v2c = this.getFromViewportToCenterTransform(camera, useGL);
+           const M = v2c.compose(invCameraT.compose(invLayerT)); // First apply v2c, then invCamera, then invLayer
+            
+           return M.apply(p.x, p.y);
+        }
+
+        /**
+         * Transform a point from Layer to Viewport coordinates
+         * @param {*} p point {x,y} Layer (0,0 at Layer center y Up)
+         * @param {Camera} camera 
+         * @param {Transform} layerT layer transform
+         * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
+         * @returns point in viewport coordinates (0,0 at left,bottom y Up)
+         */
+         static fromLayerToViewport(p, camera, layerT, useGL) {
+            const M = this.getFromLayerToViewportTransform(camera, layerT, useGL);
+            return M.apply(p.x, p.y);
+         }
+
+        /**
+         * Transform a point from Layer to Center 
+         * @param {*} p point {x,y} in Layer coordinates (0,0 at Layer center)
+         * @param {Camera} camera camera
+         * @param {Transform} layerT layer transform
+         * @returns point in Center (0, 0 at glViewport center) coordinates.
+         */
+         static fromLayerToCenter(p, camera, layerT, useGL) {
+            // M = cameraT * layerT
+            const cameraT = this.getCurrentTransform(camera, useGL);
+            const M = layerT.compose(cameraT);
+
+            return  M.apply(p.x, p.y);
+        }
+
+        ////////////// CHECKED UP TO HERE ////////////////////
+
+        /**
+         * Transform a point from Layer to Image coordinates
+         * @param {*} p point {x, y} Layer coordinates (0,0 at Layer center)
+         * @param {*} layerSize {w, h} Size in pixel of the Layer
+         * @returns  Point in Image coordinates (0,0 at left,top, y Down)
+         */
+         static fromLayerToImage(p, layerSize) {
+            // InvertY * Tr(Lw/2, Lh/2)
+            let result  = {x: p.x + layerSize.w/2, y: p.y + layerSize.h/2};
+            return this.invertY(result, layerSize);
+        }
+        
+        /**
+         * Transform a point from CanvasHtml to Scene
+         * @param {*} p point {x, y} in CanvasHtml (0,0 left,top, y Down)
+         * @param {Camera} camera camera
+         * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
+         * @returns Point in Scene coordinates (0,0 at scene center, y Up)
+         */
+         static fromCanvasHtmlToScene(p, camera, useGL) {
+            // invCameraT * Tr(-Vw/2, -Vh/2) * InvertY  * [Scale(devPixRatio)]
+            let result = this.fromCanvasHtmlToViewport(p, camera, useGL);
+            const v2c = this.getFromViewportToCenterTransform(camera, useGL);
+            const invCameraT = this.getCurrentTransform(camera, useGL).inverse();
+            const M = v2c.compose(invCameraT);
+
+            return  M.apply(result.x, result.y);
+        }
+
+        /**
+         * Transform a point from Scene to CanvasHtml
+         * @param {*} p point {x, y} Scene coordinates (0,0 at scene center, y Up)
+         * @param {Camera} camera camera
+         * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
+         * @returns Point in CanvasHtml (0,0 left,top, y Down)
+         */
+        static fromSceneToCanvasHtml(p, camera, useGL) {
+            // invCameraT * Tr(-Vw/2, -Vh/2) * InvertY  * [Scale(devPixRatio)]
+            let result = this.fromSceneToViewport(p, camera, useGL);
+            return this.fromViewportToCanvasHtml(result, camera, useGL);
+        }
+
+        /**
+         * Transform a point from Scene to Viewport
+         * @param {*} p point {x, y} Scene coordinates (0,0 at scene center, y Up)
+         * @param {Camera} camera camera
+         * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
+         * @returns Point in Viewport (0,0 left,bottom, y Up)
+         */
+        static fromSceneToViewport(p, camera, useGL) {
+            // FromCenterToViewport * CamT
+            const c2v = this.getFromViewportToCenterTransform(camera, useGL).inverse();
+            const CameraT = this.getCurrentTransform(camera, useGL);
+            const M = CameraT.compose(c2v);
+
+            return  M.apply(p.x, p.y);
+        }
+        
+        /**
+         * Transform a point from Scene to Viewport, using given transform and viewport
+         * @param {*} p point {x, y} Scene coordinates (0,0 at scene center, y Up)
+         * @param {Transform} cameraT camera transform
+         * @param {*} viewport viewport {x,y,dx,dy,w,h}
+         * @returns Point in Viewport (0,0 left,bottom, y Up)
+         */
+        static fromSceneToViewportNoCamera(p, cameraT, viewport) {
+            // invCameraT * Tr(-Vw/2, -Vh/2) * InvertY  * [Scale(devPixRatio)]
+            const c2v = this.getFromViewportToCenterTransformNoCamera(viewport).inverse();
+            const M = cameraT.compose(c2v);
+
+            return  M.apply(p.x, p.y);
+        }
+            
+        /**
+         * Transform a point from Viewport to Scene.
+         * @param {*} p point {x, y} Viewport coordinates (0,0 at left,bottom, y Up)
+         * @param {Camera} camera camera
+         * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
+         * @returns Point in Viewport (0,0 at scene center, y Up)
+         */
+         static fromViewportToScene(p, camera, useGL) {
+            // invCamT * FromViewportToCenter 
+            const v2c = this.getFromViewportToCenterTransform(camera, useGL);
+            const invCameraT = this.getCurrentTransform(camera, useGL).inverse();
+            const M = v2c.compose(invCameraT);
+
+            return  M.apply(p.x, p.y);
+        }
+
+        /**
+         * Transform a point from Viewport to Scene, using given transform and viewport
+         * @param {*} p point {x, y} Viewport coordinates (0,0 at left,bottom, y Up)
+         * @param {Transform} cameraT camera transform
+         * @param {*} viewport viewport {x,y,dx,dy,w,h}
+         * @returns Point in Viewport (0,0 at scene center, y Up)
+         */
+        static fromViewportToSceneNoCamera(p, cameraT, viewport) {
+            // invCamT * FromViewportToCenter 
+            const v2c = this.getFromViewportToCenterTransformNoCamera(viewport);
+            const invCameraT = cameraT.inverse();
+            const M = v2c.compose(invCameraT);
+
+            return  M.apply(p.x, p.y);
+        }
+        
+        /**
+         * Transform a point from CanvasHtml to Image
+         * @param {*} p  point {x, y} in CanvasHtml (0,0 left,top, y Down)
+         * @param {Camera} camera camera 
+         * @param {Transform} layerT layer transform 
+         * @param {*} layerSize  {w, h} Size in pixel of the Layer
+         * @param {bool} applyGLScale if true apply devPixelRatio scale. Keep it false when working with SVG
+         * @returns Point in Image space (0,0 left,top of the image, y Down)
+         */
+         static fromCanvasHtmlToImage(p, camera, layerT, layerSize, useGL) {
+            // Translate(Lw/2, Lh/2) * InvLayerT * InvCameraT *  Translate(-Vw/2, -Vh/2) * invertY * [Scale(devicePixelRatio)]
+            // in other words... fromLayerToImage * invLayerT * fromCanvasHtmlToScene
+            let result = this.fromCanvasHtmlToScene(p, camera, useGL);
+            const invLayerT = layerT.inverse();
+            result = invLayerT.apply(result.x, result.y);
+            result = this.fromLayerToImage(result, layerSize);
+
+            return result;
+        }
+
+        /**
+         * Transform a box from Viewport to Image coordinates
+         * @param {BoundingBox} box in Viewport coordinates (0,0 at left,bottom, y Up)
+         * @param {Transform} cameraT camera Transform
+         * @param {*} viewport {x,y,dx,dy,w,h}
+         * @param {Transform} layerT layer transform
+         * @param {*} layerSize {w,h} layer pixel size
+         * @returns box in Image coordinates (0,0 left,top, y Dowm)
+         */
+         static fromViewportBoxToImageBox(box, cameraT, viewport, layerT, layerSize) {
+            // InvertYonImage * T(Lw/2, Lh/2) * InvL * InvCam * T(-Vw/2,-Vh/2) 
+            let V2C = new Transform({x:-viewport.w/2, y:-viewport.h/2});
+            let C2S = cameraT.inverse();
+            let S2L = layerT.inverse();
+            let L2I = new Transform({x:layerSize.w/2, y:layerSize.h/2});
+            let M = V2C.compose(C2S.compose(S2L.compose(L2I)));
+            let resultBox = new BoundingBox();
+    		for(let i = 0; i < 4; ++i) {
+                let p = box.corner(i);
+                p = M.apply(p.x, p.y);
+                p = CoordinateSystem.invertY(p, layerSize);
+    			resultBox.mergePoint(p);
+    		}
+            return resultBox;
+        }
+
+        /**
+         * Transform a box from Layer to Scene 
+         * @param {BoundingBox} box  box in Layer coordinates (0,0 at layer center)
+         * @param {Transform} layerT layer transform
+         * @returns box in Scene coordinates (0,0 at scene center)
+         */
+         static fromLayerBoxToSceneBox(box, layerT) {
+             return layerT.transformBox(box); 
+        }
+      
+        /**
+         * Transform a box from Scene to Layer 
+         * @param {BoundingBox} box  box in Layer coordinates (0,0 at layer center)
+         * @param {Transform} layerT layer transform
+         * @returns box in Scene coordinates (0,0 at scene center)
+         */
+         static fromSceneBoxToLayerBox(box, layerT) {
+            return layerT.inverse().transformBox(box); 
+       }
+
+        /**
+         * Transform a box from Layer to Viewport coordinates
+         * @param {BoundingBox} box box in Layer coordinates (0,0 at Layer center y Up)
+         * @param {Camera} camera 
+         * @param {Transform} layerT layer transform
+         * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
+         * @returns Box in Viewport coordinates (0,0 at left, bottom y Up)
+         */
+         static fromLayerBoxToViewportBox(box, camera, layerT, useGL) {
+            const M = this.getFromLayerToViewportTransform(camera, layerT, useGL);
+            return M.transformBox(box);  
+        }
+
+        /**
+         * Transform a box from Layer to Viewport coordinates
+         * @param {BoundingBox} box box in Layer coordinates (0,0 at Layer center y Up)
+         * @param {Camera} camera 
+         * @param {Transform} layerT layer transform
+         * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
+         * @returns Box in Viewport coordinates (0,0 at left, bottom y Up)
+         */
+         static fromViewportBoxToLayerBox(box, camera, layerT, useGL) {
+            const M = this.getFromLayerToViewportTransform(camera, layerT, useGL).inverse();
+            return M.transformBox(box);  
+        }
+
+        /**
+         * Get a transform to go from viewport 0,0 at left, bottom y Up, to Center 0,0 at viewport center
+         * @param {Camera} camera camera
+         * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
+         * @returns transform from Viewport to Center
+         */
+         static getFromViewportToCenterTransform(camera, useGL) {
+            const viewport = this.getViewport(camera, useGL);
+            return this.getFromViewportToCenterTransformNoCamera(viewport);
+        }
+
+        /**
+         * Get a transform to go from viewport 0,0 at left, bottom y Up, to Center 0,0 at viewport center
+         * from explicit viewport param. (Not using camera parameter here)
+         * @param {*} viewport viewport
+         * @returns transform from Viewport to Center
+         */
+        static getFromViewportToCenterTransformNoCamera(viewport) {
+            return new Transform({x:viewport.x-viewport.w/2, y:viewport.y-viewport.h/2, z:1, a:0, t:0});
+        }
+
+        /**
+         * Return transform with y reflected wrt origin (y=-y)
+         * @param {Transform} t  
+         * @returns {Transform} transform, with y reflected (around 0)
+         */
+        static reflectY(t) {
+            return new Transform({x:t.x, y:-t.y, z:t.z, a:t.a, t:t.t});
+        }
+
+        /**
+         * Get a transform to go from Layer (0,0 at Layer center y Up) to Viewport (0,0 at left,bottom y Up)
+         * @param {Camera} camera 
+         * @param {Transform} layerT layer transform
+         * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
+         * @returns transform from Layer to Viewport
+         */
+         static getFromLayerToViewportTransform(camera, layerT, useGL) {
+            // M =  Center2Viewport * CameraT  * LayerT
+            const cameraT = this.getCurrentTransform(camera, useGL);
+            const c2v = this.getFromViewportToCenterTransform(camera, useGL).inverse();
+            const M = layerT.compose(cameraT.compose(c2v));
+            return M;
+        }
+
+        /**
+         * Get a transform to go from Layer (0,0 at Layer center y Up) to Viewport (0,0 at left,bottom y Up)
+         * @param {Transform} CameraT camera transform
+         * @param {viewport} viewport {x,y,dx,dy,w,h} viewport
+         * @param {Transform} layerT layer transform
+         * @returns transform from Layer to Viewport
+         */
+        static getFromLayerToViewportTransformNoCamera(cameraT, viewport, layerT) {
+            // M =  Center2Viewport * CameraT  * LayerT
+            const c2v =  this.getFromViewportToCenterTransformNoCamera(viewport).inverse();
+            const M = layerT.compose(cameraT.compose(c2v));
+            return M;
+        }
+        
+
+        /**
+         * Scale x applying f scale factor
+         * @param {*} p Point to be scaled
+         * @param {Number} f Scale factor
+         * @returns Point in CanvasContext (Scaled by devicePixelRation)
+         */
+        static scale(p, f) {
+            return { x:p.x * f, y:p.y * f};
+        }
+
+        /**
+         * Invert y with respect to viewport.h
+         * @param {*} p Point to be transformed 
+         * @param {*} viewport current viewport
+         * @returns Point with y inverted with respect to viewport.h
+         */
+        static invertY(p, viewport) {
+            return {x:p.x, y:viewport.h - p.y};
+        }
+
+        /**
+         * Return the camera viewport: scaled by devicePixelRatio if useGL is true.
+         * @param {bool} useGL True to work with WebGL, false for SVG. When true viewport scaled by devPixelRatio 
+         * @returns Viewport 
+         */
+        static getViewport(camera, useGL) {
+            return useGL ? camera.glViewport() : camera.viewport;
+        }
+
+        static getCurrentTransform(camera, useGL) {
+            let cameraT = useGL ?
+                            camera.getGlCurrentTransform(performance.now()) :
+                            camera.getCurrentTransform(performance.now());
+           
+            return cameraT;
         }
     }
 
@@ -967,7 +1447,7 @@
     	}
 
     	/** returns the list of tiles required for a rendering, sorted by priority, max */
-    	needed(viewport, transform, border, bias, tiles, maxtiles = 8) {
+    	needed(viewport, transform, layerTransform, border, bias, tiles, maxtiles = 8) {
     		//FIXME should check if image is withing the viewport (+ border)
     		let tile = tiles.get(0) || this.newTile(0); //{ index, x, y, missing, tex: [], level };
     		tile.time = performance.now();
@@ -979,13 +1459,18 @@
     	}
 
     	/** returns the list of tiles available for a rendering */
-    	available(viewport, transform, border, bias, tiles) {
+    	available(viewport, transform, layerTransform, border, bias, tiles) {
     		//FIXME should check if image is withing the viewport (+ border)
     		let torender = {};
 
     		if (tiles.has(0) && tiles.get(0).missing == 0) 
     			torender[0] = tiles.get(0); //{ index: index, level: level, x: x >> d, y: y >> d, complete: true };
     		return torender;
+    	}
+
+    	getViewportBox(viewport, transform, layerT) {
+    		const boxViewport = new BoundingBox({xLow:viewport.x, yLow:viewport.y, xHigh:viewport.x+viewport.dx, yHigh:viewport.y+viewport.dy});
+    		return CoordinateSystem.fromViewportBoxToImageBox(boxViewport, transform, viewport, layerT, {w:this.width, h:this.height});
     	}
     }
 
@@ -1223,7 +1708,8 @@
     			layout: 'image',
     			shader: null, //current shader.
     			gl: null,
-
+    			width: 0,
+    			height: 0,
     			prefetchBorder: 1,
     			mipmapBias: 0.4,
 
@@ -1243,8 +1729,8 @@
     		this.transform = new Transform(this.transform);
 
     		if (typeof (this.layout) == 'string') {
-    			let size = { width: this.width || 0, height: this.height || 0 };
-    			this.setLayout(new Layout(null, this.layout, size));
+    			let size = { width: this.width, height: this.height };
+    			this.setLayout(new Layout(null, this.layout, size)); //FIXME new Layout not have size, but options.width options.height
     		} else {
     			this.setLayout(this.layout);
     		}
@@ -1405,7 +1891,7 @@
     	}
 
     	/**
-    	 * Gets the layer bounding box
+    	 * Gets the layer bounding box (<FIXME> Change name: box is in scene coordinates)
     	 * @returns {BoundingBox} The bounding box 
     	 */
     	boundingBox() {
@@ -1576,9 +2062,9 @@
     		this.prepareWebGL();
 
     		//		find which quads to draw and in case request for them
-    		transform = this.transform.compose(transform);
-    		let available = this.layout.available(viewport, transform, 0, this.mipmapBias, this.tiles);
+    		let available = this.layout.available(viewport, transform, this.transform, 0, this.mipmapBias, this.tiles);
 
+    		transform = this.transform.compose(transform);
     		let matrix = transform.projectionMatrix(viewport);
     		this.gl.uniformMatrix4fv(this.shader.matrixlocation, this.gl.FALSE, matrix);
 
@@ -1809,7 +2295,7 @@
     			if (tile.missing != 0 && !this.requested[index])
     				tmp.push(tile);
     		} */
-    		this.queue = this.layout.needed(viewport, transform, this.prefetchBorder, this.mipmapBias, this.tiles);
+    		this.queue = this.layout.needed(viewport, transform, this.transform, this.prefetchBorder, this.mipmapBias, this.tiles);
     		/*		let needed = this.layout.neededBox(viewport, transform, this.prefetchBorder, this.mipmapBias);
     				if (this.previouslyNeeded && this.sameNeeded(this.previouslyNeeded, needed))
     					return;
@@ -2383,8 +2869,7 @@
     		let u = this.uniforms[name];
     		if(!u)
     			throw new Error(`Unknown '${name}'. It is not a registered uniform.`);
-
-    		if(typeof(value) == "number" && u.value == value) 
+    		if ((typeof (value) == "number" || typeof (value) == "boolean") && u.value == value) 
     			return;
     		if(Array.isArray(value) && Array.isArray(u.value) && value.length == u.value.length) {
     			let equal = true;
@@ -2482,6 +2967,9 @@
     					case 'vec2':  gl.uniform2fv(uniform.location, value); break;
     					case 'float': gl.uniform1f(uniform.location, value); break;
     					case 'int':   gl.uniform1i (uniform.location, value); break;
+    					case 'bool':  gl.uniform1i (uniform.location, value); break;
+    					case 'mat3':  gl.uniformMatrix3fv (uniform.location, false, value); break;
+    					case 'mat4':  gl.uniformMatrix4fv (uniform.location, false, value); break;
     					default: throw Error('Unknown uniform type: ' + u.type);
     				}
     			}
@@ -2758,7 +3246,7 @@ void main() {
      * This calls defines the content of an annotation which is represented by its unique identifier and additional 
      * information (such as description, annotation category or class, drawing style, labels, etc.).
      */
-    class Annotation$1 {
+    class Annotation {
     	/**
     	 * Instantiates an **Annotation** object. An object literal with Annotation `options` can be specified.
     	 * Note that the developer is free to define additional elements characterizing a custom annotation by adding new options to the constructor.
@@ -2772,7 +3260,7 @@ void main() {
     		Object.assign(
     			this, 
     			{
-    				id: Annotation$1.UUID(),
+    				id: Annotation.UUID(),
     				code: null,
     				label: null,
     				description: null,
@@ -2862,7 +3350,7 @@ void main() {
     				throw "Unsupported selector: " + selector.type;
     			}
     		}
-    		return new Annotation$1(options);
+    		return new Annotation(options);
     	}
     	/*
     	 * Exports an Annotation to a JSON entry
@@ -2929,7 +3417,13 @@ void main() {
 
     	/** @ignore */
     	async loadAnnotations(url) {
-    		var response = await fetch(url);
+    		const headers = new Headers();
+    		headers.append('pragma', 'no-cache');
+    		headers.append('cache-control', 'no-cache');
+    		var response = await fetch(url, {
+    			method: 'GET',
+    			headers: headers,
+    	  	});
     		if(!response.ok) {
     			this.status = "Failed loading " + this.url + ": " + response.statusText;
     			return;
@@ -2940,7 +3434,7 @@ void main() {
     			return;
     		}
     		//this.annotations = this.annotations.map(a => '@context' in a ? Annotation.fromJsonLd(a): a);
-    		this.annotations = this.annotations.map(a => new Annotation$1(a));
+    		this.annotations = this.annotations.map(a => new Annotation(a));
     		for(let a of this.annotations)
     			if(a.publish != 1)
     				a.visible = false;
@@ -2956,7 +3450,7 @@ void main() {
     	/** @ignore */
     	newAnnotation(annotation) {
     		if(!annotation)
-    			annotation = new Annotation$1();
+    			annotation = new Annotation();
 
     		this.annotations.push(annotation);
     		let html = this.createAnnotationEntry(annotation);
@@ -3068,6 +3562,7 @@ void main() {
     		// Contain array of records with at least visible,region,image (url of the image). 
     		// Can be also a pointer to annotation array set from outside with setTileDescriptors()
             this.tileDescriptors = []; 
+    		this.box = new BoundingBox();
     		
     		if (url != null) {
     			// Read data from annotation file
@@ -3089,9 +3584,12 @@ void main() {
     		}
     		//this.annotations = this.annotations.map(a => '@context' in a ? Annotation.fromJsonLd(a): a);
     		this.tileDescriptors = this.tileDescriptors.map(a => new Annotation(a));
-    		for(let a of this.tileDescriptors)
+    		for(let a of this.tileDescriptors) {
     			if(a.publish != 1)
     				a.visible = false;
+    		}
+    		this.computeBoundingBox();
+    		this.emit('updateSize');
 
     		if (this.path == null) {
     			this.setPathFromUrl(url);
@@ -3099,6 +3597,22 @@ void main() {
 
     		this.status = 'ready';
     		this.emit('ready');
+    	}
+    	    /**
+    	 * Gets the layout bounding box.
+    	 * @returns {BoundingBox} The layout bounding box.
+    	 */
+    	computeBoundingBox() {
+    		this.box = new BoundingBox();
+    		for(let a of this.tileDescriptors) {
+    			let r = a.region;
+    			let b = new BoundingBox( { xLow:r.x, yLow: r.y, xHigh: r.x + r.w, yHigh: r.y + r.h});
+    			this.box.mergeBox(b);
+    		}
+    	}
+
+    	boundingBox() {
+    		return this.box;
     	}
 
     	setPathFromUrl(url) {
@@ -3109,7 +3623,11 @@ void main() {
     		for(let i = 0; i < N-1; ++i) {
     			this.path += myArray[i] + "/";
     		}
-    		this.path += "/annot/";
+    		this.getTileURL = (id, tile) => {		
+    			const url = this.path + '/' + this.tileDescriptors[tile.index].image;
+    			return url;
+    		};
+    		//this.path += "/annot/";
     	}
 
         setTileDescriptors(tileDescriptors) {
@@ -3161,10 +3679,9 @@ void main() {
     		};
     	}
 
-        needed(viewport, transform, border, bias, tiles, maxtiles = 8) {
+        needed(viewport, transform, layerTransform, border, bias, tiles, maxtiles = 8) {
     		//look for needed nodes and prefetched nodes (on the pos destination
-    		let box = transform.getInverseBox(viewport);
-    		box.shift(this.width/2, this.height/2);
+    		const box = this.getViewportBox(viewport, transform, layerTransform);
 
     		let needed = [];
     		let now = performance.now();
@@ -3176,7 +3693,7 @@ void main() {
     			let index = this.index(0, x, 0);
     			let tile = tiles.get(index) || this.newTile(index); 
 
-    			if (this.intersect(box, index, flipY)) {
+    			if (this.intersects(box, index, flipY)) {
     				tile.time = now;
     				tile.priority = this.tileDescriptors[index].visible ? 10 : 1;
     				if (tile.missing === null) 
@@ -3191,11 +3708,10 @@ void main() {
         }
 
     	/** returns the list of tiles available for a rendering */
-    	available(viewport, transform, border, bias, tiles) {
+    	available(viewport, transform, layerTransform, border, bias, tiles) {
     		//find box in image coordinates where (0, 0) is in the upper left corner.
-    		let box = transform.getInverseBox(viewport);
-    		box.shift(this.width/2, this.height/2);
-
+    		const box = this.getViewportBox(viewport, transform, layerTransform);
+    	
     		let torender = [];
 
     		// Linear scan of all the potential tiles
@@ -3204,7 +3720,7 @@ void main() {
     		for (let x = 0; x < N; x++) {
     			let index = this.index(0, x, 0);
 
-    			if (this.tileDescriptors[index].visible && this.intersect(box, index, flipY)) {
+    			if (this.tileDescriptors[index].visible && this.intersects(box, index, flipY)) {
     				if (tiles.has(index)) {
     					let tile = tiles.get(index); 
     					if (tile.missing == 0) {
@@ -3220,15 +3736,14 @@ void main() {
     	newTile(index) {
     		let tile = new Tile();
     		tile.index = index;
-    		const r = this.tileDescriptors[index].region;
-    		tile.x = r.x;
-    		tile.y = r.y;
-    		tile.w = r.w;
-    		tile.h = r.h;
+
+    		let descriptor = this.tileDescriptors[index];
+    		tile.image = descriptor.image;		
+    		Object.assign(tile, descriptor.region);
     		return tile;
     	}
     	
-    	intersect(box, index, flipY = true) {
+    	intersects(box, index, flipY = true) {
     		const r = this.tileDescriptors[index].region;
     		const xLow = r.x;
             const yLow = r.y;
@@ -3240,24 +3755,7 @@ void main() {
     		return xLow < box.xHigh  && yLow < boxYHigh && xHigh > box.xLow && yHigh > boxYLow;
     	}
 
-        /**
-    	 * Gets the layout bounding box.
-    	 * @returns {BoundingBox} The layout bounding box.
-    	 */
-    	boundingBox() {
-    		let bbox = new BoundingBox();
-    		for(let t of this.tileDescriptors) {
-    			if (t.visible) {
-    				const x0 = t.region.x;
-    				const y0 = t.region.y;
-    				const x1 = x0 + t.region.w;
-    				const y1 = y0 + t.region.h;
-    				const tbox = new BoundingBox({xLow: x0, yLow: y0, xHigh: x1, yHigh: y1});
-    				bbox.mergeBox(tbox);
-    			}
-    		}
-    		return bbox;
-    	}
+
 
     	tileCount() {
     		return this.tileDescriptors.length;
@@ -3616,8 +4114,8 @@ void main() {
     	}
 
     	/** returns the list of tiles required for a rendering, sorted by priority, max */
-    	needed(viewport, transform, border, bias, tiles, maxtiles = 8) {
-    		let neededBox = this.neededBox(viewport, transform, 0, bias);
+    	needed(viewport, transform, layerTransform, border, bias, tiles, maxtiles = 8) {
+    		let neededBox = this.neededBox(viewport, transform, layerTransform, 0, bias);
     		
     		//if (this.previouslyNeeded && this.sameNeeded(this.previouslyNeeded, neededBox))
     	    //		return;
@@ -3650,8 +4148,8 @@ void main() {
     	}
 
     	/** returns the list of tiles available for a rendering */
-    	available(viewport, transform, border, bias, tiles) {
-    		let needed = this.neededBox(viewport, transform, 0, bias);
+    	available(viewport, transform, layerTransform, border, bias, tiles) {
+    		let needed = this.neededBox(viewport, transform, layerTransform, 0, bias);
     		let torender = {}; //array of minlevel, actual level, x, y (referred to minlevel)
     		let brothers = {};
 
@@ -3690,21 +4188,20 @@ void main() {
      	* Computes the tiles needed for each level, given a viewport and a transform.
      	* @param {Viewport} viewport The viewport.
     	* @param {Transform} transform The current transform.
+    	* @param {Transform} layerTransform The transform of the calling layer
      	* @param {number} border The threshold (in tile units) around the current camera position for which to prefetch tiles.
     	* @param {number} bias The mipmap bias of the texture.
      	* @returns {Object} level: the optimal level in the pyramid, pyramid: array of bounding boxes in tile units.
      	*/
-    	neededBox(viewport, transform, border, bias) {
+    	neededBox(viewport, transform, layerTransform, border, bias) {
     		if(this.type == "image")
     			return { level:0, pyramid: [new BoundingBox({ xLow:0, yLow:0, xHigh:1, yHigh:1 })] };
 
     		//here we are computing with inverse levels; level 0 is the bottom!
     		let iminlevel = Math.max(0, Math.min(Math.floor(-Math.log2(transform.z) + bias), this.nlevels-1));
     		let minlevel = this.nlevels-1-iminlevel;
-    		//
-    		let bbox = transform.getInverseBox(viewport);
-    		//find box in image coordinates where (0, 0) is in the upper left corner.
-    		bbox.shift(this.width/2, this.height/2);
+
+    		const bbox = this.getViewportBox(viewport, transform, layerTransform);
 
     		let pyramid = [];
     		for(let level = 0; level <= minlevel; level++) {
@@ -4253,6 +4750,7 @@ void main() {
 
     		this.zooming = false;           //true if in the middle of a pinch
     		this.initialDistance = 0.0;
+    		this.useGLcoords = false;
 
     		if(options)
     			Object.assign(this, options);
@@ -4264,7 +4762,7 @@ void main() {
     			return;
     		this.panning = true;
 
-    		this.startMouse = { x: e.offsetX, y: e.offsetY };
+    		this.startMouse = CoordinateSystem.fromCanvasHtmlToViewport({ x: e.offsetX, y: e.offsetY }, this.camera, this.useGLcoords);
 
     		let now = performance.now();
     		this.initialTransform = this.camera.getCurrentTransform(now);
@@ -4278,8 +4776,9 @@ void main() {
     			return;
 
     		let m = this.initialTransform;
-    		let dx = (e.offsetX - this.startMouse.x);
-    		let dy = (e.offsetY - this.startMouse.y);
+    		const p = CoordinateSystem.fromCanvasHtmlToViewport({ x: e.offsetX, y: e.offsetY }, this.camera, this.useGLcoords);
+    		let dx = (p.x - this.startMouse.x);
+    		let dy = (p.y - this.startMouse.y);
     		
     		this.camera.setPosition(this.panDelay, m.x + dx, m.y + dy, m.z, m.a);
     	}
@@ -4313,7 +4812,10 @@ void main() {
     		let offsetX2 = e2.clientX - rect2.left;
     		let offsetY2 = e2.clientY - rect2.top;
     		const scale = this.distance(e1, e2);
-    		const pos = this.camera.mapToScene((offsetX1 + offsetX2)/2, (offsetY1 + offsetY2)/2, this.camera.getCurrentTransform(performance.now()));
+    		// FIXME CHECK ON TOUCH SCREEN
+    		//const pos = this.camera.mapToScene((offsetX1 + offsetX2)/2, (offsetY1 + offsetY2)/2, this.camera.getCurrentTransform(performance.now()));
+    		const pos = CoordinateSystem.fromCanvasHtmlToScene({ x: (offsetX1 + offsetX2)/2, y: (offsetY1 + offsetY2)/2 }, this.camera, this.useGLcoords);
+
     		const dz = scale/this.initialDistance;
     		this.camera.deltaZoom(this.zoomDelay, dz, pos.x, pos.y);
     		this.initialDistance = scale;
@@ -4333,7 +4835,8 @@ void main() {
     			return;
     		}
     		let delta = -e.deltaY/53;
-    		const pos = this.camera.mapToScene(e.offsetX, e.offsetY, this.camera.getCurrentTransform(performance.now()));
+    		//const pos = this.camera.mapToScene(e.offsetX, e.offsetY, this.camera.getCurrentTransform(performance.now()));
+    		const pos = CoordinateSystem.fromCanvasHtmlToScene({ x: e.offsetX, y: e.offsetY }, this.camera, this.useGLcoords);
     		const dz = Math.pow(this.zoomAmount, delta);		
     		this.camera.deltaZoom(this.zoomDelay, dz, pos.x, pos.y);
     		e.preventDefault();
@@ -4343,7 +4846,9 @@ void main() {
     	fingerDoubleTap(e) {
     		if(!this.active || !this.activeModifiers.includes(this.modifierState(e)))
     			return;
-    		const pos = this.camera.mapToScene(e.offsetX, e.offsetY, this.camera.getCurrentTransform(performance.now()));
+    		//const pos = this.camera.mapToScene(e.offsetX, e.offsetY, this.camera.getCurrentTransform(performance.now()));
+    		const pos = CoordinateSystem.fromCanvasHtmlToScene({ x: e.offsetX, y: e.offsetY }, this.camera, this.useGLcoords);
+
     		const dz = this.zoomAmount;
     		this.camera.deltaZoom(this.zoomDelay, dz, pos.x, pos.y);
     	}
@@ -4548,7 +5053,7 @@ void main() {
                 //TODO maybe we should sort by distance instead.
                 fingerDownEvents.sort((a, b) => b.timeStamp - a.timeStamp);
                 for (let e2 of fingerDownEvents) {
-                    if (e1.timeStamp - e2.timeStamp > this.pinchInterval) break; 
+                    if (e1.timeStamp - e2.timeStamp > this.pinchMaxInterval) break; 
 
                     handler.pinchStart(e1, e2);
                     if (!e1.defaultPrevented) break;
@@ -5233,29 +5738,33 @@ void main() {
     	}
 
     	/**
-    	 * Appends the selected SVG icons to the `container`.
+    	 * Appends the selected SVG element to the `container`.
     	 * @param {HTMLElement} container A HTML DOM node.
-    	 * @param {string} selector A CSS selector (e.g. a class name).
-    	 * @returns {SVGElement} A pointer to the SVG icon referenced by the selector.
+    	 * @param {SVGElement|string} elm An SVGElement or a CSS selector (e.g. a class name).
+    	 * @returns {SVGElement} A pointer to the SVG icon referenced by the elm.
     	 */
-    	static async appendIcon(container, selector) {
-    		let element = await Skin.getElement(selector);
-
-    		let icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    		container.appendChild(icon);
-    		icon.appendChild(element);
-    		
-    		let box = element.getBBox();
-
-    		let tlist = element.transform.baseVal;
-    		if (tlist.numberOfItems == 0)
-    			tlist.appendItem(icon.createSVGTransform());
-    		tlist.getItem(0).setTranslate(-box.x, -box.y);
-
-    		icon.setAttribute('viewBox', `${-pad} ${-pad} ${box.width + 2*pad} ${box.height + 2*pad}`);
-    		icon.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    	static async appendIcon(container, icon) {
+    		let element = null;
+    		if (typeof icon == 'string') {
+    			element = await Skin.getElement(icon);
+    			icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    			icon.appendChild(element);
+    			container.appendChild(icon);
+    			let box = element.getBBox();
+    			let tlist = element.transform.baseVal;
+    			if (tlist.numberOfItems == 0)
+    				tlist.appendItem(icon.createSVGTransform());
+    			tlist.getItem(0).setTranslate(-box.x, -box.y);
+    			icon.setAttribute('viewBox', `${-pad} ${-pad} ${box.width + 2 * pad} ${box.height + 2 * pad}`);
+    			icon.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    		} else {
+    			container.appendChild(icon);
+    			let box = icon.getBBox();
+    			icon.setAttribute('viewBox', `${-pad} ${-pad} ${box.width + 2 * pad} ${box.height + 2 * pad}`);
+    			icon.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    		}
     		return icon;
-    	}	
+    	 }
     }
 
     /* units are those in use, scale and ruler will pick the appropriate unit 
@@ -5293,22 +5802,21 @@ void main() {
     class ScaleBar extends Units {
         constructor(pixelSize, viewer, options) {
     		super(options);
-            Object.assign(this, {
+            options = Object.assign(this, {
                 pixelSize: pixelSize,
                 viewer: viewer,
                 width: 200,
                 fontSize: 24,
     			precision: 0
-            });
-    		if(options)
-    			Object.assign(this, options);
+            }, options);
+    		Object.assign(this, options);
 
-    		this.svg = createSVGElement$2('svg', { viewBox: `0 0 ${this.width} 30` });
+    		this.svg = Util.createSVGElement('svg', { viewBox: `0 0 ${this.width} 30` });
     		this.svg.classList.add('openlime-scale');
 
-    		this.line = createSVGElement$2('line', { x1: 5, y1: 26.5, x2:this.width - 5, y2: 26.5 });
+    		this.line = Util.createSVGElement('line', { x1: 5, y1: 26.5, x2:this.width - 5, y2: 26.5 });
 
-    		this.text = createSVGElement$2('text', { x: '50%', y: '16px', 'dominant-basiline': 'middle', 'text-anchor': 'middle' });
+    		this.text = Util.createSVGElement('text', { x: '50%', y: '16px', 'dominant-basiline': 'middle', 'text-anchor': 'middle' });
     		this.text.textContent = "";
     		
     		this.svg.appendChild(this.line);
@@ -5355,13 +5863,7 @@ void main() {
     	}
     }
 
-    function createSVGElement$2(tag, attributes) {
-    	let e = document.createElementNS('http://www.w3.org/2000/svg', tag);
-    	if (attributes)
-    		for (const [key, value] of Object.entries(attributes))
-    			e.setAttribute(key, value);
-    	return e;
-    }
+    /* color is specified in the css under the .openlime-ruler selector */
 
     class Ruler extends Units {
     	constructor(viewer, pixelSize, options) {
@@ -5387,14 +5889,13 @@ void main() {
     			Object.assign(this, options);
     	}
     	
-
     	start() {
     		this.enabled = true;
     		this.previousCursor = this.overlay.style.cursor;
     		this.overlay.style.cursor = this.cursor;
 
     		if(!this.svg) {
-    			this.svg = createSVGElement$1('svg', { class: 'openlime-ruler'} );
+    			this.svg = Util.createSVGElement('svg', { class: 'openlime-ruler'} );
     			this.svgGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     			this.svg.append(this.svgGroup);
     			this.overlay.appendChild(this.svg);
@@ -5409,20 +5910,18 @@ void main() {
     		this.clear();
     	}
     	
-
     	clear() {
     		this.svgGroup.replaceChildren([]);
     		this.measure = null;
     		this.history = [];
     	}
 
-
     	/*finish() {
     		let m = this.measure;
-    		m.line = createSVGElement('line', { x1: m.x1, y1: m.y1, x2: m.x2, y2: m.y2 });
+    		m.line = Util.createSVGElement('line', { x1: m.x1, y1: m.y1, x2: m.x2, y2: m.y2 });
     		this.svgGroup.appendChild(m.line);
 
-    		m.text = createSVGElement('text');
+    		m.text = Util.createSVGElement('text');
     		m.text.textContent = this.format(this.length(m));
     		this.svgGroup.appendChild(m.text);
 
@@ -5439,24 +5938,27 @@ void main() {
     		let t = this.camera.getGlCurrentTransform(performance.now());
     		let viewport = this.camera.glViewport();
     		this.svg.setAttribute('viewBox', `${-viewport.w / 2} ${-viewport.h / 2} ${viewport.w} ${viewport.h}`);
-    		let c = [0, 0]; //this.boundingBox().corner(0);
+    		let c = {x:0, y:0}; //this.boundingBox().corner(0);
     		this.svgGroup.setAttribute("transform",
-    			`translate(${t.x} ${t.y}) rotate(${-t.a} 0 0) scale(${t.z} ${t.z}) translate(${c[0]} ${c[1]})`);
+    			`translate(${t.x} ${t.y}) rotate(${-t.a} 0 0) scale(${t.z} ${t.z}) translate(${c.x} ${c.y})`);
 
     		for(let m of this.history) 
     			this.updateMeasure(m, t);
     	}
+
     	/** @ignore */
     	createMarker(x, y) {
-    		let m = createSVGElement$1("path");
+    		let m = Util.createSVGElement("path");
     		this.svgGroup.appendChild(m);
     		return m;
     	}
+
     	/** @ignore */
     	updateMarker(marker, x, y, size) {
     		let d = `M ${x-size} ${y} L ${x+size} ${y} M ${x} ${y-size} L ${x} ${y+size}`;
     		marker.setAttribute('d', d);
     	}
+
     	/** @ignore */
     	updateText(measure, fontsize) {
     		measure.text.setAttribute('font-size', fontsize + "px");
@@ -5487,6 +5989,7 @@ void main() {
     		measure.text.setAttribute('y', my);
     		measure.text.textContent = this.format(length*this.pixelSize);
     	}
+
     	/** @ignore */
     	createMeasure(x, y) {
     		let m = {
@@ -5495,15 +5998,16 @@ void main() {
     			marker2: this.createMarker(x, y), 
     			x2: x, y2: y
     		};
-    		m.line = createSVGElement$1('line', { x1: m.x1, y1: m.y1, x2: m.x2, y2: m.y2 });
+    		m.line = Util.createSVGElement('line', { x1: m.x1, y1: m.y1, x2: m.x2, y2: m.y2 });
     		this.svgGroup.appendChild(m.line);
 
-    		m.text = createSVGElement$1('text');
+    		m.text = Util.createSVGElement('text');
     		m.text.textContent = '';
     		this.svgGroup.appendChild(m.text);
 
     		return m;
     	}
+
     	/** @ignore */
     	updateMeasure(measure, transform) {
     		let markersize = window.devicePixelRatio*this.markerSize/transform.z;
@@ -5518,8 +6022,6 @@ void main() {
     		for(let p of ['x1', 'y1', 'x2', 'y2'])
     			measure.line.setAttribute(p, measure[p]);
     	}
-
-
 
     	/** @ignore */
     	fingerSingleTap(e) { 
@@ -5553,13 +6055,6 @@ void main() {
     		this.update();	
     		e.preventDefault();
     	}
-    }
-    function createSVGElement$1(tag, attributes) {
-    	let e = document.createElementNS('http://www.w3.org/2000/svg', tag);
-    	if (attributes)
-    		for (const [key, value] of Object.entries(attributes))
-    			e.setAttribute(key, value);
-    	return e;
     }
 
     /**
@@ -5743,6 +6238,7 @@ void main() {
     			if(this.showLightDirections)
     				this.updateLightDirections(x, y);
     			}, { 
+    				// TODO: IS THIS OK? It was false before
     				active: false, 
         			activeModifiers: [2, 4], 
         			control: 'light', 
@@ -5924,7 +6420,20 @@ void main() {
     				if (action.display !== true)
     					continue;
 
-    				action.element = await Skin.appendIcon(toolbar, '.openlime-' + name);
+    				if('icon' in action) {
+    					if(typeof action.icon == 'string') {
+    						if(Util.isSVGString(action.icon)) {
+    							action.icon = Util.SVGFromString(action.icon);
+    						} else {
+    							action.icon = await Util.loadSVG(action.icon);
+    						}
+    						action.icon.classList.add('openlime-button');
+    					}
+    				} else {
+    					action.icon = '.openlime-' + name;
+    				}
+
+    				action.element = await Skin.appendIcon(toolbar, action.icon);
     				if (this.enableTooltip) {
     					let title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
     					title.textContent = action.title;
@@ -6408,7 +6917,6 @@ void main() {
     		this.scale = this.material.scale;
     		this.bias = this.material.bias;
 
-    		console.log(this.scale, this.bias);
     		if(['mrgb', 'mycc'].includes(this.colorspace))
     			this.loadBasis(this.basis);
 
@@ -6715,6 +7223,7 @@ vec4 render(vec3 base[np1]) {
     /* HSH utility functions 
      */
     class HSH {
+    	static minElevation = 0.15;
     	/* @param {Array} v expects light direction as [x, y, z]
     	*/
     	static lightWeights(v) {
@@ -6722,7 +7231,7 @@ vec4 render(vec3 base[np1]) {
     		let phi = Math.atan2(v[1], v[0]);
     		if (phi < 0)
     			phi = 2 * PI + phi;
-    		let theta = Math.min(Math.acos(v[2]), PI / 2 - 0.1);
+    		let theta = Math.min(Math.acos(v[2]), PI / 2 - this.minElevation);
 
     		let cosP = Math.cos(phi);
     		let cosT = Math.cos(theta);
@@ -7312,8 +7821,8 @@ void main() {
             this.uniforms = {
                 u_lens: { type: 'vec4', needsUpdate: true, size: 4, value: [0,0,100,10] },
                 u_width_height: { type: 'vec2', needsUpdate: true, size: 2, value: [1,1]},
-                u_border_color: {type: 'vec4', needsUpdate: true, size: 4, value: [0.8, 0.8, 0.8, 1]}
-            };
+                u_border_color: {type: 'vec4', needsUpdate: true, size: 4, value: [0.8, 0.8, 0.8, 1]},
+                u_border_enable: {type: 'bool', needsUpdate: true, size: 1, value: false}        };
             this.label = "ShaderLens";
             this.needsUpdate = true;
             this.overlayLayerEnabled = false;
@@ -7324,10 +7833,11 @@ void main() {
             this.needsUpdate = true;
         }
 
-        setLensUniforms(lensViewportCoords, windowWH, borderColor) {
+        setLensUniforms(lensViewportCoords, windowWH, borderColor, borderEnable) {
             this.setUniform('u_lens', lensViewportCoords);
             this.setUniform('u_width_height', windowWH);
             this.setUniform('u_border_color', borderColor);
+            this.setUniform('u_border_enable', borderEnable);
         }
 
     	fragShaderSrc(gl) {
@@ -7341,10 +7851,10 @@ void main() {
 
                 overlaySamplerCode =  
                 `vec4 c1 = texture${gl2?'':'2D'}(source1, v_texcoord);
-            if (centerDist2 > lensR2) {
+            if (r > u_lens.z) {
                 float k = (c1.r + c1.g + c1.b) / 3.0;
                 c1 = vec4(k, k, k, c1.a);
-            } else if (centerDist2 > innerBorderR2) {
+            } else if (u_border_enable && r > innerBorderRadius) {
                 // Preserve border keeping c1 alpha at zero
                 c1.a = 0.0; 
             }
@@ -7360,44 +7870,43 @@ void main() {
         uniform vec4 u_lens; // [cx, cy, radius, border]
         uniform vec2 u_width_height; // Keep wh to map to pixels. TexCoords cannot be integer unless using texture_rectangle
         uniform vec4 u_border_color;
+        uniform bool u_border_enable;
         ${gl2? 'in' : 'varying'} vec2 v_texcoord;
         ${gl2? 'out' : ''} vec4 color;
 
         vec4 lensColor(in vec4 c_in, in vec4 c_border, in vec4 c_out,
             float r, float R, float B) {
             vec4 result;
-            if (r<R) {
-                float t=smoothstep(R-B, R, r);
-                result = mix(c_in, c_border, t);
+            if (u_border_enable) {
+                float B_SMOOTH = B < 8.0 ? B/8.0 : 1.0;
+                if (r<R-B+B_SMOOTH) {
+                    float t=smoothstep(R-B, R-B+B_SMOOTH, r);
+                    result = mix(c_in, c_border, t);
+                } else if (r<R-B_SMOOTH) {
+                    result = c_border;  
+                } else {
+                    float t=smoothstep(R-B_SMOOTH, R, r);
+                    result = mix(c_border, c_out, t);
+                }
             } else {
-                float t=smoothstep(R, R+B, r);
-                result = mix(c_border, c_out, t);
+                result = (r<R) ? c_in : c_out;
             }
             return result;
         }
 
         void main() {
-            float lensR2 = u_lens.z * u_lens.z;
-            float innerBorderR2 = (u_lens.z - u_lens.w) * (u_lens.z - u_lens.w);
+            float innerBorderRadius = (u_lens.z - u_lens.w);
             float dx = v_texcoord.x * u_width_height.x - u_lens.x;
             float dy = v_texcoord.y * u_width_height.y - u_lens.y;
-            float centerDist2 = dx*dx+dy*dy;
+            float r = sqrt(dx*dx + dy*dy);
 
-            //color = vec4(0.0, 0.0, 0.0, 0.0);
-            //if (centerDist2 < innerBorderR2) {
-            //    color = texture${gl2?'':'2D'}(source0, v_texcoord);
-            //} else if (centerDist2 < lensR2) {
-            //    color = u_border_color;
-            //}
             vec4 c_in = texture${gl2?'':'2D'}(source0, v_texcoord);
             vec4 c_out = u_border_color; c_out.a=0.0;
             
-            float r = sqrt(centerDist2);
             color = lensColor(c_in, u_border_color, c_out, r, u_lens.z, u_lens.w);
 
             ${overlaySamplerCode}
             ${gl2?'':'gl_FragColor = color;'}
-
         }
         `
         }
@@ -7428,10 +7937,17 @@ void main() {
     		options = Object.assign({
     			overlay: true,
     			radius: 100,
-    			borderColor: [0.8, 0.8, 0.8, 1],
-    			borderWidth: 4,
+    			borderColor: [0.078, 0.078, 0.078, 1],
+    			borderWidth: 12,
+    			borderEnable: false,
+    			dashboard: null,
     		}, options);
     		super(options);
+
+    		if (!this.camera) {
+    			console.log("Missing camera");
+    			throw "Missing Camera"
+    		}
     		
     		// Shader lens currently handles up to 2 layers
     		let shader = new ShaderLens();
@@ -7443,6 +7959,24 @@ void main() {
     		this.addControl('radius', [this.radius, 0]);
     		this.addControl('borderColor', this.borderColor);
     		this.addControl('borderWidth', [this.borderWidth]);
+
+    		this.oldRadius = -9999;
+    		this.oldCenter = [-9999, -9999];
+
+    		this.useGL = true;
+
+    		if(this.dashboard) this.dashboard.lensLayer = this;
+    	}
+
+    	setVisible(visible) {
+    		if(this.dashboard) {
+    			if(visible) {
+    				this.dashboard.container.style.display = 'block';
+    			} else {
+    				this.dashboard.container.style.display = 'none';
+    			}
+    		}
+    		super.setVisible(visible);
     	}
 
     	removeOverlayLayer() {
@@ -7486,11 +8020,13 @@ void main() {
     	}
 
     	getCurrentCenter() {
-    		return this.controls['center'].current.value;
+    		const p = this.controls['center'].current.value;
+    		return {x:p[0], y:p[1]};
     	}
 
     	getTargetCenter() {
-    		return this.controls['center'].target.value;
+    		const p = this.controls['center'].target.value;
+    		return {x:p[0], y:p[1]};
     	}
 
     	getBorderColor() {
@@ -7503,6 +8039,15 @@ void main() {
 
     	draw(transform, viewport) {
     		let done = this.interpolateControls();
+
+    		// Update dashboard size & pos
+    		if (this.dashboard) {
+    			const c = this.getCurrentCenter();
+    			const r = this.getRadius();
+    			this.dashboard.update(c.x, c.y, r);
+    			this.oldCenter = c;
+    			this.oldRadius = r;
+    		}
     		// const vlens = this.getLensInViewportCoords(transform, viewport);
     		// this.shader.setLensUniforms(vlens, [viewport.w, viewport.h], this.borderColor);
     		// this.emit('draw');
@@ -7548,7 +8093,7 @@ void main() {
     		
     		// Set in the lensShader the proper lens position wrt the window viewport
     		const vl = this.getLensInViewportCoords(transform, viewport);
-    		this.shader.setLensUniforms(vl, [viewport.w, viewport.h], this.getBorderColor());
+    		this.shader.setLensUniforms(vl, [viewport.w, viewport.h], this.getBorderColor(), this.borderEnable);
     	
     		this.prepareWebGL();
 
@@ -7578,9 +8123,9 @@ void main() {
 
     	getLensViewport(transform, viewport) {
     		const lensC = this.getCurrentCenter();
-    		const l = transform.sceneToViewportCoords(viewport, lensC);
+    		const l = CoordinateSystem.fromSceneToViewport(lensC, this.camera, this.useGL);
     		const r = this.getRadius() * transform.z;
-    		return {x: Math.floor(l[0]-r)-1, y: Math.floor(l[1]-r)-1, dx: Math.ceil(2*r)+2, dy: Math.ceil(2*r)+2, w:viewport.w, h:viewport.h};
+    		return {x: Math.floor(l.x-r)-1, y: Math.floor(l.y-r)-1, dx: Math.ceil(2*r)+2, dy: Math.ceil(2*r)+2, w:viewport.w, h:viewport.h};
     	}
 
     	getOverlayLayerViewport(transform, viewport) {
@@ -7588,14 +8133,14 @@ void main() {
     		if (this.layers.length == 2) {
     			// Get overlay projected viewport
     			let bbox = this.layers[1].boundingBox();
-    			const p0v = transform.sceneToViewportCoords(viewport, [bbox.xLow, bbox.yLow]);
-    			const p1v = transform.sceneToViewportCoords(viewport, [bbox.xHigh, bbox.yHigh]);
-    		
+    			const p0v = CoordinateSystem.fromSceneToViewport({x:bbox.xLow, y:bbox.yLow}, this.camera, this.useGL);
+    			const p1v = CoordinateSystem.fromSceneToViewport({x:bbox.xHigh, y:bbox.yHigh}, this.camera, this.useGL);
+    	
     			// Intersect with window viewport
-    			const x0 = Math.min(Math.max(0, Math.floor(p0v[0])), viewport.w);
-    			const y0 = Math.min(Math.max(0, Math.floor(p0v[1])), viewport.h);
-    			const x1 = Math.min(Math.max(0, Math.ceil(p1v[0])), viewport.w);
-    			const y1 = Math.min(Math.max(0, Math.ceil(p1v[1])), viewport.h);
+    			const x0 = Math.min(Math.max(0, Math.floor(p0v.x)), viewport.w);
+    			const y0 = Math.min(Math.max(0, Math.floor(p0v.y)), viewport.h);
+    			const x1 = Math.min(Math.max(0, Math.ceil(p1v.x)), viewport.w);
+    			const y1 = Math.min(Math.max(0, Math.ceil(p1v.y)), viewport.h);
 
     			const width = x1 - x0;
     			const height = y1 - y0;
@@ -7617,146 +8162,14 @@ void main() {
 
     	getLensInViewportCoords(transform, viewport) {
     		const lensC = this.getCurrentCenter();
-    		const c = transform.sceneToViewportCoords(viewport, lensC);
+    		const c = CoordinateSystem.fromSceneToViewport(lensC, this.camera, this.useGL);
     		const r = this.getRadius();
-    		return [c[0],  c[1], r * transform.z, this.getBorderWidth()];
+    		return [c.x, c.y, r * transform.z, this.getBorderWidth()];
     	}
 
     }
 
     Layer.prototype.types['lens'] = (options) => { return new LayerLens(options); };
-
-    class ControllerLens extends Controller {
-    	constructor(options) {
-
-    		super(options);
-
-            if (!options.lensLayer) {
-                console.log("ControllerLens lensLayer option required");
-                throw "ControllerLens lensLayer option required";
-            }
-     
-            if (!options.camera) {
-                console.log("ControllerLens camera option required");
-                throw "ControllerLens camera option required";
-            }
-
-            this.panning = false;
-            this.zooming = false;
-            this.initialDistance = 0;
-            this.startPos = [0, 0];
-        }
-
-    	panStart(e) {
-            if (!this.active)
-                return;
-
-            const p = this.getScenePosition(e);
-            this.panning = false;
-
-            if (this.isInsideLens(p)) {
-                this.panning = true;
-                e.preventDefault();
-            }
-    	}
-
-    	panMove(e) {
-            // Discard events due to cursor outside window
-            if (Math.abs(e.offsetX) > 64000 || Math.abs(e.offsetY) > 64000) return;
-            if(this.panning) {
-                const p = this.getScenePosition(e);
-                const dx = p[0]-this.startPos[0];
-                const dy = p[1]-this.startPos[1];
-                const c = this.lensLayer.getTargetCenter();
-        
-                this.lensLayer.setCenter(c[0] + dx, c[1] + dy);
-                this.startPos = p;
-                e.preventDefault();
-            }
-    	}
-
-    	panEnd(e) {
-    		if(!this.panning)
-    			return;
-    		this.panning = false;
-    	}
-
-    	pinchStart(e1, e2) {
-            if (!this.active)
-                return;
-
-            const p0 = this.getScenePosition(e1);
-            const p1 = this.getScenePosition(e2);
-            const pc = [(p0[0]+ p1[0]) * 0.5, (p0[1] + p1[1]) * 0.5];
-
-            if (this.isInsideLens(pc)) {
-                this.zooming = true;
-                this.initialDistance = this.distance(e1, e2);
-                this.initialRadius = this.lensLayer.getRadius();
-
-                e1.preventDefault();
-            } 
-    	}
-
-    	pinchMove(e1, e2) {
-    		if (!this.zooming)
-                return;
-            const d = this.distance(e1, e2);
-    		const scale = d / (this.initialDistance + 0.00001);
-            const newRadius = scale * this.initialRadius;
-            this.lensLayer.setRadius(newRadius);
-    	}
-
-    	pinchEnd(e, x, y, scale) {
-    		this.zooming = false;
-        }
-        
-        mouseWheel(e) {
-            const p = this.getScenePosition(e);
-            let result = false;
-            if (this.isInsideLens(p)) {
-                const delta = e.deltaY > 0 ? 1 : -1;
-                const factor = delta > 0 ? 1.2 : 1/1.2;
-                const r = this.lensLayer.getRadius();
-                this.lensLayer.setRadius(r*factor);
-
-                result = true;
-                e.preventDefault();
-            } 
-            
-            return result;
-        }
-
-    	getScenePosition(e, t = null) {
-            let x = e.offsetX;
-            let y = e.offsetY;
-            let rect = e.target.getBoundingClientRect();
-
-            // Transform canvas p to scene coords
-            if (t == null) {
-                let now = performance.now();
-                t = this.camera.getCurrentTransform(now);
-            }
-            const p = t.viewportToSceneCoords(this.camera.viewport, [x, rect.height- y]);
-            
-            return p;
-        }
-
-    	distance(e1, e2) {
-    		return Math.sqrt(Math.pow(e1.x - e2.x, 2) + Math.pow(e1.y - e2.y, 2));
-    	}
-
-        isInsideLens(p) {
-            const c = this.lensLayer.getCurrentCenter();
-            const dx = p[0] - c[0];
-            const dy = p[1] - c[1];
-            const d2 = dx*dx + dy*dy;
-            const r = this.lensLayer.getRadius();
-            const res = d2 < r * r;
-            if (res) { this.startPos = p;}
-            return res;
-        }
-    }
 
     /**
      * The FocusContext class is responsible for identifying a good Focus and Context situation.
@@ -7783,22 +8196,22 @@ void main() {
             // When t is 0.5: border situation, move both focus & context to keep the lens steady on screen.
             // In this case the context should be moved of deltaFocus*scale to achieve steadyness.
             // Thus interpolate deltaContext between 0 and deltaFocus*s (with t ranging from 1 to 0.5)
-            const deltaFocus = [delta[0] * txy[0], delta[1] * txy[1]];
-            const deltaContext = [-deltaFocus[0] * context.z * 2 * (1-txy[0]), 
-                                   deltaFocus[1] * context.z * 2 * (1-txy[1])];
-            context.x += deltaContext[0];
-            context.y += deltaContext[1];
+            const deltaFocus = {x:delta.x * txy.x, y: delta.y * txy.y};
+            const deltaContext = {x:-deltaFocus.x * context.z * 2 * (1-txy.x), 
+                                  y:-deltaFocus.y * context.z * 2 * (1-txy.y)};
+            context.x += deltaContext.x;
+            context.y += deltaContext.y;
 
-            focus.position[0] += deltaFocus[0];
-            focus.position[1] += deltaFocus[1];
+            focus.position.x += deltaFocus.x;
+            focus.position.y += deltaFocus.y;
 
             // Clamp lens position on dataset boundaries
-            if (Math.abs(focus.position[0]) > imageSize.w/2) {
-                focus.position[0] = imageSize.w/2 * Math.sign(focus.position[0]);
+            if (Math.abs(focus.position.x) > imageSize.w/2) {
+                focus.position.x = imageSize.w/2 * Math.sign(focus.position.x);
             }
 
-            if (Math.abs(focus.position[1]) > imageSize.h/2) {
-                focus.position[1] = imageSize.h/2 * Math.sign(focus.position[1]);
+            if (Math.abs(focus.position.y) > imageSize.h/2) {
+                focus.position.y = imageSize.h/2 * Math.sign(focus.position.y);
             } 
         }
 
@@ -7846,8 +8259,8 @@ void main() {
             }
         
             // Scale around lens center
-            context.x += focus.position[0]*context.z*(1 - zoomScaleAmount);
-            context.y -= focus.position[1]*context.z*(1 - zoomScaleAmount);
+            context.x += focus.position.x*context.z*(1 - zoomScaleAmount);
+            context.y += focus.position.y*context.z*(1 - zoomScaleAmount);
             context.z = context.z * zoomScaleAmount;  
             focus.radius *= radiusScaleAmount;
         }
@@ -7861,17 +8274,21 @@ void main() {
          */
         static adaptContext(viewport, focus, context, desiredScale) {
             // Get current projected annotation center position
-            const pOld = context.sceneToViewportCoords(viewport, focus.position);
+            //const pOld = context.sceneToViewportCoords(viewport, focus.position);
+            const useGL = true;
+            const pOld = CoordinateSystem.fromSceneToViewportNoCamera(focus.position, context, viewport, useGL);
             context.z = desiredScale;
 
             FocusContext.adaptContextScale(viewport, focus, context);
             
             // After scale, restore projected annotation position, in order to avoid
             // moving the annotation center outside the boundaries
-            const pNew = context.sceneToViewportCoords(viewport, focus.position);
-            const delta = [pNew[0] - pOld[0], pNew[1] - pOld[1]];
-            context.x -= delta[0];
-            context.y += delta[1];
+            //const pNew = context.sceneToViewportCoords(viewport, focus.position);
+            const pNew = CoordinateSystem.fromSceneToViewportNoCamera(focus.position, context, viewport, useGL);
+
+            const delta = [pNew.x - pOld.x, pNew.y - pOld.y];
+            context.x -= delta.x;
+            context.y += delta.y;
 
             // Force annotation inside the viewport
             FocusContext.adaptContextPosition(viewport, focus, context);
@@ -7894,11 +8311,6 @@ void main() {
                 context.z = radiusRange.max / focus.radius;
                 // zoomScaleAmount = (radiusRange.max / focus.radius) / context.z;
             }
-         
-            // Scale around focus center
-            // context.x += focus.position[0]*context.z*(1 - zoomScaleAmount);
-            // context.y -= focus.position[1]*context.z*(1 - zoomScaleAmount);
-            // context.z = context.z * zoomScaleAmount; 
         }
 
         /**
@@ -7910,17 +8322,16 @@ void main() {
         static adaptContextPosition(viewport, focus, context) {
             const delta = this.getCanvasBorder(focus, context);
             let box = this.getShrinkedBox(viewport, delta);
-            const screenP = context.sceneToViewportCoords(viewport, focus.position);
-            for(let i = 0; i < 2; ++i) {
-                const deltaMin = Math.max(0, (box.min[i] - screenP[i]));
-                const deltaMax = Math.min(0, (box.max[i] - screenP[i]));
-                let delta = deltaMin != 0 ? deltaMin : deltaMax;
-                if (i == 0) {
-                    context.x += delta;
-                } else {
-                    context.y -= delta;
-                }
-            }
+            const useGL = true;
+            const screenP = CoordinateSystem.fromSceneToViewportNoCamera(focus.position, context, viewport, useGL);
+           
+            const deltaMinX = Math.max(0, (box.xLow - screenP.x));
+            const deltaMaxX = Math.min(0, (box.xHigh - screenP.x));
+            context.x += deltaMinX != 0 ? deltaMinX : deltaMaxX;
+            
+            const deltaMinY = Math.max(0, (box.yLow - screenP.y));
+            const deltaMaxY = Math.min(0, (box.yHigh - screenP.y));
+            context.y += deltaMinY != 0 ? deltaMinY : deltaMaxY;
         }
 
         /**
@@ -7932,24 +8343,27 @@ void main() {
             // 0.5 is borderline focus and context. 
             const delta = this.getCanvasBorder(focus, context);
             const box = this.getShrinkedBox(viewport, delta);
-            const p = context.sceneToViewportCoords(viewport, focus.position); 
+            //  const p = context.sceneToViewportCoords(viewport, focus.position); 
+            const useGL = true;
+            const p = CoordinateSystem.fromSceneToViewportNoCamera(focus.position, context, viewport, useGL);
+            
 
             const halfCanvasW = viewport.w / 2 - delta;
             const halfCanvasH = viewport.h / 2 - delta;
         
-            let xDistance = (panDir[0] > 0 ?
-              Math.max(0, Math.min(halfCanvasW, box.max[0] - p[0])) / (halfCanvasW) :
-              Math.max(0, Math.min(halfCanvasW, p[0] - box.min[0])) / (halfCanvasW));
+            let xDistance = (panDir.x > 0 ?
+              Math.max(0, Math.min(halfCanvasW, box.xHigh - p.x)) / (halfCanvasW) :
+              Math.max(0, Math.min(halfCanvasW, p.x - box.xLow)) / (halfCanvasW));
             xDistance = this.smoothstep(xDistance, 0, 0.75);
         
-            let yDistance = (panDir[1] > 0 ?
-              Math.max(0, Math.min(halfCanvasH, box.max[1] - p[1])) / (halfCanvasH) :
-              Math.max(0, Math.min(halfCanvasH, p[1] - box.min[1])) / (halfCanvasH));
+            let yDistance = (panDir.y > 0 ?
+              Math.max(0, Math.min(halfCanvasH, box.yHigh - p.y)) / (halfCanvasH) :
+              Math.max(0, Math.min(halfCanvasH, p.y - box.yLow)) / (halfCanvasH));
             yDistance = this.smoothstep(yDistance, 0, 0.75);
             
             // Use d/2+05, because when d = 0.5 camera movement = lens movement 
             // with the effect of the lens not moving from its canvas position.
-            const txy =  [xDistance / 2 + 0.5, yDistance / 2 + 0.5];
+            const txy =  {x:xDistance / 2 + 0.5, y: yDistance / 2 + 0.5};
             return txy;
         }
 
@@ -7968,8 +8382,10 @@ void main() {
         static getShrinkedBox(viewport, delta) {
             // Return the viewport box in canvas pixels, shrinked of delta pixels on the min,max corners
             const box = {
-                min: [delta, delta],
-                max: [viewport.w - delta, viewport.h - delta]
+               xLow:delta, 
+               yLow:delta,
+               xHigh:viewport.w - delta, 
+               yHigh:viewport.h - delta
             };
             return box;
         }
@@ -8002,6 +8418,222 @@ void main() {
 
     }
 
+    class ControllerLens extends Controller {
+    	constructor(options) {
+
+    		super(options);
+
+            if (!options.lensLayer) {
+                console.log("ControllerLens lensLayer option required");
+                throw "ControllerLens lensLayer option required";
+            }
+     
+            if (!options.camera) {
+                console.log("ControllerLens camera option required");
+                throw "ControllerLens camera option required";
+            }
+
+            this.panning = false;
+            this.zooming = false;
+            this.initialDistance = 0;
+            this.startPos = {x:0, y:0};
+            this.oldCursorPos = {x:0, y:0};
+            this.useGL = false;
+        }
+
+    	panStart(e) {
+            if (!this.active)
+                return;
+
+            const p = this.getScenePosition(e);
+            this.panning = false;
+
+            const hit = this.isInsideLens(p);
+            if (this.lensLayer.visible && hit.inside) {
+                // if (hit.border) {
+                //     this.zooming = true;
+                //     const p = this.getPixelPosition(e);
+                //     this.zoomStart(p);
+                // } else {
+                //     this.panning = true;
+                // }
+                this.panning = true;
+                this.startPos = p;
+
+                e.preventDefault();
+            }
+    	}
+
+    	panMove(e) {
+            // Discard events due to cursor outside window
+            this.getPixelPosition(e);
+            if (Math.abs(e.offsetX) > 64000 || Math.abs(e.offsetY) > 64000) return;
+            if(this.panning) {
+                const p = this.getScenePosition(e);
+                const dx = p.x-this.startPos.x;
+                const dy = p.y-this.startPos.y;
+                const c = this.lensLayer.getTargetCenter();
+        
+                this.lensLayer.setCenter(c.x + dx, c.y + dy);
+                this.startPos = p;
+                e.preventDefault();
+            }
+            //  else if (this.zooming) {
+            //     const p = this.getPixelPosition(e);
+            //     this.zoomMove(p);
+            // }
+    	}
+
+    	panEnd(e) {
+    		this.panning = false;
+            this.zooming = false;
+    	}
+
+    	pinchStart(e1, e2) {
+            if (!this.active)
+                return;
+
+            const p0 = this.getScenePosition(e1);
+            const p1 = this.getScenePosition(e2);
+            const pc = {x:(p0.x+ p1.x) * 0.5, y: (p0.y + p1.y) * 0.5};
+
+            if (this.lensLayer.visible && this.isInsideLens(pc).inside) {
+                this.zooming = true;
+                this.initialDistance = this.distance(e1, e2);
+                this.initialRadius = this.lensLayer.getRadius();
+                this.startPos = pc;
+
+                e1.preventDefault();
+            } 
+    	}
+
+    	pinchMove(e1, e2) {
+    		if (!this.zooming)
+                return;
+            const d = this.distance(e1, e2);
+    		const scale = d / (this.initialDistance + 0.00001);
+            const newRadius = scale * this.initialRadius;
+            this.lensLayer.setRadius(newRadius);
+    	}
+
+    	pinchEnd(e, x, y, scale) {
+    		this.zooming = false;
+        }
+        
+        mouseWheel(e) {
+            const p = this.getScenePosition(e);
+            let result = false;
+            if (this.lensLayer.visible && this.isInsideLens(p).inside) {
+                const delta = e.deltaY > 0 ? 1 : -1;
+                const factor = delta > 0 ? 1.2 : 1/1.2;
+                const r = this.lensLayer.getRadius();
+                this.lensLayer.setRadius(r*factor);
+                this.startPos = p;
+
+                result = true;
+                e.preventDefault();
+            } 
+            
+            return result;
+        }
+
+
+        
+        /**
+         * Start zoom operation clicking on lens border. Call it at start of pointerdown event on lens border
+         * @param {*} pe pixel position in CanvasHtml
+         */
+         zoomStart(pe) {
+             if (!this.lensLayer.visible) return;
+
+            this.zooming = true;
+            this.oldCursorPos = pe; // Used by derived class
+            const p = this.getScenePosition(pe);
+            const lens = this.getFocus();
+            const r = lens.radius;
+            const c = lens.position;
+            let v = {x: p.x-c.x, y: p.y-c.y};
+            let d = Math.sqrt(v.x*v.x + v.y*v.y);
+
+            // Difference between radius and |Click-LensCenter| will be used by zoomMove
+            this.deltaR = d - r;
+        }
+
+        /**
+         * Zoom dragging lens border. Call it during pointermove event on lens border
+         * @param {*} pe pixel position CanvasHTml
+         */
+         zoomMove(pe) {
+            if (this.zooming) {
+                const p = this.getScenePosition(pe);
+
+                const lens = this.getFocus();
+                const c = lens.position;
+                let v = {x: p.x-c.x, y: p.y-c.y};
+                let d = Math.sqrt(v.x*v.x + v.y*v.y);
+
+                //  Set as new radius |Click-LensCenter|(now) - |Click-LensCenter|(start)
+                const scale = this.camera.getCurrentTransform(performance.now()).z; 
+                const radiusRange = FocusContext.getRadiusRangeCanvas(this.camera.viewport);
+                const newRadius = Math.max(radiusRange.min / scale, d - this.deltaR);
+
+                this.lensLayer.setRadius(newRadius, this.zoomDelay);
+            }
+        }
+
+        /**
+         * End of zoom operation on lens border
+         */
+        zoomEnd() {
+            this.zooming = false;
+        }
+
+        getFocus() {
+            const p = this.lensLayer.getCurrentCenter();
+            const r = this.lensLayer.getRadius();
+            return  {position: p, radius: r}
+        }
+
+        isInsideLens(p) {
+            const c = this.lensLayer.getCurrentCenter();
+            const dx = p.x - c.x;
+            const dy = p.y - c.y;
+            const d  = Math.sqrt(dx*dx + dy*dy);
+            const r = this.lensLayer.getRadius();
+            const inside = d < r;
+
+            const t = this.camera.getCurrentTransform(performance.now());
+            const b = this.lensLayer.getBorderWidth() / t.z;
+            const border = inside && d > r-b;
+            //console.log("IsInside " + d.toFixed(0) + " r " + r.toFixed(0) + ", b " + b.toFixed(0) + " IN " + inside + " B " + border);
+            return {inside:inside, border:border};
+        }
+
+        /**
+         * Convert position from CanvasHtml to Viewport
+         * @param {*} e contain offsetX,offsetY position in CanvasHtml (0,0 top,left, y Down)
+         * @returns Position in Viewport (0,0 at bottom,left, y Up)
+         */
+        getPixelPosition(e) {
+            const p = {x: e.offsetX, y: e.offsetY};
+            return CoordinateSystem.fromCanvasHtmlToViewport(p, this.camera, this.useGL);
+        }
+
+        /**
+         * Convert position from CanvasHtml to Scene
+         * @param {*} e must contain offsetX,offsetY position in CanvasHtml (0,0 top,left, y Down)
+         * @returns Point in Scene coordinates (0,0 at center, y Up)
+         */
+    	getScenePosition(e) {
+            const p = {x: e.offsetX, y: e.offsetY};
+            return CoordinateSystem.fromCanvasHtmlToScene(p, this.camera, this.useGL);
+        }
+
+    	distance(e1, e2) {
+    		return Math.sqrt(Math.pow(e1.x - e2.x, 2) + Math.pow(e1.y - e2.y, 2));
+    	}
+    }
+
     class ControllerFocusContext extends ControllerLens {
         static callUpdate(param) {
             param.update();
@@ -8014,7 +8646,8 @@ void main() {
                 updateDelay: 100,
                 zoomDelay: 150,
                 zoomAmount: 1.5,
-                priority: -100
+                priority: -100,
+                enableDirectContextControl: true
     		}, options);
 
             if (!options.lensLayer) {
@@ -8043,46 +8676,47 @@ void main() {
             this.imageSize = { w: 1, h: 1 };
             this.FocusContextEnabled = true;
 
-            this.centerToClickOffset = [0, 0];
-            this.previousClickPos = [0, 0];
-            this.currentClickPos = [0, 0];
+            this.centerToClickOffset = {x: 0, y: 0};
+            this.previousClickPos = {x: 0, y: 0};
+            this.currentClickPos = {x: 0, y: 0};
 
-            this.insideLens = false;
+            this.insideLens = {inside:false, border:false};
             this.panning = false;
             this.zooming = false;
             this.panningCamera = false;
 
             // Handle only camera panning
-            this.startPos = [0, 0];
+            this.startPos = {x: 0, y: 0};
             this.initialTransform = this.camera.getCurrentTransform(performance.now());
             
             // Handle pinchZoom
             this.initialPinchDistance = 1;
             this.initialPinchRadius = 1;
-            this.initialPinchPos = [0,0];
+            this.initialPinchPos = {x: 0, y: 0};
         }
 
     	panStart(e) {
             if (!this.active)
                 return;
                 
-            const t = this.camera.getCurrentTransform(performance.now());
-            const p = this.getScenePosition(e, t);
+            const p = this.getScenePosition(e);
             this.panning = false;
             this.insideLens = this.isInsideLens(p);
+            const startPos = this.getPixelPosition(e); 
 
-            if (this.insideLens) {
-                const startPos = this.getPixelPosition(e); 
-
-                const lc = this.getScreenPosition(this.getFocus().position, t);
-                this.centerToClickOffset = [startPos[0] - lc[0], startPos[1] - lc[1]];
-                this.currentClickPos = [startPos[0], startPos[1]];
+            if (this.lensLayer.visible && this.insideLens.inside) {
+                const lc = CoordinateSystem.fromSceneToViewport(this.getFocus().position, this.camera, this.useGL);
+                
+                this.centerToClickOffset = {x:startPos.x - lc.x, y: startPos.y - lc.y};
+                this.currentClickPos = {x: startPos.x, y: startPos.y};
                 this.panning = true;
             } else {
-                this.startPos = { x: e.offsetX, y: e.offsetY };
-                this.initialTransform = t;
-                this.camera.target = this.initialTransform.copy(); //stop animation.
-                this.panningCamera = true;
+                if (this.enableDirectContextControl) {
+                    this.startPos = startPos;
+                    this.initialTransform = this.camera.getCurrentTransform(performance.now());
+                    this.camera.target = this.initialTransform.copy(); //stop animation.
+                    this.panningCamera = true;
+                }
             }
             e.preventDefault();
 
@@ -8093,12 +8727,11 @@ void main() {
 
         panMove(e) {
             if (Math.abs(e.offsetX) > 64000 || Math.abs(e.offsetY) > 64000) return;
-            if(this.panning) {
-                this.currentClickPos = this.getPixelPosition(e);
-            } else if (this.panningCamera) {
+            this.currentClickPos = this.getPixelPosition(e);
+            if(this.panning) ; else if (this.panningCamera) {
                 let m = this.initialTransform;
-                let dx = (e.offsetX - this.startPos.x);
-                let dy = (e.offsetY - this.startPos.y);
+                let dx = (this.currentClickPos.x - this.startPos.x);
+                let dy = (this.currentClickPos.y - this.startPos.y);
 
                 this.camera.setPosition(this.updateDelay, m.x + dx, m.y + dy, m.z, m.a);
             }
@@ -8110,15 +8743,12 @@ void main() {
 
             const p0 = this.getScenePosition(e1);
             const p1 = this.getScenePosition(e2);
-            const p = [(p0[0] + p1[0]) * 0.5, (p0[1] + p1[1]) * 0.5];
-            this.initialPinchPos = [(e1.offsetX + e2.offsetX) * 0.5, (e1.offsetY + e2.offsetY) * 0.5];
+            const p = {x:(p0.x + p1.x) * 0.5, y: (p0.y + p1.y) * 0.5};
+            this.initialPinchPos = {x: (e1.offsetX + e2.offsetX) * 0.5, y: (e1.offsetY + e2.offsetY) * 0.5};
             this.insideLens = this.isInsideLens(p);
             this.zooming = true;
             this.initialPinchDistance = this.distance(e1, e2);
             this.initialPinchRadius = this.lensLayer.getRadius();
-            this.initialScale = this.camera.getCurrentTransform(performance.now()).z; 
-            
-            console.log("Start pinchZoom inside " + this.insideLens);
 
             e1.preventDefault();
     	}
@@ -8127,17 +8757,18 @@ void main() {
             if (this.zooming) {
                 const d = this.distance(e1, e2);
                 const scale = d / (this.initialPinchDistance + 0.00001);
-                if (this.insideLens) {
+                if (this.lensLayer.visible && this.insideLens.inside) {
                     const newRadius = scale * this.initialPinchRadius;
                     const currentRadius = this.lensLayer.getRadius();
                     const dz = newRadius / currentRadius;
                     // Zoom around initial pinch pos, and not current center to avoid unwanted drifts
-                    //console.log("D " + d.toFixed(2) + "/ InitD " + this.initialPinchDistance.toFixed(2) + " =Sc " + scale.toFixed(2));
                     this.updateRadiusAndScale(dz);
                     //this.initialPinchDistance = d;
                 } else {
-                    this.updateScale(this.initialPinchPos[0], this.initialPinchPos[1], scale);
-                    this.initialPinchDistance = d;
+                    if (this.enableDirectContextControl) {
+                        this.updateScale(this.initialPinchPos.x, this.initialPinchPos.y, scale);
+                        this.initialPinchDistance = d;
+                    }
                 }
             }
         }
@@ -8146,19 +8777,99 @@ void main() {
     		this.zooming = false;
         }
 
+        /**   
+         * Start zoom operation clicking on lens border. Call it on pointerdown event on lens border
+         * @param {*} p pixel position in 0,wh (y up)
+         */
+        zoomStart(pe) {
+            if (this.lensLayer.visible) {
+                super.zoomStart(pe);
+
+                // Ask to call zoomUpdate at regular interval during zoommovement
+                this.timeOut = setInterval(this.zoomUpdate.bind(this), 50);
+            }
+        }
+
+        /**
+         * Zoom dragging lens border. Call it during pointermove event on lens border
+         * @param {*} p pixel position in 0,wh (y up)
+         */
+         zoomMove(pe) {
+            if (this.zooming) {
+                this.oldCursorPos = pe;
+                let t = this.camera.getCurrentTransform(performance.now()); 
+                // let p = t.viewportToSceneCoords(this.camera.viewport, pe); 
+                const p = this.getScenePosition(pe);
+                
+                const lens = this.getFocus();
+                const c = lens.position;
+                let v = {x: p.x-c.x, y: p.y-c.y};
+                let d = Math.sqrt(v.x*v.x + v.y*v.y);
+
+                //Set as new radius |Click-LensCenter|(now) - |Click-LensCenter|(start)
+                const radiusRange = FocusContext.getRadiusRangeCanvas(this.camera.viewport);
+                const newRadius = Math.max(radiusRange.min / t.z, d - this.deltaR);
+                const dz = newRadius / lens.radius;
+                this.updateRadiusAndScale(dz);
+            }
+        }
+        
+        /** @ignore  */
+        zoomUpdate() {
+            // Give continuity to zoom  scale also when user is steady.
+            // If lens border is able to reach user pointer zoom stops.
+            // If this is not possible due to camera scale update, 
+            // zoom will continue with a speed proportional to the radius/cursor distance
+            
+            if (this.zooming) {
+                const p = this.getScenePosition(this.oldCursorPos);
+
+                const lens = this.getFocus();
+                const c = lens.position;
+                let v = {x: p.x-c.x, y: p.y-c.y};
+                let d = Math.sqrt(v.x*v.x + v.y*v.y);
+
+                //Set as new radius |Click-LensCenter|(now) - |Click-LensCenter|(start)
+                const radiusRange = FocusContext.getRadiusRangeCanvas(this.camera.viewport);
+                let t = this.camera.getCurrentTransform(performance.now()); 
+                const newRadius = Math.max(radiusRange.min / t.z, d - this.deltaR);
+                const dz = newRadius / lens.radius;
+                this.updateRadiusAndScale(dz);
+            }
+        }
+
+        /**
+         * Called at end of zoom border drag operation
+         */
+        zoomEnd() {
+            if (this.lensLayer.visible) {
+                super.zoomEnd();
+                // Stop calling zoomUpdate
+                clearTimeout(this.timeOut);
+            }
+        }
+        
         mouseWheel(e) {
             const p = this.getScenePosition(e);
             this.insideLens = this.isInsideLens(p);
             const dz = e.deltaY  > 0 ? this.zoomAmount : 1/this.zoomAmount;
-            if (this.insideLens) {
+            if (this.lensLayer.visible && this.insideLens.inside) {
                 this.updateRadiusAndScale(dz);
             } else {
-                // Invert scale when updating scale instead of lens radius, to obtain the same zoom direction
-                this.updateScale(e.offsetX, e.offsetY, 1/dz);
+                if (this.enableDirectContextControl) {
+                    // Invert scale when updating scale instead of lens radius, to obtain the same zoom direction
+                    const p = this.getPixelPosition(e);
+                    this.updateScale(p.x, p.y, 1 / dz);
+                }
             }
             e.preventDefault();
         }
 
+        /**
+         * Multiply lens radius of dz. Consequently adjust camera in order to keep Focus & Context condition verified.
+         * At the end of the operation lens radius could be 
+         * @param {*} dz factor to multiply lens radius
+         */
         updateRadiusAndScale(dz) {
             let focus = this.getFocus();
             const now = performance.now();
@@ -8189,57 +8900,51 @@ void main() {
         }
 
         panEnd() {
+            if (this.panning) { clearTimeout(this.timeOut); }
+
             this.panning = false;
             this.panningCamera = false;
             this.zooming = false;
-            clearTimeout(this.timeOut);
         }
 
          update() {
             if (this.panning) {
-                const t = this.camera.getCurrentTransform(performance.now());
-                let lensDeltaPosition = this.lastInteractionDelta(t);
-                lensDeltaPosition[0] /= t.z;
-                lensDeltaPosition[1] /= t.z;
-
                 let context = this.camera.getCurrentTransform(performance.now());
+                let lensDeltaPosition = this.lastInteractionDelta();
+                lensDeltaPosition.x /= context.z;
+                lensDeltaPosition.y /= context.z;
+
                 let focus = this.getFocus();
                 if (this.FocusContextEnabled) {
                     FocusContext.pan(this.camera.viewport, focus, context, lensDeltaPosition, this.imageSize);
                     this.camera.setPosition(this.updateDelay, context.x, context.y, context.z, context.a);
                 } else {
-                    focus.position[0] += lensDeltaPosition[0];
-                    focus.position[1] += lensDeltaPosition[1];
+                    focus.position.x += lensDeltaPosition.x;
+                    focus.position.y += lensDeltaPosition.y;
                 }
 
-                this.lensLayer.setCenter(focus.position[0], focus.position[1], this.updateDelay);
-                this.previousClickPos = [this.currentClickPos[0], this.currentClickPos[1]];
+                this.lensLayer.setCenter(focus.position.x, focus.position.y, this.updateDelay);
+                this.previousClickPos = [this.currentClickPos.x, this.currentClickPos.y];
             } 
         }
 
-        lastInteractionDelta(t) {
-            let result = [0, 0];
+        lastInteractionDelta() {
+            let result = {x:0, y:0};
             // Compute delta with respect to previous position
-            if (this.panning && this.insideLens) {
+            if (this.panning && this.insideLens.inside) {
                 // For lens pan Compute delta wrt previous lens position
-                const lc = this.getScreenPosition(this.getFocus().position, t);
+                const lc = CoordinateSystem.fromSceneToViewport(this.getFocus().position, this.camera, this.useGL);
                 result =
-                    [this.currentClickPos[0] - lc[0] - this.centerToClickOffset[0],
-                     this.currentClickPos[1] - lc[1] - this.centerToClickOffset[1]];
+                    {x: this.currentClickPos.x - lc.x - this.centerToClickOffset.x,
+                     y: this.currentClickPos.y - lc.y - this.centerToClickOffset.y};
             } else {
                 // For camera pan Compute delta wrt previous click position
                 result = 
-                    [this.currentClickPos[0] - this.previousClickPos[0],
-                     this.currentClickPos[1] - this.previousClickPos[1]];
+                    {x: this.currentClickPos.x - this.previousClickPos.x,
+                     y: this.currentClickPos.y - this.previousClickPos.y};
             }
           
             return result;
-        }
-
-        getFocus() {
-            const p = this.lensLayer.getCurrentCenter();
-            const r = this.lensLayer.getRadius();
-            return  {position: p, radius: r}
         }
         
         setDatasetDimensions(width, height) {
@@ -8252,32 +8957,1524 @@ void main() {
             this.lensLayer.setRadius(imageRadius);
             this.lensLayer.setCenter(this.imageSize.w * 0.5, this.imageSize.h*0.5);
         }
+
+    }
+
+    /**
+     * RenderingMode for lens and background. Currently implemented only draw and hide.
+     */
+    const RenderingMode = {
+        draw: "fill:white;",
+        hide: "fill:black;"
+    };
+
+    /**
+     * Callback function fired by a 'click' event on a lens dashboard element.
+     * @function taskCallback
+     * @param {Event} e The DOM event.
+     */
+
+    /**
+     * The LensDashboard class is an optional element that can be embedded in an instance of {@link LayerLens}.
+     * It represents a square HTML container of sufficient size to hold the lens that is positioned solidly against it.
+     * Its main use is to allow the creation of a dashboard of HTML elements positioned around the lens.
+     * 
+     * In the example below a simple HTML button is positioned close to the top-left corner of the dashboard:
+     * 
+     * @example
+     * 
+     * const lensDashboard = new OpenLIME.LensDashboard(lime);
+     * const lensLayer = new OpenLIME.Layer({
+     * type: "lens",
+     * layers: [layerIn],
+     * 		camera: lime.camera,
+     *		radius: 200,
+     *		border: 10,
+     *		dashboard: lensDashboard,
+     *		visible: true
+     * });
+     * lime.addLayer('lens', lensLayer);
+     *  
+     * const btn = document.createElement('button');
+     * btn.innerHTML = "Click Me";
+     * btn.style = `position: absolute;  
+     *				left: 0px; 
+     *				top: 0px;
+     *				display: inline-block; 
+     *				cursor: pointer;
+     *				pointer-events: auto;`;
+     * lensDashboard.append(btn);
+     */
+    class LensDashboard {
+
+    	/**
+     	* Manages creation and update of a lens dashboard.
+     	* An object literal with Layer `options` can be specified.
+    	* This class instatiates an optional element of {@link LayerLens}
+     	* @param {Object} options An object literal with Lensdashboard parameters.
+     	* @param {number} options.borderWidth=30 The extra border thickness (in pixels) around the square including the lens.
+     	*/
+    	constructor(viewer, options) {
+    		options = Object.assign({
+    			containerSpace: 80,
+    			borderColor: [0.078, 0.078, 0.078, 1],
+    			borderWidth: 12,
+    			layerSvgAnnotation: null   
+    		}, options);
+    		Object.assign(this, options);
+
+    		this.lensLayer = null;
+            this.viewer = viewer;
+    		this.elements = [];
+            this.container = document.createElement('div');
+    		this.container.style = `position: absolute; width: 50px; height: 50px; background-color: rgb(200, 0, 0, 0.0); pointer-events: none`;
+    		this.container.classList.add('openlime-lens-dashboard');		
+    		this.viewer.containerElement.appendChild(this.container);
+      
+    		const col = [255.0 * this.borderColor[0], 255.0 * this.borderColor[1], 255.0 * this.borderColor[2], 255.0 * this.borderColor[3]];
+    		this.lensElm = Util.createSVGElement('svg', { viewBox: `0 0 100 100` });
+    		const circle = Util.createSVGElement('circle', { cx: 10, cy: 10, r: 50 });
+    		circle.setAttributeNS(null, 'style', `position:absolute; visibility: visible; fill: none; stroke: rgb(${col[0]},${col[1]},${col[2]},${col[3]}); stroke-width: ${this.borderWidth}px;`);
+    		circle.setAttributeNS(null, 'shape-rendering', 'geometricPrecision');
+    		this.lensElm.appendChild(circle);
+    		this.container.appendChild(this.lensElm);
+    		this.setupCircleInteraction(circle);
+    		this.lensBox = { x: 0, y: 0, r: 0, w: 0, h: 0 };
+    		  
+    		this.svgElement = null;
+    		this.svgMaskId = 'openlime-image-mask';
+    		this.svgMaskUrl = `url(#${this.svgMaskId})`;
+
+    		this.noupdate=false;
+        }
+
+    	/**
+    	 * Setup the event listener to update lens radius by dragging lens border.
+    	 * Call the lens controller to update lens radius.
+    	 * @param {*} circle lens svg border.
+    	 */
+    	setupCircleInteraction(circle) {
+    		circle.style.pointerEvents = 'auto';
+    		this.isCircleSelected = false;
+
+    		// OffsetXY are unstable from this point (I don't know why)
+    		// Thus get coordinates from clientXY
+    		function getXYFromEvent(e, container) {
+    			const x = e.clientX -  container.offsetLeft - container.clientLeft;
+    			const y = e.clientY - container.offsetTop - container.clientTop;
+    			return {offsetX:x, offsetY:y};
+    		}
+
+            this.viewer.containerElement.addEventListener('pointerdown', (e) => {
+                if(circle == e.target) {
+                    this.isCircleSelected = true;		
+    				if (this.lensLayer.controllers[0]) {
+    					const p = getXYFromEvent(e, this.viewer.containerElement);
+    					this.lensLayer.controllers[0].zoomStart(p);
+    				}
+    				e.preventDefault();
+    				e.stopPropagation();
+    			}
+    		 });
+
+    		 this.viewer.containerElement.addEventListener('pointermove', (e) => {
+    			 if (this.isCircleSelected) {
+    				if (this.lensLayer.controllers[0]) {
+    					const p = getXYFromEvent(e, this.viewer.containerElement);
+    					this.lensLayer.controllers[0].zoomMove(p);
+    				}
+    				e.preventDefault();
+    				e.stopPropagation();
+    			}
+    		 });
+
+    		 this.viewer.containerElement.addEventListener('pointerup', (e) => {
+    			if (this.isCircleSelected) {
+    				if (this.lensLayer.controllers[0]) {
+    					this.lensLayer.controllers[0].zoomEnd();
+    				}
+    				this.isCircleSelected = false;
+    				e.preventDefault();
+    				e.stopPropagation();
+    			}
+    		 });
+    	}
+
+    	/**
+    	 * Call this to set the corresponding LayerSvgAnnotation
+    	 * @param {LayerSvgAnnotation} l 
+    	 */
+    	setLayerSvgAnnotation(l) {
+    		this.layerSvgAnnotation = l;
+    		this.svgElement = this.layerSvgAnnotation.svgElement;
+    	}
+
+    	/** @ignore */
+    	createSvgLensMask() {
+    		if (this.svgElement == null) this.setupSvgElement();
+    		if (this.svgElement == null) return;
+    	
+    		// Create a mask made of a rectangle (it will be set to the full viewport) for the background
+    		// And a circle, corresponding to the lens. 
+            const w = 100; // The real size will be set at each frame by the update function
+            this.svgMask = Util.createSVGElement("mask", {id: this.svgMaskId});
+    		this.svgGroup = Util.createSVGElement("g");
+            this.outMask = Util.createSVGElement("rect", {id:'outside-lens-mask', x:-w/2, y:-w/2, width: w, height:w,  style:"fill:black;"});
+            this.inMask = Util.createSVGElement("circle", {id:'inside-lens-mask', cx:0, cy:0, r: w/2, style:"fill:white;"});
+            this.svgGroup.appendChild(this.outMask);
+            this.svgGroup.appendChild(this.inMask);
+            this.svgMask.appendChild(this.svgGroup);
+    		this.svgElement.appendChild(this.svgMask);
+
+            // FIXME Remove svgCheck. It's a Check, just to have an SVG element to mask
+    		// this.svgCheck = Util.createSVGElement('rect', {x:-w/2, y:-w/2, width:w/2, height:w/2, style:'fill:orange; stroke:blue; stroke-width:5px;'}); //  
+    		// this.svgCheck.setAttribute('mask', this.svgMaskUrl);
+    		// this.svgElement.appendChild(this.svgCheck);
+    		// console.log(this.svgCheck);
+    	}
+
+    	/** @ignore */
+    	setupSvgElement() {
+    		if (this.layerSvgAnnotation) {
+    			// AnnotationLayer available, get its root svgElement
+    			if (this.svgElement == null) {
+    				//console.log("NULL SVG ELEMENT, take it from layerSvgAnnotation");
+    				this.svgElement = this.layerSvgAnnotation.svgElement;
+    			}
+    		} else {
+    			// No annotationLayer, search for an svgElement
+    		
+    			// First: get shadowRoot to attach the svgElement
+    			let shadowRoot = this.viewer.canvas.overlayElement.shadowRoot; 
+    			if (shadowRoot == null) {
+    				//console.log("WARNING: null ShadowRoot, create a new one");
+    				shadowRoot = this.viewer.canvas.overlayElement.attachShadow({ mode: "open" });
+    			}
+    		
+    			//console.log("WARNING: no svg element, create a new one");
+    			this.svgElement = shadowRoot.querySelector('svg');
+    			if (this.svgElement == null) {
+    				// Not availale svg element: build a new one and attach to the tree
+    				this.svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    				this.svgElement.classList.add('openlime-svgoverlay-mask');
+    				this.svgElement.setAttributeNS(null, 'style', 'pointer-events: none;');
+    				shadowRoot.appendChild(this.svgElement);
+    			}
+    		}
+    	}
+
+    	/**
+    	 * Set mask property on the svg element which need to be displayed with the lens
+    	 * @param {*} svg element which need to be displayed within the lens
+    	 */
+    	setMaskOnSvgLayer(svg) {
+    		svg.setAttributeNS(null, 'mask', this.svgMaskUrl);
+    	}
+
+    	/**
+    	 * Remove mask attribute from svg element
+    	 * @param {*} svg element from which remove the mask attribute
+    	 */
+    	removeMaskFromSvgLayer(svg) {
+    		svg.removeAttribute('mask');
+    	}
+
+    	/**
+    	 * Appends a HTML element to the dashboard. The element must be positioned in 'absolute' mode.
+    	 * @param {*} elm A HTML element
+    	 */
+        append(elm) {
+    		this.container.appendChild(elm);
+    	}
+    	
+    	/**
+    	 * Set rendering mode within the lens.
+    	 * @param {RenderingMode} mode RenderingMode.draw or RenderingMode.hide
+    	 */
+        setLensRenderingMode(mode) {
+            this.inMask.setAttributeNS(null, 'style', mode);
+        }
+
+    	/**
+    	 * Set the background rendering mode within the lens.
+    	 * @param {RenderingMode} mode RenderingMode.draw or RenderingMode.hide
+    	 */
+        setBackgroundRenderingMode(mode) {
+            this.outMask.setAttributeNS(null, 'style', mode);
+        }
+
+    	/** @ignore */
+    	update(x, y, r) {
+    		const useGL = false;
+    		const center = CoordinateSystem.fromSceneToCanvasHtml({x:x, y:y}, this.viewer.camera, useGL);
+
+    		const now = performance.now();
+    		let cameraT = this.viewer.camera.getCurrentTransform(now);
+    		const radius = r * cameraT.z;
+    		const sizew = 2 * radius + 2 * this.containerSpace;
+    		const sizeh = 2 * radius + 2 * this.containerSpace;
+    		const p = { x: 0, y: 0 };
+    		p.x = center.x - radius - this.containerSpace;
+    		p.y = center.y - radius - this.containerSpace;
+    		this.container.style.left = `${p.x}px`;
+    		this.container.style.top = `${p.y}px`;
+    		this.container.style.width = `${sizew}px`;
+    		this.container.style.height = `${sizeh}px`;
+
+    		// Lens circle
+    		if (sizew != this.lensBox.w || sizeh != this.lensBox.h) {
+    			const cx = Math.ceil(sizew * 0.5);
+    			const cy = Math.ceil(sizeh * 0.5);
+    			this.lensElm.setAttributeNS(null, 'viewBox', `0 0 ${sizew} ${sizeh}`);
+    			const circle = this.lensElm.querySelector('circle');
+    			circle.setAttributeNS(null, 'cx', cx);
+    			circle.setAttributeNS(null, 'cy', cy);
+    			circle.setAttributeNS(null, 'r', radius - 0.5*this.borderWidth);
+    		}
+
+    		this.updateMask(cameraT, center, radius);
+
+    		this.lensBox = {
+    			x: center.x,
+    			y: center.y,
+    			r: radius,
+    			w: sizew,
+    			h: sizeh
+    		};
+
+    	}
+
+    	updateMask(cameraT, center, radius) {
+    	   if (this.svgElement == null) { this.createSvgLensMask(); }
+    	   if (this.svgElement == null) return;
+
+    	  // Lens Mask
+    	  const viewport = this.viewer.camera.viewport;
+    	  if (this.layerSvgAnnotation != null) {
+    		// Compensate the mask transform with the inverse of the annotation svgGroup transform
+    		const inverse = true;
+    		const invTransfStr = this.layerSvgAnnotation.getSvgGroupTransform(cameraT, inverse);
+    		this.svgGroup.setAttribute("transform", invTransfStr);
+    	 } else {
+    		 // Set the viewbox.  (in the other branch it is set by the layerSvgAnnotation)
+    		this.svgElement.setAttribute('viewBox', `${-viewport.w / 2} ${-viewport.h / 2} ${viewport.w} ${viewport.h}`);
+    	 }
+
+    	  // Set the full viewport for outer mask rectangle
+    	  this.outMask.setAttribute( 'x', -viewport.w / 2);
+    	  this.outMask.setAttribute( 'y', -viewport.h / 2);
+    	  this.outMask.setAttribute( 'width', viewport.w);
+    	  this.outMask.setAttribute( 'height', viewport.h);
+
+    	  // Set lens parameter for inner lens
+    	  this.inMask.setAttributeNS(null, 'cx', center.x - viewport.w / 2);
+    	  this.inMask.setAttributeNS(null, 'cy', center.y - viewport.h / 2);
+    	  this.inMask.setAttributeNS(null, 'r', radius - this.borderWidth - 2);
+    	}
+
+    }
+
+    class LensDashboardNavigator extends LensDashboard {
+       /**
+         * Manages creation and update of a lens dashboard.
+         * An object literal with Layer `options` can be specified.
+       * This class instatiates an optional element of {@link LayerLens}
+         * @param {Object} options An object literal with Lensdashboard parameters.
+         * @param {number} options.toolboxHeight=25 The extra border thickness (in pixels) around the square including the lens.
+         */
+       constructor(viewer, options) {
+          super(viewer, options);
+          options = Object.assign({
+             toolboxHeight: 22,
+             actions: {
+                camera: { label: 'camera', task: (event) => { if (!this.actions.camera.active) this.toggleLightController(); } },
+                light: { label: 'light', task: (event) => { if (!this.actions.light.active) this.toggleLightController(); } },
+                annoswitch: { label: 'annoswitch', type: 'toggle', toggleClass: '.openlime-lens-dashboard-annoswitch-bar', task: (event) => { } },
+                prev: { label: 'prev', task: (event) => { } },
+                down: { label: 'down', task: (event) => { } },
+                next: { label: 'next', task: (event) => { } },
+             },
+             updateCb: null,
+             updateEndCb: null
+          }, options);
+          Object.assign(this, options);
+
+          this.moving = false;
+          this.delay = 400;
+          this.timeout = null; // Timeout for moving
+          this.noupdate = false;
+
+          this.angleToolbar = 30.0 * (Math.PI / 180.0);
+
+          this.container.style.display = 'block';
+          this.container.style.margin = '0';
+
+          const h1 = document.createElement('div');
+          h1.style = `text-align: center; color: #fff`;
+          h1.classList.add('openlime-lens-dashboard-toolbox-header');
+          h1.innerHTML = 'MOVE';
+
+          const h2 = document.createElement('div');
+          h2.style = `text-align: center; color: #fff`;
+          h2.classList.add('openlime-lens-dashboard-toolbox-header');
+          h2.innerHTML = 'INFO';
+
+          this.toolbox1 = document.createElement('div');
+          this.toolbox1.style = `z-index: 10; position: absolute; padding: 4px; left: 0px; width: fit-content; background-color: rgb(20, 20, 20, 1.0); border-radius: 10px; gap: 8px`;
+          this.toolbox1.classList.add('openlime-lens-dashboard-toolbox');
+          this.container.appendChild(this.toolbox1);
+          this.toolbox1.appendChild(h1);
+
+          this.toolbox2 = document.createElement('div');
+          this.toolbox2.style = `z-index: 10; position: absolute; padding: 4px; right: 0px; width: fit-content; background-color: rgb(20, 20, 20, 1.0); border-radius: 10px; gap: 8px`;
+          this.toolbox2.classList.add('openlime-lens-dashboard-toolbox');
+          this.container.appendChild(this.toolbox2);
+          this.toolbox2.appendChild(h2);
+
+          this.tools1 = document.createElement('div');
+          this.tools1.style = `display: flex; justify-content: center; height: ${this.toolboxHeight}px`;
+          this.tools1.classList.add('openlime-lens-dashboard-toolbox-tools');
+          this.toolbox1.appendChild(this.tools1);
+
+          this.tools2 = document.createElement('div');
+          this.tools2.style = `display: flex; justify-content: center; height: ${this.toolboxHeight}px`;
+          this.tools2.classList.add('openlime-lens-dashboard-toolbox-tools');
+          this.toolbox2.appendChild(this.tools2);
+
+          // TOOLBOX ITEMS
+
+          this.actions.camera.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <!-- Created with Inkscape (http://www.inkscape.org/) -->
         
-        getPixelPosition(e) {
-            let x = e.offsetX;
-            let y = e.offsetY;
-            let rect = e.target.getBoundingClientRect();
-            return [x, rect.height - y];
+        <svg
+           viewBox="0 0 83.319054 83.319054"
+           version="1.1"
+           id="svg2495"
+           xmlns="http://www.w3.org/2000/svg"
+           xmlns:svg="http://www.w3.org/2000/svg">
+          <defs
+             id="defs2492" />
+          <g
+             id="layer1"
+             transform="translate(-69.000668,-98.39946)">
+            <g
+               id="g2458"
+               transform="matrix(0.35277777,0,0,0.35277777,46.261671,-65.803422)"
+               class="openlime-lens-dashboard-camera">
+              <path class="openlime-lens-dashboard-button-bkg"
+                 d="m 300.637,583.547 c 0,65.219 -52.871,118.09 -118.09,118.09 -65.219,0 -118.09,-52.871 -118.09,-118.09 0,-65.219 52.871,-118.09 118.09,-118.09 65.219,0 118.09,52.871 118.09,118.09 z"
+                 style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+                 id="path50" />
+              <g
+                 id="g52">
+                <path
+                   d="M 123.445,524.445 H 241.652 V 642.648 H 123.445 Z"
+                   style="fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:#000000;stroke-width:16.7936;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+                   id="path54" />
+              </g>
+              <g
+                 id="g56"
+                 transform="scale(1,0.946694)">
+                <path
+                   d="m 190.449,581.031 h -15.793 c -0.011,7.563 0,27.472 0,27.472 0,0 -17.133,0 -25.609,0.025 v 15.779 c 8.476,-0.009 25.609,-0.009 25.609,-0.009 0,0 0,19.881 -0.011,27.485 h 15.793 c 0.011,-7.604 0.011,-27.485 0.011,-27.485 0,0 17.125,0 25.598,0 v -15.795 c -8.473,0 -25.598,0 -25.598,0 0,0 -0.023,-19.904 0,-27.472"
+                   style="fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.52673;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+                   id="path58" />
+              </g>
+              <path
+                 d="m 269.254,557.93 22.332,21.437 c 2.098,2.071 2.195,5.344 0,7.504 l -22.332,21.008 c -1.25,1.25 -5.004,1.25 -6.254,-2.504 v -46.273 c 1.25,-3.672 5.004,-2.422 6.254,-1.172 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path60" />
+              <path
+                 d="M 95.844,607.395 73.508,585.957 c -2.094,-2.07 -2.192,-5.34 0,-7.504 l 22.336,-21.008 c 1.25,-1.25 5,-1.25 6.254,2.504 v 46.274 c -1.254,3.672 -5.004,2.422 -6.254,1.172 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path62" />
+              <path
+                 d="m 157.59,494.32 21.437,-22.332 c 2.071,-2.097 5.344,-2.191 7.504,0 l 21.008,22.332 c 1.25,1.254 1.25,5.004 -2.504,6.254 h -46.273 c -3.672,-1.25 -2.422,-5 -1.172,-6.254 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path64" />
+              <path
+                 d="m 207.055,671.785 -21.438,22.336 c -2.07,2.094 -5.344,2.191 -7.504,0 l -21.008,-22.336 c -1.25,-1.25 -1.25,-5 2.504,-6.25 h 46.274 c 3.672,1.25 2.422,5 1.172,6.25 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path66" />
+            </g>
+          </g>
+        </svg>`;
+
+          this.actions.light.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <!-- Created with Inkscape (http://www.inkscape.org/) -->
+        
+        <svg
+           viewBox="0 0 83.319054 83.320114"
+           version="1.1"
+           id="svg5698"
+           xmlns="http://www.w3.org/2000/svg"
+           xmlns:svg="http://www.w3.org/2000/svg">
+          <defs
+             id="defs5695" />
+          <g
+             id="layer1"
+             transform="translate(-104.32352,-59.017909)">
+            <g
+               id="g2477"
+               transform="matrix(0.35277777,0,0,0.35277777,-16.220287,-105.16169)"
+               class="openlime-lens-dashboard-light">
+              <path class="openlime-lens-dashboard-button-bkg"
+                 d="m 577.879,583.484 c 0,65.219 -52.871,118.09 -118.09,118.09 -65.219,0 -118.09,-52.871 -118.09,-118.09 0,-65.222 52.871,-118.093 118.09,-118.093 65.219,0 118.09,52.871 118.09,118.093 z"
+                 style="fill:#fbfbfb;fill-opacity:1;fill-rule:nonzero;stroke:none"
+                 id="path74" />
+              <path
+                 d="m 546.496,558.359 22.332,21.438 c 2.098,2.066 2.192,5.34 0,7.504 l -22.332,21.004 c -1.25,1.254 -5.004,1.254 -6.254,-2.5 v -46.274 c 1.25,-3.672 5.004,-2.422 6.254,-1.172 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path76" />
+              <path
+                 d="M 373.082,607.82 350.75,586.383 c -2.094,-2.067 -2.191,-5.34 0,-7.504 l 22.332,-21.004 c 1.254,-1.25 5.004,-1.25 6.254,2.5 v 46.277 c -1.25,3.672 -5,2.422 -6.254,1.168 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path78" />
+              <path
+                 d="m 434.832,494.75 21.438,-22.332 c 2.07,-2.098 5.339,-2.195 7.503,0 l 21.008,22.332 c 1.25,1.25 1.25,5.004 -2.504,6.254 h -46.273 c -3.672,-1.25 -2.422,-5.004 -1.172,-6.254 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path80" />
+              <path
+                 d="m 484.297,672.215 -21.438,22.332 c -2.07,2.098 -5.343,2.195 -7.507,0 l -21.004,-22.332 c -1.25,-1.25 -1.25,-5.004 2.504,-6.254 h 46.273 c 3.672,1.25 2.422,5.004 1.172,6.254 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path82" />
+              <path
+                 d="m 438.223,599.988 c 0,0 -2.161,-0.535 -3.684,0.227 -1.523,0.762 -0.789,8.773 -0.789,8.773 l 16.305,-0.222 c 0,0 -14.071,3.597 -15.383,6.296 -1.317,2.7 1.672,6.786 4.34,7.426 2.136,0.516 45.793,-13.426 46.808,-14.625 0.883,-1.039 1.446,-6.75 0.528,-7.648 -0.922,-0.899 -4.602,-0.789 -4.602,-0.789 0,0 -1.449,0.113 -0.133,-3.934 1.317,-4.051 15.254,-20.137 18.672,-30.262 3.293,-9.753 1.387,-22.531 -2.367,-28.683 -3.965,-6.504 -9.598,-10.688 -17.356,-13.723 -7.789,-3.051 -22.191,-4.773 -33.664,-1.578 -11.425,3.188 -20.32,8.988 -25.507,16.649 -4.657,6.878 -4.473,20.699 -2.895,26.097 1.578,5.403 17.621,25.426 19.199,29.473 1.578,4.051 0.528,6.523 0.528,6.523 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path84" />
+              <g
+                 id="g86"
+                 transform="scale(1,0.855493)">
+                <path
+                   d="m 438.223,701.337 c 0,0 -2.161,-0.626 -3.684,0.265 -1.523,0.89 -0.789,10.255 -0.789,10.255 l 16.305,-0.26 c 0,0 -14.071,4.205 -15.383,7.36 -1.317,3.155 1.672,7.931 4.34,8.68 2.136,0.603 45.793,-15.693 46.808,-17.095 0.883,-1.215 1.446,-7.89 0.528,-8.94 -0.922,-1.051 -4.602,-0.923 -4.602,-0.923 0,0 -1.449,0.133 -0.133,-4.598 1.317,-4.735 15.254,-23.538 18.672,-35.373 3.293,-11.402 1.387,-26.337 -2.367,-33.529 -3.965,-7.603 -9.598,-12.493 -17.356,-16.041 -7.789,-3.566 -22.191,-5.579 -33.664,-1.844 -11.425,3.725 -20.32,10.506 -25.507,19.46 -4.657,8.041 -4.473,24.196 -2.895,30.506 1.578,6.315 17.621,29.721 19.199,34.451 1.578,4.735 0.528,7.626 0.528,7.626 z"
+                   style="fill:none;stroke:#f8f8f8;stroke-width:8.1576;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.00677317"
+                   id="path88" />
+              </g>
+              <path
+                 d="m 435.59,631.598 c 0.394,3.714 14.992,14.851 20.91,15.414 5.914,0.562 5.125,0.898 9.336,-0.453 4.207,-1.348 17.617,-9.223 18.277,-10.571 1.68,-3.453 2.758,-6.976 1.313,-9.113 -1.449,-2.145 -3.946,-0.563 -6.574,0.227 -2.629,0.785 -13.805,5.734 -17.489,6.859 -2.89,0.883 -9.203,-0.563 -9.203,-0.563 0,0 32.012,-10.578 33.266,-12.933 1.316,-2.477 0.262,-6.977 -2.762,-7.539 -1.926,-0.36 -43.785,13.386 -44.836,15.074 -1.055,1.688 -2.238,3.598 -2.238,3.598 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path90" />
+              <g
+                 id="g92"
+                 transform="scale(1,0.855493)">
+                <path
+                   d="m 435.59,738.285 c 0.394,4.343 14.992,17.361 20.91,18.018 5.914,0.658 5.125,1.05 9.336,-0.529 4.207,-1.576 17.617,-10.781 18.277,-12.356 1.68,-4.037 2.758,-8.155 1.313,-10.653 -1.449,-2.507 -3.946,-0.657 -6.574,0.265 -2.629,0.918 -13.805,6.703 -17.489,8.018 -2.89,1.032 -9.203,-0.658 -9.203,-0.658 0,0 32.012,-12.365 33.266,-15.118 1.316,-2.895 0.262,-8.155 -2.762,-8.812 -1.926,-0.421 -43.785,15.648 -44.836,17.62 -1.055,1.973 -2.238,4.205 -2.238,4.205 z"
+                   style="fill:none;stroke:#f8f8f8;stroke-width:8.1576;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.00677317"
+                   id="path94" />
+              </g>
+              <path
+                 d="m 438.223,599.988 c 0,0 -2.161,-0.535 -3.684,0.227 -1.523,0.762 -0.789,8.773 -0.789,8.773 l 16.305,-0.222 c 0,0 -14.071,3.597 -15.383,6.296 -1.317,2.7 1.672,6.786 4.34,7.426 2.136,0.516 45.793,-13.426 46.808,-14.625 0.883,-1.039 1.446,-6.75 0.528,-7.648 -0.922,-0.899 -4.602,-0.789 -4.602,-0.789 0,0 -1.449,0.113 -0.133,-3.934 1.317,-4.051 15.254,-20.137 18.672,-30.262 3.293,-9.753 1.387,-22.531 -2.367,-28.683 -3.965,-6.504 -9.598,-10.688 -17.356,-13.723 -7.789,-3.051 -22.191,-4.773 -33.664,-1.578 -11.425,3.188 -20.32,8.988 -25.507,16.649 -4.657,6.878 -4.473,20.699 -2.895,26.097 1.578,5.403 17.621,25.426 19.199,29.473 1.578,4.051 0.528,6.523 0.528,6.523 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path96" />
+              <g
+                 id="g98"
+                 transform="scale(1,0.855493)">
+                <path
+                   d="m 438.223,701.337 c 0,0 -2.161,-0.626 -3.684,0.265 -1.523,0.89 -0.789,10.255 -0.789,10.255 l 16.305,-0.26 c 0,0 -14.071,4.205 -15.383,7.36 -1.317,3.155 1.672,7.931 4.34,8.68 2.136,0.603 45.793,-15.693 46.808,-17.095 0.883,-1.215 1.446,-7.89 0.528,-8.94 -0.922,-1.051 -4.602,-0.923 -4.602,-0.923 0,0 -1.449,0.133 -0.133,-4.598 1.317,-4.735 15.254,-23.538 18.672,-35.373 3.293,-11.402 1.387,-26.337 -2.367,-33.529 -3.965,-7.603 -9.598,-12.493 -17.356,-16.041 -7.789,-3.566 -22.191,-5.579 -33.664,-1.844 -11.425,3.725 -20.32,10.506 -25.507,19.46 -4.657,8.041 -4.473,24.196 -2.895,30.506 1.578,6.315 17.621,29.721 19.199,34.451 1.578,4.735 0.528,7.626 0.528,7.626 z"
+                   style="fill:none;stroke:#f8f8f8;stroke-width:8.1576;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.00677317"
+                   id="path100" />
+              </g>
+              <path
+                 d="m 435.59,631.598 c 0.394,3.714 14.992,14.851 20.91,15.414 5.914,0.562 5.125,0.898 9.336,-0.453 4.207,-1.348 17.617,-9.223 18.277,-10.571 1.68,-3.453 2.758,-6.976 1.313,-9.113 -1.449,-2.145 -3.946,-0.563 -6.574,0.227 -2.629,0.785 -13.805,5.734 -17.489,6.859 -2.89,0.883 -9.203,-0.563 -9.203,-0.563 0,0 32.012,-10.578 33.266,-12.933 1.316,-2.477 0.262,-6.977 -2.762,-7.539 -1.926,-0.36 -43.785,13.386 -44.836,15.074 -1.055,1.688 -2.238,3.598 -2.238,3.598 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path102" />
+              <g
+                 id="g104"
+                 transform="scale(1,0.855493)">
+                <path
+                   d="m 435.59,738.285 c 0.394,4.343 14.992,17.361 20.91,18.018 5.914,0.658 5.125,1.05 9.336,-0.529 4.207,-1.576 17.617,-10.781 18.277,-12.356 1.68,-4.037 2.758,-8.155 1.313,-10.653 -1.449,-2.507 -3.946,-0.657 -6.574,0.265 -2.629,0.918 -13.805,6.703 -17.489,8.018 -2.89,1.032 -9.203,-0.658 -9.203,-0.658 0,0 32.012,-12.365 33.266,-15.118 1.316,-2.895 0.262,-8.155 -2.762,-8.812 -1.926,-0.421 -43.785,15.648 -44.836,17.62 -1.055,1.973 -2.238,4.205 -2.238,4.205 z"
+                   style="fill:none;stroke:#f8f8f8;stroke-width:8.1576;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.00677317"
+                   id="path106" />
+              </g>
+            </g>
+          </g>
+        </svg>`;
+
+          this.actions.annoswitch.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+      <!-- Created with Inkscape (http://www.inkscape.org/) -->
+      
+      <svg
+         viewBox="0 0 83.319054 83.320114"
+         version="1.1"
+         id="svg11415"
+         xml:space="preserve"
+         xmlns="http://www.w3.org/2000/svg"
+         xmlns:svg="http://www.w3.org/2000/svg"><defs
+           id="defs11412"><marker
+             style="overflow:visible"
+             id="TriangleStart"
+             refX="0"
+             refY="0"
+             orient="auto-start-reverse"
+             markerWidth="5.3244081"
+             markerHeight="6.155385"
+             viewBox="0 0 5.3244081 6.1553851"
+             preserveAspectRatio="xMidYMid"><path
+               transform="scale(0.5)"
+               style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+               d="M 5.77,0 -2.88,5 V -5 Z"
+               id="path135" /></marker><marker
+             style="overflow:visible"
+             id="TriangleStart-5"
+             refX="0"
+             refY="0"
+             orient="auto-start-reverse"
+             markerWidth="5.3244081"
+             markerHeight="6.155385"
+             viewBox="0 0 5.3244081 6.1553851"
+             preserveAspectRatio="xMidYMid"><path
+               transform="scale(0.5)"
+               style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+               d="M 5.77,0 -2.88,5 V -5 Z"
+               id="path135-3" /></marker></defs><g
+           id="g327"
+           transform="translate(129.83427,13.264356)"><g
+             id="g346"><path
+               d="m -46.51522,28.396234 c 0,23.007813 -18.65172,41.659526 -41.65953,41.659526 -23.00782,0 -41.65952,-18.651713 -41.65952,-41.659526 0,-23.00887 18.6517,-41.66059 41.65952,-41.66059 23.00781,0 41.65953,18.65172 41.65953,41.66059 z"
+               style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+               id="path68"
+               class="openlime-lens-dashboard-button-bkg" /><g
+               aria-label="i"
+               id="text430"
+               style="font-size:50.8px;line-height:1.25;font-family:'Palace Script MT';-inkscape-font-specification:'Palace Script MT';font-variant-ligatures:none;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+               transform="matrix(1.9896002,0,0,1.9896002,-378.32178,-41.782121)"><path
+                 d="m 149.74343,19.295724 c -1.4224,1.1176 -2.5908,2.032 -3.5052,2.6416 0.3556,1.0668 0.8128,1.9304 1.9304,3.556 1.4224,-1.27 1.5748,-1.4224 3.302,-2.7432 -0.1524,-0.3048 -0.254,-0.508 -0.6604,-1.1684 -0.3048,-0.6096 -0.3556,-0.6096 -0.762,-1.6256 z m 1.9304,25.4 -0.8636,0.4572 c -3.5052,1.9304 -4.1148,2.1844 -4.7244,2.1844 -0.5588,0 -0.9144,-0.5588 -0.9144,-1.4224 0,-0.8636 0,-0.8636 1.6764,-7.5692 1.8796,-7.7216 1.8796,-7.7216 1.8796,-8.128 0,-0.3048 -0.254,-0.508 -0.6096,-0.508 -0.8636,0 -3.8608,1.6764 -8.0264,4.4704 l -0.1016,1.4224 c 3.0988,-1.6764 3.2512,-1.7272 3.7084,-1.7272 0.4064,0 0.6096,0.3048 0.6096,0.8636 0,0.7112 -0.1524,1.4224 -0.9144,4.318 -2.3876,8.8392 -2.3876,8.8392 -2.3876,10.16 0,1.2192 0.4572,2.032 1.2192,2.032 0.8636,0 2.2352,-0.6604 4.9276,-2.3876 0.9652,-0.6096 1.9304,-1.2192 2.8956,-1.8796 0.4572,-0.254 0.8128,-0.508 1.4224,-0.8636 z"
+                 style="font-weight:bold;font-family:Z003;-inkscape-font-specification:'Z003 Bold'"
+                 id="path495" /></g><path
+               style="fill:none;stroke:#000000;stroke-width:17.09477;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="M -66.121922,49.608737 -110.22757,7.1826674"
+               id="path465"
+               class="openlime-lens-dashboard-annoswitch-bar" /></g></g></svg>`;
+
+          this.actions.prev.svg = `<svg
+               viewBox="0 0 83.319054 83.320114"
+               version="1.1"
+               id="svg11415"
+               xml:space="preserve"
+               xmlns="http://www.w3.org/2000/svg"
+               xmlns:svg="http://www.w3.org/2000/svg"><defs
+                 id="defs11412"><marker
+                   style="overflow:visible"
+                   id="TriangleStart"
+                   refX="0"
+                   refY="0"
+                   orient="auto-start-reverse"
+                   markerWidth="5.3244081"
+                   markerHeight="6.155385"
+                   viewBox="0 0 5.3244081 6.1553851"
+                   preserveAspectRatio="xMidYMid"><path
+                     transform="scale(0.5)"
+                     style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+                     d="M 5.77,0 -2.88,5 V -5 Z"
+                     id="path135" /></marker><marker
+                   style="overflow:visible"
+                   id="TriangleStart-5"
+                   refX="0"
+                   refY="0"
+                   orient="auto-start-reverse"
+                   markerWidth="5.3244081"
+                   markerHeight="6.155385"
+                   viewBox="0 0 5.3244081 6.1553851"
+                   preserveAspectRatio="xMidYMid"><path
+                     transform="scale(0.5)"
+                     style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+                     d="M 5.77,0 -2.88,5 V -5 Z"
+                     id="path135-3" /></marker></defs><g
+                 id="g417"
+                 transform="matrix(3.3565779,0,0,3.3565779,129.92814,-51.220758)"><g
+                   id="g335"><path
+                     d="m -172.71351,100.60243 c 0,23.00781 -18.65172,41.65952 -41.65953,41.65952 -23.00782,0 -41.65952,-18.65171 -41.65952,-41.65952 0,-23.00887 18.6517,-41.66059 41.65952,-41.66059 23.00781,0 41.65953,18.65172 41.65953,41.66059 z"
+                     style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+                     id="path68"
+                     class="openlime-lens-dashboard-button-bkg"
+                     transform="matrix(0.29792248,0,0,0.29792248,37.569341,-2.3002842)" /><path
+                     style="fill:#030104"
+                     d="m -35.494703,28.624414 c 0,-0.264 0.213,-0.474 0.475,-0.474 h 2.421 c 0.262,0 0.475,0.21 0.475,0.474 0,3.211 2.615,5.826 5.827,5.826 3.212,0 5.827,-2.615 5.827,-5.826 0,-3.214 -2.614,-5.826 -5.827,-5.826 -0.34,0 -0.68,0.028 -1.016,0.089 v 1.647 c 0,0.193 -0.116,0.367 -0.291,0.439 -0.181,0.073 -0.383,0.031 -0.521,-0.104 l -4.832,-3.273 c -0.184,-0.185 -0.184,-0.482 0,-0.667 l 4.833,-3.268 c 0.136,-0.136 0.338,-0.176 0.519,-0.104 0.175,0.074 0.291,0.246 0.291,0.438 v 1.487 c 0.34,-0.038 0.68,-0.057 1.016,-0.057 5.071,0 9.198,4.127 9.198,9.198 0,5.07 -4.127,9.197 -9.198,9.197 -5.07,10e-4 -9.197,-4.126 -9.197,-9.196 z"
+                     id="path415" /></g></g></svg>`;
+
+          this.actions.down.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <!-- Created with Inkscape (http://www.inkscape.org/) -->
+        
+        <svg
+           viewBox="0 0 83.319054 83.320114"
+           version="1.1"
+           id="svg11415"
+           xml:space="preserve"
+           xmlns="http://www.w3.org/2000/svg"
+           xmlns:svg="http://www.w3.org/2000/svg"><defs
+             id="defs11412"><marker
+               style="overflow:visible"
+               id="TriangleStart"
+               refX="0"
+               refY="0"
+               orient="auto-start-reverse"
+               markerWidth="5.3244081"
+               markerHeight="6.155385"
+               viewBox="0 0 5.3244081 6.1553851"
+               preserveAspectRatio="xMidYMid"><path
+                 transform="scale(0.5)"
+                 style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+                 d="M 5.77,0 -2.88,5 V -5 Z"
+                 id="path135" /></marker><marker
+               style="overflow:visible"
+               id="TriangleStart-5"
+               refX="0"
+               refY="0"
+               orient="auto-start-reverse"
+               markerWidth="5.3244081"
+               markerHeight="6.155385"
+               viewBox="0 0 5.3244081 6.1553851"
+               preserveAspectRatio="xMidYMid"><path
+                 transform="scale(0.5)"
+                 style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+                 d="M 5.77,0 -2.88,5 V -5 Z"
+                 id="path135-3" /></marker></defs><g
+             id="g4652"
+             transform="translate(145.46385,95.197966)"><g
+               id="g4846"
+               transform="translate(-126.60931,52.756264)"><path
+                 d="m 64.464511,-106.29364 c 0,23.007813 -18.65172,41.659526 -41.65953,41.659526 -23.0078196,0 -41.659526,-18.651713 -41.659526,-41.659526 0,-23.00887 18.6517064,-41.66059 41.659526,-41.66059 23.00781,0 41.65953,18.65172 41.65953,41.66059 z"
+                 style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+                 id="path68"
+                 class="openlime-lens-dashboard-button-bkg" /><g
+                 id="g2392-5"
+                 transform="matrix(0.26458333,0,0,0.26458333,-283.58108,-263.57207)"><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:40;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1072.4033,509.27736 h 171.1826"
+                   id="path351-6" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1185.0215,568.3701 h 59.6026"
+                   id="path351-3-2" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1184.2167,621.15576 h 59.6026"
+                   id="path351-3-2-0" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:40;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1072.4033,679.59496 h 171.1826"
+                   id="path351-3-6-7-1" /><path
+                   style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:11.4448;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#TriangleStart-5)"
+                   d="m 1074.9115,570.87447 54.1203,-0.0275"
+                   id="path1366-2" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:14;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1080.0425,521.28147 v 54.87857"
+                   id="path1402-7" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+                   d="m 1150.8866,623.00688 0.3956,-5.02729"
+                   id="path2545" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1185.0215,567.71656 h 59.6026"
+                   id="path2720" /></g></g></g></svg>`;
+
+          this.actions.next.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+      <!-- Created with Inkscape (http://www.inkscape.org/) -->
+      
+      <svg
+         viewBox="0 0 83.319054 83.320114"
+         version="1.1"
+         id="svg11415"
+         xml:space="preserve"
+         xmlns="http://www.w3.org/2000/svg"
+         xmlns:svg="http://www.w3.org/2000/svg"><defs
+           id="defs11412"><marker
+             style="overflow:visible"
+             id="TriangleStart"
+             refX="0"
+             refY="0"
+             orient="auto-start-reverse"
+             markerWidth="5.3244081"
+             markerHeight="6.155385"
+             viewBox="0 0 5.3244081 6.1553851"
+             preserveAspectRatio="xMidYMid"><path
+               transform="scale(0.5)"
+               style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+               d="M 5.77,0 -2.88,5 V -5 Z"
+               id="path135" /></marker></defs><g
+           id="g4652"
+           transform="translate(-12.647874,74.762541)"><path
+             d="m 95.96693,-33.101955 c 0,23.007813 -18.65172,41.6595258 -41.65953,41.6595258 -23.00782,0 -41.659526,-18.6517128 -41.659526,-41.6595258 0,-23.008872 18.651706,-41.660586 41.659526,-41.660586 23.00781,0 41.65953,18.651714 41.65953,41.660586 z"
+             style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+             id="path68"
+             class="openlime-lens-dashboard-button-bkg" /><g
+             id="g4636"
+             transform="translate(173.74831,-50.897484)"><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:10.5833;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -142.08694,-4.7366002 h 45.292059"
+               id="path351" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:10.5833;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -142.08694,40.326598 h 45.292059"
+               id="path351-3-6-7" /><path
+               style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.20746;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#TriangleStart)"
+               d="m -136.09942,8.7192481 0.008,14.9721889"
+               id="path1366" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.70417;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="M -136.07283,-1.5605128 V 24.204958"
+               id="path1402" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:7.9375;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -111.69142,24.864565 h 15.76985"
+               id="path351-3-2-0-3" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:7.9375;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -111.37623,10.725444 h 15.76986"
+               id="path2720-9" /></g></g></svg>`;
+
+          for (let [name, action] of Object.entries(this.actions)) {
+             action.element = Util.SVGFromString(action.svg);
+             action.element.style = `height: 100%; margin: 0 5px`;
+             action.element.classList.add('openlime-lens-dashboard-button');
+             if (action.type == 'toggle') {
+                const toggleElm = action.element.querySelector(action.toggleClass);
+                toggleElm.style.visibility = `hidden`;
+                action.active = false;
+             }
+             action.element.addEventListener('click', (e) => {
+                if (action.type == 'toggle') {
+                   action.active = !action.active;
+                   const toggleElm = action.element.querySelector(action.toggleClass);
+                   if (action.active) {
+                      toggleElm.style.visibility = `visible`;
+                   } else {
+                      toggleElm.style.visibility = `hidden`;
+                   }
+                   this.noupdate=true;
+                }
+                action.task(e);
+                e.preventDefault();
+             });
+          }
+
+          this.tools1.appendChild(this.actions.camera.element);
+          this.tools1.appendChild(this.actions.light.element);
+          this.tools2.appendChild(this.actions.annoswitch.element);
+          this.tools2.appendChild(this.actions.prev.element);
+          this.tools2.appendChild(this.actions.down.element);
+          this.tools2.appendChild(this.actions.next.element);
+
+          // Set Camera movement active
+          this.actions.camera.active = this.actions.camera.element.classList.toggle('openlime-lens-dashboard-camera-active');
+          this.actions.light.active = false;
+
+          // Enable camera, light, next buttons
+          this.setActionEnabled('camera');
+          this.setActionEnabled('light');
+          this.setActionEnabled('annoswitch');
+          this.setActionEnabled('next');
+       }
+
+       getAction(label) {
+          let result = null;
+          for (let [name, action] of Object.entries(this.actions)) {
+             if (action.label === label) {
+                result = action;
+                break;
+             }
+          }
+          return result;
+       }
+
+       setActionEnabled(label, enable = true) {
+          const action = this.getAction(label);
+          if (action) {
+             action.element.classList.toggle('enabled', enable);
+          }
+       }
+
+       toggleLightController() {
+          let active = this.actions.light.element.classList.toggle('openlime-lens-dashboard-light-active');
+          this.actions.light.active = active;
+          this.actions.camera.active = this.actions.camera.element.classList.toggle('openlime-lens-dashboard-camera-active');
+
+          for (let layer of Object.values(this.viewer.canvas.layers))
+             for (let c of layer.controllers)
+                if (c.control == 'light') {
+                   c.active = true;
+                   c.activeModifiers = active ? [0, 2, 4] : [2, 4];  //nothing, shift and alt
+                }
+       }
+
+       toggle() {
+          this.container.classList.toggle('closed');
+       }
+
+       /** @ignore */
+       update(x, y, r) { 
+          if(this.noupdate) {
+             this.noupdate = false;
+             return;
+          }
+          super.update(x,y,r);
+          const center = {
+             x: this.lensBox.x,
+             y: this.lensBox.y
+          };
+          const radius = this.lensBox.r;
+          const sizew = this.lensBox.w;
+          const sizeh = this.lensBox.h;
+
+          // Set toolbox position
+          const tbw1 = this.toolbox1.clientWidth;
+          const tbh1 = this.toolbox1.clientHeight;
+          const tbw2 = this.toolbox2.clientWidth;
+          const tbh2 = this.toolbox2.clientHeight;
+          let cbx = radius * Math.sin(this.angleToolbar);
+          let cby = radius * Math.cos(this.angleToolbar);
+
+          let bx1 = this.containerSpace + radius - cbx - tbw1 / 2;
+          let by1 = this.containerSpace + radius + cby - tbh1 / 2;
+          this.toolbox1.style.left = `${bx1}px`;
+          this.toolbox1.style.top = `${by1}px`;
+
+          let bx2 = this.containerSpace + radius + cbx - tbw2 / 2;
+          let by2 = this.containerSpace + radius + cby - tbh2 / 2;
+          this.toolbox2.style.left = `${bx2}px`;
+          this.toolbox2.style.top = `${by2}px`;
+
+          if (this.updateCb) {
+             // updateCb(c.x, c.y, r, dashboard.w, dashboard.h, canvas.w, canvas.h) all params in canvas coordinates
+             this.updateCb(center.x, center.y, radius, sizew, sizeh, this.viewer.camera.viewport.w, this.viewer.camera.viewport.h);
+          }
+
+          if (!this.moving) {
+             this.toggle();
+             this.moving = true;
+          }
+          if (this.timeout) clearTimeout(this.timeout);
+          this.timeout = setTimeout(() => {
+             this.toggle();
+             this.moving = false;
+             if (this.updateEndCb) this.updateEndCb(center.x, center.y, radius, sizew, sizeh, this.viewer.camera.viewport.w, this.viewer.camera.viewport.h);
+          }, this.delay);
+       }
+    }
+
+    class LensDashboardNavigatorRadial extends LensDashboard {
+       /**
+         * Manages creation and update of a lens dashboard.
+         * An object literal with Layer `options` can be specified.
+       * This class instatiates an optional element of {@link LayerLens}
+         * @param {Object} options An object literal with Lensdashboard parameters.
+         * @param {number} options.toolboxHeight=25 The extra border thickness (in pixels) around the square including the lens.
+         */
+       constructor(viewer, options) {
+          super(viewer, options);
+          options = Object.assign({
+             toolSize: 34,
+             toolPadding: 0,
+             group: [-65, 0],
+             actions: {
+                camera: { label: 'camera', group: 0, angle: -25, task: (event) => { if (!this.actions.camera.active) this.toggleLightController(); } },
+                light: { label: 'light', group: 0, angle: 0, task: (event) => { if (!this.actions.light.active) this.toggleLightController(); } },
+                annoswitch: { label: 'annoswitch', group: 1, angle: 0, type: 'toggle', toggleClass: '.openlime-lens-dashboard-annoswitch-bar', task: (event) => { } },
+                prev: { label: 'prev', group: 1, angle: 25, task: (event) => { } },
+                down: { label: 'down', group: 1, angle: 50, task: (event) => { } },
+                next: { label: 'next', group: 1, angle: 75, task: (event) => { } },
+             },
+              updateCb: null,
+             updateEndCb: null
+          }, options);
+          Object.assign(this, options);
+
+          this.moving = false;
+          this.delay = 400;
+          this.timeout = null; // Timeout for moving
+          this.noupdate = false;
+
+          // TOOLBOX BKG
+     		const col = [255.0 * this.borderColor[0], 255.0 * this.borderColor[1], 255.0 * this.borderColor[2], 255.0 * this.borderColor[3]];
+          col[3]=0.4;
+          this.toolboxBkgSize = 56                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               ;
+          this.toolboxBkgPadding = 4;
+          this.toolboxBkg = new Object();
+          this.toolboxBkg.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+         <svg
+            viewBox="0 0 200 200"
+            fill="none"
+            version="1.1"
+            id="svg11"
+            xmlns="http://www.w3.org/2000/svg"
+            xmlns:svg="http://www.w3.org/2000/svg">
+           <path id="shape-dashboard-bkg" d="" stroke="none" fill="rgb(${col[0]},${col[1]},${col[2]},${col[3]})"/>
+         </svg>`;
+          this.toolboxBkg.element = Util.SVGFromString(this.toolboxBkg.svg);
+          this.toolboxBkg.element.setAttributeNS(null, 'style', 'position: absolute; top: 0px; left:0px;');
+          this.container.appendChild(this.toolboxBkg.element);
+
+          // TOOLBOX ITEMS
+          this.actions.camera.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <!-- Created with Inkscape (http://www.inkscape.org/) -->
+        
+        <svg
+           viewBox="0 0 83.319054 83.319054"
+           version="1.1"
+           id="svg2495"
+           xmlns="http://www.w3.org/2000/svg"
+           xmlns:svg="http://www.w3.org/2000/svg">
+          <defs
+             id="defs2492" />
+          <g
+             id="layer1"
+             transform="translate(-69.000668,-98.39946)">
+            <g
+               id="g2458"
+               transform="matrix(0.35277777,0,0,0.35277777,46.261671,-65.803422)"
+               class="openlime-lens-dashboard-camera">
+              <path class="openlime-lens-dashboard-button-bkg"
+                 d="m 300.637,583.547 c 0,65.219 -52.871,118.09 -118.09,118.09 -65.219,0 -118.09,-52.871 -118.09,-118.09 0,-65.219 52.871,-118.09 118.09,-118.09 65.219,0 118.09,52.871 118.09,118.09 z"
+                 style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+                 id="path50" />
+              <g
+                 id="g52">
+                <path
+                   d="M 123.445,524.445 H 241.652 V 642.648 H 123.445 Z"
+                   style="fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:#000000;stroke-width:16.7936;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+                   id="path54" />
+              </g>
+              <g
+                 id="g56"
+                 transform="scale(1,0.946694)">
+                <path
+                   d="m 190.449,581.031 h -15.793 c -0.011,7.563 0,27.472 0,27.472 0,0 -17.133,0 -25.609,0.025 v 15.779 c 8.476,-0.009 25.609,-0.009 25.609,-0.009 0,0 0,19.881 -0.011,27.485 h 15.793 c 0.011,-7.604 0.011,-27.485 0.011,-27.485 0,0 17.125,0 25.598,0 v -15.795 c -8.473,0 -25.598,0 -25.598,0 0,0 -0.023,-19.904 0,-27.472"
+                   style="fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.52673;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+                   id="path58" />
+              </g>
+              <path
+                 d="m 269.254,557.93 22.332,21.437 c 2.098,2.071 2.195,5.344 0,7.504 l -22.332,21.008 c -1.25,1.25 -5.004,1.25 -6.254,-2.504 v -46.273 c 1.25,-3.672 5.004,-2.422 6.254,-1.172 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path60" />
+              <path
+                 d="M 95.844,607.395 73.508,585.957 c -2.094,-2.07 -2.192,-5.34 0,-7.504 l 22.336,-21.008 c 1.25,-1.25 5,-1.25 6.254,2.504 v 46.274 c -1.254,3.672 -5.004,2.422 -6.254,1.172 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path62" />
+              <path
+                 d="m 157.59,494.32 21.437,-22.332 c 2.071,-2.097 5.344,-2.191 7.504,0 l 21.008,22.332 c 1.25,1.254 1.25,5.004 -2.504,6.254 h -46.273 c -3.672,-1.25 -2.422,-5 -1.172,-6.254 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path64" />
+              <path
+                 d="m 207.055,671.785 -21.438,22.336 c -2.07,2.094 -5.344,2.191 -7.504,0 l -21.008,-22.336 c -1.25,-1.25 -1.25,-5 2.504,-6.25 h 46.274 c 3.672,1.25 2.422,5 1.172,6.25 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path66" />
+            </g>
+          </g>
+        </svg>`;
+
+          this.actions.light.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <!-- Created with Inkscape (http://www.inkscape.org/) -->
+        
+        <svg
+           viewBox="0 0 83.319054 83.320114"
+           version="1.1"
+           id="svg5698"
+           xmlns="http://www.w3.org/2000/svg"
+           xmlns:svg="http://www.w3.org/2000/svg">
+          <defs
+             id="defs5695" />
+          <g
+             id="layer1"
+             transform="translate(-104.32352,-59.017909)">
+            <g
+               id="g2477"
+               transform="matrix(0.35277777,0,0,0.35277777,-16.220287,-105.16169)"
+               class="openlime-lens-dashboard-light">
+              <path class="openlime-lens-dashboard-button-bkg"
+                 d="m 577.879,583.484 c 0,65.219 -52.871,118.09 -118.09,118.09 -65.219,0 -118.09,-52.871 -118.09,-118.09 0,-65.222 52.871,-118.093 118.09,-118.093 65.219,0 118.09,52.871 118.09,118.093 z"
+                 style="fill:#fbfbfb;fill-opacity:1;fill-rule:nonzero;stroke:none"
+                 id="path74" />
+              <path
+                 d="m 546.496,558.359 22.332,21.438 c 2.098,2.066 2.192,5.34 0,7.504 l -22.332,21.004 c -1.25,1.254 -5.004,1.254 -6.254,-2.5 v -46.274 c 1.25,-3.672 5.004,-2.422 6.254,-1.172 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path76" />
+              <path
+                 d="M 373.082,607.82 350.75,586.383 c -2.094,-2.067 -2.191,-5.34 0,-7.504 l 22.332,-21.004 c 1.254,-1.25 5.004,-1.25 6.254,2.5 v 46.277 c -1.25,3.672 -5,2.422 -6.254,1.168 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path78" />
+              <path
+                 d="m 434.832,494.75 21.438,-22.332 c 2.07,-2.098 5.339,-2.195 7.503,0 l 21.008,22.332 c 1.25,1.25 1.25,5.004 -2.504,6.254 h -46.273 c -3.672,-1.25 -2.422,-5.004 -1.172,-6.254 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path80" />
+              <path
+                 d="m 484.297,672.215 -21.438,22.332 c -2.07,2.098 -5.343,2.195 -7.507,0 l -21.004,-22.332 c -1.25,-1.25 -1.25,-5.004 2.504,-6.254 h 46.273 c 3.672,1.25 2.422,5.004 1.172,6.254 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path82" />
+              <path
+                 d="m 438.223,599.988 c 0,0 -2.161,-0.535 -3.684,0.227 -1.523,0.762 -0.789,8.773 -0.789,8.773 l 16.305,-0.222 c 0,0 -14.071,3.597 -15.383,6.296 -1.317,2.7 1.672,6.786 4.34,7.426 2.136,0.516 45.793,-13.426 46.808,-14.625 0.883,-1.039 1.446,-6.75 0.528,-7.648 -0.922,-0.899 -4.602,-0.789 -4.602,-0.789 0,0 -1.449,0.113 -0.133,-3.934 1.317,-4.051 15.254,-20.137 18.672,-30.262 3.293,-9.753 1.387,-22.531 -2.367,-28.683 -3.965,-6.504 -9.598,-10.688 -17.356,-13.723 -7.789,-3.051 -22.191,-4.773 -33.664,-1.578 -11.425,3.188 -20.32,8.988 -25.507,16.649 -4.657,6.878 -4.473,20.699 -2.895,26.097 1.578,5.403 17.621,25.426 19.199,29.473 1.578,4.051 0.528,6.523 0.528,6.523 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path84" />
+              <g
+                 id="g86"
+                 transform="scale(1,0.855493)">
+                <path
+                   d="m 438.223,701.337 c 0,0 -2.161,-0.626 -3.684,0.265 -1.523,0.89 -0.789,10.255 -0.789,10.255 l 16.305,-0.26 c 0,0 -14.071,4.205 -15.383,7.36 -1.317,3.155 1.672,7.931 4.34,8.68 2.136,0.603 45.793,-15.693 46.808,-17.095 0.883,-1.215 1.446,-7.89 0.528,-8.94 -0.922,-1.051 -4.602,-0.923 -4.602,-0.923 0,0 -1.449,0.133 -0.133,-4.598 1.317,-4.735 15.254,-23.538 18.672,-35.373 3.293,-11.402 1.387,-26.337 -2.367,-33.529 -3.965,-7.603 -9.598,-12.493 -17.356,-16.041 -7.789,-3.566 -22.191,-5.579 -33.664,-1.844 -11.425,3.725 -20.32,10.506 -25.507,19.46 -4.657,8.041 -4.473,24.196 -2.895,30.506 1.578,6.315 17.621,29.721 19.199,34.451 1.578,4.735 0.528,7.626 0.528,7.626 z"
+                   style="fill:none;stroke:#f8f8f8;stroke-width:8.1576;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.00677317"
+                   id="path88" />
+              </g>
+              <path
+                 d="m 435.59,631.598 c 0.394,3.714 14.992,14.851 20.91,15.414 5.914,0.562 5.125,0.898 9.336,-0.453 4.207,-1.348 17.617,-9.223 18.277,-10.571 1.68,-3.453 2.758,-6.976 1.313,-9.113 -1.449,-2.145 -3.946,-0.563 -6.574,0.227 -2.629,0.785 -13.805,5.734 -17.489,6.859 -2.89,0.883 -9.203,-0.563 -9.203,-0.563 0,0 32.012,-10.578 33.266,-12.933 1.316,-2.477 0.262,-6.977 -2.762,-7.539 -1.926,-0.36 -43.785,13.386 -44.836,15.074 -1.055,1.688 -2.238,3.598 -2.238,3.598 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path90" />
+              <g
+                 id="g92"
+                 transform="scale(1,0.855493)">
+                <path
+                   d="m 435.59,738.285 c 0.394,4.343 14.992,17.361 20.91,18.018 5.914,0.658 5.125,1.05 9.336,-0.529 4.207,-1.576 17.617,-10.781 18.277,-12.356 1.68,-4.037 2.758,-8.155 1.313,-10.653 -1.449,-2.507 -3.946,-0.657 -6.574,0.265 -2.629,0.918 -13.805,6.703 -17.489,8.018 -2.89,1.032 -9.203,-0.658 -9.203,-0.658 0,0 32.012,-12.365 33.266,-15.118 1.316,-2.895 0.262,-8.155 -2.762,-8.812 -1.926,-0.421 -43.785,15.648 -44.836,17.62 -1.055,1.973 -2.238,4.205 -2.238,4.205 z"
+                   style="fill:none;stroke:#f8f8f8;stroke-width:8.1576;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.00677317"
+                   id="path94" />
+              </g>
+              <path
+                 d="m 438.223,599.988 c 0,0 -2.161,-0.535 -3.684,0.227 -1.523,0.762 -0.789,8.773 -0.789,8.773 l 16.305,-0.222 c 0,0 -14.071,3.597 -15.383,6.296 -1.317,2.7 1.672,6.786 4.34,7.426 2.136,0.516 45.793,-13.426 46.808,-14.625 0.883,-1.039 1.446,-6.75 0.528,-7.648 -0.922,-0.899 -4.602,-0.789 -4.602,-0.789 0,0 -1.449,0.113 -0.133,-3.934 1.317,-4.051 15.254,-20.137 18.672,-30.262 3.293,-9.753 1.387,-22.531 -2.367,-28.683 -3.965,-6.504 -9.598,-10.688 -17.356,-13.723 -7.789,-3.051 -22.191,-4.773 -33.664,-1.578 -11.425,3.188 -20.32,8.988 -25.507,16.649 -4.657,6.878 -4.473,20.699 -2.895,26.097 1.578,5.403 17.621,25.426 19.199,29.473 1.578,4.051 0.528,6.523 0.528,6.523 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path96" />
+              <g
+                 id="g98"
+                 transform="scale(1,0.855493)">
+                <path
+                   d="m 438.223,701.337 c 0,0 -2.161,-0.626 -3.684,0.265 -1.523,0.89 -0.789,10.255 -0.789,10.255 l 16.305,-0.26 c 0,0 -14.071,4.205 -15.383,7.36 -1.317,3.155 1.672,7.931 4.34,8.68 2.136,0.603 45.793,-15.693 46.808,-17.095 0.883,-1.215 1.446,-7.89 0.528,-8.94 -0.922,-1.051 -4.602,-0.923 -4.602,-0.923 0,0 -1.449,0.133 -0.133,-4.598 1.317,-4.735 15.254,-23.538 18.672,-35.373 3.293,-11.402 1.387,-26.337 -2.367,-33.529 -3.965,-7.603 -9.598,-12.493 -17.356,-16.041 -7.789,-3.566 -22.191,-5.579 -33.664,-1.844 -11.425,3.725 -20.32,10.506 -25.507,19.46 -4.657,8.041 -4.473,24.196 -2.895,30.506 1.578,6.315 17.621,29.721 19.199,34.451 1.578,4.735 0.528,7.626 0.528,7.626 z"
+                   style="fill:none;stroke:#f8f8f8;stroke-width:8.1576;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.00677317"
+                   id="path100" />
+              </g>
+              <path
+                 d="m 435.59,631.598 c 0.394,3.714 14.992,14.851 20.91,15.414 5.914,0.562 5.125,0.898 9.336,-0.453 4.207,-1.348 17.617,-9.223 18.277,-10.571 1.68,-3.453 2.758,-6.976 1.313,-9.113 -1.449,-2.145 -3.946,-0.563 -6.574,0.227 -2.629,0.785 -13.805,5.734 -17.489,6.859 -2.89,0.883 -9.203,-0.563 -9.203,-0.563 0,0 32.012,-10.578 33.266,-12.933 1.316,-2.477 0.262,-6.977 -2.762,-7.539 -1.926,-0.36 -43.785,13.386 -44.836,15.074 -1.055,1.688 -2.238,3.598 -2.238,3.598 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path102" />
+              <g
+                 id="g104"
+                 transform="scale(1,0.855493)">
+                <path
+                   d="m 435.59,738.285 c 0.394,4.343 14.992,17.361 20.91,18.018 5.914,0.658 5.125,1.05 9.336,-0.529 4.207,-1.576 17.617,-10.781 18.277,-12.356 1.68,-4.037 2.758,-8.155 1.313,-10.653 -1.449,-2.507 -3.946,-0.657 -6.574,0.265 -2.629,0.918 -13.805,6.703 -17.489,8.018 -2.89,1.032 -9.203,-0.658 -9.203,-0.658 0,0 32.012,-12.365 33.266,-15.118 1.316,-2.895 0.262,-8.155 -2.762,-8.812 -1.926,-0.421 -43.785,15.648 -44.836,17.62 -1.055,1.973 -2.238,4.205 -2.238,4.205 z"
+                   style="fill:none;stroke:#f8f8f8;stroke-width:8.1576;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.00677317"
+                   id="path106" />
+              </g>
+            </g>
+          </g>
+        </svg>`;
+
+          this.actions.annoswitch.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+      <!-- Created with Inkscape (http://www.inkscape.org/) -->
+      
+      <svg
+         viewBox="0 0 83.319054 83.320114"
+         version="1.1"
+         id="svg11415"
+         xml:space="preserve"
+         xmlns="http://www.w3.org/2000/svg"
+         xmlns:svg="http://www.w3.org/2000/svg"><defs
+           id="defs11412"><marker
+             style="overflow:visible"
+             id="TriangleStart"
+             refX="0"
+             refY="0"
+             orient="auto-start-reverse"
+             markerWidth="5.3244081"
+             markerHeight="6.155385"
+             viewBox="0 0 5.3244081 6.1553851"
+             preserveAspectRatio="xMidYMid"><path
+               transform="scale(0.5)"
+               style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+               d="M 5.77,0 -2.88,5 V -5 Z"
+               id="path135" /></marker><marker
+             style="overflow:visible"
+             id="TriangleStart-5"
+             refX="0"
+             refY="0"
+             orient="auto-start-reverse"
+             markerWidth="5.3244081"
+             markerHeight="6.155385"
+             viewBox="0 0 5.3244081 6.1553851"
+             preserveAspectRatio="xMidYMid"><path
+               transform="scale(0.5)"
+               style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+               d="M 5.77,0 -2.88,5 V -5 Z"
+               id="path135-3" /></marker></defs><g
+           id="g327"
+           transform="translate(129.83427,13.264356)"><g
+             id="g346"><path
+               d="m -46.51522,28.396234 c 0,23.007813 -18.65172,41.659526 -41.65953,41.659526 -23.00782,0 -41.65952,-18.651713 -41.65952,-41.659526 0,-23.00887 18.6517,-41.66059 41.65952,-41.66059 23.00781,0 41.65953,18.65172 41.65953,41.66059 z"
+               style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+               id="path68"
+               class="openlime-lens-dashboard-button-bkg" /><g
+               aria-label="i"
+               id="text430"
+               style="font-size:50.8px;line-height:1.25;font-family:'Palace Script MT';-inkscape-font-specification:'Palace Script MT';font-variant-ligatures:none;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+               transform="matrix(1.9896002,0,0,1.9896002,-378.32178,-41.782121)"><path
+                 d="m 149.74343,19.295724 c -1.4224,1.1176 -2.5908,2.032 -3.5052,2.6416 0.3556,1.0668 0.8128,1.9304 1.9304,3.556 1.4224,-1.27 1.5748,-1.4224 3.302,-2.7432 -0.1524,-0.3048 -0.254,-0.508 -0.6604,-1.1684 -0.3048,-0.6096 -0.3556,-0.6096 -0.762,-1.6256 z m 1.9304,25.4 -0.8636,0.4572 c -3.5052,1.9304 -4.1148,2.1844 -4.7244,2.1844 -0.5588,0 -0.9144,-0.5588 -0.9144,-1.4224 0,-0.8636 0,-0.8636 1.6764,-7.5692 1.8796,-7.7216 1.8796,-7.7216 1.8796,-8.128 0,-0.3048 -0.254,-0.508 -0.6096,-0.508 -0.8636,0 -3.8608,1.6764 -8.0264,4.4704 l -0.1016,1.4224 c 3.0988,-1.6764 3.2512,-1.7272 3.7084,-1.7272 0.4064,0 0.6096,0.3048 0.6096,0.8636 0,0.7112 -0.1524,1.4224 -0.9144,4.318 -2.3876,8.8392 -2.3876,8.8392 -2.3876,10.16 0,1.2192 0.4572,2.032 1.2192,2.032 0.8636,0 2.2352,-0.6604 4.9276,-2.3876 0.9652,-0.6096 1.9304,-1.2192 2.8956,-1.8796 0.4572,-0.254 0.8128,-0.508 1.4224,-0.8636 z"
+                 style="font-weight:bold;font-family:Z003;-inkscape-font-specification:'Z003 Bold'"
+                 id="path495" /></g><path
+               style="fill:none;stroke:#000000;stroke-width:17.09477;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="M -66.121922,49.608737 -110.22757,7.1826674"
+               id="path465"
+               class="openlime-lens-dashboard-annoswitch-bar" /></g></g></svg>`;
+
+          this.actions.prev.svg = `<svg
+      viewBox="0 0 83.319054 83.320114"
+      version="1.1"
+      id="svg11415"
+      xml:space="preserve"
+      xmlns="http://www.w3.org/2000/svg"
+      xmlns:svg="http://www.w3.org/2000/svg"><defs
+        id="defs11412"><marker
+          style="overflow:visible"
+          id="TriangleStart"
+          refX="0"
+          refY="0"
+          orient="auto-start-reverse"
+          markerWidth="5.3244081"
+          markerHeight="6.155385"
+          viewBox="0 0 5.3244081 6.1553851"
+          preserveAspectRatio="xMidYMid"><path
+            transform="scale(0.5)"
+            style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+            d="M 5.77,0 -2.88,5 V -5 Z"
+            id="path135" /></marker><marker
+          style="overflow:visible"
+          id="TriangleStart-5"
+          refX="0"
+          refY="0"
+          orient="auto-start-reverse"
+          markerWidth="5.3244081"
+          markerHeight="6.155385"
+          viewBox="0 0 5.3244081 6.1553851"
+          preserveAspectRatio="xMidYMid"><path
+            transform="scale(0.5)"
+            style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+            d="M 5.77,0 -2.88,5 V -5 Z"
+            id="path135-3" /></marker></defs><g
+        id="g417"
+        transform="matrix(3.3565779,0,0,3.3565779,129.92814,-51.220758)"><g
+          id="g335"><path
+            d="m -172.71351,100.60243 c 0,23.00781 -18.65172,41.65952 -41.65953,41.65952 -23.00782,0 -41.65952,-18.65171 -41.65952,-41.65952 0,-23.00887 18.6517,-41.66059 41.65952,-41.66059 23.00781,0 41.65953,18.65172 41.65953,41.66059 z"
+            style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+            id="path68"
+            class="openlime-lens-dashboard-button-bkg"
+            transform="matrix(0.29792248,0,0,0.29792248,37.569341,-2.3002842)" /><path
+            style="fill:#030104"
+            d="m -35.494703,28.624414 c 0,-0.264 0.213,-0.474 0.475,-0.474 h 2.421 c 0.262,0 0.475,0.21 0.475,0.474 0,3.211 2.615,5.826 5.827,5.826 3.212,0 5.827,-2.615 5.827,-5.826 0,-3.214 -2.614,-5.826 -5.827,-5.826 -0.34,0 -0.68,0.028 -1.016,0.089 v 1.647 c 0,0.193 -0.116,0.367 -0.291,0.439 -0.181,0.073 -0.383,0.031 -0.521,-0.104 l -4.832,-3.273 c -0.184,-0.185 -0.184,-0.482 0,-0.667 l 4.833,-3.268 c 0.136,-0.136 0.338,-0.176 0.519,-0.104 0.175,0.074 0.291,0.246 0.291,0.438 v 1.487 c 0.34,-0.038 0.68,-0.057 1.016,-0.057 5.071,0 9.198,4.127 9.198,9.198 0,5.07 -4.127,9.197 -9.198,9.197 -5.07,10e-4 -9.197,-4.126 -9.197,-9.196 z"
+            id="path415" /></g></g></svg>`;
+
+          this.actions.down.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <!-- Created with Inkscape (http://www.inkscape.org/) -->
+        
+        <svg
+           viewBox="0 0 83.319054 83.320114"
+           version="1.1"
+           id="svg11415"
+           xml:space="preserve"
+           xmlns="http://www.w3.org/2000/svg"
+           xmlns:svg="http://www.w3.org/2000/svg"><defs
+             id="defs11412"><marker
+               style="overflow:visible"
+               id="TriangleStart"
+               refX="0"
+               refY="0"
+               orient="auto-start-reverse"
+               markerWidth="5.3244081"
+               markerHeight="6.155385"
+               viewBox="0 0 5.3244081 6.1553851"
+               preserveAspectRatio="xMidYMid"><path
+                 transform="scale(0.5)"
+                 style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+                 d="M 5.77,0 -2.88,5 V -5 Z"
+                 id="path135" /></marker><marker
+               style="overflow:visible"
+               id="TriangleStart-5"
+               refX="0"
+               refY="0"
+               orient="auto-start-reverse"
+               markerWidth="5.3244081"
+               markerHeight="6.155385"
+               viewBox="0 0 5.3244081 6.1553851"
+               preserveAspectRatio="xMidYMid"><path
+                 transform="scale(0.5)"
+                 style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+                 d="M 5.77,0 -2.88,5 V -5 Z"
+                 id="path135-3" /></marker></defs><g
+             id="g4652"
+             transform="translate(145.46385,95.197966)"><g
+               id="g4846"
+               transform="translate(-126.60931,52.756264)"><path
+                 d="m 64.464511,-106.29364 c 0,23.007813 -18.65172,41.659526 -41.65953,41.659526 -23.0078196,0 -41.659526,-18.651713 -41.659526,-41.659526 0,-23.00887 18.6517064,-41.66059 41.659526,-41.66059 23.00781,0 41.65953,18.65172 41.65953,41.66059 z"
+                 style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+                 id="path68"
+                 class="openlime-lens-dashboard-button-bkg" /><g
+                 id="g2392-5"
+                 transform="matrix(0.26458333,0,0,0.26458333,-283.58108,-263.57207)"><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:40;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1072.4033,509.27736 h 171.1826"
+                   id="path351-6" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1185.0215,568.3701 h 59.6026"
+                   id="path351-3-2" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1184.2167,621.15576 h 59.6026"
+                   id="path351-3-2-0" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:40;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1072.4033,679.59496 h 171.1826"
+                   id="path351-3-6-7-1" /><path
+                   style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:11.4448;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#TriangleStart-5)"
+                   d="m 1074.9115,570.87447 54.1203,-0.0275"
+                   id="path1366-2" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:14;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1080.0425,521.28147 v 54.87857"
+                   id="path1402-7" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+                   d="m 1150.8866,623.00688 0.3956,-5.02729"
+                   id="path2545" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1185.0215,567.71656 h 59.6026"
+                   id="path2720" /></g></g></g></svg>`;
+
+          this.actions.next.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+      <!-- Created with Inkscape (http://www.inkscape.org/) -->
+      
+      <svg
+         viewBox="0 0 83.319054 83.320114"
+         version="1.1"
+         id="svg11415"
+         xml:space="preserve"
+         xmlns="http://www.w3.org/2000/svg"
+         xmlns:svg="http://www.w3.org/2000/svg"><defs
+           id="defs11412"><marker
+             style="overflow:visible"
+             id="TriangleStart"
+             refX="0"
+             refY="0"
+             orient="auto-start-reverse"
+             markerWidth="5.3244081"
+             markerHeight="6.155385"
+             viewBox="0 0 5.3244081 6.1553851"
+             preserveAspectRatio="xMidYMid"><path
+               transform="scale(0.5)"
+               style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+               d="M 5.77,0 -2.88,5 V -5 Z"
+               id="path135" /></marker></defs><g
+           id="g4652"
+           transform="translate(-12.647874,74.762541)"><path
+             d="m 95.96693,-33.101955 c 0,23.007813 -18.65172,41.6595258 -41.65953,41.6595258 -23.00782,0 -41.659526,-18.6517128 -41.659526,-41.6595258 0,-23.008872 18.651706,-41.660586 41.659526,-41.660586 23.00781,0 41.65953,18.651714 41.65953,41.660586 z"
+             style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+             id="path68"
+             class="openlime-lens-dashboard-button-bkg" /><g
+             id="g4636"
+             transform="translate(173.74831,-50.897484)"><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:10.5833;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -142.08694,-4.7366002 h 45.292059"
+               id="path351" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:10.5833;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -142.08694,40.326598 h 45.292059"
+               id="path351-3-6-7" /><path
+               style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.20746;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#TriangleStart)"
+               d="m -136.09942,8.7192481 0.008,14.9721889"
+               id="path1366" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.70417;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="M -136.07283,-1.5605128 V 24.204958"
+               id="path1402" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:7.9375;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -111.69142,24.864565 h 15.76985"
+               id="path351-3-2-0-3" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:7.9375;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -111.37623,10.725444 h 15.76986"
+               id="path2720-9" /></g></g></svg>`;
+
+          if (queueMicrotask) queueMicrotask(() => { this.init(); }); //allows modification of actions and layers before init.
+          else setTimeout(() => { this.init(); }, 0);
+
+       }
+
+       init() {
+          this.container.style.display = 'block';
+          this.container.style.margin = '0';
+
+          for (let [name, action] of Object.entries(this.actions)) {
+             this.addAction(action);
+          }
+
+          // Set Camera movement active
+          this.actions.camera.active = this.actions.camera.element.classList.toggle('openlime-lens-dashboard-camera-active');
+          this.actions.light.active = false;
+
+          // Enable camera, light, next buttons
+          this.setActionEnabled('camera');
+          this.setActionEnabled('light');
+          this.setActionEnabled('annoswitch');
+          this.setActionEnabled('next');
+       }
+
+       static degToRadians(angle) {
+          return angle * (Math.PI / 180.0);
+       }
+
+       static polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+          const angleInRadians = (angleInDegrees-90) * Math.PI / 180.0;
+        
+          return {
+            x: centerX + (radius * Math.cos(angleInRadians)),
+            y: centerY + (radius * Math.sin(angleInRadians))
+          };
+        }
+        
+       static describeArc(x, y, radius, border, startAngle, endAngle){
+        
+            const start = LensDashboardNavigatorRadial.polarToCartesian(x, y, radius+border, endAngle);
+            const end = LensDashboardNavigatorRadial.polarToCartesian(x, y, radius+border, startAngle);
+            const startIn = LensDashboardNavigatorRadial.polarToCartesian(x, y, radius, endAngle);
+            const endIn = LensDashboardNavigatorRadial.polarToCartesian(x, y, radius, startAngle);
+        
+            const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+        
+            const d = [
+                "M", start.x, start.y, 
+                "A", radius+border, radius+border, 0, largeArcFlag, 0, end.x, end.y,
+                "L", endIn.x, endIn.y,
+                "A", radius, radius, 1, largeArcFlag, 1, startIn.x, startIn.y,
+            ].join(" ");
+        
+            return d;       
         }
 
-        getScreenPosition(p, t) {
-            // Transform from p expressed wrt world center (at dataset center is 0,0)
-            // to Viewport coords 0,w 0,h
-            const c = t.sceneToViewportCoords(this.camera.viewport, p);
-            return c;
-        }
+       setToolboxBkg(r, sizew, sizeh) {
+          const e = this.toolboxBkg.element;
+          e.setAttributeNS(null, 'viewBox', `0 0 ${sizew} ${sizeh}`);
+          const shape = e.querySelector('#shape-dashboard-bkg');
+          this.containerSpace;
+          const b =  this.toolboxBkgSize;
+          const cx = sizew*0.5;
+          const cy = sizeh*0.5;
+          shape.setAttributeNS(null, 'd', LensDashboardNavigatorRadial.describeArc(cx, cy, r, b, -110, 110));
+          // shape.setAttributeNS(null, 'd', `M ${sizew*0.5-r-b},${sizeh*0.5} a1,1 0 0,1 ${2*(r+b)},0 h ${-b} a1,1 0 1,0 ${-2*r},0 Z`);
+       }
 
-        isInsideLens(p) {
-            const c = this.lensLayer.getTargetCenter();
-            const dx = p[0] - c[0];
-            const dy = p[1] - c[1];
-            const d = Math.sqrt(dx*dx + dy*dy);
-            const r = this.lensLayer.getRadius();
-            const within = d < r;
-            //const onBorder = within && d >= r-this.lensLayer.border;
-            return within;
-        }
+       addAction(action) {
+          action.element = Util.SVGFromString(action.svg);
+          action.element.style = `position:absolute; height: ${this.toolSize}px; margin: 0`;
+          action.element.classList.add('openlime-lens-dashboard-button');
+          if (action.type == 'toggle') {
+             const toggleElm = action.element.querySelector(action.toggleClass);
+             toggleElm.style.visibility = `hidden`;
+             action.active = false;
+          }
+          action.element.addEventListener('click', (e) => {
+             if (action.type == 'toggle') {
+                action.active = !action.active;
+                const toggleElm = action.element.querySelector(action.toggleClass);
+                if (action.active) {
+                   toggleElm.style.visibility = `visible`;
+                } else {
+                   toggleElm.style.visibility = `hidden`;
+                }
+                this.noupdate=true;
+             }
+             action.task(e);
+             e.preventDefault();
+          });
+          this.container.appendChild(action.element);
+       }
 
+       getAction(label) {
+          let result = null;
+          for (let [name, action] of Object.entries(this.actions)) {
+             if (action.label === label) {
+                result = action;
+                break;
+             }
+          }
+          return result;
+       }
+
+       setActionEnabled(label, enable = true) {
+          const action = this.getAction(label);
+          if (action) {
+             action.element.classList.toggle('enabled', enable);
+          }
+       }
+
+       toggleLightController() {
+          let active = this.actions.light.element.classList.toggle('openlime-lens-dashboard-light-active');
+          this.actions.light.active = active;
+          this.actions.camera.active = this.actions.camera.element.classList.toggle('openlime-lens-dashboard-camera-active');
+
+          for (let layer of Object.values(this.viewer.canvas.layers))
+             for (let c of layer.controllers)
+                if (c.control == 'light') {
+                   c.active = true;
+                   c.activeModifiers = active ? [0, 2, 4] : [2, 4];  //nothing, shift and alt
+                }
+       }
+
+       setToggleClassVisibility(t) {
+          for (let [name, action] of Object.entries(this.actions)) {
+             if (action.type == 'toggle' && action.active) {
+                const toggleElm = action.element.querySelector(action.toggleClass);
+                if (t) {
+                   toggleElm.style.visibility = `visible`;
+                } else {
+                   toggleElm.style.visibility = `hidden`;
+                }
+             }
+          }
+       }
+
+       toggle() {
+          const t = this.container.classList.toggle('closed');
+          this.setToggleClassVisibility(!t);
+       }
+
+       setToolboxElm(radius, sizew, sizeh) {
+          
+            // Toolbox Background
+          this.setToolboxBkg(radius - this.borderWidth - 2, sizew, sizeh);
+          this.first = false;
+
+          // Set tool position
+          const alphaDelta = 2.0*Math.asin((this.toolSize*0.5+this.toolPadding)/(radius));
+          for (let i = 0; i < this.group.length; i++) {
+             const gArr = Object.entries(this.actions).filter( ([key, value]) => value.group == i);
+             if(Math.abs(this.group[i]) > 90) gArr.reverse();
+             let idx = 0;
+             for (let [name, action] of gArr) {
+                // const tw = action.element.clientWidth;
+                // const th = action.element.clientHeight;
+                const th = this.toolSize;
+                const tw = this.toolSize;
+                const rad = LensDashboardNavigatorRadial.degToRadians(this.group[i]) + idx * alphaDelta;
+                let cbx = (radius+this.toolSize*0.5+this.toolboxBkgPadding) * Math.sin(rad);
+                let cby = (radius+this.toolSize*0.5+this.toolboxBkgPadding) * Math.cos(rad);
+                let bx = sizew * 0.5 + cbx - tw / 2;
+                let by = sizeh * 0.5 - cby - th / 2;
+                action.element.style.left = `${bx}px`;
+                action.element.style.top = `${by}px`;
+                idx++;
+             }
+          }
+       }
+
+       /** @ignore */
+       update(x, y, r) {
+          if(this.noupdate) {
+             this.noupdate = false;
+             return;
+          }
+          super.update(x,y,r);
+          const center = {
+             x: this.lensBox.x,
+             y: this.lensBox.y
+          };
+          const radius = this.lensBox.r;
+          const sizew = this.lensBox.w;
+          const sizeh = this.lensBox.h;
+         
+          //this.setToolboxElm(radius, sizew, sizeh);
+
+          if (this.updateCb) {
+             // updateCb(c.x, c.y, r, dashboard.w, dashboard.h, canvas.w, canvas.h) all params in canvas coordinates
+             this.updateCb(center.x, center.y, radius, sizew, sizeh, this.viewer.camera.viewport.w, this.viewer.camera.viewport.h);
+          }
+
+          if (!this.moving) {
+             this.toggle();
+             this.moving = true;
+          }
+          if (this.timeout) clearTimeout(this.timeout);
+          this.timeout = setTimeout(() => {
+             this.toggle();
+             this.moving = false;
+             this.setToolboxElm(radius, sizew, sizeh);
+             if (this.updateEndCb) this.updateEndCb(center.x, center.y, radius, sizew, sizeh, this.viewer.camera.viewport.w, this.viewer.camera.viewport.h);
+          }, this.delay);
+       }
     }
 
     /**
@@ -8315,12 +10512,14 @@ void main() {
     			svgGroup: null,
     			onClick: null,			//callback function
     			classes: {
-    				'': { stroke: '#000', label: '' },
+    				'': { style: { stroke: '#000' }, label: '' },
     			},
     			annotationUpdate: null
     		}, options);
     		super(options);
-    		this.style += Object.entries(this.classes).map((g) => `[data-class=${g[0]}] { stroke:${g[1].stroke}; }`).join('\n');
+    		for(const [key, value] of Object.entries(this.classes)) {
+    			this.style += `[data-class=${key}] { ` + Object.entries(value.style).map( g => `${g[0]}: ${g[1]};`).join('\n') + '}';
+    		}
     		//this.createOverlaySVGElement();
     		//this.setLayout(this.layout);
     	}
@@ -8389,9 +10588,9 @@ void main() {
 
     	/** @ignore */
     	newAnnotation(annotation) {
-    		let svg = createSVGElement('svg');
+    		let svg = Util.createSVGElement('svg');
     		if (!annotation)
-    			annotation = new Annotation$1({ element: svg, selector_type: 'SvgSelector' });
+    			annotation = new Annotation({ element: svg, selector_type: 'SvgSelector' });
     		return super.newAnnotation(annotation)
     	}
 
@@ -8399,12 +10598,27 @@ void main() {
     	draw(transform, viewport) {
     		if (!this.svgElement)
     			return true;
-    		let t = this.transform.compose(transform);
     		this.svgElement.setAttribute('viewBox', `${-viewport.w / 2} ${-viewport.h / 2} ${viewport.w} ${viewport.h}`);
-    		let c = this.boundingBox().corner(0);
-    		this.svgGroup.setAttribute("transform",
-    			`translate(${t.x} ${t.y}) rotate(${-t.a} 0 0) scale(${t.z} ${t.z}) translate(${c[0]} ${c[1]})`);
+
+    		const svgTransform = this.getSvgGroupTransform(transform);
+    		this.svgGroup.setAttribute("transform",	svgTransform);
     		return true;
+    	}
+
+    	/**
+    	 * Return the string containing the transform for drawing the svg group in the proper position
+    	 * @param {Transform} transform current transform parameter of the draw function
+    	 * @param {bool} inverse when its false return the transform needed to draw the svgGroup
+    	 * @returns string with svgroup transform 
+    	 */
+    	getSvgGroupTransform(transform, inverse=false) {
+    		let t = this.transform.compose(transform);
+    		let c = this.boundingBox().corner(0);
+    		// FIXME CHECK IT: Convert from GL to SVG, but without any scaling. It just needs to reflect around 0,
+    		t = CoordinateSystem.reflectY(t);
+    		return inverse ?
+    		 `translate(${-c.x} ${-c.y})  scale(${1/t.z} ${1/t.z}) rotate(${t.a} 0 0) translate(${-t.x} ${-t.y})` :
+    		 `translate(${t.x} ${t.y}) rotate(${-t.a} 0 0) scale(${t.z} ${t.z}) translate(${c.x} ${c.y})`;
     	}
 
     	/** @ignore */
@@ -8489,15 +10703,6 @@ void main() {
     			}
     		}
     	}
-    }
-
-    /** @ignore */ 
-    function createSVGElement(tag, attributes) {
-    	let e = document.createElementNS('http://www.w3.org/2000/svg', tag);
-    	if (attributes)
-    		for (const [key, value] of Object.entries(attributes))
-    			e.setAttribute(key, value);
-    	return e;
     }
 
     Layer.prototype.types['svg_annotations'] = (options) => { return new LayerSvgAnnotation(options); };
@@ -8790,9 +10995,8 @@ void main() {
     				},
     				pin: {
     					template: (x,y) => {
-    						console.log("idx= ", this.annotation.idx);
-    						return `<svg xmlns='http://www.w3.org/2000/svg' x='${x}' y='${y}' width='4%' height='4%' 
-						viewBox='0 0 18 18'><path d='M 0,0 C 0,0 4,0 8,0 12,0 16,4 16,8 16,12 12,16 8,16 4,16 0,12 0,8 0,4 0,0 0,0 Z'/><text id='pin-text' x='7' y='8'>${this.annotation.idx}</text></svg>`;
+    						return `<svg xmlns='http://www.w3.org/2000/svg' x='${x}' y='${y}' width='4%' height='4%' class='pin'
+						viewBox='0 0 18 18'><path d='M 0,0 C 0,0 4,0 8,0 12,0 16,4 16,8 16,12 12,16 8,16 4,16 0,12 0,8 0,4 0,0 0,0 Z'/><text class='pin-text' x='7' y='8'>${this.annotation.idx}</text></svg>`;
     					}, //pin di alcazar  1. url a svg 2. txt (stringa con svg) 3. funzione(x,y) ritorna svg 4. dom (da skin).
     					tooltip: 'New pin',
     					tool: Pin
@@ -8841,7 +11045,7 @@ void main() {
     			deleteCallback: null
     		}, options);
 
-    		layer.style += Object.entries(this.classes).map((g) => `[data-class=${g[0]}] { stroke:${g[1].stroke}; }`).join('\n');
+    		layer.style += Object.entries(this.classes).map((g) => `[data-class=${g[0]}] { stroke:${g[1].style.stroke}; }`).join('\n');
     		//at the moment is not really possible to unregister the events registered here.
     		viewer.pointerManager.onEvent(this);
     		document.addEventListener('keyup', (e) => this.keyUp(e), false);
@@ -8936,7 +11140,7 @@ void main() {
     		edit.classList.remove('hidden');
     		let button = edit.querySelector('.openlime-select-button');
     		button.textContent = this.classes[anno.class].label;
-    		button.style.background = this.classes[anno.class].stroke;
+    		button.style.background = this.classes[anno.class].style.stroke;
     	}
 
     	/** @ignore */
@@ -8969,6 +11173,15 @@ void main() {
 					<label for="label">Title:</label> <input name="label" type="text"><br>
 					<label for="description">Description:</label><br>
 					<textarea name="description" cols="30" rows="5"></textarea><br>
+					<span>Class:</span> 
+					<div class="openlime-select">
+						<input type="hidden" name="classes" value=""/>
+						<div class="openlime-select-button"></div>
+						<ul class="openlime-select-menu">
+						${Object.entries(this.classes).map((c) =>
+			`<li data-class="${c[0]}" style="background:${c[1].style.stroke};">${c[1].label}</li>`).join('\n')}
+						</ul>
+					</div>
 					<label for="idx">Index:</label> <input name="idx" type="text"><br>	
 					${Object.entries(this.annotation.data).map(k => {
 						let label = k[0];
@@ -8976,15 +11189,6 @@ void main() {
 						return str;
 					}).join('\n')}
 					<br>
-					<span>Class:</span> 
-					<div class="openlime-select">
-						<input type="hidden" name="classes" value=""/>
-						<div class="openlime-select-button"></div>
-						<ul class="openlime-select-menu">
-						${Object.entries(this.classes).map((c) =>
-			`<li data-class="${c[0]}" style="background:${c[1].stroke};">${c[1].label}</li>`).join('\n')}
-						</ul>
-					</div>
 					<span><button class="openlime-state">SAVE</button></span>
 					<span><input type="checkbox" name="publish" value=""> Publish</span><br>
 					<div class="openlime-annotation-edit-tools"></div>
@@ -9020,7 +11224,7 @@ void main() {
 
     			input.value = e.srcElement.getAttribute('data-class');
     			input.dispatchEvent(new Event('change'));
-    			button.style.background = this.classes[input.value].stroke;
+    			button.style.background = this.classes[input.value].style.stroke;
     			button.textContent = e.srcElement.textContent;
 
     			select.classList.toggle('active');
@@ -9067,7 +11271,7 @@ void main() {
     			if (this.annotation.idx != idx.value) {
     				const svgPinIdx = this.annotation.elements[0];
     				if(svgPinIdx) {
-    					const txt = svgPinIdx.querySelector("#pin-text");
+    					const txt = svgPinIdx.querySelector(".pin-text");
     					if(txt) {
     						txt.textContent = idx.value;
     					}
@@ -9115,7 +11319,7 @@ void main() {
     		anno.class = select.value || '';
 
     		let button = edit.querySelector('.openlime-select-button');
-    		button.style.background = this.classes[anno.class].stroke;
+    		button.style.background = this.classes[anno.class].style.stroke;
 
     		for (let e of this.annotation.elements)
     			e.setAttribute('data-class', anno.class);
@@ -9188,7 +11392,7 @@ void main() {
     		let svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     		const bBox = this.layer.boundingBox();
     		svgElement.setAttribute('viewBox', `0 0 ${bBox.xHigh-bBox.xLow} ${bBox.yHigh-bBox.yLow}`);
-    		let style = createSVGElement('style');
+    		let style = Util.createSVGElement('style');
     		style.textContent = this.layer.style;
     		svgElement.appendChild(style);
     		let serializer = new XMLSerializer();
@@ -9452,13 +11656,14 @@ void main() {
 
     	/** @ignore */
     	mapToSvg(e) {
-    		let camera = this.viewer.camera;
-    		let transform = camera.getCurrentTransform(performance.now());
-    		let pos = camera.mapToScene(e.offsetX, e.offsetY, transform);
-    		const topLeft = this.layer.boundingBox().corner(0);
-    		pos.x -= topLeft[0]; 
-    		pos.y -= topLeft[1];
-    		pos.z = transform.z;
+    		const p = {x:e.offsetX, y: e.offsetY};
+    		const layerT = this.layer.transform;
+    		const useGL = false;
+    		console.log(layerT);
+    		const layerbb = this.layer.boundingBox();
+    		const layerSize = {w:layerbb.width(), h:layerbb.height()};
+    		let pos = CoordinateSystem.fromCanvasHtmlToImage(p, this.viewer.camera, layerT, layerSize, useGL);
+    		
     		return pos;
     	}
     }
@@ -9467,7 +11672,7 @@ void main() {
     /** @ignore */
     class Point {
     	tap(pos) {
-    		let point = createSVGElement('circle', { cx: pos.x, cy: pos.y, r: 10, class: 'point' });
+    		let point = Util.createSVGElement('circle', { cx: pos.x, cy: pos.y, r: 10, class: 'point' });
     		this.annotation.elements.push(point);
     		return true;
     	}
@@ -9499,7 +11704,7 @@ void main() {
     		if (this.points.length == 1) {
     			saveCurrent;
 
-    			this.path = createSVGElement('path', { d: `M${pos.x} ${pos.y}`, class: 'line' });
+    			this.path = Util.createSVGElement('path', { d: `M${pos.x} ${pos.y}`, class: 'line' });
     			return this.path;
     		}
     		let p = this.path.getAttribute('d');
@@ -9529,7 +11734,7 @@ void main() {
 
     	create(pos) {
     		this.origin = pos;
-    		this.box = createSVGElement('rect', { x: pos.x, y: pos.y, width: 0, height: 0, class: 'rect' });
+    		this.box = Util.createSVGElement('rect', { x: pos.x, y: pos.y, width: 0, height: 0, class: 'rect' });
     		return this.box;
     	}
 
@@ -9555,7 +11760,7 @@ void main() {
     	}
     	create(pos) {
     		this.origin = pos;
-    		this.circle = createSVGElement('circle', { cx: pos.x, cy: pos.y, r: 0, class: 'circle' });
+    		this.circle = Util.createSVGElement('circle', { cx: pos.x, cy: pos.y, r: 0, class: 'circle' });
     		return this.circle;
     	}
     	adjust(pos) {
@@ -9596,7 +11801,7 @@ void main() {
     				return;
     			}
     		}
-    		this.path = createSVGElement('path', { d: `M${pos.x} ${pos.y}`, class: 'line' });
+    		this.path = Util.createSVGElement('path', { d: `M${pos.x} ${pos.y}`, class: 'line' });
     		this.path.points = [pos];
     		this.history = [this.path.points.length];
     		this.annotation.elements.push(this.path);
@@ -9717,6 +11922,7 @@ void main() {
     	}
     }
 
+    exports.BoundingBox = BoundingBox;
     exports.Camera = Camera;
     exports.Canvas = Canvas;
     exports.Controller = Controller;
@@ -9724,8 +11930,10 @@ void main() {
     exports.ControllerFocusContext = ControllerFocusContext;
     exports.ControllerLens = ControllerLens;
     exports.ControllerPanZoom = ControllerPanZoom;
+    exports.CoordinateSystem = CoordinateSystem;
     exports.EditorSvgAnnotation = EditorSvgAnnotation;
     exports.FocusContext = FocusContext;
+    exports.HSH = HSH;
     exports.Layer = Layer;
     exports.LayerAnnotation = LayerAnnotation;
     exports.LayerAnnotationImage = LayerAnnotationImage;
@@ -9738,18 +11946,25 @@ void main() {
     exports.Layout = Layout;
     exports.LayoutTileImages = LayoutTileImages;
     exports.LayoutTiles = LayoutTiles;
+    exports.LensDashboard = LensDashboard;
+    exports.LensDashboardNavigator = LensDashboardNavigator;
+    exports.LensDashboardNavigatorRadial = LensDashboardNavigatorRadial;
     exports.PointerManager = PointerManager;
     exports.Raster = Raster;
+    exports.RenderingMode = RenderingMode;
     exports.Ruler = Ruler;
     exports.ScaleBar = ScaleBar;
     exports.Shader = Shader;
+    exports.ShaderBRDF = ShaderBRDF;
     exports.ShaderCombiner = ShaderCombiner;
+    exports.ShaderRTI = ShaderRTI;
     exports.Skin = Skin;
     exports.Tile = Tile;
     exports.Transform = Transform;
     exports.UIBasic = UIBasic;
     exports.UIDialog = UIDialog;
     exports.Units = Units;
+    exports.Util = Util;
     exports.Viewer = Viewer;
 
     Object.defineProperty(exports, '__esModule', { value: true });
