@@ -48,7 +48,7 @@ void DStretchDialog::buttonGenerateClicked()
 
     m_OutputFile = output;
 
-    DStretchTask* task = new DStretchTask(this);
+	DStretchTask* task = new DStretchTask(this);
     QStringList files;
 
     files << m_InputFile;

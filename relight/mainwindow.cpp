@@ -308,6 +308,7 @@ void MainWindow::undo(){
 			auto m = dynamic_cast<SphereMarker *>(marker);
 			if(m && m->sphere == sphere) {
 				ui->markerList->removeItem(marker);
+				delete marker;
 				break;
 			}
 		}
@@ -320,7 +321,7 @@ void MainWindow::undo(){
 
 void MainWindow::redo() {
 	Action action = history.redo();
-	if(action.type = Action::NO_ACTION)
+	if(action.type == Action::NO_ACTION)
 		return;
 
 }
@@ -883,7 +884,8 @@ void MainWindow::exportNormals() {
 void MainWindow::convertRTI() {
 	if(!convert)
 		convert = new ConvertDialog(this);
-	convert->show();
+	convert->project = &project;
+	convert->exec(&project);
 }
 
 void MainWindow::exportRTI(bool normals) {
@@ -906,6 +908,7 @@ void MainWindow::exportRTI(bool normals) {
 
 	//should init with saved preferences.
 	project.computePixelSize();
+	rtiexport->project = &project;
 	rtiexport->pixelSize = project.pixelSize;
 
 	rtiexport->setTabIndex(normals? 1 : 0);
@@ -913,13 +916,14 @@ void MainWindow::exportRTI(bool normals) {
 
 	rtiexport->showImage(imagePixmap->pixmap());
 	rtiexport->lights = project.directions();
+	rtiexport->light3d = project.dome.lightConfiguration  != Dome::DIRECTIONAL;
 	rtiexport->path = project.dir.path();
 	rtiexport->setModal(true);
 
 	rtiexport->show();
 	//this needs to be called AFTER show, to ensure proportions are computed properly
 	rtiexport->setCrop(project.crop);
-	rtiexport->exec();
+	rtiexport->exec(&project);
 	project.crop = rtiexport->crop;
 	if(ProcessQueue::instance().queue.size())
 		showQueue();

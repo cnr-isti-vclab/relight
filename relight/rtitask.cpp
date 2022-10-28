@@ -20,7 +20,7 @@ using namespace std;
 int convertToRTI(const char *filename, const char *output);
 int convertRTI(const char *file, const char *output, int quality);
 
-RtiTask::RtiTask() {}
+RtiTask::RtiTask(const Project &_project): Task(), project(_project) {}
 
 RtiTask::~RtiTask() {
 	if(builder)
@@ -92,7 +92,12 @@ void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 		for(int k = 0; k < 3; k++)
 			lights[i/3][k] = qlights[i+k].toDouble();
 	builder->lights = builder->imageset.lights = lights;
+	builder->imageset.light3d = project.dome.lightConfiguration != Dome::DIRECTIONAL;
+	builder->imageset.dome_radius = project.dome.domeDiameter/2.0;
+	builder->imageset.vertical_offset = project.dome.verticalOffset;
+	builder->imageset.initLights();
 	builder->imageset.initImages(input_folder.toStdString().c_str());
+
 
 	if(hasParameter("crop")) {
 		QRect rect = (*this)["crop"].value.toRect();

@@ -44,7 +44,7 @@ void ConvertDialog::convert() {
 		return;
 
 
-	RtiTask *task = new RtiTask;
+	RtiTask *task = new RtiTask(*project);
 	task->output = output;
 	task->label = "RTI"; //should use
 	task->addParameter("input", Parameter::STRING, filename);

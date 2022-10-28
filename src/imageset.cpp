@@ -276,6 +276,7 @@ Vector3f ImageSet::relativeLight(const Vector3f &light, int x, int y){
 	Vector3f l = light;
 	l[0]  -= (x - width/2.0f)/width;
 	l[1]  -= (y - height/2.0f)/width;
+	l[2]  += vertical_offset/width;
 	return l;
 }
 
@@ -373,7 +374,7 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 		}
 
 
-		//compensante intensity.
+		//compensate intensity.
 		if(light3d) {
 
 			uint32_t x = 0;

@@ -68,7 +68,11 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QDoubleSpinBox" name="imageWidth"/>
+           <widget class="QDoubleSpinBox" name="imageWidth">
+            <property name="maximum">
+             <double>200.000000000000000</double>
+            </property>
+           </widget>
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_2">
@@ -78,7 +82,11 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QDoubleSpinBox" name="domeDiameter"/>
+           <widget class="QDoubleSpinBox" name="domeDiameter">
+            <property name="maximum">
+             <double>400.000000000000000</double>
+            </property>
+           </widget>
           </item>
           <item row="2" column="0">
            <widget class="QLabel" name="label_3">
@@ -88,7 +96,11 @@
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QDoubleSpinBox" name="verticalOffset"/>
+           <widget class="QDoubleSpinBox" name="verticalOffset">
+            <property name="minimum">
+             <double>-100.000000000000000</double>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
