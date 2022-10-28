@@ -7,6 +7,7 @@
 
 #include "httpserver.h"
 #include "../src/relight_vector.h"
+#include "project.h"
 
 namespace Ui {
 	class RtiExport;
@@ -20,8 +21,12 @@ class RtiExport : public QDialog
 	Q_OBJECT
 
 public:
+	enum Format { PTM, RTI, RELIGHT, DEEPZOOM, TARZOOM };
+
+	Project *project = nullptr;
 	QStringList images;
 	std::vector<Vector3f> lights;
+	bool light3d = false;
 	float pixelSize = 0;
 	QRect crop;
 	QString path;
@@ -37,7 +42,11 @@ public:
 	void setCrop(QRect rect);
 	void showImage(QPixmap pix);
 
-	enum Format { PTM, RTI, RELIGHT, DEEPZOOM, TARZOOM };
+	void exec(Project *_project) {
+		project = _project;
+		QDialog::exec();
+	}
+
 
 public slots:
 	void setTabIndex(int index);

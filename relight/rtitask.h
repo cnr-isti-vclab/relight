@@ -2,6 +2,7 @@
 #define RTITASK_H
 
 #include "task.h"
+#include "project.h"
 #include <QMutex>
 
 class RtiBuilder;
@@ -20,8 +21,9 @@ class RtiTask: public Task {
 	Q_OBJECT
 public:
 	enum Steps { RELIGHT, DEEPZOOM, TARZOOM, ITARZOOM };
+	Project project;
 
-	RtiTask();
+	RtiTask(const Project &_project);
     virtual ~RtiTask();
     virtual void run() override;
 

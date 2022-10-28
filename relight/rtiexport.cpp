@@ -305,7 +305,7 @@ void RtiExport::createRTI() {
 	else if(ui->formatItarzoom->isChecked())
 		format = "itarzoom";
 
-	RtiTask *task = new RtiTask;
+	RtiTask *task = new RtiTask(*project);
     task->input_folder = path;
 	task->output = output;
     task->label = "RTI"; //should use
@@ -316,6 +316,8 @@ void RtiExport::createRTI() {
 	task->addParameter("output", Parameter::FOLDER, output);
 	task->addParameter("images", Parameter::STRINGLIST, images);
 	task->addParameter("pixelSize", Parameter::DOUBLE, pixelSize);
+	task->addParameter("light3d", Parameter::BOOL, light3d);
+
 
 	QList<QVariant> slights;
 	for(auto light: lights)

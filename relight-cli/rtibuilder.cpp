@@ -936,9 +936,8 @@ size_t RtiBuilder::savePTM(const std::string &output) {
 
 	for(size_t i = 0; i < gbias.size(); i++) {
 		int j = coeffRemap[i];
-		gbias[i] = static_cast<int>(bias[j+3]*255.0);
-		//if(i != 5 && i != 3) gbias[i] = 0;
-		gscale[i] = scale[j+3];
+		gbias[i] = static_cast<int>(bias[j*3]*255.0);
+		gscale[i] = scale[j*3];
 	}
 	for(float s: gscale)
 		stream << s << " ";
@@ -1070,7 +1069,7 @@ size_t RtiBuilder::saveUniversal(const std::string &output) {
 		gscale[i] = scale[i*3];
 	}
 	fwrite(gscale.data(), sizeof(float), gscale.size(), file);
-	fwrite(gbias.data(), sizeof(float), gbias.size(), file);
+	fwrite(gbias.data(),  sizeof(float), gbias.size(),  file);
 
 
 	//second reading.
