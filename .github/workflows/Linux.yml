@@ -12,19 +12,13 @@ jobs:
     runs-on: ubuntu-18.04 #in order to deploy, need to use oldest supported version
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: true
-    - name: Cache Qt
-      id: cache-qt
-      uses: actions/cache@v1
-      with:
-        path: ../Qt
-        key: ${{ runner.os }}-QtCache-${{ env.QT_VERSION }}
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
-        cached: ${{ steps.cache-qt.outputs.cache-hit }}
+        cache: true
         version: ${{ env.QT_VERSION }}
     - name: Install dependencies
       run: |
@@ -36,12 +30,12 @@ jobs:
       run: |
         bash build_scripts/${{ runner.os }}/2_deploy_and_appimage.sh
     - name: Upload Relight Portable
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: relight_linux_portable
         path: install/
     - name: Upload Relight AppImage
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: relight_linux_appimage
         path: ReLight*.AppImage

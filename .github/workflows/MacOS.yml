@@ -12,26 +12,20 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: true
-    - name: Cache Qt
-      id: cache-qt
-      uses: actions/cache@v1
-      with:
-        path: ../Qt
-        key: ${{ runner.os }}-QtCache-${{ env.QT_VERSION }}
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
-        cached: ${{ steps.cache-qt.outputs.cache-hit }}
+        cache: true
         version: ${{ env.QT_VERSION }}
     - name: Install dependencies
       run: |
         bash build_scripts/${{ runner.os }}/0_setup_env.sh
     - name: Configure and Build
       run: |
-        bash build_scripts/${{ runner.os }}/1_build.sh
+        bash build_scripts/${{ runner.os }}/1_build.sh --use_brew_llvm
     - name: Deploy
       run: |
         bash build_scripts/${{ runner.os }}/2_deploy.sh
@@ -39,12 +33,12 @@ jobs:
       run: |
         bash build_scripts/${{ runner.os }}/3_dmg.sh
     - name: Upload Relight Portable
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: relight_macos_portable
         path: install/ReLight*.app
     - name: Upload Relight DMG
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: relight_macos_dmg
         path: install/ReLight*.dmg
