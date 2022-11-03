@@ -18,6 +18,7 @@ BUILD_PATH=$SOURCE_PATH/build
 INSTALL_PATH=$SOURCE_PATH/install
 CORES="-j4"
 QT_DIR=""
+USE_BREW_LLVM=false
 
 #check parameters
 for i in "$@"
@@ -37,6 +38,10 @@ case $i in
         ;;
     -qt=*|--qt_dir=*)
         QT_DIR=${i#*=}
+        shift # past argument=value
+        ;;
+    --use_brew_llvm)
+        USE_BREW_LLVM=true
         shift # past argument=value
         ;;
     *)
@@ -61,6 +66,16 @@ cd $BUILD_PATH
 if [ ! -z "$QT_DIR" ]
 then
     export Qt5_DIR=$QT_DIR
+fi
+
+if [ "$USE_BREW_LLVM" = true ] ; then
+    export PATH="$(brew --prefix llvm)/bin:$PATH";
+    export CC=/usr/local/opt/llvm/bin/clang
+    export CXX=/usr/local/opt/llvm/bin/clang++
+    export COMPILER=${CXX}
+    export CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include"
+    export CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include"
+    export LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib"
 fi
 
 cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH $SOURCE_PATH

@@ -23,7 +23,7 @@ esac
 done
 
 
-brew install libomp eigen libjpeg
+brew install llvm libomp eigen libjpeg
 npm install -g appdmg
 
 if [ "$INSTALL_QT" = true ] ; then
