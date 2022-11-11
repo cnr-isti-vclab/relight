@@ -65,8 +65,10 @@ bool getFloats(FILE *file, vector<float> &a, unsigned int expected = 0) {
 	buffer[255] = 0;
 
 	QString str = buffer;
+	//some rtis have a space after the last float, other a \n directly.
+	str = str.trimmed();
 	QStringList parts = str.split(' ');
-	parts.pop_back(); //remove \n
+
 	for(int i = 0; i < parts.size(); i++) {
 		bool ok;
 		float s = parts[i].toDouble(&ok);
