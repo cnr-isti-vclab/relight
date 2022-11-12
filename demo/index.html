@@ -87,7 +87,7 @@ async function autodetectNormals(layout) {
 async function init() {
 	let layout = await autodetect();
 	let normals = await autodetectNormals(layout);
-        var lime = new OpenLIME.Viewer('#openlime', { background:'black' });
+	var lime = new OpenLIME.Viewer('#openlime', { background:'black' });
 
 
 	let layer = new OpenLIME.Layer({ 
@@ -99,7 +99,7 @@ async function init() {
 
 	lime.canvas.addLayer('RTI', layer); 
 	OpenLIME.Skin.setUrl('skin.svg');
-	let ui = new OpenLIME.UIBasic(lime, { skin: 'skin.svg' });
+	let ui = new OpenLIME.UIBasic(lime, { skin: 'skin.svg', showLightDirections: true });
 	ui.actions.light.active = true;
 	ui.actions.layers.display = true;
 	lime.camera.maxFixedZoom = 1;
