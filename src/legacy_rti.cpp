@@ -76,17 +76,6 @@ bool getFloats(FILE *file, vector<float> &a, unsigned int expected = 0) {
 		if(!ok) return false;
 	}
 
-/* strdod depends on the locale! the .ptm does not.
-
-	char *start = buffer;
-	char *end = start;
-	while(1) {
-		float n = strtod(start, &end);
-		if(errno != 0 || start == end)
-			break;
-		start = end;
-		a.push_back(n);
-	} */
 	if(expected != 0)
 		return expected == a.size();
 	return a.size() > 0;
@@ -96,16 +85,20 @@ bool getIntegers(FILE *file, vector<int> &a, unsigned int expected = 0) {
 	char buffer[256];
 	if(fgets(buffer, 256, file) == nullptr)
 		return false;
-	buffer[255] = '0';
-	char *start = buffer;
-	char *end = start;
-	while(1) {
-		int n = strtol(start, &end, 10);
-		if(errno != 0 || start == end)
-			break;
-		start = end;
-		a.push_back(n);
+	buffer[255] = 0;
+
+	QString str = buffer;
+	//some rtis have a space after the last float, other a \n directly.
+	str = str.trimmed();
+	QStringList parts = str.split(' ');
+
+	for(int i = 0; i < parts.size(); i++) {
+		bool ok;
+		float s = parts[i].toInt(&ok);
+		a.push_back(s);
+		if(!ok) return false;
 	}
+
 	if(expected != 0)
 		return expected == a.size();
 	return a.size() > 0;
@@ -343,6 +336,7 @@ bool LRti::loadHSH(FILE* file) {
 	vector<unsigned char> line(line_size);
 	
 	//for each pixel is 9 for red... 9 for green, 9 for blue
+	//we distribute the pixels in 27 planes (or 12, if 4 is basis_terms.
 	for(int y = 0; y < height; y++)	{
 		int Y = height -1 -y;
 		if(fread(line.data(), 1, line_size, file) != line_size)

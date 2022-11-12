@@ -1697,6 +1697,7 @@
     	init(options) {
     		Object.assign(this, {
     			transform: new Transform(),
+    			viewport: null,
     			visible: true,
     			zindex: 0,
     			overlay: false, //in the GUI it won't affect the visibility of the other layers
@@ -1736,6 +1737,10 @@
     		}
     	}
 
+    	setViewport(view) {
+    		this.viewport = view;
+    		this.emit('update');
+    	}
     	/**
     	 * Sets the state of the layer 
     	 */
@@ -2059,6 +2064,14 @@
     			throw "Shader not specified!";
 
     		let done = this.interpolateControls();
+
+    		let parent_viewport = viewport;
+    		if(this.viewport) {
+    			viewport = this.viewport;
+    			this.gl.viewport(viewport.x, viewport.y, viewport.dx, viewport.dy);
+    		}
+    		
+
     		this.prepareWebGL();
 
     		//		find which quads to draw and in case request for them
@@ -2070,12 +2083,16 @@
 
     		this.updateAllTileBuffers(available);
 
+    		//
     		let i = 0;
     		for (let tile of Object.values(available)) {
     			//			if(tile.complete)
     			this.drawTile(tile, i);
     			++i;
     		}
+    		if(this.vieport) 
+    			this.gl.viewport(parent_viewport.x, parent_viewport.y, parent_viewport.dx, parent_viewport.dy);
+
     		return done;
     	}
     	
@@ -2267,6 +2284,9 @@
 
     	/** @ignore */
     	prefetch(transform, viewport) {
+    		if(this.viewport)
+    			viewport = this.viewport;
+
     		if (this.layers.length != 0) { //combine layers
     			for (let layer of this.layers)
     				layer.prefetch(transform, viewport);
@@ -2333,7 +2353,7 @@
     			throw "AAARRGGHHH double tile!";
 
     		if (this.requested[tile.index])
-    			throw "AAARRGGHHH double request!";
+    			console.log("Warning: double request!");
 
     		this.tiles.set(tile.index, tile);
     		this.requested[tile.index] = true;
@@ -4721,7 +4741,8 @@ void main() {
     			return;
     		if(this.relative)
     			return;
-    		this.update(e);
+    			
+    		this.callback(...this.rangeCoords(e));
     		e.preventDefault();
     	}
 
@@ -5656,8 +5677,10 @@ void main() {
             this.canvasElement.width = width * window.devicePixelRatio;
             this.canvasElement.height = height * window.devicePixelRatio;
 
-            this.camera.setViewport({ x: 0, y: 0, dx: width, dy: height, w: width, h: height });
-        
+            let view = { x: 0, y: 0, dx: width, dy: height, w: width, h: height };
+            this.camera.setViewport(view);
+            this.emit('resize', view);
+
             this.canvas.prefetch();
             this.redraw();
         }
@@ -5693,6 +5716,7 @@ void main() {
     }
 
     addSignals(Viewer, 'draw');
+    addSignals(Viewer, 'resize'); //args: viewport
 
     let url = 'skin/skin.svg';
     let svg = null;
@@ -6232,11 +6256,13 @@ void main() {
     			this.menu.push(layerEntry);
     		}
 
-    		let controller = new Controller2D((x, y) => {
-    			for (let layer of lightLayers)
-    				layer.setLight([x, y], 0);
-    			if(this.showLightDirections)
-    				this.updateLightDirections(x, y);
+    		let controller = new Controller2D(
+    			(x, y) => {
+    				for (let layer of lightLayers)
+    					layer.setLight([x, y], 0);
+    				if(this.showLightDirections)
+    					this.updateLightDirections(x, y);
+    				this.emit('lightdirection', [x, y, Math.sqrt(1 - x*x + y*y)]);
     			}, { 
     				// TODO: IS THIS OK? It was false before
     				active: false, 
@@ -6787,6 +6813,7 @@ void main() {
     }
 
     addSignals(UIDialog, 'closed');
+    addSignals(UIBasic, 'lightdirection');
 
     /**
      * Extends {@link Shader}, initialized with a relight .json (see:
