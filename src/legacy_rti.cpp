@@ -778,7 +778,6 @@ bool LRti::decodeJPEG(size_t size, unsigned char *buffer, unsigned int plane) {
 	int w, h;
 	JpegDecoder dec;
 	dec.setColorSpace(JCS_GRAYSCALE);
-	dec.setJpegColorSpace(JCS_GRAYSCALE);
 	
 	if(!dec.decode(buffer, size, img, w, h) || w != width || h != height) {
 		cerr << "Failed decoding jpeg or different size." << endl;

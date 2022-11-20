@@ -17,9 +17,10 @@ public:
 
 	 //JCS_GRAYSCALE, JCS_RGB, JCS_YCbCr, or JCS_CMYK.
 
-	void setColorSpace(J_COLOR_SPACE space);
-	void setJpegColorSpace(J_COLOR_SPACE colorSpace);
 	J_COLOR_SPACE getColorSpace() const;
+	void setColorSpace(J_COLOR_SPACE space);
+	J_COLOR_SPACE getJpegColorSpace() const;
+
 	bool decode(uint8_t* buffer, size_t len, uint8_t*& img, int& width, int& height);
 	bool decode(const char* path, uint8_t*& img, int& width, int& height);
 	bool decode(FILE* file, uint8_t*& img, int& width, int& height);
@@ -42,9 +43,6 @@ private:
 
 	jpeg_decompress_struct decInfo;
 	jpeg_error_mgr errMgr;
-
-	J_COLOR_SPACE colorSpace = JCS_RGB;
-	J_COLOR_SPACE jpegColorSpace = JCS_YCbCr;
 
 	bool subsampled = false;
 };

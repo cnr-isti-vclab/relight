@@ -100,6 +100,7 @@ void TileRow::nextRow() {
 		tile.width = end - start;
 		tile.encoder = new JpegEncoder();
 		tile.encoder->setQuality(quality);
+		tile.encoder->setColorSpace(JCS_RGB, 3);
 		QString filepath = QString("%1/%2_%3.jpg").arg(path).arg(col).arg(current_row); //path + "/" +  QString::number(col) + "_" + QString::numberto_string(current_row) + ".jpg");
 		tile.encoder->init(filepath.toStdString().c_str(), tile.width, h);
 		push_back(tile);

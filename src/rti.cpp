@@ -150,7 +150,6 @@ bool Rti::loadData(const char *folder) {
 	for(int i = 0; i < njpegs; i++) {
 		planedecs[i] = new JpegDecoder;
 		planedecs[i]->setColorSpace(JCS_RGB);
-		planedecs[i]->setJpegColorSpace(JCS_YCbCr);
 
 		int w, h;
 		planedecs[i]->init(dir.filePath(QString("plane_%1.jpg").arg(i)).toStdString().c_str(), w, h);
