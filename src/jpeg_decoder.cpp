@@ -12,15 +12,16 @@ JpegDecoder::~JpegDecoder() {
 }
 
 void JpegDecoder::setColorSpace(J_COLOR_SPACE colorSpace) {
-	this->colorSpace = colorSpace;
+	decInfo.out_color_space = colorSpace;
 }
 
-void JpegDecoder::setJpegColorSpace(J_COLOR_SPACE colorSpace) {
-	this->jpegColorSpace = colorSpace;
-}
 
 J_COLOR_SPACE JpegDecoder::getColorSpace() const {
-	return colorSpace;
+	return decInfo.out_color_space;
+}
+
+J_COLOR_SPACE JpegDecoder::getJpegColorSpace() const {
+	return decInfo.jpeg_color_space;
 }
 
 bool JpegDecoder::decode(uint8_t* buffer, size_t len, uint8_t*& img, int& width, int& height) {
@@ -77,8 +78,8 @@ bool JpegDecoder::init(const char* path, int &width, int &height) {
 
 bool JpegDecoder::init(int &width, int &height) {
 	jpeg_read_header(&decInfo, (boolean)true);
-	decInfo.out_color_space = colorSpace;
-	decInfo.jpeg_color_space = jpegColorSpace;
+	//decInfo.out_color_space = colorSpace;
+	//decInfo.jpeg_color_space = jpegColorSpace;
 	decInfo.raw_data_out = (boolean)false;
 	
 	if(decInfo.num_components > 1) 
