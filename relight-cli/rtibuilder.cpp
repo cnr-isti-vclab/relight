@@ -936,8 +936,13 @@ size_t RtiBuilder::savePTM(const std::string &output) {
 
 	for(size_t i = 0; i < gbias.size(); i++) {
 		int j = coeffRemap[i];
-		gbias[i] = static_cast<int>(bias[j+3]*255.0);
-		gscale[i] = scale[j+3];
+		if(colorspace == LRGB) {
+			gbias[i] = static_cast<int>(bias[j+3]*255.0);
+			gscale[i] = scale[j+3];
+		} else {
+			gbias[i] = static_cast<int>(bias[j*3]*255.0);
+			gscale[i] = scale[j*3];
+		}
 	}
 	for(float s: gscale)
 		stream << s << " ";
