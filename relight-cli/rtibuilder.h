@@ -76,6 +76,10 @@ protected:
 	MaterialBuilder pickBase(PixelArray &sample, std::vector<Vector3f> &lights);
 	//use for 3d lights
 	void pickBases(PixelArray &sample);
+	//PTM or HSH + bad light sampling could overestimate, here histogram is renormalized.
+	//TODO: check for underestimate, expose parameter.
+	void normalizeHistogram(PixelArray &sample, double percentile = 0.95);
+
 	void minmaxMaterial(PixelArray &sample);
 	void finalizeMaterial();
 

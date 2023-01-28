@@ -44,7 +44,8 @@ void HttpServer::start(QString folder) {
 
 
 	t = std::thread([this](){
-		this->server->listen("0.0.0.0", port);
+		if(!this->server->listen("0.0.0.0", port))
+			cerr << "Failed binding port: " << port << ". Already in use? " << endl;
 	});
 }
 

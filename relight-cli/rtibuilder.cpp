@@ -510,6 +510,56 @@ MaterialBuilder RtiBuilder::pickBase(PixelArray &sample, std::vector<Vector3f> &
 	return builder;
 }
 
+//PTM or HSH with bad light distribution can over (or under) estimate.
+//we cane work on the histogram.
+//actually we could also work in post production (it's the same!).
+void RtiBuilder::normalizeHistogram(PixelArray &sample, double percentile) {
+	std::vector<int> histogram[3]; //goes from -1.0 to 2.0
+	double step = 0.05;
+	int side = (int) 1.0/step;
+	for(int i = 0; i < 3; i++)
+		histogram[i].resize(side*3, 0);
+
+	for(uint32_t i = 0; i < sample.npixels(); i++) {
+		if(callback && (i % 8000) == 0)
+			if(!(*callback)("Histogram normalization:", 100*i/sample.npixels()))
+				throw std::string("Cancelled.");
+
+		vector<float> principal = toPrincipal(sample[i]);
+
+		//check for top light: [1, 0....0]
+		for(int c = 0; c < 3; c++) {
+			float value = 1.0f*principal[0]/255.0f;
+			int bin = (int)round((value/step)) + side;
+			bin = max(0, min( side*3-1, bin));
+			histogram[c][bin]++;
+		}
+	}
+	//find top percentile value
+	int tot[3] = { 0, 0, 0 };
+	int top = 0;
+	for(int i = 0; i < side*3; i++) {
+		for(int c = 0; c < 3; c++) {
+			tot[c] += histogram[c][i];
+			if(tot[c] < sample.npixels()*percentile)
+				top = i; //last channel updadating wins.
+		}
+	}
+	float scale = 1/((top/float(side))-1.0f);
+	if(scale >= 1.0)
+		return;
+
+	if(materialbuilders.size()) {
+		for(auto &builder: materialbuilders) {
+			for(auto &v: builder.proj)
+				v *= scale;
+		}
+	} else {
+		for(auto &v: materialbuilder.proj)
+			v *= scale;
+	}
+}
+
 void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 	uint32_t dim = sample.components()*3;
 
@@ -537,13 +587,16 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 	if(callback && !(*callback)("Coefficients quantization:", 0))
 		throw std::string("Cancelled.");
 
+	if(colorspace == RGB) {
+		normalizeHistogram(sample, 0.95);
+	}
+
 	//TODO workers to speed up this.
 	for(uint32_t i = 0; i < sample.npixels(); i++) {
 		if(callback && (i % 8000) == 0)
 			if(!(*callback)("Coefficients quantization:", 100*i/sample.npixels()))
 				throw std::string("Cancelled.");
-		//TODO should interpolate instead!
-		//TODO for rbf and bilinear we don't interpolate the grid (rbf can't bilinear resemple the lights)
+\
 		vector<float> principal = toPrincipal(sample[i]);
 
 		//find max and min of coefficients
@@ -552,6 +605,7 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 			plane.min = std::min(principal[p], plane.min);
 			plane.max = std::max(principal[p], plane.max);
 		}
+
 	}
 	//compute common min max for 3 colors
 	if(commonMinMax && colorspace == RGB) {
