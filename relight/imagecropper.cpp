@@ -374,8 +374,6 @@ void ImageCropper::updateCursorIcon(const QPointF& _mousePosition)
 			cursorIcon = QCursor(Qt::ArrowCursor);
 			break;
 	}
-	//
-	QApplication::setOverrideCursor(cursorIcon);
 	this->setCursor(cursorIcon);
 }
 
