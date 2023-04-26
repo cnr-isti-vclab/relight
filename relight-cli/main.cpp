@@ -22,7 +22,7 @@ using namespace std;
 void help() {
 	cout << "Create an RTI from a set of images and a set of light directions (.lp) in a folder.\n";
 	cout << "It is also possible to convert from .ptm or .rti to relight format and viceversa.\n\n";
-	cout << "Usage: relight-cli [-bpqy3PnmMwkrsSRBcCeE]<input folder> [output folder]\n\n";
+	cout << "Usage: relight-cli [-bpqy3PnmMwkrsSRBcCeEv]<input folder> [output folder]\n\n";
 	cout << "       relight-cli [-q] <input.ptm|.rti> [output folder]\n\n";
 	cout << "       relight-cli [-q] <input.json> [output.ptm]\n\n";
     cout << "\tinput folder containing a .lp with number of photos and light directions\n";
@@ -57,6 +57,7 @@ void help() {
 
     cout << "\t-D <path> : directory to store rebuilt images\n";
     cout << "\t-L <x:y:z> : reconstruct only one image from light parameters, output is the filename\n";
+	cout << "\t-v : verbose, prints progress info\n";
 }
 
 //convert PTM into relight format
@@ -298,7 +299,7 @@ int main(int argc, char *argv[]) {
             break;
         }
 		case 'v':
-			verbose = false;
+			verbose = true;
 			break;
         case '?':
             cerr << "Option " << char(optopt) << " requires an argument!\n" << endl;
@@ -388,6 +389,9 @@ int main(int argc, char *argv[]) {
 				cerr << qPrintable(error) << endl;
 				return 1;
 			}
+		} else {
+			cerr << "Input parameter (" << input << ") is an unknown type, relight-cli can process .relight, .json, .rti or .ptm files" << endl;
+			return 1;
 		}
 	} else {
 		if(!builder.initFromFolder(input, callback)) {

@@ -78,6 +78,10 @@ bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(std::st
 			error = "Failed imageset init.";
 			return false;
 		}
+		if(imageset.lights.size() == 0) {
+			error = "Could not find .lp file with light information";
+			return false;
+		}
 	} catch(QString e) {
 		error = e.toStdString();
 		return false;
@@ -88,7 +92,7 @@ bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(std::st
 	width = imageset.width;
 	height = imageset.height;
 	lights = imageset.lights;
-	return init();
+	return init(callback);
 }
 
 
