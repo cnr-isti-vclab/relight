@@ -1,6 +1,8 @@
 #ifndef PROJECT_H
 #define PROJECT_H
 
+#define RELIGHT_STRINGIFY0(v) #v
+#define RELIGHT_STRINGIFY(v) RELIGHT_STRINGIFY0(v)
 
 #include "lens.h"
 #include "dome.h"
@@ -19,6 +21,7 @@ class White;
 class Project {
 public:
 
+	QString version;
 	QDir dir;                  //image folder, path relative to project
 	QSize imgsize;             //images width and height (must be the same for all).
 	Lens lens;
@@ -33,7 +36,9 @@ public:
 	QRect crop;
 	float pixelSize = 0; //if computed from measures
 
-	Project() {}
+	Project() {
+		version = RELIGHT_STRINGIFY(RELIGHT_VERSION);
+	}
 	~Project();
 
 	void clear();
