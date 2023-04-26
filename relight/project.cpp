@@ -230,6 +230,10 @@ void Project::load(QString filename) {
 
 	QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
 	QJsonObject obj = doc.object();
+
+	if(obj.contains("version"))
+		version = obj["version"].toString();
+
 	imgsize.setWidth(obj["width"].toInt());
 	imgsize.setHeight(obj["height"].toInt());
 	if(!imgsize.isValid())
@@ -318,6 +322,9 @@ void Project::checkImages() {
 void Project::save(QString filename) {
 
 	QJsonObject project;
+	version = RELIGHT_STRINGIFY(RELIGHT_VERSION);
+
+	project.insert("version", version);
 	project.insert("width", imgsize.width());
 	project.insert("height", imgsize.height());
 
