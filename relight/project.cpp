@@ -108,6 +108,11 @@ bool Project::scanDir() {
 		try {
 			Exif exif;//exif
 			exif.parse(image.filename);
+#ifdef DEBUG
+			for(auto it = exif.begin(); it != exif.end(); it++) {
+				cout << qPrintable(exif.tagNames[it.key()]) << " " << qPrintable(it.value().toString()) << endl;
+			}
+#endif
 			image.readExif(exif);
 			image_lens.readExif(exif);
 		} catch(QString err) {
@@ -233,6 +238,13 @@ void Project::load(QString filename) {
 
 	if(obj.contains("version"))
 		version = obj["version"].toString();
+	if(obj.contains("authors"))
+		for(auto author: obj["authors"].toArray())
+			authors.push_back(author.toString());
+	if(obj.contains("platform"))
+		platform = obj["platform"].toString();
+	if(obj.contains("created"))
+		created = QDateTime::fromString(obj["created"].toString(), Qt::ISODate);
 
 	imgsize.setWidth(obj["width"].toInt());
 	imgsize.setHeight(obj["height"].toInt());
@@ -324,7 +336,17 @@ void Project::save(QString filename) {
 	QJsonObject project;
 	version = RELIGHT_STRINGIFY(RELIGHT_VERSION);
 
+	project.insert("application", "RelightLab");
 	project.insert("version", version);
+	project.insert("name", name);
+	QJsonArray jauthors;
+	for(QString &author: authors)
+		jauthors.append(author);
+	project.insert("authors", jauthors);
+	project.insert("platform", platform);
+	project.insert("created", created.toString(Qt::ISODate));
+	project.insert("lastUpdated", lastUpdated.toString(Qt::ISODate));
+
 	project.insert("width", imgsize.width());
 	project.insert("height", imgsize.height());
 
