@@ -17,8 +17,8 @@ public:
 	Vector3f direction = Vector3f(0, 0, 0);  //light direction (infinite distance assumed)
 	Vector3f position = Vector3f(0, 0, 0);   //3d light position
 	double exposureTime = 0;
+	double isoSpeedRatings = 0;
 	QSize size;
-	//uint32_t width = 0, height =0;
 
 	Image(QString s = ""): filename(s) {}
 

@@ -38,6 +38,7 @@ void Image::fromJson(const QJsonObject &obj) {
 
 void Image::readExif(Exif &exif) {
 	exposureTime = exif[Exif::ExposureTime].toDouble();
+	isoSpeedRatings = exif[Exif::ISOSpeedRatings].toDouble();
 	//ColorSpace
 
 	/*for(auto tag: exif.keys()) {

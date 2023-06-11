@@ -10,6 +10,8 @@
 #include <QDir>
 #include <QString>
 #include <QRect>
+#include <QSysInfo>
+#include <QDateTime>
 
 class QJsonObject;
 class Sphere;
@@ -36,8 +38,17 @@ public:
 	QRect crop;
 	float pixelSize = 0; //if computed from measures
 
+	QString name;
+	std::vector<QString> authors;
+	QString platform;
+	QDateTime created;
+	QDateTime lastUpdated;
+
 	Project() {
 		version = RELIGHT_STRINGIFY(RELIGHT_VERSION);
+		auto sysinfo = QSysInfo();
+		platform = sysinfo.kernelType() + " " + sysinfo.kernelVersion();
+		created = lastUpdated = QDateTime::currentDateTime();
 	}
 	~Project();
 
