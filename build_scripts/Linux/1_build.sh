@@ -19,6 +19,7 @@ BUILD_PATH=$SOURCE_PATH/build
 INSTALL_PATH=$SOURCE_PATH/install/usr/
 CORES="-j4"
 QT_DIR=""
+CCACHE=""
 
 #check parameters
 for i in "$@"
@@ -38,6 +39,10 @@ case $i in
         ;;
     -qt=*|--qt_dir=*)
         QT_DIR=${i#*=}
+        shift # past argument=value
+        ;;
+    --ccache)
+        CCACHE="-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
         shift # past argument=value
         ;;
     *)
@@ -61,12 +66,13 @@ fi
 BUILD_PATH=$(realpath $BUILD_PATH)
 INSTALL_PATH=$(realpath $INSTALL_PATH)
 
-cd $BUILD_PATH
 if [ ! -z "$QT_DIR" ]
 then
     export Qt5_DIR=$QT_DIR
 fi
 
-cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH $SOURCE_PATH
-make $CORES
-make install
+cd $BUILD_PATH
+export NINJA_STATUS="[%p (%f/%t) ] "
+cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH $CCACHE $SOURCE_PATH
+ninja
+ninja install
