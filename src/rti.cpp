@@ -47,6 +47,7 @@ bool Rti::load(const char *filename, bool loadPlanes) {
 
 	width = obj["width"].toInt();
 	height = obj["height"].toInt();
+	quality = obj["quality"].toInt();
 
 	map<string, Type> types = {{"ptm", PTM}, {"hsh", HSH}, {"sh", SH}, {"h", H}, {"dmd", DMD}, {"rbf", RBF}, {"bilinear", BILINEAR }};
 	QString t = obj["type"].toString();
