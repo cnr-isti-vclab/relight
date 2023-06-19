@@ -19,6 +19,7 @@ INSTALL_PATH=$SOURCE_PATH/install
 CORES="-j4"
 QT_DIR=""
 USE_BREW_LLVM=false
+CCACHE=""
 
 #check parameters
 for i in "$@"
@@ -44,6 +45,10 @@ case $i in
         USE_BREW_LLVM=true
         shift # past argument=value
         ;;
+    --ccache)
+        CCACHE="-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+        shift # past argument=value
+        ;;
     *)
         # unknown option
         ;;
@@ -62,7 +67,6 @@ then
     mkdir -p $INSTALL_PATH
 fi
 
-cd $BUILD_PATH
 if [ ! -z "$QT_DIR" ]
 then
     export Qt5_DIR=$QT_DIR
@@ -78,6 +82,8 @@ if [ "$USE_BREW_LLVM" = true ] ; then
     export LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib"
 fi
 
-cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH $SOURCE_PATH
-make $CORES
-make install
+cd $BUILD_PATH
+export NINJA_STATUS="[%p (%f/%t) ] "
+cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH $SOURCE_PATH
+ninja
+ninja install
