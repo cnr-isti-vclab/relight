@@ -2,6 +2,7 @@
 #include <QDir>
 #include <vector>
 #include <iostream>
+#include "../src/getopt.h"
 
 #include "../src/rti.h"
 #include "../relight-cli/rtibuilder.h"
@@ -11,25 +12,49 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-	if(argc < 4) {
-		cerr << "Usage: " << argv[0] << " <relight folder 1> ... <relight folder 2> <output>\n\n";
-		cerr << "This code uniforms scale and bias for the coefficient planes so that they can be merged.\n"
-				"The religth folders must have the same basis, number of planes, etc. \n\n";
-		return 0;
-	}
 
+	bool use_rti_quality = true;
+	uint32_t quality = 95;
 	std::vector<float> scale;
 	std::vector<float> bias;
 	std::vector<float> min;
 	std::vector<float> max;
 
+	opterr = 0;
+	char c;
+	while ((c  = getopt (argc, argv, "q:")) != -1) {
+		switch (c)
+		{
+		case 'q':
+			quality = atoi(optarg);
+			if(quality <= 0 || quality > 100) {
+				cerr << "Invalid quality (-q) value: " << quality << ", it should be between 1 and 100\n";
+				exit(-1);
+			}
+			use_rti_quality = false;
+			break;
+		default:
+			cerr << "Unknown error!\n" << endl;
+			return -1;
+		}
+	}
+	if(argc - optind < 3) {
+		cerr << "Usage: " << argv[0] << " [OPTIONS] <relight folder 1> ... <relight folder 2> <output>\n\n";
+		cerr << "This code uniforms scale and bias for the coefficient planes so that they can be merged.\n"
+				"The religth folders must have the same basis, number of planes, etc. \n\n";
+		cerr << "Options:\n";
+		cerr << "	-q <quality>: jpeg quality [0-100]\n";
+		return 0;
+	}
+
 	//load all RTI json (not the planes)
-	vector<RtiBuilder> rtis(argc-2);
+	vector<RtiBuilder> rtis(argc - optind - 1);
 	for(size_t i = 0; i < rtis.size(); i++) {
 		RtiBuilder &rti = rtis[i];
-		bool success = rti.load(argv[i+1], false);
+		char *path = argv[optind + i];
+		bool success = rti.load(path, false);
 		if(!success) {
-			cerr << "Could not load rti: " << argv[i+1] << endl;
+			cerr << "Could not load rti: " << path << endl;
 			return -1;
 		}
 		//check all RTI have the same parameters
@@ -39,15 +64,15 @@ int main(int argc, char *argv[]) {
 			continue;
 		}
 		if(rti.basis != rtis[0].basis) {
-			cerr << "Rti basis for " << argv[i+1] << " is different." << endl;
+			cerr << "Rti basis for " << path << " is different." << endl;
 			return -1;
 		}
 		if(rti.colorspace != rtis[0].colorspace) {
-			cerr << "Rti colorspace for " << argv[i+1] << " is different." << endl;
+			cerr << "Rti colorspace for " << path << " is different." << endl;
 			return -1;
 		}
 		if(rti.nplanes != rtis[0].nplanes) {
-			cerr << "Rti number of planes for " << argv[i+1] << " is different." << endl;
+			cerr << "Rti number of planes for " << path << " is different." << endl;
 			return -1;
 		}
 
@@ -76,7 +101,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	for(size_t i = 0; i < rtis.size(); i++) {
-		QDir input_rti_dir(argv[i+1]);
+		char *path = argv[optind + i];
+		QDir input_rti_dir(path);
 
 		if(!output_dir.mkdir(input_rti_dir.dirName())) {
 			cerr << "Could not create remapped RTI directory: " << qPrintable(input_rti_dir.dirName()) << endl;
@@ -84,7 +110,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		RtiBuilder &rti = rtis[i];
-		rti.loadData(argv[i+1]);
+		rti.loadData(path);
 		for(int i = 0; i < rti.nplanes; i++) {
 			auto &plane = rti.planes[i];
 			for(uint8_t &c: plane) {
@@ -97,7 +123,8 @@ int main(int argc, char *argv[]) {
 		rti.bias = bias;
 		//save json
 		QDir output_rti_dir(output_dir.filePath(input_rti_dir.dirName()));
-		rti.saveJSON(output_rti_dir, 100);
+		uint32_t rti_quality = use_rti_quality ? rti.quality : quality;
+		rti.saveJSON(output_rti_dir, rti_quality);
 		int width = rti.width;
 		int height = rti.height;
 		vector<uint8_t> line(width*3);
@@ -105,9 +132,9 @@ int main(int argc, char *argv[]) {
 		for(int i = 0; i < rti.nplanes/3; i++) {
 			QString filename = output_rti_dir.filePath(QString("plane_%1.jpg").arg(i));
 			JpegEncoder enc;
-			enc.setQuality(100);
+			enc.setQuality(rti_quality);
 			enc.setColorSpace(JCS_RGB, 3);
-			enc.setJpegColorSpace(JCS_YCbCr);
+			enc.setJpegColorSpace(JCS_RGB);
 			enc.init(filename.toStdString().c_str(), width, height);
 
 
