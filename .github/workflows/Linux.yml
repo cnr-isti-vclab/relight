@@ -9,7 +9,7 @@ env:
 jobs:
   linux_build:
     name: Build Relight (Linux)
-    runs-on: ubuntu-18.04 #in order to deploy, need to use oldest supported version
+    runs-on: ubuntu-20.04 #in order to deploy, need to use oldest supported version
 
     steps:
     - uses: actions/checkout@v3
@@ -22,13 +22,13 @@ jobs:
         version: ${{ env.QT_VERSION }}
     - name: Install dependencies
       run: |
-        bash build_scripts/${{ runner.os }}/0_setup_env_ubuntu.sh
+        bash build_scripts/${{ runner.os }}/0_setup_env.sh
     - name: Configure and Build
       run: |
         bash build_scripts/${{ runner.os }}/1_build.sh
     - name: Deploy
       run: |
-        bash build_scripts/${{ runner.os }}/2_deploy_and_appimage.sh
+        bash build_scripts/${{ runner.os }}/2_deploy.sh
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v3
       with:

@@ -50,4 +50,4 @@ esac
 done
 
 bash $SCRIPTS_PATH/1_build.sh -b=$BUILD_PATH -i=$INSTALL_PATH $QT_DIR_OPTION $CORES
-bash $SCRIPTS_PATH/2_deploy_and_appimage.sh -i=$INSTALL_PATH $QT_DIR_OPTION
+bash $SCRIPTS_PATH/2_deploy.sh -i=$INSTALL_PATH $QT_DIR_OPTION
