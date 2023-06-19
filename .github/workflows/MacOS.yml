@@ -29,9 +29,6 @@ jobs:
     - name: Deploy
       run: |
         bash build_scripts/${{ runner.os }}/2_deploy.sh
-    - name: DMG
-      run: |
-        bash build_scripts/${{ runner.os }}/3_dmg.sh
     - name: Upload Relight Portable
       uses: actions/upload-artifact@v3
       with:

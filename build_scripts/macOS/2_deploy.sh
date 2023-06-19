@@ -34,3 +34,22 @@ esac
 done
 
 ${QT_DIR}macdeployqt $INSTALL_PATH/relight.app
+
+#get version
+RL_VERSION=$(cat $SCRIPTS_PATH/../../RELIGHT_VERSION)
+
+# final step create the dmg using appdmg
+# appdmg is installed with 'npm install -g appdmg'",
+sed "s%INST_PATH%$INSTALL_PATH%g" $SCRIPTS_PATH/resources/dmg_latest.json > $SCRIPTS_PATH/resources/dmg_final.json
+sed -i '' "s%RL_VERSION%$RL_VERSION%g" $SCRIPTS_PATH/resources/dmg_final.json
+sed -i '' "s%SOURCE_PATH%$SOURCE_PATH%g" $SCRIPTS_PATH/resources/dmg_final.json
+
+mv $INSTALL_PATH/relight.app $INSTALL_PATH/ReLight$RL_VERSION.app
+
+echo "Running appdmg"
+appdmg $SCRIPTS_PATH/resources/dmg_final.json $INSTALL_PATH/ReLight$RL_VERSION-macos.dmg
+
+rm $SCRIPTS_PATH/resources/dmg_final.json
+
+#at this point, distrib folder contains a DMG ReLight file
+echo "distrib folder now contains a DMG file"
