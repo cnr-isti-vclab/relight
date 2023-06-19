@@ -13,6 +13,7 @@ SCRIPTS_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 SOURCE_PATH=$SCRIPTS_PATH/../..
 INSTALL_PATH=$SOURCE_PATH/install
+PACKAGES_PATH=$SOURCE_PATH/packages
 QT_DIR=""
 
 #checking for parameters
@@ -21,6 +22,10 @@ do
 case $i in
     -i=*|--install_path=*)
         INSTALL_PATH="${i#*=}"
+        shift # past argument=value
+        ;;
+    -p=*|--packages_path=*)
+        PACKAGES_PATH="${i#*=}"
         shift # past argument=value
         ;;
     -qt=*|--qt_dir=*)
@@ -46,10 +51,9 @@ sed -i '' "s%SOURCE_PATH%$SOURCE_PATH%g" $SCRIPTS_PATH/resources/dmg_final.json
 
 mv $INSTALL_PATH/relight.app $INSTALL_PATH/ReLight$RL_VERSION.app
 
+mkdir $PACKAGES_PATH
+
 echo "Running appdmg"
-appdmg $SCRIPTS_PATH/resources/dmg_final.json $INSTALL_PATH/ReLight$RL_VERSION-macos.dmg
+appdmg $SCRIPTS_PATH/resources/dmg_final.json $PACKAGES_PATH/ReLightLab$RL_VERSION-macos.dmg
 
 rm $SCRIPTS_PATH/resources/dmg_final.json
-
-#at this point, distrib folder contains a DMG ReLight file
-echo "distrib folder now contains a DMG file"

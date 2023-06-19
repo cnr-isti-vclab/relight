@@ -9,6 +9,7 @@
 
 SCRIPTS_PATH="$(dirname "$(realpath "$0")")"
 INSTALL_PATH=$SCRIPTS_PATH/../../install
+PACKAGES_PATH=$SCRIPTS_PATH/../../packages
 QT_DIR=""
 
 #checking for parameters
@@ -17,6 +18,10 @@ do
 case $i in
     -i=*|--install_path=*)
         INSTALL_PATH="${i#*=}"
+        shift # past argument=value
+        ;;
+    -p=*|--packages_path=*)
+        PACKAGES_PATH="${i#*=}"
         shift # past argument=value
         ;;
     -qt=*|--qt_dir=*)
@@ -51,4 +56,5 @@ $SCRIPTS_PATH/resources/linuxdeploy --appdir=$INSTALL_PATH \
 
 RELIGHT_VERSION=$(cat RELIGHT_VERSION) #get the relight version from the string
 
-mv ReLight-*.AppImage ReLight$RELIGHT_VERSION-linux.AppImage
+mkdir $PACKAGES_PATH
+mv ReLight-*.AppImage $PACKAGES_PATH/ReLightLab$RELIGHT_VERSION-linux.AppImage
