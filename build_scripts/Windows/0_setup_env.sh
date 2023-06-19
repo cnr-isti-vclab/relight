@@ -1,8 +1,8 @@
 #!/bin/bash
 # this is a script shell sets up a Windows environment where
-# MeshLab can be compiled, deployed and packaged.
+# RelightLab can be compiled, deployed and packaged.
 #
-# Run this script if you never installed any of the MeshLab dependencies.
+# Run this script if you never installed any of the RelightLab dependencies.
 #
 # Requires: choco
 

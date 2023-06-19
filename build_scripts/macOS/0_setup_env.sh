@@ -6,14 +6,14 @@
 #
 # Requires: homebrew
 
-INSTALL_QT=false
+DONT_INSTALL_QT=false
 
 #checking for parameters
 for i in "$@"
 do
 case $i in
-    --install_qt)
-        INSTALL_QT=true
+    --dont_install_qt)
+        DONT_INSTALL_QT=true
         shift # past argument=value
         ;;
     *)
@@ -23,11 +23,14 @@ esac
 done
 
 
-brew install llvm libomp eigen libjpeg
+brew install coreutils llvm cmake ninja libomp eigen libjpeg
 npm install -g appdmg
 
-if [ "$INSTALL_QT" = true ] ; then
-    brew install qt@5
+if [ "$DONT_INSTALL_QT" = false ] ; then
+    echo "=== installing qt packages..."
+
+    brew install qt
+
     echo "export QTDIR=/usr/local/opt/qt" >> ~/.bash_profile
     echo "export PATH=$QTDIR/bin:$PATH" >> ~/.bash_profile
     echo "export LD_LIBRARY_PATH=/usr/local/opt/qt/lib:$LD_LIBRARY_PATH" >> ~/.bash_profile
