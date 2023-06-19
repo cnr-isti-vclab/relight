@@ -59,12 +59,6 @@ public:
 };
 
 int main(int argc, char *argv[]) {
-	QApplication app(argc, argv);
-
-	QCoreApplication::setOrganizationName("VCG");
-	QCoreApplication::setOrganizationDomain("vcg.isti.cnr.it");
-	QCoreApplication::setApplicationName("RelightLab");
-	QCoreApplication::setApplicationVersion(RELIGHT_STRINGIFY(RELIGHT_VERSION));
 
 	if (argc > 1) {
 		if (std::string(argv[1]) == std::string("--version") ||
@@ -73,6 +67,13 @@ int main(int argc, char *argv[]) {
 			return 0;
 		}
 	}
+
+	QApplication app(argc, argv);
+
+	QCoreApplication::setOrganizationName("VCG");
+	QCoreApplication::setOrganizationDomain("vcg.isti.cnr.it");
+	QCoreApplication::setApplicationName("RelightLab");
+	QCoreApplication::setApplicationVersion(RELIGHT_STRINGIFY(RELIGHT_VERSION));
 
 	//	AutoStyle autostyle;
 	//	app.connect(&autostyle, SIGNAL(resetStyle(QString)), SLOT(setStyleSheet(QString)));
