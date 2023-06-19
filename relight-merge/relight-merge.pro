@@ -32,6 +32,7 @@ mac:QMAKE_LFLAGS += -lomp
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 
 SOURCES += main.cpp \
+    ../src/getopt.cpp \
     ../src/rti.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/imageset.cpp \
