@@ -62,7 +62,7 @@ jobs:
     - name: Install dependencies
       shell: bash
       run: |
-        bash scripts/${{ runner.os }}/0_setup_env.sh --dont_install_qt
+        bash build_scripts/${{ runner.os }}/0_setup_env.sh --dont_install_qt
     - name: Ccache
       uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -70,11 +70,11 @@ jobs:
     - name: Configure and Build
       shell: bash
       run: |
-        bash scripts/${{ runner.os }}/1_build.sh --ccache --use_brew_llvm
+        bash build_scripts/${{ runner.os }}/1_build.sh --ccache --use_brew_llvm
     - name: Deploy
       shell: bash
       run: |
-        bash scripts/${{ runner.os }}/2_deploy.sh --cert_pssw='${{ secrets.WIN_CERTIFICATE_PSSW }}' --cert_id='${{ secrets.MACOS_CERT_ID }}' --notarization_user='${{ secrets.MACOS_NOTARIZATION_USER }}' --notarization_team='${{ secrets.MACOS_NOTARIZATION_TEAM_ID }}' --notarization_pssw='${{ secrets.MACOS_NOTARIZATION_PSSW }}'
+        bash build_scripts/${{ runner.os }}/2_deploy.sh --cert_pssw='${{ secrets.WIN_CERTIFICATE_PSSW }}' --cert_id='${{ secrets.MACOS_CERT_ID }}' --notarization_user='${{ secrets.MACOS_NOTARIZATION_USER }}' --notarization_team='${{ secrets.MACOS_NOTARIZATION_TEAM_ID }}' --notarization_pssw='${{ secrets.MACOS_NOTARIZATION_PSSW }}'
     - name: Upload RelightLab Portable
       uses: actions/upload-artifact@v3
       with:
