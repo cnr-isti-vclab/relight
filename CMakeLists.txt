@@ -39,7 +39,7 @@ else() # should never happen
 	set(RELIGHT_VERSION "test")
 endif()
 
-message("ReLight Version: " ${RELIGHT_VERSION})
+message("Relight Version: " ${RELIGHT_VERSION})
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/relight_tools.cmake)
 

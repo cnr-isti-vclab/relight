@@ -1,4 +1,4 @@
-name: BuildReLightLab
+name: BuildRelightLab
 
 on:
   [push, pull_request]
@@ -10,7 +10,7 @@ env:
 
 jobs:
   relightlab_build:
-    name: Build ReLightLab
+    name: Build Relight
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -19,7 +19,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        submodules: recursive
+        submodules: true
     - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
     - name: Set CodeSign Certificate macOS
@@ -55,14 +55,14 @@ jobs:
       shell: bash
       run: |
         bash build_scripts/${{ runner.os }}/2_deploy.sh --cert_pssw='${{ secrets.WIN_CERTIFICATE_PSSW }}' --cert_id='${{ secrets.MACOS_CERT_ID }}'
-    - name: Upload ReLightLab Portable
+    - name: Upload RelightLab Portable
       uses: actions/upload-artifact@v3
       with:
-        name: ReLightLab_${{ runner.os }}_portable
+        name: RelightLab_${{ runner.os }}_portable
         path: install/
-    - name: Upload ReLightLab Packages
+    - name: Upload RelightLab Packages
       if: runner.os != 'Windows'
       uses: actions/upload-artifact@v3
       with:
-        name: ReLightLab_${{ runner.os }}_packages
-        path: packages/ReLightLab*
+        name: RelightLab_${{ runner.os }}_packages
+        path: packages/RelightLab*

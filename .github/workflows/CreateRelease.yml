@@ -5,7 +5,7 @@ on:
   workflow_dispatch: #manual run
     inputs:
       version:
-        description: 'New ReLightLab Version'
+        description: 'New Relight Version'
         required: true
         default: 'YYYY.MM'
 
@@ -20,17 +20,17 @@ jobs:
     - uses: actions/checkout@v3
       with:
         submodules: true
-    - name: Update ReLight version
+    - name: Update Relight version
       run : |
         echo ${{ github.event.inputs.version }} | tr -d '\n'> RELIGHT_VERSION
     - name: commit RELIGHT_VERSION change
       uses: stefanzweifel/git-auto-commit-action@v4
       with:
-        commit_message: Set ReLight version to ${{ github.event.inputs.version }}
+        commit_message: Set Relight version to ${{ github.event.inputs.version }}
 
   relight_build:
     needs: [update_rl_version]
-    name: Build ReLightLab
+    name: Build RelightLab
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -38,7 +38,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        submodules: recursive
+        submodules: true
         ref: main
     - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
@@ -75,18 +75,18 @@ jobs:
       shell: bash
       run: |
         bash scripts/${{ runner.os }}/2_deploy.sh --cert_pssw='${{ secrets.WIN_CERTIFICATE_PSSW }}' --cert_id='${{ secrets.MACOS_CERT_ID }}' --notarization_user='${{ secrets.MACOS_NOTARIZATION_USER }}' --notarization_team='${{ secrets.MACOS_NOTARIZATION_TEAM_ID }}' --notarization_pssw='${{ secrets.MACOS_NOTARIZATION_PSSW }}'
-    - name: Upload ReLightLab Portable
+    - name: Upload RelightLab Portable
       uses: actions/upload-artifact@v3
       with:
-        name: ReLightLab_${{ runner.os }}_portable
+        name: RelightLab_${{ runner.os }}_portable
         path: install/
-    - name: Upload ReLightLab Packages
+    - name: Upload RelightLab Packages
       uses: actions/upload-artifact@v3
       with:
-        name: ReLightLab_${{ runner.os }}_packages
-        path: packages/ReLightLab*
+        name: RelightLab_${{ runner.os }}_packages
+        path: packages/RelightLab*
 
-  #after building ReLightLab for the three platforms, we create a release in github
+  #after building RelightLab for the three platforms, we create a release in github
   create_release:
     name: Create Release
     needs: [relight_build]
@@ -97,12 +97,12 @@ jobs:
     - name: Download Linux ZIP
       uses: actions/download-artifact@v3
       with:
-        name: ReLightLab_Linux_portable
+        name: RelightLab_Linux_portable
         path: relighlab_linux_portable
     - name: Download Linux AppImage
       uses: actions/download-artifact@v3
       with:
-        name: ReLightLab_Linux_packages
+        name: RelightLab_Linux_packages
         path: relighlab_linux_appimage
     - name: Change Permissions
       run: |
@@ -120,62 +120,62 @@ jobs:
         read -a strarr <<< "$STR_VERSION"
         RL_VERSION=${strarr[1]} #get the relight version from the string
         echo "rl_version=$RL_VERSION" >> $GITHUB_OUTPUT
-    - name: Create ReLightLab Portable Linux Archive
+    - name: Create RelightLab Portable Linux Archive
       run: |
         cd relighlab_linux_portable
-        tar -cvzf ../ReLightLab${{steps.envs.outputs.rl_version}}-linux.tar.gz *
+        tar -cvzf ../RelightLab${{steps.envs.outputs.rl_version}}-linux.tar.gz *
         cd ..
 
     #Download MacOS Package
     - name: Download MacOS DMG
       uses: actions/download-artifact@v3
       with:
-        name: ReLightLab_macOS_packages
+        name: RelightLab_macOS_packages
         path: relighlab_macos_dmg
     - name: Download MacOS Portable
       uses: actions/download-artifact@v3
       with:
-        name: ReLightLab_macOS_portable
+        name: RelightLab_macOS_portable
         path: relighlab_macos_portable
     - name: Change Permissions
       run: |
-        chmod +x relighlab_macos_portable/ReLightLab*.app/Contents/MacOS/relight
-        chmod +x relighlab_macos_portable/ReLightLab*.app/Contents/MacOS/relight-cli
-        chmod +x relighlab_macos_portable/ReLightLab*.app/Contents/MacOS/relight-merge
-    - name: Create ReLightLab Portable MacOS
+        chmod +x relighlab_macos_portable/RelightLab*.app/Contents/MacOS/relight
+        chmod +x relighlab_macos_portable/RelightLab*.app/Contents/MacOS/relight-cli
+        chmod +x relighlab_macos_portable/RelightLab*.app/Contents/MacOS/relight-merge
+    - name: Create RelightLab Portable MacOS
       run: |
         cd relighlab_macos_portable
-        tar -cvzf ../ReLightLab${{steps.envs.outputs.rl_version}}-macos.tar.gz *
+        tar -cvzf ../RelightLab${{steps.envs.outputs.rl_version}}-macos.tar.gz *
         cd ..
 
     #Download Windows Packages
     - name: Download Windows ZIP
       uses: actions/download-artifact@v3
       with:
-        name: ReLightLab_Windows_portable
+        name: RelightLab_Windows_portable
         path: relighlab_windows_portable
 #    - name: Download Windows Installer
 #      uses: actions/download-artifact@v3
 #      with:
-#        name: ReLightLab_Windows_packages
+#        name: RelightLab_Windows_packages
 #        path: relighlab_windows_installer
-    - name: Create ReLightLab Portable Windows Archive
+    - name: Create RelightLab Portable Windows Archive
       run: |
         cd relighlab_windows_portable
-        zip -r ../ReLightLab${{steps.envs.outputs.rl_version}}-windows.zip *
+        zip -r ../RelightLab${{steps.envs.outputs.rl_version}}-windows.zip *
         cd ..
 
     #Create release and upload
     - uses: "marvinpinto/action-automatic-releases@6273874b61ebc8c71f1a61b2d98e234cf389b303"
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        automatic_release_tag: "ReLightLab-${{steps.envs.outputs.rl_version}}"
+        automatic_release_tag: "RelightLab-${{steps.envs.outputs.rl_version}}"
         prerelease: false #${{ github.event.inputs.release_candidate }}
-        title: "ReLightLab-${{steps.envs.outputs.rl_version}}"
+        title: "RelightLab-${{steps.envs.outputs.rl_version}}"
         files: |
-          ReLightLab${{steps.envs.outputs.rl_version}}-linux.tar.gz
-          relighlab_linux_appimage/ReLightLab${{steps.envs.outputs.rl_version}}-linux.AppImage
-          ReLightLab${{steps.envs.outputs.rl_version}}-macos.tar.gz
-          relighlab_macos_dmg/ReLightLab${{steps.envs.outputs.rl_version}}-macos.dmg
-          ReLightLab${{steps.envs.outputs.rl_version}}-windows.zip
-#          relighlab_windows_installer/ReLightLab${{steps.envs.outputs.rl_version}}-windows.exe
+          RelightLab${{steps.envs.outputs.rl_version}}-linux.tar.gz
+          relighlab_linux_appimage/RelightLab${{steps.envs.outputs.rl_version}}-linux.AppImage
+          RelightLab${{steps.envs.outputs.rl_version}}-macos.tar.gz
+          relighlab_macos_dmg/RelightLab${{steps.envs.outputs.rl_version}}-macos.dmg
+          RelightLab${{steps.envs.outputs.rl_version}}-windows.zip
+#          relighlab_windows_installer/RelightLab${{steps.envs.outputs.rl_version}}-windows.exe
