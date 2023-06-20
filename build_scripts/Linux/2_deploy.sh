@@ -10,7 +10,7 @@
 SCRIPTS_PATH="$(dirname "$(realpath "$0")")"
 INSTALL_PATH=$SCRIPTS_PATH/../../install
 PACKAGES_PATH=$SCRIPTS_PATH/../../packages
-QT_DIR=""
+QT_DIR_OPTION=""
 
 #checking for parameters
 for i in "$@"
@@ -20,12 +20,12 @@ case $i in
         INSTALL_PATH="${i#*=}"
         shift # past argument=value
         ;;
-    -p=*|--packages_path=*)
-        PACKAGES_PATH="${i#*=}"
+    -qt=*|--qt_dir=*)
+        QT_DIR_OPTION=-qt=${i#*=}
         shift # past argument=value
         ;;
-    -qt=*|--qt_dir=*)
-        QT_DIR=${i#*=}
+    -p=*|--packages_path=*)
+        PACKAGES_PATH="${i#*=}"
         shift # past argument=value
         ;;
     *)
@@ -34,27 +34,21 @@ case $i in
 esac
 done
 
-# make bundle
-mkdir -p $INSTALL_PATH/usr/share/applications/
-mkdir -p $INSTALL_PATH/usr/share/icons/Yaru/512x512/apps/
-cp $SCRIPTS_PATH/resources/relight.desktop $INSTALL_PATH/usr/share/applications/relight.desktop
-cp $SCRIPTS_PATH/../relight.png $INSTALL_PATH/usr/share/icons/Yaru/512x512/apps/relight.png
+# The script will terminate after the first line that fails
+set -e
 
-if [ ! -z "$QT_DIR" ]
-then
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$QT_DIR/lib
-    export QMAKE=$QT_DIR/bin/qmake
-fi
+bash $SCRIPTS_PATH/internal/2a_make_bundle.sh -i=$INSTALL_PATH
 
-chmod +x $INSTALL_PATH/usr/bin/relight
-chmod +x $INSTALL_PATH/usr/bin/relight-cli
-chmod +x $INSTALL_PATH/usr/bin/relight-merge
+echo "======= Bundle created ======="
 
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/usr/lib
-$SCRIPTS_PATH/resources/linuxdeploy --appdir=$INSTALL_PATH \
-  --plugin qt --output appimage
+#bash $SCRIPTS_PATH/internal/2b_deb.sh -i=$INSTALL_PATH -p=$PACKAGES_PATH
 
-RELIGHT_VERSION=$(cat RELIGHT_VERSION) #get the relight version from the string
+#echo "======= Deb Created ======="
 
-mkdir $PACKAGES_PATH
-mv ReLight-*.AppImage $PACKAGES_PATH/ReLightLab$RELIGHT_VERSION-linux.AppImage
+bash $SCRIPTS_PATH/internal/2c_portable.sh -i=$INSTALL_PATH $QT_DIR_OPTION
+
+echo "======= Portable Version Created ======="
+
+bash $SCRIPTS_PATH/internal/2d_appimage.sh -i=$INSTALL_PATH -p=$PACKAGES_PATH
+
+echo "======= AppImage Created ======="
