@@ -30,4 +30,4 @@ $SCRIPTS_PATH/resources/linuxdeploy --appdir=$INSTALL_PATH \
 RELIGHT_VERSION=$(cat RELIGHT_VERSION) #get the relight version from the string
 
 mkdir $PACKAGES_PATH
-mv ReLight-*.AppImage $PACKAGES_PATH/ReLightLab$RELIGHT_VERSION-linux.AppImage
+mv RelightLab-*.AppImage $PACKAGES_PATH/RelightLab$RELIGHT_VERSION-linux.AppImage
