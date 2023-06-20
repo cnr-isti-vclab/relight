@@ -98,18 +98,18 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: RelightLab_Linux_portable
-        path: relighlab_linux_portable
+        path: relightlab_linux_portable
     - name: Download Linux AppImage
       uses: actions/download-artifact@v3
       with:
         name: RelightLab_Linux_packages
-        path: relighlab_linux_appimage
+        path: relightlab_linux_appimage
     - name: Change Permissions
       run: |
-        chmod +x relighlab_linux_portable/usr/bin/relight
-        chmod +x relighlab_linux_portable/usr/bin/relight-cli
-        chmod +x relighlab_linux_portable/usr/bin/relight-merge
-        chmod +x relighlab_linux_portable/AppRun
+        chmod +x relightlab_linux_portable/usr/bin/relight
+        chmod +x relightlab_linux_portable/usr/bin/relight-cli
+        chmod +x relightlab_linux_portable/usr/bin/relight-merge
+        chmod +x relightlab_linux_portable/AppRun
     - name: Setup env variables
       id: envs
       shell: bash
@@ -122,7 +122,7 @@ jobs:
         echo "rl_version=$RL_VERSION" >> $GITHUB_OUTPUT
     - name: Create RelightLab Portable Linux Archive
       run: |
-        cd relighlab_linux_portable
+        cd relightlab_linux_portable
         tar -cvzf ../RelightLab${{steps.envs.outputs.rl_version}}-linux.tar.gz *
         cd ..
 
@@ -131,20 +131,20 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: RelightLab_macOS_packages
-        path: relighlab_macos_dmg
+        path: relightlab_macos_dmg
     - name: Download MacOS Portable
       uses: actions/download-artifact@v3
       with:
         name: RelightLab_macOS_portable
-        path: relighlab_macos_portable
+        path: relightlab_macos_portable
     - name: Change Permissions
       run: |
-        chmod +x relighlab_macos_portable/RelightLab*.app/Contents/MacOS/relight
-        chmod +x relighlab_macos_portable/RelightLab*.app/Contents/MacOS/relight-cli
-        chmod +x relighlab_macos_portable/RelightLab*.app/Contents/MacOS/relight-merge
+        chmod +x relightlab_macos_portable/RelightLab*.app/Contents/MacOS/relight
+        chmod +x relightlab_macos_portable/RelightLab*.app/Contents/MacOS/relight-cli
+        chmod +x relightlab_macos_portable/RelightLab*.app/Contents/MacOS/relight-merge
     - name: Create RelightLab Portable MacOS
       run: |
-        cd relighlab_macos_portable
+        cd relightlab_macos_portable
         tar -cvzf ../RelightLab${{steps.envs.outputs.rl_version}}-macos.tar.gz *
         cd ..
 
@@ -153,15 +153,15 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: RelightLab_Windows_portable
-        path: relighlab_windows_portable
+        path: relightlab_windows_portable
 #    - name: Download Windows Installer
 #      uses: actions/download-artifact@v3
 #      with:
 #        name: RelightLab_Windows_packages
-#        path: relighlab_windows_installer
+#        path: relightlab_windows_installer
     - name: Create RelightLab Portable Windows Archive
       run: |
-        cd relighlab_windows_portable
+        cd relightlab_windows_portable
         zip -r ../RelightLab${{steps.envs.outputs.rl_version}}-windows.zip *
         cd ..
 
@@ -174,8 +174,8 @@ jobs:
         title: "RelightLab-${{steps.envs.outputs.rl_version}}"
         files: |
           RelightLab${{steps.envs.outputs.rl_version}}-linux.tar.gz
-          relighlab_linux_appimage/RelightLab${{steps.envs.outputs.rl_version}}-linux.AppImage
+          relightlab_linux_appimage/RelightLab${{steps.envs.outputs.rl_version}}-linux.AppImage
           RelightLab${{steps.envs.outputs.rl_version}}-macos.tar.gz
-          relighlab_macos_dmg/RelightLab${{steps.envs.outputs.rl_version}}-macos.dmg
+          relightlab_macos_dmg/RelightLab${{steps.envs.outputs.rl_version}}-macos.dmg
           RelightLab${{steps.envs.outputs.rl_version}}-windows.zip
-#          relighlab_windows_installer/RelightLab${{steps.envs.outputs.rl_version}}-windows.exe
+#          relightlab_windows_installer/RelightLab${{steps.envs.outputs.rl_version}}-windows.exe
