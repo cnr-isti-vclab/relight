@@ -1,7 +1,6 @@
 #!/bin/bash
 
-SCRIPTS_PATH="$(dirname "$(realpath "$0")")"/../../
-RESOURCES_PATH=$SCRIPTS_PATH/../../resources
+SCRIPTS_PATH="$(dirname "$(realpath "$0")")"/../
 SOURCE_PATH=$SCRIPTS_PATH/../../src
 INSTALL_PATH=$SOURCE_PATH/../install
 
