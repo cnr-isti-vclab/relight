@@ -1,20 +1,16 @@
 #!/bin/bash
-# this is a script shell for deploying a meshlab-portable app.
-# Requires a properly built meshlab.
-#
-# Without given arguments, the folder that will be deployed is meshlab/distrib.
-#
-# You can give as argument the DISTRIB_PATH.
-#
-# After running this script, $DISTRIB_PATH/meshlab.app will be a portable meshlab application.
 
-#default paths wrt the script folder
-SCRIPTS_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+SCRIPTS_PATH="$(dirname "$(realpath "$0")")"
 
-SOURCE_PATH=$SCRIPTS_PATH/../..
-INSTALL_PATH=$SOURCE_PATH/install
-PACKAGES_PATH=$SOURCE_PATH/packages
-QT_DIR=""
+INSTALL_PATH=$SCRIPTS_PATH/../../install
+QT_DIR_OPTION=""
+PACKAGES_PATH=$SCRIPTS_PATH/../../packages
+SIGN=false
+NOTARIZE=false
+CERT_ID=""
+NOTAR_USER=""
+NOTAR_TEAM_ID=""
+NOTAR_PASSWORD=""
 
 #checking for parameters
 for i in "$@"
@@ -24,12 +20,34 @@ case $i in
         INSTALL_PATH="${i#*=}"
         shift # past argument=value
         ;;
+    -qt=*|--qt_dir=*)
+        QT_DIR_OPTION=-qt=${i#*=}
+        shift # past argument=value
+        ;;
     -p=*|--packages_path=*)
         PACKAGES_PATH="${i#*=}"
         shift # past argument=value
         ;;
-    -qt=*|--qt_dir=*)
-        QT_DIR=${i#*=}/bin/
+    -ci=*|--cert_id=*)
+        CERT_ID="${i#*=}"
+        if [ -n "$CERT_ID" ]; then
+          SIGN=true
+        fi
+        shift # past argument=value
+        ;;
+    -nu=*|--notarization_user=*)
+        NOTAR_USER="${i#*=}"
+        if [ -n "$NOTAR_USER" ]; then
+          NOTARIZE=true
+        fi
+        shift # past argument=value
+        ;;
+    -np=*|--notarization_pssw=*)
+        NOTAR_PASSWORD="${i#*=}"
+        shift # past argument=value
+        ;;
+    -nt=*|--notarization_team=*)
+        NOTAR_TEAM_ID="${i#*=}"
         shift # past argument=value
         ;;
     *)
@@ -38,22 +56,22 @@ case $i in
 esac
 done
 
-${QT_DIR}macdeployqt $INSTALL_PATH/relight.app
+bash $SCRIPTS_PATH/internal/2a_appbundle.sh -i=$INSTALL_PATH $QT_DIR_OPTION
 
-#get version
-RL_VERSION=$(cat $SCRIPTS_PATH/../../RELIGHT_VERSION)
+echo "======= AppBundle Created ======="
 
-# final step create the dmg using appdmg
-# appdmg is installed with 'npm install -g appdmg'",
-sed "s%INST_PATH%$INSTALL_PATH%g" $SCRIPTS_PATH/resources/dmg_latest.json > $SCRIPTS_PATH/resources/dmg_final.json
-sed -i '' "s%RL_VERSION%$RL_VERSION%g" $SCRIPTS_PATH/resources/dmg_final.json
-sed -i '' "s%SOURCE_PATH%$SOURCE_PATH%g" $SCRIPTS_PATH/resources/dmg_final.json
+if [ "$SIGN" = true ] ; then
+    bash $SCRIPTS_PATH/internal/2b_sign_appbundle.sh -i=$INSTALL_PATH -ci=$CERT_ID
 
-mv $INSTALL_PATH/relight.app $INSTALL_PATH/ReLight$RL_VERSION.app
+    echo "======= AppBundle Signed ======="
+fi
 
-mkdir $PACKAGES_PATH
+if [ "$NOTARIZE" = true ] ; then
+    bash $SCRIPTS_PATH/internal/2c_notarize_appbundle.sh -i=$INSTALL_PATH -nu=$NOTAR_USER -nt=$NOTAR_TEAM_ID -np=$NOTAR_PASSWORD
 
-echo "Running appdmg"
-appdmg $SCRIPTS_PATH/resources/dmg_final.json $PACKAGES_PATH/ReLightLab$RL_VERSION-macos.dmg
+    echo "======= AppBundle Notarized ======="
+fi
 
-rm $SCRIPTS_PATH/resources/dmg_final.json
+bash $SCRIPTS_PATH/internal/2d_dmg.sh -i=$INSTALL_PATH -p=$PACKAGES_PATH
+
+echo "======= DMG Created ======="
