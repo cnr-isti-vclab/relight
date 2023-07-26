@@ -86,7 +86,8 @@ QRect ImageCropper::croppedRect() {
 	realSizeRect.setWidth(r.width() * xScale);
 	realSizeRect.setHeight(r.height() * yScale);
 
-	realSizeRect = realSizeRect.intersected(QRectF(0, 0, imageForCropping.width(), imageForCropping.height()));
+	if(!imageForCropping.isNull())
+		realSizeRect = realSizeRect.intersected(QRectF(0, 0, imageForCropping.width(), imageForCropping.height()));
 	return realSizeRect.toRect();
 }
 

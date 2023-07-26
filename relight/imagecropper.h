@@ -84,8 +84,8 @@ private:
 private:
 	bool show_handle = true;
 
-	float leftDelta, topDelta;
-	float xScale, yScale;
+	float leftDelta = 0, topDelta = 0;
+	float xScale = 1, yScale = 1;
 
 	QPixmap imageForCropping;
 	QRectF croppingRect;
