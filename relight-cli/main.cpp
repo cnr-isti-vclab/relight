@@ -2,6 +2,7 @@
 //#include "../src/legacy_rti.h"
 
 #include "../src/getopt.h"
+extern int opterr;
 
 #include <QDir>
 #include <QImage>
