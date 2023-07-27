@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=ReLight
+Name=RelightLab
 GenericName=Image relighting
 Comment=Create and view relightable images
 Exec=relight %F
