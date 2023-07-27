@@ -36,6 +36,7 @@ public:
 
 	Sphere();
 	bool fit();
+	void ellipseFit();
 	void findHighlight(QImage im, int n);
 	void computeDirections(Lens &lens);
 

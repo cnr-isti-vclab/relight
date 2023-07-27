@@ -51,9 +51,93 @@ public:
 
 } */
 
+#include <Eigen/Dense>
+#include <Eigen/Core>
+#include <Eigen/Eigenvalues>
+
+void Sphere::ellipseFit() {
+	size_t n = border.size();
+
+	Eigen::MatrixXd D1(n, 3);
+	Eigen::MatrixXd D2(n, 3);
+	for(size_t k = 0; k < border.size(); k++) {
+		double x = X(k)= border[k].x();
+		double y = Y(k)= border[k].y();
+		D1(k, 0) = x*x;
+		D1(k, 1) = x*y;
+		D1(k, 2) = y*y;
+		D2(k, 0) = x;
+		D2(k, 1) = y;
+		D2(k, 2) = 1.0;
+	}
+
+	Eigen::MatrixXd S1(3,3);
+	Eigen::MatrixXd S2(3,3);
+	Eigen::MatrixXd S3(3,3);
+
+	S1 = D1.transpose() * D1;
+	S2 = D1.transpose() * D2;
+	S3 = D2.transpose() * D2;
+
+	Eigen::MatrixXd C1(3,3);
+	C1 << 0,0,2, 0,-1,0, 2,0,0;
+
+	Eigen::MatrixXd M;
+
+	M= C1.inverse()* (S1 - S2*S3.inverse()*S2.transpose());
+
+	Eigen::EigenSolver<Eigen::MatrixXd> s(M);
+
+	Eigen::MatrixXd eigenvector= s.eigenvectors().real();
+	Eigen::VectorXd row0 = eigenvector.row(0);
+	Eigen::VectorXd row1 = eigenvector.row(1);
+	Eigen::VectorXd row2 = eigenvector.row(2);
+
+	Eigen::VectorXd cond = 4 * row0.array() * row2.array() - row1.array().pow(2);
+
+
+	Eigen::VectorXd ellipse = eigenvector.col(0)
+
+	for(int i= 0; i<3 ; i++){
+		if(cond(i) > 0){
+			min_pos_eig = eigenvector.col(i);
+			break;
+		}
+	}
+	Eigen::VectorXd coeffs(6);
+	Eigen::VectorXd cont_matrix=  -1*S3.inverse()* S2.transpose() * ellipse;
+	coeffs << min_pos_eig, cont_matrix;
+
+
+	double a = coeffs(0);
+	double b = coeffs(1)/2;
+	double c = coeffs(2);
+	double d = coeffs(3)/2;
+	double f = coeffs(4)/2;
+	double g = coeffs(5);
+
+	double center_x = (c*d-b*f)/(pow(b,2)-a*c);
+	double center_y = (a*f-b*d)/(pow(b,2)-a*c);
+
+	double numerator = 2*(a*f*f+c*d*d+g*b*b-2*b*d*f-a*c*g);
+	double denominator1 = (b*b-a*c)*( (c-a)*sqrt(1+4*b*b/((a-c)*(a-c)))-(c+a));
+	double denominator2 = (b*b-a*c)*( (a-c)*sqrt(1+4*b*b/((a-c)*(a-c)))-(c+a));
+
+	double width = sqrt(numerator/denominator1);
+	double height = sqrt(numerator/denominator2);
+	double phi = 0.5*atan((2*b)/(a-c));
+
+	cout << "Center: " << center_x << " - " << center_y << endl;
+	cout << "W: " << width << " H: " << height << endl;
+	cout << "PHi: " << phi << endl;
+}
+
 bool Sphere::fit() {
 	if(border.size() < 3)
 		return false;
+
+//	if(border.size() >= 5)
+//		ellipseFit();
 
 	double n = border.size();
 	double sx = 0, sy = 0, sxy = 0, sx2 = 0, sy2 = 0, sx3 = 0, sy3 = 0, sx2y = 0, sxy2 = 0;
