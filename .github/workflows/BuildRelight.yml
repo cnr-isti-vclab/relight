@@ -1,0 +1,68 @@
+name: BuildRelightLab
+
+on:
+  [push, pull_request]
+
+env:
+  QT_VERSION: 5.15.2
+  MAC_CERT: ${{secrets.MACOS_CERT_ID}}
+  WIN_CERT: ${{secrets.WIN_CERTIFICATE}}
+
+jobs:
+  relightlab_build:
+    name: Build Relight
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-20.04', 'macos-latest', 'windows-latest']
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+    - name: Set CodeSign Certificate macOS
+      if: runner.os == 'macOS' && env.MAC_CERT != null
+      uses: apple-actions/import-codesign-certs@v2
+      with:
+        p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
+        p12-password: ${{ secrets.MACOS_CERTIFICATE_PSSW }}
+    - name: Set CodeSign Certificate Windows
+      if: runner.os == 'Windows' && env.WIN_CERT != null
+      run: |
+        New-Item -ItemType directory -Path certificate
+        Set-Content -Path certificate\certificate.txt -Value '${{ secrets.WIN_CERTIFICATE }}'
+        certutil -decode certificate\certificate.txt certificate\certificate.pfx
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        cache: true
+        version: ${{ env.QT_VERSION }}
+    - name: Install dependencies
+      shell: bash
+      run: |
+        bash build_scripts/${{ runner.os }}/0_setup_env.sh --dont_install_qt
+    - name: Ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ runner.os }}-${{ github.ref }}
+    - name: Configure and Build
+      shell: bash
+      run: |
+        bash build_scripts/${{ runner.os }}/1_build.sh --ccache --use_brew_llvm
+    - name: Deploy
+      shell: bash
+      run: |
+        bash build_scripts/${{ runner.os }}/2_deploy.sh --cert_pssw='${{ secrets.WIN_CERTIFICATE_PSSW }}' --cert_id='${{ secrets.MACOS_CERT_ID }}'
+    - name: Upload RelightLab Portable
+      uses: actions/upload-artifact@v3
+      with:
+        name: RelightLab_${{ runner.os }}_portable
+        path: install/
+    - name: Upload RelightLab Packages
+      if: runner.os != 'Windows'
+      uses: actions/upload-artifact@v3
+      with:
+        name: RelightLab_${{ runner.os }}_packages
+        path: packages/RelightLab*

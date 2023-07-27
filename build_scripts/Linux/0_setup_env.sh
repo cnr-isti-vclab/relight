@@ -4,14 +4,14 @@
 #
 # Run this script if you never installed any of the Relight dependencies.
 
-INSTALL_QT=false
+DONT_INSTALL_QT=false
 
 #checking for parameters
 for i in "$@"
 do
 case $i in
-    --install_qt)
-        INSTALL_QT=true
+    ---dont_install_qt)
+        DONT_INSTALL_QT=true
         shift # past argument=value
         ;;
     *)
@@ -22,9 +22,11 @@ done
 
 sudo apt-get update
 echo "=== installing mesa packages..."
-sudo apt-get install -y mesa-common-dev libglu1-mesa-dev libjpeg-dev libeigen3-dev
+sudo apt-get install -y mesa-common-dev libglu1-mesa-dev 
 
-if [ "$INSTALL_QT" = true ] ; then
+sudo apt-get install -y cmake ninja-build patchelf libjpeg-dev libeigen3-dev
+
+if [ "$DONT_INSTALL_QT" = false ] ; then
     echo "=== installing qt packages..."
     sudo apt-get install -y qt5-default qttools5-dev-tools qtdeclarative5-dev
 else
