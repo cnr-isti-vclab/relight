@@ -152,6 +152,7 @@ target_include_directories(
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}
 		${EIGEN3_INCLUDE_DIR}
+		${FFTW_INCLUDE_DIR}
 	)
 	
 target_link_libraries(
@@ -163,6 +164,7 @@ target_link_libraries(
 		${RELIGHT_QT}::Widgets
 		${RELIGHT_QT}::Concurrent
 		${RELIGHT_QT}::Xml
+		${FFTW_LIBRARIES}
 	)
 
 target_compile_definitions(relight PUBLIC _USE_MATH_DEFINES NOMINMAX)
