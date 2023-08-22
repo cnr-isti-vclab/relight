@@ -24,7 +24,7 @@ sudo apt-get update
 echo "=== installing mesa packages..."
 sudo apt-get install -y mesa-common-dev libglu1-mesa-dev 
 
-sudo apt-get install -y cmake ninja-build patchelf libjpeg-dev libeigen3-dev
+sudo apt-get install -y cmake ninja-build patchelf libjpeg-dev libeigen3-devm libfftw3-dev
 
 if [ "$DONT_INSTALL_QT" = false ] ; then
     echo "=== installing qt packages..."
