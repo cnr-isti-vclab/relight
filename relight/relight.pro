@@ -17,7 +17,7 @@ win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
 unix:INCLUDEPATH += /usr/include/eigen3
-unix:LIBS += -ljpeg -liomp5
+unix:LIBS += -ljpeg -liomp5 -lfftw3 #-lfftw3f -lfftw3l
 unix:QMAKE_CXXFLAGS += -fopenmp
 
 
@@ -40,6 +40,7 @@ SOURCES += main.cpp \
     graphics_view_zoom.cpp \
     normalstask.cpp \
     rtiexport.cpp \
+    ../relight-cli/convert_rti.cpp \
     ../relight-cli/rtibuilder.cpp \
     ../src/imageset.cpp \
     ../src/jpeg_decoder.cpp \
@@ -48,6 +49,8 @@ SOURCES += main.cpp \
     ../src/legacy_rti.cpp \
     ../src/deepzoom.cpp \
     ../src/exif.cpp \
+    ../src/flatnormals.cpp \
+    ../src/lp.cpp \
     dome.cpp \
     helpdialog.cpp \
     project.cpp \
@@ -64,9 +67,7 @@ SOURCES += main.cpp \
     task.cpp \
     rtitask.cpp \
     settingsdialog.cpp \
-    ../relight-cli/convert_rti.cpp \
     domecalibration.cpp \
-    ../src/lp.cpp \
     qmarkerlist.cpp \
     qmarker.cpp \
     qmeasuremarker.cpp \
@@ -84,7 +85,6 @@ SOURCES += main.cpp \
 
 
 HEADERS += \
-    ../src/deepzoom.h \
     dstretch.h \
     dstretchdialog.h \
     dstretchtask.h \
@@ -97,17 +97,24 @@ HEADERS += \
     helpdialog.h \
     ../src/imageset.h \
     ../src/jpeg_decoder.h \
-    ../src/jpeg_encoder.h \
     ../src/material.h \
     ../src/eigenpca.h \
     ../relight-cli/rtibuilder.h \
     ../src/relight_threadpool.h \
+    ../src/relight_vector.h \
+    ../src/lp.h \
+    ../src/deepzoom.h \
+    ../src/flatnormals.h \
+    ../src/exif.h \
+    ../src/legacy_rti.h \
+    ../src/relight_vector.h \
+    ../src/lp.h \
+    ../src/flatnormals.h \
     project.h \
     measure.h \
     focaldialog.h \
     lens.h \
     image.h \
-    ../src/exif.h \
     httpserver.h \
     scripts.h \
     processqueue.h \
@@ -117,12 +124,9 @@ HEADERS += \
     task.h \
     rtitask.h \
     settingsdialog.h \
-    ../src/legacy_rti.h \
     httplib.h \
     domecalibration.h \
     dome.h \
-    ../src/relight_vector.h \
-    ../src/lp.h \
     qmarker.h \
     qmarkerlist.h \
     qmeasuremarker.h \
@@ -136,8 +140,7 @@ HEADERS += \
     aligndialog.h \
     zoom.h \
     zoomdialog.h \
-    zoomtask.h \
-    ../src/deepzoom.h
+    zoomtask.h
 
 FORMS += \
     dstretchdialog.ui \

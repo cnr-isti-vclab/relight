@@ -57,12 +57,11 @@ public:
 
 void Sphere::ellipseFit() {
 	size_t n = border.size();
-
 	Eigen::MatrixXd D1(n, 3);
 	Eigen::MatrixXd D2(n, 3);
 	for(size_t k = 0; k < border.size(); k++) {
-		double x = X(k)= border[k].x();
-		double y = Y(k)= border[k].y();
+		double x = border[k].x();
+		double y = border[k].y();
 		D1(k, 0) = x*x;
 		D1(k, 1) = x*y;
 		D1(k, 2) = y*y;
@@ -96,9 +95,10 @@ void Sphere::ellipseFit() {
 	Eigen::VectorXd cond = 4 * row0.array() * row2.array() - row1.array().pow(2);
 
 
-	Eigen::VectorXd ellipse = eigenvector.col(0)
+	Eigen::VectorXd ellipse = eigenvector.col(0);
+	Eigen::VectorXd min_pos_eig;
 
-	for(int i= 0; i<3 ; i++){
+	for(int i = 0; i<3 ; i++) {
 		if(cond(i) > 0){
 			min_pos_eig = eigenvector.col(i);
 			break;
