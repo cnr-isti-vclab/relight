@@ -3,6 +3,7 @@
 #include "../src/jpeg_encoder.h"
 #include "../src/imageset.h"
 #include "../src/relight_threadpool.h"
+#include "../src/flatnormals.h"
 
 #include <Eigen/Eigen>
 #include <Eigen/Core>
@@ -52,7 +53,7 @@ void NormalsTask::run()
     }
     imageSet.crop(m_Crop.left(), m_Crop.top(), m_Crop.width(), m_Crop.height());
 
-	std::vector<uint8_t> normals(imageSet.width * imageSet.height * 3);
+	std::vector<double> normals(imageSet.width * imageSet.height * 3);
 
     // Thread pool used to handle the processors
     RelightThreadPool pool;
@@ -68,7 +69,7 @@ void NormalsTask::run()
 
         // Create the normal task and get the run lambda
         uint32_t idx = i * 3 * imageSet.width;
-        uint8_t* data = normals.data() + idx;
+		double* data = normals.data() + idx;
 
         std::function<void(void)> run = [this, &line, &imageSet, data](void)->void {
             NormalsWorker task(m_Method, line, data, imageSet.lights);
@@ -84,8 +85,31 @@ void NormalsTask::run()
 
     // Wait for the end of all the threads
     pool.finish();
+
+	if(m_FlatMethod != NONE) {
+		NormalsImage ni;
+		ni.load(normals, imageSet.width, imageSet.height);
+		switch(m_FlatMethod) {
+			case RADIAL:
+				ni.flattenRadial();
+				break;
+			case FOURIER:
+				//convert radius to frequencies
+				double sigma = 100/m_FlatRadius;
+				ni.flattenFourier(imageSet.width/10, sigma);
+				break;
+		}
+		normals = ni.normals;
+	}
+
+	// Convert double to uint8_t;
+	std::vector<uint8_t> colors(imageSet.width * imageSet.height * 3);
+	for(size_t i = 0; i < normals.size(); i++) {
+		colors[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
+	}
+
     // Save the final result
-	QImage img(normals.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
+	QImage img(colors.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
 	img.save(m_OutputFolder);
     progressed("Cleaning up...", 99);
 
@@ -164,10 +188,9 @@ void NormalsWorker::solveL2()
         mNormals.col(0).normalize();
 
         // Save
-        m_Normals[normalIdx] = floor(((mNormals(0, 0) + 1.0f) / 2.0f) * 255);
-        m_Normals[normalIdx+1] = floor(((mNormals(1, 0) + 1.0f) / 2.0f) * 255);
-        m_Normals[normalIdx+2] = floor(((mNormals(2, 0) + 1.0f) / 2.0f) * 255);
-
+		m_Normals[normalIdx] = mNormals(0, 0);
+		m_Normals[normalIdx+1] = mNormals(1, 0);
+		m_Normals[normalIdx+2] = mNormals(2, 0);
         normalIdx += 3;
     }
 }

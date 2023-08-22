@@ -251,8 +251,17 @@ void RtiExport::createNormals() {
     if(ui->rpca_solver->isChecked())
         method = 5;
 
-    ProcessQueue &queue = ProcessQueue::instance();
-	NormalsTask *task = new NormalsTask(path, output, crop, method);
+	NormalsTask::FlatMethod flat_method;
+	if(ui->flat_none->isChecked())
+		flat_method = NormalsTask::FlatMethod::NONE;
+	if(ui->flat_radial->isChecked())
+		flat_method = NormalsTask::FlatMethod::RADIAL;
+	if(ui->flat_fourier->isChecked())
+		flat_method = NormalsTask::FlatMethod::FOURIER;
+
+	double flat_radius = ui->flat_fourier_radius->value();
+	ProcessQueue &queue = ProcessQueue::instance();
+	NormalsTask *task = new NormalsTask(path, output, crop, method, flat_method, flat_radius);
 
 	QList<QVariant> slights;
 	for(auto light: lights)
