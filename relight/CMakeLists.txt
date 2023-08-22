@@ -44,6 +44,7 @@ set (RELIGHT_HEADERS
 	../src/relight_vector.h
 	../src/deepzoom.h
 	../relight-cli/rtibuilder.h
+	../src/flatnormals.h
 	processqueue.h
 	queueitem.h
 	queuewindow.h
@@ -97,6 +98,7 @@ set (RELIGHT_SOURCES
 	../src/exif.cpp
 	../src/lp.cpp
 	../src/deepzoom.cpp
+	../src/flatnormals.cpp
 	helpdialog.cpp
 	focaldialog.cpp
 	settingsdialog.cpp
