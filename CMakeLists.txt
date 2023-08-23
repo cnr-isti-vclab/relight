@@ -3,7 +3,9 @@ project(relight)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_FIND_FRAMEWORK LAST)
-list(APPEND CMAKE_MODULE_PATH "./")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+
+message(CMAKE_MODULE_PATH="${CMAKE_MODULE_PATH}")
 
 option(USE_QT_5 "Set to use Qt5" ON)
 option(MACOSX_MAKE_BUNDLE "If using macos, all targets will be placed in a relight macosx app bundle" ON)
