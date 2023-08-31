@@ -8,7 +8,7 @@
 class NormalsImage {
 public:
 	//radial
-	bool exponential = false;
+	bool exponential = true;
 	//fourier
 	double sigma = 20;
 	int padding_amount = 20;
