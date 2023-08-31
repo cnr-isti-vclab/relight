@@ -29,10 +29,6 @@ if(NOT Eigen3_FOUND)
 	set(EIGEN3_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/eigen-3.3.9)
 endif()
 
-find_package(FFTW)
-if(NOT FFTW_FOUND)
-	set(FFTW_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/fftw-3.3.10/include)
-endif()
 
 if(MSVC)
 	set(JPEGTURBO_HOME ${CMAKE_CURRENT_SOURCE_DIR}/external/libjpeg-turbo-2.0.6)

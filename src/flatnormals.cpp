@@ -3,11 +3,15 @@
 #include <QFile>
 #include <QTextStream>
 
-#include <fftw3.h>
+
+#include <complex>
 #include <math.h>
 
 #include <eigen3/Eigen/Dense>
 using namespace Eigen;
+
+#include "pocketfft.h"
+using namespace pocketfft;
 
 #include <vector>
 #include <iostream>
@@ -165,14 +169,15 @@ void NormalsImage::flattenRadial(double binSize) {
 
 void NormalsImage::flattenFourier(int padding, double sigma) {
 	padding_amount = padding;
-	int W = w + padding_amount*2;
-	int H = h + padding_amount*2;
-	fftw_complex *inx = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * W*H);
-	fftw_complex *iny = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * W*H);
-	fftw_complex *outx = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * W*H);
-	fftw_complex *outy = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * W*H);
-	fftw_complex *resx = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * W*H);
-	fftw_complex *resy = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * W*H);
+	unsigned int W = w + padding_amount*2;
+	unsigned int H = h + padding_amount*2;
+
+	shape_t shape{ W, H };
+	stride_t stride { 16, W*16 };
+	shape_t axes{0, 1};
+
+	vector<complex<double>> datax(W*H);
+	vector<complex<double>> datay(W*H);
 
 	vector<double> dataz(w*h);
 
@@ -191,10 +196,10 @@ void NormalsImage::flattenFourier(int padding, double sigma) {
 
 			int X = x + padding_amount;
 			int Y = y + padding_amount;
-			inx[X + Y*W][0] = n[0];
-			inx[X + Y*W][1] = 0;
-			iny[X + Y*W][0] = n[1];
-			iny[X + Y*W][1] = 0;
+			datax[X + Y*W].real(n[0]);
+			datax[X + Y*W].imag(0);
+			datay[X + Y*W].real(n[1]);
+			datay[X + Y*W].imag(0);
 			if(x < padding_amount) {
 				X = padding_amount -x;
 			}
@@ -211,19 +216,17 @@ void NormalsImage::flattenFourier(int padding, double sigma) {
 				Y = H - padding_amount + h - 1 -y;
 			}
 
-			inx[X + Y*W][0] = n[0];
-			inx[X + Y*W][1] = 0;
-			iny[X + Y*W][0] = n[1];
-			iny[X + Y*W][1] = 0;
+			datax[X + Y*W].real(n[0]);
+			datax[X + Y*W].imag(0);
+			datay[X + Y*W].real(n[1]);
+			datay[X + Y*W].imag(0);
 
 			dataz[x + y*w] = n[2];
 		}
 	}
-	fftw_plan planr2cx = fftw_plan_dft_2d(H, W, inx, outx, FFTW_FORWARD, FFTW_ESTIMATE);
-	fftw_execute(planr2cx);
 
-	fftw_plan planr2cy = fftw_plan_dft_2d(H, W, iny, outy, FFTW_FORWARD, FFTW_ESTIMATE);
-	fftw_execute(planr2cy);
+	c2c(shape, stride, stride, axes, FORWARD, datax.data(), datax.data(), 1.0);
+	c2c(shape, stride, stride, axes, FORWARD, datay.data(), datay.data(), 1.0);
 
 
 	for(int y = 0; y < H; y++) {
@@ -239,28 +242,21 @@ void NormalsImage::flattenFourier(int padding, double sigma) {
 			if(r2 < sigma*sigma/4)
 				g = 1.0 - pow(cos(M_PI*r2/sigma), 2); */
 
-			outx[x + y*W][0] *= g;
-			outx[x + y*W][1] *= g;
-
-			outy[x + y*W][0] *= g;
-			outy[x + y*W][1] *= g;
+			datax[x + y*W] *= g;
+			datay[x + y*W] *= g;
 		}
 	}
 
+	c2c(shape, stride, stride, axes, BACKWARD, datax.data(), datax.data(), 1./(W*H));
+	c2c(shape, stride, stride, axes, BACKWARD, datay.data(), datay.data(), 1./(W*H));
 
-	fftw_plan planc2rx = fftw_plan_dft_2d(H, W, outx, resx, FFTW_BACKWARD, FFTW_ESTIMATE);
-	fftw_execute(planc2rx);
 
-	fftw_plan planc2ry = fftw_plan_dft_2d(H, W, outy, resy, FFTW_BACKWARD, FFTW_ESTIMATE);
-	fftw_execute(planc2ry);
-
-	flat = QImage(w, h, QImage::Format_ARGB32);
 	for(int y = 0; y < h; y++) {
 		for(int x = 0; x < w; x++) {
 			int X  = x + padding_amount;
 			int Y = y + padding_amount;
-			double r = resx[X + Y*W][0]/(W*H);
-			double g = resy[X + Y*W][0]/(W*H);
+			double r = datax[X + Y*W].real();
+			double g = datay[X + Y*W].real();
 			double d = sqrt(r*r + g*g);
 			if(exponential) {
 				r = r*sin(d)/d;
@@ -285,15 +281,4 @@ void NormalsImage::flattenFourier(int padding, double sigma) {
 			*/
 		}
 	}
-
-	fftw_destroy_plan(planr2cx);
-	fftw_destroy_plan(planr2cy);
-	fftw_destroy_plan(planc2rx);
-	fftw_destroy_plan(planc2ry);
-	fftw_free(inx);
-	fftw_free(iny);
-	fftw_free(outx);
-	fftw_free(outy);
-	fftw_free(resx);
-	fftw_free(resy);
 }
