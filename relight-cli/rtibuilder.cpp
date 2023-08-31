@@ -591,7 +591,7 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 	if(callback && !(*callback)("Coefficients quantization:", 0))
 		throw std::string("Cancelled.");
 
-	if(colorspace == RGB) {
+	if(colorspace == RGB && histogram_fix) {
 		normalizeHistogram(sample, 0.95);
 	}
 

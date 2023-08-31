@@ -44,6 +44,7 @@ void help() {
 	cout << "\t-k <int>x<int>+<int>+<int>: Cropping extracts only the widthxheight+offx+offy part\n";
 
     cout << "\nIgnore exotic parameters below here\n\n";
+	cout << "\n-H        : fix overexposure in ptm and hsh due to bad sampling\n";
     cout << "\t-r <int>  : side of the basis function (default 8, 0 means rbf interpolation)\n";
 	cout << "\t-s <int>  : sampling RAM for pca  in MB (default 500MB)\n";
     cout << "\t-S <float>: sigma in rgf gaussian interpolation default 0.125 (~100 img)\n";
@@ -107,6 +108,7 @@ int main(int argc, char *argv[]) {
     bool relighted = false;
     Vector3f light;
 	bool verbose = true;
+	bool histogram_fix = false;
 
 	opterr = 0;
     char c;
@@ -258,6 +260,10 @@ int main(int argc, char *argv[]) {
 				cout << "Cropping: X: " << builder.crop[0] << " Y: " << builder.crop[1]
 					 << " Width: " << builder.crop[2] << " Height: " << builder.crop[3] << endl;
 			}
+			break;
+		}
+		case 'H': {
+			builder.histogram_fix = true;
 			break;
 		}
         case 'R': {
