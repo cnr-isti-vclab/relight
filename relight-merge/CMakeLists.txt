@@ -22,6 +22,7 @@ endif()
 
 
 SET(HEADERS
+	../src/getopt.h
 	../src/rti.h
 	../src/jpeg_decoder.h
 	../src/imageset.h
@@ -32,6 +33,7 @@ SET(HEADERS
 
 SET(SOURCES
 	main.cpp
+	../src/getopt.cpp
 	../src/rti.cpp
 	../src/jpeg_decoder.cpp
 	../src/imageset.cpp
