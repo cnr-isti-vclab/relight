@@ -23,8 +23,9 @@ Overlay enlarges the tiles but not the side on the border of the image (need to 
 Options:
 
 	gl: if provided will use an already created context
-	url: path of the directory where the json (and the images) resides
-	path: for iip absolute path of the same directory
+	url: path of the directory where the json (and the images) reside
+	stack: true or false - whether image is an image stack (IIP only)
+	server: server for IIP or IIIF layouts
 	layout: pick between image, deepzoom, google, iip, iiif, zoomify
 	visible: rendering active or not, (default: true)
 	light: initial light (default [0, 0, 1]
@@ -127,6 +128,10 @@ setUrl: function(url) {
 	t.waiting = 1;
 	if (t.layout == "webrtiviewer") {
 		t.get(url + '/info.xml', 'xml', function(d) { t.waiting--; t.loadWebRTIViewerInfo(d); });
+	} else if (t.layout == "iip" ) {
+		// info.json embedded in TIFF ImageDescription metadata tag
+		var url = t.server + "?FIF=" + t.url + ((t.stack===true) ? "" : "/plane_0.tif") + "&OBJ=xmp";
+		t.get(url, 'json', function(d) { t.waiting--; t.loadInfo(d); });
 	} else {
 		t.get(url + '/info.json', 'json', function(d) { t.waiting--; t.loadInfo(d); });
 	}
@@ -626,7 +631,9 @@ initTree: function() {
 		case "iip":
 			t.suffix = ".tif";
 			t.overlap = 0;
-			t.metaDataURL = t.server + "?FIF=" + t.path + "/" + t.img + t.suffix + "&obj=IIP,1.0&obj=Max-size&obj=Tile-size&obj=Resolution-number";
+
+			t.metaDataURL = t.server + "?FIF=" + ((t.stack===true) ? t.url : t.url + "/" + t.img + t.suffix) +
+					"&obj=Max-size&obj=Tile-size&obj=Resolution-number";
 
 			t.parseMetaData = function(response) {
 				var tmp = response.split( "Tile-size:" );
@@ -642,10 +649,12 @@ initTree: function() {
 
 			t.getTileURL = function(image, x, y, level) {
 				var prefix = image.substr(0, image.lastIndexOf("."));
-				var img = t.path + "/" + prefix + t.suffix;
+				var plane = parseInt(prefix.split('_')[1]);
 				var index = y*t.qbox[level][2] + x;
 				var ilevel = parseInt(t.nlevels - 1 - level);
-				return t.server+"?FIF=" + img + "&JTL=" + ilevel + "," + index;
+				var img = (t.stack===true) ? t.url + "&SDS=" + plane : t.url + "/" + prefix + t.suffix;
+				var url = t.server+"?FIF=" + img + "&JTL=" + ilevel + "," + index;
+				return url;
 			};
 			break;
 
@@ -1451,5 +1460,3 @@ neededBox: function(pos, border, canvas) {
 }
 
 };
-
-
