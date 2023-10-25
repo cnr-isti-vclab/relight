@@ -78,7 +78,7 @@ Scale and bias will be applied to the texture coefficients (from [0, 1]) as:
 * [Deepzoom](https://www.microsoft.com/silverlight/deep-zoom/)
 * [Zoomify](http://www.zoomify.com/)
 * [Google maps](https://developers.google.com/maps/)
-* [IIP](http://iipimage.sourceforge.net/)
+* [IIP](https://iipimage.sourceforge.io/)
 * [IIIF](http://iiif.io)
 
 [libvips](http://jcupitt.github.io/libvips/supported/current) can be used to [generate deepzoom, zoomify and google pyramidal formats](http://libvips.blogspot.com/2013/03/making-deepzoom-zoomify-and-google-maps.html), scripts can be found in the directory *test*.
@@ -92,7 +92,8 @@ Scale and bias will be applied to the texture coefficients (from [0, 1]) as:
 Options:
 * url: path to a directory containing the web format
 * layout: deepzoom, zoomify, google, iip, iiif or image for the web format
-* path: used for iip layout, absolute path of the dir.
+* server: server URL for use with iip or iiif
+* stack: true or false - whether image is an image stack (IIP only)
 * light: initial light, array x, y, z.
 * pos: initial view object { x: y: z:}
 * border: for tiled formats amount of prefetching tiles arount the view (default 1)
