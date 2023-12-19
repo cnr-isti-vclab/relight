@@ -28,6 +28,10 @@ public:
 	bool fitted;         //we have a valid fit
 	QImage sphereImg;
 
+	bool ellipse = false;
+	float eWidth, eHeight, eAngle;
+	float eFocal; //estimated focal
+
 	std::vector<QPointF> border;
 	std::vector<QPointF> lights;       //2d pixel of the light spot for this sphere.
 	std::vector<Vector3f> directions;  //

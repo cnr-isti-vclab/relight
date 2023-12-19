@@ -38,6 +38,9 @@ SphereMarker::SphereMarker( Sphere *s, QGraphicsView *_view, QWidget *parent):
 	circle = new QGraphicsEllipseItem(0, 0, 1, 1);
 	circle->setPen(outlinePen);
 
+	axis[0] = new QGraphicsLineItem(0, 0, 1, 1);
+	axis[1] = new QGraphicsLineItem(0, 0, 1, 1);
+
 	QVector<qreal> dashes;
 	dashes << 4 << 4;
 	outlinePen.setDashPattern(dashes);
@@ -59,6 +62,8 @@ SphereMarker::SphereMarker( Sphere *s, QGraphicsView *_view, QWidget *parent):
 	scene->addItem(circle);
 	scene->addItem(smallcircle);
 	scene->addItem(highlight);
+	scene->addItem(axis[0]);
+	scene->addItem(axis[1]);
 
 	init();
 	for(QPointF pos: sphere->border)
@@ -85,7 +90,16 @@ void SphereMarker::init() {
 	QPointF c = sphere->center;
 	double R = double(sphere->radius);
 	double r = double(sphere->smallradius);
-	circle->setRect(c.x()-R, c.y()-R, 2*R, 2*R);
+	if(sphere->ellipse) {
+		circle->setRect(c.x() - sphere->eWidth, c.y() - sphere->eHeight, 2*sphere->eWidth, 2*sphere->eHeight);
+		circle->setTransformOriginPoint(c);
+		circle->setRotation(sphere->eAngle);
+		QPointF dir = { cos(sphere->eAngle*M_PI/180), sin(sphere->eAngle*M_PI/180) };
+		axis[0]->setLine(c.x(), c.y(), c.x() + dir.x()*sphere->eWidth, c.y() + dir.y()*sphere->eWidth);
+		axis[1]->setLine(c.x(), c.y(), c.x() - dir.y()*sphere->eHeight, c.y() + dir.x()*sphere->eHeight);
+	} else {
+		circle->setRect(c.x()-R, c.y()-R, 2*R, 2*R);
+	}
 	circle->setVisible(true);
 	smallcircle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
 	smallcircle->setVisible(true);
