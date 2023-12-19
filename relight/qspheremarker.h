@@ -4,6 +4,7 @@
 #include "qmarker.h"
 
 #include <QGraphicsEllipseItem>
+#include <QGraphicsLineItem>
 
 class Sphere;
 
@@ -61,6 +62,7 @@ public:
 	std::vector<BorderPoint *> border;
 	QGraphicsEllipseItem *circle = nullptr;
 	QGraphicsEllipseItem *smallcircle = nullptr;
+	QGraphicsLineItem *axis[2] = { nullptr, nullptr };
 	HighlightPoint *highlight = nullptr;
 	QGraphicsPixmapItem *pixmap = nullptr;
 

@@ -127,17 +127,35 @@ void Sphere::ellipseFit() {
 	double height = sqrt(numerator/denominator2);
 	double phi = 0.5*atan((2*b)/(a-c));
 
+	if(width < height) {
+		std::swap(width, height);
+		phi += M_PI/2;
+	}
+
+	this->ellipse = true;
+	center = QPointF(center_x, center_y);
+	eWidth = width;
+	eHeight = height;
+	eAngle = phi*180/M_PI;
+	eFocal =  180*acos(eHeight/eWidth)/M_PI;
+
+
 	cout << "Center: " << center_x << " - " << center_y << endl;
 	cout << "W: " << width << " H: " << height << endl;
 	cout << "PHi: " << phi << endl;
+	cout << "Focal: " << eFocal << endl;
 }
 
 bool Sphere::fit() {
 	if(border.size() < 3)
 		return false;
 
-//	if(border.size() >= 5)
-//		ellipseFit();
+	if(border.size() >= 5) {
+		ellipseFit();
+		radius = eWidth;
+		smallradius =  radius/2;
+	} else {
+		ellipse = false;
 
 	double n = border.size();
 	double sx = 0, sy = 0, sxy = 0, sx2 = 0, sy2 = 0, sx3 = 0, sy3 = 0, sx2y = 0, sxy2 = 0;
@@ -175,6 +193,9 @@ bool Sphere::fit() {
 	//float max_angle = (52.0/180.0)*M_PI; //60 deg  respect to the vertical
 	float max_angle = (50.0/180.0)*M_PI; //slightly over 45. hoping not to spot reflexes
 	smallradius = radius*sin(max_angle);
+
+
+	}
 
 	int startx = (int)floor(center.x() - smallradius);
 	int endx = (int)ceil(center.x() + smallradius+1);
@@ -311,6 +332,18 @@ void Sphere::findHighlight(QImage img, int n) {
 
 void Sphere::computeDirections(Lens &lens) {
 
+	Eigen::Vector2f radial;
+	if(ellipse) {
+		//check large axis:
+		Eigen::Vector2f major = { cos(eAngle*M_PI/180), sin(eAngle*M_PI/180) }; //this should be major axis.
+		major.normalize();
+		radial = { center.x() - lens.width/2.0f, center.y() - lens.height/2.0f};
+		radial.normalize();
+		float deviation = 180*acos(fabs(major.dot(radial)))/M_PI;
+		cout << "Deviation from axis to direction to center In degrees: " << deviation << endl;
+	}
+
+
 	directions.resize(lights.size());
 	Vector3f viewDir = lens.viewDirection(center.x(), center.y());
 	for(size_t i = 0; i < lights.size(); i++) {
@@ -324,8 +357,19 @@ void Sphere::computeDirections(Lens &lens) {
 		float y = lights[i].y();
 		Vector3f dir = lens.viewDirection(x, y);
 
-		x = (x - inner.left() - smallradius)/radius;
-		y = -(y - inner.top() - smallradius)/radius; //inverted y  coords
+		if(ellipse) {
+			Eigen::Vector2f diff = { x - center.x(), y - center.y() };
+			radial = radial*diff.dot(radial); //find radial component;
+			diff -= radial; //orthogonal component;
+			radial *= eHeight/eWidth;
+			diff += radial;
+			diff /= eWidth;
+			x = diff.x();
+			y = diff.y();
+		} else {
+			x = (x - inner.left() - smallradius)/radius;
+			y = -(y - inner.top() - smallradius)/radius; //inverted y  coords
+		}
 
 		float d = sqrt(x*x + y*y);
 		float a = asin(d)*2;
