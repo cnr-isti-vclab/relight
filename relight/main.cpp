@@ -60,6 +60,7 @@ public:
 
 int main(int argc, char *argv[]) {
 
+	setlocale(LC_ALL, ".UTF8");
 	if (argc > 1) {
 		if (std::string(argv[1]) == std::string("--version") ||
 			std::string(argv[1]) == std::string("-v")) {
