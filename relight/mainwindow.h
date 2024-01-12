@@ -109,6 +109,8 @@ public slots:
 	void openImage(int id, bool fit = false);
 	void imageChecked(QStandardItem *item);
 
+    void rotateAllLeft();
+    void rotateAllRight();
 	void next();
 	void previous();
 	void doubleClick(QPoint p);

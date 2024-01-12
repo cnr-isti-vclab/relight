@@ -89,6 +89,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionDelete_selected, SIGNAL(triggered()), this, SLOT(deleteSelected()));
     ui->actionDelete_selected->setShortcuts(QList<QKeySequence>() << Qt::Key_Delete << Qt::Key_Backspace);
 
+    connect(ui->actionRotate_all_left, SIGNAL(triggered()), this, SLOT(rotateAllLeft()));
+    connect(ui->actionRotate_all_right, SIGNAL(triggered()), this, SLOT(rotateAllRight()));
+
 	QObject::connect(new QShortcut(QKeySequence(Qt::Key_Escape), this), &QShortcut::activated, this, &MainWindow::esc);
 	QObject::connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Z), this), &QShortcut::activated, this, &MainWindow::undo);
 	QObject::connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_Z), this), &QShortcut::activated, this, &MainWindow::redo);
@@ -405,6 +408,20 @@ void MainWindow::openImage(int id, bool fit) {
 	}
 	showHighlights(n);
 }
+
+void MainWindow::rotateAllLeft() {
+    if(project.size()) {
+        project.rotateImages(false);
+        openImage(currentImage, false);
+    }
+}
+void MainWindow::rotateAllRight() {
+    if(project.size()) {
+        project.rotateImages(true);
+        openImage(currentImage, false);
+    }
+}
+
 
 void MainWindow::showHighlights(size_t n) {
 	ignore_scene_changes = true;
@@ -825,7 +842,7 @@ void MainWindow::loadLP(QString lp) {
 
 	if(project.size() != filenames.size()) {
 		auto response = QMessageBox::question(this, "Light directions and images",
-			QString("The folder contains %1 images, the .lp file specify %1 images.\n")
+            QString("The folder contains %1 images, the .lp file specify %2 images.\n")
 					.arg(project.size()).arg(filenames.size()));
 		if(response == QMessageBox::Cancel || response == QMessageBox::No)
 			return;

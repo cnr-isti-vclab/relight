@@ -186,6 +186,16 @@ double mutualInfo(QImage &a, QImage &b) {
 	return m;
 }
 
+void Project::rotateImages(bool clockwise) {
+    QTransform rotate;
+    rotate.rotate(clockwise ? 90 : -90);
+    for(Image &image: images) {
+        QImage source(image.filename);
+        QImage rotated = source.transformed(rotate);
+        rotated.save(image.filename, "jpg", 100);
+    }
+}
+
 void Project::rotateImages() {
 	//find first image non rotated.
 	QString target_filename;
@@ -218,7 +228,7 @@ void Project::rotateImages() {
 		QTransform final = right_mutual > left_mutual ? rot_left : rot_right;
 		//TODO should be libjpeg to rotate.
 		QImage rotated = source.transformed(final);
-		rotated.save(image.filename);
+        rotated.save(image.filename, "jpg", 100);
 
 		image.size = imgsize;
 		image.valid = true;
