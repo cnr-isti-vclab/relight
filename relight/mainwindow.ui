@@ -296,7 +296,7 @@
     <addaction name="actionDelete_selected"/>
     <addaction name="separator"/>
     <addaction name="actionRotate_all_right"/>
-    <addaction name="actionRotate_all_right_2"/>
+    <addaction name="actionRotate_all_left"/>
     <addaction name="actionDStretch"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -618,7 +618,7 @@
     <string>Rotate right all images</string>
    </property>
   </action>
-  <action name="actionRotate_all_right_2">
+  <action name="actionRotate_all_left">
    <property name="text">
     <string>Rotate left all images</string>
    </property>
