@@ -243,17 +243,20 @@ void RtiExport::createNormals() {
 		output += ".png";
 
     // Get normal method
-    unsigned int method = 0; //least squares
+    NormalSolver solver = NORMALS_L2; //least squares
     if(ui->l2_solver->isChecked())
-        method = 0;
+        solver = NORMALS_L2;
     if(ui->sbl_solver->isChecked())
-        method = 4;
+        solver = NORMALS_SBL;
     if(ui->rpca_solver->isChecked())
-        method = 5;
+        solver = NORMALS_RPCA;
+
+
 
     ProcessQueue &queue = ProcessQueue::instance();
-	NormalsTask *task = new NormalsTask(path, output, crop, method);
-
+    NormalsTask *task = new NormalsTask(path, output, crop, solver);
+    task->exportSurface = ui->export_surface->isChecked();
+    task->exportK = ui->discontinuity->value();
 	QList<QVariant> slights;
 	for(auto light: lights)
 		for(int k = 0; k < 3; k++)

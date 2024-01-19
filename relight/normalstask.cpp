@@ -3,6 +3,7 @@
 #include "../src/jpeg_encoder.h"
 #include "../src/imageset.h"
 #include "../src/relight_threadpool.h"
+#include "../src/bni_normal_integration.h"
 
 #include <Eigen/Eigen>
 #include <Eigen/Core>
@@ -27,7 +28,7 @@ void NormalsTask::run()
 {
     status = RUNNING;
 	// ImageSet initialization
-    ImageSet imageSet(m_InputFolder.toStdString().c_str());
+    ImageSet imageSet(input_folder.toStdString().c_str());
 
 	QList<QVariant> qlights = (*this)["lights"].value.toList();
 	std::vector<Vector3f> lights(qlights.size()/3);
@@ -52,7 +53,8 @@ void NormalsTask::run()
     }
     imageSet.crop(m_Crop.left(), m_Crop.top(), m_Crop.width(), m_Crop.height());
 
-	std::vector<uint8_t> normals(imageSet.width * imageSet.height * 3);
+    //std::vector<uint8_t> normals(imageSet.width * imageSet.height * 3);
+    std::vector<float> normals(imageSet.width * imageSet.height * 3);
 
     // Thread pool used to handle the processors
     RelightThreadPool pool;
@@ -68,10 +70,11 @@ void NormalsTask::run()
 
         // Create the normal task and get the run lambda
         uint32_t idx = i * 3 * imageSet.width;
-        uint8_t* data = normals.data() + idx;
+        //uint8_t* data = normals.data() + idx;
+        float* data = &normals[idx];
 
         std::function<void(void)> run = [this, &line, &imageSet, data](void)->void {
-            NormalsWorker task(m_Method, line, data, imageSet.lights);
+            NormalsWorker task(solver, line, data, imageSet.lights);
             return task.run();
         };
 
@@ -84,11 +87,22 @@ void NormalsTask::run()
 
     // Wait for the end of all the threads
     pool.finish();
-    // Save the final result
-	QImage img(normals.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
-	img.save(m_OutputFolder);
-    progressed("Cleaning up...", 99);
 
+    std::vector<uint8_t> normalmap(imageSet.width * imageSet.height * 3);
+    for(size_t i = 0; i < normals.size(); i++)
+        normalmap[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
+
+    // Save the final result
+    QImage img(normalmap.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
+    img.save(output);
+
+    if(exportSurface) {
+        progressed("Integrating normals...", 0);
+        auto z = bni_integrate(imageSet.width, imageSet.height, normals, exportK);
+        QString filename = output.left(output.size() -4) + ".ply";
+        progressed("Saving surface...", 99);
+        savePly(filename, imageSet.width, imageSet.height, z);
+    }
     int end = clock();
     qDebug() << "Time: " << ((double)(end - start) / CLOCKS_PER_SEC);
     progressed("Finished", 100);
@@ -118,18 +132,18 @@ bool NormalsTask::progressed(std::string s, int percent)
 
 void NormalsWorker::run()
 {
-    switch (m_Method)
+    switch (solver)
     {
     // L2 solver
-    case 0:
+    case NORMALS_L2:
         solveL2();
         break;
     // SBL solver
-    case 4:
+    case NORMALS_SBL:
         solveSBL();
         break;
     // RPCA solver
-    case 5:
+    case NORMALS_RPCA:
         solveRPCA();
         break;
     }
@@ -154,6 +168,7 @@ void NormalsWorker::solveL2()
             mLights(i, j) = m_Lights[i][j];
 
     // For each pixel in the line solve the system
+    //TODO do it in a single pass, it's faster.
 	for (size_t p = 0; p < m_Row.size(); p++) {
         // Fill the pixel vector
 		for (size_t m = 0; m < m_Lights.size(); m++)
@@ -164,9 +179,12 @@ void NormalsWorker::solveL2()
         mNormals.col(0).normalize();
 
         // Save
-        m_Normals[normalIdx] = floor(((mNormals(0, 0) + 1.0f) / 2.0f) * 255);
+        /*m_Normals[normalIdx] = floor(((mNormals(0, 0) + 1.0f) / 2.0f) * 255);
         m_Normals[normalIdx+1] = floor(((mNormals(1, 0) + 1.0f) / 2.0f) * 255);
-        m_Normals[normalIdx+2] = floor(((mNormals(2, 0) + 1.0f) / 2.0f) * 255);
+        m_Normals[normalIdx+2] = floor(((mNormals(2, 0) + 1.0f) / 2.0f) * 255);*/
+        m_Normals[normalIdx+0] = mNormals(0,0);
+        m_Normals[normalIdx+1] = mNormals(1,0);
+        m_Normals[normalIdx+2] = mNormals(2,0);
 
         normalIdx += 3;
     }
