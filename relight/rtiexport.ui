@@ -13,8 +13,8 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout">
-   <item>
+  <layout class="QGridLayout" name="gridLayout_7">
+   <item row="0" column="0">
     <widget class="ImageCropper" name="cropview">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -24,7 +24,7 @@
      </property>
     </widget>
    </item>
-   <item>
+   <item row="0" column="1">
     <widget class="QTabWidget" name="export_frame">
      <property name="currentIndex">
       <number>0</number>
@@ -286,23 +286,13 @@
       <attribute name="title">
        <string>Normals</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_4">
+      <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
         <widget class="QGroupBox" name="groupBox_5">
          <property name="title">
           <string>Solver</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_4">
-          <item row="0" column="0">
-           <widget class="QRadioButton" name="l2_solver">
-            <property name="text">
-             <string>Least squares</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
           <item row="2" column="0">
            <widget class="QRadioButton" name="sbl_solver">
             <property name="enabled">
@@ -313,6 +303,16 @@
             </property>
            </widget>
           </item>
+          <item row="0" column="0">
+           <widget class="QRadioButton" name="l2_solver">
+            <property name="text">
+             <string>Least squares</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
           <item row="3" column="0">
            <widget class="QRadioButton" name="rpca_solver">
             <property name="enabled">
@@ -320,6 +320,36 @@
             </property>
             <property name="text">
              <string>Robust PCA</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_6">
+         <property name="title">
+          <string>3D Surface</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_5">
+          <item row="0" column="0" colspan="2">
+           <widget class="QCheckBox" name="export_surface">
+            <property name="text">
+             <string>Export ply surface</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_11">
+            <property name="text">
+             <string>Discontinuity</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QDoubleSpinBox" name="discontinuity">
+            <property name="value">
+             <double>2.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -361,7 +391,7 @@
      </widget>
     </widget>
    </item>
-   <item>
+   <item row="0" column="2">
     <widget class="QFrame" name="crop_frame">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">

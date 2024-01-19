@@ -32,6 +32,7 @@ mac:QMAKE_LFLAGS += -lomp
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 
 SOURCES += main.cpp \
+    ../src/bni_normal_integration.cpp \
     dstretchdialog.cpp \
     dstretchtask.cpp \
     history.cpp \
@@ -84,6 +85,7 @@ SOURCES += main.cpp \
 
 
 HEADERS += \
+    ../src/bni_normal_integration.h \
     ../src/deepzoom.h \
     dstretch.h \
     dstretchdialog.h \

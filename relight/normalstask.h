@@ -12,11 +12,22 @@
 #include "task.h"
 #include <QRunnable>
 
+enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA };
+
+
 class NormalsTask :  public Task
 {
 public:
-    NormalsTask(QString& inputPath, QString& outputPath, QRect crop, uint32_t method) :
-        m_InputFolder(inputPath), m_OutputFolder(outputPath), m_Crop(crop), m_Method(method){}
+    NormalSolver solver;
+    bool exportSurface = false;
+    bool exportK = 2.0;
+    QRect m_Crop;
+
+    NormalsTask(QString& inputPath, QString& outputPath, QRect crop, NormalSolver _solver) :
+        m_Crop(crop), solver(_solver) {
+        input_folder = inputPath;
+        output = outputPath;
+    }
     virtual ~NormalsTask(){};
 
     virtual void run() override;
@@ -24,17 +35,15 @@ public:
 public slots:
     bool progressed(std::string str, int percent) override;
 private:
-    QString m_InputFolder;
-    QString m_OutputFolder;
-    QRect m_Crop;
-    uint32_t m_Method;
+
+
 };
 
 class NormalsWorker
 {
 public:
-    NormalsWorker(unsigned int method, PixelArray& toProcess, uint8_t* normals, std::vector<Vector3f> lights) :
-         m_Method(method), m_Row(toProcess), m_Normals(normals), m_Lights(lights){}
+    NormalsWorker(NormalSolver _solver, PixelArray& toProcess, float* normals, std::vector<Vector3f> lights) :
+         solver(_solver), m_Row(toProcess), m_Normals(normals), m_Lights(lights){}
 
     void run();
 private:
@@ -42,9 +51,10 @@ private:
     void solveSBL();
     void solveRPCA();
 private:
-    uint32_t m_Method;
+    NormalSolver solver;
     PixelArray m_Row;
-    uint8_t* m_Normals;
+    //uint8_t* m_Normals;
+    float* m_Normals;
     std::vector<Vector3f> m_Lights;
     QMutex m_Mutex;
 };
