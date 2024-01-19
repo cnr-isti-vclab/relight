@@ -19,7 +19,7 @@ double sigmoid(const double x, const double k = 1.0) {
 }
 
 bool saveDepthMap(const QString &filename, int w, int h, std::vector<float> &z) {
-
+    return false;
 }
 
 bool savePly(const QString &filename, int w, int h, std::vector<double> &z) {
