@@ -10,7 +10,7 @@
 
 std::vector<double> bni_integrate(int w, int h, std::vector<float> &normalmap,
                                 double k = 2.0,
-                                double tolerance = 1e-4,
+                                double tolerance = 1e-5,
                                 int max_iterations = 150,
                                 int max_solver_iterations = 1000);
 
