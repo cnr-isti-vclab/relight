@@ -1,8 +1,8 @@
-#include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/SparseCore>
-#include <eigen3/Eigen/IterativeLinearSolvers>
-#include <eigen3/Eigen/IterativeLinearSolvers>
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include <Eigen/SparseCore>
+#include <Eigen/IterativeLinearSolvers>
+#include <Eigen/IterativeLinearSolvers>
 
 #include <QFile>
 #include <QTextStream>
