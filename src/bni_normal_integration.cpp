@@ -94,12 +94,12 @@ std::vector<double> bni_integrate(int w, int h, std::vector<float> &normalmap,
     for(int y = 0; y < h; y++) {
         for(int x= 0; x < w; x++) {
             int pos = x + y*w;
-            nx(pos) = normalmap[pos*3];
-            ny(pos) = normalmap[pos*3+1];
-            nz(y, x) = normalmap[pos*3+2];
+            nx(pos) = normalmap[pos*3+1];
+            ny(pos) = normalmap[pos*3+0];
+            nz(y, x) = -normalmap[pos*3+2];
         }
     }
-
+    cout << "nx: " << nx(0) << " ny: " << ny(0) << " nz: " << nz(0, 0) << endl;
     //BUILD A maps which encodes half derivatives (positive, negative, dx and dy)
 
     vector<Triple> triples;
