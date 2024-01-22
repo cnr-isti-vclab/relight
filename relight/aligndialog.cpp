@@ -1,7 +1,7 @@
 #include "aligndialog.h"
 #include "ui_aligndialog.h"
 
-#include "project.h"
+#include "../src/project.h"
 #include "qalignmarker.h"
 #include "align.h"
 

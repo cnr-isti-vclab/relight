@@ -7,7 +7,7 @@
 
 #include "httpserver.h"
 #include "../src/relight_vector.h"
-#include "project.h"
+#include "../src/project.h"
 
 namespace Ui {
 	class RtiExport;

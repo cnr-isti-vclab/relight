@@ -48,13 +48,13 @@ SOURCES += main.cpp \
     ../src/legacy_rti.cpp \
     ../src/deepzoom.cpp \
     ../src/exif.cpp \
-    dome.cpp \
+    ../src/dome.cpp \
     helpdialog.cpp \
-    project.cpp \
+    ../src/project.cpp \
     measure.cpp \
     focaldialog.cpp \
-    lens.cpp \
-    image.cpp \
+    ../src/lens.cpp \
+    ../src/image.cpp \
     httpserver.cpp \
     scripts.cpp \
     processqueue.cpp \
@@ -102,11 +102,11 @@ HEADERS += \
     ../src/eigenpca.h \
     ../relight-cli/rtibuilder.h \
     ../src/relight_threadpool.h \
-    project.h \
+    ../src/project.h \
     measure.h \
     focaldialog.h \
-    lens.h \
-    image.h \
+    ../src/lens.h \
+    ../src/image.h \
     ../src/exif.h \
     httpserver.h \
     scripts.h \
@@ -120,7 +120,7 @@ HEADERS += \
     ../src/legacy_rti.h \
     httplib.h \
     domecalibration.h \
-    dome.h \
+    ../src/dome.h \
     ../src/relight_vector.h \
     ../src/lp.h \
     qmarker.h \
