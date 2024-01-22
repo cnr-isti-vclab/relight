@@ -178,7 +178,7 @@ std::vector<double> bni_integrate(std::function<bool(std::string s, int n)> prog
 		solver.setTolerance(solver_tolerance);
 		solver.setMaxIterations(max_solver_iterations);
 
-		z = solver.solve(b_vec);
+		z = solver.solveWithGuess(b_vec, z);
 		if (solver.info() != Eigen::Success) {
 			double finalResidual = solver.error();
 			cerr << "Max iter reached with error: " << finalResidual << endl;
