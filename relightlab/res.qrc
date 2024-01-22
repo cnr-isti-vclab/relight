@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>docs/home.txt</file>
+        <file>css/style.txt</file>
+    </qresource>
+</RCC>
