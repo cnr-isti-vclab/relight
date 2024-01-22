@@ -105,7 +105,7 @@ HEADERS += \
     ../relight-cli/rtibuilder.h \
     ../src/relight_threadpool.h \
     ../src/project.h \
-    ../SRC/measure.h \
+    ../src/measure.h \
     focaldialog.h \
     ../src/lens.h \
     ../src/image.h \

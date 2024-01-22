@@ -10,8 +10,8 @@
 #include <math.h>
 #include <assert.h>
 #include "mainwindow.h"
-#include "project.h"
-#include "lens.h"
+#include "../src/project.h"
+#include "../src/lens.h"
 #include <iostream>
 
 
