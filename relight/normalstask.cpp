@@ -96,10 +96,18 @@ void NormalsTask::run()
     QImage img(normalmap.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
     img.save(output);
 
+    std::function<bool(std::string s, int d)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
+
     if(exportSurface) {
         progressed("Integrating normals...", 0);
-        auto z = bni_integrate(imageSet.width, imageSet.height, normals, exportK);
+        auto z = bni_integrate(callback, imageSet.width, imageSet.height, normals, exportK);
+        if(z.size() == 0) {
+            error = "Failed to integrate normals";
+            status = FAILED;
+            return;
+        }
         QString filename = output.left(output.size() -4) + ".ply";
+
         progressed("Saving surface...", 99);
         savePly(filename, imageSet.width, imageSet.height, z);
     }
