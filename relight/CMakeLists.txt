@@ -23,16 +23,16 @@ endif()
 set (RELIGHT_HEADERS
 	imagecropper.h
 	mainwindow.h
-	sphere.h
-	measure.h
+	../src/sphere.h
+	../src/measure.h
 	graphics_view_zoom.h
 	rtiexport.h
 	helpdialog.h
 	focaldialog.h
 	settingsdialog.h
-	lens.h
-	image.h
-	project.h
+	../src/lens.h
+	../src/image.h
+	../src/project.h
 	../src/legacy_rti.h
 	../src/imageset.h
 	../src/jpeg_decoder.h
@@ -53,18 +53,18 @@ set (RELIGHT_HEADERS
 	script.h
 	rtitask.h
 	normalstask.h
-	dome.h
+	../src/dome.h
 	domecalibration.h
 	qmarker.h
 	qmarkerlist.h
 	qmeasuremarker.h
-	sphere.h
+	../src/sphere.h
 	qspheremarker.h
-	align.h
+	../src/align.h
 	qalignmarker.h
 	aligndialog.h
 	qwhitemarker.h
-	white.h
+	../src/white.h
 	history.h
 	convertdialog.h
 	zoom.h
@@ -79,14 +79,14 @@ set (RELIGHT_SOURCES
 	main.cpp
 	imagecropper.cpp
 	mainwindow.cpp
-	sphere.cpp
-	measure.cpp
+	../src/sphere.cpp
+	../src/measure.cpp
 	graphics_view_zoom.cpp
 	rtiexport.cpp
 	httpserver.cpp
-	lens.cpp
-	image.cpp
-	project.cpp
+	../src/lens.cpp
+	../src/image.cpp
+	../src/project.cpp
 	scripts.cpp
 	../relight-cli/rtibuilder.cpp
 	../relight-cli/convert_rti.cpp
@@ -112,16 +112,16 @@ set (RELIGHT_SOURCES
 	rtitask.cpp
 	normalstask.cpp
 	domecalibration.cpp
-	dome.cpp
+	../src/dome.cpp
 	qmarkerlist.cpp
 	qmarker.cpp
 	qmeasuremarker.cpp
-	sphere.cpp
+	../src/sphere.cpp
 	qspheremarker.cpp
-	align.cpp
+	../src/align.cpp
 	qalignmarker.cpp
 	qwhitemarker.cpp
-	white.cpp
+	../src/white.cpp
 	history.cpp
 	convertdialog.cpp
 	zoomtask.cpp

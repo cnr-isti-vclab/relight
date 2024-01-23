@@ -6,7 +6,6 @@
 #include "../src/imageset.h"
 #include "helpdialog.h"
 #include "focaldialog.h"
-#include "scripts.h"
 #include "queuewindow.h"
 #include "httpserver.h"
 #include "settingsdialog.h"
@@ -303,8 +302,8 @@ void MainWindow::undo(){
 	Action action = history.undo();
 	switch(action.type) {
 	case Action::NO_ACTION: return;
-	case Action::ADD_SPHERE: {        //a sphere was added: remove it.
-		assert(action.sphere_id >= 0 && action.sphere_id < project.spheres.size());
+    case Action::ADD_SPHERE: {        //a sphere was added: remove it.
+        assert(action.sphere_id >= 0 && action.sphere_id < (int)project.spheres.size());
 		Sphere *sphere = project.spheres[action.sphere_id];
 		auto markers = ui->markerList->getItems();
 		for(auto marker: markers) {
@@ -488,7 +487,7 @@ void MainWindow::computeMaxLuma() {
 		for(auto image: project.images)
 			imageset.images.push_back(image.filename);
 		imageset.initImages(this->project.dir.path().toStdString().c_str());
-		std::function<bool(std::string s, int n)> callback = [this](std::string /*s*/, int /*n*/)->bool { return true; };
+        std::function<bool(std::string s, int n)> callback = [](std::string /*s*/, int /*n*/)->bool { return true; };
 		this->maxLuma = imageset.maxImage(&callback);
 	}
 }

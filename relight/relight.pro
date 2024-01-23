@@ -49,10 +49,10 @@ SOURCES += main.cpp \
     ../src/legacy_rti.cpp \
     ../src/deepzoom.cpp \
     ../src/exif.cpp \
+    ../src/project.cpp \
     ../src/dome.cpp \
     helpdialog.cpp \
-    ../src/project.cpp \
-    measure.cpp \
+    ../src/measure.cpp \
     focaldialog.cpp \
     ../src/lens.cpp \
     ../src/image.cpp \
@@ -71,12 +71,12 @@ SOURCES += main.cpp \
     qmarkerlist.cpp \
     qmarker.cpp \
     qmeasuremarker.cpp \
-    sphere.cpp \
+    ../src/sphere.cpp \
     qspheremarker.cpp \
-    align.cpp \
+    ../src/align.cpp \
     qalignmarker.cpp \
     qwhitemarker.cpp \
-    white.cpp \
+    ../src/white.cpp \
     convertdialog.cpp \
     aligndialog.cpp \
     zoomdialog.cpp \
@@ -105,7 +105,7 @@ HEADERS += \
     ../relight-cli/rtibuilder.h \
     ../src/relight_threadpool.h \
     ../src/project.h \
-    measure.h \
+    ../src/measure.h \
     focaldialog.h \
     ../src/lens.h \
     ../src/image.h \
@@ -128,12 +128,12 @@ HEADERS += \
     qmarker.h \
     qmarkerlist.h \
     qmeasuremarker.h \
-    sphere.h \
+    ../src/sphere.h \
     qspheremarker.h \
-    align.h \
+    ../src/align.h \
     qalignmarker.h \
     qwhitemarker.h \
-    white.h \
+    ../src/white.h \
     convertdialog.h \
     aligndialog.h \
     zoom.h \

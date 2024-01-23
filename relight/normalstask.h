@@ -24,7 +24,7 @@ public:
     QRect m_Crop;
 
     NormalsTask(QString& inputPath, QString& outputPath, QRect crop, NormalSolver _solver) :
-        m_Crop(crop), solver(_solver) {
+        solver(_solver), m_Crop(crop) {
         input_folder = inputPath;
         output = outputPath;
     }

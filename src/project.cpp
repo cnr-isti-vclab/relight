@@ -1,5 +1,5 @@
 #include "project.h"
-#include "../src/exif.h"
+#include "exif.h"
 #include "sphere.h"
 #include "measure.h"
 #include "align.h"

@@ -1,5 +1,5 @@
 #include "qwhitemarker.h"
-#include "white.h"
+#include "../src/white.h"
 #include <QGraphicsRectItem>
 #include <QPen>
 #include <QLabel>

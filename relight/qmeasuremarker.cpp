@@ -1,6 +1,6 @@
 #include "qmeasuremarker.h"
-#include "measure.h"
-#include "sphere.h"
+#include "../src/measure.h"
+#include "../src/sphere.h"
 
 #include <QInputDialog>
 #include <QGraphicsView>
