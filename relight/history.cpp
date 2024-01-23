@@ -13,7 +13,7 @@ Action History::undo() {
 }
 
 Action History::redo() {
-	if(current_action >= size())
+    if(current_action >= (int)size())
 		return Action();
 	return (*this)[current_action++];
 }
