@@ -1,6 +1,6 @@
 #include "focaldialog.h"
 #include "ui_focaldialog.h"
-#include "project.h"
+#include "../src/project.h"
 
 FocalDialog::FocalDialog(Project *_project, QWidget *parent) :
 	QDialog(parent),

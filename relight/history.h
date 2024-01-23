@@ -4,7 +4,7 @@
 #include <QPoint>
 #include <vector>
 
-#include "sphere.h"
+#include "../src/sphere.h"
 
 class Action {
 public:

@@ -3,8 +3,8 @@
 
 #include <QMainWindow>
 #include <QDir>
-#include "sphere.h"
-#include "project.h"
+#include "../src/sphere.h"
+#include "../src/project.h"
 #include "dstretchdialog.h"
 #include "zoomdialog.h"
 #include "history.h"

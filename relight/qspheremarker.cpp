@@ -1,5 +1,5 @@
 #include "qspheremarker.h"
-#include "sphere.h"
+#include "../src/sphere.h"
 #include "mainwindow.h" //for RTIScene
 #include <QGraphicsEllipseItem>
 #include <QPen>

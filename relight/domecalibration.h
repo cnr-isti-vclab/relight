@@ -3,7 +3,7 @@
 
 #include <QDialog>
 
-#include "dome.h"
+#include "../src/dome.h"
 
 namespace Ui {
 class DomeCalibration;
