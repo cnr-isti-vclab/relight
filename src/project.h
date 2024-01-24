@@ -86,6 +86,7 @@ public:
 	}
 	//check size and validity
 	void checkImages();
+	void checkMissingImages();
 
 	std::vector<Vector3f> directions() {
 		std::vector<Vector3f> dirs;
