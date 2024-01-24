@@ -1,10 +1,12 @@
-#include "homeframe.h"
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QTextBrowser>
 #include <QFile>
-#include "actions.h"
+#include <QAction>
+
+#include "homeframe.h"
+#include "relightapp.h"
 
 void setDefaultAction(QPushButton *button, QAction *action) {
 	QObject::connect(button, SIGNAL(clicked(bool)), action, SLOT(trigger()));
@@ -30,11 +32,11 @@ HomeFrame::HomeFrame() {
 	leftColumnLayout->addWidget(titleLabel);
 
 	QPushButton *new_project = new QPushButton(this);
-	setDefaultAction(new_project, Action::new_project);
+	setDefaultAction(new_project, qRelightApp->action("new_project"));
 	leftColumnLayout->addWidget(new_project);
 
 	QPushButton *open_project = new QPushButton(this);
-	setDefaultAction(open_project, Action::open_project);
+	setDefaultAction(open_project, qRelightApp->action("open_project"));
 	leftColumnLayout->addWidget(open_project);
 
 	QLabel *recentLabel = new QLabel("Recent projects:");

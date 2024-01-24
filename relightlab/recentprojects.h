@@ -10,8 +10,10 @@ public:
 	QString title;
 	QString notes;
 
+	RecentProject() {}
+	RecentProject(const QVariant &v) { fromVariant(v); }
 	QVariant toVariant();
-	void fromVariant(QVariant &v);
+	void fromVariant(const QVariant &v);
 };
 
 static std::vector<RecentProject> getRecentProjects();

@@ -12,7 +12,7 @@ public:
 	MainWindow();
 	void setupActions();
 	void createMenu();
-	void clear();
+	void initInterface(); //initialize interface using the current project
 
 public slots:
 	void newProject();
@@ -22,6 +22,8 @@ public slots:
 private:
 	TabWidget *tabs;
 	QString project_filename; //last filename project opened or saved filename.
+
+	bool needsSavingProceed(); //return false if userd oesn't want to proceed
 };
 
 #endif // MAINWINDOW_H
