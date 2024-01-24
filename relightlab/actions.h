@@ -11,6 +11,7 @@ public:
 	static QAction *new_project;
 	static QAction *open_project;
 	static QAction *close_project;
+	static QAction *exit;
 };
 
 #endif // ACTIONS_H
