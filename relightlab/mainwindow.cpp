@@ -171,7 +171,6 @@ void MainWindow::openProject() {
 }
 
 void MainWindow::closeProject() {
-
 	cout << "close Project" << endl;
 	qRelightApp->action("close_project")->setEnabled(false);
 }
@@ -181,8 +180,8 @@ void MainWindow::initInterface() {
 }
 
 bool MainWindow::needsSavingProceed() {
-	if(!qRelightApp->project().needs_saving);
-	return true;
+	if(!qRelightApp->project().needs_saving)
+		return true;
 	auto answer = QMessageBox::question(this, "Current project is unsaved", "Do you want to proceed without saving?");
 	return answer == QMessageBox::Yes;
 }
