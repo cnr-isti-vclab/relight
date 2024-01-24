@@ -11,14 +11,17 @@ class MainWindow: public QMainWindow {
 public:
 	MainWindow();
 	void setupActions();
+	void createMenu();
+	void clear();
 
 public slots:
 	void newProject();
 	void openProject();
 	void closeProject();
 
-protected:
+private:
 	TabWidget *tabs;
+	QString project_filename; //last filename project opened or saved filename.
 };
 
 #endif // MAINWINDOW_H
