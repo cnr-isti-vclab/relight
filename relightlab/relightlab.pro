@@ -37,7 +37,6 @@ SOURCES += main.cpp \
     ../src/project.cpp \
     ../src/sphere.cpp \
     ../src/white.cpp \
-    imagestab.cpp \
     mainwindow.cpp \
     recentprojects.cpp \
     relightapp.cpp \
@@ -66,7 +65,6 @@ HEADERS += \
     ../src/project.h \
     ../src/sphere.h \
     ../src/white.h \
-    imagestab.h \
     mainwindow.h \
     mainwindow.h \
     recentprojects.h \
