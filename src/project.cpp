@@ -280,16 +280,7 @@ void Project::load(QString filename) {
 		images.push_back(image);
 	}
 
-	for(size_t i = 0; i < images.size(); i++) {
-		Image &image = images[i];
-		QFileInfo imginfo(image.filename);
-		if(!imginfo.exists()) {
-			missing.push_back(int(i));
-			//throw QString("Could not find the image: " + image.filename) + " in folder: " + dir.absolutePath();
-			continue;
-		}
-	}
-
+	checkMissingImages();
 	checkImages();
 
 	if(obj.contains("crop")) {
@@ -331,6 +322,18 @@ void Project::load(QString filename) {
 	}
 }
 
+void Project::checkMissingImages() {
+	missing.clear();
+	for(size_t i = 0; i < images.size(); i++) {
+		Image &image = images[i];
+		QFileInfo imginfo(image.filename);
+		if(!imginfo.exists()) {
+			missing.push_back(int(i));
+			//throw QString("Could not find the image: " + image.filename) + " in folder: " + dir.absolutePath();
+			continue;
+		}
+	}
+}
 void Project::checkImages() {
 		for(Image &image:images) {
 		QImageReader reader(image.filename);
