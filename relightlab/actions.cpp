@@ -3,6 +3,7 @@
 QAction *Action::new_project = nullptr;
 QAction *Action::open_project = nullptr;
 QAction *Action::close_project = nullptr;
+QAction *Action::exit = nullptr;
 
 void Action::initialize() {
 	new_project = new QAction("New project...");
@@ -13,10 +14,15 @@ void Action::initialize() {
 
 	close_project = new QAction("Close project...");
 	close_project->setShortcut(QKeySequence("Ctrl+W"));
+	close_project->setEnabled(false);
+
+	exit = new QAction("Exit");
+	exit->setShortcut(QKeySequence("Alt+F4"));
 }
 
 void Action::cleanup() {
 	delete new_project;
 	delete open_project;
 	delete close_project;
+	delete exit;
 }
