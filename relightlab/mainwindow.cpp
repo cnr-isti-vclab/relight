@@ -8,13 +8,11 @@
 #include "tabwidget.h"
 #include "homeframe.h"
 #include "imageframe.h"
-#include "actions.h"
 
 #include <iostream>
 using namespace std;
 
 MainWindow::MainWindow() {
-	Action::initialize();
 	setupActions();
 	createMenu();
 
@@ -38,44 +36,85 @@ void MainWindow::createMenu() {
 	menuFile->setTitle("File");
 	menubar->addAction(menuFile->menuAction());
 
-	menuFile->addAction(Action::new_project);
-	menuFile->addAction(Action::open_project);
-	menuFile->addAction(Action::close_project);
+	menuFile->addAction(qRelightApp->action("new_project"));
+	menuFile->addAction(qRelightApp->action("open_project"));
+	menuFile->addAction(qRelightApp->action("close_project"));
 
 	menuFile->addSeparator();
 	menuFile->addSeparator();
-	menuFile->addAction(Action::exit);
+	menuFile->addAction(qRelightApp->action("exit"));
 
 	setMenuBar(menubar);
 }
 
 void MainWindow::setupActions() {
-	connect(Action::new_project, SIGNAL(triggered(bool)), this, SLOT(newProject()));
-	connect(Action::open_project, SIGNAL(triggered(bool)), this, SLOT(openProject()));
-	connect(Action::close_project, SIGNAL(triggered(bool)), this, SLOT(closeProject()));
+	connect(qRelightApp->action("new_project"), SIGNAL(triggered(bool)), this, SLOT(newProject()));
+	connect(qRelightApp->action("open_project"), SIGNAL(triggered(bool)), this, SLOT(openProject()));
+	connect(qRelightApp->action("close_project"), SIGNAL(triggered(bool)), this, SLOT(closeProject()));
 
-	connect(Action::exit, SIGNAL(triggered(bool)), this, SLOT(close()));
-
-}
-
-void MainWindow::clear() {
+	connect(qRelightApp->action("exit"), SIGNAL(triggered(bool)), this, SLOT(close()));
 
 }
 
 void MainWindow::newProject() {
-	cout << "New Project" << endl;
-	Action::close_project->setEnabled(true);
+	if(!needsSavingProceed())
+		return;
+
+	QString dir = QFileDialog::getExistingDirectory(this, "Choose picture folder", qRelightApp->lastProjectDir());
+	if(dir.isNull()) return;
+
+
+	Project project;
+	project.setDir(QDir(dir));
+	bool ok = project.scanDir();
+	if(!project.size()) {
+		QMessageBox::critical(this, "Houston we have a problem!", "Could not find images in directory: " + project.dir.path());
+		return;
+	}
+
+	if(!ok) {
+		//check if we can rotate a few images.
+		bool canrotate = false;
+		for(Image &image: project.images) {
+			if(image.size == project.imgsize)
+				continue;
+
+			if(image.isRotated(project.imgsize))
+				canrotate = true;
+		}
+		if(canrotate) {
+			int answer = QMessageBox::question(this, "Some images are rotated.", "Do you wish to uniform image rotation?", QMessageBox::Yes, QMessageBox::No);
+			if(answer != QMessageBox::No)
+				project.rotateImages();
+		} else
+			QMessageBox::critical(this, "Resolution problem", "Not all of the images in the folder have the same resolution,\nyou might need to fix this problem manually.");
+	}
+
+	qRelightApp->project() = project;
+
+	initInterface();
+
+/* TODO: move this into the lights tab
+	QStringList img_ext;
+	img_ext << "*.lp";
+	QStringList lps = QDir(dir).entryList(img_ext);
+	if(lps.size() > 0) {
+		int answer = QMessageBox::question(this, "Found an .lp file: " + lps[0], "Do you wish to load " + lps[0] + "?", QMessageBox::Yes, QMessageBox::No);
+		if(answer != QMessageBox::No)
+			loadLP(lps[0]);
+	}
+*/
+
+	qRelightApp->action("close_project")->setEnabled(true);
 	tabs->setCurrentIndex(1);
 }
 
 void MainWindow::openProject() {
-	QString lastDir = QSettings().value("LastDir", QDir::homePath()).toString();
-
-	QString filename = QFileDialog::getOpenFileName(this, "Select a project", lastDir, "*.relight");
+	if(!needsSavingProceed())
+		return;
+	QString filename = QFileDialog::getOpenFileName(this, "Select a project", qRelightApp->lastProjectDir(), "*.relight");
 	if(filename.isNull())
 		return;
-
-	clear();
 
 	Project project;
 	try {
@@ -121,17 +160,29 @@ void MainWindow::openProject() {
 		}
 	}
 
-	clear();
 	qRelightApp->project() = project;
 	project_filename = filename; //project.dir.relativeFilePath(filename);
+	qRelightApp->setLastProjectDir(project.dir.path());
 
-	QSettings().setValue("LastDir", project.dir.path());
+	initInterface();
+	qRelightApp->action("close_project")->setEnabled(true);
 
-	Action::close_project->setEnabled(true);
 	tabs->setCurrentIndex(1);
 }
 
 void MainWindow::closeProject() {
+
 	cout << "close Project" << endl;
-	Action::close_project->setEnabled(false);
+	qRelightApp->action("close_project")->setEnabled(false);
+}
+
+void MainWindow::initInterface() {
+
+}
+
+bool MainWindow::needsSavingProceed() {
+	if(!qRelightApp->project().needs_saving);
+	return true;
+	auto answer = QMessageBox::question(this, "Current project is unsaved", "Do you want to proceed without saving?");
+	return answer == QMessageBox::Yes;
 }

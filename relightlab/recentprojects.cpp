@@ -1,6 +1,7 @@
 #include <QSettings>
 #include <QVariant>
 #include <QMap>
+#include <QList>
 #include "recentprojects.h"
 
 
@@ -20,7 +21,7 @@ QVariant RecentProject::toVariant() {
 	return recent;
 }
 
-void RecentProject::fromVariant(QVariant &v) {
+void RecentProject::fromVariant(const QVariant &v) {
 	QMap<QString, QVariant> recent = v.toMap();
 	filename = recent["filename"].toString();
 	title = recent["title"].toString();
@@ -28,7 +29,12 @@ void RecentProject::fromVariant(QVariant &v) {
 }
 
 static std::vector<RecentProject> getRecentProjects() {
+	QList<QVariant> recents = QSettings().value("RecentProjects", QList<QVariant>()).toList();
 
+	std::vector<RecentProject> recentProjects;
+	for(const QVariant &v: recents) {
+		recentProjects.push_back(v);
+	}
 }
 static void addRecentProject(QString filename, QString title, QString notes) {
 
