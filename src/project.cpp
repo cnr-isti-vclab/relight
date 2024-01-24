@@ -43,6 +43,7 @@ void Project::clear() {
 	measures.clear();
 
 	crop = QRect();
+	needs_saving = false;
 }
 
 bool Project::setDir(QDir folder) {
@@ -53,6 +54,7 @@ bool Project::setDir(QDir folder) {
 	}
 	dir = folder;
 	QDir::setCurrent(dir.path());
+	needs_saving = true;
 	return true;
 }
 
@@ -141,7 +143,7 @@ bool Project::scanDir() {
 		images[i].valid &= (lens.focal35() == alllens[i].focal35());
 		images[i].skip = !images[i].valid;
 	}
-
+	needs_saving = true;
 	return resolutions.size() == 1 && focals.size() == 1;
 }
 double mutualInfo(QImage &a, QImage &b) {
@@ -187,13 +189,14 @@ double mutualInfo(QImage &a, QImage &b) {
 }
 
 void Project::rotateImages(bool clockwise) {
-    QTransform rotate;
-    rotate.rotate(clockwise ? 90 : -90);
-    for(Image &image: images) {
-        QImage source(image.filename);
-        QImage rotated = source.transformed(rotate);
-        rotated.save(image.filename, "jpg", 100);
-    }
+	QTransform rotate;
+	rotate.rotate(clockwise ? 90 : -90);
+	for(Image &image: images) {
+		QImage source(image.filename);
+		QImage rotated = source.transformed(rotate);
+		rotated.save(image.filename, "jpg", 100);
+	}
+	needs_saving = true;
 }
 
 void Project::rotateImages() {
@@ -228,12 +231,11 @@ void Project::rotateImages() {
 		QTransform final = right_mutual > left_mutual ? rot_left : rot_right;
 		//TODO should be libjpeg to rotate.
 		QImage rotated = source.transformed(final);
-        rotated.save(image.filename, "jpg", 100);
+		rotated.save(image.filename, "jpg", 100);
 
 		image.size = imgsize;
 		image.valid = true;
 		image.skip = false;
-		cout << "Right: " << right_mutual << " Left: " << left_mutual << endl;
 	}
 }
 
@@ -320,6 +322,7 @@ void Project::load(QString filename) {
 			whites.push_back(_white);
 		}
 	}
+	needs_saving = false;
 }
 
 void Project::checkMissingImages() {
@@ -335,7 +338,7 @@ void Project::checkMissingImages() {
 	}
 }
 void Project::checkImages() {
-		for(Image &image:images) {
+	for(Image &image:images) {
 		QImageReader reader(image.filename);
 		QSize size = reader.size();
 		image.valid = (size == imgsize);
@@ -423,12 +426,19 @@ void Project::save(QString filename) {
 
 
 	QFile file(filename);
-	file.open(QFile::WriteOnly | QFile::Truncate);
+	bool opened  = file.open(QFile::WriteOnly | QFile::Truncate);
+	if(!opened) {
+		QString error = file.errorString();
+		throw error;
+	}
 	file.write(doc.toJson());
+
+	needs_saving = false;
 }
 
 Measure *Project::newMeasure() {
 	auto m = new Measure();
+	needs_saving = true;
 	measures.push_back(m);
 	return m;
 }
@@ -441,21 +451,25 @@ void Project::computePixelSize() {
 			count++;
 		}
 	pixelSize /= count;
+	needs_saving = true;
 }
 
 Sphere *Project::newSphere() {
 	auto s = new Sphere(images.size());
 	spheres.push_back(s);
+	needs_saving = true;
 	return s;
 }
 Align *Project::newAlign() {
 	auto s = new Align(images.size());
 	aligns.push_back(s);
+	needs_saving = true;
 	return s;
 }
 White *Project::newWhite() {
 	auto s = new White();
 	whites.push_back(s);
+	needs_saving = true;
 	return s;
 }
 
@@ -535,7 +549,7 @@ void  Project::computeDirections() {
 					v = v.rotate(axis, angle);
 
 				if(dome.domeDiameter) {
-				//find intersection between direAlignctions and sphere.
+					//find intersection between direAlignctions and sphere.
 					for(size_t i = 0; i < sphere->directions.size(); i++) {
 						Vector3f &direction = sphere->directions[i];
 						direction.normalize();
@@ -570,4 +584,5 @@ void  Project::computeDirections() {
 		if(weights[i] > 0)
 			images[i].direction = directions[i]/weights[i];
 	}
+	needs_saving = true;
 }

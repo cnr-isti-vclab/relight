@@ -43,19 +43,21 @@ public:
 	QString platform;
 	QDateTime created;
 	QDateTime lastUpdated;
+	bool needs_saving;
 
 	Project() {
 		version = RELIGHT_STRINGIFY(RELIGHT_VERSION);
 		auto sysinfo = QSysInfo();
 		platform = sysinfo.kernelType() + " " + sysinfo.kernelVersion();
 		created = lastUpdated = QDateTime::currentDateTime();
+		needs_saving = false;
 	}
 	~Project();
 
 	void clear();
 	void load(QString filename);
-	void save(QString filename);
-	void saveLP(QString filename, std::vector<Vector3f> &directions);
+	void save(QString filename); //throws QString on error
+	void saveLP(QString filename, std::vector<Vector3f> &directions); //throws QString on error
 	void computeDirections();
 	void computePixelSize();
 
