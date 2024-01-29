@@ -1,9 +1,11 @@
 #include <QVBoxLayout>
 #include <QToolBar>
 #include <QGraphicsView>
+#include <QStatusBar>
 
 #include "relightapp.h"
 #include "imageframe.h"
+#include "canvas.h"
 
 ImageFrame::ImageFrame() {
 	QVBoxLayout *container = new QVBoxLayout(this);
@@ -18,16 +20,21 @@ ImageFrame::ImageFrame() {
 	left_toolbar->addAction(qRelightApp->action("rotate_right"));
 	left_toolbar->addAction(qRelightApp->action("rotate_left"));
 
-	toolbars->addWidget(left_toolbar);
-	toolbars->addSpacing(1);
+	toolbars->addWidget(left_toolbar, 0, Qt::AlignLeft);
+	//toolbars->addSpacing();
 
 	QToolBar *right_toolbar = new QToolBar;
+	right_toolbar->setStyleSheet("background:red;");
 	right_toolbar->addAction(qRelightApp->action("show_image"));
 	right_toolbar->addAction(qRelightApp->action("show_list"));
 	right_toolbar->addAction(qRelightApp->action("show_grid"));
-	toolbars->addWidget(right_toolbar);
+	toolbars->addWidget(right_toolbar, 1, Qt::AlignRight);
 
 	container->addLayout(toolbars);
-	container->addWidget(new QGraphicsView);
 
+	canvas = new Canvas();
+	container->addWidget(canvas);
+
+	status = new QStatusBar();
+	container->addWidget(status);
 }
