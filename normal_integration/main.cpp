@@ -17,6 +17,7 @@ void help() {
 	cout << " -M <integer>: max number of discontinuity iterations (default 150)\n";
 	cout << " -t <float>: solver target error (default 1e-4)\n";
 	cout << " -T <float>: minimum energy discontinuity improvement (default 1e-4)\n";
+	cout << " -s <int>: halve images size n times.\n";
 }
 
 void ensure(bool condition, const std::string &msg) {
@@ -25,6 +26,7 @@ void ensure(bool condition, const std::string &msg) {
 	cerr << msg << endl;
 	exit(-1);
 }
+
 int main(int argc, char *argv[]) {
 
 	if(argc == 1) {
@@ -34,13 +36,14 @@ int main(int argc, char *argv[]) {
 	opterr = 0;
 
 	QString ply;
-	float k; //discontinuity propensity
+	float k = 2; //discontinuity propensity
 	int max_solver_iterations = 5000;
 	int max_iterations = 150;
 	float solver_tolerance = 1e-5;
 	float tolerance = 1e-5;
 	char c;
-	while ((c  = getopt (argc, argv, "hp:k:m:M:t:T:")) != -1) {
+	int scale = 0;
+	while ((c  = getopt (argc, argv, "hp:k:m:M:t:T:s:")) != -1) {
 		switch (c) {
 		case 'h': help();
 			break;
@@ -55,6 +58,8 @@ int main(int argc, char *argv[]) {
 		case 't': solver_tolerance = atof(optarg);
 			break;
 		case 'T': tolerance = atof(optarg);
+			break;
+		case 's': scale = atoi(optarg);
 			break;
 		}
 	}
@@ -85,7 +90,9 @@ int main(int argc, char *argv[]) {
 			normals.push_back(-((2.0*qBlue(line[x]))/255.0-1.0));
 		}
 	}
-	std::vector<double> height_map = bni_integrate(nullptr, w, h, normals, k, tolerance, solver_tolerance, max_iterations, max_solver_iterations);
+	//std::vector<float> height_map(w*h, 0);
+	//bni_integrate(nullptr, w, h, normals, height_map, k, tolerance, solver_tolerance, max_iterations, max_solver_iterations);
+	std::vector<float> height_map = bni_pyramid(nullptr, w, h, normals, k, tolerance, solver_tolerance, max_iterations, max_solver_iterations, scale);
 	if(height_map.size() == 0) {
 		cerr << "Failed normal integration" << endl;
 		return -1;
