@@ -10,7 +10,6 @@ using namespace std;
 ProcessQueue::~ProcessQueue() {
 	if(!isRunning())
 		return;
-
 	{
 		QMutexLocker locker(&lock);
 		stopped = true;
@@ -60,6 +59,12 @@ void ProcessQueue::startNewProcess() {
 	task->start();
 	task->status = Task::RUNNING;
 	emit update();
+}
+
+bool ProcessQueue::hasTasks() {
+	QMutexLocker locker(&lock);
+	if(task) return true;
+	return queue.size() > 0;
 }
 
 void ProcessQueue::addTask(Task *a, bool paused) {

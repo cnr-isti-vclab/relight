@@ -19,10 +19,7 @@ int main(int argc, char *argv[]) {
 	QCoreApplication::setApplicationName("RelightLab");
 	QCoreApplication::setApplicationVersion(RELIGHT_STRINGIFY(RELIGHT_VERSION));
 
-	MainWindow w;
-	w.showMaximized();
-
-
+	app.run();
 	return app.exec();
 }
 

@@ -27,6 +27,7 @@ mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 
 
 SOURCES += main.cpp \
+    ../relight/parameter.cpp \
     ../relight/processqueue.cpp \
     ../src/align.cpp \
     ../src/dome.cpp \
@@ -37,6 +38,7 @@ SOURCES += main.cpp \
     ../src/project.cpp \
     ../src/sphere.cpp \
     ../src/white.cpp \
+    canvas.cpp \
     mainwindow.cpp \
     recentprojects.cpp \
     relightapp.cpp \
@@ -55,6 +57,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 FORMS +=
 
 HEADERS += \
+    ../relight/parameter.h \
     ../relight/processqueue.h \
     ../src/align.h \
     ../src/dome.h \
@@ -65,6 +68,7 @@ HEADERS += \
     ../src/project.h \
     ../src/sphere.h \
     ../src/white.h \
+    canvas.h \
     mainwindow.h \
     mainwindow.h \
     recentprojects.h \
