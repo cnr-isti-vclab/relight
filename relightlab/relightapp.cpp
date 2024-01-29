@@ -1,5 +1,6 @@
 #include "relightapp.h"
 #include "../relight/processqueue.h"
+#include "imageframe.h"
 
 #include <QMessageBox>
 #include <QFileDialog>
@@ -15,7 +16,7 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	QFile style(":/css/style.qss");
 	style.open(QFile::ReadOnly);
 	setStyleSheet(style.readAll());
-	//Font size can be read using QApplication::font().pointSize();
+	//Default font size can be read using QApplication::font().pointSize(), not pointPixel
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.start();
@@ -30,7 +31,7 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	addAction("exit", "Exit", "", "Alt-F4", SLOT(close()));
 
 	//imagesframe
-	addAction("zoom_fit", "Fit", "", "");
+	addAction("zoom_fit", "Fit", "", "=");
 	addAction("zoom_one", "Zoom 1x", "", "1");
 	addAction("zoom_in", "Zoom in", "", "+");
 	addAction("zoom_out", "Zoom out", "", "-");
@@ -159,9 +160,8 @@ void RelightApp::openProject() {
 	qRelightApp->setLastProjectDir(project.dir.path());
 
 	mainwindow->initInterface();
-	action("close_project")->setEnabled(true);
-
 	mainwindow->setTabIndex(1);
+	mainwindow->image_frame->showImage(0);
 }
 
 void RelightApp::saveProject() {
