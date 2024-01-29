@@ -33,6 +33,7 @@ public:
 		return single;
 	}
 
+	bool hasTasks();
 	void addTask(Task *a, bool paused = false);
 	void removeTask(int id);
 	void pushFront(int id);
