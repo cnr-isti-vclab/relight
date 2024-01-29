@@ -11,6 +11,9 @@ using namespace std;
 Canvas::Canvas(QWidget *parent): QGraphicsView(parent) {
 	viewport()->installEventFilter(this);
 	setMouseTracking(true);
+	setDragMode(QGraphicsView::ScrollHandDrag);
+	setInteractive(true);
+
 	_modifiers = Qt::NoModifier; //Qt::ControlModifier;
 	_zoom_factor_base = 1.0015;
 }
