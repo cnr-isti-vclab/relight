@@ -35,10 +35,13 @@ static std::vector<RecentProject> getRecentProjects() {
 	for(const QVariant &v: recents) {
 		recentProjects.push_back(v);
 	}
+	return recentProjects;
 }
+
 static void addRecentProject(QString filename, QString title, QString notes) {
 
 }
+
 static void clearRecentProjects() {
 
 }
