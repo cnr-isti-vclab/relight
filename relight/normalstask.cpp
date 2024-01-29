@@ -100,7 +100,8 @@ void NormalsTask::run()
 
     if(exportSurface) {
         progressed("Integrating normals...", 0);
-        auto z = bni_integrate(callback, imageSet.width, imageSet.height, normals, exportK);
+		std::vector<float> z;
+		bni_integrate(callback, imageSet.width, imageSet.height, normals, z, exportK);
         if(z.size() == 0) {
             error = "Failed to integrate normals";
             status = FAILED;
