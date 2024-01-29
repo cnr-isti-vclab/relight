@@ -5,6 +5,8 @@
 
 class QStackedWidget;
 class TabWidget;
+class HomeFrame;
+class ImageFrame;
 
 class MainWindow: public QMainWindow {
 	Q_OBJECT
@@ -13,17 +15,13 @@ public:
 	void setupActions();
 	void createMenu();
 	void initInterface(); //initialize interface using the current project
+	void setTabIndex(int index);
+	void setTabWidget(QWidget *widget);
 
-public slots:
-	void newProject();
-	void openProject();
-	void closeProject();
 
-private:
 	TabWidget *tabs;
-	QString project_filename; //last filename project opened or saved filename.
-
-	bool needsSavingProceed(); //return false if userd oesn't want to proceed
+	HomeFrame *home_frame;
+	ImageFrame *image_frame;
 };
 
 #endif // MAINWINDOW_H
