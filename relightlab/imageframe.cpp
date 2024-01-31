@@ -87,6 +87,7 @@ ImageFrame::ImageFrame() {
 void ImageFrame::init() {
 	image_list->init();
 	image_grid->init();
+	scene->clear();
 	showImage(0);
 	fit();
 	listMode(); //TODO actually use last used mode used by the user
@@ -106,8 +107,6 @@ void ImageFrame::showImage(int id) {
 		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
 		return;
 	}
-	if(imagePixmap)
-		delete imagePixmap;
 	imagePixmap = new QGraphicsPixmapItem(QPixmap::fromImage(img));
 	imagePixmap->setZValue(-1);
 	scene->addItem(imagePixmap);

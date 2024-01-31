@@ -5,44 +5,24 @@
 #include "recentprojects.h"
 
 
-/*QList<QVariant> list = QSettings().value("Recents", QList<QVariant>()).toList();
-std::vector<RecentProject> m_recents;
-for(QVariant &v: list) {
-	auto r = v.toMap();
-	RecentProject p;
-	p.filename = r["filename"].toString();
-}*/
 
-QVariant RecentProject::toVariant() {
-	QMap<QString, QVariant> recent;
-	recent["filename"] = QVariant(filename);
-	recent["title"] = QVariant(title);
-	recent["notes"] = QVariant(notes);
-	return recent;
+QStringList recentProjects() {
+	return QSettings().value("recent-projects", QStringList()).toStringList();
 }
 
-void RecentProject::fromVariant(const QVariant &v) {
-	QMap<QString, QVariant> recent = v.toMap();
-	filename = recent["filename"].toString();
-	title = recent["title"].toString();
-	notes = recent["notes"].toString();
-}
-
-static std::vector<RecentProject> getRecentProjects() {
-	QList<QVariant> recents = QSettings().value("RecentProjects", QList<QVariant>()).toList();
-
-	std::vector<RecentProject> recentProjects;
-	for(const QVariant &v: recents) {
-		recentProjects.push_back(v);
+void addRecentProject(const QString &filename) {
+	QStringList recents = recentProjects();
+	int index = recents.indexOf(filename);
+	if (index != -1) { // String found in the list
+		recents.removeAt(index); // Remove the string from its current position
 	}
-	return recentProjects;
+	recents.prepend(filename); // Add the string to the front
+	QSettings().setValue("recent-projects", recents);
 }
 
-static void addRecentProject(QString filename, QString title, QString notes) {
-
+void clearRecentProjects() {
+	QSettings().setValue("recent-projects", QStringList());
 }
 
-static void clearRecentProjects() {
 
-}
 
