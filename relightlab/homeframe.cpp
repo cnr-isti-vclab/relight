@@ -32,10 +32,12 @@ HomeFrame::HomeFrame() {
 	leftColumnLayout->addWidget(titleLabel);
 
 	QPushButton *new_project = new QPushButton(this);
+	new_project->setProperty("class", "large");
 	setDefaultAction(new_project, qRelightApp->action("new_project"));
 	leftColumnLayout->addWidget(new_project);
 
 	QPushButton *open_project = new QPushButton(this);
+	open_project->setProperty("class", "large");
 	setDefaultAction(open_project, qRelightApp->action("open_project"));
 	leftColumnLayout->addWidget(open_project);
 
