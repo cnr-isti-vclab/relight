@@ -12,8 +12,10 @@ class MainWindow: public QMainWindow {
 	Q_OBJECT
 public:
 	MainWindow();
-	void setupActions();
 	void createMenu();
+	void updateRecentProjectsMenu();
+	void openRecentProject();
+
 	void initInterface(); //initialize interface using the current project
 	void setTabIndex(int index);
 	void setTabWidget(QWidget *widget);
@@ -22,6 +24,8 @@ public:
 	TabWidget *tabs;
 	HomeFrame *home_frame;
 	ImageFrame *image_frame;
+private:
+	QMenu *recentMenu = nullptr;
 };
 
 #endif // MAINWINDOW_H
