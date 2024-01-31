@@ -8,6 +8,7 @@
 #include "tabwidget.h"
 #include "homeframe.h"
 #include "imageframe.h"
+#include "recentprojects.h"
 
 #include <iostream>
 using namespace std;
@@ -47,6 +48,11 @@ void MainWindow::createMenu() {
 
 	menuFile->addAction(qRelightApp->action("new_project"));
 	menuFile->addAction(qRelightApp->action("open_project"));	
+
+	recentMenu = new QMenu(tr("&Recent Projects"), this);
+	menuFile->addMenu(recentMenu);
+	updateRecentProjectsMenu();
+
 	menuFile->addSeparator();
 	menuFile->addAction(qRelightApp->action("save_project"));
 	menuFile->addAction(qRelightApp->action("save_project_as"));
@@ -56,6 +62,29 @@ void MainWindow::createMenu() {
 	setMenuBar(menubar);
 }
 
+void MainWindow::updateRecentProjectsMenu() {
+	recentMenu->clear();
+
+	QStringList recents = recentProjects();
+
+	int count = 1;
+	for (const QString& project : recents) {
+		QAction *action = new QAction(QString::number(count++) + " | " + project, this);
+		action->setProperty("filename", project);
+		connect(action, &QAction::triggered, this, &MainWindow::openRecentProject);
+		recentMenu->addAction(action);
+	}
+}
+
+void MainWindow::openRecentProject() {
+	QAction *action = qobject_cast<QAction *>(sender());
+	if (action) {
+		QString projectFilename = action->property("filename").toString();
+		if(!qRelightApp->needsSavingProceed())
+			return;
+		qRelightApp->openProject(projectFilename);
+	}
+}
 
 
 void MainWindow::initInterface() {
