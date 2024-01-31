@@ -2,8 +2,18 @@
 #home { padding-top:30px }
 
 QPushButton.large {
-text-align: left;
-padding-left:12px;
-padding-top:8px;
-padding-bottom:8px;
+    text-align: left;
+	padding-left:12px;
+	padding-top:8px;
+	padding-bottom:8px;
+}
+
+
+QLabel.recent {
+    font-size:9pt;
+	padding:4px;
+}
+
+QLabel.recent:hover{
+    background-color: palette(mid);
 }
