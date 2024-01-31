@@ -11,6 +11,8 @@ public:
 	void set_modifiers(Qt::KeyboardModifiers modifiers);
 	void set_zoom_factor_base(double value);
 
+	double min_scale = 0.0f;
+	double max_scale = 0.0f;
 private:
 	Qt::KeyboardModifiers _modifiers;
 	double _zoom_factor_base;
