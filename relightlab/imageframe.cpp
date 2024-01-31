@@ -22,8 +22,9 @@ ImageFrame::ImageFrame() {
 
 	QToolBar *left_toolbar = new QToolBar;
 
-	left_toolbar->addAction(qRelightApp->action("rotate_right"));
 	left_toolbar->addAction(qRelightApp->action("rotate_left"));
+	left_toolbar->addAction(qRelightApp->action("rotate_right"));
+
 
 	toolbars->addWidget(left_toolbar, 0, Qt::AlignLeft);
 //	toolbars->addSpacing();
@@ -39,7 +40,6 @@ ImageFrame::ImageFrame() {
 
 
 	QToolBar *right_toolbar = new QToolBar;
-	right_toolbar->setStyleSheet("background:red;");
 	right_toolbar->addAction(qRelightApp->action("show_image"));
 	right_toolbar->addAction(qRelightApp->action("show_list"));
 	right_toolbar->addAction(qRelightApp->action("show_grid"));
@@ -50,9 +50,11 @@ ImageFrame::ImageFrame() {
 	QHBoxLayout *content = new QHBoxLayout;
 
 	image_list = new ImageList();
+	image_list->hide();
 	content->addWidget(image_list, 0);
 
 	image_grid = new ImageGrid();
+	image_grid->hide();
 	content->addWidget(image_grid, 1);
 
 	canvas = new Canvas();

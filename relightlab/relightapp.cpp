@@ -4,14 +4,22 @@
 
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QStyleFactory>
 #include <QAction>
 
+#include <QDebug>
 
 RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	QTemporaryDir tmp;
 	if(!tmp.isValid()) {
 		QMessageBox::critical(nullptr, "Temporary folder is needed", "Could not create a temporary file for the scripts.\nSelect a folder in File->Preferences");
 	}
+
+	this->setStyle(QStyleFactory::create("Fusion"));
+
+	QIcon::setThemeSearchPaths(QStringList() << ":/icons");
+	QIcon::setThemeName("light");
+
 
 	QFile style(":/css/style.qss");
 	style.open(QFile::ReadOnly);
@@ -22,34 +30,63 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	queue.start();
 
 
-	addAction("new_project", "New project..", "", "Ctrl+N", SLOT(newProject()));
-	addAction("open_project", "Open project...", "", "Ctrl+O", SLOT(openProject()));
-	addAction("save_project", "Save project", "", "Ctrl+S", SLOT(saveProject()));
+
+	addAction("new_project", "New project..", "file", "Ctrl+N", SLOT(newProject()));
+	addAction("open_project", "Open project...", "folder", "Ctrl+O", SLOT(openProject()));
+	addAction("save_project", "Save project", "save", "Ctrl+S", SLOT(saveProject()));
 	addAction("save_project_as", "Save project as...", "", "Shift-Ctrl+S", SLOT(saveProjectAs()));
 
 	addAction("preferences", "Preferences...", "", "Shift-Ctrl-P", SLOT(openPreferences()));
 	addAction("exit", "Exit", "", "Alt-F4", SLOT(close()));
 
 	//imagesframe
-	addAction("zoom_fit", "Fit", "", "=");
+	addAction("zoom_fit", "Fit", "maximize", "=");
 	addAction("zoom_one", "Zoom 1x", "", "1");
-	addAction("zoom_in", "Zoom in", "", "+");
-	addAction("zoom_out", "Zoom out", "", "-");
+	addAction("zoom_in", "Zoom in", "zoom-in", "+");
+	addAction("zoom_out", "Zoom out", "zoom-out", "-");
 
-	addAction("previous_image", "Previous image", "", "left");
-	addAction("next_image", "Next image", "", "right");
+	addAction("previous_image", "Previous image", "chevron-left", "left");
+	addAction("next_image", "Next image", "chevron-right", "right");
 
-	addAction("rotate_left", "Rotate left", "", "");
-	addAction("rotate_right", "Rotate right", "", "");
+	addAction("rotate_left", "Rotate left", "rotate-ccw", "");
+	addAction("rotate_right", "Rotate right", "rotate-cw", "");
 
-	addAction("show_image", "Show image", "", "");
-	addAction("show_list", "Show list", "", "");
-	addAction("show_grid", "Show grid", "", "");
+	addAction("show_image", "Show image", "image", "");
+	addAction("show_list", "Show list", "list", "");
+	addAction("show_grid", "Show grid", "grid", "");
 }
 
 void RelightApp::run() {
+	setDarkStyle();
 	mainwindow = new MainWindow;
 	mainwindow->showMaximized();
+}
+
+void RelightApp::setDarkStyle() {
+	QIcon::setThemeName("dark");
+	QPalette darkPalette;
+	darkPalette.setColor(QPalette::Window,QColor(53,53,53));
+	darkPalette.setColor(QPalette::WindowText,Qt::white);
+	darkPalette.setColor(QPalette::Disabled,QPalette::WindowText,QColor(127,127,127));
+	darkPalette.setColor(QPalette::Base,QColor(42,42,42));
+	darkPalette.setColor(QPalette::AlternateBase,QColor(66,66,66));
+	darkPalette.setColor(QPalette::ToolTipBase,Qt::white);
+	darkPalette.setColor(QPalette::ToolTipText,Qt::white);
+	darkPalette.setColor(QPalette::Text,Qt::white);
+	darkPalette.setColor(QPalette::Disabled,QPalette::Text,QColor(127,127,127));
+	darkPalette.setColor(QPalette::Dark,QColor(35,35,35));
+	darkPalette.setColor(QPalette::Shadow,QColor(20,20,20));
+	darkPalette.setColor(QPalette::Button,QColor(53,53,53));
+	darkPalette.setColor(QPalette::ButtonText,Qt::white);
+	darkPalette.setColor(QPalette::Disabled,QPalette::ButtonText,QColor(127,127,127));
+	darkPalette.setColor(QPalette::BrightText,Qt::red);
+	darkPalette.setColor(QPalette::Link,QColor(42,130,218));
+	darkPalette.setColor(QPalette::Highlight,QColor(42,130,218));
+	darkPalette.setColor(QPalette::Disabled,QPalette::Highlight,QColor(80,80,80));
+	darkPalette.setColor(QPalette::HighlightedText,Qt::white);
+	darkPalette.setColor(QPalette::Disabled,QPalette::HighlightedText,QColor(127,127,127));
+
+	qApp->setPalette(darkPalette);
 }
 
 void RelightApp::newProject() {
@@ -202,6 +239,9 @@ bool RelightApp::needsSavingProceed() {
 QAction *RelightApp::addAction(const QString &id, const QString &label, const QString &icon, const QString &shortcut, const char *method) {
 	QAction *a = new QAction(label);
 	a->setShortcut(shortcut);
+	if(icon != "")
+		//a->setIcon(QIcon(icon));
+		a->setIcon(QIcon::fromTheme(icon));
 	actions[id] = a;
 	if(method)
 		connect(a, SIGNAL(triggered()), this, method);
