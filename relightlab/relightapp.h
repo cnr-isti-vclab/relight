@@ -29,6 +29,7 @@ public:
 public slots:
 	void newProject();
 	void openProject();
+	void openProject(const QString &filename);
 	void saveProject();
 	void saveProjectAs();
 	void close();
@@ -45,10 +46,11 @@ public:
 	void setLastProjectDir(QString dir) {
 		QSettings().setValue("LastProjectDir", dir);
 	}
+	bool needsSavingProceed();
 
 private:
 	QAction *addAction(const QString &id, const QString &label, const QString &icon, const QString &shortcut, const char *method = nullptr);
-	bool needsSavingProceed();
+
 
 	//keep memory of current project filename for quick saving.
 	QString project_filename;

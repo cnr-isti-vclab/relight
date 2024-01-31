@@ -1,6 +1,7 @@
 #include "relightapp.h"
 #include "../relight/processqueue.h"
 #include "imageframe.h"
+#include "recentprojects.h"
 
 #include <QMessageBox>
 #include <QFileDialog>
@@ -148,7 +149,10 @@ void RelightApp::openProject() {
 	QString filename = QFileDialog::getOpenFileName(mainwindow, "Select a project", qRelightApp->lastProjectDir(), "*.relight");
 	if(filename.isNull())
 		return;
+	openProject(filename);
+}
 
+void RelightApp::openProject(const QString &filename) {
 	Project project;
 	try {
 		project.load(filename);
@@ -200,6 +204,8 @@ void RelightApp::openProject() {
 	mainwindow->initInterface();
 	mainwindow->setTabIndex(1);
 	mainwindow->image_frame->init();
+	addRecentProject(filename);
+	mainwindow->updateRecentProjectsMenu();
 }
 
 void RelightApp::saveProject() {
@@ -247,3 +253,4 @@ QAction *RelightApp::addAction(const QString &id, const QString &label, const QS
 		connect(a, SIGNAL(triggered()), this, method);
 	return a;
 }
+

@@ -40,6 +40,7 @@ SOURCES += main.cpp \
     ../src/white.cpp \
     canvas.cpp \
     mainwindow.cpp \
+    preferences.cpp \
     recentprojects.cpp \
     relightapp.cpp \
     tabwidget.cpp \
@@ -74,6 +75,7 @@ HEADERS += \
     canvas.h \
     mainwindow.h \
     mainwindow.h \
+    preferences.h \
     recentprojects.h \
     relightapp.h \
     tabwidget.h \
