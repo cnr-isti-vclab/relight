@@ -5,6 +5,7 @@
 
 class Canvas;
 class ImageList;
+class ImageGrid;
 
 class QStatusBar;
 class QGraphicsPixmapItem;
@@ -17,6 +18,7 @@ class ImageFrame: public QFrame {
 public:
 	enum Mode { SINGLE, LIST, THUMBNAILS };
 	ImageList *image_list = nullptr;
+	ImageGrid *image_grid = nullptr;
 	Canvas *canvas = nullptr;
 	QStatusBar *status = nullptr;
 	ImageFrame();
@@ -30,6 +32,10 @@ public slots:
 	void previousImage();
 	void nextImage();
 	void showImageItem(QListWidgetItem *item);
+
+	void imageMode();
+	void listMode();
+	void gridMode();
 
 private:
 	QGraphicsPixmapItem *imagePixmap = nullptr;

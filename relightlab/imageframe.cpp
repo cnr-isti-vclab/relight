@@ -10,6 +10,7 @@
 #include "imageframe.h"
 #include "canvas.h"
 #include "imagelist.h"
+#include "imagegrid.h"
 
 #include <iostream>
 using namespace std;
@@ -51,6 +52,9 @@ ImageFrame::ImageFrame() {
 	image_list = new ImageList();
 	content->addWidget(image_list, 0);
 
+	image_grid = new ImageGrid();
+	content->addWidget(image_grid, 1);
+
 	canvas = new Canvas();
 	content->addWidget(canvas, 1);
 
@@ -68,6 +72,10 @@ ImageFrame::ImageFrame() {
 
 	connect(image_list, SIGNAL(itemPressed(QListWidgetItem*)), this, SLOT(showImageItem(QListWidgetItem*)));
 
+	connect(qRelightApp->action("show_image"),  SIGNAL(triggered(bool)), this, SLOT(imageMode()));
+	connect(qRelightApp->action("show_list"),  SIGNAL(triggered(bool)), this, SLOT(listMode()));
+	connect(qRelightApp->action("show_grid"),  SIGNAL(triggered(bool)), this, SLOT(gridMode()));
+
 	container->addLayout(content);
 
 	status = new QStatusBar();
@@ -76,9 +84,10 @@ ImageFrame::ImageFrame() {
 
 void ImageFrame::init() {
 	image_list->init();
+	image_grid->init();
 	showImage(0);
 	fit();
-	showImage(0);
+	listMode(); //TODO actually use last used mode used by the user
 }
 
 void ImageFrame::showImage(int id) {
@@ -86,7 +95,7 @@ void ImageFrame::showImage(int id) {
 
 	image_list->setCurrentRow(id);
 	qRelightApp->action("previous_image")->setEnabled(id != 0);
-	qRelightApp->action("next_image")->setEnabled(id != project.images.size()-1);
+	qRelightApp->action("next_image")->setEnabled(id != (int)project.images.size()-1);
 
 	QString filename = project.images[id].filename;
 
@@ -137,7 +146,7 @@ void ImageFrame::previousImage() {
 
 void ImageFrame::nextImage() {
 	int current = image_list->currentRow();
-	if(current++ == qRelightApp->project().images.size()-1)
+	if(current++ == (int)qRelightApp->project().images.size()-1)
 		return;
 	image_list->setCurrentRow(current);
 	showImage(current);
@@ -148,3 +157,21 @@ void ImageFrame::showImageItem(QListWidgetItem *item) {
 	int id =item->listWidget()->currentRow();
 	showImage(id);
 }
+
+void ImageFrame::imageMode() {
+	canvas->show();
+	image_list->hide();
+	image_grid->hide();
+}
+void ImageFrame::listMode() {
+	canvas->show();
+	image_list->show();
+	image_grid->hide();
+
+}
+void ImageFrame::gridMode() {
+	canvas->hide();
+	image_list->hide();
+	image_grid->show();
+}
+
