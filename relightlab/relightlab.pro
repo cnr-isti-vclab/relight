@@ -45,7 +45,9 @@ SOURCES += main.cpp \
     tabwidget.cpp \
     imageframe.cpp \
     homeframe.cpp \
-    imagelist.cpp
+    imagelist.cpp \
+    flowlayout.cpp \
+    imagegrid.cpp
 
 RESOURCES += \
     res.qrc
@@ -77,4 +79,6 @@ HEADERS += \
     tabwidget.h \
     imageframe.h \
     homeframe.h \
-    imagelist.h
+    imagelist.h \
+    flowlayout.h \
+    imagegrid.h
