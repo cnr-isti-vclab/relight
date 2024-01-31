@@ -31,7 +31,6 @@ void Canvas::gentle_zoom(double factor) {
 															   viewport()->height() / 2.0);
 	QPointF viewport_center = mapFromScene(target_scene_pos) - delta_viewport_pos;
 	centerOn(mapToScene(viewport_center.toPoint()));
-	qDebug() << "Viewport center: " << viewport_center;
 	emit zoomed();
 }
 

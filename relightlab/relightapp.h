@@ -38,7 +38,7 @@ public slots:
 public:
 	Project &project() { return m_project; }
 	QAction *action(const QString &id) { return actions[id]; }
-
+	void setDarkStyle();
 	QString lastProjectDir() {
 		return QSettings().value("LastProjectDir", QDir::homePath()).toString();
 	}
