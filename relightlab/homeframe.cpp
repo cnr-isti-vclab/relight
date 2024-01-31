@@ -7,6 +7,7 @@
 
 #include "homeframe.h"
 #include "relightapp.h"
+#include "recentprojects.h"
 
 void setDefaultAction(QPushButton *button, QAction *action) {
 	QObject::connect(button, SIGNAL(clicked(bool)), action, SLOT(trigger()));
@@ -43,6 +44,15 @@ HomeFrame::HomeFrame() {
 
 	QLabel *recentLabel = new QLabel("Recent projects:");
 	leftColumnLayout->addWidget(recentLabel);
+
+
+	for(QString filename: recentProjects()) {
+		QLabel *label = new QLabel("<a href='" + filename + "'>" + filename + "</a>");
+		label->setProperty("class", "recent");
+		label->setWordWrap(true);
+		leftColumnLayout->addWidget(label);
+		connect(label, SIGNAL(linkActivated(QString)), qRelightApp, SLOT(openProject(QString)));
+	}
 	leftColumnLayout->addStretch();
 
 	// Add columns to the content layout

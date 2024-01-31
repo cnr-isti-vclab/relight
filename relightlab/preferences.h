@@ -1,11 +1,16 @@
 #ifndef PREFERENCES_H
 #define PREFERENCES_H
 
+#include <QDialog>
 
-class Preferences
-{
+class TabWidget;
+
+class Preferences: public QDialog {
 public:
-	Preferences();
+	Preferences(QWidget *parent = nullptr);
+
+private:
+	TabWidget *tabs;
 };
 
 #endif // PREFERENCES_H
