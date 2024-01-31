@@ -1,2 +1,9 @@
 /* QWidget { font-size: 11pt; } */
 #home { padding-top:30px }
+
+QPushButton.large {
+text-align: left;
+padding-left:12px;
+padding-top:8px;
+padding-bottom:8px;
+}
