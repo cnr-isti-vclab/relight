@@ -23,7 +23,7 @@ public:
 	MainWindow *mainwindow = nullptr;
 
 	RelightApp(int &argc, char **argv);
-	~RelightApp();
+	virtual ~RelightApp() {}
 	void run();
 
 public slots:

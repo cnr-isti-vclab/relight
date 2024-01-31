@@ -13,6 +13,5 @@ void ImageList::init() {
 		item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
 		item->setCheckState(Qt::Unchecked);
 		addItem(item);
-
 	}
 }

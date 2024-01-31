@@ -46,8 +46,6 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	addAction("show_list", "Show list", "", "");
 	addAction("show_grid", "Show grid", "", "");
 }
-RelightApp::~RelightApp() {
-}
 
 void RelightApp::run() {
 	mainwindow = new MainWindow;
