@@ -3,6 +3,8 @@
 #include <QMouseEvent>
 #include <QApplication>
 #include <QScrollBar>
+#include <QDebug>
+
 #include <qmath.h>
 
 #include <iostream>
@@ -19,12 +21,17 @@ Canvas::Canvas(QWidget *parent): QGraphicsView(parent) {
 }
 
 void Canvas::gentle_zoom(double factor) {
+	double currentScale = transform().m11();
+	if(currentScale * factor < min_scale)
+		factor = min_scale/currentScale;
+
 	scale(factor, factor);
 	centerOn(target_scene_pos);
 	QPointF delta_viewport_pos = target_viewport_pos - QPointF(viewport()->width() / 2.0,
 															   viewport()->height() / 2.0);
 	QPointF viewport_center = mapFromScene(target_scene_pos) - delta_viewport_pos;
 	centerOn(mapToScene(viewport_center.toPoint()));
+	qDebug() << "Viewport center: " << viewport_center;
 	emit zoomed();
 }
 
@@ -84,6 +91,6 @@ void Canvas::zoomIn() {
 }
 
 void Canvas::zoomOut() {
-	gentle_zoom(0.835383);
+	gentle_zoom(1/1.19706);
 }
 

@@ -22,10 +22,10 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	queue.start();
 
 
-	addAction("new_project", "New project..", "", "Ctrl-N", SLOT(newProject()));
-	addAction("open_project", "Open project...", "", "Ctrl-O", SLOT(openProject()));
-	addAction("save_project", "Save project", "", "Ctrl-S", SLOT(saveProject()));
-	addAction("save_project_as", "Save project as...", "", "Shift-Ctrl-S", SLOT(saveProjectAs()));
+	addAction("new_project", "New project..", "", "Ctrl+N", SLOT(newProject()));
+	addAction("open_project", "Open project...", "", "Ctrl+O", SLOT(openProject()));
+	addAction("save_project", "Save project", "", "Ctrl+S", SLOT(saveProject()));
+	addAction("save_project_as", "Save project as...", "", "Shift-Ctrl+S", SLOT(saveProjectAs()));
 
 	addAction("preferences", "Preferences...", "", "Shift-Ctrl-P", SLOT(openPreferences()));
 	addAction("exit", "Exit", "", "Alt-F4", SLOT(close()));
@@ -35,6 +35,10 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	addAction("zoom_one", "Zoom 1x", "", "1");
 	addAction("zoom_in", "Zoom in", "", "+");
 	addAction("zoom_out", "Zoom out", "", "-");
+
+	addAction("previous_image", "Previous image", "", "left");
+	addAction("next_image", "Next image", "", "right");
+
 	addAction("rotate_left", "Rotate left", "", "");
 	addAction("rotate_right", "Rotate right", "", "");
 
@@ -43,7 +47,6 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	addAction("show_grid", "Show grid", "", "");
 }
 RelightApp::~RelightApp() {
-	delete mainwindow;
 }
 
 void RelightApp::run() {
@@ -161,7 +164,7 @@ void RelightApp::openProject() {
 
 	mainwindow->initInterface();
 	mainwindow->setTabIndex(1);
-	mainwindow->image_frame->showImage(0);
+	mainwindow->image_frame->init();
 }
 
 void RelightApp::saveProject() {
