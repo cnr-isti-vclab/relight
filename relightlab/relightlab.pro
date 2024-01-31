@@ -44,7 +44,8 @@ SOURCES += main.cpp \
     relightapp.cpp \
     tabwidget.cpp \
     imageframe.cpp \
-    homeframe.cpp
+    homeframe.cpp \
+    imagelist.cpp
 
 RESOURCES += \
     res.qrc
@@ -75,4 +76,5 @@ HEADERS += \
     relightapp.h \
     tabwidget.h \
     imageframe.h \
-    homeframe.h
+    homeframe.h \
+    imagelist.h
