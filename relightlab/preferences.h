@@ -11,6 +11,7 @@ public:
 
 private:
 	TabWidget *tabs;
+	QWidget *buildAppearance();
 };
 
 #endif // PREFERENCES_H
