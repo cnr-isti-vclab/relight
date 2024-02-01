@@ -1,5 +1,9 @@
-QT += widgets
+QT += widgets svg
 CONFIG += c++11
+
+#TODO: this might be needed in CMake
+#find_package(Qt5Svg REQUIRED)
+#target_link_libraries( ${APP_NAME} Qt5::Svg )
 
 DEFINES += QT_DEPRECATED_WARNINGS
 DEFINES += _USE_MATH_DEFINES

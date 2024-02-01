@@ -49,13 +49,15 @@ void MainWindow::createMenu() {
 	menuFile->addAction(qRelightApp->action("new_project"));
 	menuFile->addAction(qRelightApp->action("open_project"));	
 
-	recentMenu = new QMenu(tr("&Recent Projects"), this);
+	recentMenu = new QMenu("&Recent Projects", this);
 	menuFile->addMenu(recentMenu);
 	updateRecentProjectsMenu();
 
 	menuFile->addSeparator();
 	menuFile->addAction(qRelightApp->action("save_project"));
 	menuFile->addAction(qRelightApp->action("save_project_as"));
+	menuFile->addSeparator();
+	menuFile->addAction(qRelightApp->action("preferences"));
 	menuFile->addSeparator();
 	menuFile->addAction(qRelightApp->action("exit"));
 
