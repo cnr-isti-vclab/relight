@@ -2,10 +2,13 @@
 #include "../relight/processqueue.h"
 #include "imageframe.h"
 #include "recentprojects.h"
+#include "mainwindow.h"
+#include "preferences.h"
 
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QStyleFactory>
+#include <QStyle>
 #include <QAction>
 
 #include <QDebug>
@@ -16,16 +19,39 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 		QMessageBox::critical(nullptr, "Temporary folder is needed", "Could not create a temporary file for the scripts.\nSelect a folder in File->Preferences");
 	}
 
-	this->setStyle(QStyleFactory::create("Fusion"));
-
-	QIcon::setThemeSearchPaths(QStringList() << ":/icons");
-	QIcon::setThemeName("light");
 
 
 	QFile style(":/css/style.qss");
 	style.open(QFile::ReadOnly);
 	setStyleSheet(style.readAll());
 	//Default font size can be read using QApplication::font().pointSize(), not pointPixel
+
+	dark_palette.setColor(QPalette::Window,QColor(53,53,53));
+	dark_palette.setColor(QPalette::WindowText,Qt::white);
+	dark_palette.setColor(QPalette::Disabled,QPalette::WindowText,QColor(127,127,127));
+	dark_palette.setColor(QPalette::Base,QColor(42,42,42));
+	dark_palette.setColor(QPalette::AlternateBase,QColor(66,66,66));
+	dark_palette.setColor(QPalette::ToolTipBase,Qt::white);
+	dark_palette.setColor(QPalette::ToolTipText,Qt::white);
+	dark_palette.setColor(QPalette::Text,Qt::white);
+	dark_palette.setColor(QPalette::Disabled,QPalette::Text,QColor(127,127,127));
+	dark_palette.setColor(QPalette::Dark,QColor(35,35,35));
+	dark_palette.setColor(QPalette::Shadow,QColor(20,20,20));
+	dark_palette.setColor(QPalette::Button,QColor(53,53,53));
+	dark_palette.setColor(QPalette::ButtonText,Qt::white);
+	dark_palette.setColor(QPalette::Disabled,QPalette::ButtonText,QColor(127,127,127));
+	dark_palette.setColor(QPalette::BrightText,Qt::red);
+	dark_palette.setColor(QPalette::Link,QColor(42,130,218));
+	dark_palette.setColor(QPalette::Highlight,QColor(42,130,218));
+	dark_palette.setColor(QPalette::Disabled,QPalette::Highlight,QColor(80,80,80));
+	dark_palette.setColor(QPalette::HighlightedText,Qt::white);
+	dark_palette.setColor(QPalette::Disabled,QPalette::HighlightedText,QColor(127,127,127));
+
+	this->setStyle(QStyleFactory::create("Fusion"));
+
+	setAttribute(Qt::AA_DontShowIconsInMenus);
+	QIcon::setThemeSearchPaths(QStringList() << ":/icons");
+
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.start();
@@ -58,36 +84,22 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 }
 
 void RelightApp::run() {
-	setDarkStyle();
+	qDebug() << QSettings().allKeys();
+	bool dark = QSettings().value("dark", false).toBool();
+	if(dark) {
+		QIcon::setThemeName("dark");
+		setPalette(dark_palette);
+	} else {
+		QIcon::setThemeName("light");
+	}
+
+
 	mainwindow = new MainWindow;
 	mainwindow->showMaximized();
 }
 
-void RelightApp::setDarkStyle() {
-	QIcon::setThemeName("dark");
-	QPalette darkPalette;
-	darkPalette.setColor(QPalette::Window,QColor(53,53,53));
-	darkPalette.setColor(QPalette::WindowText,Qt::white);
-	darkPalette.setColor(QPalette::Disabled,QPalette::WindowText,QColor(127,127,127));
-	darkPalette.setColor(QPalette::Base,QColor(42,42,42));
-	darkPalette.setColor(QPalette::AlternateBase,QColor(66,66,66));
-	darkPalette.setColor(QPalette::ToolTipBase,Qt::white);
-	darkPalette.setColor(QPalette::ToolTipText,Qt::white);
-	darkPalette.setColor(QPalette::Text,Qt::white);
-	darkPalette.setColor(QPalette::Disabled,QPalette::Text,QColor(127,127,127));
-	darkPalette.setColor(QPalette::Dark,QColor(35,35,35));
-	darkPalette.setColor(QPalette::Shadow,QColor(20,20,20));
-	darkPalette.setColor(QPalette::Button,QColor(53,53,53));
-	darkPalette.setColor(QPalette::ButtonText,Qt::white);
-	darkPalette.setColor(QPalette::Disabled,QPalette::ButtonText,QColor(127,127,127));
-	darkPalette.setColor(QPalette::BrightText,Qt::red);
-	darkPalette.setColor(QPalette::Link,QColor(42,130,218));
-	darkPalette.setColor(QPalette::Highlight,QColor(42,130,218));
-	darkPalette.setColor(QPalette::Disabled,QPalette::Highlight,QColor(80,80,80));
-	darkPalette.setColor(QPalette::HighlightedText,Qt::white);
-	darkPalette.setColor(QPalette::Disabled,QPalette::HighlightedText,QColor(127,127,127));
-
-	qApp->setPalette(darkPalette);
+void RelightApp::setDarkTheme(bool dark) {
+	QSettings().setValue("dark", dark);
 }
 
 void RelightApp::newProject() {
@@ -217,7 +229,9 @@ void RelightApp::saveProjectAs() {
 }
 
 void RelightApp::openPreferences() {
-
+	if(!preferences)
+		preferences = new Preferences(mainwindow);
+	preferences->show();
 }
 
 void RelightApp::close() {
@@ -245,9 +259,10 @@ bool RelightApp::needsSavingProceed() {
 QAction *RelightApp::addAction(const QString &id, const QString &label, const QString &icon, const QString &shortcut, const char *method) {
 	QAction *a = new QAction(label);
 	a->setShortcut(shortcut);
-	if(icon != "")
+	if(icon != "") {
 		//a->setIcon(QIcon(icon));
 		a->setIcon(QIcon::fromTheme(icon));
+	}
 	actions[id] = a;
 	if(method)
 		connect(a, SIGNAL(triggered()), this, method);

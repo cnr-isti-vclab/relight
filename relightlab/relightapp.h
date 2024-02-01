@@ -9,10 +9,12 @@
 #include <QVariant>
 
 #include "../src/project.h"
-#include "mainwindow.h"
+
 
 #define qRelightApp (static_cast<RelightApp *>(QCoreApplication::instance()))
 
+class Preferences;
+class MainWindow;
 
 class RelightApp: public QApplication {
 	Q_OBJECT
@@ -21,6 +23,7 @@ public:
 
 	QMap<QString, QAction *> actions;
 	MainWindow *mainwindow = nullptr;
+	Preferences *preferences = nullptr;
 
 	RelightApp(int &argc, char **argv);
 	virtual ~RelightApp() {}
@@ -35,11 +38,11 @@ public slots:
 	void close();
 
 	void openPreferences();
+	void setDarkTheme(bool on);
 
 public:
 	Project &project() { return m_project; }
 	QAction *action(const QString &id) { return actions[id]; }
-	void setDarkStyle();
 	QString lastProjectDir() {
 		return QSettings().value("LastProjectDir", QDir::homePath()).toString();
 	}
@@ -54,6 +57,7 @@ private:
 
 	//keep memory of current project filename for quick saving.
 	QString project_filename;
+	QPalette dark_palette;
 };
 
 #endif
