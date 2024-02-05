@@ -17,3 +17,7 @@ QLabel.recent {
 QLabel.recent:hover{
     background-color: palette(mid);
 }
+
+QFrame#lights_choice QPushButton {
+    padding:20px
+}
