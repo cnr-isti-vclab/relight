@@ -7,6 +7,7 @@ class QStackedWidget;
 class TabWidget;
 class HomeFrame;
 class ImageFrame;
+class LightsFrame;
 
 class MainWindow: public QMainWindow {
 	Q_OBJECT
@@ -24,6 +25,7 @@ public:
 	TabWidget *tabs;
 	HomeFrame *home_frame;
 	ImageFrame *image_frame;
+	LightsFrame *lights_frame;
 private:
 	QMenu *recentMenu = nullptr;
 };
