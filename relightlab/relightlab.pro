@@ -1,4 +1,4 @@
-QT += widgets svg
+QT += widgets
 CONFIG += c++11
 
 #TODO: this might be needed in CMake
@@ -62,10 +62,6 @@ RESOURCES += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-
-FORMS += \
-    form.ui \
-    reform.ui
 
 HEADERS += \
     ../relight/parameter.h \
