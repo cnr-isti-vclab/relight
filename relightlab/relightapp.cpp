@@ -10,6 +10,7 @@
 #include <QStyleFactory>
 #include <QStyle>
 #include <QAction>
+#include <QMessageBox>
 
 #include <QDebug>
 
@@ -84,7 +85,7 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 }
 
 void RelightApp::run() {
-	qDebug() << QSettings().allKeys();
+	//qDebug() << "Settings: " << QSettings().allKeys();
 	bool dark = QSettings().value("dark", false).toBool();
 	if(dark) {
 		QIcon::setThemeName("dark");
@@ -135,6 +136,16 @@ void RelightApp::newProject() {
 		} else
 			QMessageBox::critical(mainwindow, "Resolution problem", "Not all of the images in the folder have the same resolution,\nyou might need to fix this problem manually.");
 	}
+
+	QStringList img_ext;
+	img_ext << "*.lp";
+	QStringList lps = QDir(dir).entryList(img_ext);
+	if(lps.size() > 0) {
+		int answer = QMessageBox::question(this, "Found an .lp file: " + lps[0], "Do you wish to load " + lps[0] + "?", QMessageBox::Yes, QMessageBox::No);
+		if(answer != QMessageBox::No)
+			loadLP(lps[0]);
+	}
+
 
 	qRelightApp->project() = project;
 

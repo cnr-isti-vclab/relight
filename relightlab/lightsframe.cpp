@@ -5,6 +5,8 @@
 #include <QButtonGroup>
 #include <QPushButton>
 #include <QLabel>
+#include <QDebug>
+#include <QFileDialog>
 
 Card::Card(QString title, QString subtitle, QWidget *parent): QFrame(parent) {
 	setFrameShape(QFrame::StyledPanel);
@@ -15,7 +17,7 @@ Card::Card(QString title, QString subtitle, QWidget *parent): QFrame(parent) {
 	QObject::connect(button, SIGNAL(clicked()), this, SLOT(click()));
 	button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-	setStyleSheet("QPushButton { font-size: 24px; }");
+	setStyleSheet("QPushButton { font-size: 24px; padding:20px}");
 
 	layout->addWidget(button);
 	layout->addSpacing(30);
@@ -25,11 +27,24 @@ Card::Card(QString title, QString subtitle, QWidget *parent): QFrame(parent) {
 }
 
 LightsFrame::LightsFrame() {
-	this->addWidget(createLightsChoice());
+	addWidget(createChoiceFrame());
+	lp = new LpFrame();
+	addWidget(lp);
+	sphere = new SphereFrame();
+	addWidget(sphere);
+	dome = new DomeFrame();
+	addWidget(dome);
 }
-QFrame *LightsFrame::createLightsChoice() {
+
+void LightsFrame::init() {
+	lp->init();
+	sphere->init();
+	dome->init();
+}
+
+QFrame *LightsFrame::createChoiceFrame() {
 	QFrame *lights_choice = new QFrame();
-	lights_choice->setObjectName("lights_choice");
+	//lights_choice->setObjectName("lights_choice");
 
 	QVBoxLayout *content = new QVBoxLayout(lights_choice);
 
@@ -42,18 +57,16 @@ QFrame *LightsFrame::createLightsChoice() {
 	buttons->addStretch(1);
 
 	Card *lp = new Card("LP", "<p>Load a file (.lp) containging the light directions.</p>");
-
+	connect(lp, SIGNAL(clicked()), this, SLOT(showLp()));
 	buttons->addWidget(lp, 1);
 
-	QPushButton *sphere =new QPushButton("Sphere:\n identify reflective spheres");
+	Card *sphere = new Card("Sphere", "<p>Identify one or more reflective spheres</p>");
 	connect(sphere, SIGNAL(clicked()), this, SLOT(showSphere()));
-	sphere->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	buttons->addWidget(sphere, 0);
+	buttons->addWidget(sphere, 1);
 
-	QPushButton *dome = new QPushButton("Dome:\n select a preconfigured dome");
+	Card *dome = new Card("Dome", "<p>Select a preconfigure dome</p>");
 	connect(dome, SIGNAL(clicked()), this, SLOT(showDome()));
-	dome->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	buttons->addWidget(dome, 0);
+	buttons->addWidget(dome, 1);
 
 	buttons->addStretch(1);
 
@@ -61,26 +74,71 @@ QFrame *LightsFrame::createLightsChoice() {
 	return lights_choice;
 }
 
-QFrame *LightsFrame::createLp() {
-	QFrame *lp_frame = new QFrame();
-	return lp_frame;
-}
+void LightsFrame::showChoice() {
 
-QFrame *LightsFrame::createSphere() {
-	QFrame *sphere_frame = new QFrame();
-	return sphere_frame;
+	setCurrentIndex(0);
 }
-
-QFrame *LightsFrame::createDome() {
-	QFrame *dome_frame = new QFrame();
-	return dome_frame;
-}
-
 void LightsFrame::showLp() {
+	setCurrentWidget(lp);
 }
 
 void LightsFrame::showSphere() {
+	setCurrentIndex(2);
 }
 
 void LightsFrame::showDome() {
+	setCurrentIndex(3);
 }
+
+
+
+LpFrame::LpFrame(QWidget *parent): QFrame(parent) {
+	QVBoxLayout *content = new QVBoxLayout(this);
+	content->setContentsMargins(31, 31, 31, 31);
+	this->setLayout(content);
+
+	QLabel *title = new QLabel("<h2>LP light directions</h2>");
+	content->addWidget(title);
+	content->addSpacing(30);
+	QHBoxLayout *filebox = new QHBoxLayout();
+	QPushButton *load = new QPushButton("Load LP file...");
+	connect(load, SIGNAL(clicked()), this, SLOT(loadLP()));
+	load->setMaximumWidth(300);
+	filebox->addWidget(load);
+	QLabel *filename = new QLabel();
+	filebox->addWidget(filename);
+
+	content->addLayout(filebox);
+	content->addStretch();
+}
+
+void LpFrame::init() {
+}
+
+void LpFrame::loadLP() {
+
+	QFileDialog::getOpenFileName(this, "Load an LP file", )
+}
+
+SphereFrame::SphereFrame(QWidget *parent): QFrame(parent) {
+	QVBoxLayout *content = new QVBoxLayout(this);
+	this->setLayout(content);
+
+	QLabel *title = new QLabel("<h2>Sphere light directions</h2>");
+	content->addWidget(title);
+}
+
+void SphereFrame::init() {
+}
+
+DomeFrame::DomeFrame(QWidget *parent): QFrame(parent) {
+	QVBoxLayout *content = new QVBoxLayout(this);
+	this->setLayout(content);
+
+	QLabel *title = new QLabel("<h2>Dome light directions</h2>");
+	content->addWidget(title);
+}
+
+void DomeFrame::init() {
+}
+

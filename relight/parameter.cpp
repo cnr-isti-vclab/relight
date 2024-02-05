@@ -27,6 +27,9 @@ QStringList Parameter::arguments() {
 		break;
 	case TMP_FILE: //Script will fill it in.
 		break;
+	default:
+		throw "parameter type not supported";
+		break;
 	}
 	return list;
 }
