@@ -1,5 +1,9 @@
 #include <QApplication>
 
+#include <QVBoxLayout>
+#include <QPushButton>
+#include <QLabel>
+
 #include "relightapp.h"
 #include "mainwindow.h"
 
@@ -20,6 +24,7 @@ int main(int argc, char *argv[]) {
 	QCoreApplication::setApplicationVersion(RELIGHT_STRINGIFY(RELIGHT_VERSION));
 
 	app.run();
+
 	return app.exec();
 }
 

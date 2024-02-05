@@ -5,10 +5,12 @@
 
 #include "mainwindow.h"
 #include "relightapp.h"
+#include "recentprojects.h"
 #include "tabwidget.h"
 #include "homeframe.h"
 #include "imageframe.h"
-#include "recentprojects.h"
+#include "lightsframe.h"
+
 
 #include <iostream>
 using namespace std;
@@ -20,11 +22,12 @@ MainWindow::MainWindow() {
 
 	home_frame = new HomeFrame;
 	image_frame = new ImageFrame;
+	lights_frame = new LightsFrame;
 	tabs = new TabWidget;
 	tabs->addTab(home_frame, "Home");
 	tabs->addTab(image_frame, "Images");
 	tabs->addTab(new QWidget, "Align");
-	tabs->addTab(new QWidget, "Lights");
+	tabs->addTab(lights_frame, "Lights");
 	tabs->addTab(new QWidget, "Crop");
 
 	setCentralWidget(tabs);
