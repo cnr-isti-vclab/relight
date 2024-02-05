@@ -52,7 +52,8 @@ SOURCES += main.cpp \
     homeframe.cpp \
     imagelist.cpp \
     flowlayout.cpp \
-    imagegrid.cpp
+    imagegrid.cpp \
+    lightsframe.cpp
 
 RESOURCES += \
     res.qrc
@@ -62,7 +63,9 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-FORMS +=
+FORMS += \
+    form.ui \
+    reform.ui
 
 HEADERS += \
     ../relight/parameter.h \
@@ -87,4 +90,5 @@ HEADERS += \
     homeframe.h \
     imagelist.h \
     flowlayout.h \
-    imagegrid.h
+    imagegrid.h \
+    lightsframe.h
