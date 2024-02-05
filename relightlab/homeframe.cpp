@@ -20,14 +20,13 @@ HomeFrame::HomeFrame() {
 
 	//setStyleSheet(".home { background:red; padding-top:100px }");
 	QHBoxLayout *contentLayout = new QHBoxLayout(this);
-	contentLayout->addStretch();
+	contentLayout->addStretch(1);
 
 	// Left column
 	QVBoxLayout *leftColumnLayout = new QVBoxLayout();
 
 	// Title label
-	QLabel *titleLabel = new QLabel("RelightLab");
-	titleLabel->setFont(QFont("Arial", 16, QFont::Bold));
+	QLabel *titleLabel = new QLabel("<h1>RelightLab</h1>");
 	titleLabel->setMinimumWidth(200);
 
 	leftColumnLayout->addWidget(titleLabel);
@@ -42,7 +41,8 @@ HomeFrame::HomeFrame() {
 	setDefaultAction(open_project, qRelightApp->action("open_project"));
 	leftColumnLayout->addWidget(open_project);
 
-	QLabel *recentLabel = new QLabel("Recent projects:");
+	QLabel *recentLabel = new QLabel("<h2>Recent projects:</h2>");
+	leftColumnLayout->addSpacing(20);
 	leftColumnLayout->addWidget(recentLabel);
 
 
@@ -56,7 +56,7 @@ HomeFrame::HomeFrame() {
 	leftColumnLayout->addStretch();
 
 	// Add columns to the content layout
-	contentLayout->addLayout(leftColumnLayout);
+	contentLayout->addLayout(leftColumnLayout, 2);
 
 	// Right column
 	QTextBrowser *browser = new QTextBrowser(this);
@@ -66,9 +66,9 @@ HomeFrame::HomeFrame() {
 	file.open(QIODevice::ReadOnly);
 	browser->setText(file.readAll());
 	browser->setMinimumWidth(400);
-	contentLayout->addWidget(browser);
+	contentLayout->addWidget(browser, 2);
 
-	contentLayout->addStretch();
+	contentLayout->addStretch(1);
 
 	// Set layout margins and spacing
 	contentLayout->setContentsMargins(20, 20, 20, 20);

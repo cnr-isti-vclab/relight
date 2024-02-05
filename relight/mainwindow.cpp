@@ -871,6 +871,7 @@ void MainWindow::loadLP(QString lp) {
 			project.images[i].direction = directions[i];
 	}
 }
+
 void MainWindow::saveLPs() {
 	int count = 1;
 	QString basename = "sphere";
