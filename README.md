@@ -1,7 +1,7 @@
 
 **Relight** is a library to create and view relightable images (RTI).
 
-## [Demo](https://pc-ponchio.isti.cnr.it/relight/)
+## [Demo](https://vcg.isti.cnr.it/relight/)
 
 ## Features
 
