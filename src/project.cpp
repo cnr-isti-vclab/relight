@@ -4,6 +4,7 @@
 #include "measure.h"
 #include "align.h"
 #include "white.h"
+#include "lp.h"
 
 #include <QFile>
 #include <QTextStream>
@@ -503,6 +504,45 @@ void Project::saveLP(QString filename, std::vector<Vector3f> &directions) {
 	for(size_t i = 0; i < directions.size(); i++) {
 		Vector3f d = directions[i];
 		str << "v " << d[0] << " " << d[1] << " " << d[2] << "\n";
+	}
+}
+
+
+void Project::loadLP(QString filename) {
+	vector<QString> filenames;
+	std::vector<Vector3f> directions;
+
+
+	parseLP(filename, directions, filenames); //might throw an error.
+
+	if(size() != filenames.size()) {
+		throw QString("The folder contains %1 images, the .lp file specify %2 images.\n"
+					  "You might have some extraneous images, or just loading the wrong .lp file.")
+				.arg(size()).arg(filenames.size());
+	}
+
+	vector<Vector3f> ordered_dir(directions.size());
+	bool success = true;
+	for(size_t i = 0; i < filenames.size(); i++) {
+		QString &s = filenames[i];
+		int pos = indexOf(s);
+		if(pos == -1) {
+			success = false;
+			break;
+		}
+		ordered_dir[pos] = directions[i];
+	}
+
+	if(success) {
+		for(size_t i = 0; i < size(); i++)
+			images[i].direction = ordered_dir[i];
+	} else {
+		auto response = QMessageBox::question(nullptr, "Light directions and images",
+			"Filenames in .lp do not match with images in the .lp directory. Do you want to just use the filename order?");
+		if(response == QMessageBox::Cancel || response == QMessageBox::No)
+			return;
+		for(size_t i = 0; i < size(); i++)
+			images[i].direction = directions[i];
 	}
 }
 
