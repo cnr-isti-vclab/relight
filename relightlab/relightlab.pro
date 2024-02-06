@@ -53,7 +53,9 @@ SOURCES += main.cpp \
     imagelist.cpp \
     flowlayout.cpp \
     imagegrid.cpp \
-    lightsframe.cpp
+    lightsframe.cpp \
+    ../src/lp.cpp \
+    lpframe.cpp
 
 RESOURCES += \
     res.qrc
@@ -87,4 +89,9 @@ HEADERS += \
     imagelist.h \
     flowlayout.h \
     imagegrid.h \
-    lightsframe.h
+    lightsframe.h \
+    ../src/lp.h \
+    lpframe.h
+
+FORMS += \
+    form.ui

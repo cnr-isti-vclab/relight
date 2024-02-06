@@ -841,7 +841,8 @@ void MainWindow::loadLP(QString lp) {
 
 	if(project.size() != filenames.size()) {
 		auto response = QMessageBox::question(this, "Light directions and images",
-            QString("The folder contains %1 images, the .lp file specify %2 images.\n")
+			QString("The folder contains %1 images, the .lp file specify %2 images.\n"
+					"You might have some extraneous images, or just loading the wrong .lp file.")
 					.arg(project.size()).arg(filenames.size()));
 		if(response == QMessageBox::Cancel || response == QMessageBox::No)
 			return;

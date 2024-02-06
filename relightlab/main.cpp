@@ -15,7 +15,6 @@ Project project;
 int main(int argc, char *argv[]) {
 	setlocale(LC_ALL, ".UTF8");
 
-
 	RelightApp app(argc, argv);
 
 	QCoreApplication::setOrganizationName("VCG");
