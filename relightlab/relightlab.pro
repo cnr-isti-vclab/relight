@@ -55,7 +55,8 @@ SOURCES += main.cpp \
     imagegrid.cpp \
     lightsframe.cpp \
     ../src/lp.cpp \
-    lpframe.cpp
+    lpframe.cpp \
+    domeframe.cpp
 
 RESOURCES += \
     res.qrc
@@ -91,7 +92,9 @@ HEADERS += \
     imagegrid.h \
     lightsframe.h \
     ../src/lp.h \
-    lpframe.h
+    lpframe.h \
+    domeframe.h
 
 FORMS += \
     form.ui
+

@@ -5,6 +5,7 @@
 
 class QLabel;
 class LpFrame;
+class DomeFrame;
 
 class Card: public QFrame {
 	Q_OBJECT
@@ -23,11 +24,7 @@ public:
 	void init();
 };
 
-class DomeFrame: public QFrame {
-public:
-	DomeFrame(QWidget *parent = nullptr);
-	void init();
-};
+
 
 class LightsFrame: public QStackedWidget {
 	Q_OBJECT
