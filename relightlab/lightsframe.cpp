@@ -1,6 +1,7 @@
 #include "lightsframe.h"
 #include "lpframe.h"
 #include "relightapp.h"
+#include "domeframe.h"
 
 #include <QVBoxLayout>
 #include <QRadioButton>
@@ -105,14 +106,4 @@ SphereFrame::SphereFrame(QWidget *parent): QFrame(parent) {
 void SphereFrame::init() {
 }
 
-DomeFrame::DomeFrame(QWidget *parent): QFrame(parent) {
-	QVBoxLayout *content = new QVBoxLayout(this);
-	this->setLayout(content);
-
-	QLabel *title = new QLabel("<h2>Dome light directions</h2>");
-	content->addWidget(title);
-}
-
-void DomeFrame::init() {
-}
 
