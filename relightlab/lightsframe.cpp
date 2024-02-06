@@ -1,4 +1,6 @@
 #include "lightsframe.h"
+#include "lpframe.h"
+#include "relightapp.h"
 
 #include <QVBoxLayout>
 #include <QRadioButton>
@@ -28,11 +30,11 @@ Card::Card(QString title, QString subtitle, QWidget *parent): QFrame(parent) {
 
 LightsFrame::LightsFrame() {
 	addWidget(createChoiceFrame());
-	lp = new LpFrame();
+	lp = new LpFrame(this);
 	addWidget(lp);
-	sphere = new SphereFrame();
+	sphere = new SphereFrame(this);
 	addWidget(sphere);
-	dome = new DomeFrame();
+	dome = new DomeFrame(this);
 	addWidget(dome);
 }
 
@@ -91,34 +93,6 @@ void LightsFrame::showDome() {
 }
 
 
-
-LpFrame::LpFrame(QWidget *parent): QFrame(parent) {
-	QVBoxLayout *content = new QVBoxLayout(this);
-	content->setContentsMargins(31, 31, 31, 31);
-	this->setLayout(content);
-
-	QLabel *title = new QLabel("<h2>LP light directions</h2>");
-	content->addWidget(title);
-	content->addSpacing(30);
-	QHBoxLayout *filebox = new QHBoxLayout();
-	QPushButton *load = new QPushButton("Load LP file...");
-	connect(load, SIGNAL(clicked()), this, SLOT(loadLP()));
-	load->setMaximumWidth(300);
-	filebox->addWidget(load);
-	QLabel *filename = new QLabel();
-	filebox->addWidget(filename);
-
-	content->addLayout(filebox);
-	content->addStretch();
-}
-
-void LpFrame::init() {
-}
-
-void LpFrame::loadLP() {
-
-	QFileDialog::getOpenFileName(this, "Load an LP file", )
-}
 
 SphereFrame::SphereFrame(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);

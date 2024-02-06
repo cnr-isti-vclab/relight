@@ -12,6 +12,8 @@
 #include "lightsframe.h"
 
 
+#include <QMessageBox>
+
 #include <iostream>
 using namespace std;
 

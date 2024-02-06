@@ -11,8 +11,23 @@
 #include <QStyle>
 #include <QAction>
 #include <QMessageBox>
+#include <QProxyStyle>
 
 #include <QDebug>
+
+
+QIcon ProxyStyle::standardIcon(StandardPixmap standardIcon,
+								 const QStyleOption *option,
+								 const QWidget *widget) const {
+	switch(standardIcon) {
+	case QStyle::SP_DialogOkButton: return QIcon::fromTheme("check");
+	case QStyle::SP_DialogCancelButton: return QIcon::fromTheme("cancel");
+	case QStyle::SP_DialogHelpButton: return QIcon::fromTheme("help-circle");
+	case QStyle::SP_DialogSaveButton: return QIcon::fromTheme("save");
+	default: return QProxyStyle::standardIcon(standardIcon, option, widget);
+	}
+};
+
 
 RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	QTemporaryDir tmp;
@@ -48,7 +63,7 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	dark_palette.setColor(QPalette::HighlightedText,Qt::white);
 	dark_palette.setColor(QPalette::Disabled,QPalette::HighlightedText,QColor(127,127,127));
 
-	this->setStyle(QStyleFactory::create("Fusion"));
+	this->setStyle(new ProxyStyle(QStyleFactory::create("Fusion")));
 
 	setAttribute(Qt::AA_DontShowIconsInMenus);
 	QIcon::setThemeSearchPaths(QStringList() << ":/icons");
@@ -137,32 +152,20 @@ void RelightApp::newProject() {
 			QMessageBox::critical(mainwindow, "Resolution problem", "Not all of the images in the folder have the same resolution,\nyou might need to fix this problem manually.");
 	}
 
-	QStringList img_ext;
-	img_ext << "*.lp";
-	QStringList lps = QDir(dir).entryList(img_ext);
-	if(lps.size() > 0) {
-		int answer = QMessageBox::question(this, "Found an .lp file: " + lps[0], "Do you wish to load " + lps[0] + "?", QMessageBox::Yes, QMessageBox::No);
-		if(answer != QMessageBox::No)
-			loadLP(lps[0]);
-	}
-
-
 	qRelightApp->project() = project;
 
-	mainwindow->initInterface();
-
-/* TODO: move this into the lights tab
+	//Check for .lp files in the folder
 	QStringList img_ext;
 	img_ext << "*.lp";
 	QStringList lps = QDir(dir).entryList(img_ext);
 	if(lps.size() > 0) {
-		int answer = QMessageBox::question(this, "Found an .lp file: " + lps[0], "Do you wish to load " + lps[0] + "?", QMessageBox::Yes, QMessageBox::No);
+		int answer = QMessageBox::question(mainwindow, "Found an .lp file: " + lps[0], "Do you wish to load " + lps[0] + "?", QMessageBox::Yes, QMessageBox::No);
 		if(answer != QMessageBox::No)
-			loadLP(lps[0]);
+			project.loadLP(lps[0]);
 	}
-*/
 
-	qRelightApp->action("close_project")->setEnabled(true);
+
+	mainwindow->initInterface();
 	mainwindow->setTabIndex(1);
 }
 
