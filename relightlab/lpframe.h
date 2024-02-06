@@ -7,7 +7,7 @@
 
 class QLabel;
 class QGraphicsView;
-class PropertyBox;
+class LightsGeometry;
 
 class LpFrame: public QFrame {
 	Q_OBJECT
@@ -20,7 +20,8 @@ public slots:
 	void loadLP();
 
 private:
-	PropertyBox *properties;
+	QLabel *filename;
+	LightsGeometry *geometry;
 	QGraphicsView *lights;
 	QGraphicsScene scene;
 
