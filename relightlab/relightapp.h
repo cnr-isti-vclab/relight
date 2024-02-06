@@ -7,7 +7,7 @@
 #include <QFile>
 #include <QSettings>
 #include <QVariant>
-
+#include <QProxyStyle>
 #include "../src/project.h"
 
 
@@ -15,6 +15,21 @@
 
 class Preferences;
 class MainWindow;
+
+
+/* customize standard icons */
+class ProxyStyle : public QProxyStyle {
+	Q_OBJECT
+
+public:
+	ProxyStyle(QStyle *style = 0) : QProxyStyle(style) { }
+
+public slots:
+	QIcon standardIcon(StandardPixmap standardIcon,
+									 const QStyleOption *option = 0,
+									 const QWidget *widget = 0) const;
+};
+
 
 class RelightApp: public QApplication {
 	Q_OBJECT
