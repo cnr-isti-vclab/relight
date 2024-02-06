@@ -64,5 +64,7 @@
         <file>icons/dark/scalable/square.svg</file>
         <file>icons/dark/scalable/sun.svg</file>
         <file>icons/dark/scalable/zoom-out.svg</file>
+        <file>icons/light/scalable/cancel.svg</file>
+        <file>icons/dark/scalable/cancel.svg</file>
     </qresource>
 </RCC>

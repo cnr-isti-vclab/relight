@@ -4,6 +4,7 @@
 #include <QStackedWidget>
 
 class QLabel;
+class LpFrame;
 
 class Card: public QFrame {
 	Q_OBJECT
@@ -15,17 +16,6 @@ signals:
 	void clicked();
 };
 
-class LpFrame: public QFrame {
-	Q_OBJECT
-public:
-	LpFrame(QWidget *parent = nullptr);
-	void init();
-	void loadLP(QString filename);
-public slots:
-	void loadLP();
-private:
-	QLabel *filename;
-};
 
 class SphereFrame: public QFrame {
 public:
