@@ -94,8 +94,8 @@ void MainWindow::openRecentProject() {
 }
 
 
-void MainWindow::initInterface() {
-
+void MainWindow::init() {
+	lights_frame->init();
 }
 
 
