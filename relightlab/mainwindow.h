@@ -17,7 +17,7 @@ public:
 	void updateRecentProjectsMenu();
 	void openRecentProject();
 
-	void init(); //initialize interface using the current project
+	void initInterface(); //initialize interface using the current project
 	void setTabIndex(int index);
 	void setTabWidget(QWidget *widget);
 
