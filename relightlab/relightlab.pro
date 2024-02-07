@@ -43,7 +43,9 @@ SOURCES += main.cpp \
     ../src/sphere.cpp \
     ../src/white.cpp \
     canvas.cpp \
+    domepanel.cpp \
     lightgeometry.cpp \
+    lppanel.cpp \
     mainwindow.cpp \
     preferences.cpp \
     recentprojects.cpp \
@@ -55,9 +57,7 @@ SOURCES += main.cpp \
     flowlayout.cpp \
     imagegrid.cpp \
     lightsframe.cpp \
-    ../src/lp.cpp \
-    lpframe.cpp \
-    domeframe.cpp
+    ../src/lp.cpp
 
 RESOURCES += \
     res.qrc
@@ -80,7 +80,9 @@ HEADERS += \
     ../src/sphere.h \
     ../src/white.h \
     canvas.h \
+    domepanel.h \
     lightgeometry.h \
+    lppanel.h \
     mainwindow.h \
     mainwindow.h \
     preferences.h \
@@ -93,9 +95,7 @@ HEADERS += \
     flowlayout.h \
     imagegrid.h \
     lightsframe.h \
-    ../src/lp.h \
-    lpframe.h \
-    domeframe.h
+    ../src/lp.h
 
 FORMS += \
     form.ui
