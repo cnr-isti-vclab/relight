@@ -28,17 +28,17 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	grid->addWidget(new QLabel("Image width:"), 2, 0);
 	grid->addWidget(image_width = new QDoubleSpinBox, 2, 1);
 	grid->addWidget(new QLabel("cm"), 2, 2);
-	connect(image_width, &QDoubleSpinBox::valueChanged, [&](double v) { qRelightApp->project().dome.imageWidth = v; });
+	connect(image_width, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) { qRelightApp->project().dome.imageWidth = v; });
 
 	grid->addWidget(new QLabel("Diameter:"), 3, 0);
 	grid->addWidget(diameter = new QDoubleSpinBox, 3, 1);
 	grid->addWidget(new QLabel("cm"), 3, 2);
-	connect(diameter, &QDoubleSpinBox::valueChanged, [&](double v) { qRelightApp->project().dome.domeDiameter = v; });
+	connect(diameter, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) { qRelightApp->project().dome.domeDiameter = v; });
 
 	grid->addWidget(new QLabel("Vertical offset:"), 4, 0);
 	grid->addWidget(vertical_offset = new QDoubleSpinBox, 4, 1);
 	grid->addWidget(new QLabel("cm"), 4, 2);
-	connect(vertical_offset, &QDoubleSpinBox::valueChanged, [&](double v) { qRelightApp->project().dome.verticalOffset = v; });
+	connect(vertical_offset, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) { qRelightApp->project().dome.verticalOffset = v; });
 
 
 	lights = new QGraphicsView(&scene);

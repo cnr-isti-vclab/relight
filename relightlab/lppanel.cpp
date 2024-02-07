@@ -12,20 +12,9 @@
 #include <QFileDialog>
 #include <QTextBrowser>
 
-void makePage(QWidget *widget, int margin_percent = 15) {
-	QLayout *content = widget->layout();
-	content->setContentsMargins(31, 31, 31, 13);
-
-	QHBoxLayout *page_layout = new QHBoxLayout;
-	widget->setLayout(page_layout);
-
-	page_layout->addStretch(margin_percent);
-	page_layout->addLayout(content, 100 - 2*margin_percent);
-	page_layout->addStretch(margin_percent);
-}
 
 LpPanel::LpPanel() {
-	QVBoxLayout *content = new QVBoxLayout();
+	QVBoxLayout *content = new QVBoxLayout(this);
 
 	QLabel *title = new QLabel("<h2>Load .lp file</h2>");
 	content->addWidget(title);
@@ -47,7 +36,6 @@ LpPanel::LpPanel() {
 	lp_filename = new QLineEdit();
 	lp_filename->setEnabled(false);
 	lp_layout->addWidget(lp_filename);
-
 }
 
 
