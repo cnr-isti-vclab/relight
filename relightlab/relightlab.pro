@@ -95,7 +95,8 @@ HEADERS += \
     lightsframe.h \
     ../src/lp.h \
     domepanel.h \
-    lppanel.h
+	lppanel.h \
+	lightsgeometry.h
 
 FORMS += \
     form.ui
