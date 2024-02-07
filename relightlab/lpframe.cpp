@@ -1,5 +1,6 @@
 #include "lpframe.h"
 #include "relightapp.h"
+#include "lightgeometry.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -37,45 +38,6 @@ public:
 	}
 };
 
-class LightsGeometry: public QFrame {
-public:
-	LightsGeometry(QWidget *parent = nullptr): QFrame(parent) {
-		QVBoxLayout *content = new QVBoxLayout(this);
-		content->addWidget(images_number = new QLabel("Number of images:"));
-
-		content->addSpacing(20);
-		content->addWidget(sphere_approx = new QCheckBox("Enable 3D light positions on a sphere"), 0);
-
-		QFrame *geometry = new QFrame;
-		geometry->setFrameShape(QFrame::StyledPanel);
-
-		content->addWidget(geometry);
-
-		QGridLayout *grid = new QGridLayout(geometry);
-		grid->addWidget(new QLabel("Image width:"), 2, 0);
-		grid->addWidget(image_width = new QDoubleSpinBox, 2, 1);
-		grid->addWidget(new QLabel("cm"), 2, 2);
-
-		grid->addWidget(new QLabel("Diameter:"), 3, 0);
-		grid->addWidget(diameter = new QDoubleSpinBox, 3, 1);
-		grid->addWidget(new QLabel("cm"), 3, 2);
-
-		grid->addWidget(new QLabel("Vertical offset:"), 4, 0);
-		grid->addWidget(vertical_offset = new QDoubleSpinBox, 4, 1);
-		grid->addWidget(new QLabel("cm"), 4, 2);
-
-		content->addStretch();
-	}
-	void init() {
-
-	}
-
-	QLabel *images_number;
-	QCheckBox *sphere_approx;
-	QDoubleSpinBox *image_width;
-	QDoubleSpinBox *vertical_offset;
-	QDoubleSpinBox *diameter;
-};
 
 LpFrame::LpFrame(QWidget *parent): QFrame(parent) {
 
@@ -118,30 +80,19 @@ LpFrame::LpFrame(QWidget *parent): QFrame(parent) {
 	columns->addWidget(geometry);
 	columns->addStretch();
 
-	content->addLayout(columns);
-
 	content->addStretch();
 
 	QPushButton *cancel = new QPushButton(QIcon::fromTheme("cancel"), "Cancel");
 	cancel->setProperty("class", "large");
-	content->addWidget(cancel);
+	cancel->setMinimumWidth(200);
+	content->addWidget(cancel, 0, Qt::AlignRight);
 
 	connect(cancel, SIGNAL(clicked()), this->parent(), SLOT(showChoice()));
 	connect(load, SIGNAL(clicked()), this, SLOT(loadLP()));
 }
 
 void LpFrame::init() {
-	Project &project = qRelightApp->project();
-	Dome &dome = project.dome;
-	switch(dome.lightConfiguration) {
-		case Dome::DIRECTIONAL:
-		break;
-		case Dome::SPHERICAL:
-		break;
-		case Dome::LIGHTS3D
-		break;
-	}
-
+	geometry->init();
 
 }
 
