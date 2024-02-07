@@ -1,13 +1,14 @@
 #include "lightsframe.h"
-#include "lpframe.h"
 #include "relightapp.h"
-#include "domeframe.h"
+#include "domepanel.h"
+#include "lightgeometry.h"
 
 #include <QVBoxLayout>
 #include <QRadioButton>
 #include <QButtonGroup>
 #include <QPushButton>
 #include <QLabel>
+#include <QTabWidget>
 #include <QDebug>
 #include <QFileDialog>
 
@@ -30,72 +31,37 @@ Card::Card(QString title, QString subtitle, QWidget *parent): QFrame(parent) {
 }
 
 LightsFrame::LightsFrame() {
-	addWidget(createChoiceFrame());
-	lp = new LpFrame(this);
-	addWidget(lp);
-	sphere = new SphereFrame(this);
-	addWidget(sphere);
-	dome = new DomeFrame(this);
-	addWidget(dome);
+	QVBoxLayout *content = new QVBoxLayout(this);
+
+	QTabWidget *choice = new QTabWidget;
+	content->addWidget(choice);
+
+	lp = new LpPanel;
+	choice->addTab(lp, "Load .lp file");
+
+	sphere = new SpherePanel;
+	choice->addTab(sphere, "Identify reflective spheres");
+
+	dome = new DomePanel;
+	choice->addTab(dome, "Select an existing dome configuration");
+
+	geometry = new LightsGeometry;
+	content->addWidget(geometry);
+
+	connect(lp, &LpPanel::accept, geometry, &LightsGeometry::update);
+	connect(sphere, &SpherePanel::accept, geometry, &LightsGeometry::update);
+	connect(dome, &DomePanel::accept, geometry, &LightsGeometry::update);
 }
 
 void LightsFrame::init() {
-	lp->init();
 	sphere->init();
 	dome->init();
-}
-
-QFrame *LightsFrame::createChoiceFrame() {
-	QFrame *lights_choice = new QFrame();
-	//lights_choice->setObjectName("lights_choice");
-
-	QVBoxLayout *content = new QVBoxLayout(lights_choice);
-
-	content->addStretch(1);
-	QHBoxLayout *buttons = new QHBoxLayout();
-	buttons->setSpacing(30);
-
-	content->addLayout(buttons, 0);
-
-	buttons->addStretch(1);
-
-	Card *lp = new Card("LP", "<p>Load a file (.lp) containging the light directions.</p>");
-	connect(lp, SIGNAL(clicked()), this, SLOT(showLp()));
-	buttons->addWidget(lp, 1);
-
-	Card *sphere = new Card("Sphere", "<p>Identify one or more reflective spheres</p>");
-	connect(sphere, SIGNAL(clicked()), this, SLOT(showSphere()));
-	buttons->addWidget(sphere, 1);
-
-	Card *dome = new Card("Dome", "<p>Select a preconfigure dome</p>");
-	connect(dome, SIGNAL(clicked()), this, SLOT(showDome()));
-	buttons->addWidget(dome, 1);
-
-	buttons->addStretch(1);
-
-	content->addStretch(2);
-	return lights_choice;
-}
-
-void LightsFrame::showChoice() {
-
-	setCurrentIndex(0);
-}
-void LightsFrame::showLp() {
-	setCurrentWidget(lp);
-}
-
-void LightsFrame::showSphere() {
-	setCurrentIndex(2);
-}
-
-void LightsFrame::showDome() {
-	setCurrentIndex(3);
+	geometry->init();
 }
 
 
 
-SphereFrame::SphereFrame(QWidget *parent): QFrame(parent) {
+SpherePanel::SpherePanel(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);
 	this->setLayout(content);
 
@@ -103,7 +69,7 @@ SphereFrame::SphereFrame(QWidget *parent): QFrame(parent) {
 	content->addWidget(title);
 }
 
-void SphereFrame::init() {
+void SpherePanel::init() {
 }
 
 
