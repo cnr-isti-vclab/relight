@@ -1,15 +1,11 @@
 #ifndef LIGHTSFRAME_H
 #define LIGHTSFRAME_H
 
-#include "lppanel.h"
-#include "domepanel.h"
-
 #include <QStackedWidget>
 
 class QLabel;
 class LpFrame;
 class DomeFrame;
-class LightsGeometry;
 
 class Card: public QFrame {
 	Q_OBJECT
@@ -21,30 +17,32 @@ signals:
 	void clicked();
 };
 
-class SpherePanel: public QFrame {
-	Q_OBJECT
+
+class SphereFrame: public QFrame {
 public:
-	SpherePanel(QWidget *parent = nullptr);
+	SphereFrame(QWidget *parent = nullptr);
 	void init();
-signals:
-	void accept(Dome &dome);
 };
 
 
 
-class LightsFrame: public QFrame {
+class LightsFrame: public QStackedWidget {
 	Q_OBJECT
 public:
 	LightsFrame();
 
 public slots:
 	void init();
+	void showChoice();
+	void showLp();
+	void showSphere();
+	void showDome();
 
 private:
-	LpPanel *lp = nullptr;
-	SpherePanel *sphere = nullptr;
-	DomePanel *dome = nullptr;
-	LightsGeometry *geometry = nullptr;
+	QFrame *createChoiceFrame();
+	LpFrame *lp = nullptr;
+	SphereFrame *sphere = nullptr;
+	DomeFrame *dome = nullptr;
 };
 
 
