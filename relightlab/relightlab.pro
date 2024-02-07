@@ -43,6 +43,7 @@ SOURCES += main.cpp \
     ../src/sphere.cpp \
     ../src/white.cpp \
     canvas.cpp \
+    lightgeometry.cpp \
     mainwindow.cpp \
     preferences.cpp \
     recentprojects.cpp \
@@ -79,6 +80,7 @@ HEADERS += \
     ../src/sphere.h \
     ../src/white.h \
     canvas.h \
+    lightgeometry.h \
     mainwindow.h \
     mainwindow.h \
     preferences.h \
