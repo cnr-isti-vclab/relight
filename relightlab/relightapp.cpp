@@ -165,7 +165,7 @@ void RelightApp::newProject() {
 	}
 
 
-	mainwindow->init();
+	mainwindow->initInterface();
 	mainwindow->setTabIndex(1);
 }
 
@@ -227,9 +227,9 @@ void RelightApp::openProject(const QString &filename) {
 	project_filename = filename; //project.dir.relativeFilePath(filename);
 	qRelightApp->setLastProjectDir(project.dir.path());
 
-	mainwindow->init();
+	mainwindow->initInterface();
 	mainwindow->setTabIndex(1);
-
+	mainwindow->image_frame->init();
 	addRecentProject(filename);
 	mainwindow->updateRecentProjectsMenu();
 }
