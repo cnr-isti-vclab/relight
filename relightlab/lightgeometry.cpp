@@ -77,17 +77,3 @@ void LightsGeometry::update(Dome dome) {
 	init();
 }
 
-void LightsGeometry::initLights() {
-	qreal scale = 200;
-	//scene goes from [-1, +1]x[-1, +1], view will just zoom on it
-	qreal radius = scale/50;
-	Dome &dome = qRelightApp->project().dome;
-	for(Vector3f &dir: dome.directions) {
-		QGraphicsEllipseItem *e = scene.addEllipse(dir[0]*scale, dir[1]*scale, radius, radius);
-		e->setBrush(Qt::white);
-	}
-
-	qreal margin = scale/10;
-	qreal side = scale + margin;
-	lights->fitInView(QRectF(-side, -side, 2*side, 2*side), Qt::KeepAspectRatio);
-}
