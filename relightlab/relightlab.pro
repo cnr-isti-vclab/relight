@@ -45,7 +45,6 @@ SOURCES += main.cpp \
     canvas.cpp \
     domepanel.cpp \
     lightgeometry.cpp \
-    lppanel.cpp \
     mainwindow.cpp \
     preferences.cpp \
     recentprojects.cpp \
@@ -96,7 +95,6 @@ HEADERS += \
     lightsframe.h \
     ../src/lp.h \
     domepanel.h \
-	lppanel.h \
 	lightsgeometry.h \
     directionsview.h
 

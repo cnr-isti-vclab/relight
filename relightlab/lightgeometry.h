@@ -5,34 +5,32 @@
 
 #include <QFrame>
 #include <QGraphicsScene>
+#include <QButtonGroup>
 
-class QLabel;
-class QCheckBox;
+class QRadioButton;
 class QDoubleSpinBox;
-class QTextBrowser;
-class QGraphicsView;
 
 class LightsGeometry: public QFrame {
 	Q_OBJECT
-public:
-	QLabel *images_number;
-	QCheckBox *sphere_approx;
+public:	
 	QDoubleSpinBox *image_width;
+
+	QRadioButton *directional;
+	QRadioButton *sphere_approx;
+	QRadioButton *three;
+
 	QDoubleSpinBox *vertical_offset;
 	QDoubleSpinBox *diameter;
 
+	QButtonGroup *group = nullptr;
+
 	LightsGeometry(QWidget *parent = nullptr);
+	~LightsGeometry() { if(group) delete group; }
+
 	void init();
 
 public slots:
 	void update(Dome dome);
 	void setSpherical(int s);
-
-private:
-	void initLights();
-
-	QTextBrowser *info = nullptr;
-	QGraphicsView *lights = nullptr;
-	QGraphicsScene scene;
 };
 #endif // LIGHTGEOMETRY_H
