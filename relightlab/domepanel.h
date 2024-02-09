@@ -7,23 +7,39 @@
 #include <QGraphicsScene>
 
 class QGraphicsView;
+class QLabel;
+class QLineEdit;
+class QListWidget;
+class DirectionsView;
 
 class DomePanel: public QFrame {
 	Q_OBJECT
 public:
 	DomePanel(QWidget *parent = nullptr);
-	void loadDome(int);
 	void init();
+
+public slots:
+	void loadDomeFile();
+	void setSelectedDome();
 
 signals:
 	void accept(Dome dome);
 
 private:
-	QStringList domes;
-	QGraphicsView *lights;
-	QGraphicsScene scene;
+	Dome dome;
+	QStringList dome_labels;
+	QStringList dome_paths;
 
-	void initLights();
+	QLabel *filename;
+	QLineEdit *label;
+	QLabel *number;
+	QListWidget *dome_list;
+	QListWidget *images;
+	DirectionsView *directions_view;
+
+	void loadLP(QString filename);
+	void loadDome(QString filename);
+	void update(QString filename);
 };
 
 #endif // DOMEPANEL_H

@@ -2,6 +2,7 @@
 
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QList>
 
 using namespace std;
@@ -15,8 +16,8 @@ QJsonArray toJson(std::vector<Vector3f> &values) {
 	for(Vector3f v: values) {
 		QJsonObject obj;
 		obj["x"] = v[0];
-		obj["y"] = v[0];
-		obj["z"] = v[0];
+		obj["y"] = v[1];
+		obj["z"] = v[2];
 		jvalues.append(obj);
 	}
 	return jvalues;
@@ -27,16 +28,37 @@ QJsonArray toJson(std::vector<Color3f> &values) {
 	for(Color3f v: values) {
 		QJsonObject obj;
 		obj["r"] = v[0];
-		obj["g"] = v[0];
-		obj["b"] = v[0];
+		obj["g"] = v[1];
+		obj["b"] = v[2];
 		jvalues.append(obj);
 	}
 	return jvalues;
 }
 
+void Dome::save(const QString &filename) {
+	QFile file(filename);
+	bool open = file.open(QFile::WriteOnly | QFile::Truncate);
+	if(!open) {
+		throw file.errorString();
+	}
+	QJsonDocument doc(toJson());
+	file.write(doc.toJson());
+}
+
+void Dome::load(const QString &filename) {
+	QFile file(filename);
+	bool open = file.open(QFile::ReadOnly);
+	if(!open) {
+		throw file.errorString();
+	}
+	QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+	fromJson(doc.object());
+}
+
 
 QJsonObject Dome::toJson() {
 	QJsonObject dome;
+	dome.insert("label", label);
 	dome.insert("imageWidth", imageWidth);
 	dome.insert("domeDiameter", domeDiameter);
 	dome.insert("verticalOffset", verticalOffset);
@@ -65,6 +87,7 @@ void fromJson(QJsonArray values, std::vector<Color3f> &lights) {
 
 
 void Dome::fromJson(const QJsonObject &obj) {
+	label = obj["label"].toString();
 	imageWidth     = obj["imageWidth"].toDouble();
 	domeDiameter   = obj["domeDiameter"].toDouble();
 	verticalOffset = obj["verticalOffset"].toDouble();
