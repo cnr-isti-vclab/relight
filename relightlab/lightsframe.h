@@ -1,8 +1,7 @@
 #ifndef LIGHTSFRAME_H
 #define LIGHTSFRAME_H
-
-#include "lppanel.h"
 #include "domepanel.h"
+#include "../src/dome.h"
 
 #include <QStackedWidget>
 
@@ -39,11 +38,13 @@ public:
 
 public slots:
 	void init();
+	void init(Dome dome);
+	void exportDome();
 
 private:
-	LpPanel *lp = nullptr;
-	SpherePanel *sphere = nullptr;
-	DomePanel *dome = nullptr;
+	Dome dome;
+	SpherePanel *sphere_panel = nullptr;
+	DomePanel *dome_panel = nullptr;
 	LightsGeometry *geometry = nullptr;
 };
 

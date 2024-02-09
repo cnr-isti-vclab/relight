@@ -273,6 +273,25 @@ bool RelightApp::needsSavingProceed() {
 	return answer == QMessageBox::Yes;
 }
 
+QStringList RelightApp::domes() {
+	return QSettings().value("domes", QVariant(QStringList())).toStringList();
+}
+
+void RelightApp::addDome(QString filename) {
+	QStringList d = domes();
+	if(d.contains(filename))
+		return;
+	d.append(filename);
+	QSettings().setValue("domes", d);
+}
+
+void RelightApp::removeDome(QString filename) {
+	QStringList d = domes();
+	d.removeAll(filename);
+	QSettings().setValue("domes", d);
+}
+
+
 QAction *RelightApp::addAction(const QString &id, const QString &label, const QString &icon, const QString &shortcut, const char *method) {
 	QAction *a = new QAction(label);
 	a->setShortcut(shortcut);
