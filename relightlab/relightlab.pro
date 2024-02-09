@@ -57,7 +57,8 @@ SOURCES += main.cpp \
     flowlayout.cpp \
     imagegrid.cpp \
     lightsframe.cpp \
-    ../src/lp.cpp
+    ../src/lp.cpp \
+    directionsview.cpp
 
 RESOURCES += \
     res.qrc
@@ -96,7 +97,8 @@ HEADERS += \
     ../src/lp.h \
     domepanel.h \
 	lppanel.h \
-	lightsgeometry.h
+	lightsgeometry.h \
+    directionsview.h
 
 FORMS += \
     form.ui
