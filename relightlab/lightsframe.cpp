@@ -48,6 +48,8 @@ LightsFrame::LightsFrame() {
 	geometry = new LightsGeometry;
 	content->addWidget(geometry);
 
+	content->addStretch();
+
 	connect(lp, &LpPanel::accept, geometry, &LightsGeometry::update);
 	connect(sphere, &SpherePanel::accept, geometry, &LightsGeometry::update);
 	connect(dome, &DomePanel::accept, geometry, &LightsGeometry::update);
