@@ -66,6 +66,10 @@ public:
 	}
 	bool needsSavingProceed();
 
+	QStringList domes();
+	void addDome(QString filename);
+	void removeDome(QString filename);
+
 private:
 	QAction *addAction(const QString &id, const QString &label, const QString &icon, const QString &shortcut, const char *method = nullptr);
 

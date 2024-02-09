@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "../src/relight_vector.h"
+#include <QString>
 
 class QJsonObject;
 
@@ -22,6 +23,7 @@ class QJsonObject;
 
 class Dome {
 public:
+	QString label;
 	std::vector<Vector3f> directions;
 	std::vector<Vector3f> positions;
 	//TODO rename
@@ -36,6 +38,10 @@ public:
 	double verticalOffset = 0.0;
 
 	Dome();
+	Dome(const QString &filename) { load(filename); }
+	void load(const QString &filename);
+	void save(const QString &filename);
+
 	QJsonObject toJson();
 	void fromJson(const QJsonObject &obj);
 };

@@ -5,23 +5,37 @@
 #include <QFrame>
 #include <QGridLayout>
 #include <QLabel>
-#include <QCheckBox>
+#include <QRadioButton>
+#include <QButtonGroup>
 #include <QDoubleSpinBox>
-#include <QGraphicsView>
-#include <QGraphicsEllipseItem>
+#include <QDebug>
 
 LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
-	QVBoxLayout *content = new QVBoxLayout(this);
-	content->addWidget(images_number = new QLabel("Number of images:"));
 
-	content->addSpacing(20);
-	content->addWidget(sphere_approx = new QCheckBox("Enable 3D light positions on a sphere"), 0);
-	connect(sphere_approx, SIGNAL(stateChanged(int)), this, SLOT(setSpherical(int)));
+	QGridLayout * content = new QGridLayout(this);
+
+
+/*	content->addWidget( new QLabel("Number of images:"), 0, 0);
+	content->addWidget(images_number = new QLabel, 0, 1); */
+
+	content->addWidget(new QLabel("<h3>Lights geometrical configuration<h3>"), 0, 0);
+
+	group = new QButtonGroup;
+
+	content->addWidget(directional = new QRadioButton("Directional Lights"), 1, 0);
+	content->addWidget(sphere_approx = new QRadioButton("3D light positions on a sphere"), 2, 0);
+	content->addWidget(three = new QRadioButton("3D light positions"), 3, 0);
+	group->addButton(directional, Dome::DIRECTIONAL);
+	group->addButton(sphere_approx, Dome::SPHERICAL);
+	group->addButton(three, Dome::LIGHTS3D);
+
+	connect(group, SIGNAL(buttonClicked(int)), this, SLOT(setSpherical(int)));
+
 
 	QFrame *geometry = new QFrame;
 	geometry->setFrameShape(QFrame::StyledPanel);
 
-	content->addWidget(geometry);
+	content->addWidget(geometry, 1, 1, 3, 1);
 
 	QGridLayout *grid = new QGridLayout(geometry);
 	grid->setColumnMinimumWidth(0, 200);
@@ -40,30 +54,24 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	grid->addWidget(new QLabel("cm"), 4, 2);
 	connect(vertical_offset, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) { qRelightApp->project().dome.verticalOffset = v; });
 
-
-	lights = new QGraphicsView(&scene);
-	lights->setBackgroundBrush(Qt::black);
-	lights->setMinimumSize(300, 300);
-	lights->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-
-	content->addWidget(lights);
-	content->addStretch();
+	//content->setColumnStretch(1, 1);
 }
 
 void LightsGeometry::setSpherical(int spherical) {
-	Dome &dome = qRelightApp->project().dome;
-	if(spherical)
-		dome.lightConfiguration = Dome::SPHERICAL;
-	else
-		dome.lightConfiguration = Dome::DIRECTIONAL;
 
+	diameter->setEnabled(spherical == Dome::SPHERICAL);
+	vertical_offset->setEnabled(spherical == Dome::SPHERICAL);
+
+	Dome &dome = qRelightApp->project().dome;
+	dome.lightConfiguration = Dome::LightConfiguration(spherical);
 	init();
 }
 
 void LightsGeometry::init() {
 	Dome &dome = qRelightApp->project().dome;
+	group->button(dome.lightConfiguration)->setChecked(true);
+
 	bool spherical = dome.lightConfiguration == Dome::SPHERICAL;
-	sphere_approx->setChecked(spherical);
 	diameter->setEnabled(spherical);
 	vertical_offset->setEnabled(spherical);
 

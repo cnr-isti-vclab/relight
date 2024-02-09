@@ -16,6 +16,7 @@ public:
 
 public slots:
 	void highlight(int n);
+	void clear();
 
 private:
 	QGraphicsScene scene;

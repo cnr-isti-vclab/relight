@@ -31,3 +31,7 @@ void DirectionsView::highlight(int n) {
 		item->setBrush(i == n? Qt::red : Qt::white);
 	}
 }
+
+void DirectionsView::clear() {
+	scene.clear();
+}

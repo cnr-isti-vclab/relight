@@ -31,36 +31,59 @@ Card::Card(QString title, QString subtitle, QWidget *parent): QFrame(parent) {
 }
 
 LightsFrame::LightsFrame() {
-	QVBoxLayout *content = new QVBoxLayout(this);
+	QHBoxLayout *page = new QHBoxLayout(this);
+	QVBoxLayout *content = new QVBoxLayout;
+	page->addStretch(1);
+	page->addLayout(content, 5);
+	page->addStretch(1);
+
+	content->addWidget(new QLabel("<h2>Lights direction setup</h2>"));
+	content->addSpacing(30);
 
 	QTabWidget *choice = new QTabWidget;
 	content->addWidget(choice);
 
-	lp = new LpPanel;
-	choice->addTab(lp, "Load .lp file");
 
-	sphere = new SpherePanel;
-	choice->addTab(sphere, "Identify reflective spheres");
+	choice->addTab(sphere_panel = new SpherePanel, "Identify reflective spheres");
+	choice->addTab(dome_panel = new DomePanel, "Select an existing dome configuration");
 
-	dome = new DomePanel;
-	choice->addTab(dome, "Select an existing dome configuration");
+	content->addSpacing(30);
 
 	geometry = new LightsGeometry;
 	content->addWidget(geometry);
 
+	QPushButton *export_dome = new QPushButton(QIcon::fromTheme("save"), "Export as dome...");
+	content->addWidget(export_dome, Qt::AlignRight);
+
 	content->addStretch();
 
-	connect(lp, &LpPanel::accept, geometry, &LightsGeometry::update);
-	connect(sphere, &SpherePanel::accept, geometry, &LightsGeometry::update);
-	connect(dome, &DomePanel::accept, geometry, &LightsGeometry::update);
+	connect(sphere_panel, SIGNAL(accept(Dome)), this, SLOT(init(Dome)));
+	connect(dome_panel, SIGNAL(accept(Dome)), this, SLOT(init(Dome)));
+
+	connect(export_dome, SIGNAL(clicked()), this, SLOT(exportDome()));
 }
 
 void LightsFrame::init() {
-	sphere->init();
-	dome->init();
+	sphere_panel->init();
+	dome_panel->init();
 	geometry->init();
 }
 
+void LightsFrame::init(Dome _dome) {
+	geometry->update(_dome);
+	dome = _dome;
+}
+
+void LightsFrame::exportDome() {
+	QString filename = QFileDialog::getSaveFileName(this, "Select a dome file", qRelightApp->lastProjectDir(), "*.dome");
+	if(filename.isNull())
+		return;
+	if(!filename.endsWith(".dome"))
+		filename += ".dome";
+	//TODO Basic checks, label is a problem (use filename!
+	dome.save(filename);
+	qRelightApp->addDome(filename);
+}
 
 
 SpherePanel::SpherePanel(QWidget *parent): QFrame(parent) {
