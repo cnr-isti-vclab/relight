@@ -7,9 +7,10 @@
 #include <vector>
 #include "../src/relight_vector.h"
 #include "../src/dome.h"
-class QLineEdit;
-class QGraphicsView;
-class QTextBrowser;
+
+class QLabel;
+class DirectionsView;
+class QListWidget;
 
 class LpPanel: public QFrame {
 	Q_OBJECT
@@ -20,12 +21,16 @@ public:
 signals:
 	void accept(Dome dome);
 
+
 public slots:
 	void loadLP();
 
 private:
-	QLineEdit *lp_filename = nullptr;
-	QLineEdit *csv_filename = nullptr;
+	QLabel *lp_filename = nullptr;
+	QLabel *csv_filename = nullptr;
+	DirectionsView *directions_view = nullptr;
+	QLabel *lights_number = nullptr;
+	QListWidget *images = nullptr;
 };
 
 #endif // LPPANEL_H
