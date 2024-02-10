@@ -58,13 +58,13 @@ DomePanel::DomePanel(QWidget *parent): QFrame(parent) {
 	properties_layout->addWidget(number = new QLabel, 2, 1);
 
 	properties_layout->addWidget(new QLabel("Images: "), 3, 0, Qt::AlignRight);
-	properties_layout->addWidget(images = new QListWidget, 3, 1);
+	properties_layout->addWidget(images = new QListWidget, 3, 1, Qt::AlignBottom);
 	images->setMaximumWidth(600);
 	images->setStyleSheet( "QListWidget{ background: palette(alternate-base); }");
 
 
 	directions_view = new DirectionsView;
-	columns->addWidget(directions_view, 1);
+	columns->addWidget(directions_view, 1, Qt::AlignBottom);
 	directions_view->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	directions_view->setMaximumSize(200, 200);
 	directions_view->setMinimumSize(200, 200);

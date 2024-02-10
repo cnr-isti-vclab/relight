@@ -57,7 +57,10 @@ SOURCES += main.cpp \
     imagegrid.cpp \
     lightsframe.cpp \
     ../src/lp.cpp \
-    directionsview.cpp
+    directionsview.cpp \
+    spherepanel.cpp \
+    spherepicking.cpp \
+    spheremarker.cpp
 
 RESOURCES += \
     res.qrc
@@ -96,7 +99,10 @@ HEADERS += \
     ../src/lp.h \
     domepanel.h \
 	lightsgeometry.h \
-    directionsview.h
+    directionsview.h \
+    spherepanel.h \
+    spherepicking.h \
+    spheremarker.h
 
 FORMS += \
     form.ui
