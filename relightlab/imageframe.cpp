@@ -15,12 +15,12 @@
 #include <iostream>
 using namespace std;
 
-ImageFrame::ImageFrame() {
+ImageFrame::ImageFrame(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *container = new QVBoxLayout(this);
 
 	QHBoxLayout *toolbars = new QHBoxLayout();
 
-	QToolBar *left_toolbar = new QToolBar;
+	left_toolbar = new QToolBar;
 
 	left_toolbar->addAction(qRelightApp->action("rotate_left"));
 	left_toolbar->addAction(qRelightApp->action("rotate_right"));
@@ -29,7 +29,7 @@ ImageFrame::ImageFrame() {
 	toolbars->addWidget(left_toolbar, 0, Qt::AlignLeft);
 //	toolbars->addSpacing();
 
-	QToolBar *center_toolbar = new QToolBar;
+	center_toolbar = new QToolBar;
 	center_toolbar->addAction(qRelightApp->action("zoom_fit"));
 	center_toolbar->addAction(qRelightApp->action("zoom_one"));
 	center_toolbar->addAction(qRelightApp->action("zoom_in"));
@@ -39,7 +39,7 @@ ImageFrame::ImageFrame() {
 	toolbars->addWidget(center_toolbar, 0, Qt::AlignCenter);
 
 
-	QToolBar *right_toolbar = new QToolBar;
+	right_toolbar = new QToolBar;
 	right_toolbar->addAction(qRelightApp->action("show_image"));
 	right_toolbar->addAction(qRelightApp->action("show_list"));
 	right_toolbar->addAction(qRelightApp->action("show_grid"));
@@ -88,8 +88,10 @@ void ImageFrame::init() {
 	image_list->init();
 	image_grid->init();
 	scene->clear();
-	showImage(0);
-	fit();
+	if(qRelightApp->project().images.size()) {
+		showImage(0);
+		fit();
+	}
 	listMode(); //TODO actually use last used mode used by the user
 }
 
@@ -139,7 +141,7 @@ void ImageFrame::one() {
 
 void ImageFrame::previousImage() {
 	int current = image_list->currentRow();
-	if(current-- == 0)
+	if(current-- <= 0)
 		return;
 	image_list->setCurrentRow(current);
 	showImage(current);

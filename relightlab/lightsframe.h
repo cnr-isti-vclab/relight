@@ -1,7 +1,9 @@
 #ifndef LIGHTSFRAME_H
 #define LIGHTSFRAME_H
-#include "domepanel.h"
+
 #include "../src/dome.h"
+#include "domepanel.h"
+#include "spherepanel.h"
 
 #include <QStackedWidget>
 
@@ -19,16 +21,6 @@ public slots:
 signals:
 	void clicked();
 };
-
-class SpherePanel: public QFrame {
-	Q_OBJECT
-public:
-	SpherePanel(QWidget *parent = nullptr);
-	void init();
-signals:
-	void accept(Dome &dome);
-};
-
 
 
 class LightsFrame: public QFrame {
