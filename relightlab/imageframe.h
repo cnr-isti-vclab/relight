@@ -25,8 +25,11 @@ public:
 	QToolBar *left_toolbar;
 	QToolBar *center_toolbar;
 	QToolBar *right_toolbar;
+
 	ImageFrame(QWidget *parent = nullptr);
+	~ImageFrame();
 	void init();
+	int currentImage();
 	void showImage(int id); //new project loaded.
 
 public slots:
@@ -40,9 +43,11 @@ public slots:
 	void listMode();
 	void gridMode();
 
+protected:
+	QGraphicsScene *scene = nullptr;
+
 private:
 	QGraphicsPixmapItem *imagePixmap = nullptr;
-	QGraphicsScene *scene = nullptr;
 };
 
 #endif // IMAGEFRAME_H
