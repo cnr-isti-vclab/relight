@@ -11,6 +11,7 @@ class QStatusBar;
 class QGraphicsPixmapItem;
 class QGraphicsScene;
 class QListWidgetItem;
+class QToolBar;
 
 
 class ImageFrame: public QFrame {
@@ -21,8 +22,10 @@ public:
 	ImageGrid *image_grid = nullptr;
 	Canvas *canvas = nullptr;
 	QStatusBar *status = nullptr;
-	ImageFrame();
-
+	QToolBar *left_toolbar;
+	QToolBar *center_toolbar;
+	QToolBar *right_toolbar;
+	ImageFrame(QWidget *parent = nullptr);
 	void init();
 	void showImage(int id); //new project loaded.
 
