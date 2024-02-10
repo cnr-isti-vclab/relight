@@ -86,15 +86,3 @@ void LightsFrame::exportDome() {
 }
 
 
-SpherePanel::SpherePanel(QWidget *parent): QFrame(parent) {
-	QVBoxLayout *content = new QVBoxLayout(this);
-	this->setLayout(content);
-
-	QLabel *title = new QLabel("<h2>Sphere light directions</h2>");
-	content->addWidget(title);
-}
-
-void SpherePanel::init() {
-}
-
-
