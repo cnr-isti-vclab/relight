@@ -7,12 +7,13 @@
 #include <qdialog.h>
 
 class SpherePicking;
+class Sphere;
 
 class SphereDialog: public QDialog {
 	Q_OBJECT
 public:
 	SphereDialog(QWidget *parent = nullptr);
-
+	void setSphere(Sphere *sphere);
 public slots:
 	void accept();
 	void reject();
