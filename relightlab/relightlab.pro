@@ -59,8 +59,7 @@ SOURCES += main.cpp \
     ../src/lp.cpp \
     directionsview.cpp \
     spherepanel.cpp \
-    spherepicking.cpp \
-    spheremarker.cpp
+    spherepicking.cpp
 
 RESOURCES += \
     res.qrc
@@ -101,8 +100,7 @@ HEADERS += \
 	lightsgeometry.h \
     directionsview.h \
     spherepanel.h \
-    spherepicking.h \
-    spheremarker.h
+    spherepicking.h
 
 FORMS += \
     form.ui

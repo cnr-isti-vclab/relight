@@ -84,15 +84,29 @@ ImageFrame::ImageFrame(QWidget *parent): QFrame(parent) {
 	container->addWidget(status);
 }
 
+ImageFrame::~ImageFrame() {
+	delete scene;
+}
+
 void ImageFrame::init() {
 	image_list->init();
 	image_grid->init();
-	scene->clear();
+
+	if(imagePixmap) {
+		scene->removeItem(imagePixmap);
+		imagePixmap = nullptr;
+	}
+
 	if(qRelightApp->project().images.size()) {
 		showImage(0);
 		fit();
 	}
 	listMode(); //TODO actually use last used mode used by the user
+}
+
+int ImageFrame::currentImage() {
+	//TODO not properly elegant....
+	return image_list->currentRow();
 }
 
 void ImageFrame::showImage(int id) {
@@ -138,6 +152,7 @@ void ImageFrame::one() {
 	double s = 1/current_scale;
 	canvas->scale(s, s);
 }
+
 
 void ImageFrame::previousImage() {
 	int current = image_list->currentRow();
