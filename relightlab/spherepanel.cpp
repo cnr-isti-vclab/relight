@@ -1,5 +1,6 @@
 #include "spherepanel.h"
 #include "spherepicking.h"
+#include "../src/sphere.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
@@ -24,6 +25,10 @@ SphereDialog::SphereDialog(QWidget *parent): QDialog(parent) {
 	content->addWidget(buttonBox);
 	showMaximized();
 }
+void SphereDialog::setSphere(Sphere *sphere) {
+	sphere_picking->setSphere(sphere);
+}
+
 
 void SphereDialog::accept() {
 	QDialog::accept();
@@ -52,6 +57,8 @@ void SpherePanel::newSphere() {
 	if(!sphere_dialog)
 		sphere_dialog = new SphereDialog(this);
 
+	Sphere *sphere = new Sphere;
+	sphere_dialog->setSphere(sphere);
 	sphere_dialog->exec();
 	//TODO check result
 }

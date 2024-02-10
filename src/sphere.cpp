@@ -147,8 +147,9 @@ void Sphere::ellipseFit() {
 }
 
 bool Sphere::fit() {
-	if(border.size() < 3)
+	if(border.size() < 3) {
 		return false;
+	}
 
 	if(border.size() >= 5) {
 		ellipseFit();
