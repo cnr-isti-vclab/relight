@@ -10,7 +10,7 @@ class FlowLayout;
 
 class ImageThumb : public QWidget {
 public:
-	ImageThumb(const QString& imagePath, const QString& text, QWidget* parent = nullptr);
+	ImageThumb(QImage img, const QString& text, QWidget* parent = nullptr);
 };
 
 

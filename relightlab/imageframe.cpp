@@ -4,7 +4,6 @@
 #include <QStatusBar>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
-#include <QDebug>
 
 #include "relightapp.h"
 #include "imageframe.h"

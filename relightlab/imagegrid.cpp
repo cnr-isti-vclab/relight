@@ -8,14 +8,13 @@
 #include <QHBoxLayout>
 #include <QCheckBox>
 
+#include <assert.h>
 
-ImageThumb::ImageThumb(const QString& imagePath, const QString& text, QWidget* parent): QWidget(parent) {
+ImageThumb::ImageThumb(QImage img, const QString& text, QWidget* parent): QWidget(parent) {
 
 	QVBoxLayout* layout = new QVBoxLayout(this);
 
 	QLabel* thumb = new QLabel;
-	QImage img(imagePath);
-	img = img.scaledToHeight(256);
 	thumb->setPixmap(QPixmap::fromImage(img));
 	layout->addWidget(thumb);
 
@@ -37,10 +36,15 @@ ImageGrid::ImageGrid(QWidget *parent): QScrollArea(parent) {
 
 void ImageGrid::init() {
 	Project &project = qRelightApp->project();
+	std::vector<QImage> &thumbnails = qRelightApp->thumbnails();
 
-	for(Image &img: project.images) {
-		QFileInfo info(img.filename);
-		ImageThumb *thumb = new ImageThumb(img.filename, info.fileName());
+	assert(project.images.size() == thumbnails.size());
+
+	for(size_t i = 0; i < project.images.size(); i++) {
+		QImage thumbnail = thumbnails[i];
+		Image &image = project.images[i];
+		QFileInfo info(image.filename);
+		ImageThumb *thumb = new ImageThumb(thumbnail, info.fileName());
 		flowlayout->addWidget(thumb);
 	}
 }

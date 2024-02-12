@@ -2,24 +2,35 @@
 #define SPHEREPANEL_H
 
 #include "../src/dome.h"
-
+#include "../relight/task.h"
 #include <QFrame>
 #include <qdialog.h>
 
-class SpherePicking;
+
+class SphereDialog;
 class Sphere;
+class QLabel;
+class QProgressBar;
+class QVBoxLayout;
 
-class SphereDialog: public QDialog {
-	Q_OBJECT
+
+class DetectHighlights: public Task {
 public:
-	SphereDialog(QWidget *parent = nullptr);
-	void setSphere(Sphere *sphere);
-public slots:
-	void accept();
-	void reject();
+	Sphere *sphere;
+	DetectHighlights(Sphere *sphere);
+	virtual void run() override;
+};
 
-private:
-	SpherePicking *sphere_picking = nullptr;
+class SphereRow: public QWidget {
+public:
+	Sphere *sphere;
+	int rowHeight = 100;
+	QLabel *status = nullptr;
+	QProgressBar *progress = nullptr;
+	DetectHighlights *detect_highlights = nullptr;
+
+	SphereRow(Sphere *sphere, QWidget *parent = nullptr);
+	void detectHighlights();
 };
 
 
@@ -28,6 +39,8 @@ class SpherePanel: public QFrame {
 public:
 	SpherePanel(QWidget *parent = nullptr);
 	void init();
+	SphereRow *addSphere(Sphere *sphere);
+	void removeSphere(Sphere *sphere);
 
 public slots:
 	void newSphere();
@@ -39,6 +52,7 @@ signals:
 private:
 	Dome dome;
 	SphereDialog *sphere_dialog = nullptr;
+	QVBoxLayout *spheres = nullptr;
 };
 
 

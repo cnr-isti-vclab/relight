@@ -184,15 +184,3 @@ void RtiTask::openlime() {
 		copy.write(fp.readAll());
 	}
 }
-
-bool RtiTask::progressed(std::string s, int percent) {
-	QString str(s.c_str());
-	emit progress(str, percent);
-	if(status == PAUSED) {
-		mutex.lock();  //mutex should be already locked. this talls the
-		mutex.unlock();
-	}
-	if(status == STOPPED)
-		return false;
-	return true;
-}
