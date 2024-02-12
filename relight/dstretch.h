@@ -13,7 +13,7 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 
-inline void dstretchImage(QString fileName, QString output, int minSamples, std::function<bool(std::string s, int n)> progressed)
+inline void dstretchImage(QString fileName, QString output, int minSamples, std::function<bool(QString s, int n)> progressed)
 {
     // info.json
     QString infoFileName = output.mid(output.lastIndexOf("/") + 1, output.length()).split(".")[0];

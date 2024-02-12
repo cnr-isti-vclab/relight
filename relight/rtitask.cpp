@@ -30,7 +30,7 @@ RtiTask::~RtiTask() {
 void RtiTask::run() {
 	status = RUNNING;
 	QStringList steps = (*this)["steps"].value.toStringList();
-    std::function<bool(std::string s, int d)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
+	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
     QString err;
     for(auto step: steps) {
 		if(step == "relight")
@@ -111,7 +111,7 @@ void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 	builder->height = builder->imageset.height;
 	int quality= (*this)["quality"].value.toInt();
 
-	std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
+	std::function<bool(QString s, int n)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
 	try {
 		if(!builder->init(&callback)) {
