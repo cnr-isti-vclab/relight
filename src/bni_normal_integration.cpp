@@ -182,7 +182,7 @@ public:
 	}
 };
 
-std::vector<float> bni_pyramid(std::function<bool(std::string s, int n)> progressed, int &w, int &h, std::vector<float> &normalmap,
+std::vector<float> bni_pyramid(std::function<bool(QString s, int n)> progressed, int &w, int &h, std::vector<float> &normalmap,
 							   double k,
 							   double tolerance,
 							   double solver_tolerance,
@@ -223,7 +223,7 @@ std::vector<float> bni_pyramid(std::function<bool(std::string s, int n)> progres
 	return result.heights;
 }
 
-void bni_integrate(std::function<bool(std::string s, int n)> progressed, int w, int h, std::vector<float> &normalmap, std::vector<float> &heights,
+void bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int h, std::vector<float> &normalmap, std::vector<float> &heights,
 				   double k,
 				   double tolerance,
 				   double solver_tolerance,

@@ -86,7 +86,7 @@ inline QString getItarzoomPlaneData(const QString& path, ZoomData& data, QJsonAr
 }
 
 inline QString deepZoom(QString inputFolder, QString output, uint32_t quality, uint32_t overlap,
-              uint32_t tileSize, std::function<bool(std::string s, int n)> progressed)
+			  uint32_t tileSize, std::function<bool(QString s, int n)> progressed)
 {
     int nplanes = getNFiles(inputFolder, "jpg");
 
@@ -108,7 +108,7 @@ inline QString deepZoom(QString inputFolder, QString output, uint32_t quality, u
     return "OK";
 }
 
-inline QString tarZoom(QString inputFolder, QString output, std::function<bool(std::string s, int n)> progressed)
+inline QString tarZoom(QString inputFolder, QString output, std::function<bool(QString s, int n)> progressed)
 {
     // Find number of planes
     int nPlanes = getNFiles(inputFolder, "dzi");
@@ -221,7 +221,7 @@ inline QString tarZoom(QString inputFolder, QString output, std::function<bool(s
     return "OK";
 }
 
-inline QString itarZoom(const QString& inputFolder, const QString& output, std::function<bool(std::string s, int n)> progressed)
+inline QString itarZoom(const QString& inputFolder, const QString& output, std::function<bool(QString s, int n)> progressed)
 {
     // Find number of planes
     int nPlanes = getNFiles(inputFolder, "tzb");

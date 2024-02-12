@@ -34,13 +34,13 @@ public:
 	int crop[4] = { 0, 0, 0, 0 }; //left, top, width, height
 	size_t nworkers = 8;
 
-	std::function<bool(std::string stage, int percent)> *callback = nullptr;
+	std::function<bool(QString stage, int percent)> *callback = nullptr;
 
 	RtiBuilder();
 	~RtiBuilder();
-	bool initFromFolder(const std::string &folder, std::function<bool(std::string stage, int percent)> *_callback = nullptr);
-	bool initFromProject(const std::string &filename, std::function<bool(std::string stage, int percent)> *_callback = nullptr);
-	bool init(std::function<bool(std::string stage, int percent)> *_callback = nullptr);
+	bool initFromFolder(const std::string &folder, std::function<bool(QString stage, int percent)> *_callback = nullptr);
+	bool initFromProject(const std::string &filename, std::function<bool(QString stage, int percent)> *_callback = nullptr);
+	bool init(std::function<bool(QString stage, int percent)> *_callback = nullptr);
 
 	size_t save(const std::string &output, int quality = 95);
 	size_t savePTM(const std::string &output);

@@ -11,7 +11,7 @@ public:
     virtual ~DStretchTask(){}
 
     virtual void run() override;
-    virtual bool progressed(std::string str, int percent) override;
+	virtual bool progressed(QString str, int percent) override;
 
 private:
 };

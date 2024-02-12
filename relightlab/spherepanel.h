@@ -19,9 +19,11 @@ public:
 	Sphere *sphere;
 	DetectHighlights(Sphere *sphere);
 	virtual void run() override;
+
 };
 
 class SphereRow: public QWidget {
+	Q_OBJECT
 public:
 	Sphere *sphere;
 	int rowHeight = 100;
@@ -31,6 +33,9 @@ public:
 
 	SphereRow(Sphere *sphere, QWidget *parent = nullptr);
 	void detectHighlights();
+
+public slots:
+	void updateStatus(QString msg, int percent);
 };
 
 
