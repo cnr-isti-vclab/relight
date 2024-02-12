@@ -12,6 +12,7 @@ class Sphere;
 class QLabel;
 class QProgressBar;
 class QVBoxLayout;
+class ReflectionView;
 
 
 class DetectHighlights: public Task {
@@ -27,6 +28,7 @@ class SphereRow: public QWidget {
 public:
 	Sphere *sphere;
 	int rowHeight = 100;
+	ReflectionView *reflections;
 	QLabel *status = nullptr;
 	QProgressBar *progress = nullptr;
 	DetectHighlights *detect_highlights = nullptr;
@@ -51,8 +53,7 @@ public slots:
 	void newSphere();
 
 signals:
-	void accept(Dome &dome);
-
+	void accept(Dome dome);
 
 private:
 	Dome dome;

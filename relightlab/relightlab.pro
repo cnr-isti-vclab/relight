@@ -48,6 +48,7 @@ SOURCES += main.cpp \
     mainwindow.cpp \
     preferences.cpp \
     recentprojects.cpp \
+    reflectionview.cpp \
     relightapp.cpp \
     tabwidget.cpp \
     imageframe.cpp \
@@ -89,6 +90,7 @@ HEADERS += \
     mainwindow.h \
     preferences.h \
     recentprojects.h \
+    reflectionview.h \
     relightapp.h \
     tabwidget.h \
     imageframe.h \

@@ -12,24 +12,6 @@
 #include <QTabBar>
 #include <QFileDialog>
 
-Card::Card(QString title, QString subtitle, QWidget *parent): QFrame(parent) {
-	setFrameShape(QFrame::StyledPanel);
-	QVBoxLayout *layout = new QVBoxLayout(this);
-
-	QPushButton *button = new QPushButton(title);
-
-	QObject::connect(button, SIGNAL(clicked()), this, SLOT(click()));
-	button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-	setStyleSheet("QPushButton { font-size: 24px; padding:20px}");
-
-	layout->addWidget(button);
-	layout->addSpacing(30);
-	QLabel *body = new QLabel(subtitle);
-	body->setAlignment(Qt::AlignCenter);
-	layout->addWidget(body);
-}
-
 LightsFrame::LightsFrame() {
 	QHBoxLayout *page = new QHBoxLayout(this);
 	QVBoxLayout *content = new QVBoxLayout;
