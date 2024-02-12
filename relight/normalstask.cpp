@@ -96,7 +96,7 @@ void NormalsTask::run()
     QImage img(normalmap.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
     img.save(output);
 
-    std::function<bool(std::string s, int d)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
+	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
     if(exportSurface) {
         progressed("Integrating normals...", 0);
@@ -116,8 +116,8 @@ void NormalsTask::run()
     qDebug() << "Time: " << ((double)(end - start) / CLOCKS_PER_SEC);
     progressed("Finished", 100);
 }
-
-bool NormalsTask::progressed(std::string s, int percent)
+/*
+bool NormalsTask::progressed(QString str, int percent)
 {
     if(status == PAUSED) {
         mutex.lock();  //mutex should be already locked. this talls the
@@ -126,12 +126,11 @@ bool NormalsTask::progressed(std::string s, int percent)
     if(status == STOPPED)
         return false;
 
-    QString str(s.c_str());
     emit progress(str, percent);
     if(status == STOPPED)
         return false;
     return true;
-}
+}*/
 
 /**
  *   \brief NormalsWorker: generates the normals for a given line in the image set, depending on the method specified when

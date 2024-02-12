@@ -63,13 +63,13 @@ void Task::runScript(QString program, QString script, QStringList arguments, QSt
 			int pos = line.indexOf(re);
 
 			if(pos >= 0) {
-                QString text = re.match(line).capturedTexts()[1];
+				QString text = re.match(line).capturedTexts()[1];
 				int percent = re.match(line).capturedTexts()[2].toInt();
 				emit progress(text, percent);
 			}
 		}
 		if(err.size())
-            qDebug() << "Err: " << qPrintable(err) << "\n";
+			qDebug() << "Err: " << qPrintable(err) << "\n";
 		if(out.size())
 			qDebug() << "Out: " << qPrintable(out) << "\n";
 		if(status == PAUSED) {
@@ -92,29 +92,28 @@ void Task::runScript(QString program, QString script, QStringList arguments, QSt
 }
 
 void Task::pause() {
-    mutex.lock();
-    status = PAUSED;
+	mutex.lock();
+	status = PAUSED;
 }
 
 void Task::resume() {
-    if(status == PAUSED) {
-        status = RUNNING;
-        mutex.unlock();
-    }
+	if(status == PAUSED) {
+		status = RUNNING;
+		mutex.unlock();
+	}
 }
 
 void Task::stop() {
-    if(status == PAUSED) { //we were already locked then.
-        status = STOPPED;
-        mutex.unlock();
-    }
-    status = STOPPED;
+	if(status == PAUSED) { //we were already locked then.
+		status = STOPPED;
+		mutex.unlock();
+	}
+	status = STOPPED;
 }
 
 
-bool Task::progressed(std::string s, int percent) {
-	QString str(s.c_str());
-	emit progress(str, percent);
+bool Task::progressed(QString s, int percent) {
+	emit progress(s, percent);
 	if(status == PAUSED) {
 		mutex.lock();  //mutex should be already locked. this talls the
 		mutex.unlock();

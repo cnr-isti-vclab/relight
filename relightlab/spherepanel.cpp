@@ -32,7 +32,7 @@ void DetectHighlights::run() {
 		QImage img(image.filename);
 		sphere->findHighlight(img, i);
 
-		progressed("Detecting highlights", 100*(i+1) / project.images.size());
+		progressed(QString("Detecting highlights"), 100*(i+1) / project.images.size());
 	}
 	mutex.lock();
 	status = DONE;
@@ -75,17 +75,18 @@ SphereRow::SphereRow(Sphere *_sphere, QWidget *parent) {
 	columns->addWidget(remove, 1);
 
 }
+void SphereRow::updateStatus(QString msg, int percent) {
+	status->setText(msg);
+	progress->setValue(percent);
 
+}
 void SphereRow::detectHighlights() {
 	if(sphere->center.isNull()) {
 		status->setText("Needs at least 3 points.");
 		return;
 	}
 	detect_highlights = new DetectHighlights(sphere);
-	connect(detect_highlights, &DetectHighlights::progress, [&](QString msg, int percent) {
-		//status->setText(msg);
-		//progress->setValue(percent);
-	});
+	connect(detect_highlights, &DetectHighlights::progress, this, &SphereRow::updateStatus); //, Qt::QueuedConnection);
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(detect_highlights);

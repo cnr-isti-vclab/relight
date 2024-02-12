@@ -50,11 +50,12 @@ public:
 	void runScript(QString program, QString script, QStringList arguments, QString workingdir = QString());
 public slots:
 	void test() {}
-	virtual bool progressed(std::string str, int percent);
+	virtual bool progressed(QString str, int percent);
 
 signals:
     void progress(QString  str, int n);
-protected:
+
+public:
     QMutex mutex;
 };
 
