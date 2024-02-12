@@ -1,5 +1,7 @@
 #include "sphere.h"
-
+#include "project.h"
+#include "lens.h"
+//#include "mainwindow.h"
 
 #include <QJsonObject>
 #include <QJsonArray>
@@ -7,12 +9,11 @@
 #include <QRunnable>
 #include <QGradient>
 
+
+#include <iostream>
+
 #include <math.h>
 #include <assert.h>
-#include "mainwindow.h"
-#include "../src/project.h"
-#include "../src/lens.h"
-#include <iostream>
 
 
 using namespace std;
@@ -250,6 +251,8 @@ void Sphere::findHighlight(QImage img, int n) {
 				QRgb c = img.pixel(x, y);
 				int g = qGray(c);
 
+				assert(X >= 0 && X < sphereImg.width());
+				assert(Y >= 0 && Y < sphereImg.height());
 				int mg = qGray(sphereImg.pixel(X, Y));
 				if(g > mg) sphereImg.setPixel(X, Y, qRgb(g, g, g));
 
@@ -267,7 +270,7 @@ void Sphere::findHighlight(QImage img, int n) {
 			bari.rx() /= count;
 			bari.ry() /= count;
 		}
-		sphereImg.setPixel(int(bari.x()) - inner.left(), int(bari.y()) - inner.top(), qRgb(255, 255, 255));
+		//sphereImg.setPixel(int(bari.x()) - inner.left(), int(bari.y()) - inner.top(), qRgb(255, 255, 255));
 		
 		
 		threshold -= 10;
