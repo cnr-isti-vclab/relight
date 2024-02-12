@@ -28,7 +28,6 @@ public:
     virtual void run() override;
 
 public slots:
-    bool progressed(std::string str, int percent) override;
 
 	void relight(bool commonMinMax = false, bool saveLegacy = false); //use true for .rti and .ptm
 	void toRTI();

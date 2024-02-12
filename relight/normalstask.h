@@ -29,13 +29,7 @@ public:
         output = outputPath;
     }
     virtual ~NormalsTask(){};
-
     virtual void run() override;
-
-public slots:
-    bool progressed(std::string str, int percent) override;
-private:
-
 
 };
 

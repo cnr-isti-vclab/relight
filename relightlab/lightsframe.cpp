@@ -9,7 +9,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QTabWidget>
-#include <QDebug>
+#include <QTabBar>
 #include <QFileDialog>
 
 Card::Card(QString title, QString subtitle, QWidget *parent): QFrame(parent) {
@@ -44,8 +44,8 @@ LightsFrame::LightsFrame() {
 	content->addWidget(choice);
 
 
-	choice->addTab(sphere_panel = new SpherePanel, "Identify reflective spheres");
-	choice->addTab(dome_panel = new DomePanel, "Select an existing dome configuration");
+	choice->addTab(sphere_panel = new SpherePanel, "Sphere");
+	choice->addTab(dome_panel = new DomePanel, "Dome");
 
 	content->addSpacing(30);
 

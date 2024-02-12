@@ -8,7 +8,6 @@
 #include <QRadioButton>
 #include <QButtonGroup>
 #include <QDoubleSpinBox>
-#include <QDebug>
 
 LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 
