@@ -10,7 +10,6 @@ DirectionsView::DirectionsView(QWidget *parent): QGraphicsView(parent) {
 
 void DirectionsView::initFromDome(Dome &dome) {
 	qreal scale = width();
-	qDebug() << scale;
 	//scene goes from [-1, +1]x[-1, +1], view will just zoom on it
 	qreal diameter = lightSize;
 	int count = 0;

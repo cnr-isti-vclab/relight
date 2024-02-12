@@ -59,7 +59,9 @@ SOURCES += main.cpp \
     ../src/lp.cpp \
     directionsview.cpp \
     spherepanel.cpp \
-    spherepicking.cpp
+    spherepicking.cpp \
+    spheredialog.cpp \
+    ../relight/task.cpp
 
 RESOURCES += \
     res.qrc
@@ -100,7 +102,9 @@ HEADERS += \
 	lightsgeometry.h \
     directionsview.h \
     spherepanel.h \
-    spherepicking.h
+    spherepicking.h \
+    spheredialog.h \
+    ../relight/task.h
 
 FORMS += \
     form.ui

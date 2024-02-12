@@ -14,11 +14,7 @@ class Lens;
 
 class Sphere {
 public:
-	Sphere(int n_lights) {
-		lights.resize(n_lights);
-		directions.resize(n_lights);
-		//valid.resize(n_lights, false);
-	}
+
 
 
 	QPointF center;      //in pixel coordinates of the image
@@ -39,6 +35,10 @@ public:
 	std::vector<std::vector<int>>histogram;
 
 	Sphere();
+	Sphere(int n_lights) {
+		lights.resize(n_lights);
+		directions.resize(n_lights);
+	}
 	bool fit();
 	void ellipseFit();
 	void findHighlight(QImage im, int n);

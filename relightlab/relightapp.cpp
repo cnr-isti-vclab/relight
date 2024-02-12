@@ -119,6 +119,15 @@ void RelightApp::setDarkTheme(bool dark) {
 	QSettings().setValue("dark", dark);
 }
 
+void RelightApp::setProject(const Project &_project) {
+	m_project = _project;
+	loadThumbnails();
+
+	mainwindow->init();
+	mainwindow->setTabIndex(1);
+	qRelightApp->setLastProjectDir(m_project.dir.path());
+}
+
 void RelightApp::newProject() {
 	if(!needsSavingProceed())
 		return;
@@ -153,7 +162,8 @@ void RelightApp::newProject() {
 			QMessageBox::critical(mainwindow, "Resolution problem", "Not all of the images in the folder have the same resolution,\nyou might need to fix this problem manually.");
 	}
 
-	qRelightApp->project() = project;
+
+	qRelightApp->setProject(project);
 
 	//Check for .lp files in the folder
 	QStringList img_ext;
@@ -162,12 +172,8 @@ void RelightApp::newProject() {
 	if(lps.size() > 0) {
 		int answer = QMessageBox::question(mainwindow, "Found an .lp file: " + lps[0], "Do you wish to load " + lps[0] + "?", QMessageBox::Yes, QMessageBox::No);
 		if(answer != QMessageBox::No)
-			project.loadLP(lps[0]);
+			m_project.loadLP(lps[0]);
 	}
-
-
-	mainwindow->init();
-	mainwindow->setTabIndex(1);
 }
 
 void RelightApp::openProject() {
@@ -226,23 +232,42 @@ void RelightApp::openProject(const QString &filename) {
 		}
 	}
 
-	qRelightApp->project() = project;
+	qRelightApp->setProject(project);
+
 	project_filename = filename; //project.dir.relativeFilePath(filename);
-	qRelightApp->setLastProjectDir(project.dir.path());
-
-	mainwindow->init();
-	mainwindow->setTabIndex(1);
-
 	addRecentProject(filename);
 	mainwindow->updateRecentProjectsMenu();
 }
 
 void RelightApp::saveProject() {
 
+	if(project_filename.isNull()) {
+		QString filename = QFileDialog::getSaveFileName(mainwindow, "Save file: ", qRelightApp->lastProjectDir(), "*.relight");
+		if(!filename.endsWith((".relight")))
+			filename += ".relight";
+		project_filename = filename;
+	}
+	if(!project_filename.isNull())
+		m_project.save(project_filename);
+
+	//TODO set window title as project filename filename
+	QFileInfo info(project_filename);
+	mainwindow->setWindowTitle("Relight - " + info.fileName());
+	addRecentProject(project_filename);
+	mainwindow->updateRecentProjectsMenu();
 }
 
 void RelightApp::saveProjectAs() {
 
+}
+
+void RelightApp::loadThumbnails() {
+	m_thumbnails.resize(m_project.images.size());
+	for(size_t i = 0; i < m_project.images.size(); i++) {
+		Image &image = m_project.images[i];
+		QImage img(image.filename);
+		m_thumbnails[i] = img.scaledToHeight(256);
+	}
 }
 
 void RelightApp::openPreferences() {
