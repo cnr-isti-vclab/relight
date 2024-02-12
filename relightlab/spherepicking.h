@@ -64,6 +64,7 @@ public:
 
 	SpherePicking(QWidget *parent = nullptr);
 	void setSphere(Sphere *sphere);
+	void updateSphere();
 	void clear();
 
 	void showHighlight(size_t n);

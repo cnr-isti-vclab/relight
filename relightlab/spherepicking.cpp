@@ -112,6 +112,10 @@ void SpherePicking::setSphere(Sphere *s) {
 	for(QPointF pos: sphere->border)
 		addBorderPoint(pos);
 
+	updateSphere();
+}
+
+void SpherePicking::updateSphere() {
 	if(sphere->center.isNull())
 		return;
 
@@ -131,9 +135,7 @@ void SpherePicking::setSphere(Sphere *s) {
 	circle->setVisible(true);
 	smallcircle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
 	smallcircle->setVisible(true);
-
 }
-
 
 void SpherePicking::fit() {
 	if(sphere->border.size() < 3)
@@ -141,7 +143,7 @@ void SpherePicking::fit() {
 	else
 		sphere->fit();
 
-	setSphere(sphere);
+	updateSphere();
 }
 
 

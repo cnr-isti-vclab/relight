@@ -4,6 +4,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QList>
+#include <QFile>
 
 using namespace std;
 Dome::Dome() {}

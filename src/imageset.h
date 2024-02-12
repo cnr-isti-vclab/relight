@@ -46,7 +46,7 @@ public:
 	
 	QImage maxImage(std::function<bool(std::string stage, int percent)> *callback = nullptr); 
 	void crop(int _left, int _top, int _right, int _bottom);
-	void setCallback(std::function<bool(std::string stage, int percent)> *_callback = nullptr) { callback = _callback; }
+	void setCallback(std::function<bool(QString stage, int percent)> *_callback = nullptr) { callback = _callback; }
 	//call AFTER initImages and BEFORE breadline, decode or sample.
 
 	void decode(size_t img, unsigned char *buffer);
@@ -58,7 +58,7 @@ public:
 	Vector3f relativeLight(const Vector3f &light, int x, int y);
 
 protected:
-	std::function<bool(std::string stage, int percent)> *callback;
+	std::function<bool(QString stage, int percent)> *callback;
 	std::vector<JpegDecoder *> decoders;
 };
 

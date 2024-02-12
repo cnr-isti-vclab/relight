@@ -12,7 +12,7 @@ void ZoomTask::run()
     int tilesize = hasParameter("tilesize") ? (*this)["tilesize"].value.toInt() : -1;
     bool deleteFiles = hasParameter("deletefiles") ? (*this)["deletefiles"].value.toBool() : false;
 
-    std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
+	std::function<bool(QString s, int n)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
     QString zoomError;
 
     // Try copying info.json to the output folder to allow for casting
@@ -144,7 +144,7 @@ void ZoomTask::deletePrevFiles(QDir folder)
     }
 }
 
-bool ZoomTask::progressed(std::string s, int percent)
+bool ZoomTask::progressed(QString str, int percent)
 {
     if(status == PAUSED) {
         mutex.lock();
@@ -153,8 +153,8 @@ bool ZoomTask::progressed(std::string s, int percent)
     if(status == STOPPED)
         return false;
 
-    QString str(s.c_str());
-    emit progress(str, percent);
+
+	emit progress(str, percent);
     if(status == STOPPED)
         return false;
     return true;
