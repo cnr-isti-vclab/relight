@@ -12,15 +12,6 @@ class LpFrame;
 class DomeFrame;
 class LightsGeometry;
 
-class Card: public QFrame {
-	Q_OBJECT
-public:
-	Card(QString title, QString subtitle, QWidget *parent = nullptr);
-public slots:
-	void click() { emit clicked(); }
-signals:
-	void clicked();
-};
 
 
 class LightsFrame: public QFrame {

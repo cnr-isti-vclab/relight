@@ -1,8 +1,9 @@
 #include "spherepanel.h"
 #include "spheredialog.h"
 #include "spherepicking.h"
-#include "../src/sphere.h"
+#include "reflectionview.h"
 #include "relightapp.h"
+#include "../src/sphere.h"
 #include "../relight/processqueue.h"
 
 #include <QVBoxLayout>
@@ -40,7 +41,7 @@ void DetectHighlights::run() {
 }
 
 
-SphereRow::SphereRow(Sphere *_sphere, QWidget *parent) {
+SphereRow::SphereRow(Sphere *_sphere, QWidget *parent): QWidget(parent) {
 	sphere = _sphere;
 	QHBoxLayout *columns = new QHBoxLayout(this);
 	columns->setSpacing(20);
@@ -51,10 +52,13 @@ SphereRow::SphereRow(Sphere *_sphere, QWidget *parent) {
 	columns->addWidget(thumb);
 
 
-	QPixmap pix = QIcon::fromTheme("loader").pixmap(rowHeight, rowHeight);
-	QLabel *highlights = new QLabel;
-	highlights->setPixmap(pix);
-	columns->addWidget(highlights);
+	reflections = new ReflectionView(sphere);
+	reflections->setMaximumHeight(rowHeight);
+	reflections->setMaximumWidth(rowHeight);
+	//QPixmap pix = QIcon::fromTheme("loader").pixmap(rowHeight, rowHeight);
+	//QLabel *highlights = new QLabel;
+	//highlights->setPixmap(pix);
+	columns->addWidget(reflections);
 
 	QVBoxLayout *status_layout = new QVBoxLayout;
 	columns->addLayout(status_layout, 2);
@@ -78,8 +82,9 @@ SphereRow::SphereRow(Sphere *_sphere, QWidget *parent) {
 void SphereRow::updateStatus(QString msg, int percent) {
 	status->setText(msg);
 	progress->setValue(percent);
-
+	reflections->update();
 }
+
 void SphereRow::detectHighlights() {
 	if(sphere->center.isNull()) {
 		status->setText("Needs at least 3 points.");
