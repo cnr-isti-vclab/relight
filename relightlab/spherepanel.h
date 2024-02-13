@@ -9,37 +9,8 @@
 
 class SphereDialog;
 class Sphere;
-class QLabel;
-class QProgressBar;
 class QVBoxLayout;
-class ReflectionView;
-
-
-class DetectHighlights: public Task {
-public:
-	Sphere *sphere;
-	DetectHighlights(Sphere *sphere);
-	virtual void run() override;
-
-};
-
-class SphereRow: public QWidget {
-	Q_OBJECT
-public:
-	Sphere *sphere;
-	int rowHeight = 100;
-	ReflectionView *reflections;
-	QLabel *status = nullptr;
-	QProgressBar *progress = nullptr;
-	DetectHighlights *detect_highlights = nullptr;
-
-	SphereRow(Sphere *sphere, QWidget *parent = nullptr);
-	void detectHighlights();
-
-public slots:
-	void updateStatus(QString msg, int percent);
-};
-
+class SphereRow;
 
 class SpherePanel: public QFrame {
 	Q_OBJECT
