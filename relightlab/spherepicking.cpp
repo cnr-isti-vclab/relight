@@ -123,18 +123,29 @@ void SpherePicking::updateSphere() {
 	double R = double(sphere->radius);
 	double r = double(sphere->smallradius);
 	if(sphere->ellipse) {
-		circle->setRect(c.x() - sphere->eWidth, c.y() - sphere->eHeight, 2*sphere->eWidth, 2*sphere->eHeight);
+		double w = sphere->eWidth;
+		double h = sphere->eHeight;
+		circle->setRect(c.x() - w, c.y() - h, 2*w, 2*h);
 		circle->setTransformOriginPoint(c);
 		circle->setRotation(sphere->eAngle);
 		QPointF dir = { cos(sphere->eAngle*M_PI/180), sin(sphere->eAngle*M_PI/180) };
 		axis[0]->setLine(c.x(), c.y(), c.x() + dir.x()*sphere->eWidth, c.y() + dir.y()*sphere->eWidth);
 		axis[1]->setLine(c.x(), c.y(), c.x() - dir.y()*sphere->eHeight, c.y() + dir.x()*sphere->eHeight);
+
+		w *= sphere->smallradius/sphere->radius;
+		h *= sphere->smallradius/sphere->radius;
+		smallcircle->setRect(c.x() - w, c.y() - h, 2*w, 2*h);
+		smallcircle->setTransformOriginPoint(c);
+		smallcircle->setRotation(sphere->eAngle);
+		smallcircle->setVisible(true);
+
 	} else {
 		circle->setRect(c.x()-R, c.y()-R, 2*R, 2*R);
+		smallcircle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
+		smallcircle->setVisible(true);
 	}
 	circle->setVisible(true);
-	smallcircle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
-	smallcircle->setVisible(true);
+
 }
 
 void SpherePicking::fit() {
