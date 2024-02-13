@@ -1,103 +1,13 @@
 #include "spherepanel.h"
+#include "sphererow.h"
 #include "spheredialog.h"
 #include "spherepicking.h"
-#include "reflectionview.h"
 #include "relightapp.h"
 #include "../src/sphere.h"
-#include "../relight/processqueue.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
-#include <QTableWidget>
 #include <QPushButton>
-#include <QDialog>
-#include <QDialogButtonBox>
-#include <QPixmap>
-#include <QProgressBar>
-
-DetectHighlights::DetectHighlights(Sphere *_sphere) {
-	sphere = _sphere;
-}
-
-void DetectHighlights::run() {
-	mutex.lock();
-	status = RUNNING;
-	mutex.unlock();
-
-	Project &project = qRelightApp->project();
-	for(size_t i = 0; i < project.images.size(); i++) {
-
-		Image &image = project.images[i];
-		if(image.skip) continue;
-
-		QImage img(image.filename);
-		sphere->findHighlight(img, i);
-
-		progressed(QString("Detecting highlights"), 100*(i+1) / project.images.size());
-	}
-	mutex.lock();
-	status = DONE;
-	mutex.unlock();
-}
-
-
-SphereRow::SphereRow(Sphere *_sphere, QWidget *parent): QWidget(parent) {
-	sphere = _sphere;
-	QHBoxLayout *columns = new QHBoxLayout(this);
-	columns->setSpacing(20);
-	//get thumbnail for first image.
-	QLabel *thumb = new QLabel;
-	QPixmap pic = QPixmap::fromImage(qRelightApp->thumbnails()[0]);
-	thumb->setPixmap(pic.scaledToHeight(rowHeight));
-	columns->addWidget(thumb);
-
-
-	reflections = new ReflectionView(sphere);
-	reflections->setMaximumHeight(rowHeight);
-	reflections->setMaximumWidth(rowHeight);
-	//QPixmap pix = QIcon::fromTheme("loader").pixmap(rowHeight, rowHeight);
-	//QLabel *highlights = new QLabel;
-	//highlights->setPixmap(pix);
-	columns->addWidget(reflections);
-
-	QVBoxLayout *status_layout = new QVBoxLayout;
-	columns->addLayout(status_layout, 2);
-	status_layout->addStretch();
-	status = new QLabel("Locating highlights...");
-	status_layout->addWidget(status);
-	progress = new QProgressBar;
-	progress->setValue(50);
-	status_layout->addWidget(progress);
-	status_layout->addStretch();
-
-	QPushButton *edit = new QPushButton(QIcon::fromTheme("edit"), "Edit...");
-	columns->addWidget(edit, 1);
-	QPushButton *verify = new QPushButton(QIcon::fromTheme("check"), "Verify...");
-	columns->addWidget(verify, 1);
-
-	QPushButton *remove = new QPushButton(QIcon::fromTheme("trash-2"), "Delete");
-	columns->addWidget(remove, 1);
-
-}
-void SphereRow::updateStatus(QString msg, int percent) {
-	status->setText(msg);
-	progress->setValue(percent);
-	reflections->update();
-}
-
-void SphereRow::detectHighlights() {
-	if(sphere->center.isNull()) {
-		status->setText("Needs at least 3 points.");
-		return;
-	}
-	detect_highlights = new DetectHighlights(sphere);
-	connect(detect_highlights, &DetectHighlights::progress, this, &SphereRow::updateStatus); //, Qt::QueuedConnection);
-
-	ProcessQueue &queue = ProcessQueue::instance();
-	queue.addTask(detect_highlights);
-	queue.start();
-}
-
 
 SpherePanel::SpherePanel(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);

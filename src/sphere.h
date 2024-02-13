@@ -15,9 +15,16 @@ class Lens;
 class Sphere {
 public:
 	QPointF center;      //in pixel coordinates of the image
+	QPointF majorAxis;
+	QPointF minorAxis;
+	float majorRadius;
+	float minorRadius;
+
 	float radius;        //fitted radius
+
+
 	float smallradius;   //innner radius where to look for reflections
-	QRect inner;         //box of the inner part of the sphere.
+	QRect inner;         //box of the inner part of the circle/ellipse
 	bool fitted;         //we have a valid fit
 	QImage sphereImg;
 
