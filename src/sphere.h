@@ -27,6 +27,7 @@ public:
 	QRect inner;         //box of the inner part of the circle/ellipse
 	bool fitted;         //we have a valid fit
 	QImage sphereImg;
+	std::vector<QImage> thumbs;
 
 	bool ellipse = false;
 	float eWidth, eHeight, eAngle;

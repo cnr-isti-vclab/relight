@@ -18,10 +18,11 @@ public:
 	SpherePanel(QWidget *parent = nullptr);
 	void init();
 	SphereRow *addSphere(Sphere *sphere);
-	void removeSphere(Sphere *sphere);
+
 
 public slots:
 	void newSphere();
+	void removeSphere(SphereRow *sphere);
 
 signals:
 	void accept(Dome dome);
