@@ -4,6 +4,8 @@
 #include <QStatusBar>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
+#include <QResizeEvent>
+#include <QDebug>
 
 #include "relightapp.h"
 #include "imageframe.h"
@@ -59,8 +61,7 @@ ImageFrame::ImageFrame(QWidget *parent): QFrame(parent) {
 	canvas = new Canvas();
 	content->addWidget(canvas, 1);
 
-	scene = new QGraphicsScene;
-	canvas->setScene(scene);
+	canvas->setScene(&scene);
 	//TODO: deal with double click on markers.
 	//connect(canvas, SIGNAL(dblClicked(QPoint)), this, SLOT(doubleClick(QPoint)));
 	//connect(canvas, SIGNAL(clicked(QPoint)), this, SLOT(pointClick(QPoint)));
@@ -83,16 +84,13 @@ ImageFrame::ImageFrame(QWidget *parent): QFrame(parent) {
 	container->addWidget(status);
 }
 
-ImageFrame::~ImageFrame() {
-	delete scene;
-}
 
 void ImageFrame::init() {
 	image_list->init();
 	image_grid->init();
 
 	if(imagePixmap) {
-		scene->removeItem(imagePixmap);
+		scene.removeItem(imagePixmap);
 		imagePixmap = nullptr;
 	}
 
@@ -100,7 +98,7 @@ void ImageFrame::init() {
 		showImage(0);
 		fit();
 	}
-	listMode(); //TODO actually use last used mode used by the user
+	listMode(); //TODO actually use last used mode used by the user but only in imageframe
 }
 
 int ImageFrame::currentImage() {
@@ -124,7 +122,7 @@ void ImageFrame::showImage(int id) {
 	}
 	imagePixmap = new QGraphicsPixmapItem(QPixmap::fromImage(img));
 	imagePixmap->setZValue(-1);
-	scene->addItem(imagePixmap);
+	scene.addItem(imagePixmap);
 
 	int w = project.imgsize.width();
 	int h = project.imgsize.height();
@@ -137,6 +135,7 @@ void ImageFrame::showImage(int id) {
 
 void ImageFrame::fit() {
 	Project &project = qRelightApp->project();
+	qDebug() << "Canvas: " << canvas->size() << " imgsize: " << project.imgsize;
 	//find smallest problems
 	double sx =  double(canvas->width()) / project.imgsize.width();
 	double sy = double(canvas->height()) / project.imgsize.height();
@@ -144,6 +143,7 @@ void ImageFrame::fit() {
 	double current_scale = canvas->transform().m11();
 	s = s/current_scale;
 	canvas->scale(s, s);
+
 }
 
 void ImageFrame::one() {

@@ -3,6 +3,7 @@
 #include <QMouseEvent>
 #include <QApplication>
 #include <QScrollBar>
+#include <QDebug>
 
 #include <qmath.h>
 
@@ -83,6 +84,23 @@ bool Canvas::eventFilter(QObject *object, QEvent *event) {
 	Q_UNUSED(object)
 	return false;
 }
+
+
+void Canvas::resizeEvent(QResizeEvent *event) {
+	/*if(first_resize)  {
+		first_resize = false;
+		return;
+	}*/
+
+	double sx = event->size().width()/(double)event->oldSize().width();
+	double sy = event->size().height()/(double)event->oldSize().height();
+	double s = std::min(sx, sy);
+	qDebug() << event->oldSize() << " -> " << event->size();
+	scale(s, s);
+
+}
+
+
 
 void Canvas::zoomIn() {
 	gentle_zoom(1.19706);
