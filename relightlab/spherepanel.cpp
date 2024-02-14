@@ -8,6 +8,9 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QDebug>
+
+#include <assert.h>
 
 SpherePanel::SpherePanel(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);
@@ -58,9 +61,23 @@ SphereRow *SpherePanel::addSphere(Sphere *sphere) {
 	*/
 	SphereRow *row = new SphereRow(sphere);
 	spheres->addWidget(row);
+	connect(row, SIGNAL(removeme(SphereRow *)), this, SLOT(removeSphere(SphereRow *)));
 	return row;
 }
 
-void SpherePanel::removeSphere(Sphere *sphere) {
+void SpherePanel::removeSphere(SphereRow *row) {
+	layout()->removeWidget(row);
 
+	row->stopDetecting();
+
+	Sphere *sphere = row->sphere;
+	auto &spheres = qRelightApp->project().spheres;
+
+	auto it = std::find(spheres.begin(), spheres.end(), sphere);
+
+	assert(it != spheres.end());
+
+	delete sphere;
+	spheres.erase(it);
+	delete row;
 }

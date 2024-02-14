@@ -63,7 +63,9 @@ SOURCES += main.cpp \
     spherepanel.cpp \
     spherepicking.cpp \
     spheredialog.cpp \
-    ../relight/task.cpp
+    ../relight/task.cpp \
+    verifyview.cpp \
+    verifydialog.cpp
 
 RESOURCES += \
     res.qrc
@@ -108,7 +110,9 @@ HEADERS += \
     spherepanel.h \
     spherepicking.h \
     spheredialog.h \
-    ../relight/task.h
+    ../relight/task.h \
+    verifyview.h \
+    verifydialog.h
 
 FORMS += \
     form.ui

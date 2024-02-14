@@ -1,6 +1,7 @@
 #include "sphererow.h"
 #include "relightapp.h"
 #include "spheredialog.h"
+#include "verifydialog.h"
 #include "reflectionview.h"
 #include "../src/project.h"
 #include "../src/sphere.h"
@@ -69,6 +70,8 @@ SphereRow::SphereRow(Sphere *_sphere, QWidget *parent): QWidget(parent) {
 	columns->addWidget(remove, 1);
 
 	connect(edit, SIGNAL(clicked()), this, SLOT(edit()));
+	connect(remove, SIGNAL(clicked()), this, SLOT(remove()));
+	connect(verify, SIGNAL(clicked()), this, SLOT(verify()));
 
 }
 void SphereRow::edit() {
@@ -80,6 +83,15 @@ void SphereRow::edit() {
 		reflections->init();
 		detectHighlights();
 	}
+}
+
+void SphereRow::verify() {
+	VerifyDialog *verify_dialog = new VerifyDialog(sphere, this);
+	verify_dialog->exec();
+}
+
+void SphereRow::remove() {
+	emit removeme(this);
 }
 
 void SphereRow::updateStatus(QString msg, int percent) {
@@ -99,4 +111,14 @@ void SphereRow::detectHighlights() {
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(detect_highlights);
 	queue.start();
+}
+
+void SphereRow::stopDetecting() {
+	if(detect_highlights) {
+		if(detect_highlights->isRunning()) {
+			detect_highlights->stop();
+			detect_highlights->wait();
+		}
+		detect_highlights->deleteLater();
+	}
 }
