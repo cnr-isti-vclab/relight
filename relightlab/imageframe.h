@@ -2,6 +2,7 @@
 #define IMAGEFRAME_H
 
 #include <QFrame>
+#include <QGraphicsScene>
 
 class Canvas;
 class ImageList;
@@ -27,7 +28,6 @@ public:
 	QToolBar *right_toolbar;
 
 	ImageFrame(QWidget *parent = nullptr);
-	~ImageFrame();
 	void init();
 	int currentImage();
 	void showImage(int id); //new project loaded.
@@ -44,10 +44,11 @@ public slots:
 	void gridMode();
 
 protected:
-	QGraphicsScene *scene = nullptr;
+	QGraphicsScene scene;
 
 private:
 	QGraphicsPixmapItem *imagePixmap = nullptr;
+	bool first_resize = true;
 };
 
 #endif // IMAGEFRAME_H

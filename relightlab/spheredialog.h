@@ -11,6 +11,7 @@ class SphereDialog: public QDialog {
 public:
 	SphereDialog(QWidget *parent = nullptr);
 	void setSphere(Sphere *sphere);
+
 public slots:
 	void accept();
 	void reject();
