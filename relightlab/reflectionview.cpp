@@ -3,6 +3,7 @@
 #include "../src/sphere.h"
 
 #include <QGraphicsPixmapItem>
+#include <QScrollBar>
 #include <QRectF>
 #include <QDebug>
 
@@ -48,6 +49,8 @@ ReflectionView::ReflectionView(Sphere *_sphere, int _height, QWidget *parent ): 
 
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	verticalScrollBar()->blockSignals(true);
+	horizontalScrollBar()->blockSignals(true);
 
 	init();
 	update();

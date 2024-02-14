@@ -43,15 +43,14 @@ SpherePicking::SpherePicking(QWidget *parent): ImageFrame(parent) {
 	highlight->setFlag(QGraphicsItem::ItemIsSelectable);
 	highlight->setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
 
-	scene->addItem(circle);
-	scene->addItem(smallcircle);
-	scene->addItem(highlight);
-	scene->addItem(axis[0]);
-	scene->addItem(axis[1]);
+	scene.addItem(circle);
+	scene.addItem(smallcircle);
+	scene.addItem(highlight);
+	scene.addItem(axis[0]);
+	scene.addItem(axis[1]);
 
 	connect(canvas, SIGNAL(clicked(QPoint)), this, SLOT(click(QPoint)));
 	//TODO: rename something, it conflicts!
-	ImageFrame::fit();
 
 }
 
@@ -95,7 +94,7 @@ void SpherePicking::clear() {
 	axis[1]->setVisible(false);
 	highlight->setVisible(false);
 	for(BorderPoint *b: border) {
-		scene->removeItem(b);
+		scene.removeItem(b);
 		delete b;
 	}
 	border.clear();
@@ -111,6 +110,9 @@ void SpherePicking::setSphere(Sphere *s) {
 		addBorderPoint(pos);
 
 	updateSphere();
+
+	init();
+	imageMode();
 }
 
 void SpherePicking::updateSphere() {
@@ -146,7 +148,7 @@ void SpherePicking::updateSphere() {
 
 }
 
-void SpherePicking::fit() {
+void SpherePicking::fitSphere() {
 	if(sphere->border.size() < 3)
 		sphere->center = QPointF();
 	else
@@ -168,7 +170,7 @@ void SpherePicking::click(QPoint p) {
 
 	addBorderPoint(pos);
 	sphere->border.push_back(pos);
-	fit();
+	fitSphere();
 }
 
 void SpherePicking::addBorderPoint(QPointF pos) {
@@ -183,7 +185,7 @@ void SpherePicking::addBorderPoint(QPointF pos) {
 	borderPoint->setPen(outlinePen);
 	borderPoint->setBrush(blueBrush);
 	border.push_back(borderPoint);
-	scene->addItem(borderPoint);
+	scene.addItem(borderPoint);
 }
 
 void SpherePicking::updateBorderPoints() {
@@ -232,7 +234,7 @@ void SpherePicking::deleteSelected(int currentImage) {
 			sphere->border[j] = sphere->border[i];
 		}
 		if(border[i]->isSelected()) {
-			scene->removeItem(border[i]);
+			scene.removeItem(border[i]);
 			delete border[i];
 			j--;
 		}
@@ -255,7 +257,7 @@ void SpherePicking::keyReleaseEvent(QKeyEvent *e) {
 		return;
 	case Qt::Key_Z:
 		if((e->modifiers() | Qt::ControlModifier) && border.size()) {
-			scene->removeItem(border.back());
+			scene.removeItem(border.back());
 			delete border.back();
 			border.pop_back();
 			sphere->border.pop_back();

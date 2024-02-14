@@ -74,7 +74,7 @@ public:
 	void updateBorderPoints();
 
 	void deleteSelected(int currentImage);
-	void fit();
+	void fitSphere();
 
 /*	virtual void doubleClick(QPointF pos) { click(pos); }
 
