@@ -238,9 +238,12 @@ bool inEllipse(double x, double y, double a, double b, double theta) {
 
 void Sphere::findHighlight(QImage img, int n) {
 	if(n == 0) histogram.clear();
+	if(n == 0) thumbs.clear();
 	//TODO hack!
 	if(n == 0)
 		sphereImg.fill(0);
+
+	thumbs.push_back(img.copy(inner));
 
 	uchar threshold = 240;
 

@@ -33,9 +33,14 @@ public:
 
 	SphereRow(Sphere *sphere, QWidget *parent = nullptr);
 	void detectHighlights();
+	void stopDetecting();
+signals:
+	void removeme(SphereRow *row);
 
 public slots:
 	void edit();
+	void remove();
+	void verify();
 	void updateStatus(QString msg, int percent);
 };
 

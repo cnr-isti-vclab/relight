@@ -22,7 +22,7 @@ public:
 		setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
 
 	}
-	virtual ~BorderPoint();
+	virtual ~BorderPoint() {}
 
 protected:
 	SpherePicking *picker;

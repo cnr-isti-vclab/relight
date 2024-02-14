@@ -50,6 +50,9 @@ SpherePicking::SpherePicking(QWidget *parent): ImageFrame(parent) {
 	scene->addItem(axis[1]);
 
 	connect(canvas, SIGNAL(clicked(QPoint)), this, SLOT(click(QPoint)));
+	//TODO: rename something, it conflicts!
+	ImageFrame::fit();
+
 }
 
 void SpherePicking::showImage(int id) {
@@ -69,17 +72,12 @@ void SpherePicking::showImage(int id) {
 }*/
 
 
-
-
-BorderPoint::~BorderPoint() {}
-
 QVariant BorderPoint::itemChange(GraphicsItemChange change, const QVariant &value)	{
 	if ((change == ItemPositionChange  && scene()) || change == ItemScenePositionHasChanged) {
 		picker->updateBorderPoints();
 	}
 	return QGraphicsItem::itemChange(change, value);
 }
-
 
 HighlightPoint::~HighlightPoint() {}
 
