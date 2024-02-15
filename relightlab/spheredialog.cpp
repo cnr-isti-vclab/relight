@@ -7,6 +7,7 @@
 SphereDialog::SphereDialog(QWidget *parent): QDialog(parent) {
 	setModal(true);
 	sphere_picking = new SpherePicking;
+	sphere_picking->init();
 	QVBoxLayout *content = new QVBoxLayout(this);
 
 	QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok |     QDialogButtonBox::Cancel);

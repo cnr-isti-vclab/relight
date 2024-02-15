@@ -75,7 +75,6 @@ VerifyView:: VerifyView(int _id, Sphere *_sphere, int _height, QWidget *parent):
 
 void VerifyView::updateReflection() {
 	QPointF p = reflection->pos();
-	qDebug() << img_item->boundingRect()<< " P: " << p;
 	if(!img_item->boundingRect().contains(p)) {
 		reflection->setPos(sphere->inner.center() - sphere->inner.topLeft());
 		reflection->setPen(QPen(Qt::red, 2));

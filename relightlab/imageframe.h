@@ -48,7 +48,6 @@ protected:
 
 private:
 	QGraphicsPixmapItem *imagePixmap = nullptr;
-	bool first_resize = true;
 };
 
 #endif // IMAGEFRAME_H
