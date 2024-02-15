@@ -12,7 +12,9 @@ public:
 	void set_zoom_factor_base(double value);
 
 	double min_scale = 0.0f;
-	double max_scale = 0.0f;
+	double max_scale = 4.0f;
+	void fitInView(const QRectF &rect, Qt::AspectRatioMode aspectRadioMode = Qt::KeepAspectRatio);
+
 protected:
 	void resizeEvent(QResizeEvent *event);
 
@@ -22,7 +24,13 @@ private:
 	QPointF target_scene_pos, target_viewport_pos;
 	QPoint pressPosition;
 	double click_threshold = 2;
-	bool first_resize = true;
+
+	//this stuff is needed to call fitinview before the image is properly resized.
+	bool needs_fit = false;
+	bool resized = false;
+	QRectF rect_fit;
+	Qt::AspectRatioMode aspect_fit;
+
 	bool eventFilter(QObject* object, QEvent* event);
 
 public slots:
