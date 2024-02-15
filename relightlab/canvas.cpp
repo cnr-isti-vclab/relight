@@ -25,6 +25,9 @@ void Canvas::gentle_zoom(double factor) {
 	if(currentScale * factor < min_scale)
 		factor = min_scale/currentScale;
 
+	if(currentScale *factor > max_scale)
+		factor = max_scale/currentScale;
+
 	scale(factor, factor);
 	centerOn(target_scene_pos);
 	QPointF delta_viewport_pos = target_viewport_pos - QPointF(viewport()->width() / 2.0,
@@ -85,19 +88,33 @@ bool Canvas::eventFilter(QObject *object, QEvent *event) {
 	return false;
 }
 
+void Canvas::fitInView(const QRectF &rect, Qt::AspectRatioMode aspectRadioMode) {
+	if(!resized) {
+		rect_fit = rect;
+		aspect_fit = aspectRadioMode;
+		needs_fit = true;
+		return;
+	}
+	QGraphicsView::fitInView(rect, aspectRadioMode);
+}
 
 void Canvas::resizeEvent(QResizeEvent *event) {
-	/*if(first_resize)  {
-		first_resize = false;
-		return;
-	}*/
 
+	QSize old = event->oldSize();
+	QGraphicsView::resizeEvent(event);
+
+	if(!old.isValid()) {
+		if(needs_fit) {
+			QGraphicsView::fitInView(rect_fit, aspect_fit);
+		}
+		resized = true;
+		return;
+	}
+	//preservinca scale
 	double sx = event->size().width()/(double)event->oldSize().width();
 	double sy = event->size().height()/(double)event->oldSize().height();
 	double s = std::min(sx, sy);
-	qDebug() << event->oldSize() << " -> " << event->size();
 	scale(s, s);
-
 }
 
 

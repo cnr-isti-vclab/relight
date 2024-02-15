@@ -134,16 +134,8 @@ void ImageFrame::showImage(int id) {
 }
 
 void ImageFrame::fit() {
-	Project &project = qRelightApp->project();
-	qDebug() << "Canvas: " << canvas->size() << " imgsize: " << project.imgsize;
-	//find smallest problems
-	double sx =  double(canvas->width()) / project.imgsize.width();
-	double sy = double(canvas->height()) / project.imgsize.height();
-	double s = std::min(sx, sy);
-	double current_scale = canvas->transform().m11();
-	s = s/current_scale;
-	canvas->scale(s, s);
-
+	if(imagePixmap)
+		canvas->fitInView(imagePixmap->boundingRect());
 }
 
 void ImageFrame::one() {

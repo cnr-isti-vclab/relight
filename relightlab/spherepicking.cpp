@@ -192,7 +192,7 @@ void SpherePicking::updateBorderPoints() {
 	for(size_t i = 0; i < border.size(); i++) {
 		sphere->border[i] = border[i]->pos();
 	}
-	fit();
+	fitSphere();
 }
 
 
@@ -246,7 +246,7 @@ void SpherePicking::deleteSelected(int currentImage) {
 		sphere->resetHighlight(currentImage);
 		showHighlight(currentImage);
 	}
-	fit();
+	fitSphere();
 }
 
 void SpherePicking::keyReleaseEvent(QKeyEvent *e) {
@@ -261,7 +261,7 @@ void SpherePicking::keyReleaseEvent(QKeyEvent *e) {
 			delete border.back();
 			border.pop_back();
 			sphere->border.pop_back();
-			fit();
+			fitSphere();
 			return;
 		}
 		break;
