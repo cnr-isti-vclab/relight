@@ -10,6 +10,11 @@
 #include <QAction>
 #include <QUrl>
 #include <QFile>
+#include <QDebug>
+#include <QSettings>
+
+HelpDialog* HelpDialog::m_instance = nullptr; // Initialize static instance to nullptr
+
 
 HelpedButton::HelpedButton(QAction *action, QWidget *parent): QWidget(parent) {
 	init();
@@ -51,11 +56,10 @@ void HelpedButton::init() {
 
 void HelpedButton::showHelp() {
 	QString id = objectName();
-	HelpDialog *dialog = new HelpDialog(this);
-
-
-	dialog->showPage(id);
-	dialog->exec();
+	HelpDialog &dialog = HelpDialog::instance();
+	dialog.showPage(id);
+	//dialog.raise();
+	//dialog.exec();
 }
 
 
@@ -69,13 +73,19 @@ HelpButton::HelpButton(QString id, QWidget *parent): QToolButton(parent) {
 
 void HelpButton::showHelp() {
 	QString id = objectName();
-	HelpDialog *dialog = new HelpDialog(this);
-	dialog->showPage(id);
-	dialog->exec();
+	HelpDialog &dialog = HelpDialog::instance();
+	dialog.showPage(id);
+	//dialog.raise();
+	//dialog.exec();
 }
 
 
-HelpDialog::HelpDialog(QWidget *parent):QDialog(parent) {
+HelpDialog::HelpDialog(QWidget *parent): QDialog(parent) {
+
+	QSettings settings;
+	QRect region = settings.value("help_position", QRect(100, 100, 600, 600)).toRect();
+	setGeometry(region);
+
 	QVBoxLayout *content = new QVBoxLayout(this);
 
 	QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
@@ -85,16 +95,29 @@ HelpDialog::HelpDialog(QWidget *parent):QDialog(parent) {
 	browser = new QTextBrowser;
 	content->addWidget(browser);
 	content->addWidget(buttonBox);
+}
 
+HelpDialog& HelpDialog::instance() {
+	if (!m_instance) {
+		qDebug() << "recreate";
+		m_instance = new HelpDialog(); // Create the instance if it doesn't exist
+	}
+	return *m_instance;
+}
 
-
-
+void HelpDialog::accept() {
+	QSettings().setValue("help_position", geometry());
+	QDialog::accept();
 }
 
 void HelpDialog::showPage(QString id) {
-	//QFile file("qrc:/docs/interface/" + id + ".md");
 	QUrl url("qrc:/docs/interface/" + id + ".md");
-	browser->setSource(url);//, QTextDocument::MarkdownResource);
+#if QT_VERSION > QT_VERSION_CHECK(5, 15, 0)
+	browser->setSource(url, QTextDocument::MarkdownResource);
+#else
+	browser->setSource(url);
+#endif
+	setGeometry(QSettings().value("help_position", QRect(100, 100, 600, 600)).toRect());
 	show();
 }
 
