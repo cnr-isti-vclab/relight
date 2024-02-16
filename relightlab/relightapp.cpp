@@ -324,6 +324,7 @@ QAction *RelightApp::addAction(const QString &id, const QString &label, const QS
 		//a->setIcon(QIcon(icon));
 		a->setIcon(QIcon::fromTheme(icon));
 	}
+	a->setObjectName(id);
 	actions[id] = a;
 	if(method)
 		connect(a, SIGNAL(triggered()), this, method);

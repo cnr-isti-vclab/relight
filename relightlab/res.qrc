@@ -68,5 +68,7 @@
         <file>icons/dark/scalable/cancel.svg</file>
         <file>icons/light/scalable/loader.svg</file>
         <file>icons/dark/scalable/loader.svg</file>
+        <file>docs/interface/new_project.md</file>
+        <file>docs/interface/open_project.md</file>
     </qresource>
 </RCC>

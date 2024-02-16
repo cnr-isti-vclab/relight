@@ -8,6 +8,7 @@
 #include "homeframe.h"
 #include "relightapp.h"
 #include "recentprojects.h"
+#include "helpbutton.h"
 
 void setDefaultAction(QPushButton *button, QAction *action) {
 	QObject::connect(button, SIGNAL(clicked(bool)), action, SLOT(trigger()));
@@ -31,14 +32,10 @@ HomeFrame::HomeFrame() {
 
 	leftColumnLayout->addWidget(titleLabel);
 
-	QPushButton *new_project = new QPushButton(this);
-	new_project->setProperty("class", "large");
-	setDefaultAction(new_project, qRelightApp->action("new_project"));
+	HelpedButton *new_project = new HelpedButton(qRelightApp->action("new_project"));
 	leftColumnLayout->addWidget(new_project);
 
-	QPushButton *open_project = new QPushButton(this);
-	open_project->setProperty("class", "large");
-	setDefaultAction(open_project, qRelightApp->action("open_project"));
+	HelpedButton *open_project = new HelpedButton(qRelightApp->action("open_project"));
 	leftColumnLayout->addWidget(open_project);
 
 	QLabel *recentLabel = new QLabel("<h2>Recent projects:</h2>");
@@ -53,7 +50,7 @@ HomeFrame::HomeFrame() {
 		leftColumnLayout->addWidget(label);
 		connect(label, SIGNAL(linkActivated(QString)), qRelightApp, SLOT(openProject(QString)));
 	}
-	leftColumnLayout->addStretch();
+	leftColumnLayout->addStretch(1);
 
 	// Add columns to the content layout
 	contentLayout->addLayout(leftColumnLayout, 2);
