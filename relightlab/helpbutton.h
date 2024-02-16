@@ -39,10 +39,20 @@ public slots:
 class QTextBrowser;
 
 class HelpDialog: public QDialog {
+	Q_OBJECT
 public:
-	HelpDialog(QWidget *parent = nullptr);
 	void showPage(QString id);
+	static HelpDialog& instance(); // Static method to get the instance
+
+public slots:
+	void accept();
 private:
 	QTextBrowser *browser = nullptr;
+
+	explicit HelpDialog(QWidget *parent = nullptr);
+	HelpDialog(const HelpDialog&) = delete; // Disable copy constructor
+	HelpDialog& operator=(const HelpDialog&) = delete; // Disable assignment operator
+
+	static HelpDialog* m_instance; // Static instance of Dialog
 };
 #endif // HELPBUTTON_H
