@@ -119,3 +119,8 @@ HEADERS += \
 FORMS += \
     form.ui
 
+DISTFILES += \
+    docs/dome_format.md \
+    docs/relight_format.md \
+    roadmap.md
+
