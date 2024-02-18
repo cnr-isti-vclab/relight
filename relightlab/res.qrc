@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>docs/home.txt</file>
         <file>css/style.qss</file>
         <file>icons/dark/scalable/camera.svg</file>
         <file>icons/dark/scalable/cast.svg</file>
@@ -70,5 +69,8 @@
         <file>icons/dark/scalable/loader.svg</file>
         <file>docs/interface/new_project.md</file>
         <file>docs/interface/open_project.md</file>
+        <file>icons/light/scalable/home.svg</file>
+        <file>icons/dark/scalable/home.svg</file>
+        <file>docs/home.md</file>
     </qresource>
 </RCC>
