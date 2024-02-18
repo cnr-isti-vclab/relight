@@ -11,7 +11,7 @@ class QAction;
 class HelpedButton: public QWidget {
 	Q_OBJECT
 public:
-	HelpedButton(QAction *action, QWidget *parent = nullptr);
+	HelpedButton(QAction *action, QString url, QWidget *parent = nullptr);
 	HelpedButton(QString id, QIcon icon, QString text, QWidget *parent = nullptr);
 	void setDefaultAction(QAction &a);
 signals:
@@ -46,6 +46,9 @@ public:
 
 public slots:
 	void accept();
+	void home(); //get to initial documentation page
+	void forward();
+	void backward();
 private:
 	QTextBrowser *browser = nullptr;
 

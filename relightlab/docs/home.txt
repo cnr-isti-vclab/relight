@@ -1,5 +1,0 @@
-<p>Some useful docs links here.</p>
-<ul>
-<li><a href="">Get started!</a>
-<li><a href="">RTI intro</a>
-</ul>
