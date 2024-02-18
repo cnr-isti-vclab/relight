@@ -30,6 +30,11 @@ mac:QMAKE_LFLAGS += -lomp
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 
 
+# Default rules for deployment.
+qnx: target.path = /tmp/$${TARGET}/bin
+else: unix:!android: target.path = /opt/$${TARGET}/bin
+!isEmpty(target.path): INSTALLS += target
+
 SOURCES += main.cpp \
     ../relight/parameter.cpp \
     ../relight/processqueue.cpp \
@@ -71,10 +76,6 @@ SOURCES += main.cpp \
 RESOURCES += \
     res.qrc
 
-# Default rules for deployment.
-qnx: target.path = /tmp/$${TARGET}/bin
-else: unix:!android: target.path = /opt/$${TARGET}/bin
-!isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
     ../relight/parameter.h \
@@ -106,7 +107,6 @@ HEADERS += \
     lightsframe.h \
     ../src/lp.h \
     domepanel.h \
-	lightsgeometry.h \
     directionsview.h \
     spherepanel.h \
     spherepicking.h \
@@ -123,4 +123,5 @@ DISTFILES += \
     docs/dome_format.md \
     docs/relight_format.md \
     roadmap.md
+
 

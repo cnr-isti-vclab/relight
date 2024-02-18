@@ -16,6 +16,7 @@ void setDefaultAction(QPushButton *button, QAction *action) {
 	button->setIcon(action->icon());
 }
 
+
 HomeFrame::HomeFrame() {
 	setObjectName("home");
 
@@ -32,10 +33,10 @@ HomeFrame::HomeFrame() {
 
 	leftColumnLayout->addWidget(titleLabel);
 
-	HelpedButton *new_project = new HelpedButton(qRelightApp->action("new_project"));
+	HelpedButton *new_project = new HelpedButton(qRelightApp->action("new_project"), "interface/new_project");
 	leftColumnLayout->addWidget(new_project);
 
-	HelpedButton *open_project = new HelpedButton(qRelightApp->action("open_project"));
+	HelpedButton *open_project = new HelpedButton(qRelightApp->action("open_project"), "interface/open_project");
 	leftColumnLayout->addWidget(open_project);
 
 	QLabel *recentLabel = new QLabel("<h2>Recent projects:</h2>");
@@ -59,9 +60,11 @@ HomeFrame::HomeFrame() {
 	QTextBrowser *browser = new QTextBrowser(this);
 	browser->setStyleSheet("margin-left:40px; margin-top: 40px; background:transparent;");
 	browser->setAlignment(Qt::AlignTop);
-	QFile file(":/docs/home.txt");
-	file.open(QIODevice::ReadOnly);
-	browser->setText(file.readAll());
+#if QT_VERSION > QT_VERSION_CHECK(5, 15, 0)
+	browser->setSource(QUrl("qrc:/docs/home.md"), QTextDocument::MarkdownResource);
+#else
+	browser->setSource(QUrl("qrc:/docs/home.md"));
+#endif
 	browser->setMinimumWidth(400);
 	contentLayout->addWidget(browser, 2);
 
