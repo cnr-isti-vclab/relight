@@ -10,17 +10,19 @@
 #include <QAction>
 #include <QUrl>
 #include <QFile>
+#include <QToolBar>
+#include <QToolButton>
 #include <QDebug>
 #include <QSettings>
 
 HelpDialog* HelpDialog::m_instance = nullptr; // Initialize static instance to nullptr
 
 
-HelpedButton::HelpedButton(QAction *action, QWidget *parent): QWidget(parent) {
+HelpedButton::HelpedButton(QAction *action, QString url, QWidget *parent): QWidget(parent) {
 	init();
-	id = action->objectName();
+	id = url;
 	setObjectName(id);
-	setToolTip(id);
+	setToolTip("Help!");
 
 	button->setText(action->text());
 	button->setIcon(action->icon());
@@ -88,18 +90,25 @@ HelpDialog::HelpDialog(QWidget *parent): QDialog(parent) {
 
 	QVBoxLayout *content = new QVBoxLayout(this);
 
-	QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
+	QToolBar *toolbar = new QToolBar;
+	toolbar->addAction(QIcon::fromTheme("home"), "Home", this, SLOT(home()));
+	toolbar->addSeparator();
+	toolbar->addAction(QIcon::fromTheme("chevron-left"), "Back", this, SLOT(backward()));
+	toolbar->addAction(QIcon::fromTheme("chevron-right"), "Forward", this, SLOT(forward()));
 
-	connect(buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
+	content->addWidget(toolbar);
 
 	browser = new QTextBrowser;
 	content->addWidget(browser);
+
+	QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
+	connect(buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
+
 	content->addWidget(buttonBox);
 }
 
 HelpDialog& HelpDialog::instance() {
 	if (!m_instance) {
-		qDebug() << "recreate";
 		m_instance = new HelpDialog(); // Create the instance if it doesn't exist
 	}
 	return *m_instance;
@@ -110,8 +119,20 @@ void HelpDialog::accept() {
 	QDialog::accept();
 }
 
+void HelpDialog::home() {
+	showPage("home");
+}
+
+void HelpDialog::forward() {
+	browser->forward();
+}
+
+void HelpDialog::backward() {
+	browser->backward();
+}
+
 void HelpDialog::showPage(QString id) {
-	QUrl url("qrc:/docs/interface/" + id + ".md");
+	QUrl url("qrc:/docs/" + id + ".md");
 #if QT_VERSION > QT_VERSION_CHECK(5, 15, 0)
 	browser->setSource(url, QTextDocument::MarkdownResource);
 #else
