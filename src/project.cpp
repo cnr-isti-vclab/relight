@@ -29,6 +29,33 @@ Project::~Project() {
 	clear();
 }
 
+void Project::operator=(const Project& project) {
+	version = project.version;
+	dir = project.dir;
+	imgsize = project.imgsize;
+	lens = project.lens;
+	dome = project.dome;
+	images = project.images;
+	missing = project.missing;
+	for(Sphere *s: project.spheres)
+		spheres.push_back(new Sphere(*s));
+	for(Measure *m: project.measures)
+		measures.push_back(new Measure(*m));
+	for(Align *a: project.aligns)
+		aligns.push_back(new Align(*a));
+	for(White *w: project.whites)
+		whites.push_back(new White(*w));
+
+	crop = project.crop;
+	pixelSize = project.pixelSize;
+	name = project.name;
+	authors = project.authors;
+	platform = project.platform;
+	created = project.created;
+	lastUpdated = project.lastUpdated;
+	needs_saving = project.needs_saving;
+}
+
 void Project::clear() {
 	dir = QDir();
 	imgsize = QSize();

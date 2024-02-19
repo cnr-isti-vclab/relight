@@ -1,6 +1,8 @@
 #include "lightsframe.h"
 #include "relightapp.h"
 #include "domepanel.h"
+#include "spherepanel.h"
+
 #include "lightgeometry.h"
 
 #include <QVBoxLayout>
@@ -22,7 +24,7 @@ LightsFrame::LightsFrame() {
 	content->addWidget(new QLabel("<h2>Lights direction setup</h2>"));
 	content->addSpacing(30);
 
-	QTabWidget *choice = new QTabWidget;
+	choice = new QTabWidget;
 	content->addWidget(choice);
 
 
@@ -46,6 +48,9 @@ LightsFrame::LightsFrame() {
 }
 
 void LightsFrame::init() {
+	bool useSphere = qRelightApp->project().spheres.size();
+	choice->setCurrentIndex(useSphere? 0 : 1);
+
 	sphere_panel->init();
 	dome_panel->init();
 	geometry->init();
