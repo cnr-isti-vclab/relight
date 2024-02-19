@@ -32,7 +32,11 @@ SpherePanel::SpherePanel(QWidget *parent): QFrame(parent) {
 }
 
 void SpherePanel::init() {
-	//QVBoxLayout
+	for(Sphere *sphere: qRelightApp->project().spheres) {
+		sphere->fit();
+		qDebug() << sphere;
+		addSphere(sphere);
+	}
 }
 
 void SpherePanel::newSphere() {

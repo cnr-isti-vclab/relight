@@ -2,14 +2,13 @@
 #define LIGHTSFRAME_H
 
 #include "../src/dome.h"
-#include "domepanel.h"
-#include "spherepanel.h"
 
 #include <QStackedWidget>
 
 class QLabel;
-class LpFrame;
-class DomeFrame;
+class QTabWidget;
+class SpherePanel;
+class DomePanel;
 class LightsGeometry;
 
 
@@ -26,6 +25,7 @@ public slots:
 
 private:
 	Dome dome;
+	QTabWidget *choice = nullptr;
 	SpherePanel *sphere_panel = nullptr;
 	DomePanel *dome_panel = nullptr;
 	LightsGeometry *geometry = nullptr;
