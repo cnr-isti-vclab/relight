@@ -120,7 +120,7 @@ void HelpDialog::accept() {
 }
 
 void HelpDialog::home() {
-	showPage("home");
+	showPage("index");
 }
 
 void HelpDialog::forward() {
