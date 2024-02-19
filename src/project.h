@@ -53,6 +53,7 @@ public:
 		needs_saving = false;
 	}
 	~Project();
+	void operator=(const Project& project);
 
 	void clear();
 	void load(QString filename);
