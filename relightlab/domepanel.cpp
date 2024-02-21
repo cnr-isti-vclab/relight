@@ -57,8 +57,12 @@ DomePanel::DomePanel(QWidget *parent): QFrame(parent) {
 	properties_layout->addWidget(new QLabel("Number of lights: "), 2, 0, Qt::AlignRight);
 	properties_layout->addWidget(number = new QLabel, 2, 1);
 
-	properties_layout->addWidget(new QLabel("Images: "), 3, 0, Qt::AlignRight);
-	properties_layout->addWidget(images = new QListWidget, 3, 1, Qt::AlignBottom);
+	properties_layout->addWidget(new QLabel("Notes:"), 3, 0, Qt::AlignRight);
+	properties_layout->addWidget(notes = new QLabel, 3, 1);
+
+	properties_layout->addWidget(new QLabel("Images: "), 4, 0, Qt::AlignRight);
+	properties_layout->addWidget(images = new QListWidget, 4, 1, Qt::AlignBottom);
+
 	images->setMaximumWidth(600);
 	images->setStyleSheet( "QListWidget{ background: palette(alternate-base); }");
 
