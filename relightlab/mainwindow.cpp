@@ -10,6 +10,7 @@
 #include "homeframe.h"
 #include "imageframe.h"
 #include "lightsframe.h"
+#include "cropframe.h"
 
 
 #include <QMessageBox>
@@ -22,15 +23,12 @@ MainWindow::MainWindow() {
 
 	createMenu();
 
-	home_frame = new HomeFrame;
-	image_frame = new ImageFrame;
-	lights_frame = new LightsFrame;
 	tabs = new TabWidget;
-	tabs->addTab(home_frame, "Home");
-	tabs->addTab(image_frame, "Images");
+	tabs->addTab(home_frame = new HomeFrame, "Home");
+	tabs->addTab(image_frame = new ImageFrame, "Images");
 	tabs->addTab(new QWidget, "Align");
-	tabs->addTab(lights_frame, "Lights");
-	tabs->addTab(new QWidget, "Crop");
+	tabs->addTab(lights_frame = new LightsFrame, "Lights");
+	tabs->addTab(crop_frame = new CropFrame, "Crop");
 
 	setCentralWidget(tabs);
 }

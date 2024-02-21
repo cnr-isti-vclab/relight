@@ -33,6 +33,7 @@ private:
 	QLabel *filename;
 	QLineEdit *label;
 	QLabel *number;
+	QLabel *notes;
 	QListWidget *dome_list;
 	QListWidget *images;
 	DirectionsView *directions_view;

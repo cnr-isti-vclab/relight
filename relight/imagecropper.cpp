@@ -116,8 +116,8 @@ void ImageCropper::updateDeltaAndScale() {
 	if (this->size().height() == scaledImageSize.height()) {
 		leftDelta = (this->width() - scaledImageSize.width()) / 2.0f;
 	} else {
-		if(this->size().width() != scaledImageSize.width())
-			throw "Should never happen this";
+//		if(this->size().width() != scaledImageSize.width())
+//b			throw "Should never happen this";
 		topDelta = (this->height() - scaledImageSize.height()) /  2.0f;
 	}
 	xScale = (float)imageForCropping.width()  / scaledImageSize.width();
