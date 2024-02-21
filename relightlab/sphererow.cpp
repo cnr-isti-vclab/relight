@@ -41,7 +41,6 @@ void DetectHighlights::run() {
 
 SphereRow::SphereRow(Sphere *_sphere, QWidget *parent): QWidget(parent) {
 	sphere = _sphere;
-	qDebug() << sphere;
 	QHBoxLayout *columns = new QHBoxLayout(this);
 	columns->setSpacing(20);
 
@@ -77,7 +76,6 @@ SphereRow::SphereRow(Sphere *_sphere, QWidget *parent): QWidget(parent) {
 
 }
 void SphereRow::edit() {
-	qDebug() << sphere;
 	SphereDialog *sphere_dialog = new SphereDialog(this);
 	sphere_dialog->setSphere(sphere);
 	int answer = sphere_dialog->exec();
