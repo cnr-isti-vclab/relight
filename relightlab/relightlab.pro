@@ -71,7 +71,9 @@ SOURCES += main.cpp \
     ../relight/task.cpp \
     verifyview.cpp \
     verifydialog.cpp \
-    helpbutton.cpp
+    helpbutton.cpp \
+    cropframe.cpp \
+    ../relight/imagecropper.cpp
 
 RESOURCES += \
     res.qrc
@@ -114,7 +116,9 @@ HEADERS += \
     ../relight/task.h \
     verifyview.h \
     verifydialog.h \
-    helpbutton.h
+    helpbutton.h \
+    cropframe.h \
+    ../relight/imagecropper.h
 
 FORMS += \
     form.ui

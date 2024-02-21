@@ -8,6 +8,7 @@ class TabWidget;
 class HomeFrame;
 class ImageFrame;
 class LightsFrame;
+class CropFrame;
 
 class MainWindow: public QMainWindow {
 	Q_OBJECT
@@ -22,10 +23,11 @@ public:
 	void setTabWidget(QWidget *widget);
 
 
-	TabWidget *tabs;
-	HomeFrame *home_frame;
-	ImageFrame *image_frame;
-	LightsFrame *lights_frame;
+	TabWidget *tabs = nullptr;
+	HomeFrame *home_frame = nullptr;
+	ImageFrame *image_frame = nullptr;
+	LightsFrame *lights_frame = nullptr;
+	CropFrame *crop_frame = nullptr;
 private:
 	QMenu *recentMenu = nullptr;
 };
