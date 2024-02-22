@@ -83,12 +83,12 @@ void test(std::string input, std::string output,  Vector3f light) {
     img.save(output.c_str());
 }
 
-bool progress(string str, int n) {
-	static string previous = "";
+bool progress(QString str, int n) {
+	static QString previous = "";
 	if(previous == str) cout << '\r';
 	else if(previous != "")
 		cout << "\n";
-	cout << str << " %" << n << std::flush;
+	cout << qPrintable(str) << " %" << n << std::flush;
 	previous = str;
 	return true;
 }
@@ -369,12 +369,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-	std::function<bool(std::string stage, int percent)> *callback = nullptr;
+	std::function<bool(QString stage, int percent)> *callback = nullptr;
 
 	//bool (*callback)(std::string stage, int percent) = nullptr;
 	if(verbose) {
-		callback = new std::function<bool(std::string stage, int percent)>();
-		*callback = [](std::string stage, int percent)->bool{ return progress(stage, percent); };
+		callback = new std::function<bool(QString stage, int percent)>();
+		*callback = [](QString stage, int percent)->bool{ return progress(stage, percent); };
 	}
 
 	QElapsedTimer timer;
