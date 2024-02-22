@@ -1,10 +1,10 @@
 #!/bin/bash
 # This is a script shell for deploying a relight-portable folder.
-# Requires a properly built relight (see 1_build.sh).
+# Requires a properly built relightlab (see 1_build.sh).
 #
-# Without given arguments, the folder that will be deployed is relight/install.
+# Without given arguments, the folder that will be deployed is relightlab/install.
 #
-# You can give as argument the path where relight is installed.
+# You can give as argument the path where relightlab is installed.
 
 SCRIPTS_PATH="$(dirname "$(realpath "$0")")"
 INSTALL_PATH=$SCRIPTS_PATH/../../install

@@ -4,7 +4,7 @@
 # Requires a Qt environment which is set-up properly, and an accessible
 # cmake binary.
 #
-# Without given arguments, relight will be built in the relight/build
+# Without given arguments, relightlab will be built in the relightlab/build
 # directory, and installed in $BUILD_PATH/../install.
 #
 # You can give as argument the BUILD_PATH and the INSTALL_PATH in the

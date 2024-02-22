@@ -4,7 +4,7 @@ SCRIPTS_PATH="$(dirname "$(realpath "$0")")"/..
 
 INSTALL_PATH=$SCRIPTS_PATH/../../install
 CERT_ID=""
-APPNAME="relight.app"
+APPNAME="relightlab.app"
 
 #checking for parameters
 for i in "$@"
