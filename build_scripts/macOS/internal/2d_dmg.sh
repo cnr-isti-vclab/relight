@@ -33,7 +33,7 @@ sed "s%INST_PATH%$INSTALL_PATH%g" $SCRIPTS_PATH/resources/dmg_latest.json > $SCR
 sed -i '' "s%RL_VERSION%$RL_VERSION%g" $SCRIPTS_PATH/resources/dmg_final.json
 sed -i '' "s%SOURCE_PATH%$SOURCE_PATH%g" $SCRIPTS_PATH/resources/dmg_final.json
 
-mv $INSTALL_PATH/relight.app $INSTALL_PATH/RelightLab$RL_VERSION.app
+mv $INSTALL_PATH/relightlab.app $INSTALL_PATH/RelightLab$RL_VERSION.app
 
 mkdir $PACKAGES_PATH
 
