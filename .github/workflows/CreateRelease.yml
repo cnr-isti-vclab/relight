@@ -106,7 +106,7 @@ jobs:
         path: relightlab_linux_appimage
     - name: Change Permissions
       run: |
-        chmod +x relightlab_linux_portable/usr/bin/relight
+        chmod +x relightlab_linux_portable/usr/bin/relightlab
         chmod +x relightlab_linux_portable/usr/bin/relight-cli
         chmod +x relightlab_linux_portable/usr/bin/relight-merge
         chmod +x relightlab_linux_portable/AppRun
@@ -116,7 +116,7 @@ jobs:
       run: |
         #get version of relightlab
         IFS=' ' #space delimiter
-        STR_VERSION=$(relightlab_linux_portable/usr/bin/relight --version)
+        STR_VERSION=$(relightlab_linux_portable/usr/bin/relightlab --version)
         read -a strarr <<< "$STR_VERSION"
         RL_VERSION=${strarr[1]} #get the relight version from the string
         echo "rl_version=$RL_VERSION" >> $GITHUB_OUTPUT
@@ -139,7 +139,7 @@ jobs:
         path: relightlab_macos_portable
     - name: Change Permissions
       run: |
-        chmod +x relightlab_macos_portable/RelightLab*.app/Contents/MacOS/relight
+        chmod +x relightlab_macos_portable/RelightLab*.app/Contents/MacOS/relightlab
         chmod +x relightlab_macos_portable/RelightLab*.app/Contents/MacOS/relight-cli
         chmod +x relightlab_macos_portable/RelightLab*.app/Contents/MacOS/relight-merge
     - name: Create RelightLab Portable MacOS
