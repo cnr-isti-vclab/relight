@@ -52,6 +52,6 @@ else()
 endif()
 include(GNUInstallDirs)
 
-add_subdirectory(relight)
+add_subdirectory(relightlab)
 add_subdirectory(relight-cli)
 add_subdirectory(relight-merge)
