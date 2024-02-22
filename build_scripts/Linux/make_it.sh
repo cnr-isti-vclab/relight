@@ -4,12 +4,12 @@
 # Requires a Qt environment which is set-up properly, and an accessible
 # cmake binary.
 #
-# Without given arguments, ReLight will be built in the relight/build,
-# the folder relight/install will be a portable version of ReLight and
-# the AppImage will be placed in the relight folder.
+# Without given arguments, RelightLab will be built in the relightlab/build,
+# the folder relightlab/install will be a portable version of RelightLab and
+# the AppImage will be placed in the relightlab folder.
 #
 # You can give as argument the build path, the install path (that will contain
-# the portable version of ReLight), and the number of cores to use to build ReLight
+# the portable version of RelightLab), and the number of cores to use to build RelightLab
 # (default: 4).
 # The AppImage will be placed in the parent directory of the install path.
 #

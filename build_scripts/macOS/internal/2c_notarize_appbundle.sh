@@ -6,7 +6,7 @@ INSTALL_PATH=$SCRIPTS_PATH/../../install
 NOTAR_USER=""
 NOTAR_PASSWORD=""
 NOTAR_TEAM_ID=""
-APPNAME="relight.app"
+APPNAME="relightlab.app"
 
 #checking for parameters
 for i in "$@"
