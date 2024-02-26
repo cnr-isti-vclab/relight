@@ -59,6 +59,7 @@ set (RELIGHT_HEADERS
     verifydialog.h 
     helpbutton.h 
     cropframe.h 
+    rtiframe.h
     ../relight/imagecropper.h
 
 )
@@ -101,7 +102,8 @@ set (RELIGHTLAB_SOURCES
     verifyview.cpp 
     verifydialog.cpp 
     helpbutton.cpp 
-    cropframe.cpp 
+    cropframe.cpp
+    rtiframe.cpp
     ../relight/imagecropper.cpp
 )
 

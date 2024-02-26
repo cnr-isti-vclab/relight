@@ -7,23 +7,22 @@
 class QPushButton;
 class QIcon;
 class QAction;
+class QRadioButton;
 
 class HelpedButton: public QWidget {
 	Q_OBJECT
 public:
 	HelpedButton(QAction *action, QString url, QWidget *parent = nullptr);
 	HelpedButton(QString id, QIcon icon, QString text, QWidget *parent = nullptr);
-	void setDefaultAction(QAction &a);
+	//void setDefaultAction(QAction &a);
 signals:
 	void clicked();
-public slots:
-	void showHelp();
+
 private:
 	QPushButton *button = nullptr;
 	QToolButton *help = nullptr;
-	QString id;
 
-	void init();
+	void init(QString id);
 };
 
 class HelpButton: public QToolButton {
@@ -35,6 +34,18 @@ public slots:
 	void showHelp();
 };
 
+class HelpLabel: public QWidget {
+	public:
+		HelpLabel(QString txt, QString help_id, QWidget *parent = nullptr);
+};
+
+class HelpRadio: public QWidget {
+	public:
+		HelpRadio(QString txt, QString help_id, QWidget *parent = nullptr);
+		QRadioButton *radioButton() { return radio; }
+	private:
+		QRadioButton *radio = nullptr;
+};
 
 class QTextBrowser;
 
