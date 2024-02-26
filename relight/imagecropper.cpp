@@ -91,7 +91,7 @@ QRect ImageCropper::croppedRect() {
 	return realSizeRect.toRect();
 }
 
-void ImageCropper::setCrop(QRect rect) {
+void ImageCropper::setCrop(QRect rect, bool preserveArea) {
 	if(!rect.isValid())
 		return;
 	QRectF &r = croppingRect;
@@ -99,7 +99,11 @@ void ImageCropper::setCrop(QRect rect) {
 	r.setTop(rect.top()/yScale + topDelta);
 	r.setWidth(rect.width()/xScale);
 	r.setHeight(rect.height()/yScale);
+
+	QRectF original = r;
+	enforceBounds(preserveArea);
 	update();
+	emit areaChanged(croppedRect());
 }
 
 void ImageCropper::resetCrop() {
@@ -298,6 +302,28 @@ void ImageCropper::mouseMoveEvent(QMouseEvent* _event)
 		update();
 	}
 }
+
+void ImageCropper::enforceBounds(bool preserveArea) {
+	QRectF &r = croppingRect;
+	if(preserveArea) {
+		if(r.left() < leftDelta) r.moveLeft(leftDelta);
+		if(r.top() < topDelta) r.moveTop(topDelta);
+
+		float rightEdge = imageForCropping.width()/xScale + leftDelta;
+		if(r.right() > rightEdge) r.moveRight(rightEdge);
+
+		float bottomEdge = imageForCropping.height()/yScale + topDelta;
+		if(r.bottom() > bottomEdge) r.moveBottom(bottomEdge);
+	}
+	if(r.left() < leftDelta) r.setLeft(leftDelta);
+	if(r.top() < topDelta) r.setTop(topDelta);
+	float rightEdge = imageForCropping.width()/xScale + leftDelta;
+	if(r.right() > rightEdge) r.setRight(rightEdge);
+
+	float bottomEdge = imageForCropping.height()/yScale + topDelta;
+	if(r.bottom() > bottomEdge) r.setBottom(bottomEdge);
+}
+
 
 void ImageCropper::mouseReleaseEvent(QMouseEvent* _event)
 {
