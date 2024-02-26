@@ -40,7 +40,7 @@ public slots:
 	void setProportionFixed(const bool _isFixed);
 	void showHandle(bool _show = true);
 	void hideHandle();
-	void setCrop(QRect rect);
+	void setCrop(QRect rect, bool preserveArea = false);
 	void resetCrop();
 
 signals:
@@ -49,6 +49,7 @@ signals:
 public:
 	bool handleShown() { return show_handle; }
 	QRect croppedRect();
+	void enforceBounds(bool preserveArea); //makes sure the rectangle is inside the image.
 
 protected:
 	virtual void resizeEvent(QResizeEvent *event);
