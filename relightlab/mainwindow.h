@@ -9,6 +9,7 @@ class HomeFrame;
 class ImageFrame;
 class LightsFrame;
 class CropFrame;
+class RtiFrame;
 
 class MainWindow: public QMainWindow {
 	Q_OBJECT
@@ -28,6 +29,8 @@ public:
 	ImageFrame *image_frame = nullptr;
 	LightsFrame *lights_frame = nullptr;
 	CropFrame *crop_frame = nullptr;
+	RtiFrame *rti_frame = nullptr;
+
 private:
 	QMenu *recentMenu = nullptr;
 };

@@ -55,6 +55,7 @@ SOURCES += main.cpp \
     recentprojects.cpp \
     reflectionview.cpp \
     relightapp.cpp \
+    rtiframe.cpp \
     sphererow.cpp \
     tabwidget.cpp \
     imageframe.cpp \
@@ -99,6 +100,7 @@ HEADERS += \
     recentprojects.h \
     reflectionview.h \
     relightapp.h \
+    rtiframe.h \
     sphererow.h \
     tabwidget.h \
     imageframe.h \
