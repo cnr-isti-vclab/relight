@@ -1,72 +1,60 @@
 #include "helpbutton.h"
 
+#include <QWidget>
+#include <QAction>
+
+#include <QDialogButtonBox>
 #include <QIcon>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QTextBrowser>
-#include <QDialogButtonBox>
+#include <QToolBar>
 #include <QPushButton>
-#include <QWidget>
-#include <QAction>
+#include <QToolButton>
+#include <QRadioButton>
+#include <QTextBrowser>
+#include <QLabel>
+#include <QSettings>
 #include <QUrl>
 #include <QFile>
-#include <QToolBar>
-#include <QToolButton>
+
 #include <QDebug>
-#include <QSettings>
+
 
 HelpDialog* HelpDialog::m_instance = nullptr; // Initialize static instance to nullptr
 
 
 HelpedButton::HelpedButton(QAction *action, QString url, QWidget *parent): QWidget(parent) {
-	init();
-	id = url;
-	setObjectName(id);
-	setToolTip("Help!");
-
+	init(url);
 	button->setText(action->text());
 	button->setIcon(action->icon());
 	connect(button, SIGNAL(clicked(bool)), action, SLOT(trigger()));
 }
 
 HelpedButton::HelpedButton(QString id, QIcon icon, QString text, QWidget *parent): QWidget(parent) {
-	init();
-	setObjectName(id);
+	init(id);
 	setToolTip(id);
 
 	button->setIcon(icon);
 	button->setText(text);
 }
 
-void HelpedButton::init() {
+void HelpedButton::init(QString id) {
 	QHBoxLayout *layout = new QHBoxLayout(this);
 	button = new QPushButton;
 	button->setProperty("class", "large");
 
+	help = new HelpButton(id);
 
-	help = new QToolButton;
-	help->setIcon(QIcon::fromTheme("help-circle"));
-	help->setProperty("class", "large");
-	connect(help, SIGNAL(clicked()), this, SLOT(showHelp()));
-
-	setStyleSheet("QToolButton { border: none; outline: none; }");
 	layout->addWidget(button,1);
 	layout->addWidget(help);
 	layout->addStretch(1);
 }
 
 
-void HelpedButton::showHelp() {
-	QString id = objectName();
-	HelpDialog &dialog = HelpDialog::instance();
-	dialog.showPage(id);
-	//dialog.raise();
-	//dialog.exec();
-}
-
-
 HelpButton::HelpButton(QString id, QWidget *parent): QToolButton(parent) {
+	setCursor(Qt::PointingHandCursor);
 	setIcon(QIcon::fromTheme("help-circle"));
+	//setStyleSheet("QToolButton { color: #ff00ff; }");
 	setObjectName(id);
 	connect(this, SIGNAL(clicked()), this, SLOT(showHelp()));
 	setToolTip(id);
@@ -81,7 +69,25 @@ void HelpButton::showHelp() {
 	//dialog.exec();
 }
 
+HelpLabel::HelpLabel(QString txt, QString help_id, QWidget *parent): QWidget(parent) {
+	QHBoxLayout *layout = new QHBoxLayout(this);
+	QLabel *label = new QLabel(txt);
+	layout->addWidget(label);
+	layout->addStretch();
+	HelpButton *help = new HelpButton(help_id);
+	layout->addWidget(help);
+}
 
+HelpRadio::HelpRadio(QString txt, QString help_id, QWidget *parent): QWidget(parent) {
+	QHBoxLayout *layout = new QHBoxLayout(this);
+	radio = new QRadioButton(txt);
+	layout->addWidget(radio);
+	layout->addStretch();
+	HelpButton *help = new HelpButton(help_id);
+	layout->addWidget(help);
+	layout->setMargin(0);
+}
+		
 HelpDialog::HelpDialog(QWidget *parent): QDialog(parent) {
 
 	QSettings settings;
