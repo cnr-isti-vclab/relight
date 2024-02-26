@@ -1,5 +1,6 @@
 #include "cropframe.h"
 #include "../relight/imagecropper.h"
+#include "relightapp.h"
 
 #include <QLabel>
 #include <QSpinBox>
@@ -8,6 +9,7 @@
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QComboBox>
+#include <QDebug>
 
 CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 
@@ -35,16 +37,24 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	bounds_layout->addWidget(crop_height = new QSpinBox, 1, 1);
 
 	bounds_layout->addWidget(new QLabel("Top"), 2, 0);
-	bounds_layout->addWidget(crop_height = new QSpinBox, 2, 1);
+	bounds_layout->addWidget(crop_top = new QSpinBox, 2, 1);
 
 	bounds_layout->addWidget(new QLabel("Left"), 3, 0);
-	bounds_layout->addWidget(crop_height = new QSpinBox, 3, 1);
+	bounds_layout->addWidget(crop_left = new QSpinBox, 3, 1);
 
 	bounds_layout->addWidget(new QLabel("Bottom"), 4, 0);
-	bounds_layout->addWidget(crop_height = new QSpinBox, 4, 1);
+	bounds_layout->addWidget(crop_bottom = new QSpinBox, 4, 1);
 
 	bounds_layout->addWidget(new QLabel("Right"), 5, 0);
-	bounds_layout->addWidget(crop_height = new QSpinBox, 5, 1);
+	bounds_layout->addWidget(crop_right = new QSpinBox, 5, 1);
+
+	crop_width->setMaximum(65535);
+	crop_height->setMaximum(65535);
+	crop_top->setMaximum(65535);
+	crop_left->setMaximum(65535);
+	crop_bottom->setMaximum(65535);
+	crop_right->setMaximum(65535);
+
 
 
 	QGroupBox *aspect_box = new QGroupBox("Aspect ratio");
@@ -72,7 +82,53 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	right_side->addStretch(2);
 
 	connect(aspect_combo, SIGNAL(currentIndexChanged(int)), this, SLOT(setAspectRatio(int)));
+	connect(cropper, SIGNAL(areaChanged(QRect)), this, SLOT(setArea(QRect)));
 
+	//TODO needs to enforce aspect ratio!
+	connect(crop_width, QOverload<int>::of(&QSpinBox::valueChanged), [&](int a) {
+		QRect rect = cropper->croppedRect();
+		rect.setWidth(a);
+		cropper->setCrop(rect, true);
+	});
+	connect(crop_height, QOverload<int>::of(&QSpinBox::valueChanged), [&](int a) {
+		QRect rect = cropper->croppedRect();
+		rect.setHeight(a);
+		cropper->setCrop(rect, true);
+	});
+	connect(crop_top, QOverload<int>::of(&QSpinBox::valueChanged), [&](int a) {
+		QRect rect = cropper->croppedRect();
+		rect.setTop(a);
+		cropper->setCrop(rect, false);
+	});
+	connect(crop_left, QOverload<int>::of(&QSpinBox::valueChanged), [&](int a) {
+		QRect rect = cropper->croppedRect();
+		rect.setLeft(a);
+		cropper->setCrop(rect, false);
+	});
+	connect(crop_bottom, QOverload<int>::of(&QSpinBox::valueChanged), [&](int a) {
+		QRect rect = cropper->croppedRect();
+		rect.setBottom(a);
+		cropper->setCrop(rect, false);
+	});
+	connect(crop_right, QOverload<int>::of(&QSpinBox::valueChanged), [&](int a) {
+		QRect rect = cropper->croppedRect();
+		rect.setRight(a);
+		cropper->setCrop(rect, false);
+	});
+
+}
+
+void CropFrame::init() {
+	Project &project = qRelightApp->project();
+
+	QString filename = project.images[0].filename;
+
+	QImage img(project.dir.filePath(filename));
+	if(img.isNull()) {
+		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
+		return;
+	}
+	cropper->setImage(QPixmap::fromImage(img));
 }
 
 void CropFrame::setAspectRatio(int aspect) {
@@ -90,4 +146,13 @@ void CropFrame::setAspectRatio(int aspect) {
 
 	double *s = aspects[aspect];
 	cropper->setProportion(QSizeF(s[0], s[1]));
+}
+
+void CropFrame::setArea(QRect rect) {
+	crop_width->setValue(rect.width());
+	crop_height->setValue(rect.height());
+	crop_top->setValue(rect.top());
+	crop_left->setValue(rect.left());
+	crop_bottom->setValue(rect.bottom());
+	crop_right->setValue(rect.right());
 }
