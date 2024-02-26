@@ -10,9 +10,10 @@ class CropFrame: public QFrame {
 	Q_OBJECT
 public:
 	CropFrame(QWidget *parent = nullptr);
-
+	void init();
 public slots:
 	void setAspectRatio(int n);
+	void setArea(QRect rect);
 private:
 	ImageCropper *cropper = nullptr;
 	QSpinBox *crop_width = nullptr;

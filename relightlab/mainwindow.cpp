@@ -96,6 +96,7 @@ void MainWindow::openRecentProject() {
 void MainWindow::init() {
 	image_frame->init();
 	lights_frame->init();
+	crop_frame->init();
 }
 
 
