@@ -14,6 +14,7 @@
 #include "rtiframe.h"
 
 #include <QMessageBox>
+#include <QDebug>
 
 #include <iostream>
 using namespace std;
