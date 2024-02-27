@@ -85,7 +85,7 @@ HelpRadio::HelpRadio(QString txt, QString help_id, QWidget *parent): QWidget(par
 	layout->addStretch();
 	HelpButton *help = new HelpButton(help_id);
 	layout->addWidget(help);
-	layout->setMargin(0);
+	layout->setContentsMargins(0, 0, 0, 0);
 }
 		
 HelpDialog::HelpDialog(QWidget *parent): QDialog(parent) {
