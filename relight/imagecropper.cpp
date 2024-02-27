@@ -24,13 +24,8 @@ void ImageCropper::setImage(const QPixmap& _image) {
 	update();
 }
 
-void ImageCropper::setBackgroundColor(const QColor& _backgroundColor) {
-	backgroundColor = _backgroundColor;
-	update();
-}
 
-void ImageCropper::setCroppingRectBorderColor(const QColor& _borderColor)
-{
+void ImageCropper::setCroppingRectBorderColor(const QColor& _borderColor) {
 	croppingRectBorderColor = _borderColor;
 	update();
 }
@@ -76,6 +71,8 @@ void ImageCropper::setProportionFixed(const bool _isFixed)
 		setProportion(proportion);
 	}
 }
+QRect ImageCropper::imageCroppedRect() {
+} //return cropped rect in image ccords
 
 QRect ImageCropper::croppedRect() {
 	QRectF &r = croppingRect;
@@ -100,7 +97,6 @@ void ImageCropper::setCrop(QRect rect, bool preserveArea) {
 	r.setWidth(rect.width()/xScale);
 	r.setHeight(rect.height()/yScale);
 
-	QRectF original = r;
 	enforceBounds(preserveArea);
 	update();
 	emit areaChanged(croppedRect());
@@ -109,6 +105,35 @@ void ImageCropper::setCrop(QRect rect, bool preserveArea) {
 void ImageCropper::resetCrop() {
 	setCrop(imageForCropping.rect());
 }
+
+void ImageCropper::setWidth(int w) {
+	QRectF r = croppingRect;
+	QPointF delta = r.topRight();
+	r.setWidth(w/xScale);
+	delta -= r.topRight();
+	croppingRect = calculateGeometry(croppingRect, CursorPositionRight, -delta);
+	emit areaChanged(croppedRect());
+	update();
+}
+void ImageCropper::setHeight(int h) {
+	QRectF r = croppingRect;
+	QPointF delta = r.bottomRight();
+	r.setHeight(h/xScale);
+	delta -= r.bottomRight();
+	croppingRect = calculateGeometry(croppingRect, CursorPositionBottom, -delta);
+	emit areaChanged(croppedRect());
+	update();
+
+}
+void ImageCropper::setTop(int t) {
+	croppingRect.moveTo(QPointF(t/xScale + topDelta, croppingRect.left()));
+	emit areaChanged(croppedRect());
+	update();
+}
+void ImageCropper::setLeft(int l) {
+
+}
+
 
 void ImageCropper::updateDeltaAndScale() {
 	//TODO don't resize an image just to compute a proportion.

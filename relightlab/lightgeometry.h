@@ -4,11 +4,11 @@
 #include "../src/dome.h"
 
 #include <QFrame>
-#include <QGraphicsScene>
-#include <QButtonGroup>
 
 class QRadioButton;
 class QDoubleSpinBox;
+class QButtonGroup;
+class QAbstractButton;
 
 class LightsGeometry: public QFrame {
 	Q_OBJECT
@@ -31,6 +31,6 @@ public:
 
 public slots:
 	void update(Dome dome);
-	void setSpherical(int s);
+	void setSpherical(QAbstractButton *button);
 };
 #endif // LIGHTGEOMETRY_H
