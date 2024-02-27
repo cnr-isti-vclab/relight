@@ -325,14 +325,11 @@ void ImageCropper::enforceBounds(bool preserveArea) {
 }
 
 
-void ImageCropper::mouseReleaseEvent(QMouseEvent* _event)
-{
+void ImageCropper::mouseReleaseEvent(QMouseEvent* _event) {
 	isMousePressed = false;
 	updateCursorIcon(_event->pos());
 }
 
-// ********
-// Private section
 
 CursorPosition ImageCropper::cursorPosition(const QRectF& _cropRect, const QPointF& _mousePosition)
 {
