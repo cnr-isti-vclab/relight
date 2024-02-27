@@ -7,6 +7,8 @@
 #include "relightapp.h"
 #include "mainwindow.h"
 
+#include <locale.h>
+
 #define RELIGHT_STRINGIFY0(v) #v
 #define RELIGHT_STRINGIFY(v) RELIGHT_STRINGIFY0(v)
 
