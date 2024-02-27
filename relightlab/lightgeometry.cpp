@@ -28,7 +28,7 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	group->addButton(sphere_approx, Dome::SPHERICAL);
 	group->addButton(three, Dome::LIGHTS3D);
 
-	connect(group, SIGNAL(buttonClicked(int)), this, SLOT(setSpherical(int)));
+	connect(group, SIGNAL(buttonClicked(QAbstractButton *)), this, SLOT(setSpherical(QAbstractButton *)));
 
 
 	QFrame *geometry = new QFrame;
@@ -56,8 +56,8 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	//content->setColumnStretch(1, 1);
 }
 
-void LightsGeometry::setSpherical(int spherical) {
-
+void LightsGeometry::setSpherical(QAbstractButton *button) {
+	bool spherical = (button == sphere_approx);
 	diameter->setEnabled(spherical == Dome::SPHERICAL);
 	vertical_offset->setEnabled(spherical == Dome::SPHERICAL);
 

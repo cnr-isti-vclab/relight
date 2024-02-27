@@ -20,8 +20,6 @@ private:
 	QSpinBox *crop_height = nullptr;
 	QSpinBox *crop_top = nullptr;
 	QSpinBox *crop_left = nullptr;
-	QSpinBox *crop_bottom = nullptr;
-	QSpinBox *crop_right = nullptr;
 
 	QSpinBox *aspect_width = nullptr;
 	QSpinBox *aspect_height = nullptr;

@@ -43,20 +43,10 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	bounds_layout->addWidget(new QLabel("Left"), 3, 0);
 	bounds_layout->addWidget(crop_left = new QSpinBox, 3, 1);
 
-	bounds_layout->addWidget(new QLabel("Bottom"), 4, 0);
-	bounds_layout->addWidget(crop_bottom = new QSpinBox, 4, 1);
-
-	bounds_layout->addWidget(new QLabel("Right"), 5, 0);
-	bounds_layout->addWidget(crop_right = new QSpinBox, 5, 1);
-
 	crop_width->setMaximum(65535);
 	crop_height->setMaximum(65535);
 	crop_top->setMaximum(65535);
 	crop_left->setMaximum(65535);
-	crop_bottom->setMaximum(65535);
-	crop_right->setMaximum(65535);
-
-
 
 	QGroupBox *aspect_box = new QGroupBox("Aspect ratio");
 	right_side->addWidget(aspect_box);
@@ -85,38 +75,10 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	connect(aspect_combo, SIGNAL(currentIndexChanged(int)), this, SLOT(setAspectRatio(int)));
 	connect(cropper, SIGNAL(areaChanged(QRect)), this, SLOT(setArea(QRect)));
 
-	//TODO needs to enforce aspect ratio!
-	connect(crop_width, QOverload<int>::of(&QSpinBox::valueChanged), [&](int a) {
-		QRect rect = cropper->croppedRect();
-		rect.setWidth(a);
-		cropper->setCrop(rect, true);
-	});
-	connect(crop_height, QOverload<int>::of(&QSpinBox::valueChanged), [&](int a) {
-		QRect rect = cropper->croppedRect();
-		rect.setHeight(a);
-		cropper->setCrop(rect, true);
-	});
-	connect(crop_top, QOverload<int>::of(&QSpinBox::valueChanged), [&](int a) {
-		QRect rect = cropper->croppedRect();
-		rect.setTop(a);
-		cropper->setCrop(rect, false);
-	});
-	connect(crop_left, QOverload<int>::of(&QSpinBox::valueChanged), [&](int a) {
-		QRect rect = cropper->croppedRect();
-		rect.setLeft(a);
-		cropper->setCrop(rect, false);
-	});
-	connect(crop_bottom, QOverload<int>::of(&QSpinBox::valueChanged), [&](int a) {
-		QRect rect = cropper->croppedRect();
-		rect.setBottom(a);
-		cropper->setCrop(rect, false);
-	});
-	connect(crop_right, QOverload<int>::of(&QSpinBox::valueChanged), [&](int a) {
-		QRect rect = cropper->croppedRect();
-		rect.setRight(a);
-		cropper->setCrop(rect, false);
-	});
-
+	connect(crop_width, SIGNAL(valueChanged(int)), cropper, SLOT(setWidth(int)));
+	connect(crop_height, SIGNAL(valueChanged(int)), cropper, SLOT(setHeight(int)));
+	connect(crop_top, SIGNAL(valueChanged(int)), cropper, SLOT(setTop(int)));
+	connect(crop_left, SIGNAL(valueChanged(int)), cropper, SLOT(setLeft(int)));
 }
 
 void CropFrame::init() {
@@ -154,6 +116,4 @@ void CropFrame::setArea(QRect rect) {
 	crop_height->setValue(rect.height());
 	crop_top->setValue(rect.top());
 	crop_left->setValue(rect.left());
-	crop_bottom->setValue(rect.bottom());
-	crop_right->setValue(rect.right());
 }

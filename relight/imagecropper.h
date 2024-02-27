@@ -4,11 +4,6 @@
 #include <QWidget>
 #include <QSizeF>
 
-namespace {
-	const QRect INIT_CROPPING_RECT = QRect();
-	const QSizeF INIT_PROPORTION = QSizeF(1.0, 1.0);
-}
-
 enum CursorPosition {
 	CursorPositionUndefined,
 	CursorPositionMiddle,
@@ -24,8 +19,7 @@ enum CursorPosition {
 
 
 
-class ImageCropper : public QWidget
-{
+class ImageCropper : public QWidget {
 	Q_OBJECT
 
 public:
@@ -34,13 +28,16 @@ public:
 
 public slots:
 	void setImage(const QPixmap& _image);
-	void setBackgroundColor(const QColor& _backgroundColor);
 	void setCroppingRectBorderColor(const QColor& _borderColor);
 	void setProportion(const QSizeF& _proportion);
 	void setProportionFixed(const bool _isFixed);
 	void showHandle(bool _show = true);
 	void hideHandle();
 	void setCrop(QRect rect, bool preserveArea = false);
+	void setWidth(int w);
+	void setHeight(int h);
+	void setTop(int t);
+	void setLeft(int l);
 	void resetCrop();
 
 signals:
@@ -48,6 +45,7 @@ signals:
 
 public:
 	bool handleShown() { return show_handle; }
+	QRect imageCroppedRect(); //return cropped rect in image ccords
 	QRect croppedRect();
 	void enforceBounds(bool preserveArea); //makes sure the rectangle is inside the image.
 
@@ -85,11 +83,14 @@ private:
 private:
 	bool show_handle = true;
 
+	//TODO invert logic: realSize rect is stored, cropping rect is computed instead.
 	float leftDelta = 0, topDelta = 0;
 	float xScale = 1, yScale = 1;
 
 	QPixmap imageForCropping;
-	QRectF croppingRect;
+	QRectF croppingRect; //in image coords
+	QRectF realSizeRect;
+
 	QRectF lastStaticCroppingRect;
 	CursorPosition _cursorPosition = CursorPositionUndefined;
 	bool isMousePressed = false;
