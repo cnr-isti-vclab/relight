@@ -13,17 +13,16 @@
 #include <QMessageBox>
 #include <QProxyStyle>
 
-#include <QDebug>
 
 
 QIcon ProxyStyle::standardIcon(StandardPixmap standardIcon,
 								 const QStyleOption *option,
 								 const QWidget *widget) const {
 	switch(standardIcon) {
-	case QStyle::SP_DialogOkButton: return QIcon::fromTheme("check");
+	case QStyle::SP_DialogOkButton:     return QIcon::fromTheme("check");
 	case QStyle::SP_DialogCancelButton: return QIcon::fromTheme("cancel");
-	case QStyle::SP_DialogHelpButton: return QIcon::fromTheme("help-circle");
-	case QStyle::SP_DialogSaveButton: return QIcon::fromTheme("save");
+	case QStyle::SP_DialogHelpButton:   return QIcon::fromTheme("help-circle");
+	case QStyle::SP_DialogSaveButton:   return QIcon::fromTheme("save");
 	default: return QProxyStyle::standardIcon(standardIcon, option, widget);
 	}
 };

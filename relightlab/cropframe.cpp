@@ -6,6 +6,7 @@
 #include <QSpinBox>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QPushButton>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QComboBox>
