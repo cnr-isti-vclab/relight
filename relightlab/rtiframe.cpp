@@ -1,5 +1,6 @@
 #include "rtiframe.h"
 #include "helpbutton.h"
+#include "relightapp.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -8,16 +9,62 @@
 #include <QPushButton>
 #include <QLineEdit>
 #include <QSpinBox>
+#include <QButtonGroup>
 #include <QLabel>
+
+class RtiCard: public QFrame {
+public:
+	QPushButton *button;
+
+	RtiCard(QString title, QString text, QWidget *parent = nullptr) {
+		QVBoxLayout *layout = new QVBoxLayout(this);
+		layout->addWidget(button = new QPushButton(title));
+		button->setCheckable(true);
+		//QImage thumb = qRelightApp->thumbnails()[0];
+		QLabel *img = new QLabel();
+		img->setMinimumSize(200, 200);
+		layout->addWidget(img);
+		//img->setPixmap(QPixmap::fromImage(thumb.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation)));
+		layout->addWidget(new HelpLabel(text, title));
+		setFrameStyle(QFrame::StyledPanel);
+	}
+	
+};
 
 RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);
 
-	QVBoxLayout *parameters = new QVBoxLayout;
-	content->addLayout(parameters);
+	content->addWidget(new QLabel("<h2>Relightable images</h2>"));
+
+	QHBoxLayout *basis_layout = new QHBoxLayout;
+	content->addLayout(basis_layout);
+
+	QButtonGroup *basis_group = new QButtonGroup;
+
+	QStringList basis_labels;
+	basis_labels <<
+		"PTM\nPolynomial Texture Maps" <<
+		"HSH\nHemiSpherical Harmonics" <<
+		"RBF\nRadial Basis Functions" <<
+		"BNL\nBilinear sampling" <<
+		"Neural\nConvolutional neural network";
+		
+	basis_layout->addStretch(1);
+	for(int i = 0; i < 5; i++) {
+	/*	basis_layout->addWidget(basis[i] = new QPushButton(basis_labels[i]), 3);
+		basis[i]->setCheckable(true);
+		basis[i]->setProperty("class", "");
+
+		basis[i]->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+		basis_group->addButton(basis[i], i); */
+		RtiCard *card = new RtiCard(basis_labels[i].split("\n").first(), basis_labels[i].split("\n").last());
+		basis_layout->addWidget(card, 2);
+		basis_group->addButton(card->button, i);
+	}
+	basis_layout->addStretch(1);
 
 	QGroupBox *model = new QGroupBox("Model");
-	parameters->addWidget(model);
+	content->addWidget(model);
 	QVBoxLayout *model_layout = new QVBoxLayout(model);
 	model_layout->addWidget(new HelpRadio("Polynomial Texture Maps (PTM)", "rti/ptm"));
 	model_layout->addWidget(new HelpRadio("HemiSpherical Harmonics (HSH)", "rti/hsh"));
@@ -26,7 +73,7 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	model_layout->addWidget(new HelpRadio("Neural network", "rti/neural"));
 
 	QGroupBox *colorspace= new QGroupBox("Colorspace");
-	parameters->addWidget(colorspace);
+	content->addWidget(colorspace);
 	QVBoxLayout *colorspace_layout = new QVBoxLayout(colorspace);
 	colorspace_layout->addWidget(new HelpRadio("RGB", "rti/rgb"));
 	colorspace_layout->addWidget(new HelpRadio("LRGB", "rti/lrgb"));
@@ -34,7 +81,7 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	colorspace_layout->addWidget(new HelpRadio("YCC", "rti/ycc"));
 
 	QGroupBox *planes = new QGroupBox("Planes");
-	parameters->addWidget(planes);
+	content->addWidget(planes);
 
 	QGridLayout *planes_layout = new QGridLayout(planes);
 	planes_layout->addWidget(new HelpLabel("Total number of planes:", "rti/planes"), 0, 0);
@@ -48,8 +95,9 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	planes_layout->addWidget(luminance_planes, 1, 1);
 
 
-	QGroupBox *legacy = new QGroupBox("Export legacy RTI");	
-	parameters->addWidget(legacy);
+
+	QGroupBox *legacy = new QGroupBox("Export .rti for RtiViewer");
+	content->addWidget(legacy);
 
 	QGridLayout *legacy_layout = new QGridLayout(legacy);
 	
