@@ -1,6 +1,7 @@
 #include "rtiframe.h"
 #include "helpbutton.h"
 #include "relightapp.h"
+#include "rticard.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -12,29 +13,12 @@
 #include <QButtonGroup>
 #include <QLabel>
 
-class RtiCard: public QFrame {
-public:
-	QPushButton *button;
-
-	RtiCard(QString title, QString text, QWidget *parent = nullptr) {
-		QVBoxLayout *layout = new QVBoxLayout(this);
-		layout->addWidget(button = new QPushButton(title));
-		button->setCheckable(true);
-		//QImage thumb = qRelightApp->thumbnails()[0];
-		QLabel *img = new QLabel();
-		img->setMinimumSize(200, 200);
-		layout->addWidget(img);
-		//img->setPixmap(QPixmap::fromImage(thumb.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation)));
-		layout->addWidget(new HelpLabel(text, title));
-		setFrameStyle(QFrame::StyledPanel);
-	}
-	
-};
 
 RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);
 
 	content->addWidget(new QLabel("<h2>Relightable images</h2>"));
+	content->addSpacing(20);
 
 	QHBoxLayout *basis_layout = new QHBoxLayout;
 	content->addLayout(basis_layout);
@@ -51,15 +35,9 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 		
 	basis_layout->addStretch(1);
 	for(int i = 0; i < 5; i++) {
-	/*	basis_layout->addWidget(basis[i] = new QPushButton(basis_labels[i]), 3);
-		basis[i]->setCheckable(true);
-		basis[i]->setProperty("class", "");
-
-		basis[i]->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
-		basis_group->addButton(basis[i], i); */
 		RtiCard *card = new RtiCard(basis_labels[i].split("\n").first(), basis_labels[i].split("\n").last());
 		basis_layout->addWidget(card, 2);
-		basis_group->addButton(card->button, i);
+		//basis_group->addButton(card->button, i);
 	}
 	basis_layout->addStretch(1);
 
