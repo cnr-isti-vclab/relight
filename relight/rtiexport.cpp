@@ -67,7 +67,7 @@ RtiExport::RtiExport(QWidget *parent) :
     connect(ui->aspect, SIGNAL(currentIndexChanged(int)), this, SLOT(setAspectRatio(int)));
 
     ui->cropview->hideHandle();
-    ui->cropview->setBackgroundColor( Qt::lightGray );
+	//ui->cropview->setBackgroundColor( Qt::lightGray );
     ui->cropview->setCroppingRectBorderColor( Qt::white);
     changeBasis(0);
 }

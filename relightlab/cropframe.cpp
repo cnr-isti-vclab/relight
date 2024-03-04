@@ -27,9 +27,10 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 
 	QGroupBox *bounds = new QGroupBox("Area");
 	bounds->setMinimumWidth(300);
-	right_side->addWidget(bounds, 1);
+	right_side->addWidget(bounds, 0);
 
 	QGridLayout * area_layout = new QGridLayout(bounds);
+	area_layout->setSpacing(10);
 
 	area_layout->addWidget(new QLabel("Width"), 0, 0);
 	area_layout->addWidget(crop_width = new QSpinBox, 0, 1);
@@ -69,6 +70,7 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	right_side->addWidget(aspect_box);
 
 	QGridLayout *aspect_layout = new QGridLayout(aspect_box);
+	aspect_layout->setSpacing(10);
 
 	aspect_combo = new QComboBox;
 	aspect_combo->addItem("None");      //0
