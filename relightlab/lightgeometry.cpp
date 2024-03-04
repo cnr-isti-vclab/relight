@@ -9,6 +9,9 @@
 #include <QButtonGroup>
 #include <QDoubleSpinBox>
 
+LightsGeometry::~LightsGeometry() { if(group) delete group; }
+
+
 LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 
 	QGridLayout * content = new QGridLayout(this);
