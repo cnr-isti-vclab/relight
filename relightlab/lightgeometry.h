@@ -25,7 +25,7 @@ public:
 	QButtonGroup *group = nullptr;
 
 	LightsGeometry(QWidget *parent = nullptr);
-	~LightsGeometry() { if(group) delete group; }
+	~LightsGeometry();
 
 	void init();
 

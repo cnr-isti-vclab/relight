@@ -2,18 +2,27 @@
 #define RTICARD_H
 
 #include <QFrame>
+#include "../src/rti.h"
 
 
 class RtiCard: public QFrame {
+	Q_OBJECT
 public:
-	RtiCard(QString title, QString text, QWidget *parent = nullptr);
+	RtiCard(Rti::Type type, QWidget *parent = nullptr);
+
+public slots:
+	void setChecked(bool);
+
+signals:
+	void toggled(bool checked);
 
 protected:
 	//manage on click event
 	void mousePressEvent(QMouseEvent *event) override;
 
 private:
-	bool selected = false;
+	bool checked = false;
+
 };
 
 

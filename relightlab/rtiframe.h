@@ -2,20 +2,24 @@
 #define RTIFRAME_H
 
 #include <QFrame>
+//TODO we should separate RTI definitions from actual implementation (materials etc).
+#include "../src/rti.h"
 
-class QPushButton;
+class RtiCard;
 
 class RtiFrame: public QFrame {
+	Q_OBJECT
 public:
-	enum Basis { PTM = 0, HSH = 1, RBF = 2, BNL = 3, NEURAL = 4 };
-	enum Colorspace { RGB = 0, LRGB = 1, MRGB = 2, YCC = 3};
-
 	RtiFrame(QWidget *parent = nullptr);
 	void init();
 
+public slots:
+	void setBasis(Rti::Type basis);
+
 private:
-	QPushButton *basis[5];
-	QPushButton *spaces[4];
+	Rti::Type current_basis;
+	Rti::ColorSpace current_colorspace;
+	std::vector<RtiCard *> basis_cards;
 };
 
 #endif // RTIFRAME_H

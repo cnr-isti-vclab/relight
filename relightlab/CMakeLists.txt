@@ -60,6 +60,7 @@ set (RELIGHT_HEADERS
     helpbutton.h 
     cropframe.h 
     rtiframe.h
+    rticard.h
     ../relight/imagecropper.h
 
 )
@@ -104,6 +105,7 @@ set (RELIGHTLAB_SOURCES
     helpbutton.cpp 
     cropframe.cpp
     rtiframe.cpp
+    rticard.cpp
     ../relight/imagecropper.cpp
 )
 
