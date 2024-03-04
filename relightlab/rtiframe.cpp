@@ -23,21 +23,19 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	QHBoxLayout *basis_layout = new QHBoxLayout;
 	content->addLayout(basis_layout);
 
-	QButtonGroup *basis_group = new QButtonGroup;
-
-	QStringList basis_labels;
-	basis_labels <<
-		"PTM\nPolynomial Texture Maps" <<
-		"HSH\nHemiSpherical Harmonics" <<
-		"RBF\nRadial Basis Functions" <<
-		"BNL\nBilinear sampling" <<
-		"Neural\nConvolutional neural network";
+	Rti::Type basis[] = { Rti::PTM, Rti::HSH, Rti::RBF, Rti::BILINEAR, Rti::NEURAL };
+	
 		
 	basis_layout->addStretch(1);
 	for(int i = 0; i < 5; i++) {
-		RtiCard *card = new RtiCard(basis_labels[i].split("\n").first(), basis_labels[i].split("\n").last());
+		RtiCard *card = new RtiCard(basis[i]);
 		basis_layout->addWidget(card, 2);
-		//basis_group->addButton(card->button, i);
+		connect(card, &RtiCard::toggled, [=](bool checked) {
+			if(checked) {
+				setBasis((Rti::Type)i);
+			}
+		});
+		basis_cards.push_back(card);
 	}
 	basis_layout->addStretch(1);
 
@@ -97,4 +95,10 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 
 void RtiFrame::init() {
 
+}
+
+void RtiFrame::setBasis(Rti::Type basis) {
+	current_basis = basis;
+	for(int i = 0; i < basis_cards.size(); i++)
+		basis_cards[i]->setChecked(i == (int)basis);
 }
