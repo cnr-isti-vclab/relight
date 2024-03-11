@@ -11,7 +11,7 @@ class SpherePanel;
 class DomePanel;
 class LightsGeometry;
 
-
+/* Dome holds the geometri config */
 
 class LightsFrame: public QFrame {
 	Q_OBJECT
@@ -21,7 +21,6 @@ public:
 public slots:
 	void init();
 	void init(Dome dome);
-	void exportDome();
 
 private:
 	Dome dome;
