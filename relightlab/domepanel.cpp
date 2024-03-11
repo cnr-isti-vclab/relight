@@ -18,32 +18,29 @@
 
 DomePanel::DomePanel(QWidget *parent): QFrame(parent) {
 
-	QVBoxLayout *content = new QVBoxLayout(this);
-
-	content->addWidget(new QLabel("<h3>Select an existing dome configuration</h3>"));
-	content->addSpacing(30);
-
-
-	QHBoxLayout *columns = new QHBoxLayout();
-	content->addLayout(columns);
-
-	QVBoxLayout *selection = new QVBoxLayout();
-	columns->addLayout(selection, 1);
+	setContentsMargins(10, 10, 10, 10);
+	QGridLayout *content = new QGridLayout(this);
+	content->setHorizontalSpacing(20);
 
 	QPushButton *load = new QPushButton(QIcon::fromTheme("folder"), "Load dome file...");
 	load->setProperty("class", "large");
 	load->setMinimumWidth(200);
 	load->setMaximumWidth(300);
 	connect(load, SIGNAL(clicked()), this, SLOT(loadDomeFile()));
+	content->addWidget(load, 1, 0, Qt::AlignTop);
 
-	selection->addWidget(load);
 
-	selection->addWidget(new QLabel("Recent domes: "));
+
+
+	content->addWidget(new QLabel("Recent domes: "), 0, 1);
 	dome_list = new QListWidget;
-	selection->addWidget(dome_list);
+	content->addWidget(dome_list, 1, 1);
 
 
-	QFrame *properties = new QFrame;
+
+
+
+/*	QFrame *properties = new QFrame;
 	columns->addWidget(properties, 2);
 
 	QGridLayout *properties_layout = new QGridLayout(properties);
@@ -72,12 +69,12 @@ DomePanel::DomePanel(QWidget *parent): QFrame(parent) {
 	directions_view->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	directions_view->setMaximumSize(200, 200);
 	directions_view->setMinimumSize(200, 200);
-
+*/
 
 
 	connect(dome_list, SIGNAL(itemSelectionChanged()), this, SLOT(setSelectedDome()));
-	connect(label, &QLineEdit::textChanged, [&]() { dome.label = label->text(); emit accept(dome); });
-	connect(images, SIGNAL(currentRowChanged(int)), directions_view, SLOT(highlight(int)));
+//	connect(label, &QLineEdit::textChanged, [&]() { dome.label = label->text(); emit accept(dome); });
+//	connect(images, SIGNAL(currentRowChanged(int)), directions_view, SLOT(highlight(int)));
 
 	init();
 }

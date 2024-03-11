@@ -2,7 +2,6 @@
 #include "relightapp.h"
 #include "domepanel.h"
 #include "spherepanel.h"
-
 #include "lightgeometry.h"
 
 #include <QVBoxLayout>
@@ -36,15 +35,13 @@ LightsFrame::LightsFrame() {
 	geometry = new LightsGeometry;
 	content->addWidget(geometry);
 
-	QPushButton *export_dome = new QPushButton(QIcon::fromTheme("save"), "Export as dome...");
-	content->addWidget(export_dome, Qt::AlignRight);
 
 	content->addStretch();
 
 	connect(sphere_panel, SIGNAL(accept(Dome)), this, SLOT(init(Dome)));
 	connect(dome_panel, SIGNAL(accept(Dome)), this, SLOT(init(Dome)));
 
-	connect(export_dome, SIGNAL(clicked()), this, SLOT(exportDome()));
+
 }
 
 void LightsFrame::init() {
@@ -53,23 +50,16 @@ void LightsFrame::init() {
 
 	sphere_panel->init();
 	dome_panel->init();
-	geometry->init();
+	//geometry->init();
 }
 
 void LightsFrame::init(Dome _dome) {
-	geometry->update(_dome);
 	dome = _dome;
+	sphere_panel->init();
+	dome_panel->init();
+	geometry->update(_dome);
+
 }
 
-void LightsFrame::exportDome() {
-	QString filename = QFileDialog::getSaveFileName(this, "Select a dome file", qRelightApp->lastProjectDir(), "*.dome");
-	if(filename.isNull())
-		return;
-	if(!filename.endsWith(".dome"))
-		filename += ".dome";
-	//TODO Basic checks, label is a problem (use filename!
-	dome.save(filename);
-	qRelightApp->addDome(filename);
-}
 
 
