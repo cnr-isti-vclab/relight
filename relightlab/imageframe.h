@@ -13,7 +13,7 @@ class QGraphicsPixmapItem;
 class QGraphicsScene;
 class QListWidgetItem;
 class QToolBar;
-
+class FlowLayout;
 
 class ImageFrame: public QFrame {
 	Q_OBJECT

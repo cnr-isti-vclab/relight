@@ -21,7 +21,7 @@ class QString;
 class Rti {
 public:
 
-	enum Type       { PTM = 0, HSH = 1, RBF = 2, BILINEAR = 3, DMD = 4, SH = 5, H = 6 };
+	enum Type       { PTM = 0, HSH = 1, RBF = 2, BILINEAR = 3, NEURAL = 4, DMD = 5, SH = 6, H = 7 };
 	enum ColorSpace { RGB = 0, LRGB = 1, YCC = 2, MRGB = 3, MYCC = 4 };
 	enum Format     { JSON = 0, BRTI = 1 };
 	enum ImgFormat  { RAW = 0, JPEG = 1, PNG = 2 }; //add other formats?

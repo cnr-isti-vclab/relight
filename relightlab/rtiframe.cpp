@@ -2,6 +2,7 @@
 #include "helpbutton.h"
 #include "relightapp.h"
 #include "rticard.h"
+#include "flowlayout.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -12,7 +13,7 @@
 #include <QSpinBox>
 #include <QButtonGroup>
 #include <QLabel>
-
+#include <QScrollArea>
 
 RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);
@@ -20,25 +21,39 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	content->addWidget(new QLabel("<h2>Relightable images</h2>"));
 	content->addSpacing(20);
 
-	QHBoxLayout *basis_layout = new QHBoxLayout;
-	content->addLayout(basis_layout);
+	QScrollArea *area = new QScrollArea;
+	area->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+	area->setWidgetResizable(true);
+	content->addWidget(area, 1);
 
-	Rti::Type basis[] = { Rti::PTM, Rti::HSH, Rti::RBF, Rti::BILINEAR, Rti::NEURAL };
+	QWidget *widget = new QWidget;
+	area->setWidget(widget);
+
+
+	FlowLayout *sample_layout = new FlowLayout(area->widget());
 	
-		
-	basis_layout->addStretch(1);
-	for(int i = 0; i < 5; i++) {
-		RtiCard *card = new RtiCard(basis[i]);
-		basis_layout->addWidget(card, 2);
-		connect(card, &RtiCard::toggled, [=](bool checked) {
-			if(checked) {
-				setBasis((Rti::Type)i);
-			}
-		});
-		basis_cards.push_back(card);
-	}
-	basis_layout->addStretch(1);
+	sample_layout->addWidget(new RtiCard(Rti::PTM, Rti::LRGB, 9, 0));
+	sample_layout->addWidget(new RtiCard(Rti::PTM, Rti::RGB, 18, 0));
+	sample_layout->addWidget(new RtiCard(Rti::HSH, Rti::RGB, 12, 0));
+	sample_layout->addWidget(new RtiCard(Rti::HSH, Rti::LRGB, 12, 0));
+	sample_layout->addWidget(new RtiCard(Rti::HSH, Rti::RGB, 27, 0));
 
+	sample_layout->addWidget(new RtiCard(Rti::RBF, Rti::MRGB, 12, 0));
+	sample_layout->addWidget(new RtiCard(Rti::RBF, Rti::MRGB, 18, 0));
+	sample_layout->addWidget(new RtiCard(Rti::RBF, Rti::MRGB, 24, 0));
+	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::MRGB, 12, 0));
+	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::MRGB, 18, 0));
+	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::MRGB, 24, 0));
+
+	sample_layout->addWidget(new RtiCard(Rti::RBF, Rti::YCC, 12, 1));
+	sample_layout->addWidget(new RtiCard(Rti::RBF, Rti::YCC, 18, 2));
+	sample_layout->addWidget(new RtiCard(Rti::RBF, Rti::YCC, 24, 3));
+	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::YCC, 12, 1));
+	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::YCC, 18, 2));
+	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::YCC, 24, 3));
+
+
+	/*
 	QGroupBox *model = new QGroupBox("Model");
 	content->addWidget(model);
 	QVBoxLayout *model_layout = new QVBoxLayout(model);
@@ -69,9 +84,8 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 
 	QSpinBox *luminance_planes = new QSpinBox;
 	planes_layout->addWidget(luminance_planes, 1, 1);
-
-
-
+*/
+/*
 	QGroupBox *legacy = new QGroupBox("Export .rti for RtiViewer");
 	content->addWidget(legacy);
 
@@ -88,7 +102,7 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	legacy_layout->addWidget(new QLineEdit(), 2, 1);	
 	legacy_layout->addWidget(new QPushButton("..."), 2, 2);	
 
-	legacy_layout->addWidget(new QPushButton("Export"), 3, 2);	
+	legacy_layout->addWidget(new QPushButton("Export"), 3, 2);	 */
 
 	content->addStretch();
 }
@@ -99,6 +113,6 @@ void RtiFrame::init() {
 
 void RtiFrame::setBasis(Rti::Type basis) {
 	current_basis = basis;
-	for(int i = 0; i < basis_cards.size(); i++)
+	for(int i = 0; i < 4; i++)
 		basis_cards[i]->setChecked(i == (int)basis);
 }
