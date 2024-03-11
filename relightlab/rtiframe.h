@@ -19,7 +19,7 @@ public slots:
 private:
 	Rti::Type current_basis;
 	Rti::ColorSpace current_colorspace;
-	std::vector<RtiCard *> basis_cards;
+	RtiCard *basis_cards[4];
 };
 
 #endif // RTIFRAME_H

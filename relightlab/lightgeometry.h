@@ -5,19 +5,19 @@
 
 #include <QFrame>
 
-class QRadioButton;
 class QDoubleSpinBox;
 class QButtonGroup;
 class QAbstractButton;
+class HelpRadio;
 
 class LightsGeometry: public QFrame {
 	Q_OBJECT
 public:	
 	QDoubleSpinBox *image_width;
 
-	QRadioButton *directional;
-	QRadioButton *sphere_approx;
-	QRadioButton *three;
+	HelpRadio *directional;
+	HelpRadio *sphere_approx;
+	HelpRadio *three;
 
 	QDoubleSpinBox *vertical_offset;
 	QDoubleSpinBox *diameter;
