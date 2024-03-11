@@ -1,33 +1,46 @@
 #include "lightgeometry.h"
 #include "relightapp.h"
 #include "helpbutton.h"
+#include "directionsview.h"
 
 #include <QVBoxLayout>
 #include <QFrame>
 #include <QGridLayout>
 #include <QLabel>
+#include <QTextEdit>
 #include <QRadioButton>
+#include <QPushButton>
 #include <QButtonGroup>
 #include <QDoubleSpinBox>
+#include <QSpinBox>
+#include <QFileDialog>
 
 LightsGeometry::~LightsGeometry() { if(group) delete group; }
 
 
 LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 
-	QGridLayout * content = new QGridLayout(this);
+	QVBoxLayout *page = new QVBoxLayout(this);
 
+	page->addWidget(new QLabel("<h3>Current dome configuration<h3>"));
+	//page->addSpacing(10);
 
-/*	content->addWidget( new QLabel("Number of images:"), 0, 0);
-	content->addWidget(images_number = new QLabel, 0, 1); */
+	QGridLayout * content = new QGridLayout();
+	page->addLayout(content);
 
-	content->addWidget(new QLabel("<h3>Lights geometrical configuration<h3>"), 0, 0);
+	content->addWidget( new QLabel("Number of images:"), 0, 0);
+	content->addWidget(images_number = new QSpinBox, 0, 1);
+
+	content->addWidget(new QLabel("Notes:"), 1, 0);
+	content->addWidget(notes = new QTextEdit, 1, 1);
+	notes->setMaximumHeight(100);
+
 
 	group = new QButtonGroup;
 
-	content->addWidget(directional = new HelpRadio("Directional Lights", "lights/directional"), 1, 0);
-	content->addWidget(sphere_approx = new HelpRadio("3D light positions on a sphere", "lights/3dsphere"), 2, 0);
-	content->addWidget(three = new HelpRadio("3D light positions", "lights/3dposition"), 3, 0);
+	content->addWidget(directional = new HelpRadio("Directional Lights", "lights/directional"), 2, 0);
+	content->addWidget(sphere_approx = new HelpRadio("3D light positions on a sphere", "lights/3dsphere"), 3, 0);
+	content->addWidget(three = new HelpRadio("3D light positions", "lights/3dposition"), 4, 0);
 	group->addButton(directional->radioButton(), Dome::DIRECTIONAL);
 	group->addButton(sphere_approx->radioButton(), Dome::SPHERICAL);
 	group->addButton(three->radioButton(), Dome::LIGHTS3D);
@@ -38,7 +51,7 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	QFrame *geometry = new QFrame;
 	geometry->setFrameShape(QFrame::StyledPanel);
 
-	content->addWidget(geometry, 1, 1, 3, 1);
+	content->addWidget(geometry, 2, 1, 3, 1);
 
 	QGridLayout *grid = new QGridLayout(geometry);
 	grid->setColumnMinimumWidth(0, 200);
@@ -57,7 +70,24 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	grid->addWidget(new QLabel("cm"), 4, 2);
 	connect(vertical_offset, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) { qRelightApp->project().dome.verticalOffset = v; });
 
-	//content->setColumnStretch(1, 1);
+
+	/* it seems basically impossible to have a widget scale while preserving aspect ratio, bummer */
+
+	content->setSpacing(20);
+	directions_view = new DirectionsView;
+	content->addWidget(directions_view, 0, 2, 5, 1, Qt::AlignBottom);
+	directions_view->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+	directions_view->setMaximumSize(300, 300);
+	directions_view->setMinimumSize(300, 300);
+
+	page->addSpacing(20);
+
+	QPushButton *save_dome = new QPushButton(QIcon::fromTheme("save"), "Export as dome...");
+	page->addWidget(save_dome, Qt::AlignRight);
+	save_dome->setProperty("class", "large");
+
+	connect(save_dome, SIGNAL(clicked()), this, SLOT(exportDome()));
+
 }
 
 void LightsGeometry::setSpherical(QAbstractButton *button) {
@@ -88,3 +118,14 @@ void LightsGeometry::update(Dome dome) {
 	init();
 }
 
+void LightsGeometry::exportDome() {
+	QString filename = QFileDialog::getSaveFileName(this, "Select a dome file", qRelightApp->lastProjectDir(), "*.dome");
+	if(filename.isNull())
+		return;
+	if(!filename.endsWith(".dome"))
+		filename += ".dome";
+	//TODO Basic checks, label is a problem (use filename!
+	Dome &dome = qRelightApp->project().dome;
+	dome.save(filename);
+	qRelightApp->addDome(filename);
+}

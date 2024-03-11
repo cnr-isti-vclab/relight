@@ -4,6 +4,7 @@
 #include "spherepicking.h"
 #include "relightapp.h"
 #include "../src/sphere.h"
+#include "lightgeometry.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
@@ -15,10 +16,9 @@
 SpherePanel::SpherePanel(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);
 
-	content->addWidget(new QLabel("<h3>Mark a reflective sphere:</h3>"));
-	content->addSpacing(30);
-
+	content->addSpacing(10);
 	QPushButton *new_sphere = new QPushButton("New sphere...");
+	new_sphere->setProperty("class", "large");
 	content->addWidget(new_sphere);
 	new_sphere->setMinimumWidth(200);
 	new_sphere->setMaximumWidth(300);
@@ -27,7 +27,7 @@ SpherePanel::SpherePanel(QWidget *parent): QFrame(parent) {
 	content->addWidget(spheres_frame);
 	spheres = new QVBoxLayout(spheres_frame);
 
-	content->addStretch(1);
+	//content->addStretch();
 	connect(new_sphere, SIGNAL(clicked()), this, SLOT(newSphere()));
 }
 
