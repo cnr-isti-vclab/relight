@@ -1,5 +1,6 @@
 #include "lightgeometry.h"
 #include "relightapp.h"
+#include "helpbutton.h"
 
 #include <QVBoxLayout>
 #include <QFrame>
@@ -24,12 +25,12 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 
 	group = new QButtonGroup;
 
-	content->addWidget(directional = new QRadioButton("Directional Lights"), 1, 0);
-	content->addWidget(sphere_approx = new QRadioButton("3D light positions on a sphere"), 2, 0);
-	content->addWidget(three = new QRadioButton("3D light positions"), 3, 0);
-	group->addButton(directional, Dome::DIRECTIONAL);
-	group->addButton(sphere_approx, Dome::SPHERICAL);
-	group->addButton(three, Dome::LIGHTS3D);
+	content->addWidget(directional = new HelpRadio("Directional Lights", "lights/directional"), 1, 0);
+	content->addWidget(sphere_approx = new HelpRadio("3D light positions on a sphere", "lights/3dsphere"), 2, 0);
+	content->addWidget(three = new HelpRadio("3D light positions", "lights/3dposition"), 3, 0);
+	group->addButton(directional->radioButton(), Dome::DIRECTIONAL);
+	group->addButton(sphere_approx->radioButton(), Dome::SPHERICAL);
+	group->addButton(three->radioButton(), Dome::LIGHTS3D);
 
 	connect(group, SIGNAL(buttonClicked(QAbstractButton *)), this, SLOT(setSpherical(QAbstractButton *)));
 
@@ -60,7 +61,7 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 }
 
 void LightsGeometry::setSpherical(QAbstractButton *button) {
-	bool spherical = (button == sphere_approx);
+	bool spherical = (button == sphere_approx->radioButton());
 	diameter->setEnabled(spherical == Dome::SPHERICAL);
 	vertical_offset->setEnabled(spherical == Dome::SPHERICAL);
 
