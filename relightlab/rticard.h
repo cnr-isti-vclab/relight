@@ -8,8 +8,13 @@
 class RtiCard: public QFrame {
 	Q_OBJECT
 public:
-	RtiCard(Rti::Type type, QWidget *parent = nullptr);
+	Rti::Type type;
+	Rti::ColorSpace colorspace;
+	int nplanes;
+	int nchroma;
 
+	RtiCard(Rti::Type type, Rti::ColorSpace colorspace, int nplanes, int nchroma, QWidget *parent = nullptr);
+	void setCheckable(bool);
 public slots:
 	void setChecked(bool);
 
@@ -21,6 +26,7 @@ protected:
 	void mousePressEvent(QMouseEvent *event) override;
 
 private:
+	bool checkable = false;
 	bool checked = false;
 
 };

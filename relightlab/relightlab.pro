@@ -75,7 +75,8 @@ SOURCES += main.cpp \
     verifydialog.cpp \
     helpbutton.cpp \
     cropframe.cpp \
-    ../relight/imagecropper.cpp
+    ../relight/imagecropper.cpp \
+    creatertidialog.cpp
 
 RESOURCES += \
     res.qrc
@@ -122,7 +123,8 @@ HEADERS += \
     verifydialog.h \
     helpbutton.h \
     cropframe.h \
-    ../relight/imagecropper.h
+    ../relight/imagecropper.h \
+    creatertidialog.h
 
 FORMS += \
     form.ui
