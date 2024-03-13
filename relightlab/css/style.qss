@@ -25,6 +25,7 @@ QSpinBox, QDoubleSpinBox {
 	border-radius: 3px;
 	padding: 2px;
 	height:20px;
+	min-width:100px;
 }
 
 QSpinBox::up-button, QSpinBox::down-button, QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
