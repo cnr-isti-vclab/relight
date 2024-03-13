@@ -119,6 +119,9 @@ void RelightApp::setDarkTheme(bool dark) {
 }
 
 void RelightApp::setProject(const Project &_project) {
+	//cleanup interface and stop (and remove) project related tasks.
+	mainwindow->clear();
+
 	m_project = _project;
 	loadThumbnails();
 

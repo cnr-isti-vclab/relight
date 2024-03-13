@@ -15,7 +15,9 @@ class PositionView;
 class DetectHighlights: public Task {
 public:
 	Sphere *sphere;
-	DetectHighlights(Sphere *sphere);
+	bool update_positions;
+
+	DetectHighlights(Sphere *sphere, bool update = true);
 	virtual void run() override;
 
 };
@@ -32,10 +34,12 @@ public:
 	DetectHighlights *detect_highlights = nullptr;
 
 	SphereRow(Sphere *sphere, QWidget *parent = nullptr);
-	void detectHighlights();
+	void detectHighlights(bool update = true);
 	void stopDetecting();
+	
 signals:
 	void removeme(SphereRow *row);
+	void updated(); //emit when status changes
 
 public slots:
 	void edit();

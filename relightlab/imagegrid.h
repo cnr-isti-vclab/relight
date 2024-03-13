@@ -18,6 +18,7 @@ class ImageGrid: public QScrollArea {
 public:
 	ImageGrid(QWidget *parent = nullptr);
 
+	void clear();
 	void init();
 private:
 	FlowLayout *flowlayout = nullptr;
