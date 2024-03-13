@@ -31,11 +31,11 @@ private:
 	QStringList dome_paths;
 
 	QLabel *filename;
-	QLineEdit *label;
-	QLabel *number;
-	QLabel *notes;
+//	QLineEdit *label;
+//	QLabel *number;
+//	QLabel *notes;
 	QListWidget *dome_list;
-	QListWidget *images;
+	//QListWidget *images;
 	DirectionsView *directions_view;
 
 	void loadLP(QString filename);
