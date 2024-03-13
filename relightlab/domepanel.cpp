@@ -115,9 +115,9 @@ void DomePanel::loadDomeFile() {
 }
 
 void DomePanel::update(QString path) {
-	label->setText(dome.label);
-	filename->setText(path);
-	number->setText(QString::number(dome.directions.size()));
+//	label->setText(dome.label);
+//	filename->setText(path);
+//	number->setText(QString::number(dome.directions.size()));
 	directions_view->initFromDome(dome);
 
 	emit accept(dome);
@@ -137,9 +137,9 @@ void DomePanel::loadLP(QString path) {
 	QFileInfo info(path);
 	dome.label = info.fileName();
 
-	images->clear();
+/*	images->clear();
 	for(QString s: filenames)
-		images->addItem(s);
+		images->addItem(s); */
 
 	update(path);
 }
@@ -151,10 +151,10 @@ void DomePanel::loadDome(QString path) {
 		qDebug() << error;
 	}
 
-	images->clear();
+/*	images->clear();
 	for(size_t i = 0; i < dome.directions.size(); i++) {
 		images->addItem("Image " + QString::number(i));
-	}
+	}*/
 
 	update(path);
 }
