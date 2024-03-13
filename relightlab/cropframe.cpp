@@ -107,6 +107,10 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	connect(center, SIGNAL(clicked()), cropper, SLOT(centerCrop()));
 }
 
+void CropFrame::clear() {
+	cropper->setImage(QPixmap());
+}
+
 void CropFrame::init() {
 	Project &project = qRelightApp->project();
 

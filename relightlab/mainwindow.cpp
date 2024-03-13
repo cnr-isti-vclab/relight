@@ -93,6 +93,11 @@ void MainWindow::openRecentProject() {
 	}
 }
 
+void MainWindow::clear() {
+	image_frame->clear();
+	lights_frame->clear();
+	crop_frame->clear();
+}
 
 void MainWindow::init() {
 	image_frame->init();

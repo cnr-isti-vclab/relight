@@ -13,8 +13,9 @@
 #include <QPushButton>
 #include <QDebug>
 
-DetectHighlights::DetectHighlights(Sphere *_sphere) {
+DetectHighlights::DetectHighlights(Sphere *_sphere, bool update) {
 	sphere = _sphere;
+	update_positions = update;
 }
 
 void DetectHighlights::run() {
@@ -29,10 +30,12 @@ void DetectHighlights::run() {
 		if(image.skip) continue;
 
 		QImage img(image.filename);
-		sphere->findHighlight(img, i);
+		sphere->findHighlight(img, i, update_positions);
 
-		progressed(QString("Detecting highlights"), 100*(i+1) / project.images.size());
+		int progress = std::min(99, (int)(100*(i+1) / project.images.size()));
+		progressed(QString("Detecting highlights"), progress);
 	}
+	progressed(QString("Done"), 100);
 	mutex.lock();
 	status = DONE;
 	mutex.unlock();
@@ -99,17 +102,24 @@ void SphereRow::updateStatus(QString msg, int percent) {
 	status->setText(msg);
 	progress->setValue(percent);
 	reflections->update();
+	if(percent == 100) {
+		emit updated();
+	}
 }
 
-void SphereRow::detectHighlights() {
+void SphereRow::detectHighlights(bool update) {
 	if(sphere->center.isNull()) {
 		status->setText("Needs at least 3 points.");
 		return;
 	}
-	detect_highlights = new DetectHighlights(sphere);
-	connect(detect_highlights, &DetectHighlights::progress, this, &SphereRow::updateStatus); //, Qt::QueuedConnection);
+	if(!detect_highlights) {
+		detect_highlights = new DetectHighlights(sphere, update);
+		connect(detect_highlights, &DetectHighlights::progress, this, &SphereRow::updateStatus); //, Qt::QueuedConnection);
+	}
+	detect_highlights->stop();
 
 	ProcessQueue &queue = ProcessQueue::instance();
+	queue.removeTask(detect_highlights);
 	queue.addTask(detect_highlights);
 	queue.start();
 }

@@ -44,6 +44,10 @@ LightsFrame::LightsFrame() {
 
 }
 
+void LightsFrame::clear() {
+	sphere_panel->clear();
+}
+
 void LightsFrame::init() {
 	bool useSphere = qRelightApp->project().spheres.size();
 	choice->setCurrentIndex(useSphere? 0 : 1);

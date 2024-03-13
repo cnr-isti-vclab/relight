@@ -11,7 +11,9 @@ class SpherePanel;
 class DomePanel;
 class LightsGeometry;
 
-/* Dome holds the geometri config */
+/* Dome holds the geometri config 
+   SpherePanel uses the reflective spheres to calculate the light direction. (stored in the project)*/
+
 
 class LightsFrame: public QFrame {
 	Q_OBJECT
@@ -19,6 +21,7 @@ public:
 	LightsFrame();
 
 public slots:
+	void clear();
 	void init();
 	void init(Dome dome);
 

@@ -17,6 +17,7 @@ class SpherePanel: public QFrame {
 	Q_OBJECT
 public:
 	SpherePanel(QWidget *parent = nullptr);
+	void clear();
 	void init();
 	SphereRow *addSphere(Sphere *sphere);
 

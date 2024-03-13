@@ -236,7 +236,7 @@ bool inEllipse(double x, double y, double a, double b, double theta) {
 }
 
 
-void Sphere::findHighlight(QImage img, int n) {
+void Sphere::findHighlight(QImage img, int n, bool update_positions) {
 	if(n == 0) histogram.clear();
 	if(n == 0) thumbs.clear();
 	//TODO hack!
@@ -300,6 +300,8 @@ void Sphere::findHighlight(QImage img, int n) {
 		threshold -= 10;
 		iter++;
 	}
+	if(!update_positions)
+		return;
 	
 	//threshold now is 10 lower so we get more points.
 	threshold += 10;
@@ -345,7 +347,7 @@ void Sphere::findHighlight(QImage img, int n) {
 		bari = newbari/weight;
 		radius *= 0.5;
 	}
-	sphereImg.setPixel(int(bari.x()) - inner.left(), int(bari.y()) - inner.top(), qRgb(0, 255, 0));
+	//sphereImg.setPixel(int(bari.x()) - inner.left(), int(bari.y()) - inner.top(), qRgb(0, 255, 0));
 	
 
 /*	if(!sphere) {
