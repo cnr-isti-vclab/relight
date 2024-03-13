@@ -76,13 +76,25 @@ void ProcessQueue::addTask(Task *a, bool paused) {
 	emit update();
 }
 
+void ProcessQueue::removeTask(Task *a) {
+	QMutexLocker locker(&lock);
+	int index = queue.indexOf(a);
+	if(index < 0)
+		return;
+
+	Task *task = queue.takeAt(index);
+	emit update();
+}
+
 void ProcessQueue::removeTask(int id) {
 	QMutexLocker locker(&lock);
 	int index = indexOf(id);
-	if(index >= 0) {
-		Task *task = queue.takeAt(index);
-		delete task;
-	}
+	if(index < 0)
+		return;
+		
+	Task *task = queue.takeAt(index);
+	//processqueue is never the owner!
+	//delete task;
 	emit update();
 }
 

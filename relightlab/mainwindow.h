@@ -19,6 +19,7 @@ public:
 	void updateRecentProjectsMenu();
 	void openRecentProject();
 
+	void clear(); //clean up interface and stops project related tasks
 	void init(); //initialize interface using the current project
 	void setTabIndex(int index);
 	void setTabWidget(QWidget *widget);

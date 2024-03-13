@@ -31,13 +31,24 @@ SpherePanel::SpherePanel(QWidget *parent): QFrame(parent) {
 	connect(new_sphere, SIGNAL(clicked()), this, SLOT(newSphere()));
 }
 
-void SpherePanel::init() {
-	for(Sphere *sphere: qRelightApp->project().spheres) {
-		sphere->fit();
-		addSphere(sphere);
+void SpherePanel::clear() {
+	while(spheres->count() > 0) {
+		QLayoutItem *item = spheres->takeAt(0);
+		SphereRow *row =  dynamic_cast<SphereRow *>(item->widget());
+		row->stopDetecting();
+		delete row;
 	}
 }
 
+void SpherePanel::init() {
+	for(Sphere *sphere: qRelightApp->project().spheres) {
+		sphere->fit();
+		SphereRow * row = addSphere(sphere);
+		row->detectHighlights(false);
+	}
+}
+
+/* on user button press */
 void SpherePanel::newSphere() {
 	if(!sphere_dialog)
 		sphere_dialog = new SphereDialog(this);
@@ -64,7 +75,10 @@ SphereRow *SpherePanel::addSphere(Sphere *sphere) {
 	*/
 	SphereRow *row = new SphereRow(sphere);
 	spheres->addWidget(row);
+
+
 	connect(row, SIGNAL(removeme(SphereRow *)), this, SLOT(removeSphere(SphereRow *)));
+	//connect(row, SIGNAL(updated()), this, SLOT()
 	return row;
 }
 

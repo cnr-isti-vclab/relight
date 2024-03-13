@@ -84,6 +84,12 @@ ImageFrame::ImageFrame(QWidget *parent): QFrame(parent) {
 	container->addWidget(status);
 }
 
+void ImageFrame::clear() {
+	image_list->clear();
+	image_grid->clear();
+	scene.removeItem(imagePixmap);
+	imagePixmap = nullptr;
+}
 
 void ImageFrame::init() {
 	image_list->init();
