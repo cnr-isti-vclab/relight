@@ -28,6 +28,7 @@ public:
 	QToolBar *right_toolbar;
 
 	ImageFrame(QWidget *parent = nullptr);
+	void clear();
 	void init();
 	int currentImage();
 	void showImage(int id); //new project loaded.

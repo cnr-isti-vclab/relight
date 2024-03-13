@@ -46,7 +46,7 @@ public:
 	}
 	bool fit();
 	void ellipseFit();
-	void findHighlight(QImage im, int n);
+	void findHighlight(QImage im, int n, bool update_positions = true);
 	void computeDirections(Lens &lens);
 
 	void resetHighlight(size_t n); //reset light and direction of the detected highlight, of image n.

@@ -34,6 +34,9 @@ ImageGrid::ImageGrid(QWidget *parent): QScrollArea(parent) {
 	setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 }
 
+void ImageGrid::clear() {
+	flowlayout->clear();
+}
 void ImageGrid::init() {
 	Project &project = qRelightApp->project();
 	std::vector<QImage> &thumbnails = qRelightApp->thumbnails();

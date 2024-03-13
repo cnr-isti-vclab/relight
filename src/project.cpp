@@ -30,6 +30,7 @@ Project::~Project() {
 }
 
 void Project::operator=(const Project& project) {
+	clear();
 	version = project.version;
 	dir = project.dir;
 	imgsize = project.imgsize;
