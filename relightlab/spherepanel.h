@@ -26,7 +26,7 @@ public slots:
 	void removeSphere(SphereRow *sphere);
 
 signals:
-	void accept(Dome dome);
+	void updated();
 
 private:
 	SphereDialog *sphere_dialog = nullptr;

@@ -78,7 +78,7 @@ SphereRow *SpherePanel::addSphere(Sphere *sphere) {
 
 
 	connect(row, SIGNAL(removeme(SphereRow *)), this, SLOT(removeSphere(SphereRow *)));
-	//connect(row, SIGNAL(updated()), this, SLOT()
+	connect(row, SIGNAL(updated()), this, SIGNAL(updated()));
 	return row;
 }
 
@@ -98,3 +98,4 @@ void SpherePanel::removeSphere(SphereRow *row) {
 	spheres.erase(it);
 	delete row;
 }
+

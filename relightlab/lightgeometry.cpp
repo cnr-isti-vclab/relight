@@ -2,6 +2,7 @@
 #include "relightapp.h"
 #include "helpbutton.h"
 #include "directionsview.h"
+#include "../src/sphere.h"
 
 #include <QVBoxLayout>
 #include <QFrame>
@@ -15,6 +16,8 @@
 #include <QDoubleSpinBox>
 #include <QSpinBox>
 #include <QFileDialog>
+
+using namespace std;
 
 LightsGeometry::~LightsGeometry() { if(group) delete group; }
 
@@ -34,10 +37,13 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 
 	content->addWidget( new QLabel("Number of images:"), 1, 0);
 	content->addWidget(images_number = new QSpinBox, 1, 1);
+	images_number->setRange(1, 1024);
 
 	content->addWidget(new QLabel("Notes:"), 2, 0);
 	content->addWidget(notes = new QTextEdit, 2, 1);
 	notes->setMaximumHeight(100);
+	connect(notes, &QTextEdit::textChanged, [&]() { qRelightApp->project().dome.notes = notes->toPlainText(); });
+
 
 
 	group = new QButtonGroup;
@@ -116,6 +122,10 @@ void LightsGeometry::setSpherical(QAbstractButton *button) {
 
 void LightsGeometry::init() {
 	Dome &dome = qRelightApp->project().dome;
+
+	filename->setText(dome.label);
+	notes->setText(dome.notes);
+	images_number->setValue(dome.imagesCount());
 	group->button(dome.lightConfiguration)->setChecked(true);
 
 	bool spherical = dome.lightConfiguration == Dome::SPHERICAL;
@@ -125,11 +135,33 @@ void LightsGeometry::init() {
 	image_width->setValue(dome.imageWidth);
 	diameter->setValue(dome.domeDiameter);
 	vertical_offset->setValue(dome.verticalOffset);
+	directions_view->initFromDome(dome);
 }
 
-void LightsGeometry::update(Dome dome) {
+void LightsGeometry::setDome(Dome dome) {
 	qRelightApp->project().dome = dome;
 	init();
+}
+
+void LightsGeometry::setSpheres() {
+	//get spheres & lens from project
+	Project &project = qRelightApp->project();
+	//call appropriate compute directions/positions
+	Dome &dome = project.dome;
+
+	vector<Vector3f> lights;
+	switch(project.dome.lightConfiguration) {
+	case Dome::DIRECTIONAL:
+		computeDirections(project.spheres, project.lens, dome.directions);
+		break;
+	case Dome::SPHERICAL:
+		computeSphericalPositions(project.spheres, dome, project.lens, dome.positions);
+		break;
+	case Dome::LIGHTS3D:
+		computeParallaxPositions(project.spheres, project.lens, dome.positions);
+		break;
+	}
+
 }
 
 void LightsGeometry::exportDome() {

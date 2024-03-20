@@ -60,11 +60,11 @@ void Dome::load(const QString &filename) {
 QJsonObject Dome::toJson() {
 	QJsonObject dome;
 	dome.insert("label", label);
+	dome.insert("notes", notes);
 	dome.insert("imageWidth", imageWidth);
 	dome.insert("domeDiameter", domeDiameter);
 	dome.insert("verticalOffset", verticalOffset);
 	dome.insert("lightConfiguration", lightConfigs[lightConfiguration]);
-	dome.insert("directions", ::toJson(directions));
 	dome.insert("positions", ::toJson(positions));
 	dome.insert("ledAdjust", ::toJson(ledAdjust));
 	return dome;
@@ -89,6 +89,7 @@ void fromJson(QJsonArray values, std::vector<Color3f> &lights) {
 
 void Dome::fromJson(const QJsonObject &obj) {
 	label = obj["label"].toString();
+	notes = obj["notes"].toString();
 	imageWidth     = obj["imageWidth"].toDouble();
 	domeDiameter   = obj["domeDiameter"].toDouble();
 	verticalOffset = obj["verticalOffset"].toDouble();
@@ -98,7 +99,6 @@ void Dome::fromJson(const QJsonObject &obj) {
 		if(index >= 0)
 			lightConfiguration = LightConfiguration(index);
 	}
-	::fromJson(obj["directions"].toArray(), directions);
 	::fromJson(obj["positions"].toArray(), positions);
 	::fromJson(obj["ledAdjust"].toArray(), ledAdjust);
 }

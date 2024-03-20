@@ -37,76 +37,47 @@ DomePanel::DomePanel(QWidget *parent): QFrame(parent) {
 	content->addWidget(dome_list, 1, 1);
 
 
-
-
-
-/*	QFrame *properties = new QFrame;
-	columns->addWidget(properties, 2);
-
-	QGridLayout *properties_layout = new QGridLayout(properties);
-	properties_layout->addWidget(new QLabel("Filename: "), 0, 0, Qt::AlignRight);
-	properties_layout->addWidget(filename = new QLabel, 0, 1);
-	filename->setTextInteractionFlags(Qt::TextSelectableByMouse);
-
-	properties_layout->addWidget(new QLabel("Label: "), 1, 0, Qt::AlignRight);
-	properties_layout->addWidget(label = new QLineEdit, 1, 1);
-
-	properties_layout->addWidget(new QLabel("Number of lights: "), 2, 0, Qt::AlignRight);
-	properties_layout->addWidget(number = new QLabel, 2, 1);
-
-	properties_layout->addWidget(new QLabel("Notes:"), 3, 0, Qt::AlignRight);
-	properties_layout->addWidget(notes = new QLabel, 3, 1);
-
-	properties_layout->addWidget(new QLabel("Images: "), 4, 0, Qt::AlignRight);
-	properties_layout->addWidget(images = new QListWidget, 4, 1, Qt::AlignBottom);
-
-	images->setMaximumWidth(600);
-	images->setStyleSheet( "QListWidget{ background: palette(alternate-base); }");
-
-
-	directions_view = new DirectionsView;
-	columns->addWidget(directions_view, 1, Qt::AlignBottom);
-	directions_view->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	directions_view->setMaximumSize(200, 200);
-	directions_view->setMinimumSize(200, 200);
-*/
-
-
 	connect(dome_list, SIGNAL(itemSelectionChanged()), this, SLOT(setSelectedDome()));
-//	connect(label, &QLineEdit::textChanged, [&]() { dome.label = label->text(); emit accept(dome); });
-//	connect(images, SIGNAL(currentRowChanged(int)), directions_view, SLOT(highlight(int)));
-
 	init();
 }
 
 void DomePanel::init() {
+	dome = qRelightApp->project().dome;
+	updateDomeList();
+}
+
+void DomePanel::updateDomeList() {
 	dome_labels.clear();
 	dome_paths.clear();
 	dome_list->clear();
-
 	//get list of existing domes
 	QStringList paths = qRelightApp->domes();
 	for(QString path: paths) {
-		Dome dome;
+		Dome dome; //yep, same name for a class member
 		try {
 			dome.load(path);
 		} catch (QString error) {
 			qDebug() << error;
 		}
-		if(dome.label.isEmpty()) {
-			QFileInfo info(path);
-			dome.label = info.fileName();
-		}
+
+		QFileInfo info(path);
+		dome.label = info.filePath();
+
 		dome_labels.append(dome.label);
 		dome_paths.append(path);
 		dome_list->addItem(dome.label);
 	}
+
 }
 
 void DomePanel::loadDomeFile() {
 	QString path = QFileDialog::getOpenFileName(this, "Load a .lp or .dome file", QDir::currentPath(), "Light directions and domes (*.lp *.dome )");
 	if(path.isNull())
 		return;
+	loadDomeFile(path);
+}
+
+void DomePanel::loadDomeFile(QString path) {
 	if(path.endsWith(".lp"))
 		loadLP(path);
 	if(path.endsWith(".dome"))
@@ -114,18 +85,10 @@ void DomePanel::loadDomeFile() {
 	dome_list->clearSelection();
 }
 
-void DomePanel::update(QString path) {
-//	label->setText(dome.label);
-//	filename->setText(path);
-//	number->setText(QString::number(dome.directions.size()));
-	directions_view->initFromDome(dome);
-
-	emit accept(dome);
-}
 
 void DomePanel::loadLP(QString path) {
 	std::vector<QString> filenames;
-
+	dome = Dome();
 	dome.lightConfiguration = Dome::DIRECTIONAL;
 
 	try {
@@ -135,29 +98,28 @@ void DomePanel::loadLP(QString path) {
 		return;
 	}
 	QFileInfo info(path);
-	dome.label = info.fileName();
+	dome.label = info.filePath();
+	qRelightApp->addDome(path);
+	updateDomeList();
 
-/*	images->clear();
-	for(QString s: filenames)
-		images->addItem(s); */
-
-	update(path);
+	emit accept(dome);
 }
 
 void DomePanel::loadDome(QString path) {
 	try {
 		dome.load(path);
 	} catch (QString error) {
-		qDebug() << error;
+		QMessageBox::critical(this, "Loading .dome file failed", error);
+		return;
 	}
 
-/*	images->clear();
-	for(size_t i = 0; i < dome.directions.size(); i++) {
-		images->addItem("Image " + QString::number(i));
-	}*/
-
-	update(path);
+	QFileInfo info(path);
+	dome.label = info.filePath();
+	qRelightApp->addDome(path);
+	updateDomeList();
+	emit accept(dome);
 }
+
 
 
 void DomePanel::setSelectedDome() {
@@ -165,5 +127,5 @@ void DomePanel::setSelectedDome() {
 	if(!list.size())
 		return;
 	int pos = dome_list->row(list[0]);
-	loadDome(dome_paths[pos]);
+	loadDomeFile(dome_paths[pos]);
 }
