@@ -38,6 +38,7 @@ bool saveNormalMap(const QString &filename, int w, int h, std::vector<float> &no
 		}
 	}
 	img.save(filename);
+	return true;
 }
 
 bool savePly(const QString &filename, int w, int h, std::vector<float> &z) {
