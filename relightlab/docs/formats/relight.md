@@ -26,10 +26,16 @@ lighting directions or posittions and all other attributed required for processi
 | filename | Filename of the image |
 | direction | x, y, z object |
 | position | x, y, z object, one of the two needs to be present for processing |
+| lightCalibration | see Dome definition. |
 
-## Lights and geometry
+## Geometry
 | key  | value |
 | ---- | ---- |
+| diameter | Dome diameter in cm, and yes, metric and only cm. |
+| imageWidth | Default width in cm of the area covered by the image, this is useful for domes having a fixed optic. |
+| verticalOffset | Default vertical offset from the origin of the coordinated 
+(usually the center of the sphere which is the most common geometry for domes). Positive if the center is above the surface. |
+
 
 ## Reflective pheres
 
@@ -38,7 +44,7 @@ lighting directions or posittions and all other attributed required for processi
 | border| Array of the points used to fit a circle or an ellipse (in pixels 0,0 is top left corner) |
 | lights | Array of coordinates of the reflections, one for each image, [0, 0] if not found |
 
-### Deprecated
+### Deprecated?
 This values can all be simply computed from the border values.
 
 | key | value |
@@ -52,7 +58,7 @@ This values can all be simply computed from the border values.
 
 
 
-## Dome
+## If a dome is specified, it is saved here
 
 | key  | value |
 | ---- | ---- |

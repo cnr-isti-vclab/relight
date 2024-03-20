@@ -17,10 +17,13 @@ class DomePanel: public QFrame {
 public:
 	DomePanel(QWidget *parent = nullptr);
 	void init();
+	void loadDomeFile(QString path);
+
 
 public slots:
 	void loadDomeFile();
 	void setSelectedDome();
+	void updateDomeList();
 
 signals:
 	void accept(Dome dome);
@@ -31,16 +34,10 @@ private:
 	QStringList dome_paths;
 
 	QLabel *filename;
-//	QLineEdit *label;
-//	QLabel *number;
-//	QLabel *notes;
 	QListWidget *dome_list;
-	//QListWidget *images;
-	DirectionsView *directions_view;
 
 	void loadLP(QString filename);
 	void loadDome(QString filename);
-	void update(QString filename);
 };
 
 #endif // DOMEPANEL_H
