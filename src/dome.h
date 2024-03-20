@@ -24,8 +24,8 @@ class QJsonObject;
 class Dome {
 public:
 	QString label;
-	std::vector<Vector3f> directions;
-	std::vector<Vector3f> positions;
+	QString notes;
+	std::vector<Vector3f> positions; //directions are just position on the unit sphere
 	//TODO rename
 	std::vector<Color3f> ledAdjust;  //multiply pixel valut to correct for led differences
 	//TODO dome calibrations as a grid per led
@@ -41,6 +41,7 @@ public:
 	Dome(const QString &filename) { load(filename); }
 	void load(const QString &filename);
 	void save(const QString &filename);
+	size_t imagesCount() { return positions.size(); }
 
 	QJsonObject toJson();
 	void fromJson(const QJsonObject &obj);

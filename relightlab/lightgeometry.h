@@ -37,7 +37,8 @@ public:
 
 
 public slots:
-	void update(Dome dome);
+	void setDome(Dome dome);        //when a dome is selected
+	void setSpheres();              //when reflective spheres reflections have been processed
 	void setSpherical(QAbstractButton *button);
 	void exportDome();
 };

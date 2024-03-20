@@ -23,7 +23,7 @@ public:
 public slots:
 	void clear();
 	void init();
-	void init(Dome dome);
+	void setDome(Dome dome);
 
 private:
 	Dome dome;

@@ -1,7 +1,6 @@
 #include "sphere.h"
-#include "project.h"
 #include "lens.h"
-//#include "mainwindow.h"
+#include "dome.h"
 
 #include <QJsonObject>
 #include <QJsonArray>
@@ -416,6 +415,29 @@ void Sphere::computeDirections(Lens &lens) {
 		directions[i] = Vector3f(x, y, z);
 	}
 
+}
+
+//estimate light directions relative to the center of the image.
+void computeDirections(std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &directions) {
+	for(Sphere *sphere: spheres)
+		sphere->computeDirections(lens);
+}
+
+//estimate light positions using parallax (image width is the unit).
+void computeParallaxPositions(std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &positions) {
+	for(Sphere *sphere: spheres)
+		sphere->computeDirections(lens);
+}
+
+//estimate light positions assuming they live on a sphere (parameters provided by dome
+void computeSphericalPositions(std::vector<Sphere *> &spheres, Dome &dome, Lens &lens, std::vector<Vector3f> &positions) {
+	computeDirections(spheres, lens, positions);
+	assert(dome.imageWidth > 0 && dome.domeDiameter > 0);
+
+	for(Vector3f &p: positions) {
+		p *= dome.domeDiameter/2.0;
+		p[2] += dome.verticalOffset;
+	}
 }
 
 QJsonObject Sphere::toJson() {
