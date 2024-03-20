@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	if(argc - optind < 3) {
-		cerr << "Usage: " << argv[0] << " [OPTIONS] <relight folder 1> ... <relight folder 2> <output>\n\n";
+		cerr << "Usage: " << argv[0] << " [OPTIONS] <relight folder 1> ... <relight folder 2> <output folder>\n\n";
 		cerr << "This code uniforms scale and bias for the coefficient planes so that they can be merged.\n"
 				"The religth folders must have the same basis, number of planes, etc. \n\n";
 		cerr << "Options:\n";
@@ -92,25 +92,34 @@ int main(int argc, char *argv[]) {
 	QString output = argv[argc-1];
 
 	QDir output_dir(output);
-	if(!output_dir.exists()) {
-		QDir here("./");
-		if(!here.mkdir(output)) {
-			cerr << "Could not create output directory.\n";
-			return -1;
-		}
+	if(output_dir.exists()) {
+		cerr << "The output folder (" << qPrintable(output) << ") already exists! Pick a different name for the output folder, or remove it.";
+		return -1;
+	}
+
+
+	QDir here("./");
+	if(!here.mkdir(output)) {
+		cerr << "Could not create output directory: " << qPrintable(output) << "\n";
+		return -1;
 	}
 
 	for(size_t i = 0; i < rtis.size(); i++) {
 		char *path = argv[optind + i];
 		QDir input_rti_dir(path);
 
-		if(!output_dir.mkdir(input_rti_dir.dirName())) {
+		QFileInfo info(path);
+		if(info.isFile())
+			input_rti_dir = QDir(info.path());
+
+
+		if(!output_dir.exists(input_rti_dir.dirName()) && !output_dir.mkdir(input_rti_dir.dirName())) {
 			cerr << "Could not create remapped RTI directory: " << qPrintable(input_rti_dir.dirName()) << endl;
 			return -1;
 		}
 
 		RtiBuilder &rti = rtis[i];
-		rti.loadData(path);
+		rti.loadData(input_rti_dir.path().toStdString().c_str());
 		for(int i = 0; i < rti.nplanes; i++) {
 			auto &plane = rti.planes[i];
 			for(uint8_t &c: plane) {
