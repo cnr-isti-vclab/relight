@@ -13,6 +13,11 @@ class QJsonObject;
 class Lens;
 class Dome;
 
+struct Line {
+	Vector3f origin;
+	Vector3f direction;
+};
+
 class Sphere {
 public:
 	QPointF center;      //in pixel coordinates of the image
@@ -51,6 +56,8 @@ public:
 
 	//compute lights directions relative to the center of the sphere.
 	void computeDirections(Lens &lens);
+	Line toLine(Vector3f dir, Lens &lens);
+	static Vector3f intersection(std::vector<Line> &lines);
 
 	void resetHighlight(size_t n); //reset light and direction of the detected highlight, of image n.
 

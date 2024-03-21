@@ -388,10 +388,10 @@ void Sphere::computeDirections(Lens &lens) {
 
 		if(ellipse) {
 			Eigen::Vector2f diff = { x - center.x(), y - center.y() };
-			radial = radial*diff.dot(radial); //find radial component;
-			diff -= radial; //orthogonal component;
-			radial *= eHeight/eWidth;
-			diff += radial;
+			Eigen::Vector2f cradial = radial*diff.dot(radial); //find radial component;
+			diff -= cradial; //orthogonal component;
+			cradial *= eHeight/eWidth;
+			diff += cradial;
 			diff /= eWidth;
 			x = diff.x();
 			y = diff.y();
@@ -417,16 +417,81 @@ void Sphere::computeDirections(Lens &lens) {
 
 }
 
+Line Sphere::toLine(Vector3f dir, Lens &lens) {
+	Line line;
+	line.origin[0] = (center.x() - lens.width/2.0f)/lens.width;
+	line.origin[1] = (center.y() - lens.height/2.0f)/lens.width;
+	line.direction = dir;
+	return line;
+}
+
+//find the intersection of the lines using least squares approximation.
+Vector3f intersection(std::vector<Line> &lines) {
+	Eigen::MatrixXd A(lines.size(), 3);
+	Eigen::VectorXd B(lines.size());
+	for(size_t i = 0; i < lines.size(); i++) {
+		A(i, 0) = lines[i].direction[0];
+		A(i, 1) = lines[i].direction[1];
+		A(i, 2) = lines[i].direction[2];
+		B(i) = lines[i].origin * lines[i].direction;
+	}
+	Eigen::VectorXd X = A.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(B);
+	return Vector3f(X[0], X[1], X[2]);
+}
+
 //estimate light directions relative to the center of the image.
 void computeDirections(std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &directions) {
-	for(Sphere *sphere: spheres)
+
+	if(spheres.size() == 0)
+		return;
+
+	//when a light is not in the center of the image we get a bias in the distribution of the lights on the sphere
+	//if more than one light from this we can estimate an approximate radius, if not just get the directions.
+	for(Sphere *sphere: spheres) {
 		sphere->computeDirections(lens);
+	}
+	//compute just average direction
+	for(size_t i = 0; i < spheres[0]->lights.size(); i++) {
+		Vector3f dir(0, 0, 0);
+		for(Sphere *sphere: spheres) {
+			if(sphere->directions[i].isZero()) continue;
+			dir += sphere->directions[i];
+		}
+		dir.normalize();
+		directions.push_back(dir);
+	}
 }
 
 //estimate light positions using parallax (image width is the unit).
 void computeParallaxPositions(std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &positions) {
 	for(Sphere *sphere: spheres)
 		sphere->computeDirections(lens);
+	
+	if(spheres.size() == 1) {
+		positions = spheres[0]->directions;
+		return;
+	}
+	//for each reflection, compute the lines and the best intersection, estimate the radiuus of the positions vertices
+	float radius = 0;
+	for(size_t i = 0; i < spheres[0]->directions.size(); i++) {
+		std::vector<Line> lines;
+		for(Sphere *sphere: spheres) {
+			if(sphere->directions[i].isZero()) continue;
+			lines.push_back(sphere->toLine(sphere->directions[i], lens));
+		}
+		Vector3f position = intersection(lines);
+		radius += position.norm();
+		positions.push_back(position);
+	}
+	radius /= spheres[0]->directions.size();
+	//if some directions is too different from the average radius, we bring the direction closer to the average.
+	float threshold = 0.1;
+	for(Vector3f &dir: positions) {
+		float d = dir.norm();
+		if(fabs(d - radius) > threshold*radius) {
+			dir *= radius/d;
+		}
+	}
 }
 
 //estimate light positions assuming they live on a sphere (parameters provided by dome

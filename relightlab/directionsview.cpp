@@ -13,7 +13,8 @@ void DirectionsView::initFromDome(Dome &dome) {
 	//scene goes from [-1, +1]x[-1, +1], view will just zoom on it
 	qreal diameter = lightSize;
 	int count = 0;
-	for(Vector3f &dir: dome.directions) {
+	for(Vector3f dir: dome.positions) {
+		dir.normalize();
 		QGraphicsEllipseItem *e = scene.addEllipse(dir[0]*scale, dir[1]*scale, diameter, diameter);
 		e->setToolTip(QString::number(count++));
 		e->setBrush(Qt::white);

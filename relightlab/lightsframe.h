@@ -23,10 +23,8 @@ public:
 public slots:
 	void clear();
 	void init();
-	void setDome(Dome dome);
 
 private:
-	Dome dome;
 	QTabWidget *choice = nullptr;
 	SpherePanel *sphere_panel = nullptr;
 	DomePanel *dome_panel = nullptr;

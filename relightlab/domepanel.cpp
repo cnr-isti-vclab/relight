@@ -92,7 +92,7 @@ void DomePanel::loadLP(QString path) {
 	dome.lightConfiguration = Dome::DIRECTIONAL;
 
 	try {
-		parseLP(path, dome.directions, filenames);
+		parseLP(path, dome.positions, filenames);
 	} catch(QString error) {
 		QMessageBox::critical(this, "Loading .lp file failed", error);
 		return;
