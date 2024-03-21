@@ -336,6 +336,27 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	/* Sanity checks, TODO: move into RTI builder! */
+
+	switch(builder.type) {
+	case Rti::PTM:
+		if(builder.colorspace == Rti::LRGB && builder.nplanes != 9) {
+			cerr << "lptm basis requires 9 coefficient planes (option -p 9)\n";
+			return -1;
+		}
+		if(builder.colorspace == Rti::RGB && builder.nplanes != 18) {
+			cerr << "ptm basis requires 18 coefficient planes (option -p 18)\n";
+			return -1;
+		}
+		break;
+	case Rti::HSH:
+		if(builder.colorspace == Rti::RGB && (builder.nplanes != 27 || builder.nplanes != 12)) {
+			cerr << "hsh basis requires 12 or 27 coefficient planes (option -p 12 or -p 27)\n";
+			return -1;
+		}
+		break;
+	default: break;
+	}
 
     if( builder.colorspace == Rti::MYCC) {
         if(builder.yccplanes[0] == 0) {
