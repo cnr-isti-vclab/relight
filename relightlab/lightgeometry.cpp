@@ -152,7 +152,7 @@ void LightsGeometry::setSpheres() {
 	vector<Vector3f> lights;
 	switch(project.dome.lightConfiguration) {
 	case Dome::DIRECTIONAL:
-		computeDirections(project.spheres, project.lens, dome.directions);
+		computeDirections(project.spheres, project.lens, dome.positions);
 		break;
 	case Dome::SPHERICAL:
 		computeSphericalPositions(project.spheres, dome, project.lens, dome.positions);
@@ -161,6 +161,7 @@ void LightsGeometry::setSpheres() {
 		computeParallaxPositions(project.spheres, project.lens, dome.positions);
 		break;
 	}
+	directions_view->initFromDome(dome);
 
 }
 
