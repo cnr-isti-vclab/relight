@@ -3,14 +3,19 @@
 
 #include <QFrame>
 
-class ImageView;
-
+class ImageViewer;
+class QGraphicsRectItem;
 class AlignFrame: public QFrame {
+Q_OBJECT
 public:
 	AlignFrame(QWidget *parent = 0);
 
+public slots:
+	void click(QPoint p);
+
 private:
-	ImageView *image_view;
+	ImageViewer *image_viewer;
+	std::vector<QGraphicsRectItem *> samples;
 };
 
 #endif // ALIGNFRAME_H

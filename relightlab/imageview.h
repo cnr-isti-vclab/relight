@@ -34,6 +34,8 @@ private:
 class ImageViewer: public QFrame {
 	Q_OBJECT
 public:
+	ImageView *view;
+
 	ImageViewer(QWidget *parent = nullptr);
 	QGraphicsScene &scene() { return view->scene; }
 
@@ -46,7 +48,7 @@ public slots:
 	void next() { view->next(); }
 	void prev() { view->prev(); }
 protected:
-	ImageView *view;
+
 	QToolBar *toolbar;
 };
 

@@ -9,6 +9,7 @@
 #include "tabwidget.h"
 #include "homeframe.h"
 #include "imageframe.h"
+#include "alignframe.h"
 #include "lightsframe.h"
 #include "cropframe.h"
 #include "rtiframe.h"
@@ -27,7 +28,7 @@ MainWindow::MainWindow() {
 	tabs = new TabWidget;
 	tabs->addTab(home_frame = new HomeFrame, "Home");
 	tabs->addTab(image_frame = new ImageFrame, "Images");
-	tabs->addTab(new QWidget, "Align");
+	tabs->addTab(align_frame = new AlignFrame, "Align");
 	tabs->addTab(lights_frame = new LightsFrame, "Lights");
 	tabs->addTab(crop_frame = new CropFrame, "Crop");
 	tabs->addTab(rti_frame = new RtiFrame, "RTI");
