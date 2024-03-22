@@ -9,7 +9,8 @@
 
 #include "relightapp.h"
 #include "imageframe.h"
-#include "canvas.h"
+//#include "canvas.h"
+#include "imageview.h"
 #include "imagelist.h"
 #include "imagegrid.h"
 
@@ -28,7 +29,6 @@ ImageFrame::ImageFrame(QWidget *parent): QFrame(parent) {
 
 
 	toolbars->addWidget(left_toolbar, 0, Qt::AlignLeft);
-//	toolbars->addSpacing();
 
 	center_toolbar = new QToolBar;
 	center_toolbar->addAction(qRelightApp->action("zoom_fit"));
@@ -58,17 +58,12 @@ ImageFrame::ImageFrame(QWidget *parent): QFrame(parent) {
 	image_grid->hide();
 	content->addWidget(image_grid, 1);
 
-	canvas = new Canvas();
-	content->addWidget(canvas, 1);
+	content->addWidget(image_view = new ImageView, 1);
 
-	canvas->setScene(&scene);
-	//TODO: deal with double click on markers.
-	//connect(canvas, SIGNAL(dblClicked(QPoint)), this, SLOT(doubleClick(QPoint)));
-	//connect(canvas, SIGNAL(clicked(QPoint)), this, SLOT(pointClick(QPoint)));
-	connect(qRelightApp->action("zoom_fit"),  SIGNAL(triggered(bool)), this, SLOT(fit()));
-	connect(qRelightApp->action("zoom_one"),  SIGNAL(triggered(bool)), this, SLOT(one()));
-	connect(qRelightApp->action("zoom_in"),  SIGNAL(triggered(bool)), canvas, SLOT(zoomIn()));
-	connect(qRelightApp->action("zoom_out"), SIGNAL(triggered(bool)), canvas, SLOT(zoomOut()));
+	connect(qRelightApp->action("zoom_fit"),  SIGNAL(triggered(bool)), image_view, SLOT(fit()));
+	connect(qRelightApp->action("zoom_one"),  SIGNAL(triggered(bool)), image_view, SLOT(one()));
+	connect(qRelightApp->action("zoom_in"),  SIGNAL(triggered(bool)), image_view, SLOT(zoomIn()));
+	connect(qRelightApp->action("zoom_out"), SIGNAL(triggered(bool)), image_view, SLOT(zoomOut()));
 	connect(qRelightApp->action("previous_image"),  SIGNAL(triggered(bool)), this, SLOT(previousImage()));
 	connect(qRelightApp->action("next_image"),  SIGNAL(triggered(bool)), this, SLOT(nextImage()));
 
@@ -87,22 +82,17 @@ ImageFrame::ImageFrame(QWidget *parent): QFrame(parent) {
 void ImageFrame::clear() {
 	image_list->clear();
 	image_grid->clear();
-	scene.removeItem(imagePixmap);
-	imagePixmap = nullptr;
+	image_view->clear();
 }
 
 void ImageFrame::init() {
 	image_list->init();
 	image_grid->init();
-
-	if(imagePixmap) {
-		scene.removeItem(imagePixmap);
-		imagePixmap = nullptr;
-	}
+	image_view->clear();
 
 	if(qRelightApp->project().images.size()) {
 		showImage(0);
-		fit();
+		image_view->fit();
 	}
 	listMode(); //TODO actually use last used mode used by the user but only in imageframe
 }
@@ -113,43 +103,19 @@ int ImageFrame::currentImage() {
 }
 
 void ImageFrame::showImage(int id) {
+
 	Project &project = qRelightApp->project();
 
 	image_list->setCurrentRow(id);
 	qRelightApp->action("previous_image")->setEnabled(id != 0);
 	qRelightApp->action("next_image")->setEnabled(id != (int)project.images.size()-1);
 
-	QString filename = project.images[id].filename;
-
-	QImage img(project.dir.filePath(filename));
-	if(img.isNull()) {
-		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
-		return;
-	}
-	imagePixmap = new QGraphicsPixmapItem(QPixmap::fromImage(img));
-	imagePixmap->setZValue(-1);
-	scene.addItem(imagePixmap);
+	image_view->showImage(id);
 
 	int w = project.imgsize.width();
 	int h = project.imgsize.height();
-	double sx =  double(canvas->width()) / w;
-	double sy = double(canvas->height()) / h;
-	double min_scale = std::min(1.0, std::min(sx, sy));
-	canvas->min_scale = min_scale;
 	status->showMessage(QString("%1x%2 %3").arg(w).arg(h).arg(QFileInfo(project.images[id].filename).canonicalFilePath()));
 }
-
-void ImageFrame::fit() {
-	if(imagePixmap)
-		canvas->fitInView(imagePixmap->boundingRect());
-}
-
-void ImageFrame::one() {
-	double current_scale = canvas->transform().m11();
-	double s = 1/current_scale;
-	canvas->scale(s, s);
-}
-
 
 void ImageFrame::previousImage() {
 	int current = image_list->currentRow();
@@ -174,18 +140,18 @@ void ImageFrame::showImageItem(QListWidgetItem *item) {
 }
 
 void ImageFrame::imageMode() {
-	canvas->show();
+	image_view->show();
 	image_list->hide();
 	image_grid->hide();
 }
 void ImageFrame::listMode() {
-	canvas->show();
+	image_view->show();
 	image_list->show();
 	image_grid->hide();
 
 }
 void ImageFrame::gridMode() {
-	canvas->hide();
+	image_view->hide();
 	image_list->hide();
 	image_grid->show();
 }

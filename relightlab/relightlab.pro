@@ -47,8 +47,10 @@ SOURCES += main.cpp \
     ../src/project.cpp \
     ../src/sphere.cpp \
     ../src/white.cpp \
+    alignframe.cpp \
     canvas.cpp \
     domepanel.cpp \
+    imageview.cpp \
     lightgeometry.cpp \
     mainwindow.cpp \
     preferences.cpp \
@@ -94,7 +96,9 @@ HEADERS += \
     ../src/project.h \
     ../src/sphere.h \
     ../src/white.h \
+    alignframe.h \
     canvas.h \
+    imageview.h \
     lightgeometry.h \
     mainwindow.h \
     mainwindow.h \

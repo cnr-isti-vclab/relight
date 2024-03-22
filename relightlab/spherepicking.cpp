@@ -9,11 +9,9 @@
 #include <QToolBar>
 #include <QStatusBar>
 
-SpherePicking::SpherePicking(QWidget *parent): ImageFrame(parent) {
-	left_toolbar->hide();
-	right_toolbar->hide();
+SpherePicking::SpherePicking(QWidget *parent): ImageViewer(parent) {
 
-	status->showMessage("Double click on the boundary of the sphere.");
+	//status->showMessage("Double click on the boundary of the sphere.");
 
 
 	//create shpere marking items.
@@ -43,21 +41,22 @@ SpherePicking::SpherePicking(QWidget *parent): ImageFrame(parent) {
 	highlight->setFlag(QGraphicsItem::ItemIsSelectable);
 	highlight->setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
 
-	scene.addItem(circle);
-	scene.addItem(smallcircle);
-	scene.addItem(highlight);
-	scene.addItem(axis[0]);
-	scene.addItem(axis[1]);
 
-	connect(canvas, SIGNAL(clicked(QPoint)), this, SLOT(click(QPoint)));
+	scene().addItem(circle);
+	scene().addItem(smallcircle);
+	scene().addItem(highlight);
+	scene().addItem(axis[0]);
+	scene().addItem(axis[1]);
+
+	connect(view, SIGNAL(clicked(QPoint)), this, SLOT(click(QPoint)));
 	//TODO: rename something, it conflicts!
 
 }
 
 void SpherePicking::showImage(int id) {
-	ImageFrame::showImage(id);
+	ImageViewer::showImage(id);
 
-	status->showMessage("Double click on the boundary of the sphere.");
+	//status->showMessage("Double click on the boundary of the sphere.");
 }
 
 
@@ -94,7 +93,7 @@ void SpherePicking::clear() {
 	axis[1]->setVisible(false);
 	highlight->setVisible(false);
 	for(BorderPoint *b: border) {
-		scene.removeItem(b);
+		scene().removeItem(b);
 		delete b;
 	}
 	border.clear();
@@ -111,8 +110,8 @@ void SpherePicking::setSphere(Sphere *s) {
 
 	updateSphere();
 
-	init();
-	imageMode();
+	showImage(0);
+	fit();
 }
 
 void SpherePicking::updateSphere() {
@@ -159,7 +158,7 @@ void SpherePicking::fitSphere() {
 
 
 void SpherePicking::click(QPoint p) {
-	QPointF pos = canvas->mapToScene(p);
+	QPointF pos = view->mapToScene(p);
 
 	//min distance between border points in pixels.
 	double minBorderDist = 20;
@@ -185,7 +184,7 @@ void SpherePicking::addBorderPoint(QPointF pos) {
 	borderPoint->setPen(outlinePen);
 	borderPoint->setBrush(blueBrush);
 	border.push_back(borderPoint);
-	scene.addItem(borderPoint);
+	scene().addItem(borderPoint);
 }
 
 void SpherePicking::updateBorderPoints() {
@@ -234,7 +233,7 @@ void SpherePicking::deleteSelected(int currentImage) {
 			sphere->border[j] = sphere->border[i];
 		}
 		if(border[i]->isSelected()) {
-			scene.removeItem(border[i]);
+			scene().removeItem(border[i]);
 			delete border[i];
 			j--;
 		}
@@ -257,7 +256,7 @@ void SpherePicking::keyReleaseEvent(QKeyEvent *e) {
 		return;
 	case Qt::Key_Z:
 		if((e->modifiers() | Qt::ControlModifier) && border.size()) {
-			scene.removeItem(border.back());
+			scene().removeItem(border.back());
 			delete border.back();
 			border.pop_back();
 			sphere->border.pop_back();
@@ -266,5 +265,5 @@ void SpherePicking::keyReleaseEvent(QKeyEvent *e) {
 		}
 		break;
 	}
-	ImageFrame::keyPressEvent(e);
+	ImageViewer::keyPressEvent(e);
 }

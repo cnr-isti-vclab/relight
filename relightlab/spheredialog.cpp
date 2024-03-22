@@ -1,5 +1,6 @@
 #include "spheredialog.h"
 #include "spherepicking.h"
+#include "imageview.h"
 
 #include <QVBoxLayout>
 #include <QDialogButtonBox>
@@ -7,7 +8,7 @@
 SphereDialog::SphereDialog(QWidget *parent): QDialog(parent) {
 	setModal(true);
 	sphere_picking = new SpherePicking;
-	sphere_picking->init();
+	sphere_picking->showImage(0);
 	QVBoxLayout *content = new QVBoxLayout(this);
 
 	QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok |     QDialogButtonBox::Cancel);
