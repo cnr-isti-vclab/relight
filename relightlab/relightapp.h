@@ -12,7 +12,7 @@
 #include <QSettings>
 #include <QVariant>
 #include <QProxyStyle>
-
+#include <QAction>
 #include <set>
 
 

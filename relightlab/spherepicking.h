@@ -1,7 +1,7 @@
 #ifndef SPHERE_PICKING_H
 #define SPHERE_PICKING_H
 
-#include "imageframe.h"
+#include "imageview.h"
 
 #include <QGraphicsEllipseItem>
 #include <QGraphicsPathItem>
@@ -49,7 +49,7 @@ protected:
 
 class Sphere;
 
-class SpherePicking: public ImageFrame {
+class SpherePicking: public ImageViewer {
 	Q_OBJECT
 public:
 	Sphere *sphere = nullptr;
