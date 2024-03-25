@@ -9,10 +9,13 @@ class Sphere;
 
 class VerifyDialog: public QDialog {
 public:
-	VerifyDialog(Sphere *sphere, QWidget *parent = nullptr);
+	VerifyDialog(std::vector<QImage> &thumbs, std::vector<QPointF> &positions, QWidget *parent = nullptr);
+
 private:
-	Sphere *sphere;
 	FlowLayout *flowlayout = nullptr;
+	std::vector<QImage> &thumbs;
+	std::vector<QPointF> &positions;
+
 };
 
 #endif // SPHEREVERIFY_H

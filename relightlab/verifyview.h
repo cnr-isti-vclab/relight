@@ -26,7 +26,7 @@ class VerifyView: public QGraphicsView {
 public:
 	double lightSize = 10.0;
 //id is just image number
-	VerifyView(int id, Sphere *sphere, int height, QWidget *parent = nullptr);
+	VerifyView(QImage &image, QPointF &pos, int height, QWidget *parent = nullptr);
 
 public slots:
 	void updateReflection();
@@ -38,7 +38,8 @@ private:
 	QGraphicsPixmapItem *img_item;
 	ReflectionPoint *reflection;
 	QGraphicsScene scene;
-	Sphere *sphere;
+	QImage &image;
+	QPointF &pos;
 	int id;
 	int height;
 };

@@ -12,11 +12,11 @@
 #include "assert.h"
 
 
-VerifyDialog::VerifyDialog(Sphere *_sphere, QWidget *parent): QDialog(parent) {
+VerifyDialog::VerifyDialog(std::vector<QImage> &_thumbs, std::vector<QPointF> &_positions, QWidget *parent):
+	QDialog(parent), thumbs(_thumbs), positions(_positions) {
 	setModal(true);
 
 	showMaximized();
-	sphere = _sphere;
 	QVBoxLayout *layout = new QVBoxLayout(this);
 	QScrollArea *area = new QScrollArea(this);
 	layout->addWidget(area);
@@ -25,12 +25,11 @@ VerifyDialog::VerifyDialog(Sphere *_sphere, QWidget *parent): QDialog(parent) {
 	area->setWidget(new QWidget);
 	flowlayout = new FlowLayout();
 	area->widget()->setLayout(flowlayout);
+
 	area->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
-	std::vector<QImage> &thumbs = sphere->thumbs;
-
-	for(size_t i = 0; i < thumbs.size(); i++) {
-		VerifyView *thumb = new VerifyView(i, sphere, 192);
+	for(int i = 0; i < thumbs.size(); i++) {
+		VerifyView *thumb = new VerifyView(thumbs[i], positions[i], 192);
 		flowlayout->addWidget(thumb);
 	}
 

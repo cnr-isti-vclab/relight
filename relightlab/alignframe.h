@@ -5,17 +5,27 @@
 
 class ImageViewer;
 class QGraphicsRectItem;
+class Align;
+class AlignRow;
+class MarkerDialog;
+class QVBoxLayout;
+
 class AlignFrame: public QFrame {
 Q_OBJECT
 public:
-	AlignFrame(QWidget *parent = 0);
+	AlignFrame(QWidget *parent = nullptr);
+	void clear();
+	void init();
+	AlignRow *addAlign(Align *align);
 
 public slots:
-	void click(QPoint p);
+	void newAlign();
+	void removeAlign(AlignRow *align);
+
 
 private:
-	ImageViewer *image_viewer;
-	std::vector<QGraphicsRectItem *> samples;
+	MarkerDialog *marker_dialog = nullptr;
+	QVBoxLayout *aligns = nullptr;
 };
 
 #endif // ALIGNFRAME_H
