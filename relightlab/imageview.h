@@ -39,7 +39,7 @@ public:
 	ImageViewer(QWidget *parent = nullptr);
 	QGraphicsScene &scene() { return view->scene; }
 
-	void showImage(int id);
+	virtual void showImage(int id);
 	int currentImage() { return view->current_image; }
 
 public slots:

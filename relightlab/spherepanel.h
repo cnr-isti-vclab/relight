@@ -11,7 +11,6 @@ class QVBoxLayout;
 class SphereRow;
 class Dome;
 
-class LightGeometry;
 
 class SpherePanel: public QFrame {
 	Q_OBJECT
@@ -31,7 +30,6 @@ signals:
 private:
 	SphereDialog *sphere_dialog = nullptr;
 	QVBoxLayout *spheres = nullptr;
-	LightGeometry *geometry = nullptr;
 };
 
 

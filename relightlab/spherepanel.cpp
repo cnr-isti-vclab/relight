@@ -4,7 +4,6 @@
 #include "spherepicking.h"
 #include "relightapp.h"
 #include "../src/sphere.h"
-#include "lightgeometry.h"
 
 #include <QVBoxLayout>
 #include <QLabel>

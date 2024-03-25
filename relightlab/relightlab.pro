@@ -48,17 +48,21 @@ SOURCES += main.cpp \
     ../src/sphere.cpp \
     ../src/white.cpp \
     alignframe.cpp \
+    alignpicking.cpp \
+    alignrow.cpp \
     canvas.cpp \
     domepanel.cpp \
     imageview.cpp \
     lightgeometry.cpp \
     mainwindow.cpp \
+    markerdialog.cpp \
     preferences.cpp \
     recentprojects.cpp \
     reflectionview.cpp \
     relightapp.cpp \
     rticard.cpp \
     rtiframe.cpp \
+    spherepicking.cpp \
     sphererow.cpp \
     tabwidget.cpp \
     imageframe.cpp \
@@ -70,7 +74,6 @@ SOURCES += main.cpp \
     ../src/lp.cpp \
     directionsview.cpp \
     spherepanel.cpp \
-    spherepicking.cpp \
     spheredialog.cpp \
     ../relight/task.cpp \
     verifyview.cpp \
@@ -97,17 +100,21 @@ HEADERS += \
     ../src/sphere.h \
     ../src/white.h \
     alignframe.h \
+    alignpicking.h \
+    alignrow.h \
     canvas.h \
     imageview.h \
     lightgeometry.h \
     mainwindow.h \
     mainwindow.h \
+    markerdialog.h \
     preferences.h \
     recentprojects.h \
     reflectionview.h \
     relightapp.h \
     rticard.h \
     rtiframe.h \
+    spherepicking.h \
     sphererow.h \
     tabwidget.h \
     imageframe.h \
@@ -120,7 +127,6 @@ HEADERS += \
     domepanel.h \
     directionsview.h \
     spherepanel.h \
-    spherepicking.h \
     spheredialog.h \
     ../relight/task.h \
     verifyview.h \

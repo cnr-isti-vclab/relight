@@ -45,28 +45,26 @@ QVariant ReflectionPoint::itemChange(GraphicsItemChange change, const QVariant &
 	return QGraphicsItem::itemChange(change, value);
 }
 
-VerifyView:: VerifyView(int _id, Sphere *_sphere, int _height, QWidget *parent): QGraphicsView(parent) {
-	id = _id;
-	sphere = _sphere;
+VerifyView:: VerifyView(QImage &_image, QPointF &_pos, int _height, QWidget *parent):
+	QGraphicsView(parent), image(_image), pos(_pos) {
 	height = _height;
 	setScene(&scene);
 
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-	QPixmap pix = QPixmap::fromImage(sphere->thumbs[id]);//.scaledToHeight(height);
+	QPixmap pix = QPixmap::fromImage(image);//.scaledToHeight(height);
 	img_item = scene.addPixmap(pix);
 	double scale = height/(double)pix.height();
 	setFixedSize(pix.width()*scale, height);
-	QPointF pos = sphere->lights[id];
+
 	int r = 8*scale;
 	reflection = new ReflectionPoint(this, QRectF(QPointF(-r, -r), QSize(2*r, 2*r)));
 	if(pos.isNull()) {
-		reflection->setPos(sphere->inner.center() - sphere->inner.topLeft());
+		reflection->setPos(image.width()/2, image.height()/2);
 		reflection->setPen(QPen(Qt::red, 2));
 
 	} else {
-		pos -= sphere->inner.topLeft();
 		reflection->setPos(pos);
 		reflection->setPen(QPen(Qt::green, 2));
 	}
@@ -76,12 +74,12 @@ VerifyView:: VerifyView(int _id, Sphere *_sphere, int _height, QWidget *parent):
 void VerifyView::updateReflection() {
 	QPointF p = reflection->pos();
 	if(!img_item->boundingRect().contains(p)) {
-		reflection->setPos(sphere->inner.center() - sphere->inner.topLeft());
+		reflection->setPos(image.width()/2, image.height()/2);
 		reflection->setPen(QPen(Qt::red, 2));
-		sphere->lights[id] = QPointF(0, 0); //order is important: setPos triggers again.
+		pos = QPointF(0, 0); //order is important: setPos triggers again.
 
 	} else {
-		sphere->lights[id] = p + sphere->inner.topLeft();
+		pos = p;
 		reflection->setPen(QPen(Qt::green, 2));
 	}
 }

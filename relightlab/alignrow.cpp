@@ -1,6 +1,6 @@
-#include "sphererow.h"
+#include "alignrow.h"
+#include "markerdialog.h"
 #include "relightapp.h"
-#include "spheredialog.h"
 #include "verifydialog.h"
 #include "reflectionview.h"
 #include "../src/project.h"
@@ -13,16 +13,16 @@
 #include <QPushButton>
 #include <QDebug>
 
-DetectHighlights::DetectHighlights(Sphere *_sphere, bool update) {
-	sphere = _sphere;
+FindAlignment::FindAlignment(Align *_align, bool update) {
+	align = _align;
 	update_positions = update;
 }
 
-void DetectHighlights::run() {
+void FindAlignment::run() {
 	mutex.lock();
 	status = RUNNING;
 	mutex.unlock();
-
+/*
 	Project &project = qRelightApp->project();
 	for(size_t i = 0; i < project.images.size(); i++) {
 
@@ -34,7 +34,7 @@ void DetectHighlights::run() {
 
 		int progress = std::min(99, (int)(100*(i+1) / project.images.size()));
 		progressed(QString("Detecting highlights"), progress);
-	}
+	} */
 	progressed(QString("Done"), 100);
 	mutex.lock();
 	status = DONE;
@@ -42,19 +42,20 @@ void DetectHighlights::run() {
 }
 
 
-SphereRow::SphereRow(Sphere *_sphere, QWidget *parent): QWidget(parent) {
-	sphere = _sphere;
+AlignRow::AlignRow(Align *_align, QWidget *parent): QWidget(parent) {
+	align = _align;
 	QHBoxLayout *columns = new QHBoxLayout(this);
 	columns->setSpacing(20);
 
-	position = new PositionView(sphere, rowHeight);
+	columns->addWidget(thumb = new QLabel());
+/*	position = new PositionView(sphere, rowHeight);
 	position->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	columns->addWidget(position);
 
 
 	reflections = new ReflectionView(sphere, rowHeight);
 	reflections->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	columns->addWidget(reflections);
+	columns->addWidget(reflections); */
 
 	QVBoxLayout *status_layout = new QVBoxLayout;
 	columns->addLayout(status_layout, 2);
@@ -78,34 +79,30 @@ SphereRow::SphereRow(Sphere *_sphere, QWidget *parent): QWidget(parent) {
 	connect(verify, SIGNAL(clicked()), this, SLOT(verify()));
 
 }
-void SphereRow::edit() {
-	SphereDialog *sphere_dialog = new SphereDialog(this);
-	sphere_dialog->setSphere(sphere);
-	int answer = sphere_dialog->exec();
+void AlignRow::edit() {
+	MarkerDialog *marker_dialog = new MarkerDialog(MarkerDialog::ALIGN, this);
+	marker_dialog->setAlign(align);
+	int answer = marker_dialog->exec();
 	if(answer == QDialog::Accepted) {
-		position->update();
-		reflections->init();
-		detectHighlights();
+		//position->update();
+		//reflections->init();
+		//detectHighlights();
 	}
 }
 
-void SphereRow::verify() {
-	std::vector<QPointF> &positions = sphere->lights;
-	for(QPointF &pos: positions)
-		pos -= sphere->inner.topLeft();
-
-	VerifyDialog *verify_dialog = new VerifyDialog(sphere->thumbs, positions, this);
+void AlignRow::verify() {
+	std::vector<QPointF> centers;
+	std::vector<QImage> thumbs;
+	assert(0); //todo needs to initialize those vaules and update align.
+	VerifyDialog *verify_dialog = new VerifyDialog(thumbs, centers, this);
 	verify_dialog->exec();
-
-	for(QPointF &pos: positions)
-		pos += sphere->inner.topLeft();
 }
 
-void SphereRow::remove() {
+void AlignRow::remove() {
 	emit removeme(this);
 }
 
-void SphereRow::updateStatus(QString msg, int percent) {
+void AlignRow::updateStatus(QString msg, int percent) {
 	status->setText(msg);
 	progress->setValue(percent);
 	reflections->update();
@@ -114,8 +111,8 @@ void SphereRow::updateStatus(QString msg, int percent) {
 	}
 }
 
-void SphereRow::detectHighlights(bool update) {
-	if(sphere->center.isNull()) {
+void AlignRow::findAlignment(bool update) {
+/*	if(sphere->center.isNull()) {
 		status->setText("Needs at least 3 points.");
 		return;
 	}
@@ -128,15 +125,16 @@ void SphereRow::detectHighlights(bool update) {
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.removeTask(detect_highlights);
 	queue.addTask(detect_highlights);
-	queue.start();
+	queue.start(); */
 }
 
-void SphereRow::stopDetecting() {
+void AlignRow::stopFinding() {
+	/*
 	if(detect_highlights) {
 		if(detect_highlights->isRunning()) {
 			detect_highlights->stop();
 			detect_highlights->wait();
 		}
 		detect_highlights->deleteLater();
-	}
+	} */
 }
