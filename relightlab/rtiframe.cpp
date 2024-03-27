@@ -3,6 +3,7 @@
 #include "relightapp.h"
 #include "rticard.h"
 #include "flowlayout.h"
+#include "rtirow.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -21,6 +22,11 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	content->addWidget(new QLabel("<h2>Relightable images</h2>"));
 	content->addSpacing(20);
 
+	content->addWidget(new PtmRow());
+	content->addWidget(new HshRow());
+	content->addWidget(new RbfRow());
+
+/*
 	QScrollArea *area = new QScrollArea;
 	area->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 	area->setWidgetResizable(true);
@@ -52,6 +58,7 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::YCC, 18, 2));
 	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::YCC, 24, 3));
 
+*/
 
 	/*
 	QGroupBox *model = new QGroupBox("Model");

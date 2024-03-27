@@ -445,6 +445,8 @@ void computeDirections(std::vector<Sphere *> &spheres, Lens &lens, std::vector<V
 	if(spheres.size() == 0)
 		return;
 
+	directions.clear();
+
 	//when a light is not in the center of the image we get a bias in the distribution of the lights on the sphere
 	//if more than one light from this we can estimate an approximate radius, if not just get the directions.
 	for(Sphere *sphere: spheres) {
@@ -464,6 +466,8 @@ void computeDirections(std::vector<Sphere *> &spheres, Lens &lens, std::vector<V
 
 //estimate light positions using parallax (image width is the unit).
 void computeParallaxPositions(std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &positions) {
+	positions.clear();
+
 	for(Sphere *sphere: spheres)
 		sphere->computeDirections(lens);
 	
@@ -496,6 +500,7 @@ void computeParallaxPositions(std::vector<Sphere *> &spheres, Lens &lens, std::v
 
 //estimate light positions assuming they live on a sphere (parameters provided by dome
 void computeSphericalPositions(std::vector<Sphere *> &spheres, Dome &dome, Lens &lens, std::vector<Vector3f> &positions) {
+	positions.clear();
 	computeDirections(spheres, lens, positions);
 	assert(dome.imageWidth > 0 && dome.domeDiameter > 0);
 

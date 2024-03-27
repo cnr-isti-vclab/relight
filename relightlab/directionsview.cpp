@@ -1,4 +1,4 @@
-#include "directionsview.h"
+﻿#include "directionsview.h"
 #include "../src/dome.h"
 
 #include <QGraphicsEllipseItem>
@@ -9,9 +9,13 @@ DirectionsView::DirectionsView(QWidget *parent): QGraphicsView(parent) {
 }
 
 void DirectionsView::initFromDome(Dome &dome) {
+	scene.clear();
+
+
 	qreal scale = width();
 	//scene goes from [-1, +1]x[-1, +1], view will just zoom on it
 	qreal diameter = lightSize;
+
 	int count = 0;
 	for(Vector3f dir: dome.positions) {
 		dir.normalize();
