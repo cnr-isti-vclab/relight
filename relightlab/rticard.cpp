@@ -51,7 +51,9 @@ RtiCard::RtiCard(Rti::Type _type, Rti::ColorSpace _colorspace, int _nplanes, int
 	QHBoxLayout *hbox = new QHBoxLayout;
 	layout->addLayout(hbox);
 
-	hbox->addWidget(new QPushButton("Create"), 1);
+	hbox->addWidget(new QPushButton("Preview"), 1);
+	hbox->addWidget(new QPushButton("Create..."), 1);
+
 	hbox->addWidget(new QPushButton(QIcon::fromTheme("trash-2"), ""));
 	//img->setPixmap(QPixmap::fromImage(thumb.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation)));
 		

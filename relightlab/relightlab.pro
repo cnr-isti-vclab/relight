@@ -62,6 +62,7 @@ SOURCES += main.cpp \
     relightapp.cpp \
     rticard.cpp \
     rtiframe.cpp \
+    rtirow.cpp \
     spherepicking.cpp \
     sphererow.cpp \
     tabwidget.cpp \
@@ -114,6 +115,7 @@ HEADERS += \
     relightapp.h \
     rticard.h \
     rtiframe.h \
+    rtirow.h \
     spherepicking.h \
     sphererow.h \
     tabwidget.h \

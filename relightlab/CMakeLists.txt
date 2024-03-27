@@ -28,10 +28,14 @@ set (RELIGHT_HEADERS
     ../src/exif.h 
     ../src/image.h 
     ../src/lens.h 
+    ../src/lp.h 
     ../src/measure.h 
     ../src/project.h 
     ../src/sphere.h 
     ../src/white.h 
+    alignrow.h
+    alignframe.h
+    alignframe.h
     canvas.h 
     lightgeometry.h 
     mainwindow.h 
@@ -43,12 +47,13 @@ set (RELIGHT_HEADERS
     sphererow.h 
     tabwidget.h 
     imageframe.h 
+    imageview.h
     homeframe.h 
     imagelist.h 
     flowlayout.h 
     imagegrid.h 
     lightsframe.h 
-    ../src/lp.h 
+    markerdialog.h
     domepanel.h 
     directionsview.h 
     spherepanel.h 
@@ -74,10 +79,14 @@ set (RELIGHTLAB_SOURCES
     ../src/exif.cpp 
     ../src/image.cpp 
     ../src/lens.cpp 
+    ../src/lp.cpp 
     ../src/measure.cpp 
     ../src/project.cpp 
     ../src/sphere.cpp 
     ../src/white.cpp 
+    alignframe.cpp
+    alignpicking.cpp
+    alignrow.cpp
     canvas.cpp 
     domepanel.cpp 
     lightgeometry.cpp 
@@ -88,13 +97,14 @@ set (RELIGHTLAB_SOURCES
     relightapp.cpp 
     sphererow.cpp 
     tabwidget.cpp 
-    imageframe.cpp 
+    imageframe.cpp
+    imageview.cpp 
     homeframe.cpp 
     imagelist.cpp 
     flowlayout.cpp 
     imagegrid.cpp 
     lightsframe.cpp 
-    ../src/lp.cpp 
+    markerdialog.cpp
     directionsview.cpp 
     spherepanel.cpp 
     spherepicking.cpp 
