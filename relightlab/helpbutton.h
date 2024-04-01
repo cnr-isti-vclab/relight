@@ -34,9 +34,11 @@ public slots:
 	void showHelp();
 };
 
+class QLabel;
 class HelpLabel: public QWidget {
 	public:
 		HelpLabel(QString txt, QString help_id, QWidget *parent = nullptr);
+		QLabel *label = nullptr;
 };
 
 class HelpRadio: public QWidget {

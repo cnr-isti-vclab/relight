@@ -83,7 +83,7 @@ void AlignFrame::removeAlign(AlignRow *row) {
 
 	auto it = std::find(aligns.begin(), aligns.end(), align);
 
-	assert(it != aligns.end());
+//	assert(it != aligns.end());
 
 	delete align;
 	aligns.erase(it);

@@ -71,7 +71,7 @@ void HelpButton::showHelp() {
 
 HelpLabel::HelpLabel(QString txt, QString help_id, QWidget *parent): QWidget(parent) {
 	QHBoxLayout *layout = new QHBoxLayout(this);
-	QLabel *label = new QLabel(txt);
+	label = new QLabel(txt);
 	layout->addWidget(label);
 	layout->addStretch();
 	HelpButton *help = new HelpButton(help_id);

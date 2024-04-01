@@ -22,11 +22,11 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	content->addWidget(new QLabel("<h2>Relightable images</h2>"));
 	content->addSpacing(20);
 
-	content->addWidget(new PtmRow());
-	content->addWidget(new HshRow());
-	content->addWidget(new RbfRow());
+/*	content->addWidget(new PtmRow());
+	content->addWidget(new HshRow()); 
+	content->addWidget(new RbfRow()); */
 
-/*
+
 	QScrollArea *area = new QScrollArea;
 	area->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 	area->setWidgetResizable(true);
@@ -40,25 +40,13 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	
 	sample_layout->addWidget(new RtiCard(Rti::PTM, Rti::LRGB, 9, 0));
 	sample_layout->addWidget(new RtiCard(Rti::PTM, Rti::RGB, 18, 0));
-	sample_layout->addWidget(new RtiCard(Rti::HSH, Rti::RGB, 12, 0));
-	sample_layout->addWidget(new RtiCard(Rti::HSH, Rti::LRGB, 12, 0));
 	sample_layout->addWidget(new RtiCard(Rti::HSH, Rti::RGB, 27, 0));
 
-	sample_layout->addWidget(new RtiCard(Rti::RBF, Rti::MRGB, 12, 0));
+
 	sample_layout->addWidget(new RtiCard(Rti::RBF, Rti::MRGB, 18, 0));
-	sample_layout->addWidget(new RtiCard(Rti::RBF, Rti::MRGB, 24, 0));
-	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::MRGB, 12, 0));
 	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::MRGB, 18, 0));
-	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::MRGB, 24, 0));
 
-	sample_layout->addWidget(new RtiCard(Rti::RBF, Rti::YCC, 12, 1));
-	sample_layout->addWidget(new RtiCard(Rti::RBF, Rti::YCC, 18, 2));
-	sample_layout->addWidget(new RtiCard(Rti::RBF, Rti::YCC, 24, 3));
-	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::YCC, 12, 1));
-	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::YCC, 18, 2));
-	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::YCC, 24, 3));
 
-*/
 
 	/*
 	QGroupBox *model = new QGroupBox("Model");
