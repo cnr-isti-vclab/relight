@@ -93,7 +93,7 @@ void AlignRow::edit() {
 void AlignRow::verify() {
 	std::vector<QPointF> centers;
 	std::vector<QImage> thumbs;
-	assert(0); //todo needs to initialize those vaules and update align.
+//	assert(0); //todo needs to initialize those vaules and update align.
 	VerifyDialog *verify_dialog = new VerifyDialog(thumbs, centers, this);
 	verify_dialog->exec();
 }

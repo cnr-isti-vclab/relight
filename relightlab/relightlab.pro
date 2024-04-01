@@ -82,7 +82,8 @@ SOURCES += main.cpp \
     helpbutton.cpp \
     cropframe.cpp \
     ../relight/imagecropper.cpp \
-    creatertidialog.cpp
+    creatertidialog.cpp \
+    rtiexportdialog.cpp
 
 RESOURCES += \
     res.qrc
@@ -136,7 +137,8 @@ HEADERS += \
     helpbutton.h \
     cropframe.h \
     ../relight/imagecropper.h \
-    creatertidialog.h
+    creatertidialog.h \
+    rtiexportdialog.h
 
 FORMS += \
     form.ui

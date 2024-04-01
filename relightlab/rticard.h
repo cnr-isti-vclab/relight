@@ -5,6 +5,8 @@
 #include "../src/rti.h"
 
 
+class HelpLabel;
+
 class RtiCard: public QFrame {
 	Q_OBJECT
 public:
@@ -15,8 +17,10 @@ public:
 
 	RtiCard(Rti::Type type, Rti::ColorSpace colorspace, int nplanes, int nchroma, QWidget *parent = nullptr);
 	void setCheckable(bool);
+
 public slots:
 	void setChecked(bool);
+	void updateTitle();
 
 signals:
 	void toggled(bool checked);
@@ -26,6 +30,7 @@ protected:
 	void mousePressEvent(QMouseEvent *event) override;
 
 private:
+	HelpLabel *title_label = nullptr;
 	bool checkable = false;
 	bool checked = false;
 
