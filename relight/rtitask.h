@@ -3,6 +3,7 @@
 
 #include "task.h"
 #include "../src/project.h"
+#include "../src/rti.h"
 #include <QMutex>
 
 class RtiBuilder;
@@ -17,10 +18,29 @@ class RtiBuilder;
  *   openlime: add openlime js css, html for viewer
  */
 
+class RtiParameters {
+public:
+
+	enum Format { RTI = 0, RELIGHT = 1, DEEPZOOM = 2, TARZOOM = 3, ITARZOOM = 4, TIFF = 5};
+	Rti::Type basis;
+	Rti::ColorSpace colorspace;
+	int nplanes;
+	int nchroma;
+
+	Format format;
+
+	bool lossless = false; //used only for RTI format;
+
+	bool iiif_manifest = false;  //TODO
+	bool openlime; //include openlime viewer //TODO: might want different interfaces.
+
+	QString path;
+};
+
 class RtiTask: public Task {
 	Q_OBJECT
 public:
-	enum Steps { RELIGHT, DEEPZOOM, TARZOOM, ITARZOOM };
+	enum Steps { RTI, RTIJPEG, RELIGHT, DEEPZOOM, TARZOOM, ITARZOOM };
 	Project project;
 
 	RtiTask(const Project &_project);

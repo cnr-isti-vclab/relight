@@ -81,9 +81,7 @@ RtiCard::RtiCard(Rti::Type _type, Rti::ColorSpace _colorspace, int _nplanes, int
 
 
 
-	connect(create, &QPushButton::clicked, [&]() {
-		RtiExportDialog
-	})
+	connect(create, SIGNAL(clicked()), this, SLOT(rtiExport()));
 		
 	setFrameStyle(QFrame::StyledPanel);
 	setAutoFillBackground(true);
@@ -109,6 +107,11 @@ void RtiCard::updateTitle() {
 		title += QString(".%1").arg(nchroma);
 	}
 	title_label->label->setText(title);
+}
+
+void RtiCard::rtiExport() {
+	RtiExportDialog *dialog = new RtiExportDialog(this);
+	dialog->exec();
 }
 
 void RtiCard::mousePressEvent(QMouseEvent *event) {

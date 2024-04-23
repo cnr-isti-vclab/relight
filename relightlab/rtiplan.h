@@ -1,0 +1,80 @@
+#ifndef RTIPLAN_H
+#define RTIPLAN_H
+
+#include <QFrame>
+#include "../src/rti.h"
+#include "../relight/rtitask.h"
+
+class QComboBox;
+class QSpinBox;
+class QLabelButton;
+
+class RtiBasisRow: public QFrame {
+	Q_OBJECT
+public:
+	RtiBasisRow(QFrame *parent = nullptr);
+	void init(Rti::Type basis);
+signals:
+	void basisChanged(Rti::Type basis);
+private:
+	Rti::Type basis;
+	QLabelButton *ptm, *hsh, *rbf, *bln;
+};
+
+class RtiColorSpaceRow: public QFrame {
+	Q_OBJECT
+public:
+	RtiColorSpaceRow(QFrame *parent = nullptr);
+	void init(Rti::ColorSpace colorspace);
+signals:
+	void colorspaceChanged(Rti::ColorSpace colorspace);
+private:
+	Rti::ColorSpace colorspace;
+	QLabelButton *rgb, *lrgb, *mrgb, *ycc;
+};
+
+class RtiPlanesRow: public QFrame {
+	Q_OBJECT
+public:
+	RtiPlanesRow(QFrame *parent = nullptr);
+	void init(int nplanes, int nchroma);
+signals:
+	void nplanesChanged(int nplanes, int nchroma);
+private:
+	int nplanes;
+	int nchroma;
+	QComboBox *nplanesbox, *nchromabox;
+};
+
+class RtiFormatRow: public QFrame {
+	Q_OBJECT
+public:
+	RtiFormatRow(QFrame *parent = nullptr);
+	void init(RtiTask::Steps format, int quality);
+signals:
+	void formatChanged(RtiTask::Steps format);
+private:
+	RtiTask::Steps format;
+	int quality = 95;
+	QSpinBox *qualitybox;
+	QLabelButton *rti, *img, *deepzoom;
+};
+
+
+class RtiPlan: public QFrame {
+	Q_OBJECT
+public:
+	RtiPlan(QWidget *parent = nullptr);
+public slots:
+	void basisChanged(Rti::Type basis);
+	void colorspaceChanged(Rti::ColorSpace colorspace);
+	void nplanesChanged(int nplanes, int nchroma);
+	void formatChanged(RtiTask::Steps format);
+private:
+	RtiBasisRow *basis_row = nullptr;
+	RtiColorSpaceRow *colorspace_row = nullptr;
+	RtiPlanesRow *planes_row = nullptr;
+	RtiFormatRow *format_row = nullptr;
+};
+
+#endif // RTIPLAN_H

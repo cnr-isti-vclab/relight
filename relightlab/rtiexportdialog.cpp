@@ -1,4 +1,5 @@
 #include "rtiexportdialog.h"
+#include "helpbutton.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -18,11 +19,11 @@ RtiExportDialog::RtiExportDialog(QWidget *parent): QDialog(parent) {
 	QGroupBox *format = new QGroupBox("Format");
 	content->addWidget(format);
 	QVBoxLayout *format_layout = new QVBoxLayout(format);
-	format_layout->addWidget(new QRadioButton("Plain images"));
-	format_layout->addWidget(new QRadioButton("Deepzoom"));
-	format_layout->addWidget(new QRadioButton("Tarzoom"));
-	format_layout->addWidget(new QRadioButton("Interleaved Tarzoom"));
-	
+	format_layout->addWidget(new HelpRadio("Plain images", "format/relight"));
+	format_layout->addWidget(new HelpRadio("Deepzoom", "format/deepzoom"));
+	format_layout->addWidget(new HelpRadio("Tarzoom", "format/tarzoom"));
+	format_layout->addWidget(new HelpRadio("Interleaved Tarzoom", "format/itarzoom"));
+
 	QHBoxLayout *quality_box = new QHBoxLayout;
 	content->addLayout(quality_box);
 	quality_box->addWidget(new QLabel("Jpeg quality"));
@@ -43,6 +44,13 @@ RtiExportDialog::RtiExportDialog(QWidget *parent): QDialog(parent) {
 	buttons->addStretch();
 	buttons->addWidget(new QPushButton("Create"));
 	buttons->addWidget(new QPushButton("Cancel"));
+
+	//seupt connections
+	//connect(buttons->itemAt(1)->widget(), &QPushButton::clicked, this, &RtiExportDialog::accept);
+	//connect(buttons->itemAt(2)->widget(), &QPushButton::clicked, this, &RtiExportDialog::reject);
+
+	//init values from settings
+	//int quality = QSettings().value("rti/defaults/quality", 95).toInt();
 }
 
 LegacyExportDialog::LegacyExportDialog(QWidget *parent): QDialog(parent) {
@@ -51,8 +59,8 @@ LegacyExportDialog::LegacyExportDialog(QWidget *parent): QDialog(parent) {
 
 	QVBoxLayout *content = new QVBoxLayout(this);
 
-	content->addWidget(new QRadioButton("Uncompressed"));
-	content->addWidget(new QRadioButton("JPEG"));
+	content->addWidget(new HelpRadio("Uncompressed", "format/compression"));
+	content->addWidget(new HelpRadio("JPEG", "format/compressiob"));
 
 	QHBoxLayout *quality_box = new QHBoxLayout;
 	content->addLayout(quality_box);

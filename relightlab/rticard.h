@@ -21,7 +21,7 @@ public:
 public slots:
 	void setChecked(bool);
 	void updateTitle();
-
+	void rtiExport();
 signals:
 	void toggled(bool checked);
 
