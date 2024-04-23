@@ -4,8 +4,6 @@
 #include <QList>
 #include "recentprojects.h"
 
-
-
 QStringList recentProjects() {
 	return QSettings().value("recent-projects", QStringList()).toStringList();
 }
@@ -23,6 +21,5 @@ void addRecentProject(const QString &filename) {
 void clearRecentProjects() {
 	QSettings().setValue("recent-projects", QStringList());
 }
-
 
 

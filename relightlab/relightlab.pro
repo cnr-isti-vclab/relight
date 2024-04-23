@@ -57,11 +57,14 @@ SOURCES += main.cpp \
     mainwindow.cpp \
     markerdialog.cpp \
     preferences.cpp \
+    qlabelbutton.cpp \
     recentprojects.cpp \
     reflectionview.cpp \
     relightapp.cpp \
     rticard.cpp \
     rtiframe.cpp \
+    rtiplan.cpp \
+    rtirecents.cpp \
     rtirow.cpp \
     spherepicking.cpp \
     sphererow.cpp \
@@ -111,11 +114,14 @@ HEADERS += \
     mainwindow.h \
     markerdialog.h \
     preferences.h \
+    qlabelbutton.h \
     recentprojects.h \
     reflectionview.h \
     relightapp.h \
     rticard.h \
     rtiframe.h \
+    rtiplan.h \
+    rtirecents.h \
     rtirow.h \
     spherepicking.h \
     sphererow.h \

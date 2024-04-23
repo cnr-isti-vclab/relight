@@ -3,7 +3,10 @@
 #include "relightapp.h"
 #include "rticard.h"
 #include "flowlayout.h"
+#include "rtiplan.h"
 #include "rtirow.h"
+#include "rtirecents.h"
+#include "qlabelbutton.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -16,11 +19,18 @@
 #include <QLabel>
 #include <QScrollArea>
 
+
+
 RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);
 
-	content->addWidget(new QLabel("<h2>Relightable images</h2>"));
+	content->addWidget(new QLabel("<h2>Build relightable images</h2>"));
 	content->addSpacing(20);
+
+	content->addWidget(recents = new RtiRecents);
+
+	content->addWidget(new RtiPlan, 1);
+	return;
 
 /*	content->addWidget(new PtmRow());
 	content->addWidget(new HshRow()); 

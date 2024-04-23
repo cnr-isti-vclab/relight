@@ -6,6 +6,7 @@
 #include "../src/rti.h"
 
 class RtiCard;
+class RtiRecents;
 
 class RtiFrame: public QFrame {
 	Q_OBJECT
@@ -20,6 +21,7 @@ private:
 	Rti::Type current_basis;
 	Rti::ColorSpace current_colorspace;
 	RtiCard *basis_cards[4];
+	RtiRecents *recents;
 };
 
 #endif // RTIFRAME_H
