@@ -1,26 +1,17 @@
 #ifndef QLABELBUTTON_H
 #define QLABELBUTTON_H
 
-#include <QPushButton>
+#include <QCommandLinkButton>
 #include <QLabel>
+#include <QDebug>
 
-class QLabelButton: public QPushButton {
+class QLabelButton: public QCommandLinkButton {
 public:
-	QLabelButton(QString text, QWidget *parent = nullptr): QPushButton(parent) {
-		init(text, QRect(10, 10, 130, 80));
+	QLabelButton(QString text, QString description = "", QWidget *parent = nullptr): QCommandLinkButton(text, description, parent) {
+		setCheckable(true);
+		setIcon(QIcon());
+		setMinimumWidth(200);
 	}
-	QLabelButton(QString text, QRect rect, QWidget *parent = nullptr): QPushButton(parent) {
-		init(text, rect);
-	}
-	void init(QString text, QRect rect) {
-		setGeometry(rect);
-		setFixedSize(150, 100);
-		label = new QLabel(this);
-		label->setGeometry(rect);
-		label->setText(text);
-	}
-private:
-	QLabel *label = nullptr;
 };
 
 #endif // QLABELBUTTON_H

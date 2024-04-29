@@ -9,6 +9,14 @@ QPushButton.large, QToolButton.large {
 	max-width:200px;
 }
 
+QPushButton:checked {
+    background-color: rgba(42, 130, 218, 255);
+}
+
+QCommandLinkButton {
+    font-size:15px;
+}
+
 
 QLabel.recent {
     font-size:9pt;
