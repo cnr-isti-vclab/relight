@@ -6,6 +6,8 @@
 #include <QVBoxLayout>
 #include <QSpinBox>
 #include <QLineEdit>
+#include <QButtonGroup>
+#include <QComboBox>
 
 RtiBasisRow::RtiBasisRow(QFrame *parent): QFrame(parent) {
 	QHBoxLayout *layout = new QHBoxLayout(this);
@@ -13,16 +15,31 @@ RtiBasisRow::RtiBasisRow(QFrame *parent): QFrame(parent) {
 	label->setFixedWidth(200);
 	layout->addWidget(label, 0, Qt::AlignLeft);
 
-	QHBoxLayout *buttons = new QHBoxLayout;
-	layout->addLayout(buttons, 1);
-	buttons->setSpacing(20);
+	layout->addStretch(1);
 
-	buttons->addStretch(1);
-	buttons->addWidget(new QLabelButton("PTM"), 0, Qt::AlignCenter);
-	buttons->addWidget(new QLabelButton("HSH"), 0, Qt::AlignCenter);
-	buttons->addWidget(new QLabelButton("RBF"), 0, Qt::AlignCenter);
-	buttons->addWidget(new QLabelButton("BNL"), 0, Qt::AlignCenter);
-	buttons->addStretch(1);
+	QButtonGroup *group = new QButtonGroup(this);
+
+	auto *ptm = new QLabelButton("PTM", "Polynomial Texture Map\nThis is a test");
+	group->addButton(ptm);
+	layout->addWidget(ptm, 0, Qt::AlignCenter);
+	connect(ptm, &QAbstractButton::clicked, this, [this](){emit basisChanged(Rti::PTM);});
+
+	auto *hsh = new QLabelButton("HSH", "HemiSpherical Harmonics");
+	group->addButton(hsh);
+	layout->addWidget(hsh, 0, Qt::AlignCenter);
+	connect(hsh, &QAbstractButton::clicked, this, [this](){emit basisChanged(Rti::HSH);});
+
+	auto *rbf = new QLabelButton("RBF", "Radial Basis Functions + PCA");
+	group->addButton(rbf);
+	layout->addWidget(rbf, 0, Qt::AlignCenter);
+	connect(rbf, &QAbstractButton::clicked, this, [this](){emit basisChanged(Rti::RBF);});
+
+	auto *bnl = new QLabelButton("BNL", "Bilinear interplation  + PCA");
+	group->addButton(bnl);
+	layout->addWidget(bnl, 0, Qt::AlignCenter);
+	connect(bnl, &QAbstractButton::clicked, this, [this](){emit basisChanged(Rti::BILINEAR);});
+
+	layout->addStretch(1);
 }
 
 void RtiBasisRow::init(Rti::Type basis) {
@@ -34,10 +51,30 @@ RtiColorSpaceRow::RtiColorSpaceRow(QFrame *parent): QFrame(parent) {
 	HelpLabel *label = new HelpLabel("Color space:","rti/colorspace");
 	label->setFixedWidth(200);
 	layout->addWidget(label, 0, Qt::AlignLeft);
-	//layout->addWidget(new HelpLabel(""));
-	layout->addWidget(new QLabelButton("RGB"));
-	layout->addWidget(new QLabelButton("LRGB"));
-	layout->addWidget(new QLabelButton("YCC"));
+	layout->setSpacing(20);
+
+
+	layout->addStretch(1);
+
+
+	QButtonGroup *group = new QButtonGroup(this);
+	auto *rgb = new QLabelButton("RGB", "Standard");
+	group->addButton(rgb);
+	layout->addWidget(rgb, 0, Qt::AlignCenter);
+	connect(rgb, &QAbstractButton::clicked, this, [this](){emit colorspaceChanged(Rti::RGB);});
+
+	auto *lrgb = new QLabelButton("LRGB", "Albedo * Luminance.");
+	group->addButton(lrgb);
+	layout->addWidget(lrgb, 0, Qt::AlignCenter);
+	connect(lrgb, &QAbstractButton::clicked, this, [this](){emit colorspaceChanged(Rti::LRGB);});
+
+	auto *ycc = new QLabelButton("YCC", "Dedicated chrooma coefficients.");
+	group->addButton(ycc);
+	layout->addWidget(ycc, 0, Qt::AlignCenter);
+	connect(ycc, &QAbstractButton::clicked, this, [this](){emit colorspaceChanged(Rti::YCC);});
+
+	layout->addStretch(1);
+
 }
 
 void RtiColorSpaceRow::init(Rti::ColorSpace colorspace) {
@@ -47,16 +84,32 @@ void RtiColorSpaceRow::init(Rti::ColorSpace colorspace) {
 
 RtiPlanesRow::RtiPlanesRow(QFrame *parent): QFrame(parent) {
 	QHBoxLayout *layout = new QHBoxLayout(this);
-	layout->addWidget(new HelpLabel("Planes:", "rti/planes"));
-	layout->addWidget(new QLabelButton("12 coefficients"));
-	layout->addWidget(new QLabelButton("15 coefficients"));
-	layout->addWidget(new QLabelButton("18 coefficients"));
-	layout->addWidget(new QLabelButton("21 coefficients"));
-	layout->addWidget(new QLabelButton("24 coefficients"));
-	layout->addWidget(new QLabelButton("27 coefficients"));
-	layout->addWidget(new QLabelButton("0 chroma dedicated"));
-	layout->addWidget(new QLabelButton("1 chroma dedicated"));
-	layout->addWidget(new QLabelButton("2 chroma dedicated"));
+	HelpLabel *label = new HelpLabel("Planes:", "rti/planes");
+	label->setFixedWidth(200);
+	layout->addWidget(label, 0, Qt::AlignLeft);
+
+	layout->addStretch(1);
+	layout->addWidget(new QLabel("Total number of images:"));
+	auto *total_images = new QComboBox;
+	total_images->setFixedWidth(100);
+	int nimages[] = { 3, 4, 5, 6, 7, 8, 9 };
+	for(int i = 0; i < 7; i++) {
+		total_images->addItem(QString::number(nimages[i]));
+	}	
+	layout->addWidget(total_images);
+
+	layout->addStretch(1);
+	layout->addWidget(new QLabel("Number of dedicated chroma images:"));
+	auto *chroma = new QComboBox;
+	chroma->setFixedWidth(100);
+	int nchroma[] = { 1, 2, 3 };
+	for(int i = 0; i < 3; i++) {
+		chroma->addItem(QString::number(nchroma[i]));
+	}
+	layout->addWidget(chroma);
+
+	layout->addStretch(1);
+
 }
 
 void RtiPlanesRow::init(int nplanes, int nchroma) {
@@ -100,6 +153,8 @@ RtiPlan::RtiPlan(QWidget *parent): QFrame(parent) {
 	format_row = new RtiFormatRow(this);
 	layout->addWidget(format_row);
 	connect(format_row, &RtiFormatRow::formatChanged, this, &RtiPlan::formatChanged);
+
+	layout->addStretch();
 
 }
 
