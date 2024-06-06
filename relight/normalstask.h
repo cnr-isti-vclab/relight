@@ -22,6 +22,7 @@ public:
     bool exportSurface = false;
     bool exportK = 2.0;
     QRect m_Crop;
+    float pixelSize = 0;
 
     NormalsTask(QString& inputPath, QString& outputPath, QRect crop, NormalSolver _solver) :
         solver(_solver), m_Crop(crop) {
