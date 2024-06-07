@@ -24,7 +24,7 @@ public:
 	int getQuality() const;
 	void setOptimize(bool optimize);
 	void setChromaSubsampling(bool subsample);
-        void setDPI(float dpi);
+        void setDotsPerMeter(float dotsPerMeter);
 
 	bool encode(uint8_t *img, int width, int height, FILE* file);
 	bool encode(uint8_t *img, int width, int height, const char* path);
@@ -51,7 +51,7 @@ private:
 	bool subsample = false;
 
 	int quality = 95;
-        int dpi = 0;
+        int dotsPerMeter = 0;
 };
 
 #endif // JPEGENCODER_H_

@@ -46,8 +46,8 @@ void JpegEncoder::setChromaSubsampling(bool subsample) {
 	this->subsample = subsample;
 }
 
-void JpegEncoder::setDPI(float dpi) {
-        this->dpi = round( dpi );
+void JpegEncoder::setDotsPerMeter(float dotsPerMeter) {
+        this->dotsPerMeter = round( dotsPerMeter / 100.0 );  // JPEG requires a resolution in pixels/cm
 }
 
 
@@ -90,9 +90,9 @@ bool JpegEncoder::encode(uint8_t* img, int width, int height) {
 	info.optimize_coding = (boolean)optimize;
 
 	// Set our output resolution if provided in pixels/cm
-	if(dpi>0) {
-	        info.X_density = dpi;
-		info.Y_density = dpi;
+	if(dotsPerMeter>0) {
+	        info.X_density = dotsPerMeter;
+		info.Y_density = dotsPerMeter;
 		info.density_unit = 2;   // 2 = pixels per cm
 	}
 
@@ -137,9 +137,9 @@ bool JpegEncoder::init(int width, int height) {
 	info.optimize_coding = (boolean)optimize;
 
 	// Set our output resolution if provided in pixels/cm
-	if(dpi>0) {
-	        info.X_density = dpi;
-		info.Y_density = dpi;
+	if(dotsPerMeter>0) {
+	        info.X_density = dotsPerMeter;
+		info.Y_density = dotsPerMeter;
 		info.density_unit = 2;   // 2 = pixels per cm
 	}
 
