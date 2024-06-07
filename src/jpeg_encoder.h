@@ -51,7 +51,7 @@ private:
 	bool subsample = false;
 
 	int quality = 95;
-        int dotsPerMeter = 0;
+        int dotsPerCM = 0;
 };
 
 #endif // JPEGENCODER_H_
