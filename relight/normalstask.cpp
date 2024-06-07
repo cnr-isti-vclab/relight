@@ -94,11 +94,11 @@ void NormalsTask::run()
 
     // Save the final result
     QImage img(normalmap.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
-    // Set DPI if known. Need to convert as pixelSize stored in mm/pixel whereas PNG requires pixels/m
+    // Set spatial resolution if known. Need to convert as pixelSize stored in mm/pixel whereas QImage requires pixels/m
     if( pixelSize > 0 ) {
-        int dpi = round(100.0/pixelSize);
-	img.setDotsPerMeterX(dpi);
-	img.setDotsPerMeterY(dpi);
+        int dotsPerMeter = round(1000.0/pixelSize);
+        img.setDotsPerMeterX(dotsPerMeter);
+        img.setDotsPerMeterY(dotsPerMeter);
     }
     img.save(output);
     std::function<bool(std::string s, int d)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
