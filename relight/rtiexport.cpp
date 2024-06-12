@@ -255,6 +255,7 @@ void RtiExport::createNormals() {
 
     ProcessQueue &queue = ProcessQueue::instance();
     NormalsTask *task = new NormalsTask(path, output, crop, solver);
+    if( pixelSize > 0 ) task->pixelSize = pixelSize;
     task->exportSurface = ui->export_surface->isChecked();
     task->exportK = ui->discontinuity->value();
 	QList<QVariant> slights;
