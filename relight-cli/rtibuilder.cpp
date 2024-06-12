@@ -1320,7 +1320,10 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		encoders[i]->setQuality(quality);
 		encoders[i]->setColorSpace(JCS_RGB, 3);
 		encoders[i]->setJpegColorSpace(JCS_YCbCr);
-		
+
+		// Set spatial resolution if known. Convert to pixels/m as RtiBuilder stores this in mm/pixel
+		if(pixelSize > 0) encoders[i]->setDotsPerMeter(1000.0/pixelSize);
+
 		if(!chromasubsampling)
 			encoders[i]->setChromaSubsampling(false);
 		
@@ -1347,6 +1350,16 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	QImage means  (width, height, QImage::Format_RGB32);
 	QImage medians(width, height, QImage::Format_RGB32);
 
+	// Set spatial resolution if known. Convert to pixels/m as RtiBuilder stores this in mm/pixel
+	if (pixelSize > 0) {
+	        int dotsPerMeter = round(1000.0/pixelSize);
+		normals.setDotsPerMeterX(dotsPerMeter);
+		normals.setDotsPerMeterY(dotsPerMeter);
+		means.setDotsPerMeterX(dotsPerMeter);
+		means.setDotsPerMeterY(dotsPerMeter);
+		medians.setDotsPerMeterX(dotsPerMeter);
+		medians.setDotsPerMeterY(dotsPerMeter);
+	}
 
 	//colorspace check
 	if (savenormals) {
