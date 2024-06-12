@@ -130,7 +130,7 @@ setUrl: function(url) {
 		t.get(url + '/info.xml', 'xml', function(d) { t.waiting--; t.loadWebRTIViewerInfo(d); });
 	} else if (t.layout == "iip" ) {
 		// info.json embedded in TIFF ImageDescription metadata tag
-		var url = t.server + "?FIF=" + t.url + ((t.stack===true) ? "" : "/plane_0.tif") + "&OBJ=xmp";
+		var url = t.server + "?FIF=" + t.url + ((t.stack===true) ? "" : "/plane_0.tif") + "&OBJ=description";
 		t.get(url, 'json', function(d) { t.waiting--; t.loadInfo(d); });
 	} else {
 		t.get(url + '/info.json', 'json', function(d) { t.waiting--; t.loadInfo(d); });
@@ -142,9 +142,14 @@ loadInfo: function(info) {
 
 	t.type = info.type;
 	t.colorspace = info.colorspace;
+	t.format = info.format;
 
 	t.width = parseInt(info.width);
 	t.height = parseInt(info.height);
+
+	if(info.pixelSizeInMM) {
+		t.scale = info.pixelSizeInMM;
+	}
 
 	if(t.colorspace == 'mycc') {
 		t.yccplanes = info.yccplanes;
@@ -653,7 +658,13 @@ initTree: function() {
 				var index = y*t.qbox[level][2] + x;
 				var ilevel = parseInt(t.nlevels - 1 - level);
 				var img = (t.stack===true) ? t.url + "&SDS=" + plane : t.url + "/" + prefix + t.suffix;
-				var url = t.server+"?FIF=" + img + "&JTL=" + ilevel + "," + index;
+
+	                        // Handle different formats if requested or indicated in the info.json
+				var command = "JTL";  // Default
+				if (this.format == "webp") command = "WTL";
+				else if( this.format == "png" ) command = "PTL";
+
+				var url = t.server+"?FIF=" + img + "&" + command + "=" + ilevel + "," + index;
 				return url;
 			};
 			break;
