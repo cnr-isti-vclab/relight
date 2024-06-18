@@ -36,8 +36,6 @@ public:
 	std::vector<QPointF> lights;       //2d pixel of the light spot for this sphere.
 	std::vector<Vector3f> directions;  //
 
-	std::vector<std::vector<int>>histogram;
-
 	Sphere();
 	bool fit();
 	void ellipseFit();

@@ -218,9 +218,7 @@ bool Sphere::fit() {
 
 
 void Sphere::findHighlight(QImage img, int n) {
-	if(n == 0) histogram.clear();
-	//TODO hack!
-	if(n == 0) {
+	if(sphereImg.isNull()) {
 		sphereImg = QImage(inner.width(), inner.height(), QImage::Format_ARGB32);
 		sphereImg.fill(0);
 	}
@@ -276,7 +274,6 @@ void Sphere::findHighlight(QImage img, int n) {
 	//threshold now is 10 lower so we get more points.
 	threshold += 10;
 
-	histogram.push_back(histo);
 	if(threshold < 200) {
 		//highlight in the mid greys? probably all the sphere is in shadow.
 		lights[n] = QPointF(0, 0);
