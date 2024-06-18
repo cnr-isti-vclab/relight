@@ -723,6 +723,11 @@ void MainWindow::detectHighlights() {
 	progress->show();
 	progress->setMaximum(project.size());
 
+	//clean up reflection summary for each sphere.
+	for(Sphere *sphere: project.spheres) {
+		sphere->sphereImg = QImage();
+	}
+
 	QThreadPool::globalInstance()->setMaxThreadCount(1);
 	progress_jobs.clear();
 	for(size_t i = 0; i < project.size(); i++)
