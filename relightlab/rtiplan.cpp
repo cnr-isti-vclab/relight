@@ -9,71 +9,83 @@
 #include <QButtonGroup>
 #include <QComboBox>
 
-RtiBasisRow::RtiBasisRow(QFrame *parent): QFrame(parent) {
+RtiPlanRow::RtiPlanRow(QFrame *parent): QFrame(parent) {
 	QHBoxLayout *layout = new QHBoxLayout(this);
-	HelpLabel *label = new HelpLabel("Basis:", "rti/basis");
+
+	label = new HelpLabel("", "");
 	label->setFixedWidth(200);
 	layout->addWidget(label, 0, Qt::AlignLeft);
+	//layout->setSpacing(20);
 
 	layout->addStretch(1);
 
+	QFrame *buttonsFrame = new QFrame;
+	buttonsFrame->setMinimumWidth(860);
+	buttonsFrame->setFrameStyle(QFrame::Box);
+
+	layout->addWidget(buttonsFrame);
+
+	buttons = new QHBoxLayout(buttonsFrame);
+
+	layout->addStretch(1);
+}
+
+
+RtiBasisRow::RtiBasisRow(QFrame *parent): RtiPlanRow(parent) {
+
+	label->label->setText("Basis:");
+	label->help->setId("rti/basis");
+
 	QButtonGroup *group = new QButtonGroup(this);
 
-	auto *ptm = new QLabelButton("PTM", "Polynomial Texture Map\nThis is a test");
+	auto *ptm = new QLabelButton("PTM", "Polynomial Texture Map");
 	group->addButton(ptm);
-	layout->addWidget(ptm, 0, Qt::AlignCenter);
+	buttons->addWidget(ptm, 0, Qt::AlignCenter);
 	connect(ptm, &QAbstractButton::clicked, this, [this](){emit basisChanged(Rti::PTM);});
 
 	auto *hsh = new QLabelButton("HSH", "HemiSpherical Harmonics");
 	group->addButton(hsh);
-	layout->addWidget(hsh, 0, Qt::AlignCenter);
+	buttons->addWidget(hsh, 0, Qt::AlignCenter);
 	connect(hsh, &QAbstractButton::clicked, this, [this](){emit basisChanged(Rti::HSH);});
 
-	auto *rbf = new QLabelButton("RBF", "Radial Basis Functions + PCA");
+	auto *rbf = new QLabelButton("RBF", "Radial Basis Functions");
 	group->addButton(rbf);
-	layout->addWidget(rbf, 0, Qt::AlignCenter);
+	buttons->addWidget(rbf, 0, Qt::AlignCenter);
 	connect(rbf, &QAbstractButton::clicked, this, [this](){emit basisChanged(Rti::RBF);});
 
-	auto *bnl = new QLabelButton("BNL", "Bilinear interplation  + PCA");
+	auto *bnl = new QLabelButton("BNL", "Bilinear interplation");
 	group->addButton(bnl);
-	layout->addWidget(bnl, 0, Qt::AlignCenter);
+	buttons->addWidget(bnl, 0, Qt::AlignCenter);
 	connect(bnl, &QAbstractButton::clicked, this, [this](){emit basisChanged(Rti::BILINEAR);});
 
-	layout->addStretch(1);
+
 }
 
 void RtiBasisRow::init(Rti::Type basis) {
 	this->basis = basis;
 }
 
-RtiColorSpaceRow::RtiColorSpaceRow(QFrame *parent): QFrame(parent) {
-	QHBoxLayout *layout = new QHBoxLayout(this);
-	HelpLabel *label = new HelpLabel("Color space:","rti/colorspace");
-	label->setFixedWidth(200);
-	layout->addWidget(label, 0, Qt::AlignLeft);
-	layout->setSpacing(20);
+RtiColorSpaceRow::RtiColorSpaceRow(QFrame *parent): RtiPlanRow(parent) {
 
-
-	layout->addStretch(1);
+	label->label->setText("Colorspace:");
+	label->help->setId("rti/colorspace");
 
 
 	QButtonGroup *group = new QButtonGroup(this);
 	auto *rgb = new QLabelButton("RGB", "Standard");
 	group->addButton(rgb);
-	layout->addWidget(rgb, 0, Qt::AlignCenter);
+	buttons->addWidget(rgb, 0, Qt::AlignLeft);
 	connect(rgb, &QAbstractButton::clicked, this, [this](){emit colorspaceChanged(Rti::RGB);});
 
 	auto *lrgb = new QLabelButton("LRGB", "Albedo * Luminance.");
 	group->addButton(lrgb);
-	layout->addWidget(lrgb, 0, Qt::AlignCenter);
+	buttons->addWidget(lrgb, 0, Qt::AlignCenter);
 	connect(lrgb, &QAbstractButton::clicked, this, [this](){emit colorspaceChanged(Rti::LRGB);});
 
-	auto *ycc = new QLabelButton("YCC", "Dedicated chrooma coefficients.");
+	auto *ycc = new QLabelButton("YCC", "Dedicated chroma coefficients.");
 	group->addButton(ycc);
-	layout->addWidget(ycc, 0, Qt::AlignCenter);
+	buttons->addWidget(ycc, 0, Qt::AlignRight);
 	connect(ycc, &QAbstractButton::clicked, this, [this](){emit colorspaceChanged(Rti::YCC);});
-
-	layout->addStretch(1);
 
 }
 
@@ -82,34 +94,30 @@ void RtiColorSpaceRow::init(Rti::ColorSpace colorspace) {
 }
 
 
-RtiPlanesRow::RtiPlanesRow(QFrame *parent): QFrame(parent) {
-	QHBoxLayout *layout = new QHBoxLayout(this);
-	HelpLabel *label = new HelpLabel("Planes:", "rti/planes");
-	label->setFixedWidth(200);
-	layout->addWidget(label, 0, Qt::AlignLeft);
+RtiPlanesRow::RtiPlanesRow(QFrame *parent): RtiPlanRow(parent) {
 
-	layout->addStretch(1);
-	layout->addWidget(new QLabel("Total number of images:"));
+	label->label->setText("Planes:");
+	label->help->setId("rti/planes");
+
+
+	buttons->addWidget(new QLabel("Total number of images:"));
 	auto *total_images = new QComboBox;
 	total_images->setFixedWidth(100);
 	int nimages[] = { 3, 4, 5, 6, 7, 8, 9 };
 	for(int i = 0; i < 7; i++) {
 		total_images->addItem(QString::number(nimages[i]));
 	}	
-	layout->addWidget(total_images);
+	buttons->addWidget(total_images);
 
-	layout->addStretch(1);
-	layout->addWidget(new QLabel("Number of dedicated chroma images:"));
+	buttons->addStretch(1);
+	buttons->addWidget(new QLabel("Number of dedicated chroma images:"));
 	auto *chroma = new QComboBox;
 	chroma->setFixedWidth(100);
 	int nchroma[] = { 1, 2, 3 };
 	for(int i = 0; i < 3; i++) {
 		chroma->addItem(QString::number(nchroma[i]));
 	}
-	layout->addWidget(chroma);
-
-	layout->addStretch(1);
-
+	buttons->addWidget(chroma);
 }
 
 void RtiPlanesRow::init(int nplanes, int nchroma) {
@@ -117,22 +125,31 @@ void RtiPlanesRow::init(int nplanes, int nchroma) {
 	this->nchroma = nchroma;
 }
 
-RtiFormatRow::RtiFormatRow(QFrame *parent): QFrame(parent) {
-	QHBoxLayout *layout = new QHBoxLayout(this);
-	layout->addWidget(new HelpLabel("Format:", "rti/format"));
-	layout->addWidget(new QLabelButton("Lossless (heavy!)"));
-	layout->addWidget(new QLabelButton("JPEG"));
-	layout->addWidget(new QLabel("Quality:"));
-	layout->addWidget(new QSpinBox);
-	layout->addWidget(new QLabel("Filename:"));
-	layout->addWidget(new QLineEdit);
-	layout->addWidget(new QPushButton("..."));
-	layout->addWidget(new QPushButton("Export"));
+RtiFormatRow::RtiFormatRow(QFrame *parent): RtiPlanRow(parent) {
+	label->label->setText("Format:");
+	label->help->setId("rti/format");
+
+	rti = new QLabelButton("legacy (.rti, .ptm)");
+	buttons->addWidget(rti, Qt::AlignLeft);
+
+	web = new QLabelButton("web (json + jpeg");
+	buttons->addWidget(web, Qt::AlignLeft);
+
+	iip = new QLabelButton("iip (tiff)");
+	buttons->addWidget(iip, Qt::AlignLeft);
+
+/*	buttons->addWidget(new QLabelButton("Lossless (heavy!)"));
+	buttons->addWidget(new QLabelButton("JPEG"));
+	buttons->addWidget(new QLabel("Quality:"));
+	buttons->addWidget(new QSpinBox);
+	buttons->addWidget(new QLabel("Filename:"));
+	buttons->addWidget(new QLineEdit);
+	buttons->addWidget(new QPushButton("..."));
+	buttons->addWidget(new QPushButton("Export")); */
 }
 
-void RtiFormatRow::init(RtiTask::Steps format, int quality) {
+void RtiFormatRow::init(RtiParameters::Format format) {
 	this->format = format;
-	this->quality = quality;
 }
 
 RtiPlan::RtiPlan(QWidget *parent): QFrame(parent) {
@@ -176,7 +193,7 @@ void RtiPlan::nplanesChanged(int nplanes, int nchroma) {
 
 }
 
-void RtiPlan::formatChanged(RtiTask::Steps format) {
+void RtiPlan::formatChanged(RtiParameters::Format format) {
 	//when format is changed we try to change the other values as little as possible.
 	//if the new format is not compatible with the current basis we change it to the default one
 
