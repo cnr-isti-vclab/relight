@@ -29,6 +29,7 @@ class HelpButton: public QToolButton {
 	Q_OBJECT
 public:
 	HelpButton(QString id, QWidget *parent = nullptr);
+	void setId(QString id);
 
 public slots:
 	void showHelp();
@@ -40,6 +41,7 @@ class HelpLabel: public QWidget {
 	public:
 		HelpLabel(QString txt, QString help_id, QWidget *parent = nullptr);
 		QLabel *label = nullptr;
+		HelpButton *help = nullptr;
 };
 
 class HelpRadio: public QWidget {

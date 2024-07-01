@@ -8,8 +8,20 @@
 class QComboBox;
 class QSpinBox;
 class QLabelButton;
+class HelpLabel;
+class QHBoxLayout;
 
-class RtiBasisRow: public QFrame {
+class RtiPlanRow: public QFrame {
+	Q_OBJECT
+public:
+	RtiPlanRow(QFrame *parent = nullptr);
+
+protected:
+	HelpLabel *label = nullptr;
+	QHBoxLayout *buttons = nullptr;
+};
+
+class RtiBasisRow: public RtiPlanRow {
 	Q_OBJECT
 public:
 	RtiBasisRow(QFrame *parent = nullptr);
@@ -21,7 +33,7 @@ private:
 	QLabelButton *ptm, *hsh, *rbf, *bln;
 };
 
-class RtiColorSpaceRow: public QFrame {
+class RtiColorSpaceRow: public RtiPlanRow {
 	Q_OBJECT
 public:
 	RtiColorSpaceRow(QFrame *parent = nullptr);
@@ -33,7 +45,7 @@ private:
 	QLabelButton *rgb, *lrgb, *mrgb, *ycc;
 };
 
-class RtiPlanesRow: public QFrame {
+class RtiPlanesRow: public RtiPlanRow {
 	Q_OBJECT
 public:
 	RtiPlanesRow(QFrame *parent = nullptr);
@@ -46,15 +58,26 @@ private:
 	QComboBox *nplanesbox, *nchromabox;
 };
 
-class RtiFormatRow: public QFrame {
+class RtiFormatRow: public RtiPlanRow {
 	Q_OBJECT
 public:
 	RtiFormatRow(QFrame *parent = nullptr);
-	void init(RtiTask::Steps format, int quality);
+	void init(RtiParameters::Format format);
 signals:
-	void formatChanged(RtiTask::Steps format);
+	void formatChanged(RtiParameters::Format format);
 private:
-	RtiTask::Steps format;
+	RtiParameters::Format format;
+	QLabelButton *rti, *web, *iip;
+};
+
+class RtiQualityRow: public RtiPlanRow {
+	Q_OBJECT
+public:
+	RtiQualityRow(QFrame *parent = nullptr);
+	void init(int quality); //0 stands for lossless.
+signals:
+	void formatChanged(RtiParameters::Format format);
+private:
 	int quality = 95;
 	QSpinBox *qualitybox;
 	QLabelButton *rti, *img, *deepzoom;
@@ -69,7 +92,7 @@ public slots:
 	void basisChanged(Rti::Type basis);
 	void colorspaceChanged(Rti::ColorSpace colorspace);
 	void nplanesChanged(int nplanes, int nchroma);
-	void formatChanged(RtiTask::Steps format);
+	void formatChanged(RtiParameters::Format format);
 private:
 	RtiBasisRow *basis_row = nullptr;
 	RtiColorSpaceRow *colorspace_row = nullptr;

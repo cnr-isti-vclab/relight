@@ -21,13 +21,16 @@ class RtiBuilder;
 class RtiParameters {
 public:
 
-	enum Format { RTI = 0, RELIGHT = 1, DEEPZOOM = 2, TARZOOM = 3, ITARZOOM = 4, TIFF = 5};
+	enum Format { RTI = 0, WEB = 1, IIP = 2 };
+	enum WebFormat { PLAIN = 0, DEEPZOOM = 1, TARZOOM = 2, ITARZOOM = 3 };
+
 	Rti::Type basis;
 	Rti::ColorSpace colorspace;
 	int nplanes;
 	int nchroma;
 
 	Format format;
+	WebFormat webFormat;
 
 	bool lossless = false; //used only for RTI format;
 
@@ -40,8 +43,8 @@ public:
 class RtiTask: public Task {
 	Q_OBJECT
 public:
-	enum Steps { RTI, RTIJPEG, RELIGHT, DEEPZOOM, TARZOOM, ITARZOOM };
 	Project project;
+	RtiParameters parameters;
 
 	RtiTask(const Project &_project);
     virtual ~RtiTask();
