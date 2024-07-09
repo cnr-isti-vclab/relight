@@ -10,7 +10,7 @@
 #include <QButtonGroup>
 #include <QComboBox>
 
-RtiPlanRow::RtiPlanRow(QFrame *parent): QFrame(parent) {
+RtiPlanRow::RtiPlanRow(RtiParameters &param, QFrame *parent): QFrame(parent), parameters(param) {
 	QHBoxLayout *layout = new QHBoxLayout(this);
 
 	label = new HelpLabel("", "");
@@ -32,8 +32,7 @@ RtiPlanRow::RtiPlanRow(QFrame *parent): QFrame(parent) {
 }
 
 
-RtiBasisRow::RtiBasisRow(QFrame *parent): RtiPlanRow(parent) {
-
+RtiBasisRow::RtiBasisRow(RtiParameters &parameters, QFrame *parent): RtiPlanRow(parameters, parent) {
 	label->label->setText("Basis:");
 	label->help->setId("rti/basis");
 
@@ -47,10 +46,10 @@ RtiBasisRow::RtiBasisRow(QFrame *parent): RtiPlanRow(parent) {
 	buttons->addWidget(rbf, 0, Qt::AlignCenter);
 	buttons->addWidget(bnl, 0, Qt::AlignCenter);
 
-	connect(ptm, &QAbstractButton::clicked, this, [this](){emit basisChanged(Rti::PTM);});
-	connect(hsh, &QAbstractButton::clicked, this, [this](){emit basisChanged(Rti::HSH);});
-	connect(rbf, &QAbstractButton::clicked, this, [this](){emit basisChanged(Rti::RBF);});
-	connect(bnl, &QAbstractButton::clicked, this, [this](){emit basisChanged(Rti::BILINEAR);});
+	connect(ptm, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::PTM, true); });
+	connect(hsh, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::HSH, true); });
+	connect(rbf, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::RBF, true); });
+	connect(bnl, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::BILINEAR, true); });
 
 	QButtonGroup *group = new QButtonGroup(this);
 
@@ -60,11 +59,24 @@ RtiBasisRow::RtiBasisRow(QFrame *parent): RtiPlanRow(parent) {
 	group->addButton(bnl);
 }
 
-void RtiBasisRow::init(Rti::Type basis) {
-	this->basis = basis;
+void RtiBasisRow::setBasis(Rti::Type basis, bool emitting) {
+	parameters.basis = basis;
+
+	if(emitting) {
+		emit basisChanged();
+		return;
+	}
+
+	switch(basis) {
+		case Rti::PTM: ptm->setChecked(true); break;
+		case Rti::HSH: hsh->setChecked(true); break;
+		case Rti::RBF: rbf->setChecked(true); break;
+		case Rti::BILINEAR: bln->setChecked(true); break;
+		default: break;
+	}
 }
 
-RtiColorSpaceRow::RtiColorSpaceRow(QFrame *parent): RtiPlanRow(parent) {
+RtiColorSpaceRow::RtiColorSpaceRow(RtiParameters &parameters, QFrame *parent): RtiPlanRow(parameters, parent) {
 
 	label->label->setText("Colorspace:");
 	label->help->setId("rti/colorspace");
@@ -79,10 +91,10 @@ RtiColorSpaceRow::RtiColorSpaceRow(QFrame *parent): RtiPlanRow(parent) {
 	buttons->addWidget(mrgb, 0, Qt::AlignLeft);
 	buttons->addWidget(ycc, 0, Qt::AlignRight);
 
-	connect(rgb,  &QAbstractButton::clicked, this, [this](){emit colorspaceChanged(Rti::RGB);});
-	connect(lrgb, &QAbstractButton::clicked, this, [this](){emit colorspaceChanged(Rti::LRGB);});
-	connect(mrgb, &QAbstractButton::clicked, this, [this](){emit colorspaceChanged(Rti::MRGB);});
-	connect(ycc,  &QAbstractButton::clicked, this, [this](){emit colorspaceChanged(Rti::YCC);});
+	connect(rgb,  &QAbstractButton::clicked, this, [this](){ setColorspace(Rti::RGB, true);  });
+	connect(lrgb, &QAbstractButton::clicked, this, [this](){ setColorspace(Rti::LRGB, true); });
+	connect(mrgb, &QAbstractButton::clicked, this, [this](){ setColorspace(Rti::MRGB, true); });
+	connect(ycc,  &QAbstractButton::clicked, this, [this](){ setColorspace(Rti::YCC, true);  });
 
 	QButtonGroup *group = new QButtonGroup(this);
 	group->addButton(rgb);
@@ -91,18 +103,31 @@ RtiColorSpaceRow::RtiColorSpaceRow(QFrame *parent): RtiPlanRow(parent) {
 	group->addButton(ycc);
 }
 
-void RtiColorSpaceRow::init(Rti::Type basis, Rti::ColorSpace colorspace) {
-	bool pca = basis == Rti::RBF || basis == Rti::BILINEAR;
 
-	rgb->setVisible(!pca);
-	lrgb->setVisible(!pca);
-	mrgb->setVisible(pca);
-	ycc->setVisible(pca);
-	this->colorspace = colorspace;
+void RtiColorSpaceRow::setColorspace(Rti::ColorSpace colorspace, bool emitting) {
+	parameters.colorspace = colorspace;
+
+	bool pca = parameters.basis == Rti::RBF || parameters.basis == Rti::BILINEAR;
+
+	rgb->setEnabled(!pca);
+	lrgb->setEnabled(!pca);
+	mrgb->setEnabled(pca);
+	ycc->setEnabled(pca);
+
+	if(emitting) {
+		emit colorspaceChanged();
+		return;
+	}
+	switch(colorspace) {
+		case Rti::RGB:  rgb->setChecked(true); break;
+		case Rti::LRGB: lrgb->setChecked(true); break;
+		case Rti::MRGB: mrgb->setChecked(true); break;
+		case Rti::YCC:  ycc->setChecked(true); break;
+	}
 }
 
 
-RtiPlanesRow::RtiPlanesRow(QFrame *parent): RtiPlanRow(parent) {
+RtiPlanesRow::RtiPlanesRow(RtiParameters &parameters, QFrame *parent): RtiPlanRow(parameters, parent) {
 
 	label->label->setText("Planes:");
 	label->help->setId("rti/planes");
@@ -111,32 +136,55 @@ RtiPlanesRow::RtiPlanesRow(QFrame *parent): RtiPlanRow(parent) {
 	buttons->addWidget(new QLabel("Total number of images:"));
 	nplanesbox = new QComboBox;
 	nplanesbox->setFixedWidth(100);
-	int nimages[] = { 3, 4, 5, 6, 7, 8, 9 };
 	for(int i = 0; i < 7; i++) {
 		nplanesbox->addItem(QString::number(nimages[i]));
 	}	
+	connect(nplanesbox, &QComboBox::currentIndexChanged, [this](int n) { setNPlanes(nimages[n]*3, true); });
 	buttons->addWidget(nplanesbox);
 
 	buttons->addStretch(1);
 	buttons->addWidget(new QLabel("Number of dedicated chroma images:"));
 	nchromabox = new QComboBox;
 	nchromabox->setFixedWidth(100);
-	int nchroma[] = { 1, 2, 3 };
+
 	for(int i = 0; i < 3; i++) {
-		nchromabox->addItem(QString::number(nchroma[i]));
+		nchromabox->addItem(QString::number(nchromas[i]));
 	}
+	connect(nchromabox, &QComboBox::currentIndexChanged, [this](int n) { setNChroma(nchromas[n], true); });
 	buttons->addWidget(nchromabox);
 }
 
-void RtiPlanesRow::init(Rti::ColorSpace colorspace, int nplanes, int nchroma) {
-	nplanesbox->setCurrentIndex(nplanes/3 - 3);
-	nchromabox->setCurrentIndex(nchroma -1);
+void RtiPlanesRow::setNPlanes(int nplanes, bool emitting) {
+	nchromabox->setEnabled(parameters.colorspace == Rti::YCC);
 
-	this->nplanes = nplanes;
-	this->nchroma = nchroma;
+	parameters.nplanes = nplanes;
+	if(emitting) {
+		emit nplanesChanged();
+		return;
+	}
+	for(int i = 0; i < 7; i++) {
+		if(nimages[i] == nplanes/3)
+			nplanesbox->setCurrentIndex(i);
+	}
 }
 
-RtiFormatRow::RtiFormatRow(QFrame *parent): RtiPlanRow(parent) {
+void RtiPlanesRow::setNChroma(int nchroma, bool emitting) {
+	nchromabox->setEnabled(parameters.colorspace == Rti::YCC);
+
+	parameters.nchroma = nchroma;
+	if(emitting) {
+		emit nplanesChanged();
+		return;
+	}
+
+	for(int i = 0; i < 3; i++) {
+		if(nchromas[i] == nchroma)
+			nchromabox->setCurrentIndex(i);
+	}
+}
+
+
+RtiFormatRow::RtiFormatRow(RtiParameters &parameters, QFrame *parent): RtiPlanRow(parameters, parent) {
 	label->label->setText("Format:");
 	label->help->setId("rti/format");
 
@@ -149,14 +197,33 @@ RtiFormatRow::RtiFormatRow(QFrame *parent): RtiPlanRow(parent) {
 	buttons->addWidget(web, Qt::AlignLeft);
 	buttons->addWidget(iip, Qt::AlignLeft);
 
+	connect(rti, &QAbstractButton::clicked, [this]() { setFormat(RtiParameters::RTI, true); });
+	connect(rti, &QAbstractButton::clicked, [this]() { setFormat(RtiParameters::WEB, true); });
+	connect(rti, &QAbstractButton::clicked, [this]() { setFormat(RtiParameters::IIP, true); });
+
 	QButtonGroup *group = new QButtonGroup(this);
 	group->addButton(rti);
 	group->addButton(web);
 	group->addButton(iip);
+}
+
+void RtiFormatRow::setFormat(RtiParameters::Format format, bool emitting) {
+	bool legacy = parameters.basis == Rti::PTM || parameters.basis == Rti::HSH;
+	rti->setEnabled(legacy);
+
+	if(emitting) {
+		emit formatChanged();
+		return;
+	}
+	switch(format) {
+		case RtiParameters::RTI: rti->setChecked(true); break;
+		case RtiParameters::WEB: web->setChecked(true); break;
+		case RtiParameters::IIP: iip->setChecked(true); break;
+	}
 
 }
 
-RtiQualityRow::RtiQualityRow(QFrame *parent): RtiPlanRow(parent) {
+RtiQualityRow::RtiQualityRow(RtiParameters &parameters, QFrame *parent): RtiPlanRow(parameters, parent) {
 	label->label->setText("Image quality:");
 	label->help->setId("rti/quality");
 
@@ -170,41 +237,44 @@ RtiQualityRow::RtiQualityRow(QFrame *parent): RtiPlanRow(parent) {
 	qualitybox->setMaximumWidth(200);
 	qualitybox->setMinimum(75);
 	qualitybox->setMaximum(100);
-	qualitybox->setValue(quality);
+	qualitybox->setValue(parameters.quality);
 	buttons->addWidget(qualitybox, Qt::AlignRight);
 
+	connect(qualitybox, &QSpinBox::valueChanged, [this](int n) { setQuality(n, true); });
 
 	/*buttons->addWidget(new QLabel("Filename:"));
 	buttons->addWidget(new QLineEdit);
 	buttons->addWidget(new QPushButton("..."));
 	buttons->addWidget(new QPushButton("Export")); */
 }
-void RtiQualityRow::init(int quality) {
+void RtiQualityRow::setQuality(int quality, bool emitting) {
+	parameters.quality = quality;
 
+	if(emitting)
+		emit qualityChanged();
+	else
+		qualitybox->setValue(quality);
 }
 
-RtiWebLayoutRow::RtiWebLayoutRow(QFrame *parent) {
+RtiWebLayoutRow::RtiWebLayoutRow(RtiParameters &parameters, QFrame *parent): RtiPlanRow(parameters, parent) {
 	label->label->setText("Web layout:");
 	label->help->setId("rti/web_layout");
 
 }
-void RtiWebLayoutRow::init(RtiParameters::WebLayout layout) {
+void RtiWebLayoutRow::setWebLayout(RtiParameters::WebLayout layout) {
 
 } //0 stands for lossless.
 
 
-void RtiFormatRow::init(RtiParameters::Format format) {
-	this->format = format;
-}
 
 RtiPlan::RtiPlan(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *layout = new QVBoxLayout(this);
 
-	basis_row = new RtiBasisRow(this);
-	colorspace_row = new RtiColorSpaceRow(this);
-	planes_row = new RtiPlanesRow(this);
-	format_row = new RtiFormatRow(this);
-	quality_row = new RtiQualityRow(this);
+	basis_row = new RtiBasisRow(parameters, this);
+	colorspace_row = new RtiColorSpaceRow(parameters, this);
+	planes_row = new RtiPlanesRow(parameters, this);
+	format_row = new RtiFormatRow(parameters, this);
+	quality_row = new RtiQualityRow(parameters, this);
 
 	layout->addWidget(basis_row);
 	layout->addWidget(colorspace_row);
@@ -221,15 +291,15 @@ RtiPlan::RtiPlan(QWidget *parent): QFrame(parent) {
 }
 
 
-void RtiPlan::basisChanged(Rti::Type basis) {
+void RtiPlan::basisChanged() {
 	//when basis is changed we try to change the other values as little as possible.
 	//if the new basis is not compatible with the current color space we change it to the default one
 	//colorspace:
-	parameters.basis = basis;
+	auto &basis = parameters.basis;
 	bool pca = basis == Rti::RBF || basis == Rti::BILINEAR;
 
 	auto &colorspace = parameters.colorspace;
-	if(pca) {
+	if(!pca) {
 		if(colorspace != Rti::RGB && colorspace != Rti::LRGB)
 			colorspace = Rti::RGB;
 
@@ -237,7 +307,7 @@ void RtiPlan::basisChanged(Rti::Type basis) {
 		if(colorspace != Rti::MRGB && colorspace != Rti::YCC)
 			colorspace = Rti::MRGB;
 	}
-	colorspace_row->init(basis, colorspace);
+	colorspace_row->setColorspace(colorspace);
 
 	auto &nplanes = parameters.nplanes;
 	auto &nchroma = parameters.nchroma;
@@ -249,35 +319,30 @@ void RtiPlan::basisChanged(Rti::Type basis) {
 		if(colorspace != Rti::YCC) nchroma = 0;
 	}
 
-	planes_row->init(colorspace, nplanes, nchroma);
+	planes_row->setNPlanes(nplanes);
+	planes_row->setNChroma(nchroma);
+
+	if(pca && parameters.format == RtiParameters::RTI) {
+		format_row->setFormat(RtiParameters::WEB, true); //emit and cascade update other rows.
+	}
+}
+
+void RtiPlan::colorspaceChanged() {
+	planes_row->setNChroma(parameters.nchroma);
+}
+
+void RtiPlan::nplanesChanged() {
+}
+
+void RtiPlan::formatChanged() {
+}
+
+void RtiPlan::qualityChanged() {
 
 
 }
 
-void RtiPlan::colorspaceChanged(Rti::ColorSpace colorspace) {
-	//when colorspace is changed we try to change the other values as little as possible.
-	//if the new colorspace is not compatible with the current basis we change it to the default one
-
-}
-
-void RtiPlan::nplanesChanged(int nplanes, int nchroma) {
-	//when nplanes is changed we try to change the other values as little as possible.
-	//if the new nplanes is not compatible with the current basis we change it to the default one
-
-}
-
-void RtiPlan::formatChanged(RtiParameters::Format format) {
-	//when format is changed we try to change the other values as little as possible.
-	//if the new format is not compatible with the current basis we change it to the default one
-
-}
-
-void RtiPlan::qualityChanged(int quality) {
-
-
-}
-
-void RtiPlan::layoutChanged(RtiParameters::WebLayout layout) {
+void RtiPlan::layoutChanged() {
 
 }
 

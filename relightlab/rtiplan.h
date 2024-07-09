@@ -14,78 +14,93 @@ class QHBoxLayout;
 class RtiPlanRow: public QFrame {
 	Q_OBJECT
 public:
-	RtiPlanRow(QFrame *parent = nullptr);
+	RtiPlanRow(RtiParameters &parameters, QFrame *parent = nullptr);
+
+	RtiParameters &parameters;
 	HelpLabel *label = nullptr;
 	QHBoxLayout *buttons = nullptr;
 };
 
+
 class RtiBasisRow: public RtiPlanRow {
 	Q_OBJECT
 public:
-	RtiBasisRow(QFrame *parent = nullptr);
-	void init(Rti::Type basis);
-	Rti::Type basis;
-	QLabelButton *ptm, *hsh, *rbf, *bln;
-signals:
-	void basisChanged(Rti::Type basis);
+	RtiBasisRow(RtiParameters &parameters, QFrame *parent = nullptr);
+	void setBasis(Rti::Type basis, bool emitting = false);
 
+private:
+	QLabelButton *ptm, *hsh, *rbf, *bln;
+
+signals:
+	void basisChanged();
 };
+
 
 class RtiColorSpaceRow: public RtiPlanRow {
 	Q_OBJECT
 public:
-	RtiColorSpaceRow(QFrame *parent = nullptr);
-	void init(Rti::Type basis, Rti::ColorSpace colorspace);
-	Rti::ColorSpace colorspace;
+	RtiColorSpaceRow(RtiParameters &parameters, QFrame *parent = nullptr);
+	void setColorspace(Rti::ColorSpace colorspace, bool emitting = false);
+
+private:
 	QLabelButton *rgb, *lrgb, *mrgb, *ycc;
 
 signals:
-	void colorspaceChanged(Rti::ColorSpace colorspace);
+	void colorspaceChanged();
 };
+
 
 class RtiPlanesRow: public RtiPlanRow {
 	Q_OBJECT
 public:
-	RtiPlanesRow(QFrame *parent = nullptr);
-	void init(Rti::ColorSpace colorspace, int nplanes, int nchroma);
-	int nplanes;
-	int nchroma;
-	QComboBox *nplanesbox, *nchromabox;
+	RtiPlanesRow(RtiParameters &parameters, QFrame *parent = nullptr);
+	void setNPlanes(int nplanes, bool emitting = false);
+	void setNChroma(int nchroma, bool emitting = false);
 
+private:
+	QComboBox *nplanesbox, *nchromabox;
+	int nimages[7] = { 3, 4, 5, 6, 7, 8, 9 };
+	int nchromas[3] = { 1, 2, 3 };
 signals:
-	void nplanesChanged(int nplanes, int nchroma);
+	void nplanesChanged();
 };
+
 
 class RtiFormatRow: public RtiPlanRow {
 	Q_OBJECT
 public:
-	RtiFormatRow(QFrame *parent = nullptr);
-	void init(RtiParameters::Format format);
+	RtiFormatRow(RtiParameters &parameters, QFrame *parent = nullptr);
+	void setFormat(RtiParameters::Format format, bool emitting = false);
+
+private:
 	RtiParameters::Format format;
 	QLabelButton *rti, *web, *iip;
 
 signals:
-	void formatChanged(RtiParameters::Format format);
+	void formatChanged();
 };
+
 
 class RtiQualityRow: public RtiPlanRow {
 	Q_OBJECT
 public:
-	RtiQualityRow(QFrame *parent = nullptr);
-	void init(int quality); //0 stands for lossless.
-	int quality = 95;
+	RtiQualityRow(RtiParameters &parameters, QFrame *parent = nullptr);
+	void setQuality(int quality, bool emitting = false); //0 stands for lossless.
+
+private:
 	QSpinBox *qualitybox;
 
 signals:
-	void qualityChanged(int quality);
+	void qualityChanged();
 };
+
 
 class RtiWebLayoutRow: public RtiPlanRow {
 	Q_OBJECT
 public:
-	RtiWebLayoutRow(QFrame *parent = nullptr);
-	void init(RtiParameters::WebLayout layout); //0 stands for lossless.
-	RtiParameters::WebLayout layout;
+	RtiWebLayoutRow(RtiParameters &parameters, QFrame *parent = nullptr);
+	void setWebLayout(RtiParameters::WebLayout layout); //0 stands for lossless.
+
 signals:
 	void layoutChanged(RtiParameters::WebLayout layout);
 
@@ -101,12 +116,12 @@ public:
 	RtiParameters parameters;
 
 public slots:
-	void basisChanged(Rti::Type basis);
-	void colorspaceChanged(Rti::ColorSpace colorspace);
-	void nplanesChanged(int nplanes, int nchroma);
-	void formatChanged(RtiParameters::Format format);
-	void qualityChanged(int quality);
-	void layoutChanged(RtiParameters::WebLayout layout);
+	void basisChanged();
+	void colorspaceChanged();
+	void nplanesChanged();
+	void formatChanged();
+	void qualityChanged();
+	void layoutChanged();
 
 private:
 	RtiBasisRow *basis_row = nullptr;

@@ -37,6 +37,7 @@ public:
 	bool iiif_manifest = false;  //TODO
 	bool openlime; //include openlime viewer //TODO: might want different interfaces.
 
+	int quality = 95;
 	QString path;
 };
 
