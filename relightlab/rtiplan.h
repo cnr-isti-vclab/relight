@@ -99,10 +99,11 @@ class RtiWebLayoutRow: public RtiPlanRow {
 	Q_OBJECT
 public:
 	RtiWebLayoutRow(RtiParameters &parameters, QFrame *parent = nullptr);
-	void setWebLayout(RtiParameters::WebLayout layout); //0 stands for lossless.
-
+	void setWebLayout(RtiParameters::WebLayout layout, bool emitting = false); //0 stands for lossless.
+private:
+	QLabelButton *image, *deepzoom, *tarzoom, *itarzoom;
 signals:
-	void layoutChanged(RtiParameters::WebLayout layout);
+	void layoutChanged();
 
 };
 

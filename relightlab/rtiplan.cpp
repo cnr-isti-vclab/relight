@@ -260,10 +260,42 @@ RtiWebLayoutRow::RtiWebLayoutRow(RtiParameters &parameters, QFrame *parent): Rti
 	label->label->setText("Web layout:");
 	label->help->setId("rti/web_layout");
 
-}
-void RtiWebLayoutRow::setWebLayout(RtiParameters::WebLayout layout) {
+	image    = new QLabelButton("Images", "");
+	deepzoom = new QLabelButton("Deepzoom", "Pyramidal, lot's of files.");
+	tarzoom  = new QLabelButton("Tarzoom", "Pyramidal, few files but 206");
+	itarzoom = new QLabelButton("ITarzoom", "Pyramidal, few files and requests but 206");
 
-} //0 stands for lossless.
+	buttons->addWidget(image);
+	buttons->addWidget(deepzoom);
+	buttons->addWidget(tarzoom);
+	buttons->addWidget(itarzoom);
+
+	setWebLayout(parameters.web_layout);
+
+	connect(image,    &QAbstractButton::clicked, [this]() { setWebLayout(RtiParameters::PLAIN); });
+	connect(deepzoom, &QAbstractButton::clicked, [this]() { setWebLayout(RtiParameters::DEEPZOOM); });
+	connect(tarzoom,  &QAbstractButton::clicked, [this]() { setWebLayout(RtiParameters::TARZOOM); });
+	connect(itarzoom, &QAbstractButton::clicked, [this]() { setWebLayout(RtiParameters::ITARZOOM); });
+
+	QButtonGroup *group = new QButtonGroup(this);
+	group->addButton(image);
+	group->addButton(deepzoom);
+	group->addButton(tarzoom);
+	group->addButton(itarzoom);
+}
+
+void RtiWebLayoutRow::setWebLayout(RtiParameters::WebLayout layout, bool emitting) {
+	parameters.web_layout = layout;
+
+	if(emitting) {
+		emit layoutChanged();
+		return;
+	}
+
+	switch(layout) {
+	case RtiParameters::PLAIN: image->setChecked(true); break;
+	}
+}
 
 
 
@@ -274,19 +306,23 @@ RtiPlan::RtiPlan(QWidget *parent): QFrame(parent) {
 	colorspace_row = new RtiColorSpaceRow(parameters, this);
 	planes_row = new RtiPlanesRow(parameters, this);
 	format_row = new RtiFormatRow(parameters, this);
+	layout_row = new RtiWebLayoutRow(parameters, this);
 	quality_row = new RtiQualityRow(parameters, this);
 
 	layout->addWidget(basis_row);
 	layout->addWidget(colorspace_row);
 	layout->addWidget(planes_row);
-	layout->addWidget(format_row);
 	layout->addWidget(quality_row);
+	layout->addWidget(format_row);
+	layout->addWidget(layout_row);
+
 	layout->addStretch();
 
 	connect(basis_row, &RtiBasisRow::basisChanged, this, &RtiPlan::basisChanged);
 	connect(colorspace_row, &RtiColorSpaceRow::colorspaceChanged, this, &RtiPlan::colorspaceChanged);
 	connect(planes_row, &RtiPlanesRow::nplanesChanged, this, &RtiPlan::nplanesChanged);
 	connect(format_row, &RtiFormatRow::formatChanged, this, &RtiPlan::formatChanged);
+	connect(layout_row, &RtiWebLayoutRow::layoutChanged, this, &RtiPlan::layoutChanged);
 	connect(quality_row, &RtiQualityRow::qualityChanged, this, &RtiPlan::qualityChanged);
 }
 
@@ -311,6 +347,7 @@ void RtiPlan::basisChanged() {
 
 	auto &nplanes = parameters.nplanes;
 	auto &nchroma = parameters.nchroma;
+
 	switch(basis) {
 	case Rti::PTM: nplanes = 18; nchroma = 0; break;
 	case Rti::HSH: if(nplanes != 12 && nplanes != 27) nplanes = 27; nchroma = 0; break;
@@ -338,11 +375,8 @@ void RtiPlan::formatChanged() {
 }
 
 void RtiPlan::qualityChanged() {
-
-
 }
 
 void RtiPlan::layoutChanged() {
-
 }
 
