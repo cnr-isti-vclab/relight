@@ -30,7 +30,7 @@ public:
 	int nchroma;
 
 	Format format;
-	WebLayout webFormat;
+	WebLayout web_layout;
 
 	bool lossless = false; //used only for RTI format;
 
