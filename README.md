@@ -160,7 +160,38 @@ $ git submodule update --init --recursive
 $ cmake .
 $ make
 ```
-    
+### MacOS
+
+Installed tools: 
+* Homebrew, CMake, Qt6
+
+Add Homebrew on your PATH: 
+```shell
+echo 'PATH="/usr/local/bin:$PATH"' >> ./zshrc
+```
+Ensure Homebrew is in your PATH:
+```shell
+which brew 
+/opt/homebrew/bin/brew shellenv
+```
+if using .zshrc:
+```shell
+source ~/.zshrc
+```
+Alternatively, start a new shell session.
+
+Install dependencies: 
+```shell
+brew install jpeg-turbo coreutils llvm cmake ninja eigen 
+```
+NOTE: libomp library has some issues, we are working to fix them
+
+Set the Qt_DIR to point to your Qt6 installation: 
+```shell
+export cmake -DQt6_DIR=/yourpath/Qt/version/macos/lib/cmake/Qt6
+make
+```
+
 # TODO
 
 * White balance and other conversion from RAW features (dcraw)

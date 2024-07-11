@@ -1,10 +1,15 @@
 cmake_minimum_required(VERSION 3.1)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_COMPILER /usr/bin/clang++)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 project(relight)
 
-set(CMAKE_CXX_STANDARD 11)
+
+
 set(CMAKE_FIND_FRAMEWORK LAST)
 
-option(USE_QT_5 "Set to use Qt5" ON)
+option(USE_QT_5 "Set to use Qt5" OFF)
 option(MACOSX_MAKE_BUNDLE "If using macos, all targets will be placed in a relight macosx app bundle" ON)
 
 if(USE_QT_5)
@@ -53,5 +58,5 @@ endif()
 include(GNUInstallDirs)
 
 add_subdirectory(relight)
-add_subdirectory(relight-cli)
-add_subdirectory(relight-merge)
+#add_subdirectory(relight-cli)
+#add_subdirectory(relight-merge)

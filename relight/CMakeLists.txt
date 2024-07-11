@@ -1,14 +1,15 @@
 cmake_minimum_required(VERSION 3.12)
 project(relight)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_FIND_FRAMEWORK LAST)
+#set(CMAKE_CXX_STANDARD 17)
+#set(CMAKE_CXX_COMPILER clang++)
+#set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(
 	${RELIGHT_QT}
 	COMPONENTS Core Gui Widgets Concurrent Xml
 	REQUIRED)
-find_package(OpenMP)
+#find_package(OpenMP)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -157,7 +158,7 @@ target_include_directories(
 target_link_libraries(
 	relight PUBLIC
 		${JPEG_LIBRARIES}
-		OpenMP::OpenMP_CXX
+		#OpenMP::OpenMP_CXX
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui
 		${RELIGHT_QT}::Widgets
@@ -170,6 +171,7 @@ target_compile_definitions(relight PUBLIC _USE_MATH_DEFINES NOMINMAX)
 target_compile_definitions(relight
 	PUBLIC
 		RELIGHT_VERSION=${RELIGHT_VERSION})
+
 
 if (APPLE)
 	set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../build_scripts/relight.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")

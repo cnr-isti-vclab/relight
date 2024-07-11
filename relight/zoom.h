@@ -5,7 +5,11 @@
 #include <functional>
 #include <QDir>
 #include <QMessageBox>
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QXmlSimpleReader>
+#endif
+
 #include <QString>
 #include <QStringList>
 #include <QDomDocument>

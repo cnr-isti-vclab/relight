@@ -1,14 +1,17 @@
 cmake_minimum_required(VERSION 3.12)
 project(relight-merge)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_FIND_FRAMEWORK LAST)
+
+#set(CMAKE_CXX_STANDARD 17)
+#set(CMAKE_CXX_COMPILER clang++)
+#set(CMAKE_CXX_EXTENSIONS OFF)
+
 
 find_package(
 	${RELIGHT_QT}
 	COMPONENTS Core Gui Concurrent
 	REQUIRED)
-find_package(OpenMP)
+#find_package(OpenMP)
 
 set(CMAKE_AUTOMOC ON)
 
@@ -54,7 +57,7 @@ target_include_directories(
 target_link_libraries(
 	relight-merge PUBLIC
 		${JPEG_LIBRARIES}
-		OpenMP::OpenMP_CXX
+#		OpenMP::OpenMP_CXX
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui
 		${RELIGHT_QT}::Concurrent)
