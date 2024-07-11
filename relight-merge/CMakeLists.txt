@@ -4,12 +4,6 @@ project(relight-merge)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_FIND_FRAMEWORK LAST)
 
-find_package(
-	${RELIGHT_QT}
-	COMPONENTS Core Gui Concurrent
-	REQUIRED)
-find_package(OpenMP)
-
 set(CMAKE_AUTOMOC ON)
 
 if (APPLE)
