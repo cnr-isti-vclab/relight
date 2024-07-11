@@ -4,12 +4,6 @@ project(relight-cli)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_FIND_FRAMEWORK LAST)
 
-find_package(
-	${RELIGHT_QT}
-	COMPONENTS Core Gui Concurrent
-	REQUIRED)
-find_package(OpenMP)
-
 set(CMAKE_AUTOMOC ON)
 
 if (APPLE)
@@ -17,8 +11,6 @@ if (APPLE)
 	SET(CMAKE_INSTALL_RPATH $ORIGIN/../Frameworks)
 	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
-
-
 
 
 SET(HEADERS
