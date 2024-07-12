@@ -65,8 +65,11 @@ void Marker::setEditing(bool value) {
 }
 
 
-
+#if QT_VERSION >= 0x060000
+void Marker::enterEvent(QEnterEvent *event) {
+#else
 void Marker::enterEvent(QEvent *event) {
+#endif
 	QWidget::enterEvent(event);
 }
 

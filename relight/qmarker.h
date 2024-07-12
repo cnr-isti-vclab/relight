@@ -44,7 +44,12 @@ signals:
 
 protected:
 	//TODO highlight the background or something.
+#if QT_VERSION >= 0x060000
+	void enterEvent(QEnterEvent* event) override;
+#else
 	void enterEvent(QEvent* event) override;
+#endif
+
 	void leaveEvent(QEvent* event) override;
 };
 
