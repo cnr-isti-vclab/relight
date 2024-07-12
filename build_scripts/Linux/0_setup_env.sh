@@ -26,6 +26,9 @@ sudo apt-get install -y mesa-common-dev libglu1-mesa-dev
 
 sudo apt-get install -y cmake ninja-build patchelf libjpeg-dev libeigen3-dev
 
+# qt dependencies (for deployment)
+sudo apt-get install -y libxcb-cursor0
+
 if [ "$DONT_INSTALL_QT" = false ] ; then
     echo "=== installing qt packages..."
     sudo apt-get install -y qt5-default qttools5-dev-tools qtdeclarative5-dev
