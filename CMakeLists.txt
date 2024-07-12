@@ -6,20 +6,25 @@ set(CMAKE_FIND_FRAMEWORK LAST)
 
 option(MACOSX_MAKE_BUNDLE "If using macos, all targets will be placed in a relight macosx app bundle" ON)
 
-find_package(Qt5 COMPONENTS  Core Gui Widgets Concurrent Xml QUIET)
+
 find_package(Qt6 COMPONENTS  Core Gui Widgets Concurrent Xml QUIET)
 
-if (Qt6_FOUND OR Qt5_FOUND)
-	if (Qt6_FOUND)
-		set(RELIGHT_QT Qt6)
-		message("Using Qt6")
-	else()
+
+if (Qt6_FOUND)
+	set(RELIGHT_QT Qt6)
+	message("Using Qt6")
+
+else()
+	find_package(Qt5 COMPONENTS  Core Gui Widgets Concurrent Xml QUIET)
+	
+	if(Qt5_FOUND)
 		set(RELIGHT_QT Qt5)
 		message("Using Qt5")
+	else()
+		message(FATAL_ERROR "Qt not found")
 	endif()
-else()
-	message(FATAL "Qt not found")
 endif()
+
 
 find_package(Eigen3)
 find_package(OpenMP)
