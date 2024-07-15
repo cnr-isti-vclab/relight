@@ -73,8 +73,8 @@ void NormalsTask::run()
         //uint8_t* data = normals.data() + idx;
         float* data = &normals[idx];
 
-        std::function<void(void)> run = [this, &line, &imageSet, data](void)->void {
-            NormalsWorker task(solver, line, data, imageSet.lights);
+		std::function<void(void)> run = [this, &i, &line, &imageSet, data](void)->void {
+			NormalsWorker task(solver, i, line, data, imageSet);
             return task.run();
         };
 
@@ -169,12 +169,14 @@ void NormalsWorker::run()
 
 void NormalsWorker::solveL2()
 {
+	std::vector<Vector3f> &m_Lights = m_Imageset.lights;
     // Pixel data
-    Eigen::MatrixXd mLights(m_Lights.size(), 3);
-    Eigen::MatrixXd mPixel(m_Lights.size(), 1);
+	Eigen::MatrixXd mLights(m_Lights.size(), 3);
+	Eigen::MatrixXd mPixel(m_Lights.size(), 1);
     Eigen::MatrixXd mNormals;
 
     unsigned int normalIdx = 0;
+
 
     // Fill the lights matrix
 	for (size_t i = 0; i < m_Lights.size(); i++)
@@ -187,6 +189,15 @@ void NormalsWorker::solveL2()
         // Fill the pixel vector
 		for (size_t m = 0; m < m_Lights.size(); m++)
             mPixel(m, 0) = m_Row[p][m].mean();
+
+		if(m_Imageset.light3d) {
+			for(int i = 0; i < m_Lights.size(); i++) {
+				Vector3f lights = m_Imageset.relativeLight(m_Lights[i], p, row);
+				for (int j = 0; j < 3; j++)
+					mLights(i, j) = m_Lights[i][j];
+			}
+		}
+
 
         // Solve
         mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
