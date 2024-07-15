@@ -9,6 +9,7 @@
 #include <QMutex>
 #include <QRect>
 #include "../src/relight_vector.h"
+#include "../src/imageset.h"
 #include "task.h"
 #include <QRunnable>
 
@@ -43,8 +44,8 @@ private:
 class NormalsWorker
 {
 public:
-    NormalsWorker(NormalSolver _solver, PixelArray& toProcess, float* normals, std::vector<Vector3f> lights) :
-         solver(_solver), m_Row(toProcess), m_Normals(normals), m_Lights(lights){}
+	NormalsWorker(NormalSolver _solver, int _row, PixelArray& toProcess, float* normals, ImageSet &imageset) :
+		 solver(_solver), row(_row), m_Row(toProcess), m_Normals(normals), m_Imageset(imageset){}
 
     void run();
 private:
@@ -52,10 +53,12 @@ private:
     void solveSBL();
     void solveRPCA();
 private:
+
     NormalSolver solver;
+	int row;
     PixelArray m_Row;
     //uint8_t* m_Normals;
     float* m_Normals;
-    std::vector<Vector3f> m_Lights;
+	ImageSet &m_Imageset;
     QMutex m_Mutex;
 };
