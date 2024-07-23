@@ -140,6 +140,7 @@ public slots:
 	void setupMeasures();
 	void newMeasure();
 	void removeMeasure();
+	void measureChanged();
 
 	void setupAligns();
 	void newAlign();
