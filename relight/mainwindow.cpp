@@ -598,6 +598,7 @@ void MainWindow::newMeasure() {
 	ui->markerList->addItem(marker);
 	ui->markerList->setSelected(marker);
 	connect(marker, SIGNAL(removed()), this, SLOT(removeMeasure()));
+	connect(marker, SIGNAL(valueChanged()), this, SLOT(measureChanged()));
 	marker->startMeasure();
 }
 
@@ -639,6 +640,11 @@ void MainWindow::removeMeasure() {
 	delete marker;
 }
 
+void MainWindow::measureChanged() {
+	project.computePixelSize();
+
+}
+
 void MainWindow::removeAlign() {
 	auto marker = dynamic_cast<AlignMarker *>(QObject::sender());
 	project.aligns.erase(std::remove(project.aligns.begin(), project.aligns.end(), marker->align), project.aligns.end());
@@ -664,6 +670,7 @@ void MainWindow::setupMeasures() {
 	for(auto m: project.measures) {
 		auto marker = new MeasureMarker(m, ui->graphicsView, ui->markerList);
 		connect(marker, SIGNAL(removed()), this, SLOT(removeMeasure()));
+		connect(marker, SIGNAL(valueChanged()), this, SLOT(measureChanged()));
 		ui->markerList->addItem(marker);
 	}
 }
