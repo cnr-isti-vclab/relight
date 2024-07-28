@@ -611,6 +611,39 @@ initTree: function() {
 
 			break;
 
+		case "tarzoom":
+			t.tarzoom =[];	
+			t.metaDataURL = t.url + "/" + t.img + ".tzi";
+			t.getTileURL = function (image, x, y, level) {
+				var prefix = image.substr(0, image.lastIndexOf("."));
+				var base = t.url + '/' + t.img + '.tzb';
+
+				return base + ilevel + '/' + x + '_' + y + t.suffix;
+			};
+
+		this.getTileURL = (rasterid, tile) => {
+			const tar = this.tarzoom[rasterid];
+			tile.start = tar.offsets[tile.index];
+			tile.end = tar.offsets[tile.index+1];
+			return tar.url;
+		}; 
+
+			t.parseMetaData = function (response) {
+				if (!response.ok) {
+					throw new Error("Failed loading " + url + ": " + response.statusText);
+				}
+				let json = await response.json();
+				json.url = url.substr(0, url.lastIndexOf(".")) + '.tzb';
+				Object.assign(t, json);
+				t.suffix = t.format;
+				var max = Math.max(t.width, t.height)/t.tilesize;
+				t.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
+				t.tarzoom.push(json);
+			};
+
+			break;
+
+
 		case "zoomify":
 			t.overlap = 0; //overlap is not specified!
 			t.metaDataURL = t.url + "/" + t.img + "/ImageProperties.xml";
