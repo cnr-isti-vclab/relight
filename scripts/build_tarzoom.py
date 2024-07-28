@@ -2,22 +2,26 @@
 
 import re, os, sys, json, glob, shutil
 
+tilesize_re = re.compile('TileSize="(\d+)"')
+overlap_re = re.compile('Overlap="(\d+)"')
 width_re = re.compile('Width="(\d+)"')
 height_re = re.compile('Height="(\d+)"')
 pos_re = re.compile("(\d+)_(\d+).jp.*g")
 
-tilesize = 256
-overlap = 0
+
 format = 'jpg'
 
 def tarzoom(basename):
-	index =  { "tilesize": tilesize, "overlap": 0, "format":format, "offsets": [0] }
+
+	index =  { "format":format, "offsets": [0] }
 
 	print(basename)
 	with open(basename + '.dzi') as f:
 		contents = f.read()
 		w = index['width']  = int(width_re.search(contents).group(1))
 		h = index['height'] = int(height_re.search(contents).group(1))
+		tilesize = index['tilesize'] = int(tilesize_re.search(contents).group(1))
+		overlap = index['overlap'] = int(overlap_re.search(contents).group(1))
 
 
 	data = open(basename + ".tzb", 'wb')
