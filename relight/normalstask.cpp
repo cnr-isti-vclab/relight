@@ -194,7 +194,7 @@ void NormalsWorker::solveL2()
 			mPixel(m, 0) = m_Row[p][m].mean();
 
 		if(m_Imageset.light3d) {
-			for(size_t i = 0; i < m_Lights.size(); i++) {
+			for(size_t i = 0; i < m_Lights3d.size(); i++) {
 				Vector3f light = m_Imageset.relativeLight(m_Lights3d[i], p, row);
 				light.normalize();
 				for (int j = 0; j < 3; j++)
@@ -203,17 +203,15 @@ void NormalsWorker::solveL2()
 		}
 
 
-        // Solve
-        mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
-        mNormals.col(0).normalize();
 
-        // Save
-        m_Normals[normalIdx+0] = mNormals(0,0);
-        m_Normals[normalIdx+1] = mNormals(1,0);
-        m_Normals[normalIdx+2] = mNormals(2,0);
+		mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
+		mNormals.col(0).normalize();
+		m_Normals[normalIdx+0] = mNormals(0,0);
+		m_Normals[normalIdx+1] = mNormals(1,0);
+		m_Normals[normalIdx+2] = mNormals(2,0);
 
 		normalIdx += 3;
-    }
+	}
 }
 
 void NormalsWorker::solveSBL()
