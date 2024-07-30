@@ -10,6 +10,7 @@
 #include <QRect>
 #include "../src/relight_vector.h"
 #include "../src/imageset.h"
+#include "../src/project.h"
 #include "task.h"
 #include <QRunnable>
 
@@ -25,19 +26,19 @@ public:
     QRect m_Crop;
     float pixelSize = 0;
 
-    NormalsTask(QString& inputPath, QString& outputPath, QRect crop, NormalSolver _solver) :
-        solver(_solver), m_Crop(crop) {
-        input_folder = inputPath;
-        output = outputPath;
-    }
-    virtual ~NormalsTask(){};
+	NormalsTask(Project *_project, NormalSolver _solver) :
+		project(_project), solver(_solver){
+	}
+	virtual ~NormalsTask() {};
 
     virtual void run() override;
 
 public slots:
     bool progressed(std::string str, int percent) override;
-private:
 
+private:
+	//TODO remove dependency on project!
+	Project *project;
 
 };
 

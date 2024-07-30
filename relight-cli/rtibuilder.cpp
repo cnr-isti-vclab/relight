@@ -472,7 +472,7 @@ void RtiBuilder::pickBases(PixelArray &sample) {
 				for(int x = 0; x < resample_width; x++) {
 					int pixel_x = imageset.width*x/(resample_width-1);
 					int pixel_y = imageset.height*y/(resample_height-1);
-					auto relights = relativeLights(pixel_x, pixel_y);
+					auto relights = relativeNormalizedLights(pixel_x, pixel_y);
 					materialbuilders[x + y*resample_width] = pickBase(sample, relights);
 				}
 			}
@@ -1664,7 +1664,7 @@ void RtiBuilder::resamplePixel(Pixel &sample, Pixel &pixel) { //pos in pixels.
 
 //returno normalized light directions for a pixel
 //notice how sample are already intensity corrected.
-vector<Vector3f> RtiBuilder::relativeLights(int x, int y) {
+vector<Vector3f> RtiBuilder::relativeNormalizedLights(int x, int y) {
 
 	vector<Vector3f> relights = imageset.lights3d;
 	for(Vector3f &light: relights) {
@@ -1688,8 +1688,7 @@ void RtiBuilder::buildResampleMaps() {
 			int pixel_x = imageset.width*x/(resample_width-1);
 			int pixel_y = imageset.height*y/(resample_height-1);
 
-			auto relights = relativeLights(pixel_x, pixel_y);
-			//auto relights = relativeLights(imageset.width/2, imageset.height/2);
+			auto relights = relativeNormalizedLights(pixel_x, pixel_y);
 			buildResampleMap(relights, resamplemap);
 		}
 	}
