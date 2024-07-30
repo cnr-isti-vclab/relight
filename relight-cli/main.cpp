@@ -402,6 +402,10 @@ int main(int argc, char *argv[]) {
 	timer.start();
 
 	QFileInfo info(input.c_str());
+	if(!info.exists()) {
+		cerr << "Input \"" << input << "\" doesn't seems to exist." << endl;
+		return 1;
+	}
 	if(info.isFile()) {
 		if(info.suffix() == "relight") {
 			if(!builder.initFromProject(input, callback)) {
@@ -424,12 +428,15 @@ int main(int argc, char *argv[]) {
 			cerr << "Input parameter (" << input << ") is an unknown type, relight-cli can process .relight, .json, .rti or .ptm files" << endl;
 			return 1;
 		}
-	} else {
+	} else if(info.isDir()) {
 
 		if(!builder.initFromFolder(input, callback)) {
 			cerr << builder.error << " !\n" << endl;
 			return 1;
 		}
+	} else {
+		cerr << "Input\"" << input << "\" is not a file or a directory." << endl;
+		return 1;
 	}
 
     int size = builder.save(output, quality);
