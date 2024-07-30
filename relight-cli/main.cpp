@@ -408,8 +408,10 @@ int main(int argc, char *argv[]) {
 				cerr << builder.error << "\n" << endl;
 				return 1;
 			}
+
 		} if(info.suffix() == "json") {
 			return convertToRTI(input.c_str(), output.c_str());
+
 		} else if(info.suffix() == "rti" || info.suffix() == "ptm") {
 			try {
 				return convertRTI(input.c_str(), output.c_str(), quality);
@@ -417,11 +419,13 @@ int main(int argc, char *argv[]) {
 				cerr << qPrintable(error) << endl;
 				return 1;
 			}
+
 		} else {
 			cerr << "Input parameter (" << input << ") is an unknown type, relight-cli can process .relight, .json, .rti or .ptm files" << endl;
 			return 1;
 		}
 	} else {
+
 		if(!builder.initFromFolder(input, callback)) {
 			cerr << builder.error << " !\n" << endl;
 			return 1;
