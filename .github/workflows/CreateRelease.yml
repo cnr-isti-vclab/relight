@@ -102,12 +102,12 @@ jobs:
 
     #Download Linux Packages
     - name: Download Linux ZIP
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4.1.7
       with:
         name: RelightLab_Linux_portable
         path: relightlab_linux_portable
     - name: Download Linux AppImage
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4.1.7
       with:
         name: RelightLab_Linux_packages
         path: relightlab_linux_appimage
@@ -135,12 +135,12 @@ jobs:
 
     #Download MacOS Package
     - name: Download MacOS DMG
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4.1.7
       with:
         name: RelightLab_macOS_packages
         path: relightlab_macos_dmg
     - name: Download MacOS Portable
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4.1.7
       with:
         name: RelightLab_macOS_portable
         path: relightlab_macos_portable
@@ -157,12 +157,12 @@ jobs:
 
     #Download Windows Packages
     - name: Download Windows ZIP
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4.1.7
       with:
         name: RelightLab_Windows_portable
         path: relightlab_windows_portable
 #    - name: Download Windows Installer
-#      uses: actions/download-artifact@v3
+#      uses: actions/download-artifact@v4.1.7
 #      with:
 #        name: RelightLab_Windows_packages
 #        path: relightlab_windows_installer
