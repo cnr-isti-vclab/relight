@@ -108,7 +108,8 @@ bool Rti::load(const char *filename, bool loadPlanes) {
 	material.planes.resize(nplanes);
 	for(size_t p = 0; p < nplanes; p++) {
 		Material::Plane &plane = material.planes[p];
-		plane.range = range[p].toDouble();
+		if(range.size())
+			plane.range = range[p].toDouble();
 		plane.scale = scale[p].toDouble();
 		plane.bias = offset[p].toDouble();
 	}
