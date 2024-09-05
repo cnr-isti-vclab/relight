@@ -413,7 +413,7 @@ int main(int argc, char *argv[]) {
 				return 1;
 			}
 
-		} if(info.suffix() == "json") {
+		} else if(info.suffix() == "json") {
 			return convertToRTI(input.c_str(), output.c_str());
 
 		} else if(info.suffix() == "rti" || info.suffix() == "ptm") {
