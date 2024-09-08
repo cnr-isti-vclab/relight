@@ -20,12 +20,12 @@ void PanoBuilder::setMm3d(QString path){
 	ensureExecutable(path);
 	mm3d_path = path;
 }
-void PanoBuilder::relightCli(QString path){
+void PanoBuilder::setRelightCli(QString path){
 	ensureExecutable(path);
 
 	relight_cli_path = path;
 }
-void PanoBuilder::relightMerge(QString path){
+void PanoBuilder::setRelightMerge(QString path){
 	ensureExecutable(path);
 	relight_merge_path = path;
 }
@@ -103,6 +103,14 @@ void PanoBuilder::rti(){
 
 		}
 	}
+
+	QDir mergeDir(base_dir.filePath("merge"));
+	if (!mergeDir.exists()) {
+		if (!base_dir.mkdir("merge")) {
+			throw QString("Could not create 'merge' directory");
+		}
+	}
+
 	//search the subdirectory, the QDir::Dirs | filter QDir::NoDotAndDotDot to get all subdirectories inside the root directory
 	QStringList subDirs = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 	for (const QString &subDirName : subDirs) {
@@ -115,23 +123,38 @@ void PanoBuilder::rti(){
 		QString relightFile = relightFiles[0];
 
 
-		QString program = "/Users/erika/Desktop/projects/relight/build/relight-cli/relight-cli";
 		QStringList arguments;
 		arguments << subDir.absoluteFilePath(relightFile) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18" << "-m";
 
-		QString command = program + " " + arguments.join(" ");
+		QString command = relight_cli_path + " " + arguments.join(" ");
 		cout << "print command: " << qPrintable(command) <<endl;
-		QProcess process;
-		process.start(program, arguments);
+		QProcess process_cli;
+		process_cli.start(relight_cli_path, arguments);
 
-		if(!process.waitForStarted()){
-			throw QString("fail to start ") + process.program();
+		if(!process_cli.waitForStarted()){
+			throw QString("fail to start ") + process_cli.program();
 		}
 
 		//wait for the process to finish
-		if(!process.waitForFinished(-1)) {
-			throw QString("fail to run ") + process.readAllStandardError();
+		if(!process_cli.waitForFinished(-1)) {
+			throw QString("fail to run ") + process_cli.readAllStandardError();
 		}
+
+
+		QStringList arguments_merge;
+		arguments_merge << "rti" << "merge";
+		QProcess process_merge;
+		process_merge.start(relight_merge_path, arguments_merge);
+
+		if(!process_merge.waitForStarted()){
+			throw QString("fail to start ") + process_merge.program();
+		}
+
+		//wait for the process to finish
+		if(!process_merge.waitForFinished(-1)) {
+			throw QString("fail to run ") + process_merge.readAllStandardError();
+		}
+
 	}
 }
 void PanoBuilder::tapioca(){

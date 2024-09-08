@@ -71,7 +71,13 @@ int main(int argc, char *argv[])
 				}
 				startingStep = (PanoBuilder::Steps) s;
 			}
-			builder.setMm3d("/Users/erika/Desktop/micmac/bin/mm3d");
+			builder.setMm3d("/home/ponchio/devel/micmac/bin/mm3d");
+			//"/Users/erika/Desktop/micmac/bin/mm3d");
+			builder.setRelightCli("/home/ponchio/devel/relight/relight-cli/relight-cli");
+			//"/Users/erika/Desktop/projects/relight/build/relight-cli/relight-cli";
+			builder.setRelightMerge("/home/ponchio/devel/relight/relight-merge/relight-merge");
+			//"/Users/erika/Desktop/projects/relight/build/relight-cli/relight-merge";
+
 			builder.process(startingStep);
 		}
 		catch(QString error){

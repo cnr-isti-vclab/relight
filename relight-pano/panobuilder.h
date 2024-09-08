@@ -35,8 +35,8 @@ public:
 
 	PanoBuilder(QString path);
 	void setMm3d(QString path);
-	void relightCli(QString path);
-	void relightMerge(QString path);
+	void setRelightCli(QString path);
+	void setRelightMerge(QString path);
 	int findStep(QString step);
 
 	void process(Steps starting_step = RTI);

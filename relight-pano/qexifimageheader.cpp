@@ -1684,7 +1684,9 @@ qint64 QExifImageHeader::write(QIODevice *device) const
     else
         stream << quint32(0);
     writeExifValues( stream, d->imageIfdValues );
-    Q_ASSERT(startPos + exifIfdOffset == device->pos());
+#ifndef QT_NO_DEBUG
+	Q_ASSERT(startPos + exifIfdOffset == device->pos());
+#endif
     stream << quint16(d->exifIfdValues.count());
     // 2014-02-03 Sig
     exifIfdOffset += 2; // add 2 bytes for d->exifIfdValues.count()
@@ -1692,14 +1694,18 @@ qint64 QExifImageHeader::write(QIODevice *device) const
     // Sig
     writeExifHeaders(stream, d->exifIfdValues, exifIfdOffset);
     writeExifValues(stream, d->exifIfdValues);
+#ifndef QT_NO_DEBUG
     Q_ASSERT(startPos + gpsIfdOffset == device->pos());
-    if (!d->gpsIfdValues.isEmpty()) {
+#endif
+	if (!d->gpsIfdValues.isEmpty()) {
         stream << quint16(d->gpsIfdValues.count());
         writeExifHeaders(stream, d->gpsIfdValues, gpsIfdOffset);
         writeExifValues(stream, d->gpsIfdValues);
     }
+#ifndef QT_NO_DEBUG
     Q_ASSERT(startPos + offset == device->pos());
-    if (!d->thumbnailData.isEmpty()) {
+#endif
+	if (!d->thumbnailData.isEmpty()) {
         offset += 86;
         stream << quint16(7);
         QExifValue xResolution = d->thumbnailXResolution.isNull()
@@ -1724,11 +1730,15 @@ qint64 QExifImageHeader::write(QIODevice *device) const
                         QExifValue(quint32(d->thumbnailData.size())), offset);
         writeExifValue(stream, xResolution);
         writeExifValue(stream, yResolution);
+#ifndef QT_NO_DEBUG
         Q_ASSERT(startPos + offset == device->pos());
+#endif
         device->write(d->thumbnailData);
         offset += d->thumbnailData.size();
     }
-    Q_ASSERT(startPos + offset == device->pos());
+#ifndef QT_NO_DEBUG
+	Q_ASSERT(startPos + offset == device->pos());
+#endif
     d->size = offset;
 #ifdef TEXIF
     exDevice->write(exif);
