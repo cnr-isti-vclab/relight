@@ -11,6 +11,8 @@ public:
 	QString filename;
 
 	Eigen::Vector3d center;
+	Eigen::Matrix2d rotation;
+
 
 	//center Vector3double
 	//rotation Matrix3d
