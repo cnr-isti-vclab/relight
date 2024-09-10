@@ -1,5 +1,5 @@
 QT       += core gui
-
+QT       += xml
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++17
@@ -12,14 +12,17 @@ SOURCES += \
     exiftransplant.cpp \
     main.cpp \
     mainwindow.cpp \
-    panobuilder.cpp \
-    qexifimageheader.cpp
+    orixml.cpp \
+    panobuilder.cpp
 
 HEADERS += \
     exiftransplant.h \
     mainwindow.h \
-    panobuilder.h \
-    qexifimageheader.h
+    orixml.h \
+    panobuilder.h
+
+mac:INCLUDEPATH += /opt/homebrew/include/eigen3
+
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

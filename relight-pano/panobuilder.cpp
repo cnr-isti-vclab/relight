@@ -5,7 +5,7 @@
 #include <QProcess>
 #include <QFileInfo>
 #include <QImage>
-#include "qexifimageheader.h"
+#include "exiftransplant.h"
 using namespace std;
 
 PanoBuilder::PanoBuilder(QString dataset_path)
@@ -187,11 +187,11 @@ void PanoBuilder::tapioca(){
 			throw QString("Missing '*.jpg' not found in ") + subDir.path();
 		QString photo = photos[0];
 
-		QExifImageHeader exif;
-		bool success = exif.loadFromJpeg(dataset.absoluteFilePath(photo));
+		ExifTransplant exif;
+		bool success = exif.transplant(dataset.absoluteFilePath(photo).toStdString().c_str(),
+									   (subDir.dirName() + ".jpg").toStdString().c_str());
 		if(!success)
-			throw QString("Unable to load exif from: ") + dataset.absoluteFilePath(photo);
-		//exif.saveToJpeg(subDir.dirName() + ".jpg");
+			throw QString("Unable to load exif from: ") + QString(exif.error.c_str()) + dataset.absoluteFilePath(photo);
 	}
 
 	QString program = mm3d_path;
@@ -214,4 +214,146 @@ void PanoBuilder::tapioca(){
 	cout << qPrintable(process.readAllStandardOutput()) << endl;
 }
 
+void PanoBuilder::schnaps(){
+	//prende l'input dalla sottodir di homol e jpg
+	cd("photogrammetry");
 
+	QDir currentDir = QDir::current();
+	QDir homolDir(currentDir.filePath("Homol"));
+	if (!homolDir.exists()) {
+		throw QString("Homol directory does not exist in current directory: ") + homolDir.absolutePath();
+
+	}
+	cout << qPrintable(homolDir.absolutePath()) << endl;
+
+	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
+	if (jpgFiles.isEmpty()) {
+		throw QString("No JPEG images found in photogrammetry directory");
+	}
+
+	QString program = mm3d_path;
+	QStringList arguments;
+	arguments << "Schnaps" << ".*jpg";
+
+	QString command = program + " " + arguments.join(" ");
+	cout << "Print command: " << qPrintable(command) << endl;
+
+	QProcess process;
+	process.start(program, arguments);
+
+	if (!process.waitForStarted()) {
+		throw QString("Failed to start ") + process.program();
+	}
+
+	if (!process.waitForFinished(-1)) {
+		throw QString("Failed to run ") + process.readAllStandardError();
+	}
+	cout << qPrintable(process.readAllStandardOutput()) << endl;
+}
+
+void PanoBuilder::tapas(){
+	//prende l'input dalla sottodirectory Homol
+	//TODO mostrare i residui
+	cd("photogrammetry");
+
+	QDir currentDir = QDir::current();
+	QDir homolDir(currentDir.filePath("Homol"));
+	if (!homolDir.exists()) {
+		throw QString("Homol directory does not exist in current directory: ") + homolDir.absolutePath();
+
+	}
+	cout << qPrintable(homolDir.absolutePath()) << endl;
+
+	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
+	if (jpgFiles.isEmpty()) {
+		throw QString("No JPEG images found in photogrammetry directory");
+	}
+
+	QString program = mm3d_path;
+	QStringList arguments;
+	arguments << "Tapas" << "RadialBasic" << ".*jpg" <<"Out=Relative" << "SH= _mini";
+
+	QString command = program + " " + arguments.join(" ");
+	cout << "Print command: " << qPrintable(command) << endl;
+
+	QProcess process;
+	process.start(program, arguments);
+
+	if (!process.waitForStarted()) {
+		throw QString("Failed to start ") + process.program();
+	}
+
+	if (!process.waitForFinished(-1)) {
+		throw QString("Failed to run ") + process.readAllStandardError();
+	}
+	cout << qPrintable(process.readAllStandardOutput()) << endl;
+}
+
+void PanoBuilder::apericloud(){
+	//prende l'input dalla sottodirectory Homol
+	cd("photogrammetry");
+
+	QDir currentDir = QDir::current();
+	QDir homolDir(currentDir.filePath("Homol"));
+	if (!homolDir.exists()) {
+		throw QString("Homol directory does not exist in current directory: ") + homolDir.absolutePath();
+
+	}
+	cout << qPrintable(homolDir.absolutePath()) << endl;
+
+	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
+	if (jpgFiles.isEmpty()) {
+		throw QString("No JPEG images found in photogrammetry directory");
+	}
+
+	QString program = mm3d_path;
+	QStringList arguments;
+	arguments << "AperiCloud" << "Relative" << ".*jpg";
+
+	QString command = program + " " + arguments.join(" ");
+	cout << "Print command: " << qPrintable(command) << endl;
+
+	QProcess process;
+	process.start(program, arguments);
+
+	if (!process.waitForStarted()) {
+		throw QString("Failed to start ") + process.program();
+	}
+
+	if (!process.waitForFinished(-1)) {
+		throw QString("Failed to run ") + process.readAllStandardError();
+	}
+	cout << qPrintable(process.readAllStandardOutput()) << endl;
+}
+
+void PanoBuilder::orthoplane(){
+	//prende l'input dalla sottodirectory Ori-rel
+	cd("photogrammetry");
+
+	QDir currentDir = QDir::current();
+	QDir oriRelDir(currentDir.filePath("Ori-Rel"));
+	if (!oriRelDir.exists()) {
+		throw QString("Ori-Rel directory does not exist in current directory: ") + oriRelDir.absolutePath();
+	}
+
+
+	QString program = mm3d_path;
+	QStringList arguments;
+	arguments << "" << ""
+				 "" << ".*jpg";
+
+	QString command = program + " " + arguments.join(" ");
+	cout << "Print command: " << qPrintable(command) << endl;
+
+	QProcess process;
+	process.start(program, arguments);
+
+	if (!process.waitForStarted()) {
+		throw QString("Failed to start ") + process.program();
+	}
+
+	if (!process.waitForFinished(-1)) {
+		throw QString("Failed to run ") + process.readAllStandardError();
+	}
+	cout << qPrintable(process.readAllStandardOutput()) << endl;
+}

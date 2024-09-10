@@ -24,7 +24,7 @@ public:
 		JPG //convert to jpg
 	};
 
-	QStringList steps = {"rti", "tapioca"};
+	QStringList steps = {"rti", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane"};
 	QDir base_dir;
 	QDir datasets_dir;
 	QString mm3d_path;
@@ -43,10 +43,10 @@ public:
 	//create the directory rti process the datasets and relight-merge the rti planes
 	void rti();
 	void tapioca();
-	void schnaps(){};
-	void tapas(){};
-	void apericloud(){};
-	void orthoplane(){};
+	void schnaps();
+	void tapas();
+	void apericloud();
+	void orthoplane();
 	void tarama(){};
 	void malt_mec(){};
 	void c3dc(){};

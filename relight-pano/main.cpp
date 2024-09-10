@@ -4,7 +4,9 @@
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 #include <iostream>
+#include <QtXml>
 #include "panobuilder.h"
+#include "orixml.h"
 using namespace std;
 
 void help(){
@@ -21,6 +23,9 @@ int main(int argc, char *argv[])
 	QCoreApplication app(argc, argv);
 	QCoreApplication::setApplicationName("relight-pano");
 
+	QString pippo;
+	OriXml oriXml = pippo;
+	exit(0);
 
 	QCommandLineParser parser;
 	parser.setApplicationDescription("relight-pano: builds an RTI panorama");
@@ -71,12 +76,12 @@ int main(int argc, char *argv[])
 				}
 				startingStep = (PanoBuilder::Steps) s;
 			}
-			builder.setMm3d("/home/ponchio/devel/micmac/bin/mm3d");
-			//"/Users/erika/Desktop/micmac/bin/mm3d");
-			builder.setRelightCli("/home/ponchio/devel/relight/relight-cli/relight-cli");
-			//"/Users/erika/Desktop/projects/relight/build/relight-cli/relight-cli";
-			builder.setRelightMerge("/home/ponchio/devel/relight/relight-merge/relight-merge");
-			//"/Users/erika/Desktop/projects/relight/build/relight-cli/relight-merge";
+			// builder.setMm3d("/home/ponchio/devel/micmac/bin/mm3d");
+			builder.setMm3d("/Users/erika/Desktop/micmac/bin/mm3d");
+			//builder.setRelightCli("/home/ponchio/devel/relight/relight-cli/relight-cli");
+			builder.setRelightCli("/Users/erika/Desktop/projects/relight/build/relight-cli/relight-cli");
+			//builder.setRelightMerge("/home/ponchio/devel/relight/relight-merge/relight-merge");
+			builder.setRelightCli("/Users/erika/Desktop/projects/relight/build/relight-cli/relight-merge");
 
 			builder.process(startingStep);
 		}
