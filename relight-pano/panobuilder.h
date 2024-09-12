@@ -59,6 +59,7 @@ public:
 signals:
 private:
 	void ensureExecutable(QString path);
-	void cd(QString path, bool create = false);
+	QDir cd(QString path, bool create = false);
+	void rmdir(QString path);
 };
 #endif // PANOBUILDER_H

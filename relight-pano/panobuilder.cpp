@@ -40,7 +40,7 @@ void PanoBuilder::ensureExecutable(QString path){
 		throw QString("File is not executable") + path;
 
 }
-void PanoBuilder::cd(QString path, bool create){
+QDir PanoBuilder::cd(QString path, bool create){
 	QDir::setCurrent(base_dir.absolutePath());
 	QDir dir(path);
 	if(!dir.exists()){
@@ -53,10 +53,19 @@ void PanoBuilder::cd(QString path, bool create){
 			throw QString("Directory do not exist:") + path;
 	}
 	QDir::setCurrent(dir.absolutePath());
+	return QDir::current();
+}
+void PanoBuilder::rmdir(QString path){
+	QDir Tmp(QDir::current().filePath(path));
+	if(Tmp.exists()){
+		Tmp.removeRecursively();
+	}
+
 }
 int PanoBuilder::findStep(QString step){
 	return (steps.indexOf(step));
 }
+
 
 /* directory structures:
  * datasets
@@ -161,7 +170,9 @@ void PanoBuilder::rti(){
 	}
 }
 void PanoBuilder::tapioca(){
-	cd("photogrammetry", true);
+
+	QDir currentDir = cd("photogrammetry", true);
+	rmdir("Tmp-MM-Dir");
 
 	cout << qPrintable(base_dir.absolutePath()) << endl;
 	cout << qPrintable(base_dir.absoluteFilePath("rti")) << endl;
@@ -197,17 +208,15 @@ void PanoBuilder::tapioca(){
 			throw QString("Unable to load exif from: ") + QString(exif.error.c_str()) + dataset.absoluteFilePath(photo);
 	}
 
-	QString program = "/bin/bash";
+	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << mm3d_path << "Tapioca" <<"All" << ".*jpg" << "1500" << "@SFS";
+	arguments << "Tapioca" <<"All" << ".*jpg" << "1500" << "@SFS";
 
 	QString command = program + " " + arguments.join(" ");
 	cout << "Print command: " << qPrintable(command) << endl;
 
 	QProcess process;
 	process.start(program, arguments);
-	QProcessEnvironment ev = process.processEnvironment();
-	qDebug() << ev.keys();
 
 
 	if (!process.waitForStarted()) {
@@ -222,9 +231,8 @@ void PanoBuilder::tapioca(){
 
 void PanoBuilder::schnaps(){
 	//prende l'input dalla sottodir di homol e jpg
-	cd("photogrammetry");
+	QDir currentDir = cd("photogrammetry");
 
-	QDir currentDir = QDir::current();
 	QDir homolDir(currentDir.filePath("Homol"));
 	if (!homolDir.exists()) {
 		throw QString("Homol directory does not exist in current directory: ") + homolDir.absolutePath();
@@ -261,14 +269,11 @@ void PanoBuilder::tapas(){
 	//prende l'input dalla sottodirectory Homol
 	//TODO mostrare i residui
 
-	cd("photogrammetry");
+	QDir currentDir = cd("photogrammetry");
 
-	QDir currentDir = QDir::current();
 	//se esiste cancella la directory Tmp-MM-dir
-	QDir Tmp(currentDir.filePath("Tmp-MM-Dir"));
-	if(Tmp.exists()){
-		Tmp.removeRecursively();
-}
+	rmdir("Tmp-MM-Dir");
+
 	QDir homolDir(currentDir.filePath("Homol"));
 	if (!homolDir.exists()) {
 		throw QString("Homol directory does not exist in current directory: ") + homolDir.absolutePath();
@@ -303,9 +308,8 @@ void PanoBuilder::tapas(){
 
 void PanoBuilder::apericloud(){
 	//prende l'input dalla sottodirectory Homol
-	cd("photogrammetry");
+	QDir currentDir = cd("photogrammetry");
 
-	QDir currentDir = QDir::current();
 	QDir homolDir(currentDir.filePath("Homol"));
 	if (!homolDir.exists()) {
 		throw QString("Homol directory does not exist in current directory: ") + homolDir.absolutePath();
@@ -340,15 +344,14 @@ void PanoBuilder::apericloud(){
 
 void PanoBuilder::orthoplane(){
 	//prende l'input dalla sottodirectory Ori-relative
-	cd("photogrammetry");
+	QDir currentDir = cd("photogrammetry");
 
-	QDir currentDir = QDir::current();
 	QDir oriRelDir(currentDir.filePath("Ori-Relative"));
 	if (!oriRelDir.exists()) {
 		throw QString("Ori-Relative directory does not exist in current directory: ") + oriRelDir.absolutePath();
 	}
 
-	QStringList xmlFiles = oriRelDir.entryList(QStringList() << "*.xml", QDir::Files);
+	QStringList xmlFiles = oriRelDir.entryList(QStringList() << "Orientation*.xml", QDir::Files);
 	if (xmlFiles.isEmpty()) {
 		throw QString("No XML files found in Ori-Relative directory");
 	}
@@ -378,7 +381,7 @@ void PanoBuilder::orthoplane(){
 	cout << "Matrice M = (Rr0^-1 * diag(1, -1, -1)): " << M << endl;
 
 	oriXml.setOrientation(Ra0, Ca0);
-	QString savePath = oriAbsDir.filePath("Orientation-face_A.xml");
+	QString savePath = oriAbsDir.filePath(xmlFiles[0]);
 	oriXml.saveOrientation(savePath);
 
 	for (int i = 1; i < xmlFiles.size(); ++i) {
@@ -392,7 +395,7 @@ void PanoBuilder::orthoplane(){
 		// && Ra2, Ca2 && Ra3, Ca3 && Ra4, Ca4
 		ori.setOrientation(Ra1, Ca1);
 
-		QString saveOtherPath = oriAbsDir.filePath(QString("Orientation-face_%1.xml").arg(i));
+		QString saveOtherPath = oriAbsDir.filePath(xmlFiles[i]);
 		ori.saveOrientation(saveOtherPath);
 
 	}
@@ -401,9 +404,10 @@ void PanoBuilder::orthoplane(){
 
 void PanoBuilder::tarama(){
 	//prende l'input dalla sottodirectory Ori-abs
-	cd("photogrammetry");
+	QDir currentDir = cd("photogrammetry");
+	rmdir("TA");
+	rmdir("Pyram");
 
-	QDir currentDir = QDir::current();
 	QDir oriAbs(currentDir.filePath("Ori-Abs"));
 	if (!oriAbs.exists()) {
 		throw QString("Ori-abs directory does not exist in current directory: ") + oriAbs.absolutePath();
@@ -418,7 +422,7 @@ void PanoBuilder::tarama(){
 
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Tarama" << ".*jpg";
+	arguments << "Tarama" << ".*jpg" << "Abs";
 
 	QString command = program + " " + arguments.join(" ");
 	cout << "Print command: " << qPrintable(command) << endl;
@@ -434,13 +438,13 @@ void PanoBuilder::tarama(){
 		throw QString("Failed to run ") + process.readAllStandardError();
 	}
 	cout << qPrintable(process.readAllStandardOutput()) << endl;
+	cout << qPrintable(process.readAllStandardError()) << endl;
 }
 
 void PanoBuilder::malt_mec(){
 	//prende l'input dalla sottodirectory TA
-	cd("photogrammetry");
+	QDir currentDir = cd("photogrammetry");
 
-	QDir currentDir = QDir::current();
 	QDir taDir(currentDir.filePath("TA"));
 	if (!taDir.exists()) {
 		throw QString("TA directory does not exist in current directory: ") + taDir.absolutePath();
@@ -476,9 +480,8 @@ void PanoBuilder::malt_mec(){
 
 void PanoBuilder::c3dc(){
 	//prende l'input dalla sottodirectory
-	cd("photogrammetry");
+	QDir currentDir = cd("photogrammetry");
 
-	QDir currentDir = QDir::current();
 //QDir (currentDir.filePath(""));
 	//if (!.exists()) {
 	//	throw QString(" directory does not exist in current directory: ") + .absolutePath();
@@ -513,9 +516,8 @@ void PanoBuilder::c3dc(){
 
 void PanoBuilder::malt_ortho(){
 	//prende l'input dalla sottodirectory
-	cd("photogrammetry");
+	QDir currentDir = cd("photogrammetry");
 
-	QDir currentDir = QDir::current();
 	//QDir (currentDir.filePath(""));
 	//if (!.exists()) {
 	//	throw QString("TA directory does not exist in current directory: ") + .absolutePath();
@@ -551,9 +553,8 @@ void PanoBuilder::malt_ortho(){
 
 void PanoBuilder::tawny(){
 	//prende l'input dalla sottodirectory Malt
-	cd("photogrammetry");
+	QDir currentDir = cd("photogrammetry");
 
-	QDir currentDir = QDir::current();
 	QDir maltDir(currentDir.filePath("Malt"));
 	if (!maltDir.exists()) {
 		throw QString("Ortho-rti directory does not exist in current directory: ") + maltDir.absolutePath();
