@@ -7,16 +7,14 @@
 using namespace std;
 
 
-OriXml::OriXml(QString){
-	QString xmlFilePath = "/Users/erika/Desktop/Panorama_stone_2021-0-157/photogrammetry/Ori-Relative/Orientation-Face_A.JPG.xml";
+OriXml::OriXml(QString path){
 
-	QFile file(xmlFilePath);
+	QFile file(path);
 	if (!file.open(QIODevice::ReadOnly)) {
-		throw QString("Cannot open file for reading: ")  + xmlFilePath;
+		throw QString("Cannot open file for reading: ")  + path;
 		return;
 	}
 
-	QDomDocument doc;
 	if (!doc.setContent(&file)) {
 		throw QString("Cannot parse XML file.");
 		return;
@@ -89,6 +87,7 @@ void OriXml::saveOrientation(QString savePath) {
 
 	QTextStream stream(&file);
 	stream << doc.toString();
+	cout << qPrintable(doc.toString()) << endl;
 
 	cout << "File saved correctly in " << savePath.toStdString() << endl;
 }

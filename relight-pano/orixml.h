@@ -9,7 +9,6 @@
 class OriXml {
 public:
 	OriXml(QString);
-	QString filename;
 	QDomDocument doc;
 	QDomElement centreElement;
 	QDomElement rotationElementL1, rotationElementL2, rotationElementL3;
