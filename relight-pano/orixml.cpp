@@ -65,7 +65,7 @@ void OriXml::setOrientation(Eigen::Matrix3d r, Eigen::Vector3d c){
 
 	rotation = r;
 	center = c;
-	// Centre Ca%
+	// Centre Ca
 	QString Ca = QString::number(c[0]) + " " + QString::number(c[1]) + " " + QString::number(c[2]);
 
 	centreElement.firstChild().toText().setData(Ca);
@@ -76,7 +76,7 @@ void OriXml::setOrientation(Eigen::Matrix3d r, Eigen::Vector3d c){
 	rotationElementL1.firstChild().toText().setData(Ra1);
 	rotationElementL2.firstChild().toText().setData(Ra2);
 	rotationElementL3.firstChild().toText().setData(Ra3);
-	//ricopia struttura file e sostituisci L1 L2 L3 con Ra%
+
 
 
 
