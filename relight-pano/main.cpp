@@ -23,10 +23,6 @@ int main(int argc, char *argv[])
 	QCoreApplication app(argc, argv);
 	QCoreApplication::setApplicationName("relight-pano");
 
-	QString pippo;
-	OriXml oriXml = pippo;
-	exit(0);
-
 	QCommandLineParser parser;
 	parser.setApplicationDescription("relight-pano: builds an RTI panorama");
 	parser.addHelpOption();
@@ -81,7 +77,7 @@ int main(int argc, char *argv[])
 			//builder.setRelightCli("/home/ponchio/devel/relight/relight-cli/relight-cli");
 			builder.setRelightCli("/Users/erika/Desktop/projects/relight/build/relight-cli/relight-cli");
 			//builder.setRelightMerge("/home/ponchio/devel/relight/relight-merge/relight-merge");
-			builder.setRelightCli("/Users/erika/Desktop/projects/relight/build/relight-cli/relight-merge");
+			builder.setRelightCli("/Users/erika/Desktop/projects/relight/build/relight-merge/relight-merge");
 
 			builder.process(startingStep);
 		}

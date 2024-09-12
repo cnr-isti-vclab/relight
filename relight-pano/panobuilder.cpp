@@ -5,7 +5,9 @@
 #include <QProcess>
 #include <QFileInfo>
 #include <QImage>
+#include <Eigen/Core>
 #include "exiftransplant.h"
+#include "orixml.h"
 using namespace std;
 
 PanoBuilder::PanoBuilder(QString dataset_path)
@@ -271,7 +273,7 @@ void PanoBuilder::tapas(){
 
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Tapas" << "RadialBasic" << ".*jpg" <<"Out=Relative" << "SH= _mini";
+	arguments << "Tapas" << "RadialBasic" << ".*jpg" <<"Out=Relative";
 
 	QString command = program + " " + arguments.join(" ");
 	cout << "Print command: " << qPrintable(command) << endl;
@@ -308,7 +310,7 @@ void PanoBuilder::apericloud(){
 
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "AperiCloud" << "Relative" << ".*jpg";
+	arguments << "AperiCloud" << ".*jpg" << "Relative";
 
 	QString command = program + " " + arguments.join(" ");
 	cout << "Print command: " << qPrintable(command) << endl;
@@ -327,33 +329,75 @@ void PanoBuilder::apericloud(){
 }
 
 void PanoBuilder::orthoplane(){
-	//prende l'input dalla sottodirectory Ori-rel
+	//prende l'input dalla sottodirectory Ori-relative
 	cd("photogrammetry");
 
 	QDir currentDir = QDir::current();
-	QDir oriRelDir(currentDir.filePath("Ori-Rel"));
+	QDir oriRelDir(currentDir.filePath("Ori-Relative"));
 	if (!oriRelDir.exists()) {
-		throw QString("Ori-Rel directory does not exist in current directory: ") + oriRelDir.absolutePath();
+		throw QString("Ori-Relative directory does not exist in current directory: ") + oriRelDir.absolutePath();
 	}
 
+	QStringList xmlFiles = oriRelDir.entryList(QStringList() << "*.xml", QDir::Files);
+	if (xmlFiles.isEmpty()) {
+		throw QString("No XML files found in Ori-Relative directory");
+	}
+	QDir oriAbsDir(currentDir.filePath("Ori-Abs"));
+	if (!oriAbsDir.exists()){
+		if (!currentDir.mkdir("Ori-Abs")) {
+			throw QString("Could not create 'Ori-abs' directory");
+		}
+	}
+	OriXml oriXml(oriRelDir.filePath(xmlFiles[0]));
 
-	QString program = mm3d_path;
-	QStringList arguments;
-	arguments << "" << ""
-				 "" << ".*jpg";
+	//Rr0 Matrice di rotazione
+	//Cr0 Posizione centro camera.
+	Eigen::Matrix3d Rr0 = oriXml.rotation;
+	Eigen::Vector3d Cr0 = oriXml.center;
 
-	QString command = program + " " + arguments.join(" ");
-	cout << "Print command: " << qPrintable(command) << endl;
+	// Ra0 = Diag(1, -1, -1)
+	Eigen::DiagonalMatrix<double, 3> Ra0;
+	Ra0.diagonal() << 1, -1, -1;
 
-	QProcess process;
-	process.start(program, arguments);
+	// Ca0 = (0, 0, 0)
+	Eigen::Vector3d Ca0 = {0, 0, 0};
 
-	if (!process.waitForStarted()) {
-		throw QString("Failed to start ") + process.program();
+	//M = (Rr0^-1 * diag(1, -1, -1)) )
+	Eigen::Matrix3d M = Rr0.transpose() * Ra0;
+
+	cout << "Matrice M = (Rr0^-1 * diag(1, -1, -1)): " << M << endl;
+
+	oriXml.setOrientation(Ra0, Ca0);
+	QString savePath = oriAbsDir.filePath("Orientation-face_A.xml");
+	oriXml.saveOrientation(savePath);
+
+	for (int i = 1; i < xmlFiles.size(); ++i) {
+		OriXml ori(oriRelDir.filePath(xmlFiles[i]));
+		Eigen::Matrix3d Rr1 = ori.rotation;
+		Eigen::Vector3d Cr1 = ori.center;
+
+		Eigen::Matrix3d Ra1 = Rr1 * M;
+		Eigen::Vector3d Ca1 = M.transpose() * (Cr1 - Cr0);
+
+		// && Ra2, Ca2 && Ra3, Ca3 && Ra4, Ca4
+		ori.setOrientation(Ra1, Ca1);
+
+		QString saveOtherPath = oriAbsDir.filePath(QString("Orientation-face_%1.xml").arg(i));
+		ori.saveOrientation(saveOtherPath);
+
 	}
 
-	if (!process.waitForFinished(-1)) {
-		throw QString("Failed to run ") + process.readAllStandardError();
-	}
-	cout << qPrintable(process.readAllStandardOutput()) << endl;
 }
+
+
+
+
+
+
+	//crea un OriXml per ognuno degli xml di orirelative
+	//crea Oriabs
+	// 1. prendere orientamento della prima camera definisce l'ortopiano
+
+// todo bounding box: definire dove inizia e finisce l'immagine
+// 2. prendere varie camere, piano che passa per tutte le camere, es prendendo punto di mezzo delle camere e piano definito. punti tutti le camere e vengono filtrate
+// 3. prendere i nuovola punti della nuvola di punti definito in apericloud e leggere la nuvola di punti e definire la nuvola di punti
