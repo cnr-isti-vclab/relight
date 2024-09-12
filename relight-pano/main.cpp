@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 			//builder.setRelightCli("/home/ponchio/devel/relight/relight-cli/relight-cli");
 			builder.setRelightCli("/Users/erika/Desktop/projects/relight/build/relight-cli/relight-cli");
 			//builder.setRelightMerge("/home/ponchio/devel/relight/relight-merge/relight-merge");
-			builder.setRelightCli("/Users/erika/Desktop/projects/relight/build/relight-merge/relight-merge");
+			builder.setRelightMerge("/Users/erika/Desktop/projects/relight/build/relight-merge/relight-merge");
 
 			builder.process(startingStep);
 		}

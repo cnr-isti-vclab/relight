@@ -24,7 +24,7 @@ public:
 		JPG //convert to jpg
 	};
 
-	QStringList steps = {"rti", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane"};
+	QStringList steps = {"rti", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc", "malt_ortho"};
 	QDir base_dir;
 	QDir datasets_dir;
 	QString mm3d_path;
@@ -47,11 +47,11 @@ public:
 	void tapas();
 	void apericloud();
 	void orthoplane();
-	void tarama(){};
-	void malt_mec(){};
-	void c3dc(){};
-	void malt_ortho(){};
-	void tawny(){};
+	void tarama();
+	void malt_mec();
+	void c3dc();
+	void malt_ortho();
+	void tawny();
 	void jpg(){};
 
 
