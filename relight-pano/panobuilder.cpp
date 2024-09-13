@@ -81,20 +81,20 @@ int PanoBuilder::findStep(QString step){
  *		...
  *
  */
-void PanoBuilder::process(Steps starting_step){
+void PanoBuilder::process(Steps starting_step, bool stop){
 	switch (starting_step) {
-	case RTI: rti();
-	case TAPIOCA: tapioca();
-	case SCHNAPS: schnaps();
-	case TAPAS: tapas();
-	case APERICLOUD: apericloud();
-	case ORTHOPLANE: orthoplane();
-	case TARAMA: tarama();
-	case MALT_MEC: malt_mec();
-	case C3DC: c3dc();
-	case MALT_ORTHO: malt_ortho();
-	case TAWNY: tawny();
-	case JPG: jpg();
+	case RTI:        rti();        if(stop) break;
+	case TAPIOCA:    tapioca();    if(stop) break;
+	case SCHNAPS:    schnaps();    if(stop) break;
+	case TAPAS:      tapas();      if(stop) break;
+	case APERICLOUD: apericloud(); if(stop) break;
+	case ORTHOPLANE: orthoplane(); if(stop) break;
+	case TARAMA:     tarama();     if(stop) break;
+	case MALT_MEC:   malt_mec();   if(stop) break;
+	case C3DC:       c3dc();       if(stop) break;
+	case MALT_ORTHO: malt_ortho(); if(stop) break;
+	case TAWNY:      tawny();      if(stop) break;
+	case JPG:        jpg();        if(stop) break;
 
 	}
 }
@@ -444,6 +444,7 @@ void PanoBuilder::tarama(){
 void PanoBuilder::malt_mec(){
 	//prende l'input dalla sottodirectory TA
 	QDir currentDir = cd("photogrammetry");
+	rmdir("Tmp-MM-Dir");
 
 	QDir taDir(currentDir.filePath("TA"));
 	if (!taDir.exists()) {
@@ -460,7 +461,7 @@ void PanoBuilder::malt_mec(){
 	QString program = mm3d_path;
 	QStringList arguments;
 	arguments << "Malt" << "Ortho" << ".*jpg" << "Abs" << "ZoomF=4" << "DirMEC=Malt"
-			  << "DirTA=TA" << "ImOrtho='Face.*JPG'" << "DirOF=Ortho-RTI";
+			  << "DirTA=TA" << "ImOrtho='.*jpg'" << "DirOF=Ortho-Lights";
 
 	QString command = program + " " + arguments.join(" ");
 	cout << "Print command: " << qPrintable(command) << endl;
@@ -514,6 +515,43 @@ void PanoBuilder::c3dc(){
 	cout << qPrintable(process.readAllStandardOutput()) << endl;
 }
 
+void PanoBuilder::tawny(){
+	//prende l'input dalla sottodirectory Malt
+	QDir currentDir = cd("photogrammetry");
+
+	QDir maltDir(currentDir.filePath("Malt"));
+	if (!maltDir.exists()) {
+		throw QString("Ortho-lights directory does not exist in current directory: ") + maltDir.absolutePath();
+
+	}
+	cout << qPrintable(maltDir.absolutePath()) << endl;
+
+	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
+	if (jpgFiles.isEmpty()) {
+		throw QString("No JPEG images found in photogrammetry directory");
+	}
+
+	QString program = mm3d_path;
+	QStringList arguments;
+	arguments << "Tawny" << "Ortho-Lights" << "RadiomEgal=0";
+
+	QString command = program + " " + arguments.join(" ");
+	cout << "Print command: " << qPrintable(command) << endl;
+
+	QProcess process;
+	process.start(program, arguments);
+
+	if (!process.waitForStarted()) {
+		throw QString("Failed to start ") + process.program();
+	}
+
+	if (!process.waitForFinished(-1)) {
+		throw QString("Failed to run ") + process.readAllStandardError();
+	}
+	cout << qPrintable(process.readAllStandardOutput()) << endl;
+}
+
+
 void PanoBuilder::malt_ortho(){
 	//prende l'input dalla sottodirectory
 	QDir currentDir = cd("photogrammetry");
@@ -534,42 +572,6 @@ void PanoBuilder::malt_ortho(){
 	QStringList arguments;
 	arguments << "Malt" << "Ortho" << ".*jpg" << "Abs" << "ZoomF=4" << "DirMEC=Malt"
 			  << "DirTA=TA" << "DoMEC=0" << "DoOrtho=1" << "ImOrtho='Face.*JPG'" << "DirOF=Ortho-Couleur";
-
-	QString command = program + " " + arguments.join(" ");
-	cout << "Print command: " << qPrintable(command) << endl;
-
-	QProcess process;
-	process.start(program, arguments);
-
-	if (!process.waitForStarted()) {
-		throw QString("Failed to start ") + process.program();
-	}
-
-	if (!process.waitForFinished(-1)) {
-		throw QString("Failed to run ") + process.readAllStandardError();
-	}
-	cout << qPrintable(process.readAllStandardOutput()) << endl;
-}
-
-void PanoBuilder::tawny(){
-	//prende l'input dalla sottodirectory Malt
-	QDir currentDir = cd("photogrammetry");
-
-	QDir maltDir(currentDir.filePath("Malt"));
-	if (!maltDir.exists()) {
-		throw QString("Ortho-rti directory does not exist in current directory: ") + maltDir.absolutePath();
-
-	}
-	cout << qPrintable(maltDir.absolutePath()) << endl;
-
-	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
-	if (jpgFiles.isEmpty()) {
-		throw QString("No JPEG images found in photogrammetry directory");
-	}
-
-	QString program = mm3d_path;
-	QStringList arguments;
-	arguments << "Tawny" << "Ortho-Couleur" << "RadiomEgal=0" << "" <<"";
 
 	QString command = program + " " + arguments.join(" ");
 	cout << "Print command: " << qPrintable(command) << endl;
