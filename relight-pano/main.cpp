@@ -37,6 +37,10 @@ int main(int argc, char *argv[])
 										 "starting step (rti, tapioca, )", "rti");
 	parser.addOption(stepOption);
 
+	QCommandLineOption stopOption(QStringList() << "S" << "stop",
+								  "stop after first step");
+	parser.addOption(stopOption);
+
 	// Process the actual command line arguments given by the user
 	parser.process(app);
 
@@ -54,6 +58,7 @@ int main(int argc, char *argv[])
 	}
 
 	bool interactive = parser.isSet(interactiveOption);
+	bool stop = parser.isSet(stopOption);
 	PanoBuilder::Steps startingStep = PanoBuilder::RTI;
 	bool steps = parser.isSet(stepOption);
 	if (interactive && steps) {
@@ -79,7 +84,7 @@ int main(int argc, char *argv[])
 			//builder.setRelightMerge("/home/ponchio/devel/relight/relight-merge/relight-merge");
 			builder.setRelightMerge("/Users/erika/Desktop/projects/relight/build/relight-merge/relight-merge");
 
-			builder.process(startingStep);
+			builder.process(startingStep, stop);
 		}
 		catch(QString error){
 			cerr << qPrintable(error) << endl;
