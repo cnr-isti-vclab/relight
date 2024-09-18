@@ -603,7 +603,7 @@ void PanoBuilder::malt_ortho(){
 	QStringList arguments;
 	arguments << "Malt" << "Ortho" << "plane_*_.*jpg" << "Abs" << "ZoomF=4"
 			  << "DirMEC=Malt" << "DirTA=TA" << "DoMEC=0" << "DoOrtho=1"
-			  << "ImOrtho=plane_*_.*jpg" << "DirOF=Ortho-Couleur";
+			  << "ImOrtho=plane_*.jpg" << "DirOF=Ortho-Couleur";
 
 	QString command = program + " " + arguments.join(" ");
 	cout << "Print command: " << qPrintable(command) << endl;
