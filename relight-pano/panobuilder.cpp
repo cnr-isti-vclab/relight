@@ -537,63 +537,73 @@ void PanoBuilder::malt_ortho(){
 	for (const QString &subDirName : subDirs) {
 		QDir subDir(rtiDir.filePath(subDirName));
 
-		QString planeFilePath = subDir.filePath("plane_0.jpg");
-		if (!QFile::exists(planeFilePath)) {
-			cout << "Warning: plane_0.jpg does not exist in directory: " << qPrintable(subDir.absolutePath()) << endl;
+		QStringList images = subDir.entryList(QStringList() << "plane_*.jpg", QDir::Files);
+		if (images.isEmpty()) {
+			cout << "Warning: No images found with 'plane_*.jpg' pattern in directory: " << qPrintable(subDir.absolutePath()) << endl;
 			continue;
 		}
+		for (int i = 0; i < images.size(); ++i) {
 
-		QString newFileName = "plane_0_" + subDirName + ".jpg";
-		QString newFilePath = currentDir.filePath(newFileName);
-		QFile::remove(newFilePath);
+			QString imageFileName = images[i];
+			QString planeFilePath = subDir.filePath(imageFileName);
 
-		if (!QFile::copy(planeFilePath, newFilePath)) {
-			throw QString("Failed to copy and rename file: ") + planeFilePath;
+			cout << "Processing images: " << qPrintable(planeFilePath) << endl;
+
+			if (!QFile::exists(planeFilePath)) {
+				cout << "Warning: " << qPrintable(imageFileName) << " does not exist in directory: " << qPrintable(subDir.absolutePath()) << endl;
+				continue;
+			}
+			QString newFileName = QString("plane_%1_%2.jpg").arg(i).arg(subDirName);
+			QString newFilePath = currentDir.filePath(newFileName);
+			QFile::remove(newFilePath);
+
+			if (!QFile::copy(planeFilePath, newFilePath)) {
+				throw QString("Failed to copy and rename file: ") + planeFilePath;
+			}
+			cout << "Copied: " << qPrintable(planeFilePath) << " to " << qPrintable(newFilePath) << endl;
+
+			//cp "../rti/Face_A/plane_0.jpg";
+			//QFile::copy("../rti/Face_A/plane_0.jpg", currentDir.filePath("plane_0.jpg"));
+			QStringList photos = currentDir.entryList(QStringList() << "plane_*.jpg", QDir::Files);
+			if (photos.size() == 0)
+				throw QString("Missing 'plane_*.jpg' not found in ") + subDir.path();
+			QString photo = photos[0];
+
+			ExifTransplant exif;
+			bool success = exif.transplant((subDirName+ ".jpg").toStdString().c_str(),
+										   newFilePath.toStdString().c_str());
+			if (!success) {
+				throw QString("Unable to transplant EXIF from: ") + QString(exif.error.c_str()) + currentDir.absoluteFilePath(photo);
+			}
+			cout << "EXIF transplanted from: " << qPrintable(currentDir.absoluteFilePath(photo)) << " to " << qPrintable(newFilePath) << endl;
+
+
+			//copia ori abs ori face con plane
+			QDir oriAbs(currentDir.filePath("Ori-Abs"));
+			if (!oriAbs.exists()) {
+				throw QString("Ori-Abs directory does not exist in current directory: ") + oriAbs.absolutePath();
+			}
+
+			QString srcXmlFile =  QString("Orientation-%1.jpg.xml").arg(subDirName);
+			QString srcXmlPath = oriAbs.filePath(srcXmlFile);
+
+			QString destXmlFile = QString("Orientation-plane_%1_%2.jpg.xml").arg(i).arg(subDirName);
+			QString destXmlPath = oriAbs.filePath(destXmlFile);
+
+			cout << "Source XML path: " << qPrintable(srcXmlPath) << endl;
+			cout << "Destination XML path: " << qPrintable(destXmlPath) << endl;
+			QFile::remove(destXmlPath);
+			if (!QFile::copy(srcXmlPath, destXmlPath)) {
+				throw QString("Failed to copy and rename XML file: ") + srcXmlPath;
+			}
+			cout << "Copied and renamed XML file: " << qPrintable(srcXmlPath) << " to " << qPrintable(destXmlPath) << endl;
 		}
-		cout << "Copied: " << qPrintable(planeFilePath) << " to " << qPrintable(newFilePath) << endl;
-
-		//cp "../rti/Face_A/plane_0.jpg";
-		//QFile::copy("../rti/Face_A/plane_0.jpg", currentDir.filePath("plane_0.jpg"));
-		QStringList photos = currentDir.entryList(QStringList() << "plane_0_*.jpg", QDir::Files);
-		if (photos.size() == 0)
-			throw QString("Missing 'plane_0_*.jpg' not found in ") + subDir.path();
-		QString photo = photos[0];
-
-		ExifTransplant exif;
-		bool success = exif.transplant((subDirName+ ".jpg").toStdString().c_str(),
-									   newFilePath.toStdString().c_str());
-		if (!success) {
-			throw QString("Unable to transplant EXIF from: ") + QString(exif.error.c_str()) + currentDir.absoluteFilePath(photo);
-		}
-		cout << "EXIF transplanted from: " << qPrintable(currentDir.absoluteFilePath(photo)) << " to " << qPrintable(newFilePath) << endl;
-
-
-		//copia ori abs ori face con plane
-		QDir oriAbs(currentDir.filePath("Ori-Abs"));
-		if (!oriAbs.exists()) {
-			throw QString("Ori-Abs directory does not exist in current directory: ") + oriAbs.absolutePath();
-		}
-
-		QString srcXmlFile =  QString("Orientation-%1.jpg.xml").arg(subDirName);
-		QString srcXmlPath = oriAbs.filePath(srcXmlFile);
-
-		QString destXmlFile = QString("Orientation-plane_0_%1.jpg.xml").arg(subDirName);
-		QString destXmlPath = oriAbs.filePath(destXmlFile);
-
-		cout << "Source XML path: " << qPrintable(srcXmlPath) << endl;
-		cout << "Destination XML path: " << qPrintable(destXmlPath) << endl;
-		QFile::remove(destXmlPath);
-		if (!QFile::copy(srcXmlPath, destXmlPath)) {
-			throw QString("Failed to copy and rename XML file: ") + srcXmlPath;
-		}
-		cout << "Copied and renamed XML file: " << qPrintable(srcXmlPath) << " to " << qPrintable(destXmlPath) << endl;
-	}
 
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Malt" << "Ortho" << "plane_0_.*jpg" << "Abs" << "ZoomF=4"
+	arguments << "Malt" << "Ortho" << "plane_*_.*jpg" << "Abs" << "ZoomF=4"
 			  << "DirMEC=Malt" << "DirTA=TA" << "DoMEC=0" << "DoOrtho=1"
-			  << "ImOrtho=plane_0_.*jpg" << "DirOF=Ortho-Couleur";
+			  << "ImOrtho=plane_*_.*jpg" << "DirOF=Ortho-Couleur";
 
 	QString command = program + " " + arguments.join(" ");
 	cout << "Print command: " << qPrintable(command) << endl;
@@ -610,8 +620,10 @@ void PanoBuilder::malt_ortho(){
 	}
 	cout << qPrintable(process.readAllStandardOutput()) << endl;
 }
+}
 
-void PanoBuilder::tawny() {
+
+void PanoBuilder::tawny(){
 	//prende l'input dalla sottodirectory Ortho Lights?
 	QDir currentDir = cd("photogrammetry");
 
@@ -643,6 +655,9 @@ void PanoBuilder::tawny() {
 	}
 	cout << qPrintable(process.readAllStandardOutput()) << endl;
 }
+
+
+
 /*void PanoBuilder::jpg() {
 	//prende l'input dalla sottodirectory Ortho Lights?
 	QDir currentDir = cd("photogrammetry");
@@ -685,7 +700,16 @@ bool success = exif.transplant(currentDir.absoluteFilePath(jpgFiles[0]).toStdStr
 if (!success) {
 	throw QString("Unable to load exif from: ") + QString(exif.error.c_str()) + currentDir.absoluteFilePath(jpgFiles[0]);
 }
-cout << "Copied and renamed: " << qPrintable(planeFilePath) << " to " << qPrintable(newFilePath) << endl;*/
+cout << "Copied and renamed: " << qPrintable(planeFilePath) << " to " << qPrintable(newFilePath) << endl;
+
+		QString planeFilePath = subDir.filePath("plane_*.jpg");
+		if (!QFile::exists(planeFilePath)) {
+			cout << "Warning: images does not exist in directory: " << qPrintable(subDir.absolutePath()) << endl;
+			continue;
+		}
+
+
+*/
 //		QString oriAbs = subDir.filePath("Orientation-Face_*.jpg.xml");
 //if (!QFile::exists(planeFilePath)) {
 //	cout << "Warning: Orientation-Face.xml does not exist in directory: " << qPrintable(subDir.absolutePath()) << endl;
