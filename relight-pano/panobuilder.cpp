@@ -624,21 +624,26 @@ void PanoBuilder::malt_ortho(){
 
 
 void PanoBuilder::tawny(){
-	//prende l'input dalla sottodirectory Ortho Lights?
+	//prende l'input dalla sottodirectory Ortho Couleur
 	QDir currentDir = cd("photogrammetry");
 
-	if (!currentDir.exists()) {
-		throw QString("Directory photogrammetry does not exist: ") + currentDir.absolutePath();
+
+	QDir orthoCouleur(currentDir.filePath("Ortho-Couleur"));
+	if (!orthoCouleur.exists()) {
+		throw QString("orthoCouleur directory does not exist in current directory: ") + orthoCouleur.absolutePath();
+
+	}
+	cout << qPrintable(orthoCouleur.absolutePath()) << endl;
+
+	QStringList tifFiles = orthoCouleur.entryList(QStringList() << "Ort_plane_*_Face_*.tif", QDir::Files);
+	if (tifFiles.isEmpty()) {
+		throw QString("No tif images found in photogrammetry directory ") + orthoCouleur.absolutePath();
 	}
 
-	QStringList jpgFiles = currentDir.entryList(QStringList() << "plane_0_*.jpg", QDir::Files);
-	if (jpgFiles.isEmpty()) {
-		throw QString("No JPEG images found in photogrammetry directory");
-	}
 
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Tawny" << "Ortho-Light" << "RadiomEgal=0" << "Out=plane_0.tif";
+	arguments << "Tawny" << "Ortho-Couleur" << "RadiomEgal=0" << "Out=Orthophotomosaic_NewRadiom.tif";
 
 	QString command = program + " " + arguments.join(" ");
 	cout << "Print command: " << qPrintable(command) << endl;
