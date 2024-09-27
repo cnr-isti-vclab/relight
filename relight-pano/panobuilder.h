@@ -38,7 +38,7 @@ public:
 	void setRelightCli(QString path);
 	void setRelightMerge(QString path);
 	int findStep(QString step);
-
+	void exportMeans(QDir rtiDir);
 	void process(Steps starting_step = RTI, bool stop = false);
 	//create the directory rti process the datasets and relight-merge the rti planes
 	void rti();
