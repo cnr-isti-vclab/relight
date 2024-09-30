@@ -24,7 +24,7 @@ public:
 		JPG //convert to jpg
 	};
 
-	QStringList steps = {"rti", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc", "malt_ortho", "tawny"};
+	QStringList steps = {"rti", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc", "malt_ortho", "tawny", "jpg", "updateJson"};
 	QDir base_dir;
 	QDir datasets_dir;
 	QString mm3d_path;
@@ -39,6 +39,7 @@ public:
 	void setRelightMerge(QString path);
 	int findStep(QString step);
 	void exportMeans(QDir rtiDir);
+	void executeProcess(QString& process, QStringList& arguments);
 	void process(Steps starting_step = RTI, bool stop = false);
 	//create the directory rti process the datasets and relight-merge the rti planes
 	void rti();
@@ -52,8 +53,8 @@ public:
 	void c3dc();
 	void tawny();
 	void malt_ortho();
-	void jpg(){};
-
+	void jpg();
+	void updateJson();
 
 
 signals:
