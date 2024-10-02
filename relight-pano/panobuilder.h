@@ -24,7 +24,7 @@ public:
 		JPG //convert to jpg
 	};
 
-	QStringList steps = {"rti", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc", "malt_ortho", "tawny", "jpg", "updateJson"};
+	QStringList steps = {"rti", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc" "malt_ortho", "tawny", "jpg", "updateJson"};
 	QDir base_dir;
 	QDir datasets_dir;
 	QString mm3d_path;
