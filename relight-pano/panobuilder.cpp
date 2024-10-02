@@ -155,7 +155,7 @@ void PanoBuilder::process(Steps starting_step, bool stop){
 	case ORTHOPLANE: orthoplane(); if(stop) break;
 	case TARAMA:     tarama();     if(stop) break;
 	case MALT_MEC:   malt_mec();   if(stop) break;
-	case C3DC:       c3dc();       if(stop) break;
+	//case C3DC:       c3dc();       if(stop) break;
 	case MALT_ORTHO: malt_ortho(); if(stop) break;
 	case TAWNY:      tawny();      if(stop) break;
 	case JPG:        jpg();        if(stop) break;
@@ -179,18 +179,15 @@ void PanoBuilder::rti(){
 
 		}
 	}
-
-
 	//search the subdirectory, the QDir::Dirs | filter QDir::NoDotAndDotDot to get all subdirectories inside the root directory
 	QStringList subDirs = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 	for (const QString &subDirName : subDirs) {
 		QDir subDir(datasets_dir.filePath(subDirName));
-		break;
 		//search file .relight
 		QStringList relightFiles = subDir.entryList(QStringList() << "*.relight", QDir::Files);
-		if(relightFiles.size()==0)
+		/*if(relightFiles.size()==0)
 			throw QString("Missing .relight file in folder " )+ subDir.path();
-		QString relightFile = relightFiles[0];
+		QString relightFile = relightFiles[0];*/
 
 
 		QStringList arguments;
@@ -253,9 +250,32 @@ void PanoBuilder::schnaps(){
 
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Schnaps" << ".*jpg";
+	arguments << "Schnaps" << ".*jpg" << "MoveBadImgs=1";
 
 	executeProcess(program, arguments);
+
+	QDir poubelleDir(currentDir.filePath("Poubelle"));
+	if (poubelleDir.exists()) {
+		QStringList rejectImg = poubelleDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
+
+		if (!rejectImg.isEmpty()) {
+			QString errorMsg = "Error: The following images were moved to Poubelle due to poor alignment:\n";
+			for (const QString &rejectImgs : rejectImg) {
+				errorMsg += rejectImgs + "\n";
+			}
+			throw errorMsg;
+		} else {
+			qDebug() << "All images were successfully aligned. Poubelle directory is empty";
+		}
+	} else {
+		QString poubelleTxtPath = currentDir.filePath("Schnaps_poubelle.txt");
+		QFile poubelleTxt(poubelleTxtPath);
+		if (poubelleTxt.exists() && poubelleTxt.size() > 0) {
+			cout << "No images were moved to Poubelle, but suspicious images are listed in Schnaps_poubelle.txt." << endl;
+		} else {
+			cout << "No images were moved to Poubelle, and no suspicious images were found." << endl;
+		}
+	}
 }
 
 void PanoBuilder::tapas(){
@@ -274,10 +294,6 @@ void PanoBuilder::tapas(){
 	}
 	cout << qPrintable(homolDir.absolutePath()) << endl;
 
-	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
-	if (jpgFiles.isEmpty()) {
-		throw QString("No JPEG images found in photogrammetry directory");
-	}
 
 	QString program = mm3d_path;
 	QStringList arguments;
@@ -296,11 +312,6 @@ void PanoBuilder::apericloud(){
 
 	}
 	cout << qPrintable(homolDir.absolutePath()) << endl;
-
-	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
-	if (jpgFiles.isEmpty()) {
-		throw QString("No JPEG images found in photogrammetry directory");
-	}
 
 	QString program = mm3d_path;
 	QStringList arguments;
@@ -387,11 +398,6 @@ void PanoBuilder::tarama(){
 	}
 	cout << qPrintable(oriAbs.absolutePath()) << endl;
 
-	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
-	if (jpgFiles.isEmpty()) {
-		throw QString("No JPEG images found in photogrammetry directory");
-	}
-
 	QString program = mm3d_path;
 	QStringList arguments;
 	arguments << "Tarama" << ".*jpg" << "Abs";
@@ -411,15 +417,10 @@ void PanoBuilder::malt_mec(){
 	}
 	cout << qPrintable(taDir.absolutePath()) << endl;
 
-	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
-	if (jpgFiles.isEmpty()) {
-		throw QString("No JPEG images found in photogrammetry directory");
-	}
-
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Malt" << "Ortho" << ".*jpg" << "Abs" << "ZoomF=4" << "DirMEC=Malt"
-			  << "DirTA=TA" << "ImOrtho=.*jpg" << "DirOF=Ortho-Lights" << "NbVI=2";
+	arguments << "Malt" << "Ortho" << ".*jpg" << "Relative" << "ZoomF=4" << "DirMEC=Malt"
+			  << "DirTA=TA" << "ImOrtho=.*jpg" << "DirOF=Ortho-Lights" << "NbVI=3" << "Purge=true";
 
 	executeProcess(program, arguments);
 
@@ -436,7 +437,7 @@ void PanoBuilder::malt_mec(){
 	}
 }
 
-void PanoBuilder::c3dc(){
+/*void PanoBuilder::c3dc(){
 	//prende l'input dalla sottodirectory
 	QDir currentDir = cd("photogrammetry");
 
@@ -447,17 +448,13 @@ void PanoBuilder::c3dc(){
 	//}
 	//cout << qPrintable(taDir.absolutePath()) << endl;
 
-	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
-	if (jpgFiles.isEmpty()) {
-		throw QString("No JPEG images found in photogrammetry directory");
-	}
-
 	QString program = mm3d_path;
 	QStringList arguments;
 	arguments << "C3DC" << "MicMac" << ".*jpg" << "Abs" <<"DefCor=0.01";
 
 	executeProcess(program, arguments);
 }
+*/
 
 void PanoBuilder::malt_ortho(){
 	//prende l'input dalla sottodirectory
@@ -530,7 +527,7 @@ void PanoBuilder::malt_ortho(){
 
 		QString program = mm3d_path;
 		QStringList arguments;
-		arguments << "Malt" << "Ortho" << ".*jpg" << "Abs" << "ZoomF=4"
+		arguments << "Malt" << "Ortho" << ".*jpg" << "Relative" << "ZoomF=4"
 				  << "DirMEC=Malt" << "DirTA=TA" << "DoMEC=0" << "DoOrtho=1"
 				  << "ImOrtho=.*jpg" << "DirOF="+orthoPlaneDirName;
 
@@ -561,7 +558,7 @@ void PanoBuilder::tawny(){
 			cout << "Directory " << qPrintable(orthoDir.absolutePath()) << " does not exist." << endl;
 			continue;
 		}
-		QStringList tifFiles = orthoDir.entryList(QStringList() << "Ort_Face_*.tif", QDir::Files);
+		QStringList tifFiles = orthoDir.entryList(QStringList() << "Ort_*.tif", QDir::Files);
 		if (tifFiles.isEmpty()) {
 			cout << "No .tif files in " << qPrintable(orthoDir.absolutePath()) << endl;
 			continue;
