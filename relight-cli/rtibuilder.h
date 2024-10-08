@@ -65,7 +65,7 @@ protected:
 
 	//TODO this should go inimageset!
 	//compute the 3d lights relative to the pixel x, y
-	std::vector<Vector3f> relativeLights(int x, int y);
+	std::vector<Vector3f> relativeNormalizedLights(int x, int y);
 
 	void resamplePixel(Pixel &sample, Pixel &pixel);
 

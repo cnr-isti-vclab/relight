@@ -151,90 +151,6 @@ Rti::ColorSpace  colorSpace(int index) {
     return table[index];
 }
 
-
-/*bool RtiExport::callback(std::string s, int n) {
-    QString str(s.c_str());
-    emit progressText(str);
-    emit progress(n);
-
-    if(cancel)
-        return false;
-    return true;
-} */
-
-/*void RtiExport::makeRti(QString output, QRect rect, Format format, bool means, bool normals, bool highNormals) {
-
-    try {
-        uint32_t ram = uint32_t(ui->ram->value());
-
-        RtiBuilder builder;
-
-        builder.samplingram = ram;
-        builder.type         = basis(ui->basis->currentIndex());
-        builder.colorspace   = colorSpace(ui->basis->currentIndex());
-        builder.nplanes      = uint32_t(ui->planes->value());
-        builder.yccplanes[0] = uint32_t(ui->chroma->value());
-        //builder.sigma =
-
-        if( builder.colorspace == Rti::MYCC) {
-            builder.yccplanes[1] = builder.yccplanes[2] = (builder.nplanes - builder.yccplanes[0])/2;
-            builder.nplanes = builder.yccplanes[0] + 2*builder.yccplanes[1];
-        }
-        builder.crop[0] = rect.left();
-        builder.crop[1] = rect.top();
-        builder.crop[2] =  rect.width();
-        builder.crop[3] = rect.height();
-        builder.imageset.images = images;
-        builder.lights = builder.imageset.lights = lights;
-        builder.imageset.initImages(path.toStdString().c_str());
-        builder.imageset.crop(rect.left(), rect.top(), rect.width(), rect.height());
-
-        builder.width  = builder.imageset.width;
-        builder.height = builder.imageset.height;
-
-        builder.savemeans = means;
-        builder.savenormals = normals;
-
-        cancel = false;
-        std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->callback(s, n); };
-
-        if(!builder.init(&callback)) {
-            QMessageBox::critical(this, "We have a problem!", QString(builder.error.c_str()));
-            return;
-        }
-
-        int quality= ui->quality->value();
-        builder.save(output.toStdString(), quality);
-
-
-        if(format == DEEPZOOM || format == TARZOOM) {
-            for(uint32_t i = 0; i < builder.nplanes/3; i++) {
-                callback("Deepzoom creation...", 100*i/((builder.nplanes/3)-1));
-                Scripts::deepzoom(QString("%1/plane_%2").arg(output).arg(i), quality);
-            }
-            if(format == TARZOOM) {
-                for(uint32_t i = 0; i < builder.nplanes/3; i++) {
-                    callback("Tarzoom creation...", 100*i/((builder.nplanes/3)-1));
-                    Scripts::tarzoom(QString("%1/plane_%2").arg(output).arg(i));
-                }
-            }
-        }
-    } catch(int status) {
-        if(status == 1) { //was canceled.
-            emit progressText("Canceling...");
-            emit progress(0);
-        }
-    } catch(std::exception e) {
-        QMessageBox::critical(this, "We have a problem 1!", e.what());
-    } catch(const char *str) {
-        QMessageBox::critical(this, "We have a problem 2 !",str);
-    } catch(...) {
-        cout << "Something went wrong!" << endl;
-        QMessageBox::critical(this, "We have a problem 3!", "Unknown error!");
-
-    }
-} */
-
 void RtiExport::createNormals() {
     // Get export location
 	QString output = QFileDialog::getSaveFileName(this, "Select an output file for normal:", "normals.png", "Images (*.png *.jpg)");
@@ -254,15 +170,29 @@ void RtiExport::createNormals() {
 
 
     ProcessQueue &queue = ProcessQueue::instance();
-    NormalsTask *task = new NormalsTask(path, output, crop, solver);
-    if( pixelSize > 0 ) task->pixelSize = pixelSize;
-    task->exportSurface = ui->export_surface->isChecked();
-    task->exportK = ui->discontinuity->value();
+	//TODO remove project dependency!
+	NormalsTask *task = new NormalsTask(project, solver);
+	task->input_folder = path;
+	task->output = output;
+
+	task->addParameter("images", Parameter::STRINGLIST, images);
+
 	QList<QVariant> slights;
 	for(auto light: lights)
 		for(int k = 0; k < 3; k++)
 			slights << QVariant(light[k]);
 	task->addParameter("lights", Parameter::DOUBLELIST, slights);
+
+
+	QRect rect = QRect(0, 0, 0, 0);
+	if(ui->cropview->handleShown()) {
+		rect = ui->cropview->croppedRect();
+		task->addParameter("crop", Parameter::RECT,  rect);
+	}
+
+	if( pixelSize > 0 ) task->pixelSize = pixelSize;
+	task->exportSurface = ui->export_surface->isChecked();
+	task->exportK = ui->discontinuity->value();
 
 	queue.addTask(task);
     queue.start();
@@ -375,57 +305,6 @@ void RtiExport::createRTI() {
 	close();
 }
 
-
-/* OLD now unused, kept for progress bar and watcher */
-/*void RtiExport::createRTI(QString output) {
-    outputFolder = output;
-
-
-    progressbar = new QProgressDialog("Building RTI...", "Cancel", 0, 100, this);
-    progressbar->setAutoClose(false);
-    progressbar->setAutoReset(false);
-    progressbar->setWindowModality(Qt::WindowModal);
-    progressbar->show();
-    connect(progressbar, SIGNAL(canceled()), this, SLOT(cancelProcess()));
-
-    QRect rect = QRect(0, 0, 0, 0);
-    if(ui->cropview->handleShown()) {
-        rect = ui->cropview->croppedRect();
-    }
-
-    Format format = RELIGHT;
-    if(ui->formatDeepzoom->isChecked())
-        format = DEEPZOOM;
-    if(ui->formatTarzoom->isChecked())
-        format = TARZOOM;
-
-
-    QFuture<void> future = QtConcurrent::run([this, output, rect, format]() {
-        this->makeRti(output, rect, format, true, true);
-    } );
-
-    watcher.setFuture(future);
-    connect(&watcher, SIGNAL(finished()), this, SLOT(finishedProcess()));
-    connect(this, SIGNAL(progress(int)), progressbar, SLOT(setValue(int)));
-    connect(this, SIGNAL(progressText(const QString &)), progressbar, SLOT(setLabelText(const QString &)));
-}
-
-void RtiExport::cancelProcess() {
-    cancel = true;
-}
-
-void RtiExport::finishedProcess() {
-    if(progressbar == nullptr)
-        return;
-    progressbar->close();
-    delete progressbar;
-    progressbar = nullptr;
-
-    if(viewAfter) {
-        server.start(outputFolder);
-        server.show();
-    }
-} */
 
 void RtiExport::showCrop() {
     ui->cropview->showHandle();

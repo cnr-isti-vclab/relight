@@ -18,18 +18,24 @@ win32:INCLUDEPATH += ../libjpeg/include
 win32:LIBS += ../libjpeg/lib/jpeg.lib
 
 unix:INCLUDEPATH += /usr/include/eigen3 /usr/include/python3.6m
-unix:LIBS += -ljpeg -liomp5
+#unix:LIBS += -ljpeg -liomp5
 #unix:QMAKE_CXXFLAGS += -fopenmp
 
-mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/2.0.6/include \
+mac:INCLUDEPATH += /opt/homebrew/opt/jpeg-turbo/include \
     /usr/local/include \
-    /usr/local/include/eigen3
-mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/2.0.6/lib/ -ljpeg
+    /usr/local/include/eigen3 \
+    /opt/homebrew/opt/jpeg/include \
+    /opt/homebrew/Cellar/eigen/3.4.0_1/include/eigen3
+   # /usr/local/include/eigen3
+mac:LIBS += -L/opt/homebrew/opt/jpeg-turbo/lib/ -ljpeg
 mac:LIBS += -framework Accelerate
-mac:QMAKE_CXXFLAGS += -fopenmp
-mac:QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp -lomp -I/usr/local/include
-mac:QMAKE_LFLAGS += -lomp
-mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
+#mac:QMAKE_CXXFLAGS += -fopenmp
+#mac:QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp -lomp -I/usr/local/include
+#mac:QMAKE_LFLAGS += -lomp
+#mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
+mac:QMAKE_CXXFLAGS += -Xpreprocessor
+#mac:QMAKE_LFLAGS += -lomp
+mac:LIBS +=  -L/opt/homebrew/opt/jpeg/lib
 
 SOURCES += main.cpp \
     ../src/getopt.cpp \
