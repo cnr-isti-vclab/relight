@@ -438,6 +438,7 @@ void Project::computePixelSize() {
 			count++;
 		}
 	pixelSize /= count;
+	dome.imageWidth = pixelSize * imgsize.width()/10.0; //pixel size in mm, imageWIdth in cm (ugh).
 }
 
 Sphere *Project::newSphere() {
@@ -532,7 +533,7 @@ void  Project::computeDirections() {
 					v = v.rotate(axis, angle);
 
 				if(dome.domeDiameter) {
-				//find intersection between direAlignctions and sphere.
+				//find intersection between directions and sphere.
 					for(size_t i = 0; i < sphere->directions.size(); i++) {
 						Vector3f &direction = sphere->directions[i];
 						direction.normalize();

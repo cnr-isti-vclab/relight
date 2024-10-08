@@ -17,6 +17,8 @@
 #include <iostream>
 #include <time.h>
 
+using namespace std;
+
 //////////////////////////////////////////////////////// NORMALS TASK //////////////////////////////////////////////////////////
 /// \brief NormalsTask: Takes care of creating the normals from the images given in a folder (inputFolder) and saves the file
 ///         in the outputFolder. After applying the crop described in the QRect passed as an argument to the constructor,
@@ -24,47 +26,46 @@
 ///         That NormalsWorker fills a vector with the colors of the normals in that line.
 ///
 
-void NormalsTask::run()
-{
-    status = RUNNING;
-	// ImageSet initialization
-    ImageSet imageSet(input_folder.toStdString().c_str());
-
+void NormalsTask::run() {
+	status = RUNNING;
 	QList<QVariant> qlights = (*this)["lights"].value.toList();
 	std::vector<Vector3f> lights(qlights.size()/3);
 	for(int i = 0; i < qlights.size(); i+= 3)
 		for(int k = 0; k < 3; k++)
 			lights[i/3][k] = qlights[i+k].toDouble();
+
+
+
+	ImageSet imageSet;
+	imageSet.images = (*this)["images"].value.toStringList();
 	imageSet.lights = lights;
+	imageSet.light3d = project->dome.lightConfiguration != Dome::DIRECTIONAL;
+	imageSet.image_width_cm = project->dome.imageWidth;
+	imageSet.dome_radius = project->dome.domeDiameter/2.0;
+	imageSet.vertical_offset = project->dome.verticalOffset;
+	imageSet.initLights();
+	imageSet.initImages(input_folder.toStdString().c_str());
 
-    // Normals vector
+	if(hasParameter("crop")) {
+		QRect rect = (*this)["crop"].value.toRect();
+		imageSet.crop(rect.left(), rect.top(), rect.width(), rect.height());
+	}
 
+// Normals vector
 
-    int start = clock();
-    // Init
+	int start = clock();
 	imageSet.setCallback(nullptr);
 
-    // Set the crop
-    if(!m_Crop.isValid()) {
-        m_Crop.setLeft(0);
-        m_Crop.setWidth(imageSet.width);
-        m_Crop.setTop(0);
-        m_Crop.setHeight(imageSet.height);
-    }
-    imageSet.crop(m_Crop.left(), m_Crop.top(), m_Crop.width(), m_Crop.height());
 
-    //std::vector<uint8_t> normals(imageSet.width * imageSet.height * 3);
-    std::vector<float> normals(imageSet.width * imageSet.height * 3);
 
-    // Thread pool used to handle the processors
-    RelightThreadPool pool;
-    // Line in the imageset to be processed
-    PixelArray line;
+	std::vector<float> normals(imageSet.width * imageSet.height * 3);
 
-    pool.start(QThread::idealThreadCount());
+	RelightThreadPool pool;
+	PixelArray line;
 
-    for (int i=0; i<imageSet.height; i++)
-    {
+	pool.start(QThread::idealThreadCount());
+
+	for (int i=0; i<imageSet.height; i++) {
         // Read a line
         imageSet.readLine(line);
 
@@ -73,17 +74,18 @@ void NormalsTask::run()
         //uint8_t* data = normals.data() + idx;
         float* data = &normals[idx];
 
-		std::function<void(void)> run = [this, &i, &line, &imageSet, data](void)->void {
-			NormalsWorker task(solver, i, line, data, imageSet);
-            return task.run();
-        };
+		NormalsWorker *task = new NormalsWorker(solver, i, line, data, imageSet);
 
-        // Launch the task
-        pool.queue(run);
-        pool.waitForSpace();
+		std::function<void(void)> run = [this, task](void)->void {
+			task->run();
+			delete task;
+		};
 
-        progressed("Computing normals...", ((float)i / imageSet.height) * 100);
-    }
+		pool.queue(run);
+		pool.waitForSpace();
+
+		progressed("Computing normals...", ((float)i / imageSet.height) * 100);
+	}
 
     // Wait for the end of all the threads
     pool.finish();
@@ -170,6 +172,7 @@ void NormalsWorker::run()
 void NormalsWorker::solveL2()
 {
 	std::vector<Vector3f> &m_Lights = m_Imageset.lights;
+	std::vector<Vector3f> &m_Lights3d = m_Imageset.lights3d;
     // Pixel data
 	Eigen::MatrixXd mLights(m_Lights.size(), 3);
 	Eigen::MatrixXd mPixel(m_Lights.size(), 1);
@@ -188,31 +191,27 @@ void NormalsWorker::solveL2()
 	for (size_t p = 0; p < m_Row.size(); p++) {
         // Fill the pixel vector
 		for (size_t m = 0; m < m_Lights.size(); m++)
-            mPixel(m, 0) = m_Row[p][m].mean();
+			mPixel(m, 0) = m_Row[p][m].mean();
 
 		if(m_Imageset.light3d) {
-			for(int i = 0; i < m_Lights.size(); i++) {
-				Vector3f lights = m_Imageset.relativeLight(m_Lights[i], p, row);
+			for(size_t i = 0; i < m_Lights3d.size(); i++) {
+				Vector3f light = m_Imageset.relativeLight(m_Lights3d[i], p, row);
+				light.normalize();
 				for (int j = 0; j < 3; j++)
-					mLights(i, j) = m_Lights[i][j];
+					mLights(i, j) = light[j];
 			}
 		}
 
 
-        // Solve
-        mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
-        mNormals.col(0).normalize();
 
-        // Save
-        /*m_Normals[normalIdx] = floor(((mNormals(0, 0) + 1.0f) / 2.0f) * 255);
-        m_Normals[normalIdx+1] = floor(((mNormals(1, 0) + 1.0f) / 2.0f) * 255);
-        m_Normals[normalIdx+2] = floor(((mNormals(2, 0) + 1.0f) / 2.0f) * 255);*/
-        m_Normals[normalIdx+0] = mNormals(0,0);
-        m_Normals[normalIdx+1] = mNormals(1,0);
-        m_Normals[normalIdx+2] = mNormals(2,0);
+		mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
+		mNormals.col(0).normalize();
+		m_Normals[normalIdx+0] = mNormals(0,0);
+		m_Normals[normalIdx+1] = mNormals(1,0);
+		m_Normals[normalIdx+2] = mNormals(2,0);
 
-        normalIdx += 3;
-    }
+		normalIdx += 3;
+	}
 }
 
 void NormalsWorker::solveSBL()

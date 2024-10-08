@@ -28,6 +28,9 @@ public:
 public slots:
 	virtual void onEdit();
 
+signals:
+	void valueChanged();
+
 protected:
 	//waiting for first point, waiting for second point, all done.
 
