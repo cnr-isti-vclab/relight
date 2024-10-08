@@ -153,49 +153,48 @@ bool Sphere::fit() {
 	if(border.size() >= 5) {
 		ellipseFit();
 		radius = eWidth;
-		smallradius =  radius/2;
+
 	} else {
 		ellipse = false;
 
-	double n = border.size();
-	double sx = 0, sy = 0, sxy = 0, sx2 = 0, sy2 = 0, sx3 = 0, sy3 = 0, sx2y = 0, sxy2 = 0;
-	for(size_t k = 0; k < border.size(); k++) {
-		double x = border[k].x();
-		double y = border[k].y();
-		sx += x;
-		sy += y;
-		sxy += x*y;
-		sx2 += x*x;
-		sy2 += y*y;
-		sx3 += x*x*x;
-		sy3 += y*y*y;
-		sx2y += x*x*y;
-		sxy2 += x*y*y;
+		double n = border.size();
+		double sx = 0, sy = 0, sxy = 0, sx2 = 0, sy2 = 0, sx3 = 0, sy3 = 0, sx2y = 0, sxy2 = 0;
+		for(size_t k = 0; k < border.size(); k++) {
+			double x = border[k].x();
+			double y = border[k].y();
+			sx += x;
+			sy += y;
+			sxy += x*y;
+			sx2 += x*x;
+			sy2 += y*y;
+			sx3 += x*x*x;
+			sy3 += y*y*y;
+			sx2y += x*x*y;
+			sxy2 += x*y*y;
+		}
+
+		double d11 = n*sxy - sx*sy;
+		double d20 = n*sx2 - sx*sx;
+		double d02 = n*sy2 - sy*sy;
+		double d30 = n*sx3 - sx2*sx;
+		double d03 = n*sy3 - sy2*sy;
+		double d21 = n*sx2y - sx2*sy;
+		double d12 = n*sxy2 - sx*sy2;
+
+		double a = ((d30 + d12)*d02 - (d03 + d21)*d11)/(2*(d02*d20 - d11*d11));
+		double b = ((d03 + d21)*d20 - (d30 + d12)*d11)/(2*(d20*d02 - d11*d11));
+
+		double c = (sx2 +sy2  -2*a*sx - 2*b*sy)/n;
+		double r = sqrt(c + a*a + b*b);
+
+		center = QPointF(a, b);
+		radius = r;
+
+		//float max_angle = (52.0/180.0)*M_PI; //60 deg  respect to the vertical
 	}
-
-	double d11 = n*sxy - sx*sy;
-	double d20 = n*sx2 - sx*sx;
-	double d02 = n*sy2 - sy*sy;
-	double d30 = n*sx3 - sx2*sx;
-	double d03 = n*sy3 - sy2*sy;
-	double d21 = n*sx2y - sx2*sy;
-	double d12 = n*sxy2 - sx*sy2;
-
-	double a = ((d30 + d12)*d02 - (d03 + d21)*d11)/(2*(d02*d20 - d11*d11));
-	double b = ((d03 + d21)*d20 - (d30 + d12)*d11)/(2*(d20*d02 - d11*d11));
-
-	double c = (sx2 +sy2  -2*a*sx - 2*b*sy)/n;
-	double r = sqrt(c + a*a + b*b);
-
-	center = QPointF(a, b);
-	radius = r;
-
-	//float max_angle = (52.0/180.0)*M_PI; //60 deg  respect to the vertical
 	float max_angle = (50.0/180.0)*M_PI; //slightly over 45. hoping not to spot reflexes
 	smallradius = radius*sin(max_angle);
 
-
-	}
 
 	int startx = (int)floor(center.x() - smallradius);
 	int endx = (int)ceil(center.x() + smallradius+1);
@@ -205,10 +204,10 @@ bool Sphere::fit() {
 
 	inner = QRect(startx, starty, endx - startx, endy - starty);
 
-//	sphere =QImage(endx - startx, endy - starty, QImage::Format_ARGB32);
-//	sphere.fill(0);
+	//	sphere =QImage(endx - startx, endy - starty, QImage::Format_ARGB32);
+	//	sphere.fill(0);
 
-/*	if(startx < 0 || starty < 0 || endx >= imgsize.width() || endy >= imgsize.height()) {
+	/*	if(startx < 0 || starty < 0 || endx >= imgsize.width() || endy >= imgsize.height()) {
 		fitted = false;
 		return false;
 	} */
@@ -317,7 +316,7 @@ void Sphere::findHighlight(QImage img, int n) {
 	sphereImg.setPixel(int(bari.x()) - inner.left(), int(bari.y()) - inner.top(), qRgb(0, 255, 0));
 	
 
-/*	if(!sphere) {
+	/*	if(!sphere) {
 		sphere = new QGraphicsPixmapItem(QPixmap::fromImage(sphereImg));
 		sphere->setZValue(-0.5);
 		sphere->setPos(inner.topLeft());
