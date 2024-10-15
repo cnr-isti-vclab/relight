@@ -33,6 +33,24 @@ int main(int argc, char *argv[])
 										 "open users interface");
 	parser.addOption(interactiveOption);
 
+	QCommandLineOption verboseOption(QStringList() << "v" << "verbose", "Enable verbose output");
+	parser.addOption(verboseOption);
+
+	QCommandLineOption debugOption(QStringList() << "d" << "debug", "Enable debug output");
+	parser.addOption(debugOption);
+
+	//Using DefCor for malt_mec function, which indicates the level of correlation between pixels
+	//higher values ​​of DefCor force a stronger correlation between adjacent pixels, which might improve spatial coherence in reconstructed images, but reduce detail.
+	//Too high a value could cause excessive smoothness between pixels.
+	QCommandLineOption defCorOption(QStringList() << "c" << "DefCor", "Specifies the correlation between pixels (DefCor parameter)",
+									"Higher values increase pixel correlation. Default is 0.2", "0.2");
+	parser.addOption(defCorOption);
+	//A higher value for Regul might impose greater smoothing or stability,
+	//while lower values ​​would allow for more variability and detail, but might result in greater sensitivity to noise.
+	QCommandLineOption regulOption(QStringList() << "r" << "Regul", "Sets the regularization parameter (Regul)",
+													"Regul check the amount of smoothing applied during the orthorectification process. Default is 0.05", "0.05");
+	parser.addOption(regulOption);
+
 	QCommandLineOption stepOption(QStringList() << "s" << "step",
 										 "starting step (rti, tapioca, )", "rti");
 	parser.addOption(stepOption);
@@ -40,6 +58,7 @@ int main(int argc, char *argv[])
 	QCommandLineOption stopOption(QStringList() << "S" << "stop",
 								  "stop after first step");
 	parser.addOption(stopOption);
+
 
 	// Process the actual command line arguments given by the user
 	parser.process(app);
@@ -57,17 +76,37 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	double defCor = parser.value(defCorOption).toDouble();
+	double regul = parser.value(regulOption).toDouble();
+	if ((defCor < 0) || (defCor > 1.0)) {
+		cerr << "Error: DefCor must be between 0 and 1. Value provided: " << defCor << endl;
+		return -1;
+	}
+
+	if((regul < 0) || (regul > 1.0)) {
+		cerr << "Error: Regul must be between 0 and 1. Value provided: " << regul << endl;
+		return -1;
+	}
+
 	bool interactive = parser.isSet(interactiveOption);
 	bool stop = parser.isSet(stopOption);
+	bool verbose = parser.isSet(verboseOption);
+	bool debug = parser.isSet(debugOption);
+
 	PanoBuilder::Steps startingStep = PanoBuilder::RTI;
 	bool steps = parser.isSet(stepOption);
 	if (interactive && steps) {
-		cout << "run in interactive mode" << endl;
+		cout << "Run in interactive mode" << endl;
 		MainWindow w;
 		w.show();
 	} else {
 		try{
 			PanoBuilder builder(folder);
+			builder.DefCor= defCor;
+			builder.Regul = regul;
+			builder.verbose = verbose;
+			builder.debug = debug;
+
 			if(steps){
 				QString step_name = parser.value(stepOption);
 				int s = builder.findStep(step_name);

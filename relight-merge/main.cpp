@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
 		char *path = argv[optind + i];
 		bool success = rti.load(path, false);
 		if(!success) {
-			cerr << "Could not load rti: " << path << endl;
+			cerr << "Could not load rti in " << path  << ":" << rti.error << endl;
 			return -1;
 		}
 		//check all RTI have the same parameters
