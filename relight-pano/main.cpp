@@ -9,6 +9,7 @@
 #include "orixml.h"
 using namespace std;
 
+
 void help(){
 	cout << R"(relight-pano
 
@@ -69,24 +70,26 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	QString folder = args[0];
-	QDir dir(folder);
+	QString datasetsFolder = args[0];
+	QDir dir(datasetsFolder);
 	if (!dir.exists()) {
-		cerr << "Error: folder '"<< qPrintable(folder) << "' does not exist" << endl;
+		cerr << "Error: folder '"<< qPrintable(datasetsFolder) << "' does not exist" << endl;
 		return -1;
 	}
 
 	double defCor = parser.value(defCorOption).toDouble();
 	double regul = parser.value(regulOption).toDouble();
-	if ((defCor < 0) || (defCor > 1.0)) {
+	if (defCor < 0) {
 		cerr << "Error: DefCor must be between 0 and 1. Value provided: " << defCor << endl;
 		return -1;
 	}
-
-	if((regul < 0) || (regul > 1.0)) {
+	if(regul < 0) {
 		cerr << "Error: Regul must be between 0 and 1. Value provided: " << regul << endl;
 		return -1;
 	}
+	cout << "DefCor value: " << defCor << endl;
+	cout << "Regul value: " << regul << endl;
+	//exit(0);
 
 	bool interactive = parser.isSet(interactiveOption);
 	bool stop = parser.isSet(stopOption);
@@ -99,9 +102,10 @@ int main(int argc, char *argv[])
 		cout << "Run in interactive mode" << endl;
 		MainWindow w;
 		w.show();
+		return app.exec();
 	} else {
 		try{
-			PanoBuilder builder(folder);
+			PanoBuilder builder(datasetsFolder);
 			builder.DefCor= defCor;
 			builder.Regul = regul;
 			builder.verbose = verbose;
@@ -128,9 +132,6 @@ int main(int argc, char *argv[])
 		catch(QString error){
 			cerr << qPrintable(error) << endl;
 		}
-		return 0;
 	}
-
-
-	return app.exec();
+	return 0;
 }
