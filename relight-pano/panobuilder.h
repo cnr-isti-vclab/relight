@@ -44,6 +44,7 @@ public:
 	void setRelightCli(QString path);
 	void setRelightMerge(QString path);
 	int findStep(QString step);
+	int findNPlanes(QDir& dir);
 	void exportMeans(QDir rtiDir);
 	void executeProcess(QString& process, QStringList& arguments);
 	void process(Steps starting_step = RTI, bool stop = false);
