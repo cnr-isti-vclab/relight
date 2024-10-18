@@ -38,6 +38,7 @@ public:
 	double Regul = 0.05;
 	bool verbose = false;
 	bool debug = false;
+	QString format = "tif";
 
 	PanoBuilder(QString path);
 	void setMm3d(QString path);
