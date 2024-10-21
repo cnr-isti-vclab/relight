@@ -14,29 +14,30 @@ class Lens;
 
 class Sphere {
 public:
-	Sphere(int n_lights) {
-		lights.resize(n_lights);
-		directions.resize(n_lights);
-		//valid.resize(n_lights, false);
-	}
 
+	QSize image_size;  //size of the picture, needed for properly fitting reflections.
+	QPointF center;      //center of circle or ellipse, in pixel coordinates of the image
 
-	QPointF center;      //in pixel coordinates of the image
+	/* Circle parameters */
 	float radius;        //fitted radius
 	float smallradius;   //innner radius where to look for reflections
+
+	/* Ellipse parameters */
+	bool ellipse = false;
+	float eWidth, eHeight, eAngle;
+
 	QRect inner;         //box of the inner part of the sphere.
 	bool fitted;         //we have a valid fit
 	QImage sphereImg;
 
-	bool ellipse = false;
-	float eWidth, eHeight, eAngle;
-	float eFocal; //estimated focal
 
 	std::vector<QPointF> border;
 	std::vector<QPointF> lights;       //2d pixel of the light spot for this sphere.
 	std::vector<Vector3f> directions;  //
 
-	Sphere();
+
+	Sphere(int n_lights = 0);
+
 	bool fit();
 	void ellipseFit();
 	void findHighlight(QImage im, int n);
