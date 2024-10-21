@@ -7,53 +7,29 @@
 #include <QRunnable>
 #include <QGradient>
 
-#include <math.h>
-#include <assert.h>
 #include "mainwindow.h"
 #include "project.h"
 #include "lens.h"
-#include <iostream>
 
+#include <Eigen/Dense>
+#include <Eigen/Core>
+#include <Eigen/Eigenvalues>
+
+#include <iostream>
+#include <math.h>
+#include <assert.h>
 
 using namespace std;
 
-
-
-Sphere::Sphere() {}
+Sphere::Sphere(int n_lights) {
+	lights.resize(n_lights);
+	directions.resize(n_lights);
+}
 
 void Sphere::resetHighlight(size_t n) {
 	lights[n] = QPointF();
 	directions[n] = Vector3f();
 }
-
-/*void Sphere::setActive(booclass Align
-{
-public:
-	Align();
-};l _active) {
-	active = _active;
-	QPen pen;
-	pen.setCosmetic(true);
-	pen.setColor(active? Qt::yellow : Qt::lightGray);
-	if(!active) {
-
-	}
-
-	if(circle) circle->setPen(pen);
-
-	QVector<qreal> dashes;
-	dashes << 4 << 4;
-	pen.setDashPattern(dashes);
-
-	if(smallcircle) smallcircle->setPen(pen);
-	for(auto p: border)
-		p->setPen(pen);
-
-} */
-
-#include <Eigen/Dense>
-#include <Eigen/Core>
-#include <Eigen/Eigenvalues>
 
 void Sphere::ellipseFit() {
 	size_t n = border.size();
@@ -137,13 +113,6 @@ void Sphere::ellipseFit() {
 	eWidth = width;
 	eHeight = height;
 	eAngle = phi*180/M_PI;
-	eFocal =  180*acos(eHeight/eWidth)/M_PI;
-
-
-	cout << "Center: " << center_x << " - " << center_y << endl;
-	cout << "W: " << width << " H: " << height << endl;
-	cout << "PHi: " << phi << endl;
-	cout << "Focal: " << eFocal << endl;
 }
 
 bool Sphere::fit() {
@@ -328,6 +297,11 @@ void Sphere::findHighlight(QImage img, int n) {
 
 void Sphere::computeDirections(Lens &lens) {
 
+	/* this is the angle from the center of the image to the center of the sphere
+		 * and can be used to estimate check the focal length */
+	double angleToSphere = 180*acos(eHeight/eWidth)/M_PI;
+
+
 	Eigen::Vector2f radial;
 	if(ellipse) {
 		//check large axis:
@@ -362,7 +336,9 @@ void Sphere::computeDirections(Lens &lens) {
 			diff /= eWidth;
 			x = diff.x();
 			y = diff.y();
+
 		} else {
+
 			x = (x - inner.left() - smallradius)/radius;
 			y = -(y - inner.top() - smallradius)/radius; //inverted y  coords
 		}
