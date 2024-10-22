@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 #include "exiftransplant.h"
 #include "orixml.h"
+#define TESTING_PLANE_0 1
 using namespace std;
 
 PanoBuilder::PanoBuilder(QString dataset_path)
@@ -17,6 +18,9 @@ PanoBuilder::PanoBuilder(QString dataset_path)
 	base_dir = datasets_dir;
 	base_dir.cdUp();
 	QDir::setCurrent(base_dir.absolutePath());
+	DefCor = 0.1;
+	Regul = 0.1;
+
 }
 void PanoBuilder::setMm3d(QString path){
 	ensureExecutable(path);
@@ -82,7 +86,6 @@ void PanoBuilder::exportMeans(QDir rtiDir){
 		img.load(currentSubDir.filePath("means.png"));
 		img.save(subDirName + ".jpg");
 
-		cout << qPrintable(datasets_dir.absolutePath()) << endl;
 		QDir dataset(datasets_dir.absoluteFilePath(subDirName));
 
 		QStringList photos = dataset.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
@@ -98,7 +101,70 @@ void PanoBuilder::exportMeans(QDir rtiDir){
 	}
 }
 
+void PanoBuilder::executeProcess(QString& program, QStringList& arguments) {
 
+	QString command = program + " " + arguments.join(" ");
+	if(verbose)
+		cout << "Print command: " << qPrintable(command) << endl;
+
+	QProcess process;
+	process.start(program, arguments);
+
+	if (!process.waitForStarted()) {
+		throw QString("Failed to start ") + process.program();
+	}
+
+	while(true) {
+		bool done = process.waitForFinished(1000);
+		QByteArray standardOutput = process.readAllStandardOutput();
+		if (!standardOutput.isEmpty()) {
+			if(debug)
+				cout << qPrintable(QString(standardOutput));
+		}
+		QByteArray standardError = process.readAllStandardError();
+
+		if (!standardError.isEmpty()) {
+			cout << "Error: " << qPrintable(QString(standardError)) << endl;
+		}
+		if(done)
+			break;
+	}
+
+	if (process.exitStatus() != QProcess::NormalExit) {
+		throw QString("Process exited abnormally with exit code: ") + QString::number(process.exitCode());
+	}
+}
+//1. funzione findn_planes(Dir);
+//1.5 controlla se esiste la directory di destinazione del
+//2. leggere quanti plane_* ci sono usando entryList
+//3. se n_planes=0 si assegna
+//4. altrimenti si controlla se è uguale se non uguale esci
+
+int PanoBuilder::findNPlanes(QDir& dir){
+
+	if (!dir.exists()) {
+		throw QString("Directory does not exist: ") + dir.absolutePath();
+	}
+
+	int n_planes= 0;
+	QStringList subDirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+	if (subDirs.isEmpty()) {
+		throw QString("No subdirectories found in directory: %1").arg(dir.absolutePath());;
+	}
+
+	for (const QString &subDirName : subDirs) {
+		QDir subDir(dir.filePath(subDirName));
+		QStringList planeFiles = subDir.entryList(QStringList() << "plane_*", QDir::Files);
+		int n_planesDir = planeFiles.size();
+		if(n_planes==0){
+			n_planes = n_planesDir;
+		} else {
+			if(n_planes != n_planesDir)
+				throw QString("The number of dir and planes is not the same");
+		}
+	}
+	return n_planes;
+}
 /* directory structures:
  * datasets
  *		face_A
@@ -108,7 +174,6 @@ void PanoBuilder::exportMeans(QDir rtiDir){
  *		face_B
  * photogrammetry
  *		Malt
- *		Ori-Abs
  *		Ori-Rel
  *		...
  *
@@ -127,17 +192,10 @@ void PanoBuilder::process(Steps starting_step, bool stop){
 	case MALT_ORTHO: malt_ortho(); if(stop) break;
 	case TAWNY:      tawny();      if(stop) break;
 	case JPG:        jpg();        if(stop) break;
+	case UPDATEJSON: updateJson(); if(stop) break;
 
 	}
 }
-//crea la directory rti se non esiste
-//per ogni sottodir cerca file .relight e si passa nella command line di relight-cli
-//command line specifica di fare le medie -m
-// spostare le mean dentro fotogrammetry rinomina da rti/face_A/mean.jpg a photogrammetry/face_A.jpg
-// chiama il merge, che ti chiede un'altra directory "merge", cancella la cartella rti e rinomina "merge" come "rti"
-// output stampato a schermo e controlla gli errori
-
-
 
 void PanoBuilder::rti(){
 	QDir rtiDir(base_dir.filePath("rti"));
@@ -147,97 +205,62 @@ void PanoBuilder::rti(){
 
 		}
 	}
-
-	QDir mergeDir(base_dir.filePath("merge"));
-	if (!mergeDir.exists()) {
-		if (!base_dir.mkdir("merge")) {
-			throw QString("Could not create 'merge' directory");
-		}
-	}
-
 	//search the subdirectory, the QDir::Dirs | filter QDir::NoDotAndDotDot to get all subdirectories inside the root directory
 	QStringList subDirs = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+	//TODO
+	if (verbose) {
+		cout << "Found " << subDirs.size() << " subdirectories in dataset directory: "
+			 << qPrintable(datasets_dir.absolutePath()) << endl;
+	}
 	for (const QString &subDirName : subDirs) {
 		QDir subDir(datasets_dir.filePath(subDirName));
-
 		//search file .relight
 		QStringList relightFiles = subDir.entryList(QStringList() << "*.relight", QDir::Files);
-		if(relightFiles.size()==0)
+		/*if(relightFiles.size()==0)
 			throw QString("Missing .relight file in folder " )+ subDir.path();
-		QString relightFile = relightFiles[0];
+		QString relightFile = relightFiles[0];*/
 
 
 		QStringList arguments;
-		arguments << subDir.absoluteFilePath(relightFile) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18" << "-m";
+		//arguments << subDir.absoluteFilePath(relightFile) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18" << "-m"
+		//<<"-3" << "2.5:0.21";
 
-		QString command = relight_cli_path + " " + arguments.join(" ");
-		cout << "print command: " << qPrintable(command) <<endl;
-		QProcess process_cli;
-		process_cli.start(relight_cli_path, arguments);
+		arguments << datasets_dir.filePath(subDirName) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18" << "-m"
+				  <<"-3" << "2.5:0.21";
 
-		if(!process_cli.waitForStarted()){
-			throw QString("fail to start ") + process_cli.program();
-		}
-
-		//wait for the process to finish
-		if(!process_cli.waitForFinished(-1)) {
-			throw QString("fail to run ") + process_cli.readAllStandardError();
-		}
-
-
-		QStringList arguments_merge;
-		arguments_merge << "rti" << "merge";
-		QProcess process_merge;
-		process_merge.start(relight_merge_path, arguments_merge);
-
-		if(!process_merge.waitForStarted()){
-			throw QString("fail to start ") + process_merge.program();
-		}
-
-		//wait for the process to finish
-		if(!process_merge.waitForFinished(-1)) {
-			throw QString("fail to run ") + process_merge.readAllStandardError();
-		}
-
+		executeProcess(relight_cli_path, arguments);
 	}
+	QStringList arguments_merge;
+	for (const QString &subDirName : subDirs) {
+		arguments_merge << rtiDir.filePath(subDirName);
+	}
+
+	arguments_merge << "merge";
+	rmdir("merge");
+	executeProcess(relight_merge_path, arguments_merge);
+
 }
 void PanoBuilder::tapioca(){
 
 	QDir currentDir = cd("photogrammetry", true);
 	rmdir("Tmp-MM-Dir");
+	QDir rtiDir(base_dir.filePath("rti"));
 
-	cout << qPrintable(base_dir.absolutePath()) << endl;
-	cout << qPrintable(base_dir.absoluteFilePath("rti")) << endl;
-	QDir rtiDir(base_dir.absoluteFilePath("rti"));
+	QDir (base_dir.absoluteFilePath("rti"));
 	if (!rtiDir.exists()) {
-		throw QString("rti directory does not exist: ") + rtiDir.absolutePath();
+		throw QString("merge directory does not exist: ") + rtiDir.absolutePath();
 	}
 
 	exportMeans(rtiDir);
 
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Tapioca" <<"All" << ".*jpg" << "1500" << "@SFS";
+	arguments << "Tapioca" <<"All" << ".*" + format << "1500" << "@SFS";
 
-	QString command = program + " " + arguments.join(" ");
-	cout << "Print command: " << qPrintable(command) << endl;
-
-	QProcess process;
-	process.start(program, arguments);
-
-
-	if (!process.waitForStarted()) {
-		throw QString("Failed to start ") + process.program();
-	}
-
-	if (!process.waitForFinished(-1)) {
-		throw QString("Failed to run ") + process.readAllStandardError();
-	}
-	cout << qPrintable(process.readAllStandardOutput()) << endl;
+	executeProcess(program, arguments);
 }
 
 void PanoBuilder::schnaps(){
-	//prende l'input dalla sottodir di homol e jpg
 	QDir currentDir = cd("photogrammetry");
 
 	QDir homolDir(currentDir.filePath("Homol"));
@@ -245,40 +268,43 @@ void PanoBuilder::schnaps(){
 		throw QString("Homol directory does not exist in current directory: ") + homolDir.absolutePath();
 
 	}
-	cout << qPrintable(homolDir.absolutePath()) << endl;
 
-	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
+	QStringList jpgFiles = currentDir.entryList(QStringList() << "*." + format, QDir::Files);
 	if (jpgFiles.isEmpty()) {
 		throw QString("No JPEG images found in photogrammetry directory");
 	}
 
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Schnaps" << ".*jpg";
+	arguments << "Schnaps" << ".*" + format << "MoveBadImgs=1";
 
-	QString command = program + " " + arguments.join(" ");
-	cout << "Print command: " << qPrintable(command) << endl;
+	executeProcess(program, arguments);
 
-	QProcess process;
-	process.start(program, arguments);
+	QDir poubelleDir(currentDir.filePath("Poubelle"));
+	if (poubelleDir.exists()) {
+		QStringList rejectImg = poubelleDir.entryList(QStringList() << "*." + format, QDir::Files);
 
-	if (!process.waitForStarted()) {
-		throw QString("Failed to start ") + process.program();
+		if (!rejectImg.isEmpty()) {
+			QString errorMsg = "Error: The following images were moved to Poubelle due to poor alignment:\n";
+			for (const QString &rejectImgs : rejectImg) {
+				errorMsg += rejectImgs + "\n";
+			}
+			throw errorMsg;
+		}
+	} else {
+		QString poubelleTxtPath = currentDir.filePath("Schnaps_poubelle.txt");
+		QFile poubelleTxt(poubelleTxtPath);
+		if (poubelleTxt.exists() && poubelleTxt.size() > 0) {
+			throw QString("No images were moved to Poubelle, but suspicious images are listed in Schnaps_poubelle.txt");
+		}
 	}
-
-	if (!process.waitForFinished(-1)) {
-		throw QString("Failed to run ") + process.readAllStandardError();
-	}
-	cout << qPrintable(process.readAllStandardOutput()) << endl;
 }
+// exif tools
+// capire come fare la conversione portandosi dietro gli exif
 
 void PanoBuilder::tapas(){
-	//prende l'input dalla sottodirectory Homol
-	//TODO mostrare i residui
 
 	QDir currentDir = cd("photogrammetry");
-
-	//se esiste cancella la directory Tmp-MM-dir
 	rmdir("Tmp-MM-Dir");
 
 	QDir homolDir(currentDir.filePath("Homol"));
@@ -286,71 +312,30 @@ void PanoBuilder::tapas(){
 		throw QString("Homol directory does not exist in current directory: ") + homolDir.absolutePath();
 
 	}
-	cout << qPrintable(homolDir.absolutePath()) << endl;
-
-	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
-	if (jpgFiles.isEmpty()) {
-		throw QString("No JPEG images found in photogrammetry directory");
-	}
-
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Tapas" << "RadialBasic" << ".*jpg" <<"Out=Relative";
+	arguments << "Tapas" << "RadialBasic" << ".*" + format <<"Out=Relative";
 
-	QString command = program + " " + arguments.join(" ");
-	cout << "Print command: " << qPrintable(command) << endl;
-
-	QProcess process;
-	process.start(program, arguments);
-
-	if (!process.waitForStarted()) {
-		throw QString("Failed to start ") + process.program();
-	}
-
-	if (!process.waitForFinished(-1)) {
-		throw QString("Failed to run ") + process.readAllStandardError();
-	}
-	cout << qPrintable(process.readAllStandardOutput()) << endl;
+	executeProcess(program, arguments);
 }
 
 void PanoBuilder::apericloud(){
-	//prende l'input dalla sottodirectory Homol
 	QDir currentDir = cd("photogrammetry");
 
 	QDir homolDir(currentDir.filePath("Homol"));
-	if (!homolDir.exists()) {
+	if (!homolDir.exists())
 		throw QString("Homol directory does not exist in current directory: ") + homolDir.absolutePath();
-
-	}
-	cout << qPrintable(homolDir.absolutePath()) << endl;
-
-	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
-	if (jpgFiles.isEmpty()) {
-		throw QString("No JPEG images found in photogrammetry directory");
-	}
-
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "AperiCloud" << ".*jpg" << "Relative";
+	arguments << "AperiCloud" << ".*" + format << "Relative";
 
-	QString command = program + " " + arguments.join(" ");
-	cout << "Print command: " << qPrintable(command) << endl;
-
-	QProcess process;
-	process.start(program, arguments);
-
-	if (!process.waitForStarted()) {
-		throw QString("Failed to start ") + process.program();
-	}
-
-	if (!process.waitForFinished(-1)) {
-		throw QString("Failed to run ") + process.readAllStandardError();
-	}
-	cout << qPrintable(process.readAllStandardOutput()) << endl;
+	executeProcess(program, arguments);
 }
 
+// At this moment, the function Ori-Abs is not being used in the upcoming functions
+// It will be revisited and debugged later
 void PanoBuilder::orthoplane(){
-	//prende l'input dalla sottodirectory Ori-relative
+
 	QDir currentDir = cd("photogrammetry");
 
 	QDir oriRelDir(currentDir.filePath("Ori-Relative"));
@@ -362,6 +347,7 @@ void PanoBuilder::orthoplane(){
 	if (xmlFiles.isEmpty()) {
 		throw QString("No XML files found in Ori-Relative directory");
 	}
+
 	QDir oriAbsDir(currentDir.filePath("Ori-Abs"));
 	if (!oriAbsDir.exists()){
 		if (!currentDir.mkdir("Ori-Abs")) {
@@ -406,7 +392,6 @@ void PanoBuilder::orthoplane(){
 		ori.saveOrientation(saveOtherPath);
 
 	}
-
 	QStringList autoCalFiles = oriRelDir.entryList(QStringList() << "*AutoCal*", QDir::Files);
 	for(QString s: autoCalFiles) {
 		QFile::copy(oriRelDir.absoluteFilePath(s), oriAbsDir.absoluteFilePath(s));
@@ -415,349 +400,252 @@ void PanoBuilder::orthoplane(){
 }
 
 void PanoBuilder::tarama(){
-	//prende l'input dalla sottodirectory Ori-abs
 	QDir currentDir = cd("photogrammetry");
 	rmdir("TA");
 	rmdir("Pyram");
 
-	QDir oriAbs(currentDir.filePath("Ori-Abs"));
-	if (!oriAbs.exists()) {
-		throw QString("Ori-abs directory does not exist in current directory: ") + oriAbs.absolutePath();
+	QDir oriRel(currentDir.filePath("Ori-Relative"));
+	if (!oriRel.exists()) {
+		throw QString("Ori-Relative directory does not exist in current directory: ") + oriRel.absolutePath();
 
-	}
-	cout << qPrintable(oriAbs.absolutePath()) << endl;
-
-	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
-	if (jpgFiles.isEmpty()) {
-		throw QString("No JPEG images found in photogrammetry directory");
 	}
 
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Tarama" << ".*jpg" << "Abs";
+	arguments << "Tarama" << ".*" + format
+			  << "Relative";
 
-	QString command = program + " " + arguments.join(" ");
-	cout << "Print command: " << qPrintable(command) << endl;
-
-	QProcess process;
-	process.start(program, arguments);
-
-	if (!process.waitForStarted()) {
-		throw QString("Failed to start ") + process.program();
-	}
-
-	if (!process.waitForFinished(-1)) {
-		throw QString("Failed to run ") + process.readAllStandardError();
-	}
-	cout << qPrintable(process.readAllStandardOutput()) << endl;
-	cout << qPrintable(process.readAllStandardError()) << endl;
+	executeProcess(program, arguments);
 }
 
 void PanoBuilder::malt_mec(){
-	//prende l'input dalla sottodirectory TA
 	QDir currentDir = cd("photogrammetry");
-	//("Tmp-MM-Dir");
 
 	QDir taDir(currentDir.filePath("TA"));
-	if (!taDir.exists()) {
+	if (!taDir.exists())
 		throw QString("TA directory does not exist in current directory: ") + taDir.absolutePath();
 
-	}
-	cout << qPrintable(taDir.absolutePath()) << endl;
-
-	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
-	if (jpgFiles.isEmpty()) {
-		throw QString("No JPEG images found in photogrammetry directory");
-	}
+	rmdir("Ortho-Lights");
+	rmdir("Tmp-MM-Dir");
 
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Malt" << "Ortho" << ".*jpg" << "Abs" << "ZoomF=4" << "DirMEC=Malt"
-			  << "DirTA=TA" << "ImOrtho=.*jpg" << "DirOF=Ortho-Lights" << "NbVI=2";
-
-	QString command = program + " " + arguments.join(" ");
-	cout << "Print command: " << qPrintable(command) << endl;
-
-	QProcess process;
-	process.start(program, arguments);
-
-	if (!process.waitForStarted()) {
-		throw QString("Failed to start ") + process.program();
-	}
-
-	if (!process.waitForFinished(-1)) {
-		throw QString("Failed to run ") + process.readAllStandardError();
-	}
-	cout << qPrintable(process.readAllStandardOutput()) << endl;
-
-	QDir orthoLightDir(currentDir.filePath("Ortho-Lights"));
-
-	if (orthoLightDir.exists()) {
-		if (!orthoLightDir.removeRecursively()) {
-			throw QString("Failed to remove Ortho-Lights directory.");
-		} else {
-			cout << "Successfully removed Ortho-Lights directory." << endl;
-		}
-	} else {
-		cout << "Ortho-Lights directory does not exist." << endl;
-	}
+	arguments << "Malt" << "Ortho" << ".*tif" << "Relative" << "ZoomF=4" << "DirMEC=Malt"
+			  << "DirTA=TA" << "ImOrtho=.*tif" << "DirOF=Ortho-Lights" << "NbVI=2" << "Purge=true"
+			  << QString("DefCor=%1").arg(DefCor)
+			  << QString("Regul=%1").arg(Regul);
+	//DefCor 2 is to big
+	executeProcess(program, arguments);
 }
 
+
 void PanoBuilder::c3dc(){
-	//prende l'input dalla sottodirectory
+	return;
 	QDir currentDir = cd("photogrammetry");
 
-	//QDir (currentDir.filePath(""));
-	//if (!.exists()) {
-	//	throw QString(" directory does not exist in current directory: ") + .absolutePath();
-
-	//}
-	//cout << qPrintable(taDir.absolutePath()) << endl;
-
-	QStringList jpgFiles = currentDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
-	if (jpgFiles.isEmpty()) {
-		throw QString("No JPEG images found in photogrammetry directory");
-	}
+	QDir oriDir(currentDir.filePath("Ori-Relative"));
+	if (!oriDir.exists())
+		throw QString("Ori directory does not exist in current directory: ") + oriDir.absolutePath();
 
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "C3DC" << "MicMac" << ".*jpg" << "Abs" <<"DefCor=0.01";
+	arguments << "C3DC" << "MicMac" << ".*" + format << "Relative" << QString("DefCor=%1").arg(DefCor);;
 
-	QString command = program + " " + arguments.join(" ");
-	cout << "Print command: " << qPrintable(command) << endl;
-
-	QProcess process;
-	process.start(program, arguments);
-
-	if (!process.waitForStarted()) {
-		throw QString("Failed to start ") + process.program();
-	}
-
-	if (!process.waitForFinished(-1)) {
-		throw QString("Failed to run ") + process.readAllStandardError();
-	}
-	cout << qPrintable(process.readAllStandardOutput()) << endl;
+	executeProcess(program, arguments);
 }
 
 void PanoBuilder::malt_ortho(){
-	//prende l'input dalla sottodirectory
 
+	QDir currentDir = cd("photogrammetry");
+
+	QDir mergeDir(base_dir.filePath("merge"));
+	if (!mergeDir.exists()) {
+		throw QString("Merge dir directory does not exist in base directory: ") + mergeDir.absolutePath();
+
+	}
+	QDir rtiDir(base_dir.filePath("rti"));
+	if (!rtiDir.exists()) {
+		throw QString("rti dir directory does not exist in base directory: ") + rtiDir.absolutePath();
+
+	}
+	exportMeans(rtiDir);
+
+	QStringList subDirs = mergeDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+	if (subDirs.isEmpty()) {
+		throw QString("No subdirectories found in 'merge' directory.");
+	}
+	int n_planes = findNPlanes(mergeDir);
+	for (int plane =0; plane < n_planes; plane++){
+		for (const QString &subDirName : subDirs) {
+			QDir subDir(mergeDir.filePath(subDirName));
+
+			QString planeFileName = QString("plane_%1.jpg").arg(plane);
+			QString planeFilePath = subDir.filePath(planeFileName);
+
+			if (!QFile::exists(planeFilePath))
+				throw QString("Error: %1 does not exist in directory: ").arg(planeFilePath).arg(subDir.absolutePath());
+
+			//se formato è jpg copia se è un tif devi fare una conversion
+			QString newTifFileName = QString("%1.tif").arg(subDirName);
+			QString newTifFilePath = currentDir.filePath(newTifFileName);
+
+			if (planeFileName.endsWith(".jpg")) {
+				QString exifCommand = QString("exiftool -tagsfromfile %1 %2").arg(planeFilePath, newTifFilePath);
+				int result = system(exifCommand.toStdString().c_str());
+				if (result != 0)
+					throw QString("Error copying EXIF data from %1 to %2").arg(planeFilePath, newTifFilePath);
+
+			}
+			else if (!QFile::exists(newTifFilePath)) {
+				// Comando per convertire JPG in TIFF
+				QString convertCommand = QString("convert %1 %2").arg(planeFilePath, newTifFilePath);
+				int convertResult = system(convertCommand.toStdString().c_str());
+				if (convertResult != 0) {
+					throw QString("Error converting %1 to %2").arg(planeFilePath, newTifFilePath);
+				}
+
+				QString newFileName = QString("%1.jpg").arg(subDirName);
+				QString newFilePath = currentDir.filePath(newFileName);
+
+				ExifTransplant exif;
+				bool success = exif.transplant(newFilePath.toStdString().c_str(),
+											   planeFilePath.toStdString().c_str());
+				if(!success)
+					throw QString("Unable to load exif from: ") + QString(exif.error.c_str()) + newFilePath;
+
+				QFile::remove(newFilePath);
+
+				if (!QFile::copy(planeFilePath, newFilePath))
+					throw QString("Failed to copy and rename file: ") + planeFilePath;
+			}
+		}
+		/*if(verbose)
+			cout << "Copied planes and renamed: " << qPrintable(planeFilePath) << " to " << qPrintable(newFilePath) << endl;*/
+
+		QString orthoPlaneDirName = QString("Ortho_plane_%1").arg(plane);
+		rmdir("Tmp-MM-Dir");
+		rmdir(orthoPlaneDirName);
+
+		QString program = mm3d_path;
+		QStringList arguments;
+		arguments << "Malt" << "Ortho" << ".*" + format << "Relative" << "ZoomF=4"
+				  << "DirMEC=Malt" << "DirTA=TA" << "DoMEC=0" << "DoOrtho=1"
+				  << "ImOrtho=.*" + format << "DirOF="+orthoPlaneDirName;
+
+		executeProcess(program, arguments);
+
+		QStringList ortImages = QDir(orthoPlaneDirName).entryList(QStringList() << "Ort_*.tif", QDir::Files);
+		if (ortImages.isEmpty()) {
+			throw QString("Error: No output images found in ").arg(orthoPlaneDirName);
+		}
+#if TESTING_PLANE_0
+		break;
+#endif
+	}
+	exportMeans(rtiDir);
+}
+
+void PanoBuilder::tawny() {
+	QDir currentDir = cd("photogrammetry");
+
+	//int n_planes = findNPlanes(currentDir);
+	QStringList planeDirs  = currentDir.entryList(QStringList() << "Ortho_plane_*", QDir::Dirs);
+
+	//for (int plane = 0; plane <= n_planes; ++plane) {
+	for (const QString& planeDirName : planeDirs) {
+		QDir orthoDir(currentDir.filePath(planeDirName));
+		QString plane = planeDirName.split("_").last();
+		//QString planeDirName = QString("Ortho_plane_%1").arg(plane);
+		if (!orthoDir.exists()) {
+			throw QString("Directory %1 does not exist").arg(orthoDir.absolutePath());
+		}
+		QStringList tifFiles = orthoDir.entryList(QStringList() << "Ort_*.tif", QDir::Files);
+		if (tifFiles.isEmpty()) {
+			throw QString("No .tif files in ").arg(orthoDir.absolutePath());
+		}
+		QString program = mm3d_path;
+
+		QStringList arguments;
+		arguments << "Tawny" <<  planeDirName <<"RadiomEgal=0" << "DEq=1" << "DegRap=2" << QString("Out=plane_%1.tif").arg(plane);
+		executeProcess(program, arguments);
+
+#if TESTING_PLANE_0
+		break;
+#endif
+	}
+}
+
+void PanoBuilder::jpg() {
+	//prende l'input dalla sottodirectory Ortho Plane. plane_0.tif
+	QDir currentDir = cd("photogrammetry");
+	QStringList planeDirs = currentDir.entryList(QStringList() << "Ortho_plane_*", QDir::Dirs);
+	rmdir("Panorama");
+	currentDir.mkdir("Panorama");
+	QDir panoramaDir("Panorama");
+	//	for (int plane = 0; plane < n_planes; ++plane) {
+	for (const QString& planeDirName : planeDirs) {
+		//QString planeDirName = QString("Ortho_plane_%1").arg(plane);
+
+		QDir orthoDir(currentDir.filePath(planeDirName));
+		if (!orthoDir.exists()) {
+			throw QString("Directory %1 does not exist").arg(orthoDir.absolutePath());
+		}
+		QStringList tifFiles = orthoDir.entryList(QStringList() << "plane_*." + format, QDir::Files);
+		if (tifFiles.isEmpty()) {
+			cout << "No plane_*.tif files in " << qPrintable(orthoDir.absolutePath()) << endl;
+			continue;
+		}
+
+		QString tifFile = tifFiles.first();
+		QString tifFilePath = orthoDir.filePath(tifFile);
+
+		QImage img;
+		if (!img.load(tifFilePath)) {
+			throw QString("Failed to load image: ").arg(tifFilePath);
+		}
+		QString jpgFileName = QString("%1."+format).arg(tifFile);
+		QString jpgFilePath = panoramaDir.filePath(jpgFileName);
+
+		if (!img.save(jpgFilePath)) {
+			throw QString("Failed to save image: ").arg(jpgFilePath);
+		} else {
+			cout << "Saved image as: " << qPrintable(jpgFilePath) << endl;
+		}
+	}
+}
+
+void PanoBuilder::updateJson(){
 	QDir currentDir = cd("photogrammetry");
 
 	QDir rtiDir(base_dir.filePath("rti"));
 	if (!rtiDir.exists()) {
-		throw QString("rti directory does not exist in base directory: ") + rtiDir.absolutePath();
-
+		throw QString("rti directory does not exist: ") + rtiDir.absolutePath();
 	}
-	exportMeans(rtiDir);
 	QStringList subDirs = rtiDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 	if (subDirs.isEmpty()) {
 		throw QString("No subdirectories found in 'rti' directory.");
 	}
-	int n_planes=1;
-		//prende le img nella subdir rti planes
-	for (int plane =0; plane<n_planes; plane++){
 
-		for (const QString &subDirName : subDirs) {
-			QDir subDir(rtiDir.filePath(subDirName));
+	QString subDirName = subDirs[0];
+	QDir subDir(rtiDir.filePath(subDirName));
 
-			if(n_planes==1){
-				QStringList planeFiles = subDir.entryList(QStringList() << "plane_*.jpg", QDir::Files);
-				n_planes = planeFiles.size();
-			}
-			QString planeFileName = QString("plane_%1.jpg").arg(plane);
-			QString planeFilePath = subDir.filePath(planeFileName);
-
-			if (!QFile::exists(planeFilePath)) {
-				cout << "Warning: " << qPrintable(planeFileName) << " does not exist in directory: " << qPrintable(subDir.absolutePath()) << endl;
-				continue;
-			}
-
-			QString newFileName = QString("%1.jpg").arg(subDirName);
-			QString newFilePath = currentDir.filePath(newFileName);
-
-
-			ExifTransplant exif;
-			bool success = exif.transplant(newFilePath.toStdString().c_str(),
-										   planeFilePath.toStdString().c_str());
-			if(!success)
-				throw QString("Unable to load exif from: ") + QString(exif.error.c_str()) + newFilePath;
-
-			QFile::remove(newFilePath);
-
-			if (!QFile::copy(planeFilePath, newFilePath)) {
-				throw QString("Failed to copy and rename file: ") + planeFilePath;
-			}
-			cout << "Copied planes and renamed: " << qPrintable(planeFilePath) << " to " << qPrintable(newFilePath) << endl;
-
-
-		}
-		// crea la dir ortho_plane_n usala dentro malt
-
-		QString orthoPlaneDirName = QString("Ortho_plane_%1").arg(plane);
-		rmdir("Tmp-MM-Dir");
-
-		//QStringList ortImages = orthoLightDir.entryList(QStringList() << "Ort_*.tif", QDir::Files);
-
-		//chiama il malt
-
-		QString program = mm3d_path;
-		QStringList arguments;
-		arguments << "Malt" << "Ortho" << ".*jpg" << "Abs" << "ZoomF=4"
-				  << "DirMEC=Malt" << "DirTA=TA" << "DoMEC=0" << "DoOrtho=1"
-				  << "ImOrtho=.*jpg" << "DirOF="+orthoPlaneDirName;
-
-		QString command = program + " " + arguments.join(" ");
-		cout << "Print command: " << qPrintable(command) << endl;
-
-		QProcess process;
-		process.start(program, arguments);
-
-		if (!process.waitForStarted()) {
-			throw QString("Failed to start ") + process.program();
-		}
-
-		if (!process.waitForFinished(-1)) {
-			throw QString("Failed to run ") + process.readAllStandardError();
-		}
-		cout << qPrintable(process.readAllStandardOutput()) << endl;
-		cout << qPrintable(process.readAllStandardError()) << endl;
-
-		QStringList ortImages = QDir(orthoPlaneDirName).entryList(QStringList() << "Ort_*.tif", QDir::Files);
-		if (ortImages.isEmpty()) {
-			cout << "Error: No output images found in " << qPrintable(orthoPlaneDirName) << endl;
-		} else {
-			cout << "Output images found in " << qPrintable(orthoPlaneDirName) << ": " << ortImages.join(", ").toStdString() << endl;
-		}
-
-
+	QString jsonFilePath = subDir.filePath("info.json");
+	if (!QFile::exists(jsonFilePath)) {
+		throw QString("Error: %1 does not exist.").arg(jsonFilePath);
 	}
+	QDir panoramaDir("Panorama");
+
+	QString destJsonFilePath = panoramaDir.filePath("info.json");
+
+	if (!QFile::copy(jsonFilePath, destJsonFilePath)) {
+		throw QString("Failed to copy %1  to ").arg(jsonFilePath).arg(destJsonFilePath);
+	}
+
 }
 
 
 
 
-
-//cp "../rti/Face_A/plane_0.jpg";
-//QFile::copy("../rti/Face_A/plane_0.jpg", currentDir.filePath("plane_0.jpg"));
-//face_A_plane_0 rinomini file in Ortho-Lights
-/*QDir orthoLightsDir(currentDir.filePath("Ortho-Lights"));
-	if (!orthoLightsDir.exists()) {
-		throw QString("Ortho-Lights directory does not exist: ") + orthoLightsDir.absolutePath();
-	}
-	QStringList orthoFiles = orthoLightsDir.entryList(QStringList() << "*.tif", QDir::Files);
-	if (orthoFiles.isEmpty()) {
-		cout << "Warning: No images found in 'Ortho-Lights' directory." << endl;
-		return;
-	}
-	QStringList faceNames = {"Face_A", "Face_B", "Face_C", "Face_D", "Face_E"};
-
-	for (const QString &faceName : faceNames) {
-		int faceIndex = faceNames.indexOf(faceName);
-		for (int i = 0; i < orthoFiles.size(); ++i) {
-			QString oldFileName = orthoFiles[i];
-			QString oldFilePath = orthoLightsDir.filePath(oldFileName);
-
-			QString newFileName = QString("%1_plane_%2.tif").arg(faceName).arg(i);
-			QString newFilePath = orthoLightsDir.filePath(newFileName);
-
-			QFile::remove(newFilePath);
-			if (!QFile::rename(oldFilePath, newFilePath)) {
-				throw QString("Failed to rename file: ") + oldFilePath;
-			}
-
-			cout << "Renamed: " << qPrintable(oldFilePath) << " to " << qPrintable(newFilePath) << endl;
-		}
-	}
-
-			QString destFileName = QString("%1.jpg").arg(subDirName);
-			QString destFilePath = currentDir.filePath(destFileName);
-
-			QFile::remove(destFilePath);
-			if (!QFile::copy(newFilePath, destFilePath)) {
-				throw QString("Failed to copy and rename file: ") + newFilePath + " to " + destFilePath;
-			}
-
-			cout << "Copied and renamed: " << qPrintable(newFilePath) << " to " << qPrintable(destFilePath) << endl;
-*/
-
-
-void PanoBuilder::tawny(){
-	//prende l'input dalla sottodirectory Ortho
-	QDir currentDir = cd("photogrammetry");
-	int n_planes = 5;
-
-	for (int plane = 0; plane <= n_planes; ++plane) {
-
-		QString planeDirName = QString("Ortho_plane_%1").arg(plane);
-
-		QDir orthoDir(currentDir.filePath(planeDirName));
-		if (!orthoDir.exists()) {
-			cout << "Directory " << qPrintable(orthoDir.absolutePath()) << " does not exist." << endl;
-			continue;
-		}
-		QStringList tifFiles = orthoDir.entryList(QStringList() << "Ort_Face_*.tif", QDir::Files);
-		if (tifFiles.isEmpty()) {
-			cout << "No .tif files in " << qPrintable(orthoDir.absolutePath()) << endl;
-			continue;
-		}
-
-		QString program = mm3d_path;
-
-		QStringList arguments;
-		arguments << "Tawny" <<  QString("Ortho_plane_%1").arg(plane) << "RadiomEgal=0" << QString("Out=plane_%1.tif").arg(plane);;
-
-		QString command = program + " " + arguments.join(" ");
-		cout << "Print command: " << qPrintable(command) << endl;
-
-		QProcess process;
-		process.start(program, arguments);
-
-		if (!process.waitForStarted()) {
-			throw QString("Failed to start ") + process.program();
-		}
-
-		if (!process.waitForFinished(-1)) {
-			throw QString("Failed to run ") + process.readAllStandardError();
-		}
-		cout << qPrintable(process.readAllStandardOutput()) << endl;
-	}
-}
-
-
-/*void PanoBuilder::jpg() {
-	//prende l'input dalla sottodirectory Ortho Lights?
-	QDir currentDir = cd("photogrammetry");
-
-	if (!currentDir.exists()) {
-		throw QString("Directory photogrammetry does not exist: ") + currentDir.absolutePath();
-	}
-
-	QStringList jpgFiles = currentDir.entryList(QStringList() << ".jpg", QDir::Files);
-	if (jpgFiles.isEmpty()) {
-		throw QString("No JPEG images found in photogrammetry directory");
-	}
-
-	QString program = mm3d_path;
-	QStringList arguments;
-	arguments << "" << "Ortho-Light" << "RadiomEgal=0" << "Out=.tif";
-
-	QString command = program + " " + arguments.join(" ");
-	cout << "Print command: " << qPrintable(command) << endl;
-
-	QProcess process;
-	process.start(program, arguments);
-
-	if (!process.waitForStarted()) {
-		throw QString("Failed to start ") + process.program();
-	}
-
-	if (!process.waitForFinished(-1)) {
-		throw QString("Failed to run ") + process.readAllStandardError();
-	}
-	cout << qPrintable(process.readAllStandardOutput()) << endl;
-}
-*/
 //crea un OriXml per ognuno degli xml di orirelative
 //crea Oriabs
 // 1. prendere orientamento della prima camera definisce l'ortopiano
