@@ -28,7 +28,7 @@ void help() {
 	cout << "       relight-cli [-q] <input.json> [output.ptm]\n\n";
     cout << "\tinput folder containing a .lp with number of photos and light directions\n";
     cout << "\toptional output folder (default ./)\n\n";
-    cout << "\t-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear\n";
+	cout << "\t-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear, skip\n";
     cout << "\t-p <int>  : number of planes (default: 9)\n";
     cout << "\t-q <int>  : jpeg quality (default: 95)\n";
     cout << "\t-y <int>  : number of Y planes in YCC\n\n";
@@ -102,6 +102,7 @@ int main(int argc, char *argv[]) {
     }
 
     RtiBuilder builder;
+	bool skip_rti = false;
     int quality = 95;
     bool evaluate_error = false;
     QString redrawdir;
@@ -199,6 +200,9 @@ int main(int argc, char *argv[]) {
             } else if(b == "dmd") {
                 builder.colorspace = RtiBuilder::RGB;
                 builder.type = RtiBuilder::DMD;
+
+			} else if(b == "skip") {
+				skip_rti = true;
 
             } else {
                 cerr << "Unknown basis type: " << optarg << " (pick rbf, ptm, lptm, hsh, yrbf or bilinear!)\n" << endl;
@@ -398,6 +402,13 @@ int main(int argc, char *argv[]) {
 		*callback = [](std::string stage, int percent)->bool{ return progress(stage, percent); };
 	}
 
+	if(skip_rti && builder.savemeans) {
+		ImageSet image_set(input.c_str());
+		image_set.saveMean(output.c_str(), builder.quality);
+		return 0;
+	}
+
+
 	QElapsedTimer timer;
 	timer.start();
 
@@ -421,7 +432,7 @@ int main(int argc, char *argv[]) {
 				return convertRTI(input.c_str(), output.c_str(), quality);
 			} catch(QString error) {
 				cerr << qPrintable(error) << endl;
-				return 1;
+				return 1;	
 			}
 
 		} else {

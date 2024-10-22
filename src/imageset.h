@@ -61,9 +61,10 @@ public:
 	void skipToTop();
 
 	Vector3f relativeLight(const Vector3f &light, int x, int y);
+	void saveMean(const char *path, int quality);
 
 protected:
-	std::function<bool(std::string stage, int percent)> *callback;
+	std::function<bool(std::string stage, int percent)> *callback = nullptr;
 	std::vector<JpegDecoder *> decoders;
 };
 
