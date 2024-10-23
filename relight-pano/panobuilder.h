@@ -10,7 +10,8 @@ class PanoBuilder : public QObject
 	Q_OBJECT
 public:
 	enum Steps{
-		RTI = 0, //rti e merge e medie
+
+		MEANS = 0, //rti e merge e medie
 		TAPIOCA,
 		SCHNAPS,
 		TAPAS,
@@ -19,13 +20,14 @@ public:
 		TARAMA,
 		MALT_MEC,
 		C3DC,
+		RTI,
 		MALT_ORTHO, //copy orientation xml and exif + ortho per image
 		TAWNY,
 		JPG,//convert to jpg
 		UPDATEJSON
 	};
 
-	QStringList steps = {"rti", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc", "malt_ortho", "tawny", "jpg", "updateJson"};
+	QStringList steps = {"means", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc","rti", "malt_ortho", "tawny", "jpg", "updateJson"};
 	QDir base_dir;
 	QDir datasets_dir;
 	QString mm3d_path;
@@ -46,9 +48,10 @@ public:
 	void setRelightMerge(QString path);
 	int findStep(QString step);
 	int findNPlanes(QDir& dir);
-	void exportMeans(QDir rtiDir);
+	void exportMeans();
 	void executeProcess(QString& process, QStringList& arguments);
 	void process(Steps starting_step = RTI, bool stop = false);
+	void means();
 	//create the directory rti process the datasets and relight-merge the rti planes
 	void rti();
 	void tapioca();
