@@ -8,7 +8,7 @@
 #include <Eigen/Core>
 #include "exiftransplant.h"
 #include "orixml.h"
-#define TESTING_PLANE_0 1
+#define TESTING_PLANE_0
 using namespace std;
 
 PanoBuilder::PanoBuilder(QString dataset_path)
@@ -70,21 +70,15 @@ int PanoBuilder::findStep(QString step){
 	return (steps.indexOf(step));
 }
 
-void PanoBuilder::exportMeans(QDir rtiDir){
+void PanoBuilder::exportMeans(){
 
-	QStringList subDirNames = rtiDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+	QStringList subDirNames = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 
 	for (const QString &subDirName : subDirNames) {
 
-		QDir currentSubDir(rtiDir.filePath(subDirName));
-		QStringList meanFiles = currentSubDir.entryList(QStringList() << "means.png", QDir::Files);
-		if (meanFiles.size() == 0)
-			throw QString("Missing 'means.png' not found in ") + currentSubDir.path();
-		QString meanFile = meanFiles[0];
-
-		QImage img;
-		img.load(currentSubDir.filePath("means.png"));
-		img.save(subDirName + ".jpg");
+		QDir currentSubDir(datasets_dir.filePath(subDirName));
+		QString meanFile = subDirName + ".jpg";
+		QString meanPath = datasets_dir.filePath(meanFile);
 
 		QDir dataset(datasets_dir.absoluteFilePath(subDirName));
 
@@ -92,15 +86,37 @@ void PanoBuilder::exportMeans(QDir rtiDir){
 		if (photos.size() == 0)
 			throw QString("Missing '*.jpg' not found in ") + dataset.path();
 		QString photo = photos[0];
+		if(format == "jpg"){
 
-		ExifTransplant exif;
-		bool success = exif.transplant(dataset.absoluteFilePath(photo).toStdString().c_str(),
-									   (subDirName + ".jpg").toStdString().c_str());
-		if(!success)
-			throw QString("Unable to load exif from: ") + QString(exif.error.c_str()) + dataset.absoluteFilePath(photo);
+			if (!QFile::copy(meanPath, subDirName + ".jpg")) {
+				throw QString("Failed to copy %1  to ").arg(meanPath).arg(subDirName);
+			}
+			ExifTransplant exif;
+			bool success = exif.transplant(dataset.absoluteFilePath(photo).toStdString().c_str(),
+										   (subDirName + ".jpg").toStdString().c_str());
+			if(!success)
+				throw QString("Unable to load exif from: ") + QString(exif.error.c_str()) + dataset.absoluteFilePath(photo);
+		} else {
+
+			//se formato è jpg copia se è un tif devi fare una conversion
+			QString newTifFileName = QString("%1.tif").arg(subDirName);
+			QString newTifFilePath = datasets_dir.filePath(newTifFileName);
+
+
+			QString convertCommand = QString("magick -colorspace RGB %1 -colorspace RGB -compress none %2").arg(meanPath, newTifFilePath);
+			cout << qPrintable(convertCommand) << endl;
+			int convertResult = system(convertCommand.toStdString().c_str());
+			if (convertResult != 0)
+				throw QString("Error converting %1 to %2").arg(meanPath, newTifFilePath);
+
+			QString exifCommand = QString("exiftool -tagsfromfile %1 %2").arg(meanPath, newTifFilePath);
+			int result = system(exifCommand.toStdString().c_str());
+			if (result != 0)
+				throw QString("Error copying EXIF data from %1 to %2").arg(meanPath, newTifFilePath);
+
+		}
 	}
 }
-
 void PanoBuilder::executeProcess(QString& program, QStringList& arguments) {
 
 	QString command = program + " " + arguments.join(" ");
@@ -165,6 +181,7 @@ int PanoBuilder::findNPlanes(QDir& dir){
 	}
 	return n_planes;
 }
+
 /* directory structures:
  * datasets
  *		face_A
@@ -180,7 +197,8 @@ int PanoBuilder::findNPlanes(QDir& dir){
  */
 void PanoBuilder::process(Steps starting_step, bool stop){
 	switch (starting_step) {
-	case RTI:        rti();        if(stop) break;
+
+	case MEANS:      means();      if(stop) break;
 	case TAPIOCA:    tapioca();    if(stop) break;
 	case SCHNAPS:    schnaps();    if(stop) break;
 	case TAPAS:      tapas();      if(stop) break;
@@ -189,12 +207,40 @@ void PanoBuilder::process(Steps starting_step, bool stop){
 	case TARAMA:     tarama();     if(stop) break;
 	case MALT_MEC:   malt_mec();   if(stop) break;
 	case C3DC:       c3dc();       if(stop) break;
+	case RTI:        rti();        if(stop) break;
 	case MALT_ORTHO: malt_ortho(); if(stop) break;
 	case TAWNY:      tawny();      if(stop) break;
 	case JPG:        jpg();        if(stop) break;
 	case UPDATEJSON: updateJson(); if(stop) break;
 
 	}
+}
+void PanoBuilder::means(){
+	//1. iterare sulle sottodir di datasets
+	QStringList subDirNames = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+	for (const QString &subDirName : subDirNames) {
+		QDir currentSubDir(datasets_dir.filePath(subDirName));
+
+		QString inputPath = currentSubDir.absolutePath();
+		QString outputPath = datasets_dir.filePath(subDirName + ".jpg");
+
+		//"relight-cli -b skip -m", input, output("output.jpg");
+		//output si salva dentro la dir datasets
+		QString relightCliPath = relight_cli_path;
+		QStringList arguments;
+		arguments <<"-b" << "skip" << "-m" << inputPath << outputPath;
+
+		executeProcess(relightCliPath, arguments);
+
+		QString command = relightCliPath + " " + arguments.join(" ");
+		if (verbose) {
+			cout << "Running command: " << qPrintable(command) << endl;
+		}
+
+	}
+
+	//2. modifica l'export means dentro photogrammetry
+	exportMeans();
 }
 
 void PanoBuilder::rti(){
@@ -228,7 +274,7 @@ void PanoBuilder::rti(){
 		arguments << datasets_dir.filePath(subDirName) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18" << "-m"
 				  <<"-3" << "2.5:0.21";
 
-		executeProcess(relight_cli_path, arguments);
+		//executeProcess(relight_cli_path, arguments);
 	}
 	QStringList arguments_merge;
 	for (const QString &subDirName : subDirs) {
@@ -240,6 +286,7 @@ void PanoBuilder::rti(){
 	executeProcess(relight_merge_path, arguments_merge);
 
 }
+
 void PanoBuilder::tapioca(){
 
 	QDir currentDir = cd("photogrammetry", true);
@@ -251,7 +298,7 @@ void PanoBuilder::tapioca(){
 		throw QString("merge directory does not exist: ") + rtiDir.absolutePath();
 	}
 
-	exportMeans(rtiDir);
+	exportMeans();
 
 	QString program = mm3d_path;
 	QStringList arguments;
@@ -299,8 +346,7 @@ void PanoBuilder::schnaps(){
 		}
 	}
 }
-// exif tools
-// capire come fare la conversione portandosi dietro gli exif
+
 
 void PanoBuilder::tapas(){
 
@@ -430,14 +476,13 @@ void PanoBuilder::malt_mec(){
 
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Malt" << "Ortho" << ".*tif" << "Relative" << "ZoomF=4" << "DirMEC=Malt"
-			  << "DirTA=TA" << "ImOrtho=.*tif" << "DirOF=Ortho-Lights" << "NbVI=2" << "Purge=true"
+	arguments << "Malt" << "Ortho" << ".*" + format << "Relative" << "DoOrtho=1" << "ZoomF=4" << "DirMEC=Malt"
+			  << "DirTA=TA" << "ImOrtho=.*" + format << "DirOF=Ortho-Lights" << "NbVI=2" << "Purge=true"
 			  << QString("DefCor=%1").arg(DefCor)
 			  << QString("Regul=%1").arg(Regul);
 	//DefCor 2 is to big
 	executeProcess(program, arguments);
 }
-
 
 void PanoBuilder::c3dc(){
 	return;
@@ -468,14 +513,17 @@ void PanoBuilder::malt_ortho(){
 		throw QString("rti dir directory does not exist in base directory: ") + rtiDir.absolutePath();
 
 	}
-	exportMeans(rtiDir);
+	exportMeans();
 
 	QStringList subDirs = mergeDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-	if (subDirs.isEmpty()) {
+	if (subDirs.isEmpty())
 		throw QString("No subdirectories found in 'merge' directory.");
-	}
 	int n_planes = findNPlanes(mergeDir);
 	for (int plane =0; plane < n_planes; plane++){
+		QString orthoPlaneDirName = QString("Ortho_plane_%1").arg(plane);
+		rmdir("Tmp-MM-Dir");
+		rmdir(orthoPlaneDirName);
+
 		for (const QString &subDirName : subDirs) {
 			QDir subDir(mergeDir.filePath(subDirName));
 
@@ -485,46 +533,23 @@ void PanoBuilder::malt_ortho(){
 			if (!QFile::exists(planeFilePath))
 				throw QString("Error: %1 does not exist in directory: ").arg(planeFilePath).arg(subDir.absolutePath());
 
-			//se formato è jpg copia se è un tif devi fare una conversion
-			QString newTifFileName = QString("%1.tif").arg(subDirName);
-			QString newTifFilePath = currentDir.filePath(newTifFileName);
+			//QString exifCommand = QString("exiftool -tagsfromfile %1 %2").arg(planeFilePath, newTifFilePath);
+			//int result = system(exifCommand.toStdString().c_str());
+			//if (result != 0)
+			//	throw QString("Error copying EXIF data from %1 to %2").arg(planeFilePath, newTifFilePath);
 
-			if (planeFileName.endsWith(".jpg")) {
-				QString exifCommand = QString("exiftool -tagsfromfile %1 %2").arg(planeFilePath, newTifFilePath);
-				int result = system(exifCommand.toStdString().c_str());
-				if (result != 0)
-					throw QString("Error copying EXIF data from %1 to %2").arg(planeFilePath, newTifFilePath);
-
-			}
-			else if (!QFile::exists(newTifFilePath)) {
-				// Comando per convertire JPG in TIFF
-				QString convertCommand = QString("convert %1 %2").arg(planeFilePath, newTifFilePath);
-				int convertResult = system(convertCommand.toStdString().c_str());
-				if (convertResult != 0) {
-					throw QString("Error converting %1 to %2").arg(planeFilePath, newTifFilePath);
-				}
-
-				QString newFileName = QString("%1.jpg").arg(subDirName);
-				QString newFilePath = currentDir.filePath(newFileName);
-
-				ExifTransplant exif;
-				bool success = exif.transplant(newFilePath.toStdString().c_str(),
-											   planeFilePath.toStdString().c_str());
-				if(!success)
-					throw QString("Unable to load exif from: ") + QString(exif.error.c_str()) + newFilePath;
-
-				QFile::remove(newFilePath);
-
-				if (!QFile::copy(planeFilePath, newFilePath))
-					throw QString("Failed to copy and rename file: ") + planeFilePath;
-			}
 		}
+
+		//else if (!QFile::exists(newTifFilePath)) {
+
+		//QString newFileName = QString("%1.jpg").arg(subDirName);
+		//QString newFilePath = currentDir.filePath(newFileName);
 		/*if(verbose)
 			cout << "Copied planes and renamed: " << qPrintable(planeFilePath) << " to " << qPrintable(newFilePath) << endl;*/
 
-		QString orthoPlaneDirName = QString("Ortho_plane_%1").arg(plane);
-		rmdir("Tmp-MM-Dir");
-		rmdir(orthoPlaneDirName);
+		//QString orthoPlaneDirName = QString("Ortho_plane_%1").arg(plane);
+		//rmdir("Tmp-MM-Dir");
+		//rmdir(orthoPlaneDirName);
 
 		QString program = mm3d_path;
 		QStringList arguments;
@@ -538,13 +563,14 @@ void PanoBuilder::malt_ortho(){
 		if (ortImages.isEmpty()) {
 			throw QString("Error: No output images found in ").arg(orthoPlaneDirName);
 		}
-#if TESTING_PLANE_0
-		break;
-#endif
-	}
-	exportMeans(rtiDir);
-}
 
+	}
+	exportMeans();
+}
+//sistema di coordinate: capire dove sta il 3d del punto dell'ori rel. trasformazione del punto con formule
+// rti fa l img media non la deve fare l rti si crea in tif, sposta rti dopo il malt mec e si fa direttamente l'img media
+
+// trova i coefficienti del tawny per vedere le sovrapposizioni degli ortho
 void PanoBuilder::tawny() {
 	QDir currentDir = cd("photogrammetry");
 
@@ -560,20 +586,33 @@ void PanoBuilder::tawny() {
 			throw QString("Directory %1 does not exist").arg(orthoDir.absolutePath());
 		}
 		QStringList tifFiles = orthoDir.entryList(QStringList() << "Ort_*.tif", QDir::Files);
-		if (tifFiles.isEmpty()) {
+		if (tifFiles.isEmpty())
 			throw QString("No .tif files in ").arg(orthoDir.absolutePath());
-		}
 		QString program = mm3d_path;
 
-		QStringList arguments;
-		arguments << "Tawny" <<  planeDirName <<"RadiomEgal=0" << "DEq=1" << "DegRap=2" << QString("Out=plane_%1.tif").arg(plane);
-		executeProcess(program, arguments);
 
-#if TESTING_PLANE_0
-		break;
-#endif
+		QStringList arguments;
+		arguments << "Tawny" << planeDirName <<"DEq=0" << "DegRap=0" << QString("Out=plane_%1.tif").arg(plane);
+		executeProcess(program, arguments);
 	}
 }
+// <<"DEq=3" << "DegRap=2" << "SzV=5"
+//<< "CorThr=0.2"<< "NbPerIm=5e4"
+/*1.	DEq: Determina il grado del polinomio per equalizzare le singole immagini. Più alto è il valore, più complessa sarà l’equalizzazione.
+	•	DEq=0: Minimo livello di equalizzazione. Potrebbe lasciare visibili i bordi.
+	•	DEq=1: Grado 1, è il valore di default. Riduce i bordi, ma può introdurre drift.
+	•	DEq=2 o superiore: Gradi più alti per migliorare la continuità delle immagini.
+	2.	DegRap: Controlla il polinomio globale per ridurre i drift radiometrici.
+	•	DegRap=0: Nessun controllo globale.
+	•	DegRap=1: Controllo minimo globale, bilancia l’equalizzazione globale.
+	•	DegRap=2 o superiore: Livelli più alti per migliorare la qualità.
+	3.	SzV: Definisce la dimensione della finestra per l’equalizzazione locale. Un valore maggiore può migliorare la qualità riducendo i bordi visibili.
+	•	SzV=3: Una finestra 3x3 può essere utile per immagini difficili.
+	4.	CorThr: Soglia di correlazione per la validazione dei punti omologhi tra le immagini. Un valore più basso accetta più punti, ma potrebbe introdurre più rumore.
+	•	CorThr=0.6: Valore tipico. Abbassarlo (es. 0.5) può aiutare a mantenere più punti per l’equalizzazione.
+	5.	NbPerIm: Numero di punti di campionamento per immagine. Aumentare questo valore potrebbe aiutare nelle immagini difficili.
+	•	NbPerIm=5e4: Di default, si campionano circa 50.000 punti per immagine. Potrebbe essere utile aumentarli a NbPerIm=1e5.*/
+
 
 void PanoBuilder::jpg() {
 	//prende l'input dalla sottodirectory Ortho Plane. plane_0.tif
@@ -599,11 +638,12 @@ void PanoBuilder::jpg() {
 		QString tifFile = tifFiles.first();
 		QString tifFilePath = orthoDir.filePath(tifFile);
 
+		QString baseName = tifFile.split(".").first();
 		QImage img;
 		if (!img.load(tifFilePath)) {
 			throw QString("Failed to load image: ").arg(tifFilePath);
 		}
-		QString jpgFileName = QString("%1."+format).arg(tifFile);
+		QString jpgFileName = QString("%1.jpg").arg(baseName);
 		QString jpgFilePath = panoramaDir.filePath(jpgFileName);
 
 		if (!img.save(jpgFilePath)) {
@@ -644,33 +684,3 @@ void PanoBuilder::updateJson(){
 }
 
 
-
-
-//crea un OriXml per ognuno degli xml di orirelative
-//crea Oriabs
-// 1. prendere orientamento della prima camera definisce l'ortopiano
-/*		ExifTransplant exif;
-bool success = exif.transplant(currentDir.absoluteFilePath(jpgFiles[0]).toStdString().c_str(),
-							   newFilePath.toStdString().c_str());
-if (!success) {
-	throw QString("Unable to load exif from: ") + QString(exif.error.c_str()) + currentDir.absoluteFilePath(jpgFiles[0]);
-}
-cout << "Copied and renamed: " << qPrintable(planeFilePath) << " to " << qPrintable(newFilePath) << endl;
-
-		QString planeFilePath = subDir.filePath("plane_*.jpg");
-		if (!QFile::exists(planeFilePath)) {
-			cout << "Warning: images does not exist in directory: " << qPrintable(subDir.absolutePath()) << endl;
-			continue;
-		}
-
-
-*/
-//		QString oriAbs = subDir.filePath("Orientation-Face_*.jpg.xml");
-//if (!QFile::exists(planeFilePath)) {
-//	cout << "Warning: Orientation-Face.xml does not exist in directory: " << qPrintable(subDir.absolutePath()) << endl;
-//	continue;
-//}
-
-// todo bounding box: definire dove inizia e finisce l'immagine
-// 2. prendere varie camere, piano che passa per tutte le camere, es prendendo punto di mezzo delle camere e piano definito. punti tutti le camere e vengono filtrate
-// 3. prendere i nuovola punti della nuvola di punti definito in apericloud e leggere la nuvola di punti e definire la nuvola di punti
