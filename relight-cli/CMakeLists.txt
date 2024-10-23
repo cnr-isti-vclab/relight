@@ -23,6 +23,9 @@ SET(HEADERS
 	../src/relight_vector.h
 	../src/rti.h
 	../src/legacy_rti.h
+	../relight/normalstask.h
+	../relight/task.h
+	../src/bni_normal_integration.h
 )
 
 SET(SOURCES
@@ -36,6 +39,10 @@ SET(SOURCES
 	../src/legacy_rti.cpp
 	../src/lp.cpp
 	convert_rti.cpp
+	../relight/normalstask.cpp
+	../relight/task.cpp
+	../src/bni_normal_integration.cpp
+
 )
 
 

@@ -461,4 +461,3 @@ void ImageSet::saveMean(const char *path, int quality) {
 	}
 	encoder.finish();
 }
-

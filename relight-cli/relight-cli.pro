@@ -15,7 +15,7 @@ win32:INCLUDEPATH += ../libjpeg/include
 win32:LIBS += ../libjpeg/lib/jpeg.lib 
 
 unix:INCLUDEPATH += /usr/include/eigen3
-unix:LIBS += -ljpeg -liomp5
+unix:LIBS += -ljpeg -liomp5  -lgomp
 unix:QMAKE_CXXFLAGS += -fopenmp
 
 mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/2.0.6/include \
@@ -40,7 +40,10 @@ SOURCES += main.cpp \
     ../src/legacy_rti.cpp \
     rtibuilder.cpp \
     convert_rti.cpp \
-    ../src/lp.cpp
+    ../src/lp.cpp \
+    ../relight/normalstask.cpp \
+    ../relight/task.cpp \
+    ../src/bni_normal_integration.cpp
 
 HEADERS += \
     ../src/getopt.h \
@@ -53,7 +56,10 @@ HEADERS += \
     ../src/legacy_rti.h \
     ../src/eigenpca.h \
     rtibuilder.h \
-    ../src/lp.h
+    ../src/lp.h \
+    ../relight/normalstask.h \
+    ../relight/task.h \
+    ../src/bni_normal_integration.h
 
 
 DISTFILES += \

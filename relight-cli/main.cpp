@@ -1,4 +1,5 @@
 #include "rtibuilder.h"
+#include "../relight/normalstask.h"
 //#include "../src/legacy_rti.h"
 
 #include "../src/getopt.h"
@@ -402,9 +403,14 @@ int main(int argc, char *argv[]) {
 		*callback = [](std::string stage, int percent)->bool{ return progress(stage, percent); };
 	}
 
-	if(skip_rti && builder.savemeans) {
+	if(skip_rti) {
 		ImageSet image_set(input.c_str());
-		image_set.saveMean(output.c_str(), builder.quality);
+		if(builder.savemeans) {
+			image_set.saveMean(output.c_str(), builder.quality);
+		}
+		if(builder.savenormals) {
+			saveNormals(NORMALS_L2, image_set, output.c_str());
+		}
 		return 0;
 	}
 

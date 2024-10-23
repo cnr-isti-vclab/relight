@@ -62,6 +62,7 @@ public:
 
 	Vector3f relativeLight(const Vector3f &light, int x, int y);
 	void saveMean(const char *path, int quality);
+	void saveNormals(const char *path); //saves a png.
 
 protected:
 	std::function<bool(std::string stage, int percent)> *callback = nullptr;
