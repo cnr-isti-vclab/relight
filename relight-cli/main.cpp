@@ -336,6 +336,40 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+	std::string input = argv[optind++];
+	std::string output("./");
+	if(optind < argc)
+		output = argv[optind++];
+
+	if(relighted) {
+		if(redrawdir.isNull()) {
+			cerr << "Specify an output image filename using -D option\n" << endl;
+			return -1;
+		}
+		test(input, redrawdir.toStdString(), light);
+		return 1;
+	}
+
+	std::function<bool(std::string stage, int percent)> *callback = nullptr;
+
+	//bool (*callback)(std::string stage, int percent) = nullptr;
+	if(verbose) {
+		callback = new std::function<bool(std::string stage, int percent)>();
+		*callback = [](std::string stage, int percent)->bool{ return progress(stage, percent); };
+	}
+
+	if(skip_rti) {
+		ImageSet image_set(input.c_str());
+		if(builder.savemeans) {
+			image_set.saveMean(output.c_str(), builder.quality);
+		}
+		if(builder.savenormals) {
+			saveNormals(NORMALS_L2, image_set, output.c_str());
+		}
+		return 0;
+	}
+
+
 	if(builder.imageset.light3d == true && builder.type == RtiBuilder::RBF) {
 		cerr << "RBF basis do not support positional lights (for the moment)\n";
 		return 1;
@@ -381,38 +415,6 @@ int main(int argc, char *argv[]) {
 
     }
 
-    std::string input = argv[optind++];
-    std::string output("./");
-    if(optind < argc)
-        output = argv[optind++];
-
-    if(relighted) {
-		if(redrawdir.isNull()) {
-			cerr << "Specify an output image filename using -D option\n" << endl;
-			return -1;
-		}
-		test(input, redrawdir.toStdString(), light);
-        return 1;
-    }
-
-	std::function<bool(std::string stage, int percent)> *callback = nullptr;
-
-	//bool (*callback)(std::string stage, int percent) = nullptr;
-	if(verbose) {
-		callback = new std::function<bool(std::string stage, int percent)>();
-		*callback = [](std::string stage, int percent)->bool{ return progress(stage, percent); };
-	}
-
-	if(skip_rti) {
-		ImageSet image_set(input.c_str());
-		if(builder.savemeans) {
-			image_set.saveMean(output.c_str(), builder.quality);
-		}
-		if(builder.savenormals) {
-			saveNormals(NORMALS_L2, image_set, output.c_str());
-		}
-		return 0;
-	}
 
 
 	QElapsedTimer timer;
