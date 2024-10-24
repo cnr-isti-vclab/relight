@@ -65,7 +65,7 @@ void computeNormals(NormalSolver solver, ImageSet &imageSet, std::vector<float> 
 		pool.queue(run);
 		pool.waitForSpace();
 
-		if(! (*callback)("Computing normals...", ((float)i / imageSet.height) * 100)) {
+		if(callback && ! (*callback)("Computing normals...", ((float)i / imageSet.height) * 100)) {
 			break;
 		}
 	}
