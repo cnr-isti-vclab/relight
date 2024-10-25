@@ -304,6 +304,7 @@ void Project::load(QString filename) {
 		for(auto sphere: obj["spheres"].toArray()) {
 			Sphere *_sphere = new Sphere;
 			_sphere->fromJson(sphere.toObject());
+			_sphere->image_size = imgsize;
 			spheres.push_back(_sphere);
 		}
 	}

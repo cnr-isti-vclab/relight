@@ -164,6 +164,9 @@ void MainWindow::clear() {
 
 
 void MainWindow::newProject() {
+	if(!checkBeforeClosingProject())
+		return;
+
 	QString lastDir = settings->value("LastDir", QDir::homePath()).toString();
 	QString dir = QFileDialog::getExistingDirectory(this, "Choose picture folder", lastDir);
 	if(dir.isNull()) return;
@@ -208,6 +211,9 @@ void MainWindow::newProject() {
 }
 
 void MainWindow::openProject() {
+	if(!checkBeforeClosingProject())
+		return;
+
 	QString lastDir = settings->value("LastDir", QDir::homePath()).toString();
 
 	QString filename = QFileDialog::getOpenFileName(this, "Select a project", lastDir, "*.relight");
@@ -805,17 +811,23 @@ int MainWindow::detectHighlight(int n) {
 	}
 
 
-	for(auto sphere: project.spheres)
+	for(auto sphere: project.spheres) {
 		if(sphere->fitted) {
 			sphere->findHighlight(img, n);
 		}
-
+	}
 	return 1;
 }
 
+bool MainWindow::checkBeforeClosingProject() {
+	if(project.images.size() == 0)
+		return true;
+	int res = QMessageBox::question(this, "Closing current project.", "Are you sure?");
+	return res == QMessageBox::Yes;
+}
+
 void MainWindow::quit() {
-	int res = QMessageBox::question(this, "Closing relight.", "Sure?");
-	if(res == QMessageBox::Yes)
+	if(checkBeforeClosingProject())
 		exit(0);
 }
 
