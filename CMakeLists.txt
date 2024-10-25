@@ -1,17 +1,33 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.13)
 project(relight)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_FIND_FRAMEWORK LAST)
 
-option(USE_QT_5 "Set to use Qt5" ON)
 option(MACOSX_MAKE_BUNDLE "If using macos, all targets will be placed in a relight macosx app bundle" ON)
 
-if(USE_QT_5)
-	set(RELIGHT_QT Qt5)
-else()
+
+find_package(Qt6 COMPONENTS  Core Gui Widgets Concurrent Xml QUIET)
+
+
+if (Qt6_FOUND)
 	set(RELIGHT_QT Qt6)
+	message("Using Qt6")
+
+else()
+	find_package(Qt5 COMPONENTS  Core Gui Widgets Concurrent Xml QUIET)
+	
+	if(Qt5_FOUND)
+	set(RELIGHT_QT Qt5)
+		message("Using Qt5")
+else()
+		message(FATAL_ERROR "Qt not found")
 endif()
+endif()
+
+
+find_package(Eigen3)
+find_package(OpenMP)
 
 if(MACOSX_MAKE_BUNDLE)
 	set(MACOSX_EXE_TARGET_OPTION MACOSX_BUNDLE)
@@ -19,7 +35,6 @@ else()
 	set(MACOSX_EXE_TARGET_OPTION "")
 endif()
 
-find_package(Eigen3)
 if(NOT Eigen3_FOUND)
 	set(EIGEN3_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/eigen-3.3.9)
 endif()

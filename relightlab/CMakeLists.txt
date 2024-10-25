@@ -116,6 +116,8 @@ set (RELIGHTLAB_SOURCES
     helpbutton.cpp 
     cropframe.cpp
     rtiframe.cpp
+    rtirecents.cpp
+    rtiplan.cpp
     rticard.cpp
     rtiexportdialog.cpp
     ../relight/imagecropper.cpp
