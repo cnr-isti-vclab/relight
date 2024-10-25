@@ -35,14 +35,21 @@ jobs:
         Set-Content -Path certificate\certificate.txt -Value '${{ secrets.WIN_CERTIFICATE }}'
         certutil -decode certificate\certificate.txt certificate\certificate.pfx
     - name: Install Qt
+      if: matrix.os != 'macos-latest'
       uses: jurplel/install-qt-action@v3
       with:
         cache: true
         version: ${{ env.QT_VERSION }}
     - name: Install dependencies
+      if: matrix.os != 'macos-latest'
       shell: bash
       run: |
         bash build_scripts/${{ runner.os }}/0_setup_env.sh --dont_install_qt
+    - name: Install dependencies
+      if: matrix.os == 'macos-latest'
+      shell: bash
+      run: |
+        bash build_scripts/${{ runner.os }}/0_setup_env.sh
     - name: Ccache
       uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -50,7 +57,7 @@ jobs:
     - name: Configure and Build
       shell: bash
       run: |
-        bash build_scripts/${{ runner.os }}/1_build.sh --ccache --use_brew_llvm
+        bash build_scripts/${{ runner.os }}/1_build.sh --ccache
     - name: Deploy
       shell: bash
       run: |
