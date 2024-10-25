@@ -1,14 +1,8 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 project(relight)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_FIND_FRAMEWORK LAST)
-
-find_package(
-	${RELIGHT_QT}
-	COMPONENTS Core Gui Widgets Concurrent Xml
-	REQUIRED)
-find_package(OpenMP)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
