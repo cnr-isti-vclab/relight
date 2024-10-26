@@ -1,5 +1,6 @@
 #include "jpeg_encoder.h"
 
+#include <cmath>
 #include <iostream>
 using namespace std;
 
@@ -45,6 +46,9 @@ void JpegEncoder::setChromaSubsampling(bool subsample) {
 	this->subsample = subsample;
 }
 
+void JpegEncoder::setDotsPerMeter(float dotsPerMeter) {
+        this->dotsPerCM = round( dotsPerMeter / 100.0 );  // JPEG requires a resolution in pixels/cm
+}
 
 
 bool JpegEncoder::encode(uint8_t* img, int width, int height, FILE* file) {
@@ -84,6 +88,13 @@ bool JpegEncoder::encode(uint8_t* img, int width, int height) {
 	jpeg_set_colorspace(&info, jpegColorSpace);
 	jpeg_set_quality(&info, quality, (boolean)true);
 	info.optimize_coding = (boolean)optimize;
+
+	// Set our output resolution if provided in pixels/cm
+	if(dotsPerCM>0) {
+	        info.X_density = dotsPerCM;
+		info.Y_density = dotsPerCM;
+		info.density_unit = 2;   // 2 = pixels per cm
+	}
 
 	if(jpegColorSpace == JCS_YCbCr && subsample == false) {
 		for(int i = 0; i < numComponents; i++) {

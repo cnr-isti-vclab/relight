@@ -20,36 +20,31 @@ struct Line {
 
 class Sphere {
 public:
-	QPointF center;      //in pixel coordinates of the image
-	QPointF majorAxis;
-	QPointF minorAxis;
-	float majorRadius;
-	float minorRadius;
 
+	QPointF center;      //center of circle or ellipse, in pixel coordinates of the image
+
+	/* Circle parameters */
 	float radius;        //fitted radius
-
-
 	float smallradius;   //innner radius where to look for reflections
+
+	/* Ellipse parameters */
+	bool ellipse = false;
+	float eWidth, eHeight, eAngle;
+	float eFocal; //estimated focal
+
 	QRect inner;         //box of the inner part of the circle/ellipse
 	bool fitted;         //we have a valid fit
 	QImage sphereImg;
 	std::vector<QImage> thumbs;
 
-	bool ellipse = false;
-	float eWidth, eHeight, eAngle;
-	float eFocal; //estimated focal
 
 	std::vector<QPointF> border;        //2d pixels sampled on the border of the sphere.
 	std::vector<QPointF> lights;       //2d pixel of the light spot for this sphere.
 	std::vector<Vector3f> directions;  //
 
-	std::vector<std::vector<int>>histogram;
 
-	Sphere();
-	Sphere(int n_lights) {
-		lights.resize(n_lights);
-		directions.resize(n_lights);
-	}
+	Sphere(int n_lights = 0);
+
 	bool fit();
 	void ellipseFit();
 	void findHighlight(QImage im, int n, bool update_positions = true);

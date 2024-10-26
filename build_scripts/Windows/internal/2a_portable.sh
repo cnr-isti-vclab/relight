@@ -22,7 +22,9 @@ case $i in
 esac
 done
 
+${QT_DIR}windeployqt $INSTALL_PATH/relight.exe
 ${QT_DIR}windeployqt $INSTALL_PATH/relightlab.exe
+
 
 # remove all .lib files
 for file in $(find $INSTALL_PATH -name '*.lib');

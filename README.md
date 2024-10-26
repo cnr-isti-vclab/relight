@@ -161,6 +161,37 @@ $ cmake .
 $ make
 ```
     
+
+### MacOS
+
+Installed tools: 
+* Homebrew, CMake, Qt6
+
+Add homebrew binaries on your PATH: 
+```shell
+echo 'PATH="/opt/homebrew/bin:$PATH"' >> ./zshrc
+source ~/.zshrc
+```
+
+Add some additional enviroment constants to your shell
+```shell
+echo "$(brew shellenv)" >> ./zshrc
+source ~/.zshrc
+```
+
+Install dependencies: 
+```shell
+brew install jpeg-turbo coreutils llvm cmake ninja eigen 
+```
+
+Set the Qt_DIR to point to your Qt6 installation and libomp path: 
+```shell
+export OPENMP_PATH=$(brew --prefix libomp)
+export cmake -D OpenMP_ROOT=$OPENMP_PATH -D Qt6_DIR=/yourpath/Qt/version/macos/lib/cmake/Qt6
+make
+```
+
+
 # TODO
 
 * White balance and other conversion from RAW features (dcraw)

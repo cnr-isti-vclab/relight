@@ -36,7 +36,7 @@ public:
 	std::vector<Align *> aligns;
 	std::vector<White *> whites;
 	QRect crop;
-	float pixelSize = 0; //if computed from measures
+	float pixelSize = 0; //if computed from measures in mm
 
 	QString name;
 	std::vector<QString> authors;

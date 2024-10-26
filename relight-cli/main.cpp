@@ -34,7 +34,7 @@ void help() {
     cout << "\t-y <int>  : number of Y planes in YCC\n\n";
 	cout << "\t-3 <radius[:offset]>: 3d light positions processing, ratio diameter_dome/image_width\n               and optionally vertical offset of the center of the sphere to the surface.\n";
 
-	cout << "\t-P <pixel size in MM>: this number is saved in .json output\n";
+	cout << "\t-P <pixel size in MM>: this number is saved in .json output and within image metadata\n";
     //	cout << "\t-m <int>  : number of materials (default 8)\n";
 	cout << "\t-n        : extract normals\n";
 	cout << "\t-m        : extract mean image\n";
@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
 
 	opterr = 0;
     char c;
-	while ((c  = getopt (argc, argv, "hmMn3:r:d:q:p:s:c:reE:b:y:S:R:CD:B:L:k:v")) != -1)
+	while ((c  = getopt (argc, argv, "hmMn3:r:d:q:p:s:c:reE:b:y:S:R:CD:B:L:k:P:v")) != -1)
         switch (c)
         {
         case 'h':
@@ -132,19 +132,19 @@ int main(int argc, char *argv[]) {
             //	break;
         case 'r': {
             int res = atoi(optarg);
-            builder.resolution = res = atoi(optarg);
+            builder.resolution = res;
             if(res < 0 || res == 1 || res == 2 || res > 20) {
                 cerr << "Invalid resolution (must be 0 or >= 2 && <= 20)!\n" << endl;
                 return 1;
             }
+	    break;
+	}
+	case 'P':
+		builder.pixelSize = atof(optarg);
+		if(builder.pixelSize <= 0) {
+	        cerr << "Invalid parameter pixelSize (-P): " << optarg << endl;
+			return 1;
 		}
-			break;
-		case 'P':
-			builder.pixelSize = atof(optarg);
-			if(builder.pixelSize <= 0) {
-				cerr << "Invalidi parameter pixelSize (-p): " << optarg << endl;
-				return 1;
-			}
             break;
         case 'b': {
             string b = optarg;
@@ -336,6 +336,27 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	/* Sanity checks, TODO: move into RTI builder! */
+
+	switch(builder.type) {
+	case Rti::PTM:
+		if(builder.colorspace == Rti::LRGB && builder.nplanes != 9) {
+			cerr << "lptm basis requires 9 coefficient planes (option -p 9)\n";
+			return -1;
+		}
+		if(builder.colorspace == Rti::RGB && builder.nplanes != 18) {
+			cerr << "ptm basis requires 18 coefficient planes (option -p 18)\n";
+			return -1;
+		}
+		break;
+	case Rti::HSH:
+		if(builder.colorspace == Rti::RGB && (builder.nplanes != 27 || builder.nplanes != 12)) {
+			cerr << "hsh basis requires 12 or 27 coefficient planes (option -p 12 or -p 27)\n";
+			return -1;
+		}
+		break;
+	default: break;
+	}
 
     if( builder.colorspace == Rti::MYCC) {
         if(builder.yccplanes[0] == 0) {
@@ -381,14 +402,20 @@ int main(int argc, char *argv[]) {
 	timer.start();
 
 	QFileInfo info(input.c_str());
+	if(!info.exists()) {
+		cerr << "Input \"" << input << "\" doesn't seems to exist." << endl;
+		return 1;
+	}
 	if(info.isFile()) {
 		if(info.suffix() == "relight") {
 			if(!builder.initFromProject(input, callback)) {
 				cerr << builder.error << "\n" << endl;
 				return 1;
 			}
-		} if(info.suffix() == "json") {
+
+		} else if(info.suffix() == "json") {
 			return convertToRTI(input.c_str(), output.c_str());
+
 		} else if(info.suffix() == "rti" || info.suffix() == "ptm") {
 			try {
 				return convertRTI(input.c_str(), output.c_str(), quality);
@@ -396,15 +423,20 @@ int main(int argc, char *argv[]) {
 				cerr << qPrintable(error) << endl;
 				return 1;
 			}
+
 		} else {
 			cerr << "Input parameter (" << input << ") is an unknown type, relight-cli can process .relight, .json, .rti or .ptm files" << endl;
 			return 1;
 		}
-	} else {
+	} else if(info.isDir()) {
+
 		if(!builder.initFromFolder(input, callback)) {
 			cerr << builder.error << " !\n" << endl;
 			return 1;
 		}
+	} else {
+		cerr << "Input\"" << input << "\" is not a file or a directory." << endl;
+		return 1;
 	}
 
     int size = builder.save(output, quality);

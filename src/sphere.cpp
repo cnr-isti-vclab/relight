@@ -8,52 +8,25 @@
 #include <QRunnable>
 #include <QGradient>
 
+#include <Eigen/Dense>
+#include <Eigen/Core>
+#include <Eigen/Eigenvalues>
 
 #include <iostream>
-
 #include <math.h>
 #include <assert.h>
 
-
 using namespace std;
 
-
-
-Sphere::Sphere() {}
+Sphere::Sphere(int n_lights) {
+	lights.resize(n_lights);
+	directions.resize(n_lights);
+}
 
 void Sphere::resetHighlight(size_t n) {
 	lights[n] = QPointF();
 	directions[n] = Vector3f();
 }
-
-/*void Sphere::setActive(booclass Align
-{
-public:
-	Align();
-};l _active) {
-	active = _active;
-	QPen pen;
-	pen.setCosmetic(true);
-	pen.setColor(active? Qt::yellow : Qt::lightGray);
-	if(!active) {
-
-	}
-
-	if(circle) circle->setPen(pen);
-
-	QVector<qreal> dashes;
-	dashes << 4 << 4;
-	pen.setDashPattern(dashes);
-
-	if(smallcircle) smallcircle->setPen(pen);
-	for(auto p: border)
-		p->setPen(pen);
-
-} */
-
-#include <Eigen/Dense>
-#include <Eigen/Core>
-#include <Eigen/Eigenvalues>
 
 void Sphere::ellipseFit() {
 	size_t n = border.size();
@@ -137,19 +110,11 @@ void Sphere::ellipseFit() {
 	eWidth = width;
 	eHeight = height;
 	eAngle = phi*180/M_PI;
-	eFocal =  180*acos(eHeight/eWidth)/M_PI;
-
-
-	cout << "Center: " << center_x << " - " << center_y << endl;
-	cout << "W: " << width << " H: " << height << endl;
-	cout << "PHi: " << phi << endl;
-	cout << "Focal: " << eFocal << endl;
 }
 
 bool Sphere::fit() {
-	if(border.size() < 3) {
+	if(border.size() < 3)
 		return false;
-	}
 
 	if(border.size() >= 5) {
 		ellipseFit();
@@ -161,8 +126,7 @@ bool Sphere::fit() {
 		}
 	}
 	if(!ellipse) {
-		ellipse = false;
-
+		//TODO fitCircle
 		double n = border.size();
 		double sx = 0, sy = 0, sxy = 0, sx2 = 0, sy2 = 0, sx3 = 0, sy3 = 0, sx2y = 0, sxy2 = 0;
 		for(size_t k = 0; k < border.size(); k++) {
@@ -195,10 +159,6 @@ bool Sphere::fit() {
 
 		center = QPointF(a, b);
 		radius = r;
-
-		//float max_angle = (52.0/180.0)*M_PI; //60 deg  respect to the vertical
-		float max_angle = (50.0/180.0)*M_PI; //slightly over 45. hoping not to spot reflexes
-		smallradius = radius*sin(max_angle);
 
 
 	}
@@ -236,11 +196,11 @@ bool inEllipse(double x, double y, double a, double b, double theta) {
 
 
 void Sphere::findHighlight(QImage img, int n, bool update_positions) {
-	if(n == 0) histogram.clear();
-	if(n == 0) thumbs.clear();
-	//TODO hack!
-	if(n == 0)
+	if(sphereImg.isNull()) {
+		sphereImg = QImage(inner.width(), inner.height(), QImage::Format_ARGB32);
 		sphereImg.fill(0);
+	}
+	if(n == 0) thumbs.clear();
 
 	thumbs.push_back(img.copy(inner));
 
@@ -305,7 +265,6 @@ void Sphere::findHighlight(QImage img, int n, bool update_positions) {
 	//threshold now is 10 lower so we get more points.
 	threshold += 10;
 
-	histogram.push_back(histo);
 	if(threshold < 200) {
 		//highlight in the mid greys? probably all the sphere is in shadow.
 		lights[n] = QPointF(0, 0);

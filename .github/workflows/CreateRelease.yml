@@ -113,6 +113,7 @@ jobs:
         path: relightlab_linux_appimage
     - name: Change Permissions
       run: |
+        chmod +x relightlab_linux_portable/usr/bin/relight
         chmod +x relightlab_linux_portable/usr/bin/relightlab
         chmod +x relightlab_linux_portable/usr/bin/relight-cli
         chmod +x relightlab_linux_portable/usr/bin/relight-merge
@@ -123,7 +124,7 @@ jobs:
       run: |
         #get version of relightlab
         IFS=' ' #space delimiter
-        STR_VERSION=$(relightlab_linux_portable/usr/bin/relightlab --version)
+        STR_VERSION=$(relightlab_linux_portable/usr/bin/relight --version)
         read -a strarr <<< "$STR_VERSION"
         RL_VERSION=${strarr[1]} #get the relight version from the string
         echo "rl_version=$RL_VERSION" >> $GITHUB_OUTPUT
