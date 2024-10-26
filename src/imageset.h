@@ -15,21 +15,26 @@ class QImage;
 
 class ImageSet {
 public:
-	int width = 0, height = 0;
-	int image_width = 0, image_height = 0;
-	//left, top is pixel [0, 0];
-	int left = 0, top = 0, right = 0, bottom = 0;
-	int current_line = 0;
+	QString path;
 	QStringList images;
-	std::vector<Vector3f> lights;
-	std::vector<Vector3f> lights3d;
-	float dome_radius = 4.0f;
-	float vertical_offset = 0.0f;
-	bool light3d = false;
-    QString path;
 
+	int image_width = 0, image_height = 0; //in pixels original size of the image.
+	//current crop: left, top is pixel [0, 0];
+	int width = 0, height = 0;
+	int left = 0, top = 0, right = 0, bottom = 0;
+
+	//Lights
+	std::vector<Vector3f> lights;
+
+	bool light3d = false;
+	std::vector<Vector3f> lights3d; //always expressed in cm.
+
+	//Geometry
+	float image_width_cm = 0.0f;
+	float dome_radius = 0.0f;
+	float vertical_offset = 0.0f;
 	
-	
+	int current_line = 0;
 
 	ImageSet(const char *path = nullptr);
 	~ImageSet();

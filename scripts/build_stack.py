@@ -22,11 +22,12 @@ parser = argparse.ArgumentParser(
   description='Convert relight output folder to tiled multi-resolution TIFF image stack'
 )
 
-parser.add_argument('-i', '--input', help='Input file in EDF format', required=True)
+parser.add_argument('-i', '--input', help='Input directory containing relight RTI layout', required=True)
 parser.add_argument('-o', '--output', help='Output TIFF file', required=True)
-parser.add_argument('-c', '--compression', choices=['jpeg', 'deflate', 'lzw', 'webp', 'none'], default="jpeg", help='Compression format')
-parser.add_argument('-q', '--quality', type=int, default=75, help='Compression quality for JPEG and WebP')
-parser.add_argument('-v', '--verbose', action='store_true', help='verbose output')
+parser.add_argument('-c', '--compression', choices=['jpeg', 'deflate', 'lzw', 'webp', 'none'], default="jpeg", help='Compression format (default: %(default)s)')
+parser.add_argument('-q', '--quality', type=int, default=90, help='Compression quality for JPEG and WebP (default: %(default)s)')
+parser.add_argument('-t', '--tile', type=int, default=256, help="Tile size (default: %(default)s)")
+parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
 args = parser.parse_args()
 
 
@@ -36,6 +37,20 @@ if os.path.isfile(info):
   f = open(info, "r")
   info = f.read()
   f.close()
+
+
+# Update format field within the info data depending on choice of compression
+if args.compression != "jpeg":
+  format = '"format": "' + args.compression + '",'
+  info = info.replace( '"format": "jpg",', format )
+
+
+# Check for spatial resolution within info file
+dpi = 0.0
+n = info.find("pixelSizeInMM")
+if n > 0:
+  # Vips uses pixels/mm internally, so no scaling necessary
+  dpi = 1.0 / float( info[n+16:n+24] )
 
 
 # Count number of planes
@@ -66,13 +81,22 @@ for n in range(0,planes):
 # Join image stack vertically as a "toilet-roll"
 stack = pyvips.Image.arrayjoin( relight_planes, across=1 )
 
-# Embed info.json in XMP tag
-stack.set_type(pyvips.GValue.blob_type, "xmp-data", str.encode(info))
+
+# Embed info.json in ImageDescription tag (tag 270)
+stack.set_type(pyvips.GValue.gstr_type, "image-description", str.encode(info))
+
 
 if args.verbose:
-  print("Saving to TIFF with compression %s at quality %d" % (args.compression, args.quality))
+  print("Saving to TIFF with a tile size %d and %s compression at quality %d" % (args.tile, args.compression, args.quality))
 
 # Save as a stacked tiled pyramid TIFF using SubIFDs
+if dpi == 0.0:
 stack.tiffsave( args.output, pyramid=True, subifd=True,
                 compression=args.compression, Q=args.quality,
-                tile=True, tile_width=256, tile_height=256 )
+                  tile=True, tile_width=args.tile, tile_height=args.tile )
+else:
+  # Include spatial resolution if we have it
+  stack.tiffsave( args.output, pyramid=True, subifd=True,
+                  compression=args.compression, Q=args.quality,
+                  tile=True, tile_width=args.tile, tile_height=args.tile,
+                  xres=dpi, yres=dpi, resunit="cm" )

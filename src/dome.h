@@ -25,7 +25,8 @@ class Dome {
 public:
 	QString label;
 	QString notes;
-	std::vector<Vector3f> positions; //directions are just position on the unit sphere
+	std::vector<Vector3f> positions; 
+	std::vector<Vector3f> directions;
 	//TODO rename
 	std::vector<Color3f> ledAdjust;  //multiply pixel valut to correct for led differences
 	//TODO dome calibrations as a grid per led

@@ -65,6 +65,7 @@ QJsonObject Dome::toJson() {
 	dome.insert("domeDiameter", domeDiameter);
 	dome.insert("verticalOffset", verticalOffset);
 	dome.insert("lightConfiguration", lightConfigs[lightConfiguration]);
+	dome.insert("directions", ::toJson(directions));
 	dome.insert("positions", ::toJson(positions));
 	dome.insert("ledAdjust", ::toJson(ledAdjust));
 	return dome;
@@ -99,6 +100,7 @@ void Dome::fromJson(const QJsonObject &obj) {
 		if(index >= 0)
 			lightConfiguration = LightConfiguration(index);
 	}
+	::fromJson(obj["directions"].toArray(), directions);
 	::fromJson(obj["positions"].toArray(), positions);
 	::fromJson(obj["ledAdjust"].toArray(), ledAdjust);
 }
