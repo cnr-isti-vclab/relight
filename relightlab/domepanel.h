@@ -6,11 +6,8 @@
 #include <QFrame>
 #include <QGraphicsScene>
 
-class QGraphicsView;
 class QLabel;
-class QLineEdit;
-class QListWidget;
-class DirectionsView;
+class QComboBox;
 
 class DomePanel: public QFrame {
 	Q_OBJECT
@@ -19,10 +16,10 @@ public:
 	void init();
 	void loadDomeFile(QString path);
 
-
 public slots:
 	void loadDomeFile();
-	void setSelectedDome();
+	void exportDome();
+	void setDome(int);
 	void updateDomeList();
 
 signals:
@@ -32,9 +29,10 @@ private:
 	Dome dome;
 	QStringList dome_labels;
 	QStringList dome_paths;
+	QComboBox *dome_list;
 
-	QLabel *filename;
-	QListWidget *dome_list;
+
+	//QListWidget *dome_list;
 
 	void loadLP(QString filename);
 	void loadDome(QString filename);

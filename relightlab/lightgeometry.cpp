@@ -95,11 +95,21 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 
 	page->addSpacing(30);
 
-	QPushButton *save_dome = new QPushButton(QIcon::fromTheme("save"), "Export as dome...");
-	page->addWidget(save_dome, Qt::AlignRight);
-	save_dome->setProperty("class", "large");
+	//QFrame *buttons = new QFrame(this);
 
+	QHBoxLayout *buttons_layout = new QHBoxLayout;
+	page->addLayout(buttons_layout);
+
+	QPushButton *save_dome = new QPushButton(QIcon::fromTheme("save"), "Export as dome...");
+	buttons_layout->addWidget(save_dome, Qt::AlignRight);
+	save_dome->setProperty("class", "large");
 	connect(save_dome, SIGNAL(clicked()), this, SLOT(exportDome()));
+
+	QPushButton *load_dome = new QPushButton(QIcon::fromTheme("load"), "Load dome file...");
+	buttons_layout->addWidget(load_dome, Qt::AlignRight);
+	load_dome->setProperty("class", "large");
+
+
 
 }
 
