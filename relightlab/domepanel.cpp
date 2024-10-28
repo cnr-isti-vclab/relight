@@ -6,10 +6,10 @@
 
 #include <QPushButton>
 #include <QVBoxLayout>
-#include <QGridLayout>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
-#include <QListWidget>
+#include <QComboBox>
 #include <QFileDialog>
 
 #include <QDebug>
@@ -18,26 +18,28 @@
 
 DomePanel::DomePanel(QWidget *parent): QFrame(parent) {
 
-	setContentsMargins(10, 10, 10, 10);
-	QGridLayout *content = new QGridLayout(this);
-	content->setHorizontalSpacing(20);
+//	setContentsMargins(10, 10, 10, 10);
+	QHBoxLayout *content = new QHBoxLayout(this);
+	//content->setHorizontalSpacing(20);
+
+	QPushButton *save = new QPushButton(QIcon::fromTheme("save"), "Export dome...");
+	save->setProperty("class", "large");
+	save->setMinimumWidth(200);
+	save->setMaximumWidth(300);
+	connect(save, SIGNAL(clicked()), this, SLOT(exportDome()()));
+	content->addWidget(save, 0, Qt::AlignTop);
 
 	QPushButton *load = new QPushButton(QIcon::fromTheme("folder"), "Load dome file...");
 	load->setProperty("class", "large");
 	load->setMinimumWidth(200);
 	load->setMaximumWidth(300);
 	connect(load, SIGNAL(clicked()), this, SLOT(loadDomeFile()));
-	content->addWidget(load, 1, 0, Qt::AlignTop);
+	content->addWidget(load, 0, Qt::AlignTop);
 
 
-
-
-	content->addWidget(new QLabel("Recent domes: "), 0, 1);
-	dome_list = new QListWidget;
-	content->addWidget(dome_list, 1, 1);
-
-
-	connect(dome_list, SIGNAL(itemSelectionChanged()), this, SLOT(setSelectedDome()));
+	dome_list = new QComboBox;
+	content->addWidget(dome_list, 1, Qt::AlignTop);
+	connect(dome_list, SIGNAL(currentIdexChanged(int)), this, SLOT(setDome(int)));
 	init();
 }
 
@@ -47,9 +49,10 @@ void DomePanel::init() {
 }
 
 void DomePanel::updateDomeList() {
-	dome_labels.clear();
+	//dome_labels.clear();
 	dome_paths.clear();
 	dome_list->clear();
+	dome_list->addItem("Select a recent dome...");
 	//get list of existing domes
 	QStringList paths = qRelightApp->domes();
 	for(QString path: paths) {
@@ -67,9 +70,11 @@ void DomePanel::updateDomeList() {
 		dome_paths.append(path);
 		dome_list->addItem(dome.label);
 	}
-
 }
 
+void DomePanel::setDome(int index) {
+	loadDomeFile(dome_paths[index]);
+}
 void DomePanel::loadDomeFile() {
 	QString path = QFileDialog::getOpenFileName(this, "Load a .lp or .dome file", QDir::currentPath(), "Light directions and domes (*.lp *.dome )");
 	if(path.isNull())
@@ -82,7 +87,19 @@ void DomePanel::loadDomeFile(QString path) {
 		loadLP(path);
 	if(path.endsWith(".dome"))
 		loadDome(path);
-	dome_list->clearSelection();
+//	dome_list->clearSelection();
+}
+
+void DomePanel::exportDome() {
+	QString filename = QFileDialog::getSaveFileName(this, "Select a dome file", qRelightApp->lastProjectDir(), "*.dome");
+	if(filename.isNull())
+		return;
+	if(!filename.endsWith(".dome"))
+		filename += ".dome";
+	//TODO Basic checks, label is a problem (use filename!
+	Dome &dome = qRelightApp->project().dome;
+	dome.save(filename);
+	qRelightApp->addDome(filename);
 }
 
 
@@ -122,10 +139,10 @@ void DomePanel::loadDome(QString path) {
 
 
 
-void DomePanel::setSelectedDome() {
+/*void DomePanel::setSelectedDome() {
 	auto list = dome_list->selectedItems();
 	if(!list.size())
 		return;
 	int pos = dome_list->row(list[0]);
 	loadDomeFile(dome_paths[pos]);
-}
+}*/

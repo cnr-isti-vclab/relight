@@ -27,13 +27,14 @@ LightsFrame::LightsFrame() {
 	content->addWidget(choice);
 
 
-	choice->addTab(sphere_panel = new SpherePanel, "Sphere");
-	choice->addTab(dome_panel = new DomePanel, "Dome");
+	choice->addTab(sphere_panel = new SpherePanel, "Reflective Spheres");
+
 
 	content->addSpacing(30);
 
 	geometry = new LightsGeometry;
 	content->addWidget(geometry);
+	content->addWidget(dome_panel = new DomePanel);
 
 	content->addStretch();
 
