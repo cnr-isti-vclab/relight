@@ -5,7 +5,6 @@
 #include <functional>
 #include <QDir>
 #include <QMessageBox>
-#include <QXmlSimpleReader>
 #include <QString>
 #include <QStringList>
 #include <QDomDocument>
