@@ -12,22 +12,19 @@
 
 #include <assert.h>
 
-SpherePanel::SpherePanel(QWidget *parent): QFrame(parent) {
+SpherePanel::SpherePanel(QWidget *parent): QGroupBox("Reflective spheres", parent) {
+	//setFrameShape(QFrame::Box);
 	QVBoxLayout *content = new QVBoxLayout(this);
 
 	content->addSpacing(10);
-	QPushButton *new_sphere = new QPushButton("New sphere...");
-	new_sphere->setProperty("class", "large");
-	content->addWidget(new_sphere);
-	new_sphere->setMinimumWidth(200);
-	new_sphere->setMaximumWidth(300);
+
 
 	QFrame *spheres_frame = new QFrame;
 	content->addWidget(spheres_frame);
 	spheres = new QVBoxLayout(spheres_frame);
 
-	//content->addStretch();
-	connect(new_sphere, SIGNAL(clicked()), this, SLOT(newSphere()));
+	QHBoxLayout *buttons = new QHBoxLayout;
+	content->addLayout(buttons);
 }
 
 void SpherePanel::clear() {

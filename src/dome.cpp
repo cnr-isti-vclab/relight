@@ -1,4 +1,6 @@
 #include "dome.h"
+#include "sphere.h"
+#include "lens.h"
 
 #include <QJsonObject>
 #include <QJsonArray>
@@ -36,6 +38,37 @@ QJsonArray toJson(std::vector<Color3f> &values) {
 	return jvalues;
 }
 
+void Dome::fromSpheres(std::vector<Sphere *> &spheres, Lens &lens) {
+	switch(lightConfiguration) {
+	case Dome::DIRECTIONAL:
+		computeDirections(spheres, lens, directions);
+		break;
+	case Dome::SPHERICAL:
+		computeDirections(spheres, lens, directions);
+		positionsSphere.resize(directions.size());
+		for(size_t i = 0; i < directions.size(); i++) {
+			Vector3f &p = positionsSphere[i] = directions[i];
+			p *= domeDiameter/2.0;
+			p[2] += verticalOffset;
+		}
+		positions3d = positionsSphere;
+		break;
+	case Dome::LIGHTS3D:
+		computeParallaxPositions(spheres, lens, positions3d);
+		directions = positions3d;
+		for(size_t i = 0; i < directions.size(); i++) {
+			float len = directions[i].norm();
+			directions[i] /= len;
+			positionsSphere[i] = positions3d[i];
+			positionsSphere[i][2] -= verticalOffset;
+			len = positionsSphere[i].norm();
+			positionsSphere[i] *= domeDiameter/(2.0f*len);
+			positionsSphere[i][2] += verticalOffset;
+		}
+		break;
+	}
+}
+
 void Dome::save(const QString &filename) {
 	QFile file(filename);
 	bool open = file.open(QFile::WriteOnly | QFile::Truncate);
@@ -66,7 +99,8 @@ QJsonObject Dome::toJson() {
 	dome.insert("verticalOffset", verticalOffset);
 	dome.insert("lightConfiguration", lightConfigs[lightConfiguration]);
 	dome.insert("directions", ::toJson(directions));
-	dome.insert("positions", ::toJson(positions));
+	dome.insert("positionsSphere", ::toJson(positionsSphere));
+	dome.insert("positions3d", ::toJson(positions3d));
 	dome.insert("ledAdjust", ::toJson(ledAdjust));
 	return dome;
 }
@@ -101,7 +135,8 @@ void Dome::fromJson(const QJsonObject &obj) {
 			lightConfiguration = LightConfiguration(index);
 	}
 	::fromJson(obj["directions"].toArray(), directions);
-	::fromJson(obj["positions"].toArray(), positions);
+	::fromJson(obj["positionsSphere"].toArray(), positionsSphere);
+	::fromJson(obj["positions3d"].toArray(), positions3d);
 	::fromJson(obj["ledAdjust"].toArray(), ledAdjust);
 }
 

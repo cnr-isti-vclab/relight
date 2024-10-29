@@ -13,6 +13,13 @@ class QAbstractButton;
 class HelpRadio;
 class DirectionsView;
 
+/* This class display the current dome parameters (see dome.h for details
+ *
+ * The dome is computed using:
+ * 1) reflective spheres. The project computes the dome using the spheres.
+ * 2) lp: again the dome is computed on load, but no 3d positions.
+ */
+
 class LightsGeometry: public QFrame {
 	Q_OBJECT
 public:	
@@ -38,7 +45,7 @@ public:
 
 public slots:
 	void setDome(Dome dome);        //when a dome is selected
-	void setSpheres();              //when reflective spheres reflections have been processed
+	void setFromSpheres();              //when reflective spheres reflections have been processed
 	void setSpherical(QAbstractButton *button);
 	void exportDome();
 };

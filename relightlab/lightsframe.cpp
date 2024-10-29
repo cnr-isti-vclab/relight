@@ -23,22 +23,17 @@ LightsFrame::LightsFrame() {
 	content->addWidget(new QLabel("<h2>Lights direction setup</h2>"));
 	content->addSpacing(30);
 
-	choice = new QTabWidget;
-	content->addWidget(choice);
+	content->addWidget(dome_panel = new DomePanel(this));
 
-
-	choice->addTab(sphere_panel = new SpherePanel, "Reflective Spheres");
-
-
+	content->addWidget(sphere_panel = new SpherePanel(this));
 	content->addSpacing(30);
 
-	geometry = new LightsGeometry;
+	geometry = new LightsGeometry(this);
 	content->addWidget(geometry);
-	content->addWidget(dome_panel = new DomePanel);
 
 	content->addStretch();
 
-	connect(sphere_panel, SIGNAL(updated()), geometry, SLOT(setSpheres()));
+	connect(sphere_panel, SIGNAL(updated()), geometry, SLOT(setFromSpheres()));
 	connect(dome_panel, SIGNAL(accept(Dome)), geometry, SLOT(setDome(Dome)));
 }
 
@@ -46,9 +41,12 @@ void LightsFrame::clear() {
 	sphere_panel->clear();
 }
 
+void LightsFrame::newSphere() {
+	sphere_panel->newSphere();
+}
+
 void LightsFrame::init() {
 	bool useSphere = qRelightApp->project().spheres.size();
-	choice->setCurrentIndex(useSphere? 0 : 1);
 
 	sphere_panel->init();
 	dome_panel->init();

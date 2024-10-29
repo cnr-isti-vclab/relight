@@ -22,11 +22,18 @@ DomePanel::DomePanel(QWidget *parent): QFrame(parent) {
 	QHBoxLayout *content = new QHBoxLayout(this);
 	//content->setHorizontalSpacing(20);
 
+	QPushButton *sphere = new QPushButton(QIcon::fromTheme("folder"), "New reflective sphere...");
+	sphere->setProperty("class", "large");
+	sphere->setMinimumWidth(200);
+	sphere->setMaximumWidth(300);
+	connect(sphere, SIGNAL(clicked()), parent, SLOT(newSphere()));
+	content->addWidget(sphere, 0, Qt::AlignTop);
+
 	QPushButton *save = new QPushButton(QIcon::fromTheme("save"), "Export dome...");
 	save->setProperty("class", "large");
 	save->setMinimumWidth(200);
 	save->setMaximumWidth(300);
-	connect(save, SIGNAL(clicked()), this, SLOT(exportDome()()));
+	connect(save, SIGNAL(clicked()), this, SLOT(exportDome()));
 	content->addWidget(save, 0, Qt::AlignTop);
 
 	QPushButton *load = new QPushButton(QIcon::fromTheme("folder"), "Load dome file...");
@@ -38,8 +45,9 @@ DomePanel::DomePanel(QWidget *parent): QFrame(parent) {
 
 
 	dome_list = new QComboBox;
+	dome_list->setProperty("class", "large");
 	content->addWidget(dome_list, 1, Qt::AlignTop);
-	connect(dome_list, SIGNAL(currentIdexChanged(int)), this, SLOT(setDome(int)));
+	connect(dome_list, SIGNAL(currentIndexChanged(int)), this, SLOT(setDome(int)));
 	init();
 }
 
@@ -73,7 +81,9 @@ void DomePanel::updateDomeList() {
 }
 
 void DomePanel::setDome(int index) {
-	loadDomeFile(dome_paths[index]);
+	if(index <= 0)
+		return;
+	loadDomeFile(dome_paths[index-1]); //First index is "Seelect a recent dome..."
 }
 void DomePanel::loadDomeFile() {
 	QString path = QFileDialog::getOpenFileName(this, "Load a .lp or .dome file", QDir::currentPath(), "Light directions and domes (*.lp *.dome )");
@@ -109,7 +119,7 @@ void DomePanel::loadLP(QString path) {
 	dome.lightConfiguration = Dome::DIRECTIONAL;
 
 	try {
-		parseLP(path, dome.positions, filenames);
+		parseLP(path, dome.directions, filenames);
 	} catch(QString error) {
 		QMessageBox::critical(this, "Loading .lp file failed", error);
 		return;

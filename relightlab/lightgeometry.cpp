@@ -38,6 +38,7 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	content->addWidget( new QLabel("Number of images:"), 1, 0);
 	content->addWidget(images_number = new QSpinBox, 1, 1);
 	images_number->setRange(1, 1024);
+	images_number->setEnabled(false);
 
 	content->addWidget(new QLabel("Notes:"), 2, 0);
 	content->addWidget(notes = new QTextEdit, 2, 1);
@@ -56,7 +57,6 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	group->addButton(lights3d->radioButton(), Dome::LIGHTS3D);
 
 	connect(group, SIGNAL(buttonClicked(QAbstractButton *)), this, SLOT(setSpherical(QAbstractButton *)));
-
 
 	QFrame *geometry = new QFrame;
 	geometry->setFrameShape(QFrame::StyledPanel);
@@ -88,29 +88,12 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 
 	content->setSpacing(20);
 	directions_view = new DirectionsView;
-	content->addWidget(directions_view, 0, 2, 6, 1, Qt::AlignBottom);
+	content->addWidget(directions_view, 0, 2, 3, 1, Qt::AlignBottom);
 	directions_view->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	directions_view->setMaximumSize(300, 300);
-	directions_view->setMinimumSize(300, 300);
+	directions_view->setMaximumSize(200, 200);
+	directions_view->setMinimumSize(200, 200);
 
 	page->addSpacing(30);
-
-	//QFrame *buttons = new QFrame(this);
-
-	QHBoxLayout *buttons_layout = new QHBoxLayout;
-	page->addLayout(buttons_layout);
-
-	QPushButton *save_dome = new QPushButton(QIcon::fromTheme("save"), "Export as dome...");
-	buttons_layout->addWidget(save_dome, Qt::AlignRight);
-	save_dome->setProperty("class", "large");
-	connect(save_dome, SIGNAL(clicked()), this, SLOT(exportDome()));
-
-	QPushButton *load_dome = new QPushButton(QIcon::fromTheme("load"), "Load dome file...");
-	buttons_layout->addWidget(load_dome, Qt::AlignRight);
-	load_dome->setProperty("class", "large");
-
-
-
 }
 
 void LightsGeometry::setSpherical(QAbstractButton *button) {
@@ -153,26 +136,15 @@ void LightsGeometry::setDome(Dome dome) {
 	init();
 }
 
-void LightsGeometry::setSpheres() {
+void LightsGeometry::setFromSpheres() {
 	//get spheres & lens from project
 	Project &project = qRelightApp->project();
 	//call appropriate compute directions/positions
 	Dome &dome = project.dome;
+	dome.label = "";
+	dome.fromSpheres(project.spheres, project.lens);
 
-	vector<Vector3f> lights;
-	switch(project.dome.lightConfiguration) {
-	case Dome::DIRECTIONAL:
-		computeDirections(project.spheres, project.lens, dome.positions);
-		break;
-	case Dome::SPHERICAL:
-		computeSphericalPositions(project.spheres, dome, project.lens, dome.positions);
-		break;
-	case Dome::LIGHTS3D:
-		computeParallaxPositions(project.spheres, project.lens, dome.positions);
-		break;
-	}
-	directions_view->initFromDome(dome);
-
+	init();
 }
 
 void LightsGeometry::exportDome() {
