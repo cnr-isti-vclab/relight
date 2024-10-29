@@ -256,6 +256,7 @@ void RtiExport::createNormals() {
     ProcessQueue &queue = ProcessQueue::instance();
     NormalsTask *task = new NormalsTask(path, output, crop, solver);
     task->exportSurface = ui->export_surface->isChecked();
+	task->exportDepthmap = ui->export_depthmap->isChecked();
     task->exportK = ui->discontinuity->value();
 	QList<QVariant> slights;
 	for(auto light: lights)

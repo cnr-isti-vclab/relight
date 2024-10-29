@@ -20,6 +20,7 @@ class NormalsTask :  public Task
 public:
     NormalSolver solver;
     bool exportSurface = false;
+	bool exportDepthmap = false;
     bool exportK = 2.0;
     QRect m_Crop;
 
