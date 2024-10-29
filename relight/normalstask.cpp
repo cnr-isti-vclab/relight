@@ -98,7 +98,7 @@ void NormalsTask::run()
 
 	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
-    if(exportSurface) {
+	if(exportSurface || exportDepthmap) {
         progressed("Integrating normals...", 0);
 		std::vector<float> z;
 		bni_integrate(callback, imageSet.width, imageSet.height, normals, z, exportK);
@@ -110,8 +110,14 @@ void NormalsTask::run()
         QString filename = output.left(output.size() -4) + ".ply";
 
         progressed("Saving surface...", 99);
-        savePly(filename, imageSet.width, imageSet.height, z);
-    }
+		if(exportSurface)
+			savePly(filename, imageSet.width, imageSet.height, z);
+
+		filename = output.left(output.size() -4) + ".tif";
+
+		if(exportDepthmap)
+			saveTiff(filename + ".tif", imageSet.width, imageSet.height, z);
+	}
     int end = clock();
     qDebug() << "Time: " << ((double)(end - start) / CLOCKS_PER_SEC);
     progressed("Finished", 100);
