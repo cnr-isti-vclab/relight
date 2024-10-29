@@ -1,7 +1,7 @@
 #ifndef SPHEREPANEL_H
 #define SPHEREPANEL_H
 
-#include <QFrame>
+#include <QGroupBox>
 #include <qdialog.h>
 #include "../src/dome.h"
 
@@ -12,7 +12,7 @@ class SphereRow;
 class Dome;
 
 
-class SpherePanel: public QFrame {
+class SpherePanel: public QGroupBox {
 	Q_OBJECT
 public:
 	SpherePanel(QWidget *parent = nullptr);
