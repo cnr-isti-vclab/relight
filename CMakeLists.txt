@@ -46,6 +46,8 @@ if(MSVC)
 else()
 	find_package (JPEG REQUIRED)
 endif()
+	
+find_package (TIFF REQUIRED)
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/RELIGHT_VERSION")
 	# version is read from RELIGHT_VERSION file
