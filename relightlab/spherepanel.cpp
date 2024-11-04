@@ -28,6 +28,7 @@ SpherePanel::SpherePanel(QWidget *parent): QGroupBox("Reflective spheres", paren
 }
 
 void SpherePanel::clear() {
+	setVisible(false);
 	while(spheres->count() > 0) {
 		QLayoutItem *item = spheres->takeAt(0);
 		SphereRow *row =  dynamic_cast<SphereRow *>(item->widget());
@@ -37,7 +38,9 @@ void SpherePanel::clear() {
 }
 
 void SpherePanel::init() {
-	for(Sphere *sphere: qRelightApp->project().spheres) {
+	auto &project_spheres = qRelightApp->project().spheres;
+	setVisible(project_spheres.size() > 0);
+	for(Sphere *sphere: project_spheres) {
 		sphere->fit();
 		SphereRow * row = addSphere(sphere);
 		row->detectHighlights(false);
@@ -69,6 +72,7 @@ SphereRow *SpherePanel::addSphere(Sphere *sphere) {
 			  4) edit and delete button
 
 	*/
+	setVisible(true);
 	SphereRow *row = new SphereRow(sphere);
 	spheres->addWidget(row);
 
@@ -86,12 +90,16 @@ void SpherePanel::removeSphere(SphereRow *row) {
 	Sphere *sphere = row->sphere;
 	auto &spheres = qRelightApp->project().spheres;
 
+
 	auto it = std::find(spheres.begin(), spheres.end(), sphere);
 
 	assert(it != spheres.end());
 
 	delete sphere;
-	spheres.erase(it);
 	delete row;
+
+	spheres.erase(it);
+	setVisible(spheres.size());
+
 }
 
