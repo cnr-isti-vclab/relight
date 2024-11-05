@@ -67,8 +67,8 @@ set (RELIGHT_HEADERS
     cropframe.h 
     rtiframe.h
     rticard.h
+    rtitask.h
     ../relight/imagecropper.h
-
 )
 
 set (RELIGHTLAB_SOURCES
@@ -120,7 +120,14 @@ set (RELIGHTLAB_SOURCES
     rtiplan.cpp
     rticard.cpp
     rtiexportdialog.cpp
+    rtitask.cpp
     ../relight/imagecropper.cpp
+    ../relight-cli/rtibuilder.cpp
+    ../src/rti.cpp
+    ../src/legacy_rti.cpp
+    ../src/imageset.cpp
+    ../src/jpeg_encoder.cpp
+    ../src/jpeg_decoder.cpp
 )
 
 
