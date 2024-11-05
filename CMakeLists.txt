@@ -43,11 +43,17 @@ if(MSVC)
 	set(JPEGTURBO_HOME ${CMAKE_CURRENT_SOURCE_DIR}/external/libjpeg-turbo-2.0.6)
 	set(JPEG_INCLUDE_DIR ${JPEGTURBO_HOME}/include)
 	set(JPEG_LIBRARIES ${JPEGTURBO_HOME}/lib/jpeg.lib)
+	
 else()
 	find_package (JPEG REQUIRED)
 endif()
 	
 find_package (TIFF REQUIRED)
+if(NOT TIFF_FOUND)
+	add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/external/tiff-4.7.0)
+	add_library(TIFF::TIFF ALIAS tiff)
+endif()
+
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/RELIGHT_VERSION")
 	# version is read from RELIGHT_VERSION file
