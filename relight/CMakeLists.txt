@@ -145,14 +145,15 @@ target_include_directories(
 	relight PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}
-		${TIFF_INCLUDE_DIR}
+		TIFF::TIFF
 		${EIGEN3_INCLUDE_DIR}
 	)
-	
+
+
 target_link_libraries(
 	relight PUBLIC
 		${JPEG_LIBRARIES}
-		${TIFF_LIBRARIES}
+		TIFF::TIFF
 		OpenMP::OpenMP_CXX
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui
