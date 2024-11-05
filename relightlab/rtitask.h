@@ -8,16 +8,6 @@
 
 class RtiBuilder;
 
-/* steps could be:
- *   relight: creates an RTI in relight format
- *   toRTI: converts a relight to an .rti format
- *   fromRTI: converts an .rti to relight
- *   deepzoom: splits relight in tiles
- *   tarzoom: merges deepzoom tiles
- *   itarzoom: merges tarzoom in a single itarzoom
- *   openlime: add openlime js css, html for viewer
- */
-
 class RtiParameters {
 public:
 
@@ -48,14 +38,14 @@ public:
 	RtiParameters parameters;
 
 	RtiTask(const Project &_project);
-    virtual ~RtiTask();
-    virtual void run() override;
+	virtual ~RtiTask();
+	virtual void run() override;
 
 public slots:
 
 	void relight(bool commonMinMax = false, bool saveLegacy = false); //use true for .rti and .ptm
 	void toRTI();
-    void fromRTI();
+	void fromRTI();
 	void openlime();
 
 private:

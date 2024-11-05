@@ -6,7 +6,9 @@
 #include "rtiplan.h"
 #include "rtirow.h"
 #include "rtirecents.h"
+#include "rtiframe.h"
 #include "qlabelbutton.h"
+#include "rtitask.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -18,6 +20,7 @@
 #include <QButtonGroup>
 #include <QLabel>
 #include <QScrollArea>
+#include <QFileDialog>
 
 
 
@@ -112,12 +115,32 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	content->addStretch();
 }
 
-void RtiFrame::init() {
+void RtiFrame::exportRti(RtiParameters &parameters) {
+	//get folder if not legacy.
+	QString output;
+	if(parameters.format == RtiParameters::RTI) {
+		QString extension;
+		QString label;
 
+		if(parameters.basis == Rti::HSH) {
+			extension = ".rti";
+			label = "RTI file (*.rti)";
+		} else if(parameters.basis == Rti::PTM) {
+			extension = ".ptm";
+			label = "PTM file (*.ptm)";
+		}
+		output = QFileDialog::getSaveFileName(this, "Select a file name", QString(), label);
+		if(output.isNull()) return;
+
+		if(!output.endsWith(extension))
+		output += extension;
+
+	} else {
+		output = QFileDialog::getSaveFileName(this, "Select an output folder", QString());
+		if(output.isNull()) return;
+	}
+	parameters.path = output;
+
+	RtiTask *rti_task = new RtiTask(qRelightApp->project());
 }
 
-void RtiFrame::setBasis(Rti::Type basis) {
-	current_basis = basis;
-	for(int i = 0; i < 4; i++)
-		basis_cards[i]->setChecked(i == (int)basis);
-}

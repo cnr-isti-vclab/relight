@@ -3,9 +3,10 @@
 
 #include <QFrame>
 #include "../src/rti.h"
-#include "../relight/rtitask.h"
+#include "rtitask.h"
 
 class QComboBox;
+class QCheckBox;
 class QSpinBox;
 class QLabelButton;
 class HelpLabel;
@@ -71,7 +72,7 @@ class RtiFormatRow: public RtiPlanRow {
 public:
 	RtiFormatRow(RtiParameters &parameters, QFrame *parent = nullptr);
 	void setFormat(RtiParameters::Format format, bool emitting = false);
-
+	void allowLegacy(bool legacy);
 private:
 	RtiParameters::Format format;
 	QLabelButton *rti, *web, *iip;
@@ -86,8 +87,10 @@ class RtiQualityRow: public RtiPlanRow {
 public:
 	RtiQualityRow(RtiParameters &parameters, QFrame *parent = nullptr);
 	void setQuality(int quality, bool emitting = false); //0 stands for lossless.
+	void allowLossless(bool allow);
 
 private:
+	QCheckBox *losslessbox;
 	QSpinBox *qualitybox;
 
 signals:

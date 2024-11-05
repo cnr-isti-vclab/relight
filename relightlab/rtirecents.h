@@ -1,7 +1,7 @@
 #ifndef RTIRECENTS_H
 #define RTIRECENTS_H
 
-#include "../relight/rtitask.h"
+#include "rtitask.h"
 
 #include <QFrame>
 #include <vector>

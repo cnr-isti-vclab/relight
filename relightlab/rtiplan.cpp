@@ -1,4 +1,5 @@
 #include "rtiplan.h"
+#include "rtiframe.h"
 #include "qlabelbutton.h"
 #include "helpbutton.h"
 
@@ -36,27 +37,28 @@ RtiBasisRow::RtiBasisRow(RtiParameters &parameters, QFrame *parent): RtiPlanRow(
 	label->label->setText("Basis:");
 	label->help->setId("rti/basis");
 
-	auto *ptm = new QLabelButton("PTM", "Polynomial Texture Map");
-	auto *hsh = new QLabelButton("HSH", "HemiSpherical Harmonics");
-	auto *rbf = new QLabelButton("RBF", "Radial Basis Functions");
-	auto *bnl = new QLabelButton("BNL", "Bilinear interplation");
+	ptm = new QLabelButton("PTM", "Polynomial Texture Map");
+	hsh = new QLabelButton("HSH", "HemiSpherical Harmonics");
+	rbf = new QLabelButton("RBF", "Radial Basis Functions");
+	bln = new QLabelButton("BNL", "Bilinear interplation");
 
 	buttons->addWidget(ptm, 0, Qt::AlignCenter);
 	buttons->addWidget(hsh, 0, Qt::AlignCenter);
 	buttons->addWidget(rbf, 0, Qt::AlignCenter);
-	buttons->addWidget(bnl, 0, Qt::AlignCenter);
+	buttons->addWidget(bln, 0, Qt::AlignCenter);
 
 	connect(ptm, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::PTM, true); });
 	connect(hsh, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::HSH, true); });
 	connect(rbf, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::RBF, true); });
-	connect(bnl, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::BILINEAR, true); });
+	connect(bln, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::BILINEAR, true); });
 
 	QButtonGroup *group = new QButtonGroup(this);
 
 	group->addButton(ptm);
 	group->addButton(hsh);
 	group->addButton(rbf);
-	group->addButton(bnl);
+	group->addButton(bln);
+	setBasis(parameters.basis);
 }
 
 void RtiBasisRow::setBasis(Rti::Type basis, bool emitting) {
@@ -101,6 +103,8 @@ RtiColorSpaceRow::RtiColorSpaceRow(RtiParameters &parameters, QFrame *parent): R
 	group->addButton(lrgb);
 	group->addButton(mrgb);
 	group->addButton(ycc);
+
+	setColorspace(parameters.colorspace);
 }
 
 
@@ -152,6 +156,9 @@ RtiPlanesRow::RtiPlanesRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 	}
 	//connect(nchromabox, &QComboBox::currentIndexChanged, [this](int n) { setNChroma(nchromas[n], true); });
 	buttons->addWidget(nchromabox);
+
+	setNPlanes(parameters.nplanes);
+	setNChroma(parameters.nchroma);
 }
 
 void RtiPlanesRow::setNPlanes(int nplanes, bool emitting) {
@@ -198,18 +205,24 @@ RtiFormatRow::RtiFormatRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 	buttons->addWidget(iip, Qt::AlignLeft);
 
 	connect(rti, &QAbstractButton::clicked, [this]() { setFormat(RtiParameters::RTI, true); });
-	connect(rti, &QAbstractButton::clicked, [this]() { setFormat(RtiParameters::WEB, true); });
-	connect(rti, &QAbstractButton::clicked, [this]() { setFormat(RtiParameters::IIP, true); });
+	connect(web, &QAbstractButton::clicked, [this]() { setFormat(RtiParameters::WEB, true); });
+	connect(iip, &QAbstractButton::clicked, [this]() { setFormat(RtiParameters::IIP, true); });
 
 	QButtonGroup *group = new QButtonGroup(this);
 	group->addButton(rti);
 	group->addButton(web);
 	group->addButton(iip);
+
+	allowLegacy(parameters.basis == Rti::PTM || parameters.basis == Rti::HSH);
+	setFormat(parameters.format);
+}
+
+void RtiFormatRow::allowLegacy(bool legacy) {
+	rti->setEnabled(legacy);
 }
 
 void RtiFormatRow::setFormat(RtiParameters::Format format, bool emitting) {
-	bool legacy = parameters.basis == Rti::PTM || parameters.basis == Rti::HSH;
-	rti->setEnabled(legacy);
+	parameters.format = format;
 
 	if(emitting) {
 		emit formatChanged();
@@ -227,7 +240,7 @@ RtiQualityRow::RtiQualityRow(RtiParameters &parameters, QFrame *parent): RtiPlan
 	label->label->setText("Image quality:");
 	label->help->setId("rti/quality");
 
-	buttons->addWidget(new QCheckBox(" Lossless"), Qt::AlignLeft);
+	buttons->addWidget(losslessbox = new QCheckBox(" Lossless"), Qt::AlignLeft);
 
 	QLabel *qualitylabel = new QLabel("Quality:");
 	qualitylabel->setMaximumWidth(200);
@@ -239,21 +252,20 @@ RtiQualityRow::RtiQualityRow(RtiParameters &parameters, QFrame *parent): RtiPlan
 	qualitybox->setMaximum(100);
 	qualitybox->setValue(parameters.quality);
 	buttons->addWidget(qualitybox, Qt::AlignRight);
-
-//	connect(qualitybox, &QSpinBox::valueChanged, [this](int n) { setQuality(n, true); });
-
-	/*buttons->addWidget(new QLabel("Filename:"));
-	buttons->addWidget(new QLineEdit);
-	buttons->addWidget(new QPushButton("..."));
-	buttons->addWidget(new QPushButton("Export")); */
 }
+
 void RtiQualityRow::setQuality(int quality, bool emitting) {
 	parameters.quality = quality;
+	if(quality == 0)
+		losslessbox->setChecked(true);
 
 	if(emitting)
 		emit qualityChanged();
 	else
 		qualitybox->setValue(quality);
+}
+void RtiQualityRow::allowLossless(bool allow) {
+	losslessbox->setEnabled(allow);
 }
 
 RtiWebLayoutRow::RtiWebLayoutRow(RtiParameters &parameters, QFrame *parent): RtiPlanRow(parameters, parent) {
@@ -292,9 +304,10 @@ void RtiWebLayoutRow::setWebLayout(RtiParameters::WebLayout layout, bool emittin
 		return;
 	}
 
-	switch(layout) {
-	case RtiParameters::PLAIN: image->setChecked(true); break;
-	}
+	image->setChecked(layout == RtiParameters::PLAIN);
+	deepzoom->setChecked(layout == RtiParameters::DEEPZOOM);
+	tarzoom->setChecked(layout == RtiParameters::TARZOOM);
+	itarzoom->setChecked(layout == RtiParameters::ITARZOOM);
 }
 
 
@@ -306,16 +319,25 @@ RtiPlan::RtiPlan(QWidget *parent): QFrame(parent) {
 	colorspace_row = new RtiColorSpaceRow(parameters, this);
 	planes_row = new RtiPlanesRow(parameters, this);
 	format_row = new RtiFormatRow(parameters, this);
-	layout_row = new RtiWebLayoutRow(parameters, this);
 	quality_row = new RtiQualityRow(parameters, this);
+	layout_row = new RtiWebLayoutRow(parameters, this);
+
 
 	layout->addWidget(basis_row);
 	layout->addWidget(colorspace_row);
 	layout->addWidget(planes_row);
-	layout->addWidget(quality_row);
 	layout->addWidget(format_row);
+	layout->addWidget(quality_row);
 	layout->addWidget(layout_row);
 
+	QHBoxLayout *save_row = new QHBoxLayout;
+	QPushButton *save = new QPushButton("Export RTI...", this);
+	save->setProperty("class", "large");
+	save_row->addWidget(save);
+	RtiFrame *parent_frame = dynamic_cast<RtiFrame *>(parent);
+	connect(save, &QPushButton::clicked, [this, parent_frame]() { return parent_frame->exportRti(this->parameters); });
+
+	layout->addLayout(save_row);
 	layout->addStretch();
 
 	connect(basis_row, &RtiBasisRow::basisChanged, this, &RtiPlan::basisChanged);
@@ -334,6 +356,8 @@ void RtiPlan::basisChanged() {
 	auto &basis = parameters.basis;
 	bool pca = basis == Rti::RBF || basis == Rti::BILINEAR;
 
+	// COLORSPACE
+
 	auto &colorspace = parameters.colorspace;
 	if(!pca) {
 		if(colorspace != Rti::RGB && colorspace != Rti::LRGB)
@@ -344,6 +368,8 @@ void RtiPlan::basisChanged() {
 			colorspace = Rti::MRGB;
 	}
 	colorspace_row->setColorspace(colorspace);
+
+	// PLANES
 
 	auto &nplanes = parameters.nplanes;
 	auto &nchroma = parameters.nchroma;
@@ -359,19 +385,32 @@ void RtiPlan::basisChanged() {
 	planes_row->setNPlanes(nplanes);
 	planes_row->setNChroma(nchroma);
 
+	//FORMAT
+	format_row->allowLegacy(!pca);
+
 	if(pca && parameters.format == RtiParameters::RTI) {
-		format_row->setFormat(RtiParameters::WEB, true); //emit and cascade update other rows.
+		format_row->setFormat(RtiParameters::WEB); //emit and cascade update other rows.
 	}
 }
 
 void RtiPlan::colorspaceChanged() {
 	planes_row->setNChroma(parameters.nchroma);
+
+	bool pca = parameters.basis == Rti::RBF || parameters.basis == Rti::BILINEAR;
+	if(pca && parameters.format == RtiParameters::RTI) {
+		format_row->setFormat(RtiParameters::WEB);
+	}
 }
 
 void RtiPlan::nplanesChanged() {
+	//actually nothing happens!
 }
 
 void RtiPlan::formatChanged() {
+	bool legacy = quality_row->parameters.format == RtiParameters::RTI;
+	//only RTI allows for lossless.
+	quality_row->allowLossless(legacy);
+	layout_row->setEnabled(quality_row->parameters.format == RtiParameters::WEB);
 }
 
 void RtiPlan::qualityChanged() {

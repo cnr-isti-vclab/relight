@@ -1,4 +1,4 @@
-QT += widgets
+QT += widgets xml
 CONFIG += c++11
 
 #TODO: this might be needed in CMake
@@ -86,7 +86,9 @@ SOURCES += main.cpp \
     cropframe.cpp \
     ../relight/imagecropper.cpp \
     creatertidialog.cpp \
-    rtiexportdialog.cpp
+    rtiexportdialog.cpp \
+    rtitask.cpp \
+    task.cpp
 
 RESOURCES += \
     res.qrc
@@ -144,7 +146,9 @@ HEADERS += \
     cropframe.h \
     ../relight/imagecropper.h \
     creatertidialog.h \
-    rtiexportdialog.h
+    rtiexportdialog.h \
+    rtitask.h \
+    task.h
 
 FORMS += \
     form.ui
