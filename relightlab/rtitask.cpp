@@ -29,8 +29,6 @@ RtiTask::~RtiTask() {
 void RtiTask::run() {
 	status = RUNNING;	
 	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
-	QString err;
-
 
 	builder = new RtiBuilder;
 	builder->pixelSize = project.pixelSize;
@@ -47,31 +45,26 @@ void RtiTask::run() {
 		builder->yccplanes[1] = builder->yccplanes[2] = (builder->nplanes - builder->yccplanes[0])/2;
 		builder->nplanes = builder->yccplanes[0] + 2*builder->yccplanes[1];
 	}
+	ImageSet &imageset = builder->imageset;
 
-	builder->imageset.images = project.getImages();
+	imageset.images = project.getImages();
 
-	//which lights?
-	builder->lights = builder->imageset.lights = lights;
-	builder->imageset.light3d = project.dome.lightConfiguration != Dome::DIRECTIONAL;
-	builder->imageset.dome_radius = project.dome.domeDiameter/2.0;
-	builder->imageset.vertical_offset = project.dome.verticalOffset;
-	builder->imageset.initLights();
-	builder->imageset.initImages(input_folder.toStdString().c_str());
+	builder->lights = imageset.lights = project.dome.directions;
+	imageset.light3d = project.dome.lightConfiguration != Dome::DIRECTIONAL;
+	imageset.dome_radius = project.dome.domeDiameter/2.0;
+	imageset.vertical_offset = project.dome.verticalOffset;
+	imageset.initLights();
+	imageset.initImages(input_folder.toStdString().c_str());
 
-
-	if(hasParameter("crop")) {
-		QRect rect = (*this)["crop"].value.toRect();
-		builder->crop[0] = rect.left();
-		builder->crop[1] = rect.top();
-		builder->crop[2] = rect.width();
-		builder->crop[3] = rect.height();
-		builder->imageset.crop(rect.left(), rect.top(), rect.width(), rect.height());
+	if(!crop.isNull()) {
+		builder->crop[0] = crop.left();
+		builder->crop[1] = crop.top();
+		builder->crop[2] = crop.width();
+		builder->crop[3] = crop.height();
+		imageset.crop(crop.left(), crop.top(), crop.width(), crop.height());
 	}
-	builder->width  = builder->imageset.width;
-	builder->height = builder->imageset.height;
-	int quality= (*this)["quality"].value.toInt();
-
-	std::function<bool(QString s, int n)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
+	builder->width  = imageset.width;
+	builder->height = imageset.height;
 
 	try {
 		if(!builder->init(&callback)) {
@@ -79,7 +72,7 @@ void RtiTask::run() {
 			status = FAILED;
 			return;
 		}
-		if(saveLegacy) {
+		if(parameters.format == RtiParameters::RTI) {
 			if(builder->type == Rti::HSH)
 				builder->saveUniversal(output.toStdString());
 			else if(builder->type == Rti::PTM)
@@ -87,7 +80,7 @@ void RtiTask::run() {
 			else
 				throw "Legacy RTI and PTM formats are supported only for HSH and PTM basis";
 		} else
-			builder->save(output.toStdString(), quality);
+			builder->save(output.toStdString(), parameters.quality);
 
 	} catch(std::string e) {
 		error = e.c_str();
@@ -95,12 +88,7 @@ void RtiTask::run() {
 		return;
 	}
 
-
-	for(auto step: steps) {
-		if(step == "relight")
-			relight();
-		else if(step == "rti")
-			relight(true, true);
+/*
 		else if(step == "fromRTI")
 			fromRTI();
 		//TODO! deepZOOM should set error and status?
@@ -124,11 +112,11 @@ void RtiTask::run() {
 		}
 		else if(step == "openlime")
 			openlime();
-	}
+	} */
 	if(status != FAILED)
 		status = DONE;
 }
-
+/*
 void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 	builder = new RtiBuilder;
 	builder->pixelSize =(*this)["pixelSize"].value.toDouble();
@@ -149,18 +137,18 @@ void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 		builder->nplanes = builder->yccplanes[0] + 2*builder->yccplanes[1];
 	}
 
-	builder->imageset.images = (*this)["images"].value.toStringList();
+	imageset.images = (*this)["images"].value.toStringList();
 	QList<QVariant> qlights = (*this)["lights"].value.toList();
 	std::vector<Vector3f> lights(qlights.size()/3);
 	for(int i = 0; i < qlights.size(); i+= 3)
 		for(int k = 0; k < 3; k++)
 			lights[i/3][k] = qlights[i+k].toDouble();
-	builder->lights = builder->imageset.lights = lights;
-	builder->imageset.light3d = project.dome.lightConfiguration != Dome::DIRECTIONAL;
-	builder->imageset.dome_radius = project.dome.domeDiameter/2.0;
-	builder->imageset.vertical_offset = project.dome.verticalOffset;
-	builder->imageset.initLights();
-	builder->imageset.initImages(input_folder.toStdString().c_str());
+	builder->lights = imageset.lights = lights;
+	imageset.light3d = project.dome.lightConfiguration != Dome::DIRECTIONAL;
+	imageset.dome_radius = project.dome.domeDiameter/2.0;
+	imageset.vertical_offset = project.dome.verticalOffset;
+	imageset.initLights();
+	imageset.initImages(input_folder.toStdString().c_str());
 
 
 	if(hasParameter("crop")) {
@@ -169,10 +157,10 @@ void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 		builder->crop[1] = rect.top();
 		builder->crop[2] = rect.width();
 		builder->crop[3] = rect.height();
-		builder->imageset.crop(rect.left(), rect.top(), rect.width(), rect.height());
+		imageset.crop(rect.left(), rect.top(), rect.width(), rect.height());
 	}
-	builder->width  = builder->imageset.width;
-	builder->height = builder->imageset.height;
+	builder->width  = imageset.width;
+	builder->height = imageset.height;
 	int quality= (*this)["quality"].value.toInt();
 
 	std::function<bool(QString s, int n)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
@@ -199,8 +187,10 @@ void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 		return;
 	}
 }
+*/
 
-void RtiTask::toRTI() {
+/* not used anymore: build temporary rti and convert to legacy format */
+/* void RtiTask::toRTI() {
 	QString filename = output;
 	QTemporaryDir tmp;
 	if(!tmp.isValid()) {
@@ -215,8 +205,9 @@ void RtiTask::toRTI() {
 		error = err;
 		status = FAILED;
 	}
-}
+} */
 
+/*
 void RtiTask::fromRTI() {
 	QString input = (*this)["input"].value.toString();
 	int quality= (*this)["quality"].value.toInt();
@@ -226,12 +217,8 @@ void RtiTask::fromRTI() {
 		error = err;
 		status = FAILED;
 	}
-}
+} */
 
-int nPlanes(QString output) {
-	QDir destination(output);
-	return destination.entryList(QStringList("plane_*.jpg"), QDir::Files).size();
-}
 
 void RtiTask::openlime() {
 	QStringList files = QStringList() << ":/demo/index.html"

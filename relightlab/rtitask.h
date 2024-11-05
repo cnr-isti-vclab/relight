@@ -36,6 +36,7 @@ class RtiTask: public Task {
 public:
 	Project project;
 	RtiParameters parameters;
+	QRect crop;
 
 	RtiTask(const Project &_project);
 	virtual ~RtiTask();
@@ -43,9 +44,9 @@ public:
 
 public slots:
 
-	void relight(bool commonMinMax = false, bool saveLegacy = false); //use true for .rti and .ptm
-	void toRTI();
-	void fromRTI();
+	//void relight(bool commonMinMax = false, bool saveLegacy = false); //use true for .rti and .ptm
+	//void toRTI();
+	//void fromRTI();
 	void openlime();
 
 private:

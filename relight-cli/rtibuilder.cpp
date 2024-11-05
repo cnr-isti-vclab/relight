@@ -11,6 +11,8 @@
 #include <QImage>
 #include <QRunnable>
 #include <QThreadPool>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QtConcurrent>
 #include <QFuture>
 

@@ -1,4 +1,4 @@
-QT += widgets xml
+QT += widgets xml concurrent
 CONFIG += c++11
 
 #TODO: this might be needed in CMake
@@ -36,15 +36,22 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 SOURCES += main.cpp \
+    ../relight-cli/convert_rti.cpp \
+    ../relight-cli/rtibuilder.cpp \
     ../relight/parameter.cpp \
     ../relight/processqueue.cpp \
     ../src/align.cpp \
     ../src/dome.cpp \
     ../src/exif.cpp \
     ../src/image.cpp \
+    ../src/imageset.cpp \
+    ../src/jpeg_decoder.cpp \
+    ../src/jpeg_encoder.cpp \
+    ../src/legacy_rti.cpp \
     ../src/lens.cpp \
     ../src/measure.cpp \
     ../src/project.cpp \
+    ../src/rti.cpp \
     ../src/sphere.cpp \
     ../src/white.cpp \
     alignframe.cpp \
@@ -79,7 +86,6 @@ SOURCES += main.cpp \
     directionsview.cpp \
     spherepanel.cpp \
     spheredialog.cpp \
-    ../relight/task.cpp \
     verifyview.cpp \
     verifydialog.cpp \
     helpbutton.cpp \
@@ -95,15 +101,21 @@ RESOURCES += \
 
 
 HEADERS += \
+    ../relight-cli/rtibuilder.h \
     ../relight/parameter.h \
     ../relight/processqueue.h \
     ../src/align.h \
     ../src/dome.h \
     ../src/exif.h \
     ../src/image.h \
+    ../src/imageset.h \
+    ../src/jpeg_decoder.h \
+    ../src/jpeg_encoder.h \
+    ../src/legacy_rti.h \
     ../src/lens.h \
     ../src/measure.h \
     ../src/project.h \
+    ../src/rti.h \
     ../src/sphere.h \
     ../src/white.h \
     alignframe.h \
