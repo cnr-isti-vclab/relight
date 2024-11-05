@@ -7,20 +7,17 @@
 
 class RtiCard;
 class RtiRecents;
+class RtiParameters;
 
 class RtiFrame: public QFrame {
 	Q_OBJECT
+
 public:
 	RtiFrame(QWidget *parent = nullptr);
 	void init();
-
-public slots:
-	void setBasis(Rti::Type basis);
+	void exportRti(RtiParameters &parameters);
 
 private:
-	Rti::Type current_basis;
-	Rti::ColorSpace current_colorspace;
-	RtiCard *basis_cards[4];
 	RtiRecents *recents;
 };
 
