@@ -48,7 +48,7 @@ else()
 	find_package (JPEG REQUIRED)
 endif()
 	
-find_package (TIFF REQUIRED)
+find_package (TIFF)
 if(NOT TIFF_FOUND)
 	add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/external/tiff-4.7.0)
 	add_library(TIFF::TIFF ALIAS tiff)
