@@ -68,18 +68,10 @@ then
     export Qt5_DIR=$QT_DIR
 fi
 
-if [ "$USE_BREW_LLVM" = true ] ; then
-    export PATH="$(brew --prefix llvm)/bin:$PATH";
-    export CC=/usr/local/opt/llvm/bin/clang
-    export CXX=/usr/local/opt/llvm/bin/clang++
-    export COMPILER=${CXX}
-    export CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include"
-    export CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include"
-    export LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib"
-fi
+OPENMP_PATH=$(brew --prefix libomp)
 
 cd $BUILD_PATH
 export NINJA_STATUS="[%p (%f/%t) ] "
-cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH $CCACHE $SOURCE_PATH
+cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DOpenMP_ROOT=$OPENMP_PATH -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH $CCACHE $SOURCE_PATH
 ninja
 ninja install
