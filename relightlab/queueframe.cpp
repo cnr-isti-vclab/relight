@@ -118,7 +118,7 @@ void QueueFrame::remove() {
 	ProcessQueue &queue = ProcessQueue::instance();
 
 	QModelIndexList selection = list->selectionModel()->selection().indexes();
-	qSort(selection.begin(), selection.end(),
+	std::sort(selection.begin(), selection.end(),
 		  [](const QModelIndex &a, const QModelIndex &b) -> bool { return a.row() < b.row(); });
 
 	while(!selection.isEmpty()) {
