@@ -1,7 +1,7 @@
 #ifndef SPHEREROW_H
 #define SPHEREROW_H
 
-#include "../relight/task.h"
+#include "task.h"
 #include <QWidget>
 
 

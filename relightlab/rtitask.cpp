@@ -66,6 +66,7 @@ void RtiTask::run() {
 	builder->width  = imageset.width;
 	builder->height = imageset.height;
 
+	QString output = parameters.path; //masking Task::output.
 	try {
 		if(!builder->init(&callback)) {
 			error = builder->error.c_str();

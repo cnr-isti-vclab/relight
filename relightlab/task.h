@@ -34,6 +34,7 @@ public slots:
 
 signals:
 	void progress(QString  str, int n);
+
 protected:
 	QMutex mutex;
 };

@@ -38,8 +38,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 SOURCES += main.cpp \
     ../relight-cli/convert_rti.cpp \
     ../relight-cli/rtibuilder.cpp \
-    ../relight/parameter.cpp \
-    ../relight/processqueue.cpp \
+    processqueue.cpp \
     ../src/align.cpp \
     ../src/dome.cpp \
     ../src/exif.cpp \
@@ -94,7 +93,10 @@ SOURCES += main.cpp \
     creatertidialog.cpp \
     rtiexportdialog.cpp \
     rtitask.cpp \
-    task.cpp
+    task.cpp \
+    queueitem.cpp \
+    queueframe.cpp \
+    ../relight/httpserver.cpp
 
 RESOURCES += \
     res.qrc
@@ -102,8 +104,7 @@ RESOURCES += \
 
 HEADERS += \
     ../relight-cli/rtibuilder.h \
-    ../relight/parameter.h \
-    ../relight/processqueue.h \
+    processqueue.h \
     ../src/align.h \
     ../src/dome.h \
     ../src/exif.h \
@@ -151,7 +152,6 @@ HEADERS += \
     directionsview.h \
     spherepanel.h \
     spheredialog.h \
-    ../relight/task.h \
     verifyview.h \
     verifydialog.h \
     helpbutton.h \
@@ -160,7 +160,11 @@ HEADERS += \
     creatertidialog.h \
     rtiexportdialog.h \
     rtitask.h \
-    task.h
+    task.h \
+    queueitem.h \
+    queueframe.h \
+    ../relight/httpserver.h \
+    ../relight/httplib.h
 
 FORMS += \
     form.ui

@@ -67,6 +67,7 @@ public:
 
 	std::vector<QImage> &thumbnails() { return m_thumbnails; }
 
+	QAction *addAction(const QString &id, const QString &label, const QString &icon, const QString &shortcut, const char *method = nullptr);
 	QAction *action(const QString &id) { return actions[id]; }
 	QString lastProjectDir() {
 		return QSettings().value("LastProjectDir", QDir::homePath()).toString();
@@ -82,7 +83,7 @@ public:
 	void loadThumbnails();
 
 private:
-	QAction *addAction(const QString &id, const QString &label, const QString &icon, const QString &shortcut, const char *method = nullptr);
+
 
 	//keep memory of current project filename for quick saving.
 	QString project_filename;
