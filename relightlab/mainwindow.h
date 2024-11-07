@@ -11,6 +11,7 @@ class AlignFrame;
 class LightsFrame;
 class CropFrame;
 class RtiFrame;
+class QueueFrame;
 
 class MainWindow: public QMainWindow {
 	Q_OBJECT
@@ -33,7 +34,7 @@ public:
 	LightsFrame *lights_frame = nullptr;
 	CropFrame *crop_frame = nullptr;
 	RtiFrame *rti_frame = nullptr;
-
+	QueueFrame *queue_frame = nullptr;
 private:
 	QMenu *recentMenu = nullptr;
 };

@@ -5,7 +5,7 @@
 #include "reflectionview.h"
 #include "../src/project.h"
 #include "../src/sphere.h"
-#include "../relight/processqueue.h"
+#include "processqueue.h"
 
 #include <QHBoxLayout>
 #include <QLabel>

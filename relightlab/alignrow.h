@@ -1,7 +1,7 @@
 #ifndef ALIGNROW_H
 #define ALIGNROW_H
 
-#include "../relight/task.h"
+#include "task.h"
 #include <QWidget>
 
 

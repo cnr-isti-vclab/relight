@@ -34,10 +34,10 @@
         <file>icons/dark/scalable/square.svg</file>
         <file>icons/dark/scalable/sun.svg</file>
         <file>icons/dark/scalable/zoom-out.svg</file>
-		<file>icons/dark/scalable/minus.svg</file>
-		<file>icons/dark/scalable/plus.svg</file>
-		<file>icons/dark/scalable/cancel.svg</file>
-		<file>icons/dark/scalable/loader.svg</file>
+        <file>icons/dark/scalable/minus.svg</file>
+        <file>icons/dark/scalable/plus.svg</file>
+        <file>icons/dark/scalable/cancel.svg</file>
+        <file>icons/dark/scalable/loader.svg</file>
         <file>icons/light/scalable/camera.svg</file>
         <file>icons/light/index.theme</file>
         <file>icons/light/scalable/cast.svg</file>
@@ -71,8 +71,8 @@
         <file>icons/light/scalable/zoom-out.svg</file>
         <file>icons/light/scalable/cancel.svg</file>
         <file>icons/light/scalable/loader.svg</file>
-		<file>icons/light/scalable/minus.svg</file>
-		<file>icons/light/scalable/plus.svg</file>
+        <file>icons/light/scalable/minus.svg</file>
+        <file>icons/light/scalable/plus.svg</file>
         <file>docs/home.md</file>
         <file>docs/index.md</file>
         <file>docs/interface/new_project.md</file>
@@ -80,5 +80,9 @@
         <file>docs/formats/dome.md</file>
         <file>docs/formats/relight.md</file>
         <file>docs/formats/config.md</file>
+        <file>icons/dark/scalable/chevrons-down.svg</file>
+        <file>icons/dark/scalable/chevrons-up.svg</file>
+        <file>icons/light/scalable/chevrons-down.svg</file>
+        <file>icons/light/scalable/chevrons-up.svg</file>
     </qresource>
 </RCC>

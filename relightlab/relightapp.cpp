@@ -1,5 +1,5 @@
 #include "relightapp.h"
-#include "../relight/processqueue.h"
+#include "processqueue.h"
 #include "imageframe.h"
 #include "recentprojects.h"
 #include "mainwindow.h"
@@ -97,6 +97,8 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	addAction("show_image", "Show image", "image", "");
 	addAction("show_list", "Show list", "list", "");
 	addAction("show_grid", "Show grid", "grid", "");
+
+
 }
 
 void RelightApp::run() {

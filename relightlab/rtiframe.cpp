@@ -10,6 +10,8 @@
 #include "qlabelbutton.h"
 #include "rtitask.h"
 
+#include "processqueue.h"
+
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGroupBox>
@@ -142,5 +144,9 @@ void RtiFrame::exportRti(RtiParameters &parameters) {
 	parameters.path = output;
 
 	RtiTask *rti_task = new RtiTask(qRelightApp->project());
+	rti_task->parameters = parameters;
+
+	ProcessQueue &queue = ProcessQueue::instance();
+	queue.addTask(rti_task);
 }
 

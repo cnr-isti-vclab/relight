@@ -21,8 +21,7 @@ if (APPLE)
 endif()
 
 set (RELIGHT_HEADERS
-    ../relight/parameter.h 
-    ../relight/processqueue.h 
+    processqueue.h 
     ../src/align.h 
     ../src/dome.h 
     ../src/exif.h 
@@ -60,7 +59,7 @@ set (RELIGHT_HEADERS
     spherepanel.h 
     spherepicking.h 
     spheredialog.h 
-    ../relight/task.h 
+    task.h 
     verifyview.h 
     verifydialog.h 
     helpbutton.h 
@@ -69,12 +68,20 @@ set (RELIGHT_HEADERS
     rticard.h
     rtitask.h
     ../relight/imagecropper.h
+    ../relight-cli/rtibuilder.h
+    ../src/rti.h
+    ../src/legacy_rti.h
+    ../src/imageset.h
+    ../src/jpeg_encoder.h
+    ../src/jpeg_decoder.h
+    ../relight/httpserver.h
+    queueframe.h
+    queueitem.h
 )
 
 set (RELIGHTLAB_SOURCES
 	main.cpp 
-    ../relight/parameter.cpp 
-    ../relight/processqueue.cpp 
+    processqueue.cpp 
     ../src/align.cpp 
     ../src/dome.cpp 
     ../src/exif.cpp 
@@ -110,7 +117,7 @@ set (RELIGHTLAB_SOURCES
     spherepanel.cpp 
     spherepicking.cpp 
     spheredialog.cpp 
-    ../relight/task.cpp 
+    task.cpp 
     verifyview.cpp 
     verifydialog.cpp 
     helpbutton.cpp 
@@ -128,6 +135,9 @@ set (RELIGHTLAB_SOURCES
     ../src/imageset.cpp
     ../src/jpeg_encoder.cpp
     ../src/jpeg_decoder.cpp
+    ../relight/httpserver.cpp
+    queueframe.cpp
+    queueitem.cpp
 )
 
 
