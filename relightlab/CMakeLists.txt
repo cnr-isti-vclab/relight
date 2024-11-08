@@ -75,6 +75,7 @@ set (RELIGHT_HEADERS
     ../src/imageset.h
     ../src/jpeg_encoder.h
     ../src/jpeg_decoder.h
+    ../src/flatnormals.h
     ../relight/httpserver.h
     queueframe.h
     queueitem.h
@@ -139,6 +140,7 @@ set (RELIGHTLAB_SOURCES
     ../src/imageset.cpp
     ../src/jpeg_encoder.cpp
     ../src/jpeg_decoder.cpp
+    ../src/flatnormals.cpp
     ../relight/httpserver.cpp
     queueframe.cpp
     queueitem.cpp
