@@ -362,41 +362,31 @@
           <string>Flatten normals</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_8">
-          <item row="4" column="0">
+          <item row="3" column="0">
            <widget class="QLabel" name="label_12">
             <property name="text">
              <string>Radius (0 - 100%):</string>
             </property>
            </widget>
           </item>
-          <item row="4" column="1">
+          <item row="3" column="1">
            <widget class="QDoubleSpinBox" name="flat_fourier_radius">
             <property name="value">
              <double>20.000000000000000</double>
             </property>
            </widget>
           </item>
-          <item row="2" column="0" colspan="2">
-           <widget class="QRadioButton" name="flat_radial">
+          <item row="1" column="0" colspan="2">
+           <widget class="QCheckBox" name="flat_radial">
             <property name="text">
              <string>Radial</string>
             </property>
            </widget>
           </item>
-          <item row="3" column="0" colspan="2">
-           <widget class="QRadioButton" name="flat_fourier">
+          <item row="2" column="0" colspan="2">
+           <widget class="QCheckBox" name="flat_fourier">
             <property name="text">
              <string>Fourier</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QRadioButton" name="flat_none">
-            <property name="text">
-             <string>None</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
             </property>
            </widget>
           </item>

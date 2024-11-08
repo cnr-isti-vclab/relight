@@ -27,9 +27,9 @@
 
 void NormalsTask::run()
 {
-    status = RUNNING;
+	status = RUNNING;
 	// ImageSet initialization
-    ImageSet imageSet(input_folder.toStdString().c_str());
+	ImageSet imageSet(input_folder.toStdString().c_str());
 
 	QList<QVariant> qlights = (*this)["lights"].value.toList();
 	std::vector<Vector3f> lights(qlights.size()/3);
@@ -38,111 +38,101 @@ void NormalsTask::run()
 			lights[i/3][k] = qlights[i+k].toDouble();
 	imageSet.lights = lights;
 
-    // Normals vector
+	// Normals vector
 
 
-    int start = clock();
-    // Init
+	int start = clock();
+	// Init
 	imageSet.setCallback(nullptr);
 
-    // Set the crop
-    if(!m_Crop.isValid()) {
-        m_Crop.setLeft(0);
-        m_Crop.setWidth(imageSet.width);
-        m_Crop.setTop(0);
-        m_Crop.setHeight(imageSet.height);
-    }
-    imageSet.crop(m_Crop.left(), m_Crop.top(), m_Crop.width(), m_Crop.height());
+	// Set the crop
+	if(!m_Crop.isValid()) {
+		m_Crop.setLeft(0);
+		m_Crop.setWidth(imageSet.width);
+		m_Crop.setTop(0);
+		m_Crop.setHeight(imageSet.height);
+	}
+	imageSet.crop(m_Crop.left(), m_Crop.top(), m_Crop.width(), m_Crop.height());
 
-    std::vector<float> normals(imageSet.width * imageSet.height * 3);
+	std::vector<float> normals(imageSet.width * imageSet.height * 3);
 
-    // Thread pool used to handle the processors
-    RelightThreadPool pool;
-    // Line in the imageset to be processed
-    PixelArray line;
+	// Thread pool used to handle the processors
+	RelightThreadPool pool;
+	// Line in the imageset to be processed
+	PixelArray line;
 
-    pool.start(QThread::idealThreadCount());
+	pool.start(QThread::idealThreadCount());
 
-    for (int i=0; i<imageSet.height; i++)
-    {
-        // Read a line
-        imageSet.readLine(line);
+	for (int i=0; i<imageSet.height; i++)
+	{
+		// Read a line
+		imageSet.readLine(line);
 
-        // Create the normal task and get the run lambda
-        uint32_t idx = i * 3 * imageSet.width;
-        float* data = &normals[idx];
+		// Create the normal task and get the run lambda
+		uint32_t idx = i * 3 * imageSet.width;
+		float* data = &normals[idx];
 
-        std::function<void(void)> run = [this, &line, &imageSet, data](void)->void {
-            NormalsWorker task(solver, line, data, imageSet.lights);
-            return task.run();
-        };
+		std::function<void(void)> run = [this, &line, &imageSet, data](void)->void {
+			NormalsWorker task(solver, line, data, imageSet.lights);
+			return task.run();
+		};
 
-        // Launch the task
-        pool.queue(run);
-        pool.waitForSpace();
+		// Launch the task
+		pool.queue(run);
+		pool.waitForSpace();
 
-        progressed("Computing normals...", ((float)i / imageSet.height) * 100);
-    }
+		progressed("Computing normals...", ((float)i / imageSet.height) * 100);
+	}
 
-    // Wait for the end of all the threads
-    pool.finish();
+	// Wait for the end of all the threads
+	pool.finish();
 
-	if(m_FlatMethod != NONE) {
+	if(flatMethod != NONE) {
 		//TODO: do we really need double precision?
 		std::vector<double> normalsd(normals.size());
-		for(uint32_t i = 0; i < normals.size(); i++0)
+		for(uint32_t i = 0; i < normals.size(); i++)
 			normalsd[i] = (double)normals[i];
 
 		NormalsImage ni;
 		ni.load(normalsd, imageSet.width, imageSet.height);
-		switch(m_FlatMethod) {
-			case RADIAL:
-				ni.flattenRadial();
-				break;
-			case FOURIER:
-				//convert radius to frequencies
-				double sigma = 100/m_FlatRadius;
-				ni.flattenFourier(imageSet.width/10, sigma);
-				break;
+		switch(flatMethod) {
+		case RADIAL:
+			ni.flattenRadial();
+			break;
+		case FOURIER:
+			//convert radius to frequencies
+			double sigma = 100/flat_radius;
+			ni.flattenFourier(imageSet.width/10, sigma);
+			break;
 		}
-		normalsd = ni.normals;
-		for(uint32_t i = 0; i < normals.size(); i++0)
-			normals[i] = (float)normalsd[i];
+		for(uint32_t i = 0; i < ni.normals.size(); i++)
+			normals[i] = (float)ni.normals[i];
 
 	}
 
-	// Convert double to uint8_t;
-	std::vector<uint8_t> colors(imageSet.width * imageSet.height * 3);
-	for(size_t i = 0; i < normals.size(); i++) {
-		colors[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
-	}
 
-	QImage img(colors.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
-	img.save(m_OutputFolder);
-	progressed("Cleaning up...", 99);
+	std::vector<uint8_t> normalmap(imageSet.width * imageSet.height * 3);
+	for(size_t i = 0; i < normals.size(); i++)
+		normalmap[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
 
-    std::vector<uint8_t> normalmap(imageSet.width * imageSet.height * 3);
-    for(size_t i = 0; i < normals.size(); i++)
-        normalmap[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
-
-    // Save the final result
-    QImage img(normalmap.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
-    img.save(output);
+	// Save the final result
+	QImage img(normalmap.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
+	img.save(output);
 
 	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
 	if(exportSurface || exportDepthmap) {
-        progressed("Integrating normals...", 0);
+		progressed("Integrating normals...", 0);
 		std::vector<float> z;
 		bni_integrate(callback, imageSet.width, imageSet.height, normals, z, exportK);
-        if(z.size() == 0) {
-            error = "Failed to integrate normals";
-            status = FAILED;
-            return;
-        }
-        QString filename = output.left(output.size() -4) + ".ply";
+		if(z.size() == 0) {
+			error = "Failed to integrate normals";
+			status = FAILED;
+			return;
+		}
+		QString filename = output.left(output.size() -4) + ".ply";
 
-        progressed("Saving surface...", 99);
+		progressed("Saving surface...", 99);
 		if(exportSurface)
 			savePly(filename, imageSet.width, imageSet.height, z);
 
@@ -151,24 +141,24 @@ void NormalsTask::run()
 		if(exportDepthmap)
 			saveTiff(filename + ".tif", imageSet.width, imageSet.height, z);
 	}
-    int end = clock();
-    qDebug() << "Time: " << ((double)(end - start) / CLOCKS_PER_SEC);
-    progressed("Finished", 100);
+	int end = clock();
+	qDebug() << "Time: " << ((double)(end - start) / CLOCKS_PER_SEC);
+	progressed("Finished", 100);
 }
 /*
 bool NormalsTask::progressed(QString str, int percent)
 {
-    if(status == PAUSED) {
-        mutex.lock();  //mutex should be already locked. this talls the
-        mutex.unlock();
-    }
-    if(status == STOPPED)
-        return false;
+	if(status == PAUSED) {
+		mutex.lock();  //mutex should be already locked. this talls the
+		mutex.unlock();
+	}
+	if(status == STOPPED)
+		return false;
 
-    emit progress(str, percent);
-    if(status == STOPPED)
-        return false;
-    return true;
+	emit progress(str, percent);
+	if(status == STOPPED)
+		return false;
+	return true;
 }*/
 
 /**
@@ -179,59 +169,59 @@ bool NormalsTask::progressed(QString str, int percent)
 
 void NormalsWorker::run()
 {
-    switch (solver)
-    {
-    // L2 solver
-    case NORMALS_L2:
-        solveL2();
-        break;
-    // SBL solver
-    case NORMALS_SBL:
-        solveSBL();
-        break;
-    // RPCA solver
-    case NORMALS_RPCA:
-        solveRPCA();
-        break;
-    }
+	switch (solver)
+	{
+	// L2 solver
+	case NORMALS_L2:
+		solveL2();
+		break;
+		// SBL solver
+	case NORMALS_SBL:
+		solveSBL();
+		break;
+		// RPCA solver
+	case NORMALS_RPCA:
+		solveRPCA();
+		break;
+	}
 
-    // Deallocate line (TODO: useless?)
-    std::vector<Pixel>().swap(m_Row);
+	// Deallocate line (TODO: useless?)
+	std::vector<Pixel>().swap(m_Row);
 }
 
 
 void NormalsWorker::solveL2()
 {
-    // Pixel data
-    Eigen::MatrixXd mLights(m_Lights.size(), 3);
-    Eigen::MatrixXd mPixel(m_Lights.size(), 1);
-    Eigen::MatrixXd mNormals;
+	// Pixel data
+	Eigen::MatrixXd mLights(m_Lights.size(), 3);
+	Eigen::MatrixXd mPixel(m_Lights.size(), 1);
+	Eigen::MatrixXd mNormals;
 
-    unsigned int normalIdx = 0;
+	unsigned int normalIdx = 0;
 
-    // Fill the lights matrix
+	// Fill the lights matrix
 	for (size_t i = 0; i < m_Lights.size(); i++)
 		for (int j = 0; j < 3; j++)
-            mLights(i, j) = m_Lights[i][j];
+			mLights(i, j) = m_Lights[i][j];
 
-    // For each pixel in the line solve the system
-    //TODO do it in a single pass, it's faster.
+	// For each pixel in the line solve the system
+	//TODO do it in a single pass, it's faster.
 	for (size_t p = 0; p < m_Row.size(); p++) {
-        // Fill the pixel vector
+		// Fill the pixel vector
 		for (size_t m = 0; m < m_Lights.size(); m++)
-            mPixel(m, 0) = m_Row[p][m].mean();
+			mPixel(m, 0) = m_Row[p][m].mean();
 
-        // Solve
-        mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
-        mNormals.col(0).normalize();
+		// Solve
+		mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
+		mNormals.col(0).normalize();
 
-        // Save
+		// Save
 
 		m_Normals[normalIdx+0] = mNormals(0, 0);
 		m_Normals[normalIdx+1] = mNormals(1, 0);
 		m_Normals[normalIdx+2] = mNormals(2, 0);
 		normalIdx += 3;
-    }
+	}
 }
 
 void NormalsWorker::solveSBL()

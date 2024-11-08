@@ -20,7 +20,7 @@ class NormalsTask :  public Task
 public:
     NormalSolver solver;
     FlatMethod flatMethod;
-    double m_FlatRadius = 0.5;
+	double flat_radius = 0.5;
     bool exportSurface = false;
 	bool exportDepthmap = false;
     bool exportK = 2.0;

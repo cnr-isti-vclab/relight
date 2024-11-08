@@ -11,11 +11,15 @@
 #include <QRunnable>
 
 enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA };
+enum FlatMethod { NONE, RADIAL, FOURIER };
 
 
 class NormalsTask :  public Task {
 public:
 	NormalSolver solver;
+	FlatMethod flatMethod;
+	double m_FlatRadius = 0.5;
+
 	bool exportJpeg = true;
 	int quality = 95;
 	bool exportPng = false;
@@ -51,7 +55,7 @@ private:
 	NormalSolver solver;
 	int row;
 	PixelArray m_Row;
-	//uint8_t* m_Normals;
+
 	float* m_Normals;
 	ImageSet &m_Imageset;
 	QMutex m_Mutex;

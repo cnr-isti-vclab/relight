@@ -104,18 +104,13 @@ void NormalsImage::flattenRadial(double binSize) {
 	for(size_t i = 0; i < derivatives.size(); i++)
 		derivatives[i] /= binCount[i];
 
+#if 0
 	QFile csv("bins.csv");
 	csv.open(QFile::WriteOnly | QFile::Truncate);
 	QTextStream stream(&csv);
 	for(int i = 0; i < derivatives.size(); i++)
 		stream << i << "," << derivatives[i] << endl;
-
-	for(int i = 0; i < derivatives.size(); i++)
-		cout << i << " ";
-	cout << endl;
-	for(int i = 0; i < derivatives.size(); i++)
-		cout << derivatives[i] << " ";
-	cout << endl;
+#endif
 
 	double sum_x = 0;
 	double sum_y = 0;
