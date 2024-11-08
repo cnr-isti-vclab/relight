@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 
+#include "normalsframe.h"
 class QStackedWidget;
 class TabWidget;
 class HomeFrame;
@@ -11,7 +12,9 @@ class AlignFrame;
 class LightsFrame;
 class CropFrame;
 class RtiFrame;
+class NormalsFrame;
 class QueueFrame;
+
 
 class MainWindow: public QMainWindow {
 	Q_OBJECT
@@ -34,7 +37,9 @@ public:
 	LightsFrame *lights_frame = nullptr;
 	CropFrame *crop_frame = nullptr;
 	RtiFrame *rti_frame = nullptr;
+	NormalsFrame *normals_frame = nullptr;
 	QueueFrame *queue_frame = nullptr;
+
 private:
 	QMenu *recentMenu = nullptr;
 };

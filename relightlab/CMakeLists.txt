@@ -32,6 +32,7 @@ set (RELIGHT_HEADERS
     ../src/project.h 
     ../src/sphere.h 
     ../src/white.h 
+    ../src/bni_normal_integration.h
     alignrow.h
     alignframe.h
     alignframe.h
@@ -77,6 +78,8 @@ set (RELIGHT_HEADERS
     ../relight/httpserver.h
     queueframe.h
     queueitem.h
+    normalsframe.h
+    normalstask.h
 )
 
 set (RELIGHTLAB_SOURCES
@@ -92,6 +95,7 @@ set (RELIGHTLAB_SOURCES
     ../src/project.cpp 
     ../src/sphere.cpp 
     ../src/white.cpp 
+    ../src/bni_normal_integration.cpp
     alignframe.cpp
     alignpicking.cpp
     alignrow.cpp
@@ -138,6 +142,8 @@ set (RELIGHTLAB_SOURCES
     ../relight/httpserver.cpp
     queueframe.cpp
     queueitem.cpp
+    normalsframe.cpp
+    normalstask.cpp
 )
 
 

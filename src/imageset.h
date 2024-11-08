@@ -12,6 +12,7 @@
 class QJsonObject;
 class JpegDecoder;
 class QImage;
+class Dome;
 
 class ImageSet {
 public:
@@ -48,7 +49,8 @@ public:
 	bool initFromFolder(const char *path, bool ignore_filenames = true, int skip_image = -1);
 	bool initFromProject(QJsonObject &obj, const QString &filename);
 	void initLights();
-	bool initImages(const char *path); //require lights and images to be available, path points to the dir of the images.
+	bool initImages(const char *path); //path points to the dir of the images.
+	void initLightsFromDome(Dome &dome);
 	
 	QImage maxImage(std::function<bool(std::string stage, int percent)> *callback = nullptr); 
 	void crop(int _left, int _top, int _right, int _bottom);

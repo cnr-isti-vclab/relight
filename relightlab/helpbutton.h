@@ -8,6 +8,7 @@ class QPushButton;
 class QIcon;
 class QAction;
 class QRadioButton;
+class QCheckBox;
 
 class HelpedButton: public QWidget {
 	Q_OBJECT
@@ -51,6 +52,15 @@ class HelpRadio: public QWidget {
 	private:
 		QRadioButton *radio = nullptr;
 };
+
+class HelpCheckBox: public QWidget {
+	public:
+		HelpCheckBox(QString txt, QString help_id, QWidget *parent = nullptr);
+		QCheckBox *checkBoxButton() { return checkBox; }
+	private:
+		QCheckBox *checkBox = nullptr;
+};
+
 
 class QTextBrowser;
 

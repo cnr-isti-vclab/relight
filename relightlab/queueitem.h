@@ -17,6 +17,7 @@ public:
 	QWidget *widget = nullptr;
 	QLabel *status = nullptr;
 	QPushButton *cast = nullptr;
+	QPushButton *folder = nullptr;
 	QProgressBar *progressbar = nullptr;
 
 	QueueItem(Task *task, QListWidget *parent);

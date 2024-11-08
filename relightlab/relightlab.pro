@@ -1,5 +1,5 @@
 QT += widgets xml concurrent
-CONFIG += c++11
+CONFIG += c++17
 
 #TODO: this might be needed in CMake
 #find_package(Qt5Svg REQUIRED)
@@ -15,7 +15,7 @@ win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
 unix:INCLUDEPATH += /usr/include/eigen3
-unix:LIBS += -ljpeg -liomp5
+unix:LIBS += -ljpeg -ltiff -lgomp
 unix:QMAKE_CXXFLAGS += -fopenmp
 
 
@@ -96,7 +96,10 @@ SOURCES += main.cpp \
     task.cpp \
     queueitem.cpp \
     queueframe.cpp \
-    ../relight/httpserver.cpp
+    ../relight/httpserver.cpp \
+    normalsframe.cpp \
+    normalstask.cpp \
+    ../src/bni_normal_integration.cpp
 
 RESOURCES += \
     res.qrc
@@ -164,7 +167,10 @@ HEADERS += \
     queueitem.h \
     queueframe.h \
     ../relight/httpserver.h \
-    ../relight/httplib.h
+    ../relight/httplib.h \
+    normalsframe.h \
+    normalstask.h \
+    ../src/bni_normal_integration.h
 
 FORMS += \
     form.ui

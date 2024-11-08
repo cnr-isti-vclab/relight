@@ -20,9 +20,9 @@ else()
 	if(Qt5_FOUND)
 	set(RELIGHT_QT Qt5)
 		message("Using Qt5")
-else()
+	else()
 		message(FATAL_ERROR "Qt not found")
-endif()
+	endif()
 endif()
 
 

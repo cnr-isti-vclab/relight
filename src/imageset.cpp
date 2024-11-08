@@ -12,6 +12,7 @@
 
 #include "lp.h"
 #include "imageset.h"
+#include "dome.h"
 #include "jpeg_decoder.h"
 
 
@@ -140,6 +141,16 @@ bool ImageSet::initFromProject(QJsonObject &obj, const QString &filename) {
 	return true;
 }
 
+void ImageSet::initLightsFromDome(Dome &dome) {
+	light3d = dome.lightConfiguration != Dome::DIRECTIONAL;
+	dome_radius = dome.domeDiameter/2.0;
+	vertical_offset = dome.verticalOffset;
+	lights = dome.directions;
+	lights3d = dome.positionsSphere;
+	initLights();
+}
+
+
 void ImageSet::initLights() {
 	if(light3d) {
 		//if dome radius we assume lights are directionals
@@ -216,6 +227,7 @@ bool ImageSet::initImages(const char *_path) {
 	}
 	return true;
 }
+
 
 
 void ImageSet::crop(int _left, int _top, int _width, int _height) {

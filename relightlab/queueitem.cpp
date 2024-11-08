@@ -14,11 +14,11 @@ using namespace std;
 
 QueueItem::QueueItem(Task *_task, QListWidget *parent): QListWidgetItem(parent) {
 	style[Task::ON_QUEUE] = "background-color:#323232; color:#b1b1b1";
-	style[Task::RUNNING] = "background-color:#328232; color:#b1b1b1";
-	style[Task::PAUSED] = "background-color:#323232; color:#b1b1b1";
-	style[Task::STOPPED] = "background-color:#823232; color:#b1b1b1";
-	style[Task::DONE] = "background-color:#323282; color:#b1b1b1";
-	style[Task::FAILED] = "background-color:#823232; color:#b1b1b1";
+	style[Task::RUNNING]  = "background-color:#328232; color:#b1b1b1";
+	style[Task::PAUSED]   = "background-color:#323232; color:#b1b1b1";
+	style[Task::STOPPED]  = "background-color:#823232; color:#b1b1b1";
+	style[Task::DONE]     = "background-color:#323282; color:#b1b1b1";
+	style[Task::FAILED]   = "background-color:#823232; color:#b1b1b1";
 
 	task = _task;
 	connect(task, SIGNAL(progress(QString,int)), this, SLOT(progress(QString,int)));
@@ -55,11 +55,17 @@ QueueItem::QueueItem(Task *_task, QListWidget *parent): QListWidgetItem(parent) 
 
 
 	cast = new QPushButton();
-	cast->setIcon(QIcon(":/icons/feather/cast.svg"));
+	cast->setIcon(QIcon::fromTheme("cast"));
 	cast->setEnabled(false);
 	grid->addWidget(cast, 0, 2, 4, 1);
 
 	connect(cast, SIGNAL(clicked(bool)), this, SLOT(casting()));
+
+	folder = new QPushButton();
+	folder->setIcon(QIcon::fromTheme("folder"));
+	folder->setEnabled(false);
+	grid->addWidget(folder, 0, 3, 4, 1);
+
 	widget->setLayout(grid);
 
 	setSizeHint(widget->minimumSizeHint());
