@@ -172,8 +172,7 @@ HEADERS += \
     normalstask.h \
     ../src/bni_normal_integration.h
 
-FORMS += \
-    form.ui
+FORMS +=
 
 DISTFILES += \
     roadmap.md

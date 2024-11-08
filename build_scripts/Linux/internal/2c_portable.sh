@@ -33,7 +33,7 @@ fi
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/usr/lib
 
 if $SCRIPTS_PATH/resources/linuxdeploy --appdir=$INSTALL_PATH --plugin qt; then
-    echo "$INSTALL_PATH is now a self contained meshlab application"
+    echo "$INSTALL_PATH is now a self contained relight application"
 else
     echo "linuxdeploy failed with error code $?. Script was not completed successfully."
     exit 1

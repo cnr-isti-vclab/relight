@@ -13,602 +13,626 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <widget class="ImageCropper" name="cropview">
-   <property name="geometry">
-    <rect>
-     <x>9</x>
-     <y>9</y>
-     <width>256</width>
-     <height>192</height>
-    </rect>
-   </property>
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-     <horstretch>5</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-  </widget>
-  <widget class="QTabWidget" name="export_frame">
-   <property name="geometry">
-    <rect>
-     <x>552</x>
-     <y>9</y>
-     <width>290</width>
-     <height>597</height>
-    </rect>
-   </property>
-   <property name="currentIndex">
-    <number>1</number>
-   </property>
-   <widget class="QWidget" name="tabWidgetPage1">
-    <attribute name="title">
-     <string>RTI</string>
-    </attribute>
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Basis:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QComboBox" name="basis">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-         <horstretch>1</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="currentIndex">
-        <number>0</number>
-       </property>
+  <layout class="QGridLayout" name="gridLayout_7">
+   <item row="0" column="0">
+    <widget class="ImageCropper" name="cropview">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>5</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QTabWidget" name="export_frame">
+     <property name="currentIndex">
+      <number>1</number>
+     </property>
+     <widget class="QWidget" name="tabWidgetPage1">
+      <attribute name="title">
+       <string>RTI</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <property name="text">
-         <string>LPTM 9 - Polynomial texture map</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>PTM 18 - Polynomial texture map</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>HSH - 12 - Hemispherical harmonics</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>HSH 27 - Hemispherical harmonics</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>BLN - Bilinear interpolation + PCA</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>RBF - Radial basis functions + PCA</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>YBLN - Bilinear + PCA + chroma </string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>YRBF - RBF +  PCA + chroma</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item>
-      <widget class="QGroupBox" name="groupBox_3">
-       <property name="title">
-        <string>Format:</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
-        <item>
-         <widget class="QRadioButton" name="formatRTI">
-          <property name="text">
-           <string>RTI</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QRadioButton" name="formatRelight">
-          <property name="text">
-           <string>Relight</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QRadioButton" name="formatDeepzoom">
-          <property name="text">
-           <string>Relight + Deepzoom</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QRadioButton" name="formatTarzoom">
-          <property name="text">
-           <string>Relight + Tarzoom</string>
-          </property>
-          <property name="checked">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QRadioButton" name="formatItarzoom">
-          <property name="text">
-           <string>Relight + ITarzoom</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="openlime">
-          <property name="text">
-           <string>Add Openlime viewer</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item>
-      <widget class="QGroupBox" name="groupBox_2">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="title">
-        <string>Quality</string>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_9">
-          <property name="text">
-           <string>RAM (MB)</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QSpinBox" name="ram">
-          <property name="minimum">
-           <number>64</number>
-          </property>
-          <property name="maximum">
-           <number>4000000</number>
-          </property>
-          <property name="singleStep">
-           <number>50</number>
-          </property>
-          <property name="value">
-           <number>500</number>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QLabel" name="label_4">
-          <property name="text">
-           <string>Chroma planes:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1">
-         <widget class="QSpinBox" name="chroma">
-          <property name="minimum">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <number>27</number>
-          </property>
-          <property name="value">
-           <number>3</number>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Number of planes:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QSpinBox" name="planes">
-          <property name="minimum">
-           <number>9</number>
-          </property>
-          <property name="maximum">
-           <number>27</number>
-          </property>
-          <property name="value">
-           <number>18</number>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>Jpeg quality:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QSpinBox" name="quality">
-          <property name="minimum">
-           <number>80</number>
-          </property>
-          <property name="maximum">
-           <number>100</number>
-          </property>
-          <property name="value">
-           <number>95</number>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="crop">
-       <property name="text">
-        <string>Crop...</string>
-       </property>
-       <property name="icon">
-        <iconset resource="icons.qrc">
-         <normaloff>:/icons/feather/crop.svg</normaloff>:/icons/feather/crop.svg</iconset>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="verticalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>40</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="build_rti">
-       <property name="text">
-        <string>Build</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-   <widget class="QWidget" name="tab">
-    <attribute name="title">
-     <string>Normals</string>
-    </attribute>
-    <layout class="QVBoxLayout" name="verticalLayout_3">
-     <item>
-      <widget class="QGroupBox" name="groupBox_5">
-       <property name="title">
-        <string>Solver</string>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_4">
-        <item row="2" column="0">
-         <widget class="QRadioButton" name="sbl_solver">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string>Sparse Baesian</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QRadioButton" name="l2_solver">
-          <property name="text">
-           <string>Least squares</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QRadioButton" name="rpca_solver">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string>Robust PCA</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item>
-      <widget class="QGroupBox" name="groupBox_6">
-       <property name="title">
-        <string>3D Surface</string>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_5">
-        <item row="3" column="2">
-         <widget class="QDoubleSpinBox" name="discontinuity">
-          <property name="value">
-           <double>2.000000000000000</double>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0" colspan="2">
-         <widget class="QLabel" name="label_11">
-          <property name="text">
-           <string>Discontinuity</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0" rowspan="2" colspan="3">
-         <widget class="QCheckBox" name="export_surface">
-          <property name="text">
-           <string>Export ply surface</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QCheckBox" name="export_depthmap">
-          <property name="text">
-           <string>Export tiff depthmap</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="crop1">
-       <property name="text">
-        <string>Crop...</string>
-       </property>
-       <property name="icon">
-        <iconset resource="icons.qrc">
-         <normaloff>:/icons/feather/crop.svg</normaloff>:/icons/feather/crop.svg</iconset>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="verticalSpacer">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>40</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="build_normals">
-       <property name="text">
-        <string>Build</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-  </widget>
-  <widget class="QFrame" name="crop_frame">
-   <property name="geometry">
-    <rect>
-     <x>848</x>
-     <y>9</y>
-     <width>300</width>
-     <height>646</height>
-    </rect>
-   </property>
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-     <horstretch>1</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="minimumSize">
-    <size>
-     <width>300</width>
-     <height>300</height>
-    </size>
-   </property>
-   <property name="frameShape">
-    <enum>QFrame::StyledPanel</enum>
-   </property>
-   <property name="frameShadow">
-    <enum>QFrame::Raised</enum>
-   </property>
-   <layout class="QGridLayout" name="gridLayout_6">
-    <item row="0" column="0">
-     <widget class="QGroupBox" name="groupBox">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="title">
-       <string>Crop</string>
-      </property>
-      <layout class="QGridLayout" name="gridLayout_3">
-       <item row="0" column="0">
-        <widget class="QLabel" name="label_5">
+        <widget class="QLabel" name="label">
          <property name="text">
-          <string>Width</string>
+          <string>Basis:</string>
          </property>
         </widget>
        </item>
-       <item row="0" column="1">
-        <widget class="QSpinBox" name="width">
-         <property name="enabled">
-          <bool>true</bool>
+       <item>
+        <widget class="QComboBox" name="basis">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>1</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
-         <property name="maximum">
-          <number>32768</number>
+         <property name="currentIndex">
+          <number>0</number>
          </property>
+         <item>
+          <property name="text">
+           <string>LPTM 9 - Polynomial texture map</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>PTM 18 - Polynomial texture map</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>HSH - 12 - Hemispherical harmonics</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>HSH 27 - Hemispherical harmonics</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>BLN - Bilinear interpolation + PCA</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>RBF - Radial basis functions + PCA</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>YBLN - Bilinear + PCA + chroma </string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>YRBF - RBF +  PCA + chroma</string>
+          </property>
+         </item>
         </widget>
        </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_7">
+       <item>
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="title">
+          <string>Format:</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QRadioButton" name="formatRTI">
+            <property name="text">
+             <string>RTI</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="formatRelight">
+            <property name="text">
+             <string>Relight</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="formatDeepzoom">
+            <property name="text">
+             <string>Relight + Deepzoom</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="formatTarzoom">
+            <property name="text">
+             <string>Relight + Tarzoom</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="formatItarzoom">
+            <property name="text">
+             <string>Relight + ITarzoom</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="openlime">
+            <property name="text">
+             <string>Add Openlime viewer</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="title">
+          <string>Quality</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>RAM (MB)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="ram">
+            <property name="minimum">
+             <number>64</number>
+            </property>
+            <property name="maximum">
+             <number>4000000</number>
+            </property>
+            <property name="singleStep">
+             <number>50</number>
+            </property>
+            <property name="value">
+             <number>500</number>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Chroma planes:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QSpinBox" name="chroma">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>27</number>
+            </property>
+            <property name="value">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Number of planes:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QSpinBox" name="planes">
+            <property name="minimum">
+             <number>9</number>
+            </property>
+            <property name="maximum">
+             <number>27</number>
+            </property>
+            <property name="value">
+             <number>18</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Jpeg quality:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="quality">
+            <property name="minimum">
+             <number>80</number>
+            </property>
+            <property name="maximum">
+             <number>100</number>
+            </property>
+            <property name="value">
+             <number>95</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="crop">
          <property name="text">
-          <string>Height</string>
+          <string>Crop...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="icons.qrc">
+           <normaloff>:/icons/feather/crop.svg</normaloff>:/icons/feather/crop.svg</iconset>
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
-        <widget class="QSpinBox" name="height">
-         <property name="enabled">
-          <bool>true</bool>
+       <item>
+        <spacer name="verticalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
          </property>
-         <property name="maximum">
-          <number>32768</number>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
          </property>
-        </widget>
+        </spacer>
        </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_10">
+       <item>
+        <widget class="QPushButton" name="build_rti">
          <property name="text">
-          <string>Left</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="1">
-        <widget class="QSpinBox" name="left">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="maximum">
-          <number>32768</number>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="0">
-        <widget class="QLabel" name="label_8">
-         <property name="text">
-          <string>Top</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="1">
-        <widget class="QSpinBox" name="top">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="maximum">
-          <number>32768</number>
+          <string>Build</string>
          </property>
         </widget>
        </item>
       </layout>
      </widget>
-    </item>
-    <item row="1" column="0">
-     <widget class="QGroupBox" name="groupBox_4">
-      <property name="title">
-       <string>Aspect ratio</string>
-      </property>
-      <layout class="QGridLayout" name="gridLayout">
-       <item row="0" column="0" colspan="3">
-        <widget class="QComboBox" name="aspect"/>
-       </item>
-       <item row="1" column="0">
-        <widget class="QSpinBox" name="aspect_width">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>Normals</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="QGroupBox" name="groupBox_5">
+         <property name="title">
+          <string>Solver</string>
          </property>
-         <property name="minimum">
-          <number>1</number>
-         </property>
-         <property name="maximum">
-          <number>10000</number>
-         </property>
+         <layout class="QGridLayout" name="gridLayout_4">
+          <item row="2" column="0">
+           <widget class="QRadioButton" name="sbl_solver">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Sparse Baesian</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QRadioButton" name="l2_solver">
+            <property name="text">
+             <string>Least squares</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QRadioButton" name="rpca_solver">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Robust PCA</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
-       <item row="1" column="1">
-        <widget class="QLabel" name="label_6">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
+       <item>
+        <widget class="QGroupBox" name="groupBox_6">
+         <property name="title">
+          <string>3D Surface</string>
          </property>
+         <layout class="QGridLayout" name="gridLayout_5">
+          <item row="0" column="0" colspan="2">
+           <widget class="QCheckBox" name="export_surface">
+            <property name="text">
+             <string>Export ply surface</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_11">
+            <property name="text">
+             <string>Discontinuity</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QDoubleSpinBox" name="discontinuity">
+            <property name="value">
+             <double>2.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_7">
+         <property name="title">
+          <string>Flatten normals</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_8">
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>Radius (0 - 100%):</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QDoubleSpinBox" name="flat_fourier_radius">
+            <property name="value">
+             <double>20.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="2">
+           <widget class="QRadioButton" name="flat_radial">
+            <property name="text">
+             <string>Radial</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="2">
+           <widget class="QRadioButton" name="flat_fourier">
+            <property name="text">
+             <string>Fourier</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QRadioButton" name="flat_none">
+            <property name="text">
+             <string>None</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="crop1">
          <property name="text">
-          <string>:</string>
+          <string>Crop...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="icons.qrc">
+           <normaloff>:/icons/feather/crop.svg</normaloff>:/icons/feather/crop.svg</iconset>
          </property>
         </widget>
        </item>
-       <item row="1" column="2">
-        <widget class="QSpinBox" name="aspect_height">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
          </property>
-         <property name="minimum">
-          <number>1</number>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
          </property>
-         <property name="maximum">
-          <number>10000</number>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="build_normals">
+         <property name="text">
+          <string>Build</string>
          </property>
         </widget>
        </item>
       </layout>
      </widget>
-    </item>
-    <item row="3" column="0">
-     <spacer name="verticalSpacer_3">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>20</width>
-        <height>285</height>
-       </size>
-      </property>
-     </spacer>
-    </item>
-    <item row="4" column="0">
-     <widget class="QDialogButtonBox" name="cropbuttonbox">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <property name="standardButtons">
-       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="0">
-     <widget class="QPushButton" name="cropreset">
-      <property name="text">
-       <string>Reset</string>
-      </property>
-     </widget>
-    </item>
-   </layout>
-  </widget>
+    </widget>
+   </item>
+   <item row="0" column="2">
+    <widget class="QFrame" name="crop_frame">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>300</width>
+       <height>300</height>
+      </size>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_6">
+      <item row="0" column="0">
+       <widget class="QGroupBox" name="groupBox">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="title">
+         <string>Crop</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_3">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string>Width</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QSpinBox" name="width">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="maximum">
+            <number>32768</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_7">
+           <property name="text">
+            <string>Height</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QSpinBox" name="height">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="maximum">
+            <number>32768</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_10">
+           <property name="text">
+            <string>Left</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QSpinBox" name="left">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="maximum">
+            <number>32768</number>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_8">
+           <property name="text">
+            <string>Top</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QSpinBox" name="top">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="maximum">
+            <number>32768</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QGroupBox" name="groupBox_4">
+        <property name="title">
+         <string>Aspect ratio</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="0" column="0" colspan="3">
+          <widget class="QComboBox" name="aspect"/>
+         </item>
+         <item row="1" column="0">
+          <widget class="QSpinBox" name="aspect_width">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>10000</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLabel" name="label_6">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QSpinBox" name="aspect_height">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>10000</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <spacer name="verticalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>285</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="4" column="0">
+       <widget class="QDialogButtonBox" name="cropbuttonbox">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="standardButtons">
+         <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QPushButton" name="cropreset">
+        <property name="text">
+         <string>Reset</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
  </widget>
  <customwidgets>
   <customwidget>
