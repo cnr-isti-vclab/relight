@@ -7,7 +7,7 @@
 #include <complex>
 #include <math.h>
 
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 using namespace Eigen;
 
 #include "pocketfft.h"
