@@ -13,7 +13,9 @@
 #include "lightsframe.h"
 #include "cropframe.h"
 #include "rtiframe.h"
+#include "normalsframe.h"
 #include "queueframe.h"
+
 
 #include <QMessageBox>
 #include <QDebug>
@@ -33,6 +35,7 @@ MainWindow::MainWindow() {
 	tabs->addTab(lights_frame = new LightsFrame, "Lights");
 	tabs->addTab(crop_frame = new CropFrame, "Crop");
 	tabs->addTab(rti_frame = new RtiFrame, "RTI");
+	tabs->addTab(normals_frame = new NormalsFrame, "Normals");
 	tabs->addTab(queue_frame = new QueueFrame, "Queue");
 
 	setCentralWidget(tabs);

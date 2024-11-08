@@ -8,6 +8,7 @@ class QGridLayout;
 class QListWidget;
 class QAction;
 class QToolBar;
+class Task;
 
 class QueueFrame: public QFrame {
 	Q_OBJECT
@@ -15,6 +16,7 @@ public:
 	QueueFrame(QWidget *parent = nullptr);
 
 	void setToolsStatus();
+	void removeTask(Task *task);
 
 public slots:
 	void selectionChanged(const QItemSelection & selected, const QItemSelection & deselected);

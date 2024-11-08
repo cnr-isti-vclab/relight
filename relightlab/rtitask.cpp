@@ -19,6 +19,7 @@ using namespace std;
 int convertToRTI(const char *filename, const char *output);
 int convertRTI(const char *file, const char *output, int quality);
 
+void setupLights(ImageSet &imageset, Dome &dome);
 RtiTask::RtiTask(const Project &_project): Task(), project(_project) {}
 
 RtiTask::~RtiTask() {
@@ -46,14 +47,8 @@ void RtiTask::run() {
 		builder->nplanes = builder->yccplanes[0] + 2*builder->yccplanes[1];
 	}
 	ImageSet &imageset = builder->imageset;
-
 	imageset.images = project.getImages();
-
-	builder->lights = imageset.lights = project.dome.directions;
-	imageset.light3d = project.dome.lightConfiguration != Dome::DIRECTIONAL;
-	imageset.dome_radius = project.dome.domeDiameter/2.0;
-	imageset.vertical_offset = project.dome.verticalOffset;
-	imageset.initLights();
+	imageset.initLightsFromDome(project.dome);
 	imageset.initImages(input_folder.toStdString().c_str());
 
 	if(!crop.isNull()) {
@@ -63,6 +58,8 @@ void RtiTask::run() {
 		builder->crop[3] = crop.height();
 		imageset.crop(crop.left(), crop.top(), crop.width(), crop.height());
 	}
+
+	builder->lights = imageset.lights;
 	builder->width  = imageset.width;
 	builder->height = imageset.height;
 

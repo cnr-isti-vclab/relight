@@ -131,14 +131,18 @@ void QueueFrame::remove() {
 		list->takeItem(i.row());
 		delete item;
 	}
-	/*for(QModelIndex index: list->selectionModel()->selectedRows()) {
-		QueueItem *item = (QueueItem *)list->item(index.row());
-		if(item->task->status == Task::PAUSED ||item->task->status == Task::RUNNING) {
-			queue.stop();
+}
+
+void QueueFrame::removeTask(Task *task) {
+	ProcessQueue &queue = ProcessQueue::instance();
+	queue.removeTask(task->id);
+	for(int i = 0; i < list->count(); i++) {
+		QueueItem *item = dynamic_cast<QueueItem *>(list->item(i));
+		if(item->id == task->id) {
+			list->removeItemWidget(item);
+			//should remove task from queue?
 		}
-		delete list->takeItem(index.row());
-		queue.removeTask(item->id);
-	}*/
+	}
 }
 
 void QueueFrame::selectionChanged(const QItemSelection & selected, const QItemSelection & deselected) {
@@ -165,22 +169,22 @@ void QueueFrame::update() {
 		tasks.insert(item->id);
 	}
 	ProcessQueue &queue = ProcessQueue::instance();
+
 	//add all task not already present.
 	for(Task *task: queue.queue) {
-		if(!tasks.contains(task->id)) {
+		if(!tasks.contains(task->id) && task->visible) {
 			QueueItem *item = new QueueItem(task, list);
 			list->addItem(item);
 		}
 	}
-	if(queue.task && !tasks.contains(queue.task->id)) {
+	if(queue.task && !tasks.contains(queue.task->id) && queue.task->visible) {
 		QueueItem *item = new QueueItem(queue.task, list);
 		list->addItem(item);
 	}
 	for(Task *task: queue.past) {
-		if(!tasks.contains(task->id)) {
+		if(!tasks.contains(task->id) && task->visible) {
 			QueueItem *item = new QueueItem(task, list);
 			list->addItem(item);
-
 		}
 	}
 

@@ -10,6 +10,7 @@ class Task: public QThread {
 public:
 	int id = 0;
 	QString label;
+	bool visible = true; //visible on the queueframe.
 
 	QString input_folder;
 	QString output;

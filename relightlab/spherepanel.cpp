@@ -66,16 +66,9 @@ void SpherePanel::newSphere() {
 }
 
 SphereRow *SpherePanel::addSphere(Sphere *sphere) {
-	/*Row is: 1) thumbnail of the first image where the sphere is rendered.
-			  2) detail thumb with all the reflections.
-			  3) status
-			  4) edit and delete button
-
-	*/
 	setVisible(true);
 	SphereRow *row = new SphereRow(sphere);
 	spheres->addWidget(row);
-
 
 	connect(row, SIGNAL(removeme(SphereRow *)), this, SLOT(removeSphere(SphereRow *)));
 	connect(row, SIGNAL(updated()), this, SIGNAL(updated()));

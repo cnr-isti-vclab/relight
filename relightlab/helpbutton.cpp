@@ -11,6 +11,7 @@
 #include <QPushButton>
 #include <QToolButton>
 #include <QRadioButton>
+#include <QCheckBox>
 #include <QTextBrowser>
 #include <QLabel>
 #include <QSettings>
@@ -85,6 +86,16 @@ HelpRadio::HelpRadio(QString txt, QString help_id, QWidget *parent): QWidget(par
 	QHBoxLayout *layout = new QHBoxLayout(this);
 	radio = new QRadioButton(txt);
 	layout->addWidget(radio);
+	layout->addStretch();
+	HelpButton *help = new HelpButton(help_id);
+	layout->addWidget(help);
+	layout->setContentsMargins(0, 0, 0, 0);
+}
+
+HelpCheckBox::HelpCheckBox(QString txt, QString help_id, QWidget *parent): QWidget(parent) {
+	QHBoxLayout *layout = new QHBoxLayout(this);
+	checkBox = new QCheckBox(txt);
+	layout->addWidget(checkBox);
 	layout->addStretch();
 	HelpButton *help = new HelpButton(help_id);
 	layout->addWidget(help);

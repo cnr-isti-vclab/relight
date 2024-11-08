@@ -16,6 +16,8 @@
 DetectHighlights::DetectHighlights(Sphere *_sphere, bool update) {
 	sphere = _sphere;
 	update_positions = update;
+	visible = false;
+	label = "Detecting sphere highlights.";
 }
 
 void DetectHighlights::run() {
@@ -35,7 +37,7 @@ void DetectHighlights::run() {
 		int progress = std::min(99, (int)(100*(i+1) / project.images.size()));
 		progressed(QString("Detecting highlights"), progress);
 	}
-	progressed(QString("Done"), 100);
+	progressed(QString("Done."), 100);
 	mutex.lock();
 	status = DONE;
 	mutex.unlock();
