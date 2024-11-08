@@ -58,6 +58,7 @@ SOURCES += main.cpp \
     focaldialog.cpp \
     ../src/lens.cpp \
     ../src/image.cpp \
+	../src/lp.cpp \
     httpserver.cpp \
     scripts.cpp \
     processqueue.cpp \

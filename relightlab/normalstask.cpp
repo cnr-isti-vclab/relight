@@ -4,6 +4,7 @@
 #include "../src/imageset.h"
 #include "../src/relight_threadpool.h"
 #include "../src/bni_normal_integration.h"
+#include "../src/flatnormals.h"
 
 #include <Eigen/Eigen>
 #include <Eigen/Core>
@@ -40,10 +41,8 @@ void NormalsTask::initFromProject(Project &project) {
 
 void NormalsTask::run() {
 	status = RUNNING;
-	// Normals vector
 
-	int start = clock();
-	// Init
+
 	imageset.setCallback(nullptr);
 
 	std::vector<float> normals(imageset.width * imageset.height * 3);
@@ -79,6 +78,31 @@ void NormalsTask::run() {
 
 	// Wait for the end of all the threads
 	pool.finish();
+
+	if(flatMethod != NONE) {
+		//TODO: do we really need double precision?
+		std::vector<double> normalsd(normals.size());
+		for(uint32_t i = 0; i < normals.size(); i++)
+			normalsd[i] = (double)normals[i];
+
+		NormalsImage ni;
+		ni.load(normalsd, imageset.width, imageset.height);
+		switch(flatMethod) {
+			case RADIAL:
+				ni.flattenRadial();
+				break;
+			case FOURIER:
+				//convert radius to frequencies
+				double sigma = 100/m_FlatRadius;
+				ni.flattenFourier(imageset.width/10, sigma);
+				break;
+		}
+		normalsd = ni.normals;
+		for(uint32_t i = 0; i < normals.size(); i++)
+			normals[i] = (float)ni.normals[i];
+
+	}
+
 
 	std::vector<uint8_t> normalmap(imageset.width * imageset.height * 3);
 	for(size_t i = 0; i < normals.size(); i++)

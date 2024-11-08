@@ -38,6 +38,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 SOURCES += main.cpp \
     ../relight-cli/convert_rti.cpp \
     ../relight-cli/rtibuilder.cpp \
+    ../src/flatnormals.cpp \
     processqueue.cpp \
     ../src/align.cpp \
     ../src/dome.cpp \
@@ -107,6 +108,7 @@ RESOURCES += \
 
 HEADERS += \
     ../relight-cli/rtibuilder.h \
+    ../src/flatnormals.h \
     processqueue.h \
     ../src/align.h \
     ../src/dome.h \
