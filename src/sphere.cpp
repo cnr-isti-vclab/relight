@@ -30,7 +30,6 @@ void Sphere::resetHighlight(size_t n) {
 
 void Sphere::ellipseFit() {
 	size_t n = border.size();
-
 	Eigen::MatrixXd D1(n, 3);
 	Eigen::MatrixXd D2(n, 3);
 	for(size_t k = 0; k < border.size(); k++) {
@@ -71,7 +70,7 @@ void Sphere::ellipseFit() {
 
 	Eigen::VectorXd ellipse = eigenvector.col(0);
 	Eigen::VectorXd min_pos_eig;
-	for(int i = 0; i<3 ; i++){
+	for(int i = 0; i<3; i++) {
 		if(cond(i) > 0){
 			min_pos_eig = eigenvector.col(i);
 			break;

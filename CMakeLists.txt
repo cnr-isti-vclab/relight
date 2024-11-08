@@ -3,6 +3,9 @@ project(relight)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_FIND_FRAMEWORK LAST)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+
+message(CMAKE_MODULE_PATH="${CMAKE_MODULE_PATH}")
 
 option(MACOSX_MAKE_BUNDLE "If using macos, all targets will be placed in a relight macosx app bundle" ON)
 
@@ -38,6 +41,7 @@ endif()
 if(NOT Eigen3_FOUND)
 	set(EIGEN3_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/eigen-3.3.9)
 endif()
+
 
 if(MSVC)
 	set(JPEGTURBO_HOME ${CMAKE_CURRENT_SOURCE_DIR}/external/libjpeg-turbo-2.0.6)

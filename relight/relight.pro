@@ -41,6 +41,7 @@ SOURCES += main.cpp \
     graphics_view_zoom.cpp \
     normalstask.cpp \
     rtiexport.cpp \
+    ../relight-cli/convert_rti.cpp \
     ../relight-cli/rtibuilder.cpp \
     ../src/imageset.cpp \
     ../src/jpeg_decoder.cpp \
@@ -51,6 +52,7 @@ SOURCES += main.cpp \
     ../src/exif.cpp \
     ../src/project.cpp \
     ../src/dome.cpp \
+    ../src/flatnormals.cpp \
     helpdialog.cpp \
     ../src/measure.cpp \
     focaldialog.cpp \
@@ -65,9 +67,7 @@ SOURCES += main.cpp \
     task.cpp \
     rtitask.cpp \
     settingsdialog.cpp \
-    ../relight-cli/convert_rti.cpp \
     domecalibration.cpp \
-    ../src/lp.cpp \
     qmarkerlist.cpp \
     qmarker.cpp \
     qmeasuremarker.cpp \
@@ -99,7 +99,6 @@ HEADERS += \
     helpdialog.h \
     ../src/imageset.h \
     ../src/jpeg_decoder.h \
-    ../src/jpeg_encoder.h \
     ../src/material.h \
     ../src/eigenpca.h \
     ../relight-cli/rtibuilder.h \
@@ -110,6 +109,7 @@ HEADERS += \
     ../src/lens.h \
     ../src/image.h \
     ../src/exif.h \
+    ../src/flatnormals.h \
     httpserver.h \
     scripts.h \
     processqueue.h \
@@ -119,7 +119,6 @@ HEADERS += \
     task.h \
     rtitask.h \
     settingsdialog.h \
-    ../src/legacy_rti.h \
     httplib.h \
     domecalibration.h \
     ../src/dome.h \
@@ -138,8 +137,7 @@ HEADERS += \
     aligndialog.h \
     zoom.h \
     zoomdialog.h \
-    zoomtask.h \
-    ../src/deepzoom.h
+    zoomtask.h
 
 FORMS += \
     dstretchdialog.ui \

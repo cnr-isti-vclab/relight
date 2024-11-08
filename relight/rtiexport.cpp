@@ -252,12 +252,24 @@ void RtiExport::createNormals() {
         solver = NORMALS_RPCA;
 
 
+	NormalsTask::FlatMethod flat_method;
+	if(ui->flat_none->isChecked())
+		flat_method = NormalsTask::FlatMethod::NONE;
+	if(ui->flat_radial->isChecked())
+		flat_method = NormalsTask::FlatMethod::RADIAL;
+	if(ui->flat_fourier->isChecked())
+		flat_method = NormalsTask::FlatMethod::FOURIER;
 
-    ProcessQueue &queue = ProcessQueue::instance();
-    NormalsTask *task = new NormalsTask(path, output, crop, solver);
-    task->exportSurface = ui->export_surface->isChecked();
+	double flat_radius = ui->flat_fourier_radius->value();
+
+
+	ProcessQueue &queue = ProcessQueue::instance();
+	NormalsTask *task = new NormalsTask(path, output, crop, solver, flat_method);
+	task->exportSurface = ui->export_surface->isChecked();
 	task->exportDepthmap = ui->export_depthmap->isChecked();
-    task->exportK = ui->discontinuity->value();
+	task->exportK = ui->discontinuity->value();
+	task->flat_radius = ui->flat_fourier_radius->value();
+
 	QList<QVariant> slights;
 	for(auto light: lights)
 		for(int k = 0; k < 3; k++)

@@ -4,6 +4,7 @@
 #include "../src/imageset.h"
 #include "../src/relight_threadpool.h"
 #include "../src/bni_normal_integration.h"
+#include "../src/flatnormals.h"
 
 #include <Eigen/Eigen>
 #include <Eigen/Core>
@@ -53,7 +54,6 @@ void NormalsTask::run()
     }
     imageSet.crop(m_Crop.left(), m_Crop.top(), m_Crop.width(), m_Crop.height());
 
-    //std::vector<uint8_t> normals(imageSet.width * imageSet.height * 3);
     std::vector<float> normals(imageSet.width * imageSet.height * 3);
 
     // Thread pool used to handle the processors
@@ -70,7 +70,6 @@ void NormalsTask::run()
 
         // Create the normal task and get the run lambda
         uint32_t idx = i * 3 * imageSet.width;
-        //uint8_t* data = normals.data() + idx;
         float* data = &normals[idx];
 
         std::function<void(void)> run = [this, &line, &imageSet, data](void)->void {
@@ -87,6 +86,40 @@ void NormalsTask::run()
 
     // Wait for the end of all the threads
     pool.finish();
+
+	if(m_FlatMethod != NONE) {
+		//TODO: do we really need double precision?
+		std::vector<double> normalsd(normals.size());
+		for(uint32_t i = 0; i < normals.size(); i++0)
+			normalsd[i] = (double)normals[i];
+
+		NormalsImage ni;
+		ni.load(normalsd, imageSet.width, imageSet.height);
+		switch(m_FlatMethod) {
+			case RADIAL:
+				ni.flattenRadial();
+				break;
+			case FOURIER:
+				//convert radius to frequencies
+				double sigma = 100/m_FlatRadius;
+				ni.flattenFourier(imageSet.width/10, sigma);
+				break;
+		}
+		normalsd = ni.normals;
+		for(uint32_t i = 0; i < normals.size(); i++0)
+			normals[i] = (float)normalsd[i];
+
+	}
+
+	// Convert double to uint8_t;
+	std::vector<uint8_t> colors(imageSet.width * imageSet.height * 3);
+	for(size_t i = 0; i < normals.size(); i++) {
+		colors[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
+	}
+
+	QImage img(colors.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
+	img.save(m_OutputFolder);
+	progressed("Cleaning up...", 99);
 
     std::vector<uint8_t> normalmap(imageSet.width * imageSet.height * 3);
     for(size_t i = 0; i < normals.size(); i++)
@@ -193,14 +226,11 @@ void NormalsWorker::solveL2()
         mNormals.col(0).normalize();
 
         // Save
-        /*m_Normals[normalIdx] = floor(((mNormals(0, 0) + 1.0f) / 2.0f) * 255);
-        m_Normals[normalIdx+1] = floor(((mNormals(1, 0) + 1.0f) / 2.0f) * 255);
-        m_Normals[normalIdx+2] = floor(((mNormals(2, 0) + 1.0f) / 2.0f) * 255);*/
-        m_Normals[normalIdx+0] = mNormals(0,0);
-        m_Normals[normalIdx+1] = mNormals(1,0);
-        m_Normals[normalIdx+2] = mNormals(2,0);
 
-        normalIdx += 3;
+		m_Normals[normalIdx+0] = mNormals(0, 0);
+		m_Normals[normalIdx+1] = mNormals(1, 0);
+		m_Normals[normalIdx+2] = mNormals(2, 0);
+		normalIdx += 3;
     }
 }
 
