@@ -17,6 +17,7 @@ public:
 public slots:
 	void setAspectRatio();
 	void setArea(QRect rect);
+	void areaChanged(QRect rect);
 
 private:
 	ImageCropper *cropper = nullptr;

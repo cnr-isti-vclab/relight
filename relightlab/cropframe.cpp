@@ -105,8 +105,15 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 
 	connect(maximize, SIGNAL(clicked()), cropper, SLOT(maximizeCrop()));	
 	connect(center, SIGNAL(clicked()), cropper, SLOT(centerCrop()));
+
+	connect(cropper, SIGNAL(areaChanged(QRect)), this, SLOT(areaChanged(QRect)));
 }
 
+void CropFrame::areaChanged(QRect rect) {
+	Project &project = qRelightApp->project();
+	project.crop = rect;
+
+}
 void CropFrame::clear() {
 	cropper->setImage(QPixmap());
 }
@@ -122,6 +129,7 @@ void CropFrame::init() {
 		return;
 	}
 	cropper->setImage(QPixmap::fromImage(img));
+	cropper->setCrop(project.crop);
 }
 
 void CropFrame::setAspectRatio() {

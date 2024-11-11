@@ -45,7 +45,13 @@ void NormalsFrame::save() {
 	QString output = QFileDialog::getSaveFileName(this, "Select a filename for the normal map.", project.dir.path(), filter);
 	if(output.isNull())
 		return;
+
 	NormalsTask *task = new NormalsTask(output);
+	if(ply->isChecked())
+		task->exportPly = true;
+	if(tif->isChecked())
+		task->exportTiff = true;
+
 	task->initFromProject(project);
 
 	ProcessQueue &queue = ProcessQueue::instance();
