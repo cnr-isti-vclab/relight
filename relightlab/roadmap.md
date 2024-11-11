@@ -1,15 +1,16 @@
 # Roadmap for RelightLab.
 
+
+
 ## Reinstate existing functions:
 
-* initialize from .relight spheres, or dome.
-* rti creation and export
 * lp saving
 * normals saving and filtering/flattening
 * image scale measuring
 
 ## New Features
 
+* Don't freeze on project loading.
 * consider eventual modifications to the file format to mirror interface parameters.
 * manual alignment
 * ellipse reflections geometrically accurate
@@ -23,6 +24,11 @@
 * Assisted/automated alignment
 * PBR texture creation
 
+## Bugs
+
+* integrated normal seems to be reverrsed. (might be a y top/bottom problem).
+* Find highlights crashes if quitting early.
+* Accessing the crop tab before loading the project causes it to stop working.
 
 ## Small Bugs
 
