@@ -14,6 +14,7 @@
 * consider eventual modifications to the file format to mirror interface parameters.
 * manual alignment
 * ellipse reflections geometrically accurate
+* cancel button on sphere reflection processing.
 
 ## Long term new features
 
@@ -30,6 +31,8 @@
 * Find highlights crashes if quitting early.
 * Accessing the crop tab before loading the project causes it to stop working.
 * check for lights before exporting normals or rtis.
+* ptm and hsh number of planes cannot be changed.
+* check for invalid inner circle when creating a sphere.
 
 ## Small Bugs
 

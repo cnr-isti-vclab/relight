@@ -81,6 +81,7 @@ set (RELIGHT_HEADERS
     queueitem.h
     normalsframe.h
     normalstask.h
+    scaleframe.h
 )
 
 set (RELIGHTLAB_SOURCES
@@ -146,6 +147,7 @@ set (RELIGHTLAB_SOURCES
     queueitem.cpp
     normalsframe.cpp
     normalstask.cpp
+    scaleframe.cpp
 )
 
 

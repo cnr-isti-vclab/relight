@@ -2,6 +2,7 @@
 #include "canvas.h"
 #include "../src/sphere.h"
 
+#include <QApplication>
 #include <QGraphicsEllipseItem>
 #include <QPen>
 #include <QLabel>
@@ -50,6 +51,7 @@ SpherePicking::SpherePicking(QWidget *parent): ImageViewer(parent) {
 
 	connect(view, SIGNAL(clicked(QPoint)), this, SLOT(click(QPoint)));
 	//TODO: rename something, it conflicts!
+	QApplication::setOverrideCursor(Qt::CrossCursor);
 
 }
 
