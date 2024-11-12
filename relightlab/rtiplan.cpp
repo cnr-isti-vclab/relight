@@ -143,7 +143,7 @@ RtiPlanesRow::RtiPlanesRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 	for(int i = 0; i < 7; i++) {
 		nplanesbox->addItem(QString::number(nimages[i]));
 	}	
-	//connect(nplanesbox, &QComboBox::currentIndexChanged, [this](int n) { setNPlanes(nimages[n]*3, true); });
+	connect(nplanesbox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int n) { setNPlanes(nimages[n]*3, true); });
 	buttons->addWidget(nplanesbox);
 
 	buttons->addStretch(1);
@@ -154,7 +154,7 @@ RtiPlanesRow::RtiPlanesRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 	for(int i = 0; i < 3; i++) {
 		nchromabox->addItem(QString::number(nchromas[i]));
 	}
-	//connect(nchromabox, &QComboBox::currentIndexChanged, [this](int n) { setNChroma(nchromas[n], true); });
+	connect(nchromabox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int n) { setNChroma(nchromas[n], true); });
 	buttons->addWidget(nchromabox);
 
 	setNPlanes(parameters.nplanes);

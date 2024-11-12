@@ -29,6 +29,7 @@
 * integrated normal seems to be reverrsed. (might be a y top/bottom problem).
 * Find highlights crashes if quitting early.
 * Accessing the crop tab before loading the project causes it to stop working.
+* check for lights before exporting normals or rtis.
 
 ## Small Bugs
 
