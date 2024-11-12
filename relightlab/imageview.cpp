@@ -45,6 +45,12 @@ void ImageView::showImage(int id) {
 	current_image = id;
 }
 
+void ImageView::setSkipped(int image, bool skip) {
+	if(image != current_image)
+		return;
+}
+
+
 
 void ImageView::fit() {
 	if(imagePixmap)

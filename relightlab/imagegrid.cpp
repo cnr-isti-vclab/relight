@@ -10,7 +10,7 @@
 
 #include <assert.h>
 
-ImageThumb::ImageThumb(QImage img, const QString& text, QWidget* parent): QWidget(parent) {
+ImageThumb::ImageThumb(QImage img, const QString& text, bool skip, QWidget* parent): QWidget(parent) {
 
 	QVBoxLayout* layout = new QVBoxLayout(this);
 
@@ -19,10 +19,17 @@ ImageThumb::ImageThumb(QImage img, const QString& text, QWidget* parent): QWidge
 	layout->addWidget(thumb);
 
 	QCheckBox *checkbox = new QCheckBox(text);
+
+	checkbox->setChecked(!skip);
+	connect(checkbox, SIGNAL(stateChanged(int)), this, SIGNAL(skipChanged(int)));
 	layout->addWidget(checkbox);
 
 	layout->setSpacing(5);
 	layout->setContentsMargins(5, 5, 5, 5);
+}
+
+void ImageThumb::setSkipped(bool skip) {
+	findChild<QCheckBox *>()->setChecked(!skip);
 }
 
 ImageGrid::ImageGrid(QWidget *parent): QScrollArea(parent) {
@@ -37,6 +44,7 @@ ImageGrid::ImageGrid(QWidget *parent): QScrollArea(parent) {
 void ImageGrid::clear() {
 	flowlayout->clear();
 }
+
 void ImageGrid::init() {
 	Project &project = qRelightApp->project();
 	std::vector<QImage> &thumbnails = qRelightApp->thumbnails();
@@ -47,8 +55,17 @@ void ImageGrid::init() {
 		QImage thumbnail = thumbnails[i];
 		Image &image = project.images[i];
 		QFileInfo info(image.filename);
-		ImageThumb *thumb = new ImageThumb(thumbnail, info.fileName());
+		ImageThumb *thumb = new ImageThumb(thumbnail, info.fileName(), image.skip);
+		connect(thumb, &ImageThumb::skipChanged, [this, i, &image](int state){
+			image.skip = (state==0);
+			this->emit skipChanged(i, image.skip);
+		});
 		flowlayout->addWidget(thumb);
 	}
+}
+
+void ImageGrid::setSkipped(int image, bool skip) {
+	ImageThumb *thumb = dynamic_cast<ImageThumb *>(flowlayout->itemAt(image)->widget());
+	thumb->setSkipped(skip);
 }
 

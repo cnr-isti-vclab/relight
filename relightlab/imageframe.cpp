@@ -60,6 +60,13 @@ ImageFrame::ImageFrame(QWidget *parent): QFrame(parent) {
 
 	content->addWidget(image_view = new ImageView, 1);
 
+	connect(image_list, SIGNAL(skipChanged(int,bool)), image_grid, SLOT(setSkipped(int,bool)));
+	connect(image_list, SIGNAL(skipChanged(int,bool)), image_view, SLOT(setSkipped(int,bool)));
+	connect(image_grid, SIGNAL(skipChanged(int,bool)), image_list, SLOT(setSkipped(int,bool)));
+	connect(image_grid, SIGNAL(skipChanged(int,bool)), image_view, SLOT(setSkipped(int,bool)));
+	connect(image_view, SIGNAL(skipChanged(int,bool)), image_grid, SLOT(setSkipped(int,bool)));
+	connect(image_view, SIGNAL(skipChanged(int,bool)), image_list, SLOT(setSkipped(int,bool)));
+
 	connect(qRelightApp->action("zoom_fit"),  SIGNAL(triggered(bool)), image_view, SLOT(fit()));
 	connect(qRelightApp->action("zoom_one"),  SIGNAL(triggered(bool)), image_view, SLOT(one()));
 	connect(qRelightApp->action("zoom_in"),  SIGNAL(triggered(bool)), image_view, SLOT(zoomIn()));
