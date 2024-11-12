@@ -9,6 +9,7 @@ class TabWidget;
 class HomeFrame;
 class ImageFrame;
 class AlignFrame;
+class ScaleFrame;
 class LightsFrame;
 class CropFrame;
 class RtiFrame;
@@ -34,6 +35,7 @@ public:
 	HomeFrame *home_frame = nullptr;
 	ImageFrame *image_frame = nullptr;
 	AlignFrame *align_frame = nullptr;
+	ScaleFrame *scale_frame = nullptr;
 	LightsFrame *lights_frame = nullptr;
 	CropFrame *crop_frame = nullptr;
 	RtiFrame *rti_frame = nullptr;
