@@ -247,14 +247,15 @@ void RelightApp::saveProject() {
 
 	if(project_filename.isNull()) {
 		QString filename = QFileDialog::getSaveFileName(mainwindow, "Save file: ", qRelightApp->lastProjectDir(), "*.relight");
+		if(filename.isNull())
+			return;
 		if(!filename.endsWith((".relight")))
 			filename += ".relight";
 		project_filename = filename;
 	}
-	if(!project_filename.isNull())
-		m_project.save(project_filename);
 
-	//TODO set window title as project filename filename
+	m_project.save(project_filename);
+
 	QFileInfo info(project_filename);
 	mainwindow->setWindowTitle("Relight - " + info.fileName());
 	addRecentProject(project_filename);
@@ -262,7 +263,18 @@ void RelightApp::saveProject() {
 }
 
 void RelightApp::saveProjectAs() {
+	QString filename = QFileDialog::getSaveFileName(mainwindow, "Save file: ", qRelightApp->lastProjectDir(), "*.relight");
+	if(filename.isNull())
+		return;
+	if(!filename.endsWith((".relight")))
+		filename += ".relight";
+	project_filename = filename;
 
+	m_project.save(project_filename);
+	QFileInfo info(project_filename);
+	mainwindow->setWindowTitle("Relight - " + info.fileName());
+	addRecentProject(project_filename);
+	mainwindow->updateRecentProjectsMenu();
 }
 
 void RelightApp::loadThumbnails() {
