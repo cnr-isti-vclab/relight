@@ -100,7 +100,8 @@ SOURCES += main.cpp \
     ../relight/httpserver.cpp \
     normalsframe.cpp \
     normalstask.cpp \
-    ../src/bni_normal_integration.cpp
+    ../src/bni_normal_integration.cpp \
+    scaleframe.cpp
 
 RESOURCES += \
     res.qrc
@@ -172,7 +173,8 @@ HEADERS += \
     ../relight/httplib.h \
     normalsframe.h \
     normalstask.h \
-    ../src/bni_normal_integration.h
+    ../src/bni_normal_integration.h \
+    scaleframe.h
 
 FORMS +=
 

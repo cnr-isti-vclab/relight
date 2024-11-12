@@ -47,8 +47,8 @@ public slots:
 	void one() { view->one(); }
 	void next() { view->next(); }
 	void prev() { view->prev(); }
-protected:
 
+protected:
 	QToolBar *toolbar;
 };
 
