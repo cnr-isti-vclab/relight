@@ -33,3 +33,4 @@
 ## Small Bugs
 
 * Check version is properly written and read from the .relight file
+* Image list selected image should be shown (selection can be changed with keyboard).

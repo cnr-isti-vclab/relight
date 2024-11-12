@@ -21,10 +21,15 @@ public:
 
 public slots:
 	void showImage(int id);
+	void setSkipped(int image, bool skip);
+
 	void fit();  //fit image on screen
 	void one();  //scale to 1:1 zoom
 	void next(); //show next image
 	void prev(); //show previous image
+
+signals:
+	void skipChanged(int image, bool skip);
 
 private:
 	QGraphicsPixmapItem *imagePixmap = nullptr;
