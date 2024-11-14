@@ -88,6 +88,7 @@ void NormalsTask::run() {
 		NormalsImage ni;
 		ni.load(normalsd, imageset.width, imageset.height);
 		switch(flatMethod) {
+			case NONE: break;
 			case RADIAL:
 				ni.flattenRadial();
 				break;

@@ -16,8 +16,8 @@ enum FlatMethod { NONE, RADIAL, FOURIER };
 
 class NormalsTask :  public Task {
 public:
-	NormalSolver solver;
-	FlatMethod flatMethod;
+	NormalSolver solver = NORMALS_L2;
+	FlatMethod flatMethod = NONE;
 	double m_FlatRadius = 0.5;
 
 	bool exportJpeg = true;
