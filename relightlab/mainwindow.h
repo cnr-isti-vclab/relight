@@ -30,6 +30,10 @@ public:
 	void setTabIndex(int index);
 	void setTabWidget(QWidget *widget);
 
+public slots:
+	void showQueue();
+
+protected:
 
 	TabWidget *tabs = nullptr;
 	HomeFrame *home_frame = nullptr;
@@ -42,7 +46,6 @@ public:
 	NormalsFrame *normals_frame = nullptr;
 	QueueFrame *queue_frame = nullptr;
 
-private:
 	QMenu *recentMenu = nullptr;
 };
 

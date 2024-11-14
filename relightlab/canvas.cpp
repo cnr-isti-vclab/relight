@@ -46,6 +46,11 @@ void Canvas::set_zoom_factor_base(double value) {
 	_zoom_factor_base = value;
 }
 
+void Canvas::setCursor(Qt::CursorShape c) {
+	view_cursor = c;
+	viewport()->setCursor(view_cursor);
+}
+
 bool Canvas::eventFilter(QObject *object, QEvent *event) {
 	QMouseEvent* mouse_event = static_cast<QMouseEvent*>(event);
 
@@ -87,6 +92,12 @@ bool Canvas::eventFilter(QObject *object, QEvent *event) {
 	Q_UNUSED(object)
 	return false;
 }
+
+void  Canvas::mouseReleaseEvent(QMouseEvent *event) {
+	QGraphicsView::mouseReleaseEvent(event);
+	viewport()->setCursor(view_cursor);
+}
+
 
 void Canvas::fitInView(const QRectF &rect, Qt::AspectRatioMode aspectRadioMode) {
 	if(!resized) {

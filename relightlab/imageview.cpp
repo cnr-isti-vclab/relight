@@ -73,6 +73,7 @@ void ImageView::prev() {
 		showImage(current_image-1);
 }
 
+
 ImageViewer::ImageViewer(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *layout = new QVBoxLayout(this);
 	

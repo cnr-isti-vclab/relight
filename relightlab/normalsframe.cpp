@@ -56,4 +56,6 @@ void NormalsFrame::save() {
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);
+
+	emit processStarted();
 }

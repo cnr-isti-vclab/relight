@@ -109,8 +109,8 @@ void ScaleFrame::init() {
 }
 
 void ScaleFrame::removeScale() {
-	bool proceed = QMessageBox::question(this, "Removing measurement", "You are removing a measurement. Proceed?");
-	if(!proceed)
+	QMessageBox::StandardButton proceed = QMessageBox::question(this, "Removing measurement", "You are removing a measurement. Proceed?");
+	if(proceed != QMessageBox::Yes)
 		return;
 
 	Project &project = qRelightApp->project();
@@ -123,8 +123,8 @@ void ScaleFrame::removeScale() {
 
 void ScaleFrame::startPicking() {
 	if(status == DONE) {
-		bool proceed = QMessageBox::question(this, "Taking a new measurement", "You are removing a measurement and taking a new one. Proceed?");
-		if(!proceed)
+		QMessageBox::StandardButton proceed = QMessageBox::question(this, "Taking a new measurement", "You are removing a measurement and taking a new one. Proceed?");
+		if(proceed != QMessageBox::Yes)
 			return;
 	}
 	clear();
@@ -179,6 +179,7 @@ void ScaleFrame::setLengthLabel(double length) {
 
 	scale->setValue(length);
 	pixelSize->setText(QString("Pixel size in mm: %1").arg(qRelightApp->project().pixelSize));
+
 }
 
 void ScaleFrame::setLength(double length) {
@@ -200,6 +201,7 @@ void ScaleFrame::setLength(double length) {
 	project.measures.push_back(measure);
 	project.computePixelSize();
 	pixelSize->setText(QString("Pixel size in mm: %1").arg(qRelightApp->project().pixelSize));
+	emit pixelSizeChanged();
 }
 
 

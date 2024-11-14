@@ -15,6 +15,7 @@
 * manual alignment
 * ellipse reflections geometrically accurate
 * cancel button on sphere reflection processing.
+* better info on queue items.
 
 ## Long term new features
 
