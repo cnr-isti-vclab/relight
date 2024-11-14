@@ -55,6 +55,15 @@ ReflectionView::ReflectionView(Sphere *_sphere, int _height, QWidget *parent ): 
 	init();
 	update();
 }
+
+ReflectionView::~ReflectionView() {
+	for(auto l: lights) {
+		scene.removeItem(l);
+		delete l;
+	}
+	lights.clear();
+}
+
 void ReflectionView::init() {
 	scene.clear();
 	lights.clear();
@@ -76,8 +85,10 @@ void ReflectionView::init() {
 }
 
 void ReflectionView::update() {
-	for(auto l: lights)
+	for(auto l: lights) {
 		scene.removeItem(l);
+		delete l;
+	}
 	lights.clear();
 
 	QPixmap pix = QPixmap::fromImage(sphere->sphereImg);

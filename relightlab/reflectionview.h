@@ -30,6 +30,7 @@ public:
 	double lightRadius = 2.0;
 
 	ReflectionView(Sphere *sphere, int height, QWidget *parent = nullptr);
+	~ReflectionView();
 	void init(); //call this when the sphere changes position
 	void update(); //this when detecting highlights.
 
