@@ -13,6 +13,9 @@
 #include <QVariant>
 #include <QProxyStyle>
 #include <QAction>
+#include <QThread>
+#include <QMutex>
+
 #include <set>
 
 
@@ -35,6 +38,17 @@ public slots:
 									 const QWidget *widget = 0) const;
 };
 
+class ThumbailLoader: public QThread {
+	Q_OBJECT
+public:
+	ThumbailLoader(QStringList &images);
+signals:
+	void update(int); //something has been loaded.
+protected:
+	virtual void run();
+
+	QStringList paths;
+};
 
 class RelightApp: public QApplication {
 	Q_OBJECT
@@ -61,10 +75,14 @@ public slots:
 	void openPreferences();
 	void setDarkTheme(bool on);
 
+signals:
+	void updateThumbnail(int pos);
+
 public:
 	void setProject(const Project &project);
 	Project &project() { return m_project; }
 
+	QMutex thumbails_lock;
 	std::vector<QImage> &thumbnails() { return m_thumbnails; }
 
 	QAction *addAction(const QString &id, const QString &label, const QString &icon, const QString &shortcut, const char *method = nullptr);
@@ -88,6 +106,9 @@ private:
 	//keep memory of current project filename for quick saving.
 	QString project_filename;
 	QPalette dark_palette;
+	ThumbailLoader *loader = nullptr;
 };
+
+
 
 #endif

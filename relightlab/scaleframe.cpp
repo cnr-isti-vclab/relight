@@ -68,8 +68,6 @@ ScaleFrame::ScaleFrame(QWidget *parent): QFrame(parent) {
 }
 
 ScaleFrame::~ScaleFrame() {
-	auto &scene = viewer->scene();
-
 	clear();
 
 	delete first;
@@ -94,8 +92,6 @@ void ScaleFrame::clear() {
 }
 
 void ScaleFrame::init() {
-	auto &scene = viewer->scene();
-
 	viewer->showImage(0);
 
 	Project &project = qRelightApp->project();

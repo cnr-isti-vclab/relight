@@ -278,12 +278,33 @@ void RelightApp::saveProjectAs() {
 }
 
 void RelightApp::loadThumbnails() {
+	//if loading thumbails kill thumbnails
+	if(loader) {
+		loader->terminate();
+		loader->wait();
+		delete loader;
+		loader = nullptr;
+	}
 	m_thumbnails.resize(m_project.images.size());
+	QStringList paths;
 	for(size_t i = 0; i < m_project.images.size(); i++) {
 		Image &image = m_project.images[i];
-		QImage img(image.filename);
-		m_thumbnails[i] = img.scaledToHeight(256);
+		if(i == 0) {
+			QImage img(image.filename);
+			m_thumbnails[i] = img.scaledToHeight(256);
+		} else {
+			QImage img(m_thumbnails[0].size().scaled(2560, 256, Qt::KeepAspectRatio), QImage::Format_ARGB32);
+			img.fill(Qt::black);
+			m_thumbnails[i] = img;
+			paths.push_back(image.filename);
+		}
 	}
+
+	//start a thumbnail loading thread and ask her to signal when something has been loaded.
+	loader = new ThumbailLoader(paths);
+	connect(loader, SIGNAL(update(int)), this, SIGNAL(updateThumbnail(int)));
+	loader->start();
+
 }
 
 void RelightApp::openPreferences() {
@@ -347,3 +368,23 @@ QAction *RelightApp::addAction(const QString &id, const QString &label, const QS
 	return a;
 }
 
+ThumbailLoader::ThumbailLoader(QStringList &images) {
+	QDir current = QDir::current();
+	for(QString filename: images)
+		paths.push_back(current.absoluteFilePath(filename));
+}
+
+void ThumbailLoader::run() {
+	int count = 1;
+	for(QString path: paths) {
+		QImage img(path);
+		if(img.isNull()) //TODO shoudl actually warn!
+			break;
+		{
+			QMutexLocker lock(&qRelightApp->thumbails_lock);
+			qRelightApp->thumbnails()[count] = img.scaledToHeight(256);;
+		}
+		emit update(count);
+		count++;
+	}
+}
