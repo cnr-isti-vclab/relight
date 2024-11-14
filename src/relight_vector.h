@@ -166,14 +166,10 @@ public:
 			pixel.resize(nlights);
 	}
 	uint32_t components() { return nlights; }
-	uint32_t npixels() { return size(); }
+	uint32_t npixels() const { return size(); }
 	std::vector<Color3f> &pixel(size_t i) {
 		return this->at(i);
 	}
-
-	//get ith sample, k light.
-	//Color3f &operator()(size_t i, size_t k) { return *(data() + i*nlights + k); }
-	//float *rawdata() { return (float *)data(); }
 };
 
 #endif // RELIGHTVECTOR_H

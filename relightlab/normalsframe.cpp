@@ -45,6 +45,9 @@ void NormalsFrame::save() {
 	QString output = QFileDialog::getSaveFileName(this, "Select a filename for the normal map.", project.dir.path(), filter);
 	if(output.isNull())
 		return;
+	QString extension = jpg->isChecked() ? ".jpg" : ".png";
+	if(!output.endsWith(extension))
+		output += extension;
 
 	NormalsTask *task = new NormalsTask(output);
 	if(ply->isChecked())

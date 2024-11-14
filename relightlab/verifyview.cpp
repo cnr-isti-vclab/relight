@@ -85,7 +85,7 @@ void VerifyView::updateReflection() {
 }
 
 
-void VerifyView::resizeEvent(QResizeEvent *event) {
+void VerifyView::resizeEvent(QResizeEvent *) {
 	fitInView(img_item->boundingRect()); //.sceneRect()); //img_item);
 }
 

@@ -53,7 +53,7 @@ void NormalsTask::run() {
 
 	pool.start(QThread::idealThreadCount());
 
-	for (int i=0; i<imageset.height; i++) {
+	for (int i = 0; i < imageset.height; i++) {
 		// Read a line
 		imageset.readLine(line);
 
@@ -110,7 +110,6 @@ void NormalsTask::run() {
 
 	// Save the final result
 	QImage img(normalmap.data(), imageset.width, imageset.height, imageset.width*3, QImage::Format_RGB888);
-	img.save(output);
 
 	// Set spatial resolution if known. Need to convert as pixelSize stored in mm/pixel whereas QImage requires pixels/m
 	if( pixelSize > 0 ) {
@@ -178,8 +177,6 @@ void NormalsWorker::run()
 		break;
 	}
 
-	// Deallocate line (TODO: useless?)
-	std::vector<Pixel>().swap(m_Row);
 }
 
 
@@ -215,8 +212,6 @@ void NormalsWorker::solveL2()
 					mLights(i, j) = light[j];
 			}
 		}
-
-
 
 		mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
 		mNormals.col(0).normalize();

@@ -25,6 +25,7 @@ public:
 
 	QString version;
 	QDir dir;                  //image folder, path relative to project
+	//TODO: this is duplicated in lens!
 	QSize imgsize;             //images width and height (must be the same for all).
 	Lens lens;
 	Dome dome;
