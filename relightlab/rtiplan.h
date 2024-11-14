@@ -127,6 +127,9 @@ public slots:
 	void qualityChanged();
 	void layoutChanged();
 
+signals:
+	void exportRti();
+
 private:
 	RtiBasisRow *basis_row = nullptr;
 	RtiColorSpaceRow *colorspace_row = nullptr;
