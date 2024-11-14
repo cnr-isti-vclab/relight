@@ -18,9 +18,14 @@ SpherePanel::SpherePanel(QWidget *parent): QGroupBox("Reflective spheres", paren
 
 	content->addSpacing(10);
 
-
 	QFrame *spheres_frame = new QFrame;
-	content->addWidget(spheres_frame);
+
+	QScrollArea *sphere_area = new QScrollArea;
+	sphere_area->setWidget(spheres_frame);
+	sphere_area->setWidgetResizable(true);
+
+	content->addWidget(sphere_area);
+
 	spheres = new QVBoxLayout(spheres_frame);
 
 	QHBoxLayout *buttons = new QHBoxLayout;

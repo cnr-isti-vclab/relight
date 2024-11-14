@@ -42,8 +42,12 @@ public:
 class NormalsWorker
 {
 public:
-	NormalsWorker(NormalSolver _solver, int _row, PixelArray& toProcess, float* normals, ImageSet &imageset) :
-		solver(_solver), row(_row), m_Row(toProcess), m_Normals(normals), m_Imageset(imageset){}
+	NormalsWorker(NormalSolver _solver, int _row, const PixelArray& toProcess, float* normals, ImageSet &imageset) :
+		solver(_solver), row(_row), m_Row(toProcess), m_Normals(normals), m_Imageset(imageset){
+		m_Row.resize(toProcess.npixels(), toProcess.nlights);
+		for(size_t i = 0; i < m_Row.size(); i++)
+			m_Row[i] = toProcess[i];
+	}
 
 	void run();
 private:

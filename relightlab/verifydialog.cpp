@@ -28,7 +28,7 @@ VerifyDialog::VerifyDialog(std::vector<QImage> &_thumbs, std::vector<QPointF> &_
 
 	area->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
-	for(int i = 0; i < thumbs.size(); i++) {
+	for(size_t i = 0; i < thumbs.size(); i++) {
 		VerifyView *thumb = new VerifyView(thumbs[i], positions[i], 192);
 		flowlayout->addWidget(thumb);
 	}

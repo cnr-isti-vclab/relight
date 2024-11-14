@@ -20,6 +20,8 @@
 
 #include <QMessageBox>
 #include <QDebug>
+#include <QScrollArea>
+#include <QVBoxLayout>
 
 #include <iostream>
 using namespace std;
@@ -30,6 +32,7 @@ MainWindow::MainWindow() {
 	createMenu();
 
 	tabs = new TabWidget;
+
 	tabs->addTab(home_frame = new HomeFrame, "Home");
 	tabs->addTab(image_frame = new ImageFrame, "Images");
 	tabs->addTab(align_frame = new AlignFrame, "Align");

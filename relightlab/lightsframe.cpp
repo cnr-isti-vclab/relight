@@ -12,7 +12,8 @@
 #include <QTabWidget>
 #include <QTabBar>
 #include <QFileDialog>
-#include <QDoubleSpinBox>;
+#include <QDoubleSpinBox>
+#include <QScrollArea>
 
 LightsFrame::LightsFrame() {
 	QHBoxLayout *page = new QHBoxLayout(this);
@@ -26,7 +27,7 @@ LightsFrame::LightsFrame() {
 
 	content->addWidget(dome_panel = new DomePanel(this));
 
-	content->addWidget(sphere_panel = new SpherePanel(this));
+	content->addWidget(sphere_panel = new SpherePanel(this), 1);
 	content->addSpacing(30);
 
 	geometry = new LightsGeometry(this);
@@ -47,7 +48,7 @@ void LightsFrame::newSphere() {
 }
 
 void LightsFrame::init() {
-	bool useSphere = qRelightApp->project().spheres.size();
+//	bool useSphere = qRelightApp->project().spheres.size();
 
 	sphere_panel->init();
 	dome_panel->init();
