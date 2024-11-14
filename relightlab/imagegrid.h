@@ -13,8 +13,11 @@ class ImageThumb : public QWidget {
 public:
 	ImageThumb(QImage img, const QString& text, bool skip, QWidget* parent = nullptr);
 	void setSkipped(bool skip);
+	void setThumbnail(QImage thumb);
 signals:
 	void skipChanged(int state);
+
+
 };
 
 
@@ -28,6 +31,7 @@ public:
 
 public slots:
 	void setSkipped(int image, bool skip);
+	void updateThumbnail(int pos);
 
 signals:
 	void skipChanged(int image, bool skip);

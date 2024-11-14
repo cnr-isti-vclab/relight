@@ -10,13 +10,16 @@
 
 #include <assert.h>
 
+#include <iostream>
+using namespace std;
+
 ImageThumb::ImageThumb(QImage img, const QString& text, bool skip, QWidget* parent): QWidget(parent) {
 
 	QVBoxLayout* layout = new QVBoxLayout(this);
 
-	QLabel* thumb = new QLabel;
-	thumb->setPixmap(QPixmap::fromImage(img));
-	layout->addWidget(thumb);
+	QLabel *label = new QLabel;
+	label->setPixmap(QPixmap::fromImage(img));
+	layout->addWidget(label);
 
 	QCheckBox *checkbox = new QCheckBox(text);
 
@@ -30,6 +33,11 @@ ImageThumb::ImageThumb(QImage img, const QString& text, bool skip, QWidget* pare
 
 void ImageThumb::setSkipped(bool skip) {
 	findChild<QCheckBox *>()->setChecked(!skip);
+}
+
+void ImageThumb::setThumbnail(QImage thumb) {
+	findChild<QLabel *>()->setPixmap(QPixmap::fromImage(thumb));
+
 }
 
 ImageGrid::ImageGrid(QWidget *parent): QScrollArea(parent) {
@@ -69,3 +77,10 @@ void ImageGrid::setSkipped(int image, bool skip) {
 	thumb->setSkipped(skip);
 }
 
+void ImageGrid::updateThumbnail(int pos) {
+	ImageThumb *thumb = dynamic_cast<ImageThumb *>(flowlayout->itemAt(pos)->widget());
+
+	QMutexLocker lock(&qRelightApp->thumbails_lock);
+	thumb->setThumbnail(qRelightApp->thumbnails()[pos]);
+	cout << "Img pos: " << pos << endl;
+}

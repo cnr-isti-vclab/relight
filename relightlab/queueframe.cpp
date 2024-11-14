@@ -181,11 +181,12 @@ void QueueFrame::update() {
 		QueueItem *item = new QueueItem(queue.task, list);
 		list->addItem(item);
 	}
+/* task might have been deleted already.
 	for(Task *task: queue.past) {
 		if(!tasks.contains(task->id) && task->visible) {
 			QueueItem *item = new QueueItem(task, list);
 			list->addItem(item);
 		}
-	}
+	} */
 
 }

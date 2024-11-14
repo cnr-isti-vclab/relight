@@ -55,6 +55,7 @@ ImageFrame::ImageFrame(QWidget *parent): QFrame(parent) {
 	content->addWidget(image_list, 0);
 
 	image_grid = new ImageGrid();
+	connect(qRelightApp, SIGNAL(updateThumbnail(int)), image_grid, SLOT(updateThumbnail(int)));
 	image_grid->hide();
 	content->addWidget(image_grid, 1);
 
