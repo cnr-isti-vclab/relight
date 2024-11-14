@@ -334,8 +334,8 @@ RtiPlan::RtiPlan(QWidget *parent): QFrame(parent) {
 	QPushButton *save = new QPushButton("Export RTI...", this);
 	save->setProperty("class", "large");
 	save_row->addWidget(save);
-	RtiFrame *parent_frame = dynamic_cast<RtiFrame *>(parent);
-	connect(save, &QPushButton::clicked, [this, parent_frame]() { return parent_frame->exportRti(this->parameters); });
+
+	connect(save, &QPushButton::clicked, [this]() { emit exportRti(); });
 
 	layout->addLayout(save_row);
 	layout->addStretch();

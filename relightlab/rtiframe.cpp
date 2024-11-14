@@ -24,6 +24,7 @@
 #include <QScrollArea>
 #include <QFileDialog>
 
+#include "rtiplan.h"
 
 
 RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
@@ -34,7 +35,8 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 
 	content->addWidget(recents = new RtiRecents);
 
-	content->addWidget(new RtiPlan, 1);
+	content->addWidget(rti_plan = new RtiPlan, 1);
+	connect(rti_plan, SIGNAL(exportRti()), this, SLOT(exportRti()));
 	return;
 
 /*	content->addWidget(new PtmRow());
@@ -117,7 +119,9 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	content->addStretch();
 }
 
-void RtiFrame::exportRti(RtiParameters &parameters) {
+void RtiFrame::exportRti() {
+
+	RtiParameters &parameters = rti_plan->parameters;
 	//get folder if not legacy.
 	QString output;
 	if(parameters.format == RtiParameters::RTI) {

@@ -5,6 +5,7 @@
 //TODO we should separate RTI definitions from actual implementation (materials etc).
 #include "../src/rti.h"
 
+class RtiPlan;
 class RtiCard;
 class RtiRecents;
 class RtiParameters;
@@ -15,13 +16,16 @@ class RtiFrame: public QFrame {
 public:
 	RtiFrame(QWidget *parent = nullptr);
 	void init();
-	void exportRti(RtiParameters &parameters);
+
+public slots:
+	void exportRti();
 
 signals:
 	void processStarted();
 
 private:
 	RtiRecents *recents;
+	RtiPlan *rti_plan;
 };
 
 #endif // RTIFRAME_H

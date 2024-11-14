@@ -20,7 +20,7 @@ struct Line {
 
 class Sphere {
 public:
-
+	//TODO: initalize these values somewhere.
 	QPointF center;      //center of circle or ellipse, in pixel coordinates of the image
 
 	/* Circle parameters */
