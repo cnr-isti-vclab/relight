@@ -32,6 +32,8 @@ public slots:
 	void removeScale();
 	void setLength(double length); //called when user modified the value in the spinbox.
 
+signals:
+	void pixelSizeChanged();
 
 
 protected:

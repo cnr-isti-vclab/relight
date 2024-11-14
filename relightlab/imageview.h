@@ -19,6 +19,7 @@ public:
 	ImageView(QWidget *parent = nullptr);
 	void clear();
 
+
 public slots:
 	void showImage(int id);
 	void setSkipped(int image, bool skip);
@@ -31,9 +32,8 @@ public slots:
 signals:
 	void skipChanged(int image, bool skip);
 
-private:
+protected:
 	QGraphicsPixmapItem *imagePixmap = nullptr;
-
 };
 
 class ImageViewer: public QFrame {

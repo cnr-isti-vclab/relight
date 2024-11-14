@@ -40,8 +40,15 @@ MainWindow::MainWindow() {
 	tabs->addTab(normals_frame = new NormalsFrame, "Normals");
 	tabs->addTab(queue_frame = new QueueFrame, "Queue");
 
+	connect(scale_frame, SIGNAL(pixelSizeChanged()), lights_frame, SLOT(setPixelSize()));
+	connect(rti_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
+	connect(normals_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
 
 	setCentralWidget(tabs);
+}
+
+void MainWindow::showQueue() {
+	tabs->setCurrentIndex(8);
 }
 
 void MainWindow::setTabIndex(int index) {

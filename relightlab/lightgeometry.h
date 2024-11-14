@@ -23,7 +23,6 @@ class DirectionsView;
 class LightsGeometry: public QFrame {
 	Q_OBJECT
 public:	
-	QDoubleSpinBox *image_width;
 	QSpinBox *images_number;
 	QTextEdit *notes;
 	QLineEdit *filename;
@@ -31,6 +30,7 @@ public:
 	HelpRadio *sphere_approx;
 	HelpRadio *lights3d;
 
+	QDoubleSpinBox *image_width;
 	QDoubleSpinBox *vertical_offset;
 	QDoubleSpinBox *diameter;
 	DirectionsView *directions_view;

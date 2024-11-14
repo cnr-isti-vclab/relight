@@ -481,6 +481,7 @@ void Project::computePixelSize() {
 		}
 	pixelSize /= count;
 	needs_saving = true;
+	dome.imageWidth = pixelSize*imgsize.width();
 }
 
 Sphere *Project::newSphere() {

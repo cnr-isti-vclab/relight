@@ -14,6 +14,9 @@ public:
 public slots:
 	void save();
 
+signals:
+	void processStarted();
+
 private:
 	QRadioButton *jpg = nullptr;
 	QRadioButton *png = nullptr;

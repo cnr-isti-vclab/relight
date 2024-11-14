@@ -148,5 +148,8 @@ void RtiFrame::exportRti(RtiParameters &parameters) {
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(rti_task);
+
+	emit processStarted();
 }
+
 

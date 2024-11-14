@@ -12,6 +12,7 @@
 #include <QTabWidget>
 #include <QTabBar>
 #include <QFileDialog>
+#include <QDoubleSpinBox>;
 
 LightsFrame::LightsFrame() {
 	QHBoxLayout *page = new QHBoxLayout(this);
@@ -51,6 +52,9 @@ void LightsFrame::init() {
 	sphere_panel->init();
 	dome_panel->init();
 	geometry->init();
+}
+void LightsFrame::setPixelSize() {
+	geometry->image_width->setValue(qRelightApp->project().dome.imageWidth);
 }
 
 

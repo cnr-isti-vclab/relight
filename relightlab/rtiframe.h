@@ -17,6 +17,9 @@ public:
 	void init();
 	void exportRti(RtiParameters &parameters);
 
+signals:
+	void processStarted();
+
 private:
 	RtiRecents *recents;
 };
