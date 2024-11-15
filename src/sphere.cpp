@@ -352,7 +352,7 @@ void Sphere::computeDirections(Lens &lens) {
 			diff += cradial;
 			diff /= eWidth;
 			x = diff.x();
-			y = diff.y();
+			y = -diff.y();
 		} else {
 			x = (x - inner.left() - smallradius)/radius;
 			y = -(y - inner.top() - smallradius)/radius; //inverted y  coords

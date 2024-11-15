@@ -6,11 +6,11 @@ related to geometry and calibration of the lights, dimensions, offsets etc.
 | key | value |
 | --- | --- |
 | path | path and filename of the dome config |
-| diameter | Dome diameter in cm, and yes, metric and only cm. |
-| imageWidth | Default width in cm of the area covered by the image, this is useful for domes having a fixed optic. |
+| diameter | Dome diameter in mm, and yes, metric and only mm. |
+| imageWidth | Default width in mm of the area covered by the image, this is useful for domes having a fixed optic. |
 | verticalOffset | Default vertical offset from the origin of the coordinated 
 (usually the center of the sphere which is the most common geometry for domes). Positive if the center is above the surface. |
-| positions | Array of light positions, in cm, where z is up, x is right and y is positive going toward the top of the image, optional |
+| positions | Array of light positions, in mm, where z is up, x is right and y is positive going toward the top of the image, optional |
 | directions | Array of light directions, a reasonable approximation if the imageWidth is small relative to the diameter. Either positions or directions needs to be defined. |
 | lightsCalibration | Array. Leds can have different colors, intensity and even non uniform emissions, hence the need for calibration |
 
@@ -20,7 +20,7 @@ Each element in this array is defined as such:
 Spatial calibration is a grid sampling of the light cone intensity of each led, 
 centered on the coordinate origin (the center of the sphere dome, or [0,0,0] 
 when each led is assigned a position. (not usable id directions only are given).
-Width and height define the size of the grid in cm, rows and cols the number of 
+Width and height define the size of the grid in mm, rows and cols the number of 
 divisions in the grid, number of coefficients is cols*rows and the values.
 The distance between the samples on the x axis is width/(cols-1).
 

@@ -19,7 +19,7 @@ class Sphere;
  *
  * Coordinate system for the positions.
  * The origin is the center of the image. Z is up.
- * All units are in cm, but for the RTI computations what matters is only the ratio to the image width
+ * All units are in mm, but for the RTI computations what matters is only the ratio to the image width
  * If specified, the width will be used to display the scale in viewers.
  */
 
@@ -38,7 +38,7 @@ public:
 	enum LightConfiguration { DIRECTIONAL, SPHERICAL, LIGHTS3D };
 	LightConfiguration lightConfiguration = DIRECTIONAL;
 
-	double imageWidth = 0.0; //in cm
+	double imageWidth = 0.0; //in mm
 	double domeDiameter = 0.0;
 	double verticalOffset = 0.0;
 

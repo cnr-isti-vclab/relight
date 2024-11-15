@@ -5,17 +5,17 @@
 ## Reinstate existing functions:
 
 * lp saving
-* normals saving and filtering/flattening
-* image scale measuring
+* normals filtering/flattening
+
 
 ## New Features
 
-* Don't freeze on project loading.
 * consider eventual modifications to the file format to mirror interface parameters.
 * manual alignment
 * ellipse reflections geometrically accurate
 * cancel button on sphere reflection processing.
 * better info on queue items.
+* if scale exists don't overwrite imageWith with dome scale.
 
 ## Long term new features
 
@@ -25,17 +25,23 @@
 * shadow and burned pixels filtering
 * Assisted/automated alignment
 * PBR texture creation
+* shadow removal
+* 3d lights on sphere should take into account sphere posistion/
 
 ## Bugs
 
+* dark theme on windows conflicts
 * integrated normal seems to be reverrsed. (might be a y top/bottom problem).
 * Find highlights crashes if quitting early.
 * Accessing the crop tab before loading the project causes it to stop working.
 * check for lights before exporting normals or rtis.
 * ptm and hsh number of planes cannot be changed.
 * check for invalid inner circle when creating a sphere.
+* open folder in queue
 
 ## Small Bugs
 
 * Check version is properly written and read from the .relight file
 * Image list selected image should be shown (selection can be changed with keyboard).
+* reflective sphere row align top
+* ellipse fit seems inconsistent

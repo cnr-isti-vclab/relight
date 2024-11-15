@@ -29,10 +29,10 @@ public:
 	std::vector<Vector3f> lights;
 
 	bool light3d = false;
-	std::vector<Vector3f> lights3d; //always expressed in cm.
+	std::vector<Vector3f> lights3d; //always expressed in mm.
 
 	//Geometry
-	float image_width_cm = 0.0f;
+	float image_width_mm = 0.0f;
 	float dome_radius = 0.0f;
 	float vertical_offset = 0.0f;
 	

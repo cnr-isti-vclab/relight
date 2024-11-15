@@ -82,5 +82,4 @@ void ImageGrid::updateThumbnail(int pos) {
 
 	QMutexLocker lock(&qRelightApp->thumbails_lock);
 	thumb->setThumbnail(qRelightApp->thumbnails()[pos]);
-	cout << "Img pos: " << pos << endl;
 }
