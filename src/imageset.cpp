@@ -283,12 +283,12 @@ void ImageSet::decode(size_t img, unsigned char *buffer) {
 	decoders[img]->readRows(height, buffer);
 }
 
-//adjust light for pixel,light is cm coords, return light again in cm.
+//adjust light for pixel,light is mm coords, return light again in mm.
 Vector3f ImageSet::relativeLight(const Vector3f &light3d, int x, int y){
 	Vector3f l = light3d;
-	//relative position to the center in cm
-	float dx = image_width_cm*(x - image_width/2.0f)/image_width;
-	float dy = image_width_cm*(y - image_height/2.0f)/image_width;
+	//relative position to the center in mm
+	float dx = image_width_mm*(x - image_width/2.0f)/image_width;
+	float dy = image_width_mm*(y - image_height/2.0f)/image_width;
 	l[0]  -= dx/2;
 	l[1]  -= dy/2;
 	l[2]  += vertical_offset;

@@ -214,7 +214,7 @@ void RelightApp::openProject(const QString &filename) {
 		box.addButton("Select a different folder...", QMessageBox::ActionRole);
 		box.addButton("Cancel", QMessageBox::RejectRole);
 		int ret = box.exec();
-		cout << "RET: " << ret << " " << (int)QMessageBox::ActionRole << endl;
+
 		switch(ret) {
 		case 1: {
 			QString imagefolder = QFileDialog::getExistingDirectory(mainwindow, "Could not find the images, please select the image folder:", project.dir.absolutePath());

@@ -15,11 +15,12 @@ HEADERS += \
     ../src/bni_normal_integration.h
 
 
+unix:INCLUDEPATH += /usr/include/eigen3
 win32:INCLUDEPATH +=  ../external/eigen-3.4.0/
 
 #unix:INCLUDEPATH += /usr/include/eigen3
 unix:INCLUDEPATH += ../external/eigen-3.4.0/
-unix:LIBS += -lgomp #-liomp5
+unix:LIBS += -lgomp -ltiff #-liomp5
 unix:QMAKE_CXXFLAGS += -fopenmp
 
 

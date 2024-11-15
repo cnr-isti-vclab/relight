@@ -31,8 +31,8 @@ lighting directions or posittions and all other attributed required for processi
 ## Geometry
 | key  | value |
 | ---- | ---- |
-| diameter | Dome diameter in cm, and yes, metric and only cm. |
-| imageWidth | Default width in cm of the area covered by the image, this is useful for domes having a fixed optic. |
+| diameter | Dome diameter in mm, and yes, metric and only mm. |
+| imageWidth | Default width in mm of the area covered by the image, this is useful for domes having a fixed optic. |
 | verticalOffset | Default vertical offset from the origin of the coordinated 
 (usually the center of the sphere which is the most common geometry for domes). Positive if the center is above the surface. |
 
