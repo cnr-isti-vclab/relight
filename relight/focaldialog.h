@@ -17,10 +17,11 @@ public:
 
 	explicit FocalDialog(Project *project, QWidget *parent = 0);
 	~FocalDialog();
-
+	virtual void accept();
 public slots:
 	void setAsReal();
 	void setAsEquivalent();
+
 private:
 	Ui::FocalDialog *ui;
 };
