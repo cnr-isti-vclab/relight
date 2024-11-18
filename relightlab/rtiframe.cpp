@@ -121,6 +121,12 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 
 void RtiFrame::exportRti() {
 
+	//check for lights
+	if(qRelightApp->project().dome.directions.size() == 0) {
+		QMessageBox::warning(this, "Missing light directions.", "You need light directions for this dataset to build an RTI.\n"
+			"You can either load a dome or .lp file or mark a reflective sphere in the 'Lights' tab.");
+		return;
+	}
 	RtiParameters &parameters = rti_plan->parameters;
 	//get folder if not legacy.
 	QString output;
