@@ -58,15 +58,16 @@ SphereRow::SphereRow(Sphere *_sphere, QWidget *parent): QWidget(parent) {
 	reflections->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	columns->addWidget(reflections);
 
-	QVBoxLayout *status_layout = new QVBoxLayout;
-	columns->addLayout(status_layout, 2);
-	status_layout->addStretch();
-	status = new QLabel("Locating highlights...");
-	status_layout->addWidget(status);
+	//QVBoxLayout *status_layout = new QVBoxLayout;
+	//columns->addLayout(status_layout, 2);
+	//status_layout->addStretch();
+	//status = new QLabel("Locating highlights...");
+	//status_layout->addWidget(status);
 	progress = new QProgressBar;
 	progress->setValue(0);
-	status_layout->addWidget(progress);
-	status_layout->addStretch();
+	//status_layout->addWidget(progress);
+	//status_layout->addStretch();
+	columns->addWidget(progress, 2);
 
 	QPushButton *edit = new QPushButton(QIcon::fromTheme("edit"), "Edit...");
 	columns->addWidget(edit, 1);
@@ -108,7 +109,7 @@ void SphereRow::remove() {
 }
 
 void SphereRow::updateStatus(QString msg, int percent) {
-	status->setText(msg);
+//	status->setText(msg);
 	progress->setValue(percent);
 	reflections->update();
 	if(percent == 100) {
@@ -118,7 +119,7 @@ void SphereRow::updateStatus(QString msg, int percent) {
 
 void SphereRow::detectHighlights(bool update) {
 	if(sphere->center.isNull()) {
-		status->setText("Needs at least 3 points.");
+//		status->setText("Needs at least 3 points.");
 		return;
 	}
 	if(!detect_highlights) {
