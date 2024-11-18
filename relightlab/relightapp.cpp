@@ -303,6 +303,14 @@ void RelightApp::loadThumbnails() {
 	//start a thumbnail loading thread and ask her to signal when something has been loaded.
 	loader = new ThumbailLoader(paths);
 	connect(loader, SIGNAL(update(int)), this, SIGNAL(updateThumbnail(int)));
+	QObject::connect(this, &QCoreApplication::aboutToQuit, [&]() {
+		if(loader) {
+			loader->terminate();
+			loader->wait();
+			delete loader;
+			loader = nullptr;
+		}
+	});
 	loader->start();
 
 }
