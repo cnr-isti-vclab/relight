@@ -68,8 +68,7 @@ void Sphere::ellipseFit() {
 	Eigen::VectorXd cond = 4 * row0.array() * row2.array() - row1.array().pow(2);
 
 
-	Eigen::VectorXd ellipse = eigenvector.col(0);
-	Eigen::VectorXd min_pos_eig;
+	Eigen::VectorXd min_pos_eig = eigenvector.col(0);
 	for(int i = 0; i<3; i++) {
 		if(cond(i) > 0){
 			min_pos_eig = eigenvector.col(i);
@@ -77,7 +76,7 @@ void Sphere::ellipseFit() {
 		}
 	}
 	Eigen::VectorXd coeffs(6);
-	Eigen::VectorXd cont_matrix=  -1*S3.inverse()* S2.transpose() * ellipse;
+	Eigen::VectorXd cont_matrix=  -1*S3.inverse()* S2.transpose() * min_pos_eig;
 	coeffs << min_pos_eig, cont_matrix;
 
 

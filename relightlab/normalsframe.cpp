@@ -40,6 +40,11 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 }
 
 void NormalsFrame::save() {
+	if(qRelightApp->project().dome.directions.size() == 0) {
+		QMessageBox::warning(this, "Missing light directions.", "You need light directions for this dataset to build a normalmap.\n"
+			"You can either load a dome or .lp file or mark a reflective sphere in the 'Lights' tab.");
+		return;
+	}
 	QString filter = jpg->isChecked() ? "JPEG Images (*.jpg)" : "PNG Images (*.png)";
 	Project &project = qRelightApp->project();
 	QString output = QFileDialog::getSaveFileName(this, "Select a filename for the normal map.", project.dir.path(), filter);
