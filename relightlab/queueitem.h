@@ -22,10 +22,12 @@ public:
 
 	QueueItem(Task *task, QListWidget *parent);
 	void update();
+
 public slots:
 	void setSelected(bool selected);
 	void progress(QString text, int percent);
 	void casting();
+	void openFolder();
 
 private:
 	QMap<int, QString> style;
