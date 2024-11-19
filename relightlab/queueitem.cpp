@@ -5,6 +5,9 @@
 #include <QProgressBar>
 #include <QMessageBox>
 #include <QFileInfo>
+#include <QDesktopServices>
+#include <QUrl>
+
 #include "task.h"
 #include "../relight/httpserver.h"
 
@@ -63,8 +66,10 @@ QueueItem::QueueItem(Task *_task, QListWidget *parent): QListWidgetItem(parent) 
 
 	folder = new QPushButton();
 	folder->setIcon(QIcon::fromTheme("folder"));
-	folder->setEnabled(false);
+	folder->setEnabled(true);
 	grid->addWidget(folder, 0, 3, 4, 1);
+
+	connect(folder, SIGNAL(clicked(bool)), this, SLOT(openFolder()));
 
 	widget->setLayout(grid);
 
@@ -94,6 +99,7 @@ void QueueItem::update() {
 			if(info.isDir())
 				cast->setEnabled(true);
 		}
+		cast->setEnabled(true);
 		break;
 	case Task::STOPPED:
 		status->setText("Stopped");
@@ -122,4 +128,12 @@ void QueueItem::casting() {
 	} catch(QString error) {
 		QMessageBox::critical(nullptr, "Could not cast!", error);
 	}
+}
+
+void QueueItem::openFolder() {
+	QFileInfo fileInfo(task->output);
+	QString path = fileInfo.isDir() ? fileInfo.absoluteFilePath() : fileInfo.absolutePath();
+
+	QUrl folderUrl = QUrl::fromLocalFile(path);
+	QDesktopServices::openUrl(folderUrl);
 }
