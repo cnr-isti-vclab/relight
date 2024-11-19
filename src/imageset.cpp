@@ -277,9 +277,8 @@ Vector3f ImageSet::relativeLight(const Vector3f &light3d, int x, int y){
 	//relative position to the center in cm
 	float dx = image_width_cm*(x - image_width/2.0f)/image_width;
 	float dy = image_width_cm*(y - image_height/2.0f)/image_width;
-	l[0]  -= dx/2;
-	l[1]  -= dy/2;
-	l[2]  += vertical_offset;
+	l[0]  -= dx;
+	l[1]  -= dy;
 	return l;
 }
 
