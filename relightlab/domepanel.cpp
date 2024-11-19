@@ -115,7 +115,6 @@ void DomePanel::exportDome() {
 
 void DomePanel::loadLP(QString path) {
 	std::vector<QString> filenames;
-	dome = Dome();
 	dome.lightConfiguration = Dome::DIRECTIONAL;
 
 	try {
@@ -127,12 +126,14 @@ void DomePanel::loadLP(QString path) {
 	QFileInfo info(path);
 	dome.label = info.filePath();
 	qRelightApp->addDome(path);
+
 	updateDomeList();
 
 	emit accept(dome);
 }
 
 void DomePanel::loadDome(QString path) {
+	float imageWidth = dome.imageWidth;
 	try {
 		dome.load(path);
 	} catch (QString error) {
@@ -143,6 +144,9 @@ void DomePanel::loadDome(QString path) {
 	QFileInfo info(path);
 	dome.label = info.filePath();
 	qRelightApp->addDome(path);
+	//preserve image width if we actually have a measurement.
+	if(imageWidth != 0 && qRelightApp->project().measures.size() != 0)
+		dome.imageWidth = imageWidth;
 	updateDomeList();
 	emit accept(dome);
 }

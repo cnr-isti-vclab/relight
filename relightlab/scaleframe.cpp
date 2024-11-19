@@ -26,7 +26,7 @@ ScaleFrame::ScaleFrame(QWidget *parent): QFrame(parent) {
 	scale = new QDoubleSpinBox;
 	controls->addWidget(scale);
 
-	pixelSize = new QLabel;
+	pixelSize = new QLabel("mm");
 	controls->addWidget(pixelSize);
 
 	QPushButton *remove = new QPushButton(QIcon::fromTheme("trash-2"), "");

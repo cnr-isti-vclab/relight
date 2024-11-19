@@ -15,6 +15,7 @@
 * cancel button on sphere reflection processing.
 * better info on queue items.
 * if scale exists don't overwrite imageWith with dome scale.
+* remove relight_vector and jus use eigen.
 
 ## Long term new features
 
