@@ -195,7 +195,7 @@ void NormalsWorker::solveL2()
 
 		if(m_Imageset.light3d) {
 			for(size_t i = 0; i < m_Lights3d.size(); i++) {
-				Vector3f light = m_Imageset.relativeLight(m_Lights3d[i], p, row);
+				Vector3f light = m_Imageset.relativeLight(m_Lights3d[i], p, m_Imageset.height - row);
 				light.normalize();
 				for (int j = 0; j < 3; j++)
 					mLights(i, j) = light[j];

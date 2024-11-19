@@ -36,9 +36,14 @@ public:
 	Vector3f viewDirection(float x, float y) {
 		if(!focalLength)
 			return Vector3f(0, 0, -1);
+		float focal = focalLength;
+		if(focal35equivalent) {
+			double w = pixelSizeX * width;
+			focal  = focalLength * w / 35;
+		}
 		x -= width/2;
 		y -= height/2;
-		return Vector3f(x*pixelSizeX, -y*pixelSizeY, -focalLength);
+		return Vector3f(x*pixelSizeX, -y*pixelSizeY, -focal);
 	}
 
 	double ccdWidth() {
