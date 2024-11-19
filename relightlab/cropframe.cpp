@@ -120,8 +120,14 @@ void CropFrame::clear() {
 
 void CropFrame::init() {
 	Project &project = qRelightApp->project();
-
 	QString filename = project.images[0].filename;
+	int count = 0;
+	while(project.images[count].skip == true) {
+		count++;
+		if(count >= project.images.size())
+			break;
+		filename = project.images[count].filename;
+	}
 
 	QImage img(project.dir.filePath(filename));
 	if(img.isNull()) {
