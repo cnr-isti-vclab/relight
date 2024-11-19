@@ -26,6 +26,7 @@
 ///
 
 void NormalsTask::initFromProject(Project &project) {
+	lens = project.lens;
 	imageset.width = imageset.image_width = project.lens.width;
 	imageset.height = imageset.image_height = project.lens.height;
 
@@ -62,7 +63,7 @@ void NormalsTask::run() {
 		//uint8_t* data = normals.data() + idx;
 		float* data = &normals[idx];
 
-		NormalsWorker *task = new NormalsWorker(solver, i, line, data, imageset);
+		NormalsWorker *task = new NormalsWorker(solver, i, line, data, imageset, lens);
 
 		std::function<void(void)> run = [this, task](void)->void {
 			task->run();
@@ -138,30 +139,9 @@ void NormalsTask::run() {
 	}
 	progressed("Done", 100);
 }
-/*
-bool NormalsTask::progressed(QString str, int percent)
-{
-	if(status == PAUSED) {
-		mutex.lock();  //mutex should be already locked. this talls the
-		mutex.unlock();
-	}
-	if(status == STOPPED)
-		return false;
-
-	emit progress(str, percent);
-	if(status == STOPPED)
-		return false;
-	return true;
-}*/
-
-/**
- *   \brief NormalsWorker: generates the normals for a given line in the image set, depending on the method specified when
- *          creating the Worker.
-**/
 
 
-void NormalsWorker::run()
-{
+void NormalsWorker::run() {
 	switch (solver)
 	{
 	// L2 solver
@@ -199,7 +179,7 @@ void NormalsWorker::solveL2()
 			mLights(i, j) = m_Lights[i][j];
 
 	// For each pixel in the line solve the system
-	//TODO do it in a single pass, it's faster.
+	//TODO do it in a single large matrix, it should be  faster.
 	for (size_t p = 0; p < m_Row.size(); p++) {
 		// Fill the pixel vector
 		for (size_t m = 0; m < m_Lights.size(); m++)
@@ -207,7 +187,7 @@ void NormalsWorker::solveL2()
 
 		if(m_Imageset.light3d) {
 			for(size_t i = 0; i < m_Lights3d.size(); i++) {
-				Vector3f light = m_Imageset.relativeLight(m_Lights3d[i], p, row);
+				Vector3f light = m_Imageset.relativeLight(m_Lights3d[i], p, m_Imageset.height - row);
 				light.normalize();
 				for (int j = 0; j < 3; j++)
 					mLights(i, j) = light[j];
@@ -216,9 +196,13 @@ void NormalsWorker::solveL2()
 
 		mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
 		mNormals.col(0).normalize();
-		m_Normals[normalIdx+0] = mNormals(0,0);
-		m_Normals[normalIdx+1] = mNormals(1,0);
-		m_Normals[normalIdx+2] = mNormals(2,0);
+		Eigen::Vector3f n;
+		n[0] = float(mNormals.col(0)[0]);
+		n[1] = float(mNormals.col(0)[1]);
+		n[2] = float(mNormals.col(0)[2]);
+		m_Normals[normalIdx+0] = n[0];
+		m_Normals[normalIdx+1] = n[1];
+		m_Normals[normalIdx+2] = n[2];
 
 		normalIdx += 3;
 	}

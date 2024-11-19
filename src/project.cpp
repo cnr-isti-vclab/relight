@@ -175,6 +175,7 @@ bool Project::scanDir() {
 	needs_saving = true;
 	return resolutions.size() == 1 && focals.size() == 1;
 }
+
 double mutualInfo(QImage &a, QImage &b) {
 	uint32_t histogram[256*256];
 	memset(histogram, 0, 256*256*4);

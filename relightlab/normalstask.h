@@ -28,6 +28,7 @@ public:
 	bool exportPly = false;
 	bool bni_k = 2.0;
 	ImageSet imageset;
+	Lens lens;
 	float pixelSize = 0.0f;
 
 	NormalsTask(const QString &outputPath) {
@@ -42,8 +43,8 @@ public:
 class NormalsWorker
 {
 public:
-	NormalsWorker(NormalSolver _solver, int _row, const PixelArray& toProcess, float* normals, ImageSet &imageset) :
-		solver(_solver), row(_row), m_Row(toProcess), m_Normals(normals), m_Imageset(imageset){
+	NormalsWorker(NormalSolver _solver, int _row, const PixelArray& toProcess, float* normals, ImageSet &imageset, Lens &_lens) :
+		solver(_solver), row(_row), m_Row(toProcess), m_Normals(normals), m_Imageset(imageset), lens(_lens){
 		m_Row.resize(toProcess.npixels(), toProcess.nlights);
 		for(size_t i = 0; i < m_Row.size(); i++)
 			m_Row[i] = toProcess[i];
@@ -62,6 +63,7 @@ private:
 
 	float* m_Normals;
 	ImageSet &m_Imageset;
+	Lens &lens;
 	QMutex m_Mutex;
 };
 

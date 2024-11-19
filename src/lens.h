@@ -1,6 +1,7 @@
 #ifndef LENS_H
 #define LENS_H
 
+#include <Eigen/Core>
 #include <vector>
 #include "../src/relight_vector.h"
 
@@ -25,21 +26,12 @@ public:
 	void readExif(Exif &exif);
 
 	//compute focal length 35mm equivalent.
-	double focal35() {
-		if(focal35equivalent) return focalLength;
-		else {
-			double w = pixelSizeX * width;
-			return focalLength * 35 / w;
-		}
-	}
+	double focal35();
+
 	//return vector from eye to pixel (z < 0)
-	Vector3f viewDirection(float x, float y) {
-		if(!focalLength)
-			return Vector3f(0, 0, -1);
-		x -= width/2;
-		y -= height/2;
-		return Vector3f(x*pixelSizeX, -y*pixelSizeY, -focalLength);
-	}
+	Vector3f viewDirection(float x, float y);
+	//rotate a normal computed on a plane perpendicular to the view direction on the image plane
+	Eigen::Vector3f rotateNormal(Eigen::Vector3f n, float x, float y);
 
 	double ccdWidth() {
 		return pixelSizeX*width;
