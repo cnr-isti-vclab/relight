@@ -143,6 +143,7 @@ bool ImageSet::initFromProject(QJsonObject &obj, const QString &filename) {
 
 void ImageSet::initLightsFromDome(Dome &dome) {
 	light3d = dome.lightConfiguration != Dome::DIRECTIONAL;
+	image_width_mm = dome.imageWidth;
 	dome_radius = dome.domeDiameter/2.0;
 	vertical_offset = dome.verticalOffset;
 	lights = dome.directions;
@@ -283,15 +284,15 @@ void ImageSet::decode(size_t img, unsigned char *buffer) {
 	decoders[img]->readRows(height, buffer);
 }
 
-//adjust light for pixel,light is mm coords, return light again in mm.
+//adjust light for pixel,light is mm coords, return light again in mm. //y is expected with UP axis.
 Vector3f ImageSet::relativeLight(const Vector3f &light3d, int x, int y){
 	Vector3f l = light3d;
+	float pixel_size = image_width_mm/image_width;
 	//relative position to the center in mm
-	float dx = image_width_mm*(x - image_width/2.0f)/image_width;
-	float dy = image_width_mm*(y - image_height/2.0f)/image_width;
-	l[0]  -= dx/2;
-	l[1]  -= dy/2;
-	l[2]  += vertical_offset;
+	float dx = pixel_size*(x - image_width/2.0f);
+	float dy = pixel_size*(y - image_height/2.0f);
+	l[0]  -= dx;
+	l[1]  -= dy;
 	return l;
 }
 
@@ -324,7 +325,7 @@ void ImageSet::readLine(PixelArray &pixels) {
 			for(size_t i = 0; i < lights3d.size(); i++) {
 				Vector3f l = relativeLight(lights3d[i], pixel.x, pixel.y);
 				float r = l.squaredNorm();
-				float di = r / (dome_radius*dome_radius);
+				float di = r / pow(dome_radius + vertical_offset, 2.0f);
 				pixel[i].r *= di;
 				pixel[i].g *= di;
 				pixel[i].b *= di;
@@ -404,7 +405,7 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 					Vector3f l = relativeLight(lights3d[i], pixel.x, pixel.y);
 					float r = l.squaredNorm();
 					//TODO precompute
-					float di = r / (dome_radius*dome_radius);
+					float di = r / pow(dome_radius + vertical_offset, 2.0f);
 					pixel[i].r *= di;
 					pixel[i].g *= di;
 					pixel[i].b *= di;

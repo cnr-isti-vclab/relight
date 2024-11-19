@@ -79,7 +79,7 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 
 	grid->addWidget(new QLabel("Vertical offset:"), 4, 0);
 	grid->addWidget(vertical_offset = new QDoubleSpinBox, 4, 1);
-	vertical_offset->setRange(0, 1000);
+	vertical_offset->setRange(-1000, 1000);
 	grid->addWidget(new QLabel("mm"), 4, 2);
 	connect(vertical_offset, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) { qRelightApp->project().dome.verticalOffset = v; });
 
