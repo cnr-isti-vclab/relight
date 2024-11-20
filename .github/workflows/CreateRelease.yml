@@ -121,6 +121,7 @@ jobs:
       id: envs
       shell: bash
       run: |
+        sudo apt-get install -y mesa-common-dev libglu1-mesa-dev
         #get version of relightlab
         IFS=' ' #space delimiter
         STR_VERSION=$(relightlab_linux_portable/usr/bin/relight --version)
