@@ -16,9 +16,8 @@ public:
 	//extrinsic
 	Eigen::Matrix3f rotation;
 	Eigen::Vector3f center;
-	bool loadXml(const QString &path); //leggi gli xml gli interni e esterni e autocal f e szimg
-	//
-	bool loadInternParameters(const QString &internePath);
+	bool loadXml(const QString &path); //read the MicMac xml origin, origin resolution ecc.
+	bool loadInternParameters(const QString &internePath); // read the xml with the center, rotation, focal parameter, principal points parameters ecc.
 	Eigen::Vector3f projectionToImage(Eigen::Vector3f realPosition);
 	Eigen::Vector3f applyRadialDistortion(Eigen::Vector3f& u);
 	Eigen::Vector3f applyIntrinsicCalibration(Eigen::Vector3f& u);
@@ -34,6 +33,7 @@ public:
 	std::vector<float> elevation;
 	std::vector<Eigen::Vector3f> normals;
 	Eigen::Vector3f pixelToRealCoordinates(int pixelX, int pixelY, float pixelZ);
+
 	//Eigen::Vector3f pixelTo3DCoordinates(int pixelX, int pixelY, float depth, const QString &depthXmlPath, const QString &oriXmlPath);
 
 	Depthmap() {}
@@ -42,6 +42,8 @@ public:
 	void computeNormals();
 	void saveNormals(const char *filename);
 	void saveObj(const char *filename);
+	void depthIntegrateNormals();
+	void resizeNormals(int factorPowerOfTwo, int step);
 //	void getOrientationVector(const QString &xmlPath, Eigen::Matrix3f &rotation, Eigen::Vector3f &center);
 
 };

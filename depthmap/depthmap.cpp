@@ -5,6 +5,7 @@
 #include <QDomElement>
 #include <QtXml/QDomDocument>
 #include "depthmap.h"
+#include "../src/bni_normal_integration.h"
 #include <QFile>
 
 using namespace std;
@@ -209,6 +210,80 @@ void Depthmap::computeNormals() {
 
 		}
 	}
+}
+void Depthmap::depthIntegrateNormals(){
+	if (normals.empty()){
+		cerr << "Error: no normals found" << endl;
+	}
+	std::function<bool(std::string s, int d)> callback = [this](std::string s, int n)->bool { return true; };
+	vector<float> normals_float(normals.size()*3);
+	for(size_t i = 0; i < normals.size(); i++)
+		for(int k = 0; k < 3; k++)
+			normals_float[i*3+k] = normals[i][k];
+	bni_integrate(callback, width, height, normals_float, elevation);
+
+}
+void Depthmap::resizeNormals (int factorPowerOfTwo, int step = 1) {
+	int factor = 1 << factorPowerOfTwo;
+	int targetWidth = width/factor;
+	int targetHeight = height/factor;
+
+	std::vector<float> dxArray(targetWidth * targetHeight, 0.0f);
+	std::vector<float> dyArray(targetWidth * targetHeight, 0.0f);
+
+
+	std::vector<Eigen::Vector3f> resizedNormals(targetWidth * targetHeight);
+	cout << "Resizing normals: Factor = " << factor << ", Target Width = " << targetWidth << ", Target Height = " << targetHeight << endl;
+
+	for (int y = 0; y < targetHeight; y++) {
+		for (int x = 0; x < targetWidth; x++) {
+			//	Eigen::Vector2f avgDelta = Eigen::Vector2f::Zero();
+			float sumDx = 0.0f;
+			float sumDy = 0.0f;
+
+			float w = 0;
+			for (int dy = 0; dy < factor; dy += step) {
+				for (int dx = 0; dx < factor; dx += step) {
+					int srcX = x * factor + dx;
+					int srcY = y * factor + dy;
+
+					if (srcX < width && srcY < height) {
+
+						// 1. produrre l'array dx e dy derivates resample derivates e poi le converto in normali
+						Eigen::Vector3f normal = normals[srcX + srcY * width];
+						float dzdx = -normal.x() / normal.z();
+						float dzdy = -normal.y() / normal.z();
+
+						sumDx += dzdx;
+						sumDy += dzdy;
+						w++;
+					}
+				}
+			}
+			float avgDx = sumDx / w;
+			float avgDy = sumDy / w;
+			Eigen::Vector3f normal(avgDx, avgDy, 1.0f);
+			normal.normalize();
+			resizedNormals[y * targetWidth + x] = normal;
+		}
+	}
+
+	/*
+			// prendi normali calcoli dx e dy e fai la media
+			resizedNormals[y * targetWidth + x] = avgNormal / (factor * factor);
+		}*/
+
+	normals = resizedNormals;
+	width = targetWidth;
+	height = targetHeight;
+
+	QString filename = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/surface.jpg";
+	saveNormals(filename.toStdString().c_str());
+ //chiama l'integrale integra le normali e salva il ply
+	depthIntegrateNormals();
+	QString plyFilename = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/resize_normals.obj";
+	saveObj(plyFilename.toStdString().c_str());
+
 }
 
 void Depthmap::saveNormals(const char *filename) {
@@ -461,6 +536,7 @@ Eigen::Vector3f Camera::applyRadialDistortion(Eigen::Vector3f& uvz) {
 
 	return Eigen::Vector3f(u_dist, v_dist, uvz.z());
 }
+
 
 
 

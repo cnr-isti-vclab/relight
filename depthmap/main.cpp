@@ -1,4 +1,5 @@
 #include "depthmap.h"
+#include "../src/bni_normal_integration.h"
 #include <iostream>
 #include <QFile>
 #include <QDomDocument>
@@ -19,12 +20,20 @@ int main(int argc, char *argv[]) {
 	depth.computeNormals();
 	depth.saveNormals(qPrintable(output));
 	depth.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/output.obj");
+	depth.depthIntegrateNormals();
+	depth.saveNormals("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/surface.jpg");
+	int factorPowerOfTwo = 1;
+	depth.resizeNormals(factorPowerOfTwo, 2);
+	depth.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/resize_normals.obj");
+
 
 	Camera camera;
 	camera.loadXml(orientationXmlPath);
 	int pixelX = 165;
 	int pixelY = 144;
 	float pixelZ = 4.5;
+
+
 
 
 	Eigen::Matrix3f rotationMatrix;
@@ -43,6 +52,8 @@ int main(int argc, char *argv[]) {
 			  << realCoordinates[1] << ", " << realCoordinates[2] << ")" << endl;
 
 	cout << "Coordinate immagine: (" << imageCoords[0] << ", " << imageCoords[1] << ")" << endl;
+
+
 
 	return 0;
 }
