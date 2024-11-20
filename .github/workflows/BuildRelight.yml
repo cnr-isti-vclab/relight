@@ -63,13 +63,13 @@ jobs:
       run: |
         bash build_scripts/${{ runner.os }}/2_deploy.sh --cert_pssw='${{ secrets.WIN_CERTIFICATE_PSSW }}' --cert_id='${{ secrets.MACOS_CERT_ID }}'
     - name: Upload RelightLab Portable
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: RelightLab_${{ runner.os }}_portable
         path: install/
     - name: Upload RelightLab Packages
       if: runner.os != 'Windows'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: RelightLab_${{ runner.os }}_packages
         path: packages/RelightLab*
