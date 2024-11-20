@@ -17,16 +17,20 @@ jobs:
     name: Update RELIGHT_VERSION
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Update Relight version
       run : |
         echo ${{ github.event.inputs.version }} | tr -d '\n'> RELIGHT_VERSION
     - name: commit RELIGHT_VERSION change
-      uses: stefanzweifel/git-auto-commit-action@v4
+      uses: EndBug/add-and-commit@v9
       with:
-        commit_message: Set Relight version to ${{ github.event.inputs.version }}
+        committer_name: GitHub Actions
+        committer_email: actions@github.com
+        message: Set Relight version to ${{ github.event.inputs.version }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   relight_build:
     needs: [update_rl_version]
@@ -36,7 +40,7 @@ jobs:
       matrix:
         os: ['ubuntu-20.04', 'macos-latest', 'windows-latest']
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
         ref: master
@@ -121,7 +125,7 @@ jobs:
       id: envs
       shell: bash
       run: |
-        sudo apt-get install -y mesa-common-dev libglu1-mesa-dev
+        sudo apt-get install -y mesa-common-dev libglu1-mesa-dev freeglut3-dev
         #get version of relightlab
         IFS=' ' #space delimiter
         STR_VERSION=$(relightlab_linux_portable/usr/bin/relight --version)
