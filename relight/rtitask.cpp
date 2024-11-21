@@ -30,7 +30,7 @@ RtiTask::~RtiTask() {
 void RtiTask::run() {
 	status = RUNNING;
 	QStringList steps = (*this)["steps"].value.toStringList();
-    std::function<bool(std::string s, int d)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
+	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
     QString err;
     for(auto step: steps) {
 		if(step == "relight")
@@ -93,7 +93,7 @@ void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 			lights[i/3][k] = qlights[i+k].toDouble();
 	builder->lights = builder->imageset.lights = lights;
 	builder->imageset.light3d = project.dome.lightConfiguration != Dome::DIRECTIONAL;
-	builder->imageset.image_width_cm = project.dome.imageWidth;
+	builder->imageset.image_width_mm = project.dome.imageWidth;
 	builder->imageset.dome_radius = project.dome.domeDiameter/2.0;
 	builder->imageset.vertical_offset = project.dome.verticalOffset;
 	builder->imageset.initLights();
@@ -112,7 +112,7 @@ void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 	builder->height = builder->imageset.height;
 	int quality= (*this)["quality"].value.toInt();
 
-	std::function<bool(std::string s, int n)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
+	std::function<bool(QString s, int n)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
 	try {
 		if(!builder->init(&callback)) {
@@ -184,16 +184,4 @@ void RtiTask::openlime() {
 		copy.open(QFile::WriteOnly);
 		copy.write(fp.readAll());
 	}
-}
-
-bool RtiTask::progressed(std::string s, int percent) {
-	QString str(s.c_str());
-	emit progress(str, percent);
-	if(status == PAUSED) {
-		mutex.lock();  //mutex should be already locked. this talls the
-		mutex.unlock();
-	}
-	if(status == STOPPED)
-		return false;
-	return true;
 }

@@ -17,7 +17,7 @@ win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
 unix:INCLUDEPATH += /usr/include/eigen3
-unix:LIBS += -ljpeg -liomp5 -lgomp
+unix:LIBS += -ljpeg -ltiff -lgomp #-liomp5
 unix:QMAKE_CXXFLAGS += -fopenmp
 
 
@@ -41,6 +41,7 @@ SOURCES += main.cpp \
     graphics_view_zoom.cpp \
     normalstask.cpp \
     rtiexport.cpp \
+    ../relight-cli/convert_rti.cpp \
     ../relight-cli/rtibuilder.cpp \
     ../src/imageset.cpp \
     ../src/jpeg_decoder.cpp \
@@ -51,6 +52,7 @@ SOURCES += main.cpp \
     ../src/exif.cpp \
     ../src/project.cpp \
     ../src/dome.cpp \
+    ../src/flatnormals.cpp \
     helpdialog.cpp \
     ../src/measure.cpp \
     focaldialog.cpp \
@@ -65,7 +67,6 @@ SOURCES += main.cpp \
     task.cpp \
     rtitask.cpp \
     settingsdialog.cpp \
-    ../relight-cli/convert_rti.cpp \
     domecalibration.cpp \
     ../src/lp.cpp \
     qmarkerlist.cpp \
@@ -105,11 +106,12 @@ HEADERS += \
     ../relight-cli/rtibuilder.h \
     ../src/relight_threadpool.h \
     ../src/project.h \
-    ../SRC/measure.h \
+    ../src/measure.h \
     focaldialog.h \
     ../src/lens.h \
     ../src/image.h \
     ../src/exif.h \
+    ../src/flatnormals.h \
     httpserver.h \
     scripts.h \
     processqueue.h \

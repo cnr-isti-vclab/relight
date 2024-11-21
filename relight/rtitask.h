@@ -2,6 +2,7 @@
 #define RTITASK_H
 
 #include "task.h"
+#include "../src/rti.h"
 #include "../src/project.h"
 #include <QMutex>
 
@@ -17,19 +18,40 @@ class RtiBuilder;
  *   openlime: add openlime js css, html for viewer
  */
 
+class RtiParameters {
+public:
+
+	enum Format { RTI = 0, WEB = 1, IIP = 2 };
+	enum WebLayout { PLAIN = 0, DEEPZOOM = 1, TARZOOM = 2, ITARZOOM = 3 };
+
+	Rti::Type basis = Rti::PTM;
+	Rti::ColorSpace colorspace = Rti::RGB;
+	int nplanes = 18;
+	int nchroma = 0;
+
+	Format format = WEB;
+	WebLayout web_layout = PLAIN;
+
+	bool lossless = false; //used only for RTI format;
+
+	bool iiif_manifest = false;  //TODO
+	bool openlime = true; //include openlime viewer //TODO: might want different interfaces.
+
+	int quality = 95;
+	QString path;
+};
+
 class RtiTask: public Task {
 	Q_OBJECT
 public:
-	enum Steps { RELIGHT, DEEPZOOM, TARZOOM, ITARZOOM };
 	Project project;
+	RtiParameters parameters;
 
 	RtiTask(const Project &_project);
     virtual ~RtiTask();
     virtual void run() override;
 
 public slots:
-    bool progressed(std::string str, int percent) override;
-
 	void relight(bool commonMinMax = false, bool saveLegacy = false); //use true for .rti and .ptm
 	void toRTI();
     void fromRTI();

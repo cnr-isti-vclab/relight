@@ -39,6 +39,7 @@ set (RELIGHT_HEADERS
 	../src/deepzoom.h
 	../src/bni_normal_integration.h
 	../relight-cli/rtibuilder.h
+	../src/flatnormals.h
 	processqueue.h
 	queueitem.h
 	queuewindow.h
@@ -93,6 +94,7 @@ set (RELIGHT_SOURCES
 	../src/lp.cpp
 	../src/deepzoom.cpp
 	../src/bni_normal_integration.cpp
+	../src/flatnormals.cpp
 	helpdialog.cpp
 	focaldialog.cpp
 	settingsdialog.cpp
@@ -145,12 +147,15 @@ target_include_directories(
 	relight PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}
+		TIFF::TIFF
 		${EIGEN3_INCLUDE_DIR}
 	)
-	
+
+
 target_link_libraries(
 	relight PUBLIC
 		${JPEG_LIBRARIES}
+		TIFF::TIFF
 		OpenMP::OpenMP_CXX
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui

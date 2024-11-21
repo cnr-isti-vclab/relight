@@ -12,6 +12,7 @@
 class QJsonObject;
 class JpegDecoder;
 class QImage;
+class Dome;
 
 class ImageSet {
 public:
@@ -23,14 +24,15 @@ public:
 	int width = 0, height = 0;
 	int left = 0, top = 0, right = 0, bottom = 0;
 
+	/* REPLACE THIS WITH DOME */
 	//Lights
 	std::vector<Vector3f> lights;
 
 	bool light3d = false;
-	std::vector<Vector3f> lights3d; //always expressed in cm.
+	std::vector<Vector3f> lights3d; //always expressed in mm.
 
 	//Geometry
-	float image_width_cm = 0.0f;
+	float image_width_mm = 0.0f;
 	float dome_radius = 0.0f;
 	float vertical_offset = 0.0f;
 
@@ -47,11 +49,12 @@ public:
 	bool initFromFolder(const char *path, bool ignore_filenames = true, int skip_image = -1);
 	bool initFromProject(QJsonObject &obj, const QString &filename);
 	void initLights();
-	bool initImages(const char *path); //require lights and images to be available, path points to the dir of the images.
+	bool initImages(const char *path); //path points to the dir of the images.
+	void initLightsFromDome(Dome &dome);
 	
 	QImage maxImage(std::function<bool(std::string stage, int percent)> *callback = nullptr); 
 	void crop(int _left, int _top, int _right, int _bottom);
-	void setCallback(std::function<bool(std::string stage, int percent)> *_callback = nullptr) { callback = _callback; }
+	void setCallback(std::function<bool(QString stage, int percent)> *_callback = nullptr) { callback = _callback; }
 	//call AFTER initImages and BEFORE breadline, decode or sample.
 
 	void decode(size_t img, unsigned char *buffer);
@@ -63,7 +66,7 @@ public:
 	Vector3f relativeLight(const Vector3f &light, int x, int y);
 
 protected:
-	std::function<bool(std::string stage, int percent)> *callback;
+	std::function<bool(QString stage, int percent)> *callback;
 	std::vector<JpegDecoder *> decoders;
 };
 

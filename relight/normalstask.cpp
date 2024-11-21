@@ -4,6 +4,7 @@
 #include "../src/imageset.h"
 #include "../src/relight_threadpool.h"
 #include "../src/bni_normal_integration.h"
+#include "../src/flatnormals.h"
 
 #include <Eigen/Eigen>
 #include <Eigen/Core>
@@ -35,12 +36,11 @@ void NormalsTask::run() {
 			lights[i/3][k] = qlights[i+k].toDouble();
 
 
-
 	ImageSet imageSet;
 	imageSet.images = (*this)["images"].value.toStringList();
 	imageSet.lights = lights;
 	imageSet.light3d = project->dome.lightConfiguration != Dome::DIRECTIONAL;
-	imageSet.image_width_cm = project->dome.imageWidth;
+	imageSet.image_width_mm = project->dome.imageWidth;
 	imageSet.dome_radius = project->dome.domeDiameter/2.0;
 	imageSet.vertical_offset = project->dome.verticalOffset;
 	imageSet.initLights();
@@ -56,8 +56,6 @@ void NormalsTask::run() {
 	int start = clock();
 	imageSet.setCallback(nullptr);
 
-
-
 	std::vector<float> normals(imageSet.width * imageSet.height * 3);
 
 	RelightThreadPool pool;
@@ -71,7 +69,6 @@ void NormalsTask::run() {
 
         // Create the normal task and get the run lambda
         uint32_t idx = i * 3 * imageSet.width;
-        //uint8_t* data = normals.data() + idx;
         float* data = &normals[idx];
 
 		NormalsWorker *task = new NormalsWorker(solver, i, line, data, imageSet);
@@ -84,11 +81,36 @@ void NormalsTask::run() {
 		pool.queue(run);
 		pool.waitForSpace();
 
-		progressed("Computing normals...", ((float)i / imageSet.height) * 100);
+		if(!progressed("Computing normals...", ((float)i / imageSet.height) * 100))
+			break;
 	}
 
     // Wait for the end of all the threads
     pool.finish();
+
+	if(flatMethod != NONE) {
+		//TODO: do we really need double precision?
+		std::vector<double> normalsd(normals.size());
+		for(uint32_t i = 0; i < normals.size(); i++)
+			normalsd[i] = (double)normals[i];
+
+		NormalsImage ni;
+		ni.load(normalsd, imageSet.width, imageSet.height);
+		switch(flatMethod) {
+		case RADIAL:
+			ni.flattenRadial();
+			break;
+		case FOURIER:
+			//convert radius to frequencies
+			double sigma = 100/flat_radius;
+			ni.flattenFourier(imageSet.width/10, sigma);
+			break;
+		}
+		for(uint32_t i = 0; i < ni.normals.size(); i++)
+			normals[i] = (float)ni.normals[i];
+
+	}
+
 
     std::vector<uint8_t> normalmap(imageSet.width * imageSet.height * 3);
     for(size_t i = 0; i < normals.size(); i++)
@@ -103,10 +125,12 @@ void NormalsTask::run() {
         img.setDotsPerMeterY(dotsPerMeter);
     }
     img.save(output);
-    std::function<bool(std::string s, int d)> callback = [this](std::string s, int n)->bool { return this->progressed(s, n); };
 
-    if(exportSurface) {
-        progressed("Integrating normals...", 0);
+	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
+
+	if(exportSurface || exportDepthmap) {
+		if(!progressed("Integrating normals...", 0))
+			return;
 		std::vector<float> z;
 		bni_integrate(callback, imageSet.width, imageSet.height, normals, z, exportK);
         if(z.size() == 0) {
@@ -116,28 +140,19 @@ void NormalsTask::run() {
         }
         QString filename = output.left(output.size() -4) + ".ply";
 
-        progressed("Saving surface...", 99);
+	if(!progressed("Saving surface...", 99))
+		return;
+	if(exportSurface)
         savePly(filename, imageSet.width, imageSet.height, z);
+
+	filename = output.left(output.size() -4) + ".tif";
+
+	if(exportDepthmap)
+			saveTiff(filename + ".tif", imageSet.width, imageSet.height, z);
     }
     int end = clock();
     qDebug() << "Time: " << ((double)(end - start) / CLOCKS_PER_SEC);
     progressed("Finished", 100);
-}
-
-bool NormalsTask::progressed(std::string s, int percent)
-{
-    if(status == PAUSED) {
-        mutex.lock();  //mutex should be already locked. this talls the
-        mutex.unlock();
-    }
-    if(status == STOPPED)
-        return false;
-
-    QString str(s.c_str());
-    emit progress(str, percent);
-    if(status == STOPPED)
-        return false;
-    return true;
 }
 
 /**
@@ -209,7 +224,6 @@ void NormalsWorker::solveL2()
 		m_Normals[normalIdx+0] = mNormals(0,0);
 		m_Normals[normalIdx+1] = mNormals(1,0);
 		m_Normals[normalIdx+2] = mNormals(2,0);
-
 		normalIdx += 3;
 	}
 }

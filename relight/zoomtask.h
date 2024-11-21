@@ -18,7 +18,6 @@ public:
     ~ZoomTask(){};
 
     virtual void run() override;
-    virtual bool progressed(std::string s, int percent) override;
 
 private:
     void deletePrevFiles(QDir folder);

@@ -3,6 +3,9 @@ project(relight)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_FIND_FRAMEWORK LAST)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+
+message(CMAKE_MODULE_PATH="${CMAKE_MODULE_PATH}")
 
 option(MACOSX_MAKE_BUNDLE "If using macos, all targets will be placed in a relight macosx app bundle" ON)
 
@@ -46,6 +49,13 @@ if(MSVC)
 else()
 	find_package (JPEG REQUIRED)
 endif()
+
+find_package (TIFF)
+if(NOT TIFF_FOUND)
+	add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/external/tiff-4.7.0)
+	add_library(TIFF::TIFF ALIAS tiff)
+endif()
+
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/RELIGHT_VERSION")
 	# version is read from RELIGHT_VERSION file

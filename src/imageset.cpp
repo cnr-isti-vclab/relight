@@ -12,6 +12,7 @@
 
 #include "lp.h"
 #include "imageset.h"
+#include "dome.h"
 #include "jpeg_decoder.h"
 
 
@@ -139,6 +140,17 @@ bool ImageSet::initFromProject(QJsonObject &obj, const QString &filename) {
 	}
 	return true;
 }
+
+void ImageSet::initLightsFromDome(Dome &dome) {
+	light3d = dome.lightConfiguration != Dome::DIRECTIONAL;
+	image_width_mm = dome.imageWidth;
+	dome_radius = dome.domeDiameter/2.0;
+	vertical_offset = dome.verticalOffset;
+	lights = dome.directions;
+	lights3d = dome.positionsSphere;
+	initLights();
+}
+
 
 void ImageSet::initLights() {
 	if(light3d) {
@@ -271,12 +283,13 @@ void ImageSet::decode(size_t img, unsigned char *buffer) {
 	decoders[img]->readRows(height, buffer);
 }
 
-//adjust light for pixel,light is cm coords, return light again in cm.
+//adjust light for pixel,light is mm coords, return light again in mm. //y is expected with UP axis.
 Vector3f ImageSet::relativeLight(const Vector3f &light3d, int x, int y){
 	Vector3f l = light3d;
-	//relative position to the center in cm
-	float dx = image_width_cm*(x - image_width/2.0f)/image_width;
-	float dy = image_width_cm*(y - image_height/2.0f)/image_width;
+	float pixel_size = image_width_mm/image_width;
+	//relative position to the center in mm
+	float dx = pixel_size*(x - image_width/2.0f);
+	float dy = pixel_size*(y - image_height/2.0f);
 	l[0]  -= dx;
 	l[1]  -= dy;
 	return l;
@@ -312,7 +325,7 @@ void ImageSet::readLine(PixelArray &pixels) {
 			for(size_t i = 0; i < lights3d.size(); i++) {
 				Vector3f l = relativeLight(lights3d[i], pixel.x, pixel.y);
 				float r = l.squaredNorm();
-				float di = r / (dome_radius*dome_radius);
+				float di = r / pow(dome_radius + vertical_offset, 2.0f);
 				pixel[i].r *= di;
 				pixel[i].g *= di;
 				pixel[i].b *= di;
@@ -356,7 +369,7 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 	uint32_t offset = 0;
 	vector<uint8_t> row(image_width*3);
 	for(int y = top; y < bottom; y++) {
-		if(callback && !(*callback)(std::string("Sampling images:"), 100*(y-top)/(height-1)))
+		if(callback && !(*callback)("Sampling images:", 100*(y-top)/(height-1)))
 			throw std::string("Cancelled");
 
 		//read one row per image at a time
@@ -392,7 +405,7 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 					Vector3f l = relativeLight(lights3d[i], pixel.x, pixel.y);
 					float r = l.squaredNorm();
 					//TODO precompute
-					float di = r / (dome_radius*dome_radius);
+					float di = r / pow(dome_radius + vertical_offset, 2.0f);
 					pixel[i].r *= di;
 					pixel[i].g *= di;
 					pixel[i].b *= di;
@@ -422,7 +435,7 @@ void ImageSet::skipToTop() {
 		for(int y = 0; y < top; y++)
 			decoders[i]->readRows(1, row.data());
 		
-		if(callback && !(*callback)(std::string("Skipping cropped lines..."), 100*i/(decoders.size()-1)))
+		if(callback && !(*callback)("Skipping cropped lines...", 100*i/(decoders.size()-1)))
 			throw std::string("Cancelled");
 	}
 	current_line += top;

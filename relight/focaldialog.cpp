@@ -41,6 +41,18 @@ FocalDialog::FocalDialog(Project *_project, QWidget *parent) :
 FocalDialog::~FocalDialog() {
 	delete ui;
 }
+void FocalDialog::accept() {
+	Lens &lens = project->lens;
+	lens.focalLength = ui->focalLength->value();
+	lens.pixelSizeX = ui->ccdWidth->value()/lens.width;
+	lens.pixelSizeY = ui->ccdHeight->value()/lens.height;
+	lens.principalOffsetX = ui->principalOffsetX->value();
+	lens.principalOffsetY = ui->principalOffsetY->value();
+	lens.k1 = ui->k1->value();
+	lens.k1 = ui->k2->value();
+	lens.p1 = ui->p1->value();
+	lens.p1 = ui->p1->value();
+}
 
 void FocalDialog::setAsReal() {
 	project->lens.focal35equivalent = false;

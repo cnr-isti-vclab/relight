@@ -17,7 +17,7 @@ HEADERS += \
 
 win32:INCLUDEPATH +=  ../external/eigen-3.4.0/
 
-#unix:INCLUDEPATH += /usr/include/eigen3
+unix:INCLUDEPATH += /usr/include/eigen3
 unix:INCLUDEPATH += ../external/eigen-3.4.0/
 unix:LIBS += -lgomp #-liomp5
 unix:QMAKE_CXXFLAGS += -fopenmp
