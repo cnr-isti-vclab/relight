@@ -42,12 +42,10 @@ if(NOT Eigen3_FOUND)
 	set(EIGEN3_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/eigen-3.3.9)
 endif()
 
-
 if(MSVC)
 	set(JPEGTURBO_HOME ${CMAKE_CURRENT_SOURCE_DIR}/external/libjpeg-turbo-2.0.6)
 	set(JPEG_INCLUDE_DIR ${JPEGTURBO_HOME}/include)
-	set(JPEG_LIBRARIES ${JPEGTURBO_HOME}/lib/jpeg.lib)
-	
+	set(JPEG_LIBRARIES ${JPEGTURBO_HOME}/lib/jpeg.lib)	
 else()
 	find_package (JPEG REQUIRED)
 endif()

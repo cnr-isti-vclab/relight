@@ -169,6 +169,9 @@ void MainWindow::clear() {
 
 
 void MainWindow::newProject() {
+	if(!checkBeforeClosingProject())
+		return;
+
 	QString lastDir = settings->value("LastDir", QDir::homePath()).toString();
 	QString dir = QFileDialog::getExistingDirectory(this, "Choose picture folder", lastDir);
 	if(dir.isNull()) return;
@@ -213,6 +216,9 @@ void MainWindow::newProject() {
 }
 
 void MainWindow::openProject() {
+	if(!checkBeforeClosingProject())
+		return;
+
 	QString lastDir = settings->value("LastDir", QDir::homePath()).toString();
 
 	QString filename = QFileDialog::getOpenFileName(this, "Select a project", lastDir, "*.relight");
@@ -603,6 +609,7 @@ void MainWindow::newMeasure() {
 	ui->markerList->addItem(marker);
 	ui->markerList->setSelected(marker);
 	connect(marker, SIGNAL(removed()), this, SLOT(removeMeasure()));
+	connect(marker, SIGNAL(valueChanged()), this, SLOT(measureChanged()));
 	marker->startMeasure();
 }
 
@@ -644,6 +651,11 @@ void MainWindow::removeMeasure() {
 	delete marker;
 }
 
+void MainWindow::measureChanged() {
+	project.computePixelSize();
+
+}
+
 void MainWindow::removeAlign() {
 	auto marker = dynamic_cast<AlignMarker *>(QObject::sender());
 	project.aligns.erase(std::remove(project.aligns.begin(), project.aligns.end(), marker->align), project.aligns.end());
@@ -669,6 +681,7 @@ void MainWindow::setupMeasures() {
 	for(auto m: project.measures) {
 		auto marker = new MeasureMarker(m, ui->graphicsView, ui->markerList);
 		connect(marker, SIGNAL(removed()), this, SLOT(removeMeasure()));
+		connect(marker, SIGNAL(valueChanged()), this, SLOT(measureChanged()));
 		ui->markerList->addItem(marker);
 	}
 }
@@ -798,17 +811,23 @@ int MainWindow::detectHighlight(int n) {
 	}
 
 
-	for(auto sphere: project.spheres)
+	for(auto sphere: project.spheres) {
 		if(sphere->fitted) {
 			sphere->findHighlight(img, n);
 		}
-
+	}
 	return 1;
 }
 
+bool MainWindow::checkBeforeClosingProject() {
+	if(project.images.size() == 0)
+		return true;
+	int res = QMessageBox::question(this, "Closing current project.", "Are you sure?");
+	return res == QMessageBox::Yes;
+}
+
 void MainWindow::quit() {
-	int res = QMessageBox::question(this, "Closing relight.", "Sure?");
-	if(res == QMessageBox::Yes)
+	if(checkBeforeClosingProject())
 		exit(0);
 }
 

@@ -109,6 +109,7 @@ void MeasureMarker::askMeasure() {
 		return;
 
 	measure->length = length;
+	emit valueChanged();
 
 	if(!length) {
 	} else {

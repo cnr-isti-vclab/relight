@@ -49,6 +49,8 @@ protected:
 #else
 	void enterEvent(QEvent* event) override;
 #endif
+
+	void leaveEvent(QEvent* event) override;
 };
 
 

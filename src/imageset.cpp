@@ -230,7 +230,6 @@ bool ImageSet::initImages(const char *_path) {
 }
 
 
-
 void ImageSet::crop(int _left, int _top, int _width, int _height) {
 	left = _left;
 	top = _top;

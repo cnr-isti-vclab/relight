@@ -10,23 +10,27 @@ on:
         default: 'YYYY.MM'
 
 env:
-  QT_VERSION: 6.6.0
+  QT_VERSION: '6.6.*'
 
 jobs:
   update_rl_version:
     name: Update RELIGHT_VERSION
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Update Relight version
       run : |
         echo ${{ github.event.inputs.version }} | tr -d '\n'> RELIGHT_VERSION
     - name: commit RELIGHT_VERSION change
-      uses: stefanzweifel/git-auto-commit-action@v4
+      uses: EndBug/add-and-commit@v9
       with:
-        commit_message: Set Relight version to ${{ github.event.inputs.version }}
+        committer_name: GitHub Actions
+        committer_email: actions@github.com
+        message: Set Relight version to ${{ github.event.inputs.version }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   relight_build:
     needs: [update_rl_version]
@@ -36,7 +40,7 @@ jobs:
       matrix:
         os: ['ubuntu-20.04', 'macos-latest', 'windows-latest']
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
         ref: master
@@ -55,21 +59,14 @@ jobs:
         Set-Content -Path certificate\certificate.txt -Value '${{ secrets.WIN_CERTIFICATE }}'
         certutil -decode certificate\certificate.txt certificate\certificate.pfx
     - name: Install Qt
-      if: matrix.os != 'macos-latest'
-      uses: jurplel/install-qt-action@v3
+      uses: jurplel/install-qt-action@v4
       with:
-        cache: true
+        cache: 'true'
         version: ${{ env.QT_VERSION }}
     - name: Install dependencies
-      if: matrix.os != 'macos-latest'
       shell: bash
       run: |
         bash build_scripts/${{ runner.os }}/0_setup_env.sh --dont_install_qt
-    - name: Install dependencies
-      if: matrix.os == 'macos-latest'
-      shell: bash
-      run: |
-        bash build_scripts/${{ runner.os }}/0_setup_env.sh
     - name: Ccache
       uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -83,12 +80,12 @@ jobs:
       run: |
         bash build_scripts/${{ runner.os }}/2_deploy.sh --cert_pssw='${{ secrets.WIN_CERTIFICATE_PSSW }}' --cert_id='${{ secrets.MACOS_CERT_ID }}' --notarization_user='${{ secrets.MACOS_NOTARIZATION_USER }}' --notarization_team='${{ secrets.MACOS_NOTARIZATION_TEAM_ID }}' --notarization_pssw='${{ secrets.MACOS_NOTARIZATION_PSSW }}'
     - name: Upload RelightLab Portable
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: RelightLab_${{ runner.os }}_portable
         path: install/
     - name: Upload RelightLab Packages
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: RelightLab_${{ runner.os }}_packages
         path: packages/RelightLab*
@@ -102,12 +99,12 @@ jobs:
 
     #Download Linux Packages
     - name: Download Linux ZIP
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: RelightLab_Linux_portable
         path: relightlab_linux_portable
     - name: Download Linux AppImage
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: RelightLab_Linux_packages
         path: relightlab_linux_appimage
@@ -122,6 +119,7 @@ jobs:
       id: envs
       shell: bash
       run: |
+        sudo apt-get install -y mesa-common-dev libglu1-mesa-dev freeglut3-dev
         #get version of relightlab
         IFS=' ' #space delimiter
         STR_VERSION=$(relightlab_linux_portable/usr/bin/relight --version)
@@ -136,12 +134,12 @@ jobs:
 
     #Download MacOS Package
     - name: Download MacOS DMG
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: RelightLab_macOS_packages
         path: relightlab_macos_dmg
     - name: Download MacOS Portable
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: RelightLab_macOS_portable
         path: relightlab_macos_portable
@@ -159,12 +157,12 @@ jobs:
 
     #Download Windows Packages
     - name: Download Windows ZIP
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: RelightLab_Windows_portable
         path: relightlab_windows_portable
 #    - name: Download Windows Installer
-#      uses: actions/download-artifact@v3
+#      uses: actions/download-artifact@v4
 #      with:
 #        name: RelightLab_Windows_packages
 #        path: relightlab_windows_installer
@@ -175,13 +173,12 @@ jobs:
         cd ..
 
     #Create release and upload
-    - uses: "marvinpinto/action-automatic-releases@6273874b61ebc8c71f1a61b2d98e234cf389b303"
+    - uses: "ncipollo/release-action@v1"
       with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        automatic_release_tag: "RelightLab-${{steps.envs.outputs.rl_version}}"
-        prerelease: false #${{ github.event.inputs.release_candidate }}
-        title: "RelightLab-${{steps.envs.outputs.rl_version}}"
-        files: |
+        token: "${{ secrets.GITHUB_TOKEN }}"
+        tag: "RelightLab-${{steps.envs.outputs.rl_version}}"
+        name: "RelightLab-${{steps.envs.outputs.rl_version}}"
+        artifacts: |
           RelightLab${{steps.envs.outputs.rl_version}}-linux.tar.gz
           relightlab_linux_appimage/RelightLab${{steps.envs.outputs.rl_version}}-linux.AppImage
           RelightLab${{steps.envs.outputs.rl_version}}-macos.tar.gz

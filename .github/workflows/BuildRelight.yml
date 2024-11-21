@@ -4,7 +4,7 @@ on:
   [push, pull_request]
 
 env:
-  QT_VERSION: 6.6.0
+  QT_VERSION: '6.6.*'
   MAC_CERT: ${{secrets.MACOS_CERT_ID}}
   WIN_CERT: ${{secrets.WIN_CERTIFICATE}}
 
@@ -17,7 +17,7 @@ jobs:
       matrix:
         os: ['ubuntu-20.04', 'macos-latest', 'windows-latest']
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Setup MSVC
@@ -35,21 +35,14 @@ jobs:
         Set-Content -Path certificate\certificate.txt -Value '${{ secrets.WIN_CERTIFICATE }}'
         certutil -decode certificate\certificate.txt certificate\certificate.pfx
     - name: Install Qt
-      if: matrix.os != 'macos-latest'
-      uses: jurplel/install-qt-action@v3
+      uses: jurplel/install-qt-action@v4
       with:
-        cache: true
+        cache: 'true'
         version: ${{ env.QT_VERSION }}
     - name: Install dependencies
-      if: matrix.os != 'macos-latest'
       shell: bash
       run: |
         bash build_scripts/${{ runner.os }}/0_setup_env.sh --dont_install_qt
-    - name: Install dependencies
-      if: matrix.os == 'macos-latest'
-      shell: bash
-      run: |
-        bash build_scripts/${{ runner.os }}/0_setup_env.sh
     - name: Ccache
       uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -63,13 +56,13 @@ jobs:
       run: |
         bash build_scripts/${{ runner.os }}/2_deploy.sh --cert_pssw='${{ secrets.WIN_CERTIFICATE_PSSW }}' --cert_id='${{ secrets.MACOS_CERT_ID }}'
     - name: Upload RelightLab Portable
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: RelightLab_${{ runner.os }}_portable
         path: install/
     - name: Upload RelightLab Packages
       if: runner.os != 'Windows'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: RelightLab_${{ runner.os }}_packages
         path: packages/RelightLab*

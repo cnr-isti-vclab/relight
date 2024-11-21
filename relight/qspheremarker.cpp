@@ -90,6 +90,7 @@ void SphereMarker::init() {
 	QPointF c = sphere->center;
 	double R = double(sphere->radius);
 	double r = double(sphere->smallradius);
+
 	if(sphere->ellipse) {
 		circle->setRect(c.x() - sphere->eWidth, c.y() - sphere->eHeight, 2*sphere->eWidth, 2*sphere->eHeight);
 		circle->setTransformOriginPoint(c);
@@ -97,6 +98,10 @@ void SphereMarker::init() {
 		QPointF dir = { cos(sphere->eAngle*M_PI/180), sin(sphere->eAngle*M_PI/180) };
 		axis[0]->setLine(c.x(), c.y(), c.x() + dir.x()*sphere->eWidth, c.y() + dir.y()*sphere->eWidth);
 		axis[1]->setLine(c.x(), c.y(), c.x() - dir.y()*sphere->eHeight, c.y() + dir.x()*sphere->eHeight);
+
+		double r1 = r * sphere->eHeight/sphere->eWidth;
+		smallcircle->setTransformOriginPoint(c);
+		smallcircle->setRotation(sphere->eAngle);
 	} else {
 		circle->setRect(c.x()-R, c.y()-R, 2*R, 2*R);
 	}
