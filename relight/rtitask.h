@@ -2,8 +2,8 @@
 #define RTITASK_H
 
 #include "task.h"
-#include "../src/project.h"
 #include "../src/rti.h"
+#include "../src/project.h"
 #include <QMutex>
 
 class RtiBuilder;
