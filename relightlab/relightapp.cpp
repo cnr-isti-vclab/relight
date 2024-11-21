@@ -7,11 +7,16 @@
 
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QTemporaryDir>
 #include <QStyleFactory>
 #include <QStyle>
 #include <QAction>
 #include <QMessageBox>
 #include <QProxyStyle>
+#include <QSystemTrayIcon>
+
+#include <iostream>
+using namespace std;
 
 
 
@@ -70,6 +75,7 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 
 
 	ProcessQueue &queue = ProcessQueue::instance();
+	connect(&queue, SIGNAL(finished(QString title, QString msg)), this, SLOT(notify(QString title, QString msg)));
 	queue.start();
 
 
@@ -98,6 +104,23 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	addAction("show_list", "Show list", "list", "");
 	addAction("show_grid", "Show grid", "grid", "");
 
+
+	if(QSystemTrayIcon::isSystemTrayAvailable()) {
+		QIcon icon(":/relight.png");
+		systemTray = new QSystemTrayIcon(icon, this);
+		systemTray->show();
+		systemTray->setVisible(false);
+	}
+
+
+}
+void RelightApp::notify(const QString &title, const QString &msg, int ms) {
+	if(!systemTray)
+		return;
+	QIcon icon(":/relight.png");
+	systemTray->setVisible(true);
+	systemTray->showMessage(title, msg, icon, 5000);
+	systemTray->setVisible(false);
 
 }
 
@@ -280,7 +303,7 @@ void RelightApp::saveProjectAs() {
 void RelightApp::loadThumbnails() {
 	//if loading thumbails kill thumbnails
 	if(loader) {
-		loader->terminate();
+		loader->stop();
 		loader->wait();
 		delete loader;
 		loader = nullptr;
@@ -305,7 +328,7 @@ void RelightApp::loadThumbnails() {
 	connect(loader, SIGNAL(update(int)), this, SIGNAL(updateThumbnail(int)));
 	QObject::connect(this, &QCoreApplication::aboutToQuit, [&]() {
 		if(loader) {
-			loader->terminate();
+			loader->stop();
 			loader->wait();
 			delete loader;
 			loader = nullptr;
@@ -385,6 +408,8 @@ ThumbailLoader::ThumbailLoader(QStringList &images) {
 void ThumbailLoader::run() {
 	int count = 1;
 	for(QString path: paths) {
+		if(stop_request)
+			break;
 		QImage img(path);
 		if(img.isNull()) //TODO shoudl actually warn!
 			break;

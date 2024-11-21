@@ -16,6 +16,8 @@
 * better info on queue items.
 * if scale exists don't overwrite imageWith with dome scale.
 * remove relight_vector and jus use eigen.
+* settings: notifications
+* allow resize for normals integration (it's too slow...).
 
 ## Long term new features
 
@@ -27,15 +29,17 @@
 * PBR texture creation
 * shadow removal
 * 3d lights on sphere should take into account sphere posistion/
+* allow rescaling when building rti and normals
+
 
 ## Bugs
 
 * dark theme on windows conflicts
-* Find highlights crashes if quitting early.
 * Accessing the crop tab before loading the project causes it to stop working.
 * ptm and hsh number of planes cannot be changed.
 * check for invalid inner circle when creating a sphere.
-* open folder in queue
+* test pause/stop/play in queue.
+* deal with #lights  different from #images
 
 ## Small Bugs
 

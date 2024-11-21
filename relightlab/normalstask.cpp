@@ -33,6 +33,7 @@ void NormalsTask::initFromProject(Project &project) {
 	imageset.images = project.getImages();
 	imageset.initImages(project.dir.absolutePath().toStdString().c_str());
 	imageset.initLightsFromDome(project.dome);
+	assert(imageset.lights.size() == imageset.images.size());
 	QRect &crop = project.crop;
 	if(!crop.isNull()) {
 		imageset.crop(crop.left(), crop.top(), crop.width(), crop.height());
@@ -74,7 +75,9 @@ void NormalsTask::run() {
 		pool.queue(run);
 		pool.waitForSpace();
 
-		progressed("Computing normals...", ((float)i / imageset.height) * 100);
+		bool proceed = progressed("Computing normals...", ((float)i / imageset.height) * 100);
+		if(!proceed)
+			return;
 	}
 
 	// Wait for the end of all the threads
@@ -123,7 +126,9 @@ void NormalsTask::run() {
 	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
 	if(exportPly) {
-		progressed("Integrating normals...", 0);
+		bool proceed = progressed("Integrating normals...", 0);
+		if(!proceed)
+			return;
 		std::vector<float> z;
 		bni_integrate(callback, imageset.width, imageset.height, normals, z, bni_k);
 		if(z.size() == 0) {
@@ -196,13 +201,12 @@ void NormalsWorker::solveL2()
 
 		mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
 		mNormals.col(0).normalize();
-		Eigen::Vector3f n;
-		n[0] = float(mNormals.col(0)[0]);
-		n[1] = float(mNormals.col(0)[1]);
-		n[2] = float(mNormals.col(0)[2]);
-		m_Normals[normalIdx+0] = n[0];
-		m_Normals[normalIdx+1] = n[1];
-		m_Normals[normalIdx+2] = n[2];
+		assert(!isnan(mNormals.col(0)[0]));
+		assert(!isnan(mNormals.col(0)[1]));
+		assert(!isnan(mNormals.col(0)[2]));
+		m_Normals[normalIdx+0] = float(mNormals.col(0)[0]);
+		m_Normals[normalIdx+1] = float(mNormals.col(0)[1]);
+		m_Normals[normalIdx+2] = float(mNormals.col(0)[2]);
 
 		normalIdx += 3;
 	}

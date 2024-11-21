@@ -81,7 +81,8 @@ void NormalsTask::run()
 		pool.queue(run);
 		pool.waitForSpace();
 
-		progressed("Computing normals...", ((float)i / imageSet.height) * 100);
+		if(!progressed("Computing normals...", ((float)i / imageSet.height) * 100))
+			break;
 	}
 
 	// Wait for the end of all the threads
@@ -122,7 +123,8 @@ void NormalsTask::run()
 	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
 	if(exportSurface || exportDepthmap) {
-		progressed("Integrating normals...", 0);
+		if(!progressed("Integrating normals...", 0))
+			return;
 		std::vector<float> z;
 		bni_integrate(callback, imageSet.width, imageSet.height, normals, z, exportK);
 		if(z.size() == 0) {
@@ -132,7 +134,8 @@ void NormalsTask::run()
 		}
 		QString filename = output.left(output.size() -4) + ".ply";
 
-		progressed("Saving surface...", 99);
+		if(!progressed("Saving surface...", 99))
+			return;
 		if(exportSurface)
 			savePly(filename, imageSet.width, imageSet.height, z);
 

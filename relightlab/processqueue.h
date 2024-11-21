@@ -48,6 +48,7 @@ public:
 public slots:
 
 signals:
+	void finished(QString title, QString msg);
 	void update(); //a task was added, or started, or finished.
 
 protected:

@@ -174,11 +174,13 @@ HEADERS += \
     normalsframe.h \
     normalstask.h \
     ../src/bni_normal_integration.h \
-    scaleframe.h
+    scaleframe.h \
+    ../src/flatnormals.h
 
 FORMS +=
 
 DISTFILES += \
-    roadmap.md
+    roadmap.md \
+    ../build_scripts/relight.png
 
 

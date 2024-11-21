@@ -84,5 +84,6 @@
         <file>icons/dark/scalable/chevrons-up.svg</file>
         <file>icons/light/scalable/chevrons-down.svg</file>
         <file>icons/light/scalable/chevrons-up.svg</file>
+		<file alias="relight.png">../build_scripts/relight.png</file>
     </qresource>
 </RCC>
