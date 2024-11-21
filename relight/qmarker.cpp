@@ -72,3 +72,9 @@ void Marker::enterEvent(QEvent *event) {
 #endif
 	QWidget::enterEvent(event);
 }
+
+void Marker::leaveEvent(QEvent* event) {
+	QWidget::leaveEvent(event);
+}
+
+

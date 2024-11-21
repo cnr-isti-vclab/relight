@@ -26,6 +26,7 @@ public:
 
 public slots:
 	void setImage(const QPixmap& _image);
+	void setBackgroundColor(const QColor& _backgroundColor);
 	void setCroppingRectBorderColor(const QColor& _borderColor);
 
 	void setProportion(const QSizeF& _proportion);

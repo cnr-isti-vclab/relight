@@ -93,6 +93,7 @@ public:
 
 	bool init();
 	int detectHighlight(int n);
+	bool checkBeforeClosingProject();
 
 public slots:
 	void enableActions();
@@ -140,6 +141,7 @@ public slots:
 	void setupMeasures();
 	void newMeasure();
 	void removeMeasure();
+	void measureChanged();
 
 	void setupAligns();
 	void newAlign();

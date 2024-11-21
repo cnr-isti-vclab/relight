@@ -26,6 +26,11 @@ void ImageCropper::setImage(const QPixmap& _image) {
 	update();
 }
 
+void ImageCropper::setBackgroundColor(const QColor& _backgroundColor) {
+	backgroundColor = _backgroundColor;
+	update();
+}
+
 void ImageCropper::setCroppingRectBorderColor(const QColor& _borderColor) {
 	croppingRectBorderColor = _borderColor;
 	update();

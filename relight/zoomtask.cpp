@@ -143,19 +143,3 @@ void ZoomTask::deletePrevFiles(QDir folder)
         }
     }
 }
-
-bool ZoomTask::progressed(QString str, int percent)
-{
-    if(status == PAUSED) {
-        mutex.lock();
-        mutex.unlock();
-    }
-    if(status == STOPPED)
-        return false;
-
-
-	emit progress(str, percent);
-    if(status == STOPPED)
-        return false;
-    return true;
-}
