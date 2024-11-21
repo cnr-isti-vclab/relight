@@ -52,7 +52,6 @@ public:
     virtual void run() override;
 
 public slots:
-
 	void relight(bool commonMinMax = false, bool saveLegacy = false); //use true for .rti and .ptm
 	void toRTI();
     void fromRTI();

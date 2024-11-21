@@ -20,7 +20,8 @@ struct Line {
 
 class Sphere {
 public:
-	//TODO: initalize these values somewhere.
+
+	QSize image_size;  //size of the picture, needed for properly fitting reflections.
 	QPointF center;      //center of circle or ellipse, in pixel coordinates of the image
 
 	/* Circle parameters */

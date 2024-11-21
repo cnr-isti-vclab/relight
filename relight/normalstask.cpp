@@ -18,6 +18,8 @@
 #include <iostream>
 #include <time.h>
 
+using namespace std;
+
 //////////////////////////////////////////////////////// NORMALS TASK //////////////////////////////////////////////////////////
 /// \brief NormalsTask: Takes care of creating the normals from the images given in a folder (inputFolder) and saves the file
 ///         in the outputFolder. After applying the crop described in the QRect passed as an argument to the constructor,
@@ -25,46 +27,43 @@
 ///         That NormalsWorker fills a vector with the colors of the normals in that line.
 ///
 
-void NormalsTask::run()
-{
+void NormalsTask::run() {
 	status = RUNNING;
-	// ImageSet initialization
-	ImageSet imageSet(input_folder.toStdString().c_str());
-
 	QList<QVariant> qlights = (*this)["lights"].value.toList();
 	std::vector<Vector3f> lights(qlights.size()/3);
 	for(int i = 0; i < qlights.size(); i+= 3)
 		for(int k = 0; k < 3; k++)
 			lights[i/3][k] = qlights[i+k].toDouble();
+
+
+	ImageSet imageSet;
+	imageSet.images = (*this)["images"].value.toStringList();
 	imageSet.lights = lights;
+	imageSet.light3d = project->dome.lightConfiguration != Dome::DIRECTIONAL;
+	imageSet.image_width_mm = project->dome.imageWidth;
+	imageSet.dome_radius = project->dome.domeDiameter/2.0;
+	imageSet.vertical_offset = project->dome.verticalOffset;
+	imageSet.initLights();
+	imageSet.initImages(input_folder.toStdString().c_str());
+
+	if(hasParameter("crop")) {
+		QRect rect = (*this)["crop"].value.toRect();
+		imageSet.crop(rect.left(), rect.top(), rect.width(), rect.height());
+	}
 
 	// Normals vector
 
-
 	int start = clock();
-	// Init
 	imageSet.setCallback(nullptr);
-
-	// Set the crop
-	if(!m_Crop.isValid()) {
-		m_Crop.setLeft(0);
-		m_Crop.setWidth(imageSet.width);
-		m_Crop.setTop(0);
-		m_Crop.setHeight(imageSet.height);
-	}
-	imageSet.crop(m_Crop.left(), m_Crop.top(), m_Crop.width(), m_Crop.height());
 
 	std::vector<float> normals(imageSet.width * imageSet.height * 3);
 
-	// Thread pool used to handle the processors
 	RelightThreadPool pool;
-	// Line in the imageset to be processed
 	PixelArray line;
 
 	pool.start(QThread::idealThreadCount());
 
-	for (int i=0; i<imageSet.height; i++)
-	{
+	for (int i=0; i<imageSet.height; i++) {
 		// Read a line
 		imageSet.readLine(line);
 
@@ -72,12 +71,13 @@ void NormalsTask::run()
 		uint32_t idx = i * 3 * imageSet.width;
 		float* data = &normals[idx];
 
-		std::function<void(void)> run = [this, &line, &imageSet, data](void)->void {
-			NormalsWorker task(solver, line, data, imageSet.lights);
-			return task.run();
+		NormalsWorker *task = new NormalsWorker(solver, i, line, data, imageSet);
+
+		std::function<void(void)> run = [this, task](void)->void {
+			task->run();
+			delete task;
 		};
 
-		// Launch the task
 		pool.queue(run);
 		pool.waitForSpace();
 
@@ -118,6 +118,12 @@ void NormalsTask::run()
 
 	// Save the final result
 	QImage img(normalmap.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
+    // Set spatial resolution if known. Need to convert as pixelSize stored in mm/pixel whereas QImage requires pixels/m
+    if( pixelSize > 0 ) {
+        int dotsPerMeter = round(1000.0/pixelSize);
+        img.setDotsPerMeterX(dotsPerMeter);
+        img.setDotsPerMeterY(dotsPerMeter);
+    }
 	img.save(output);
 
 	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
@@ -148,21 +154,6 @@ void NormalsTask::run()
 	qDebug() << "Time: " << ((double)(end - start) / CLOCKS_PER_SEC);
 	progressed("Finished", 100);
 }
-/*
-bool NormalsTask::progressed(QString str, int percent)
-{
-	if(status == PAUSED) {
-		mutex.lock();  //mutex should be already locked. this talls the
-		mutex.unlock();
-	}
-	if(status == STOPPED)
-		return false;
-
-	emit progress(str, percent);
-	if(status == STOPPED)
-		return false;
-	return true;
-}*/
 
 /**
  *   \brief NormalsWorker: generates the normals for a given line in the image set, depending on the method specified when
@@ -195,12 +186,15 @@ void NormalsWorker::run()
 
 void NormalsWorker::solveL2()
 {
+	std::vector<Vector3f> &m_Lights = m_Imageset.lights;
+	std::vector<Vector3f> &m_Lights3d = m_Imageset.lights3d;
 	// Pixel data
 	Eigen::MatrixXd mLights(m_Lights.size(), 3);
 	Eigen::MatrixXd mPixel(m_Lights.size(), 1);
 	Eigen::MatrixXd mNormals;
 
 	unsigned int normalIdx = 0;
+
 
 	// Fill the lights matrix
 	for (size_t i = 0; i < m_Lights.size(); i++)
@@ -214,12 +208,19 @@ void NormalsWorker::solveL2()
 		for (size_t m = 0; m < m_Lights.size(); m++)
 			mPixel(m, 0) = m_Row[p][m].mean();
 
-		// Solve
+		if(m_Imageset.light3d) {
+			for(size_t i = 0; i < m_Lights3d.size(); i++) {
+				Vector3f light = m_Imageset.relativeLight(m_Lights3d[i], p, m_Imageset.height - row);
+				light.normalize();
+				for (int j = 0; j < 3; j++)
+					mLights(i, j) = light[j];
+			}
+		}
+
+
+
 		mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
 		mNormals.col(0).normalize();
-
-		// Save
-
 		m_Normals[normalIdx+0] = mNormals(0, 0);
 		m_Normals[normalIdx+1] = mNormals(1, 0);
 		m_Normals[normalIdx+2] = mNormals(2, 0);
