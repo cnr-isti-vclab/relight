@@ -97,6 +97,7 @@ void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 	builder->imageset.dome_radius = project.dome.domeDiameter/2.0;
 	builder->imageset.vertical_offset = project.dome.verticalOffset;
 	builder->imageset.initLights();
+
 	builder->imageset.initImages(input_folder.toStdString().c_str());
 
 
