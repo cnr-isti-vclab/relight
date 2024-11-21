@@ -100,13 +100,14 @@ void SphereMarker::init() {
 		axis[1]->setLine(c.x(), c.y(), c.x() - dir.y()*sphere->eHeight, c.y() + dir.x()*sphere->eHeight);
 
 		double r1 = r * sphere->eHeight/sphere->eWidth;
+		smallcircle->setRect(c.x() - r, c.y() - r1, 2*r, 2*r1);
 		smallcircle->setTransformOriginPoint(c);
 		smallcircle->setRotation(sphere->eAngle);
 	} else {
 		circle->setRect(c.x()-R, c.y()-R, 2*R, 2*R);
+		smallcircle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
 	}
 	circle->setVisible(true);
-	smallcircle->setRect(c.x()-r, c.y()-r, 2*r, 2*r);
 	smallcircle->setVisible(true);
 }
 

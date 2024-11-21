@@ -176,13 +176,17 @@ void RtiExport::createNormals() {
 
 	double flat_radius = ui->flat_fourier_radius->value();
 
-
 	ProcessQueue &queue = ProcessQueue::instance();
-	NormalsTask *task = new NormalsTask(path, output, crop, solver, flat_method);
+	
+	NormalsTask *task = new NormalsTask(project, solver, flat_method);
+	task->input_folder = path;
+	task->output = output;
 	task->exportSurface = ui->export_surface->isChecked();
-//	task->exportDepthmap = ui->export_depthmap->isChecked();
+	task->exportDepthmap = ui->export_depthmap->isChecked();
 	task->exportK = ui->discontinuity->value();
 	task->flat_radius = ui->flat_fourier_radius->value();
+
+	task->addParameter("images", Parameter::STRINGLIST, images);
 
 	QList<QVariant> slights;
 	for(auto light: lights)

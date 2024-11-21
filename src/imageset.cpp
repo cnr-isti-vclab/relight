@@ -321,6 +321,7 @@ void ImageSet::readLine(PixelArray &pixels) {
 	if(light3d) {
 		assert(lights3d.size() == size_t(images.size()));
 		for(Pixel &pixel: pixels) {
+			assert(pixel.size() == lights3d.size());
 			for(size_t i = 0; i < lights3d.size(); i++) {
 				Vector3f l = relativeLight(lights3d[i], pixel.x, pixel.y);
 				float r = l.squaredNorm();

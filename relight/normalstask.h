@@ -9,6 +9,8 @@
 #include <QMutex>
 #include <QRect>
 #include "../src/relight_vector.h"
+#include "../src/imageset.h"
+#include "../src/project.h"
 #include "task.h"
 #include <QRunnable>
 
@@ -27,21 +29,23 @@ public:
 	QRect m_Crop;
 	float pixelSize = 0.0f;
 
-	NormalsTask(QString& inputPath, QString& outputPath, QRect crop, NormalSolver _solver, FlatMethod _flatMethod) :
-		solver(_solver), flatMethod(_flatMethod), m_Crop(crop) {
-		input_folder = inputPath;
-		output = outputPath;
+	NormalsTask(Project *_project, NormalSolver _solver, FlatMethod _flatMethod) :
+		project(_project), solver(_solver), flatMethod(_flatMethod) {
 	}
 	virtual ~NormalsTask(){};
 	virtual void run() override;
+
+private:
+	//TODO remove dependency on project!
+	Project *project;
 
 };
 
 class NormalsWorker
 {
 public:
-	NormalsWorker(NormalSolver _solver, PixelArray& toProcess, float* normals, std::vector<Vector3f> lights) :
-		solver(_solver), m_Row(toProcess), m_Normals(normals), m_Lights(lights){}
+	NormalsWorker(NormalSolver _solver, int _row, PixelArray& toProcess, float* normals, ImageSet &imageset) :
+		 solver(_solver), row(_row), m_Row(toProcess), m_Normals(normals), m_Imageset(imageset){}
 
 	void run();
 private:
@@ -50,9 +54,9 @@ private:
 	void solveRPCA();
 private:
 	NormalSolver solver;
+	int row;
 	PixelArray m_Row;
-
 	float* m_Normals;
-	std::vector<Vector3f> m_Lights;
+	ImageSet &m_Imageset;
 	QMutex m_Mutex;
 };

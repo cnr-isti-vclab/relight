@@ -67,7 +67,6 @@ SOURCES += main.cpp \
     task.cpp \
     rtitask.cpp \
     settingsdialog.cpp \
-    ../relight-cli/convert_rti.cpp \
     domecalibration.cpp \
     ../src/lp.cpp \
     qmarkerlist.cpp \
