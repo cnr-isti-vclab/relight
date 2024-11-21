@@ -10,7 +10,6 @@ using namespace std;
 ProcessQueue::~ProcessQueue() {
 	if(!isRunning())
 		return;
-
 	{
 		QMutexLocker locker(&lock);
 		stopped = true;
@@ -62,6 +61,12 @@ void ProcessQueue::startNewProcess() {
 	emit update();
 }
 
+bool ProcessQueue::hasTasks() {
+	QMutexLocker locker(&lock);
+	if(task) return true;
+	return queue.size() > 0;
+}
+
 void ProcessQueue::addTask(Task *a, bool paused) {
 	if(paused)
 		a->pause();
@@ -71,13 +76,25 @@ void ProcessQueue::addTask(Task *a, bool paused) {
 	emit update();
 }
 
+void ProcessQueue::removeTask(Task *a) {
+	QMutexLocker locker(&lock);
+	int index = queue.indexOf(a);
+	if(index < 0)
+		return;
+
+	Task *task = queue.takeAt(index);
+	emit update();
+}
+
 void ProcessQueue::removeTask(int id) {
 	QMutexLocker locker(&lock);
 	int index = indexOf(id);
-	if(index >= 0) {
+	if(index < 0)
+		return;
+		
 		Task *task = queue.takeAt(index);
-		delete task;
-	}
+	//processqueue is never the owner!
+	//delete task;
 	emit update();
 }
 

@@ -92,8 +92,13 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionRotate_all_right, SIGNAL(triggered()), this, SLOT(rotateAllRight()));
 
 	QObject::connect(new QShortcut(QKeySequence(Qt::Key_Escape), this), &QShortcut::activated, this, &MainWindow::esc);
+#if QT_VERSION >= 0x060000
 	QObject::connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Z), this), &QShortcut::activated, this, &MainWindow::undo);
 	QObject::connect(new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z), this), &QShortcut::activated, this, &MainWindow::redo);
+#else
+	QObject::connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Z), this), &QShortcut::activated, this, &MainWindow::undo);
+	QObject::connect(new QShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_Z), this), &QShortcut::activated, this, &MainWindow::redo);
+#endif
 
     // Calibration menu
 	connect(ui->actionLens_parameters, SIGNAL(triggered(bool)), this, SLOT(editLensParameters()));
@@ -865,7 +870,8 @@ void MainWindow::loadLP(QString lp) {
 
 	if(project.size() != filenames.size()) {
 		auto response = QMessageBox::question(this, "Light directions and images",
-            QString("The folder contains %1 images, the .lp file specify %2 images.\n")
+			QString("The folder contains %1 images, the .lp file specify %2 images.\n"
+					"You might have some extraneous images, or just loading the wrong .lp file.")
 					.arg(project.size()).arg(filenames.size()));
 		if(response == QMessageBox::Cancel || response == QMessageBox::No)
 			return;
@@ -895,6 +901,7 @@ void MainWindow::loadLP(QString lp) {
 			project.images[i].direction = directions[i];
 	}
 }
+
 void MainWindow::saveLPs() {
 	int count = 1;
 	QString basename = "sphere";

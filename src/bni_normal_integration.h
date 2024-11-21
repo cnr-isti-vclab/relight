@@ -9,7 +9,7 @@
  * https://github.com/xucao-42/bilateral_normal_integration
 */
 
-void bni_integrate(std::function<bool(std::string s, int n)> progressed,
+void bni_integrate(std::function<bool(QString s, int n)> progressed,
 								  int w, int h, std::vector<float> &normalmap, std::vector<float> &heights,
 								  double k = 2.0,
 								  double tolerance = 1e-5,
@@ -17,7 +17,7 @@ void bni_integrate(std::function<bool(std::string s, int n)> progressed,
 								  int max_iterations = 150,
 								  int max_solver_iterations = 5000);
 
-std::vector<float> bni_pyramid(std::function<bool(std::string s, int n)> progressed,
+std::vector<float> bni_pyramid(std::function<bool(QString s, int n)> progressed,
 								  int &w, int &h, std::vector<float> &normalmap,
 								  double k = 2.0,
 								  double tolerance = 1e-5,
@@ -27,6 +27,7 @@ std::vector<float> bni_pyramid(std::function<bool(std::string s, int n)> progres
 								  int scale = 0);
 
 bool savePly(const QString &filename, int w, int h, std::vector<float> &z);
+bool saveTiff(const QString &filename, int w, int h, std::vector<float> &z);
 bool saveDepthMap(const QString &filename, int w, int h, std::vector<float> &z);
 
 #endif // BNI_NORMAL_INTEGRATION_H

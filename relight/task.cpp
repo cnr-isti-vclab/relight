@@ -110,3 +110,15 @@ void Task::stop() {
     }
     status = STOPPED;
 }
+
+
+bool Task::progressed(QString s, int percent) {
+	emit progress(s, percent);
+	if(status == PAUSED) {
+		mutex.lock();  //mutex should be already locked. this talls the
+		mutex.unlock();
+	}
+	if(status == STOPPED)
+		return false;
+	return true;
+}

@@ -27,7 +27,7 @@
    <item row="0" column="1">
     <widget class="QTabWidget" name="export_frame">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tabWidgetPage1">
       <attribute name="title">
@@ -286,8 +286,8 @@
       <attribute name="title">
        <string>Normals</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
-       <item>
+      <layout class="QGridLayout" name="gridLayout_9">
+       <item row="0" column="0">
         <widget class="QGroupBox" name="groupBox_5">
          <property name="title">
           <string>Solver</string>
@@ -326,7 +326,7 @@
          </layout>
         </widget>
        </item>
-       <item>
+       <item row="1" column="0">
         <widget class="QGroupBox" name="groupBox_6">
          <property name="title">
           <string>3D Surface</string>
@@ -339,14 +339,21 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
+          <item row="1" column="0" colspan="2">
+           <widget class="QCheckBox" name="export_depthmap">
+            <property name="text">
+             <string>Export depth map</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
            <widget class="QLabel" name="label_11">
             <property name="text">
              <string>Discontinuity</string>
             </property>
            </widget>
           </item>
-          <item row="1" column="1">
+          <item row="2" column="1">
            <widget class="QDoubleSpinBox" name="discontinuity">
             <property name="value">
              <double>2.000000000000000</double>
@@ -356,7 +363,44 @@
          </layout>
         </widget>
        </item>
-       <item>
+       <item row="2" column="0">
+        <widget class="QGroupBox" name="groupBox_7">
+         <property name="title">
+          <string>Flatten normals</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_8">
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>Radius (0 - 100%):</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QDoubleSpinBox" name="flat_fourier_radius">
+            <property name="value">
+             <double>20.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" colspan="2">
+           <widget class="QCheckBox" name="flat_radial">
+            <property name="text">
+             <string>Radial</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="2">
+           <widget class="QCheckBox" name="flat_fourier">
+            <property name="text">
+             <string>Fourier</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="3" column="0">
         <widget class="QPushButton" name="crop1">
          <property name="text">
           <string>Crop...</string>
@@ -367,7 +411,7 @@
          </property>
         </widget>
        </item>
-       <item>
+       <item row="4" column="0">
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -380,7 +424,7 @@
          </property>
         </spacer>
        </item>
-       <item>
+       <item row="5" column="0">
         <widget class="QPushButton" name="build_normals">
          <property name="text">
           <string>Build</string>

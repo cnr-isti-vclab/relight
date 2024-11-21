@@ -9,6 +9,8 @@
 #include "bni_normal_integration.h"
 #include <iostream>
 
+#include <tiffio.h>
+
 /* TODO: try this lib:
 https://amgcl.readthedocs.io/en/latest/tutorial/poisson3Db.html
 */
@@ -93,6 +95,64 @@ bool savePly(const QString &filename, int w, int h, std::vector<float> &z) {
 	file.write((const char *)vertices.data(), vertices.size()*4);
 	file.write((const char *)indices.data(), indices.size());
 	file.close();
+	return true;
+}
+
+bool saveTiff(const QString &filename, int w, int h, std::vector<float> &depthmap) {
+	float min = 1e20;
+	float max = -1e20;
+	for(float h: depthmap) {
+		min = std::min(h, min);
+		max = std::max(h, max);
+	}
+
+	uint32 tileWidth = 256;
+	uint32 tileLength = 256;
+
+	TIFF* outTiff = TIFFOpen(filename.toStdString().c_str(), "w");
+	if (!outTiff) {
+
+		return 1;
+	}
+
+	TIFFSetField(outTiff, TIFFTAG_IMAGEWIDTH, w);
+	TIFFSetField(outTiff, TIFFTAG_IMAGELENGTH, h);
+	TIFFSetField(outTiff, TIFFTAG_SAMPLESPERPIXEL, 1);
+	TIFFSetField(outTiff, TIFFTAG_BITSPERSAMPLE, 32);
+	TIFFSetField(outTiff, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
+	TIFFSetField(outTiff, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+	TIFFSetField(outTiff, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK); // Grayscale
+	TIFFSetField(outTiff, TIFFTAG_TILEWIDTH, tileWidth);
+	TIFFSetField(outTiff, TIFFTAG_TILELENGTH, tileLength);
+	TIFFSetField(outTiff, TIFFTAG_COMPRESSION, COMPRESSION_NONE); // No compression
+
+	uint32 numTilesX = (w + tileWidth - 1) / tileWidth;
+	uint32 numTilesY = (h + tileLength - 1) / tileLength;
+
+
+
+	for (uint32_t ty = 0; ty < numTilesY; ty++) {
+		for (uint32_t tx = 0; tx < numTilesX; tx++) {
+			uint32_t tileIndex = TIFFComputeTile(outTiff, tx * tileWidth, ty * tileLength, 0, 0);
+
+			std::vector<float> data(tileWidth * tileLength, 0.0f);
+
+			for(uint32_t dy = 0; dy < tileLength; dy++) {
+				for(uint32_t dx = 0; dx < tileWidth; dx++) {
+					uint32_t x = tx*tileWidth + dx;
+					uint32_t y = ty*tileLength + dy;
+					if(x < w && y < h)
+						data[dx + dy*tileWidth] = depthmap[x + y*w];
+				}
+			}
+			if (TIFFWriteEncodedTile(outTiff, tileIndex, data.data(), data.size() * sizeof(float)) < 0) {
+				TIFFClose(outTiff);
+				return false;
+			}
+		}
+	}
+
+	TIFFClose(outTiff);
 	return true;
 }
 
@@ -182,7 +242,7 @@ public:
 	}
 };
 
-std::vector<float> bni_pyramid(std::function<bool(std::string s, int n)> progressed, int &w, int &h, std::vector<float> &normalmap,
+std::vector<float> bni_pyramid(std::function<bool(QString s, int n)> progressed, int &w, int &h, std::vector<float> &normalmap,
 							   double k,
 							   double tolerance,
 							   double solver_tolerance,
@@ -223,7 +283,7 @@ std::vector<float> bni_pyramid(std::function<bool(std::string s, int n)> progres
 	return result.heights;
 }
 
-void bni_integrate(std::function<bool(std::string s, int n)> progressed, int w, int h, std::vector<float> &normalmap, std::vector<float> &heights,
+void bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int h, std::vector<float> &normalmap, std::vector<float> &heights,
 				   double k,
 				   double tolerance,
 				   double solver_tolerance,
@@ -303,8 +363,8 @@ void bni_integrate(std::function<bool(std::string s, int n)> progressed, int w, 
 	W.setFromTriplets(triples.begin(), triples.end());
 
 	Eigen::VectorXd z = Eigen::VectorXd::Zero(n);
-	for(int i = 0; i < n; i++)
-		z(i) = heights[i];
+	//for(int i = 0; i < n; i++)
+	//	z(i) = heights[i];
 
 	Eigen::MatrixXd tmp = A*z - b;
 	double energy = (tmp.transpose() * W * tmp)(0);
@@ -364,11 +424,14 @@ void bni_integrate(std::function<bool(std::string s, int n)> progressed, int w, 
 
 		double relative_energy = fabs(energy - energy_old) / energy_old;
 		double total_progress = fabs(energy - start_energy) / start_energy;
-		if(progressed)
-			progressed("Integrating normals...", 100*(log(relative_energy) - log(tolerance))/(log(total_progress) - log(tolerance)));
+		if(progressed) {
+			bool proceed = progressed("Integrating normals...", 100*(log(relative_energy) - log(tolerance))/(log(total_progress) - log(tolerance)));
+			if(!proceed) break;
+		}
 		if(relative_energy < tolerance)
 			break;
 	}
+	heights.resize(w*h);
 	for(int i = 0; i < w*h; i++)
 		heights[i] = z(i);
 	//memcpy(&depthmap[0], z.data(), n*8);

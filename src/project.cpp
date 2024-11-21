@@ -4,6 +4,7 @@
 #include "measure.h"
 #include "align.h"
 #include "white.h"
+#include "lp.h"
 
 #include <QFile>
 #include <QTextStream>
@@ -28,6 +29,34 @@ Project::~Project() {
 	clear();
 }
 
+void Project::operator=(const Project& project) {
+	clear();
+	version = project.version;
+	dir = project.dir;
+	imgsize = project.imgsize;
+	lens = project.lens;
+	dome = project.dome;
+	images = project.images;
+	missing = project.missing;
+	for(Sphere *s: project.spheres)
+		spheres.push_back(new Sphere(*s));
+	for(Measure *m: project.measures)
+		measures.push_back(new Measure(*m));
+	for(Align *a: project.aligns)
+		aligns.push_back(new Align(*a));
+	for(White *w: project.whites)
+		whites.push_back(new White(*w));
+
+	crop = project.crop;
+	pixelSize = project.pixelSize;
+	name = project.name;
+	authors = project.authors;
+	platform = project.platform;
+	created = project.created;
+	lastUpdated = project.lastUpdated;
+	needs_saving = project.needs_saving;
+}
+
 void Project::clear() {
 	dir = QDir();
 	imgsize = QSize();
@@ -43,6 +72,7 @@ void Project::clear() {
 	measures.clear();
 
 	crop = QRect();
+	needs_saving = false;
 }
 
 bool Project::setDir(QDir folder) {
@@ -53,6 +83,7 @@ bool Project::setDir(QDir folder) {
 	}
 	dir = folder;
 	QDir::setCurrent(dir.path());
+	needs_saving = true;
 	return true;
 }
 
@@ -141,9 +172,10 @@ bool Project::scanDir() {
 		images[i].valid &= (lens.focal35() == alllens[i].focal35());
 		images[i].skip = !images[i].valid;
 	}
-
+	needs_saving = true;
 	return resolutions.size() == 1 && focals.size() == 1;
 }
+
 double mutualInfo(QImage &a, QImage &b) {
 	uint32_t histogram[256*256];
 	memset(histogram, 0, 256*256*4);
@@ -194,6 +226,7 @@ void Project::rotateImages(bool clockwise) {
         QImage rotated = source.transformed(rotate);
         rotated.save(image.filename, "jpg", 100);
     }
+	needs_saving = true;
 }
 
 void Project::rotateImages() {
@@ -233,7 +266,6 @@ void Project::rotateImages() {
 		image.size = imgsize;
 		image.valid = true;
 		image.skip = false;
-		cout << "Right: " << right_mutual << " Left: " << left_mutual << endl;
 	}
 }
 
@@ -280,16 +312,7 @@ void Project::load(QString filename) {
 		images.push_back(image);
 	}
 
-	for(size_t i = 0; i < images.size(); i++) {
-		Image &image = images[i];
-		QFileInfo imginfo(image.filename);
-		if(!imginfo.exists()) {
-			missing.push_back(int(i));
-			//throw QString("Could not find the image: " + image.filename) + " in folder: " + dir.absolutePath();
-			continue;
-		}
-	}
-
+	checkMissingImages();
 	checkImages();
 
 	if(obj.contains("crop")) {
@@ -330,8 +353,21 @@ void Project::load(QString filename) {
 			whites.push_back(_white);
 		}
 	}
+	needs_saving = false;
 }
 
+void Project::checkMissingImages() {
+	missing.clear();
+	for(size_t i = 0; i < images.size(); i++) {
+		Image &image = images[i];
+		QFileInfo imginfo(image.filename);
+		if(!imginfo.exists()) {
+			missing.push_back(int(i));
+			//throw QString("Could not find the image: " + image.filename) + " in folder: " + dir.absolutePath();
+			continue;
+		}
+	}
+}
 void Project::checkImages() {
 		for(Image &image:images) {
 		QImageReader reader(image.filename);
@@ -421,12 +457,19 @@ void Project::save(QString filename) {
 
 
 	QFile file(filename);
-	file.open(QFile::WriteOnly | QFile::Truncate);
+	bool opened  = file.open(QFile::WriteOnly | QFile::Truncate);
+	if(!opened) {
+		QString error = file.errorString();
+		throw error;
+	}
 	file.write(doc.toJson());
+
+	needs_saving = false;
 }
 
 Measure *Project::newMeasure() {
 	auto m = new Measure();
+	needs_saving = true;
 	measures.push_back(m);
 	return m;
 }
@@ -439,22 +482,26 @@ void Project::computePixelSize() {
 			count++;
 		}
 	pixelSize /= count;
-	dome.imageWidth = pixelSize * imgsize.width()/10.0; //pixel size in mm, imageWIdth in cm (ugh).
+	needs_saving = true;
+	dome.imageWidth = pixelSize*imgsize.width();
 }
 
 Sphere *Project::newSphere() {
 	auto s = new Sphere(images.size());
 	spheres.push_back(s);
+	needs_saving = true;
 	return s;
 }
 Align *Project::newAlign() {
 	auto s = new Align(images.size());
 	aligns.push_back(s);
+	needs_saving = true;
 	return s;
 }
 White *Project::newWhite() {
 	auto s = new White();
 	whites.push_back(s);
+	needs_saving = true;
 	return s;
 }
 
@@ -488,6 +535,45 @@ void Project::saveLP(QString filename, std::vector<Vector3f> &directions) {
 	for(size_t i = 0; i < directions.size(); i++) {
 		Vector3f d = directions[i];
 		str << "v " << d[0] << " " << d[1] << " " << d[2] << "\n";
+	}
+}
+
+
+void Project::loadLP(QString filename) {
+	vector<QString> filenames;
+	std::vector<Vector3f> directions;
+
+
+	parseLP(filename, directions, filenames); //might throw an error.
+
+	if(size() != filenames.size()) {
+		throw QString("The folder contains %1 images, the .lp file specify %2 images.\n"
+					  "You might have some extraneous images, or just loading the wrong .lp file.")
+				.arg(size()).arg(filenames.size());
+	}
+
+	vector<Vector3f> ordered_dir(directions.size());
+	bool success = true;
+	for(size_t i = 0; i < filenames.size(); i++) {
+		QString &s = filenames[i];
+		int pos = indexOf(s);
+		if(pos == -1) {
+			success = false;
+			break;
+		}
+		ordered_dir[pos] = directions[i];
+	}
+
+	if(success) {
+		for(size_t i = 0; i < size(); i++)
+			images[i].direction = ordered_dir[i];
+	} else {
+		auto response = QMessageBox::question(nullptr, "Light directions and images",
+			"Filenames in .lp do not match with images in the .lp directory. Do you want to just use the filename order?");
+		if(response == QMessageBox::Cancel || response == QMessageBox::No)
+			return;
+		for(size_t i = 0; i < size(); i++)
+			images[i].direction = directions[i];
 	}
 }
 
@@ -569,4 +655,5 @@ void  Project::computeDirections() {
 		if(weights[i] > 0)
 			images[i].direction = directions[i]/weights[i];
 	}
+	needs_saving = true;
 }

@@ -11,6 +11,8 @@
 #include <QImage>
 #include <QRunnable>
 #include <QThreadPool>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QtConcurrent>
 #include <QFuture>
 
@@ -70,7 +72,7 @@ static Vector3f fromOcta(int x, int y, int resolution) {
 RtiBuilder::RtiBuilder() {}
 RtiBuilder::~RtiBuilder() {}
 
-bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(std::string stage, int percent)> *_callback) {
+bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(QString stage, int percent)> *_callback) {
 	
 	callback = _callback;
 	try {
@@ -96,7 +98,7 @@ bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(std::st
 }
 
 
-bool RtiBuilder::initFromProject(const std::string &_filename, std::function<bool(std::string stage, int percent)> *_callback) {
+bool RtiBuilder::initFromProject(const std::string &_filename, std::function<bool(QString stage, int percent)> *_callback) {
 	callback = _callback;
 	QString filename (_filename.c_str());
 	try {
@@ -151,7 +153,7 @@ void RtiBuilder::savePixel(Color3f *p, int side, const QString &file) {
 }
 */
 
-bool RtiBuilder::init(std::function<bool(std::string stage, int percent)> *_callback) {
+bool RtiBuilder::init(std::function<bool(QString stage, int percent)> *_callback) {
 	if((type == PTM || type == HSH || type == SH || type == H) && colorspace == MRGB) {
 		error = "PTM and HSH do not support MRGB";
 		return false;
@@ -1729,7 +1731,7 @@ void RtiBuilder::buildResampleMap(std::vector<Vector3f> &lights, std::vector<std
 	remap.resize(ndimensions);
 	for(uint32_t y = 0; y < resolution; y++) {
 		if(callback) {
-			bool keep_going = (*callback)(std::string("Resampling light directions"), 100*y/resolution);
+			bool keep_going = (*callback)("Resampling light directions", 100*y/resolution);
 			if(!keep_going) {
 				throw std::string("Cancelled.");
 			}

@@ -9,7 +9,7 @@
 #include <QMutex>
 #include <QTemporaryFile>
 
-#include "script.h"
+#include "task.h"
 
 #include <iostream>
 using namespace std;
@@ -33,7 +33,9 @@ public:
 		return single;
 	}
 
+	bool hasTasks();
 	void addTask(Task *a, bool paused = false);
+	void removeTask(Task *a);
 	void removeTask(int id);
 	void pushFront(int id);
 	void pushBack(int id);
