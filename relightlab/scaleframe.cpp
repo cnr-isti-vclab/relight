@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QDoubleSpinBox>
 #include <QLabel>
+#include <QMessageBox>
 #include <QGraphicsPathItem>
 #include <QGraphicsLineItem>
 #include <QGraphicsTextItem>

@@ -10,6 +10,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QComboBox>
+#include <QMessageBox>
 #include <QFileDialog>
 
 #include <QDebug>

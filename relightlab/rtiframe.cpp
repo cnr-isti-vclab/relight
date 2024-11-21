@@ -20,6 +20,7 @@
 #include <QLineEdit>
 #include <QSpinBox>
 #include <QButtonGroup>
+#include <QMessageBox>
 #include <QLabel>
 #include <QScrollArea>
 #include <QFileDialog>

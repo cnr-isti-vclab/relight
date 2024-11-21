@@ -4,10 +4,6 @@
 #include "../src/project.h"
 
 #include <QApplication>
-#include <QTemporaryDir>
-#include <QMessageBox>
-#include <QFile>
-#include <QImage>
 #include <QList>
 #include <QSettings>
 #include <QVariant>
@@ -24,6 +20,7 @@
 class Preferences;
 class MainWindow;
 class Task;
+class QSystemTrayIcon;
 
 /* customize standard icons */
 class ProxyStyle : public QProxyStyle {
@@ -42,12 +39,15 @@ class ThumbailLoader: public QThread {
 	Q_OBJECT
 public:
 	ThumbailLoader(QStringList &images);
+	void stop() { stop_request = true; }
 signals:
 	void update(int); //something has been loaded.
+
 protected:
 	virtual void run();
 
 	QStringList paths;
+	bool stop_request = false;
 };
 
 class RelightApp: public QApplication {
@@ -59,6 +59,7 @@ public:
 	QMap<QString, QAction *> actions;
 	MainWindow *mainwindow = nullptr;
 	Preferences *preferences = nullptr;
+	QSystemTrayIcon *systemTray = nullptr;
 
 	RelightApp(int &argc, char **argv);
 	virtual ~RelightApp() {}
@@ -74,7 +75,7 @@ public slots:
 
 	void openPreferences();
 	void setDarkTheme(bool on);
-
+	void notify(const QString &title, const QString &msg, int ms = 4000);
 signals:
 	void updateThumbnail(int pos);
 

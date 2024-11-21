@@ -82,13 +82,18 @@ void NormalsImage::flattenRadial(double binSize) {
 			n[1] = normals[index+1];
 			n[2] = normals[index+2];
 
+			assert(!isnan(n[0]));
+			assert(!isnan(n[1]));
+			assert(!isnan(n[2]));
+
 			if(n[2] < z_threshold) continue;
 
 			Vector3d radial;
 			radial[0] = x - w/2.0;
 			radial[1] = h/2.0 - y;
-			radial[2] = 0;
+			radial[2] = 1.0; //TODO Was zero!
 			double distance = radial.norm();
+			assert(distance > 0);
 			radial.normalize();
 
 			double outward = radial.dot(n);

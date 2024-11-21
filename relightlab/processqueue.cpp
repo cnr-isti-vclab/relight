@@ -1,4 +1,6 @@
 #include "processqueue.h"
+#include "relightapp.h"
+
 #include <QProcess>
 #include <QDir>
 #include <QSettings>
@@ -42,6 +44,10 @@ void ProcessQueue::run() {
 		task->wait(100);
 
 		if(task->isFinished()) {
+			QString msg = task->status == Task::DONE ? "Successfully finished" : task->error;
+			msg = task->output + "\n" + msg;
+			emit finished(task->label, msg);
+
 			past.push_back(task);
 			task = nullptr;
 			emit update();

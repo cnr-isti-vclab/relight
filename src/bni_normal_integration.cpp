@@ -424,8 +424,10 @@ void bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int 
 
 		double relative_energy = fabs(energy - energy_old) / energy_old;
 		double total_progress = fabs(energy - start_energy) / start_energy;
-		if(progressed)
-			progressed("Integrating normals...", 100*(log(relative_energy) - log(tolerance))/(log(total_progress) - log(tolerance)));
+		if(progressed) {
+			bool proceed = progressed("Integrating normals...", 100*(log(relative_energy) - log(tolerance))/(log(total_progress) - log(tolerance)));
+			if(!proceed) break;
+		}
 		if(relative_energy < tolerance)
 			break;
 	}

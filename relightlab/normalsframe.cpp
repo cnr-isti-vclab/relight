@@ -2,15 +2,19 @@
 #include "normalstask.h"
 #include "relightapp.h"
 #include "processqueue.h"
+#include "helpbutton.h"
 #include "../src/project.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QCheckBox>
+#include <QSpinBox>
+#include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QRadioButton>
 #include <QButtonGroup>
 #include <QFileDialog>
+#include <QMessageBox>
 
 NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);
@@ -25,11 +29,30 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 	jpg->setChecked(true);
 
 	content->addSpacing(30);
-	content->addWidget(new QLabel("<h2>Export integrated surface</h2>"));
+	content->addWidget(new QLabel("<h2>Export 3D surface</h2>"));
 
 	content->addSpacing(30);
+	QHBoxLayout *discontinuity_layout = new QHBoxLayout;
+	content->addLayout(discontinuity_layout);
+
+	discontinuity_layout->addWidget(new HelpLabel("Disconitnuity parameter:", "normals/disconituity"));
+	discontinuity_layout->addWidget(discontinuity = new QDoubleSpinBox);
+	discontinuity->setRange(0.0, 4.0);
+	discontinuity->setValue(2.0);
+
 	content->addWidget(tif = new QCheckBox("TIF: depthmap"));
 	content->addWidget(ply = new QCheckBox("PLY: mesh"));
+
+	content->addWidget(new QLabel("<h2>Flatten normals</h2>"));
+	content->addWidget(radial = new QCheckBox("Radial"));
+	content->addWidget(fourier = new QCheckBox("Fourier"));
+	QHBoxLayout *fourier_layout = new QHBoxLayout;
+	content->addLayout(fourier_layout);
+
+	fourier_layout->addWidget(new HelpLabel("Fourier image percent: ", "normals/flatten"));
+	fourier_layout->addWidget(fourier_radius = new QSpinBox);
+	fourier_radius->setRange(0, 100);
+
 
 	QPushButton *save = new QPushButton("Export");
 	content->addWidget(save);
@@ -59,6 +82,14 @@ void NormalsFrame::save() {
 		task->exportPly = true;
 	if(tif->isChecked())
 		task->exportTiff = true;
+
+	if(radial->isChecked())
+		task->flatMethod = RADIAL;
+
+	if(fourier->isChecked()) {
+		task->flatMethod = FOURIER;
+		task->m_FlatRadius = fourier_radius->value()/100.0f;
+	}
 
 	task->initFromProject(project);
 
