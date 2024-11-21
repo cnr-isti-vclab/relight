@@ -481,6 +481,10 @@ void Project::computePixelSize() {
 			pixelSize += m->pixelSize();
 			count++;
 		}
+
+	if(count == 0)
+		return;
+
 	pixelSize /= count;
 	needs_saving = true;
 	dome.imageWidth = pixelSize*imgsize.width();

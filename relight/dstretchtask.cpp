@@ -30,18 +30,3 @@ void DStretchTask::run()
 	dstretchImage(input_folder, output, minSamples, callback);
 	status = DONE;
 }
-
-bool DStretchTask::progressed(QString str, int percent)
-{
-	if(status == PAUSED) {
-		mutex.lock();
-		mutex.unlock();
-	}
-	if(status == STOPPED)
-		return false;
-
-	emit progress(str, percent);
-	if(status == STOPPED)
-		return false;
-	return true;
-}
