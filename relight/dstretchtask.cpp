@@ -14,20 +14,19 @@
 
 void DStretchTask::run()
 {
-    uint32_t minSamples;
+	uint32_t minSamples;
 	std::function<bool(QString s, int n)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
-    status = RUNNING;
+	status = RUNNING;
 
-    // Get sample rate
-    if (hasParameter("min_samples"))
-        minSamples = (*this)["min_samples"].value.toInt();
-    else {
-        error = "Unspecified sample rate";
-        status = FAILED;
-        return;
-    }
+	// Get sample rate
+	if (hasParameter("min_samples"))
+		minSamples = (*this)["min_samples"].value.toInt();
+	else {
+		error = "Unspecified sample rate";
+		status = FAILED;
+		return;
+	}
 
-    dstretchImage(input_folder, output, minSamples, callback);
-    status = DONE;
+	dstretchImage(input_folder, output, minSamples, callback);
+	status = DONE;
 }
-

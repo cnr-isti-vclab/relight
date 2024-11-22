@@ -161,7 +161,6 @@ $ cmake .
 $ make
 ```
 
-
 ### MacOS
 
 Installed tools: 

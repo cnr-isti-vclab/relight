@@ -1,0 +1,67 @@
+/* QWidget { font-size: 11pt; } */
+#home { padding-top:30px }
+
+QPushButton.large, QToolButton.large  {
+    text-align: left;
+	padding-left:12px;
+	padding-top:8px;
+	padding-bottom:8px;
+	max-width:200px;
+}
+QComboBox.large {
+    padding-left:12px;
+	padding-top:8px;
+	padding-bottom:8px;
+}
+
+QPushButton:checked {
+    background-color: rgba(42, 130, 218, 255);
+}
+
+QCommandLinkButton {
+    font-size:15px;
+}
+
+
+QLabel.recent {
+    font-size:9pt;
+	padding:4px;
+}
+
+QLabel.recent:hover{
+    background-color: palette(mid);
+}
+
+
+QSpinBox, QDoubleSpinBox {
+    border: 1px solid palette(dark);
+	border-radius: 3px;
+	padding: 2px;
+	height:20px;
+	min-width:100px;
+}
+
+QSpinBox::up-button, QSpinBox::down-button, QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
+    width: 16px;
+	height: 16px;
+	padding:4px;
+
+	subcontrol-origin: border;
+	subcontrol-position: top right;
+	border: 1px solid palette(dark);
+	border-radius: 3px;
+
+    background-color: palette(button);
+}
+
+QSpinBox::up-button, QDoubleSpinBox::up-button {
+    image: url(:/icons/dark/scalable/plus.svg);
+}
+
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+    image: url(:/icons/dark/scalable/minus.svg);
+	margin-right: 24px;
+	border-radius:0px;
+}
+
+`

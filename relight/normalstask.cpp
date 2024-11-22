@@ -51,7 +51,7 @@ void NormalsTask::run() {
 		imageSet.crop(rect.left(), rect.top(), rect.width(), rect.height());
 	}
 
-// Normals vector
+	// Normals vector
 
 	int start = clock();
 	imageSet.setCallback(nullptr);
@@ -64,12 +64,12 @@ void NormalsTask::run() {
 	pool.start(QThread::idealThreadCount());
 
 	for (int i=0; i<imageSet.height; i++) {
-        // Read a line
-        imageSet.readLine(line);
+		// Read a line
+		imageSet.readLine(line);
 
-        // Create the normal task and get the run lambda
-        uint32_t idx = i * 3 * imageSet.width;
-        float* data = &normals[idx];
+		// Create the normal task and get the run lambda
+		uint32_t idx = i * 3 * imageSet.width;
+		float* data = &normals[idx];
 
 		NormalsWorker *task = new NormalsWorker(solver, i, line, data, imageSet);
 
@@ -85,8 +85,8 @@ void NormalsTask::run() {
 			break;
 	}
 
-    // Wait for the end of all the threads
-    pool.finish();
+	// Wait for the end of all the threads
+	pool.finish();
 
 	if(flatMethod != NONE) {
 		//TODO: do we really need double precision?
@@ -112,19 +112,19 @@ void NormalsTask::run() {
 	}
 
 
-    std::vector<uint8_t> normalmap(imageSet.width * imageSet.height * 3);
-    for(size_t i = 0; i < normals.size(); i++)
-        normalmap[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
+	std::vector<uint8_t> normalmap(imageSet.width * imageSet.height * 3);
+	for(size_t i = 0; i < normals.size(); i++)
+		normalmap[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
 
-    // Save the final result
-    QImage img(normalmap.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
+	// Save the final result
+	QImage img(normalmap.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
     // Set spatial resolution if known. Need to convert as pixelSize stored in mm/pixel whereas QImage requires pixels/m
     if( pixelSize > 0 ) {
         int dotsPerMeter = round(1000.0/pixelSize);
         img.setDotsPerMeterX(dotsPerMeter);
         img.setDotsPerMeterY(dotsPerMeter);
     }
-    img.save(output);
+	img.save(output);
 
 	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
@@ -133,26 +133,26 @@ void NormalsTask::run() {
 			return;
 		std::vector<float> z;
 		bni_integrate(callback, imageSet.width, imageSet.height, normals, z, exportK);
-        if(z.size() == 0) {
-            error = "Failed to integrate normals";
-            status = FAILED;
-            return;
-        }
-        QString filename = output.left(output.size() -4) + ".ply";
+		if(z.size() == 0) {
+			error = "Failed to integrate normals";
+			status = FAILED;
+			return;
+		}
+		QString filename = output.left(output.size() -4) + ".ply";
 
-	if(!progressed("Saving surface...", 99))
-		return;
-	if(exportSurface)
-        savePly(filename, imageSet.width, imageSet.height, z);
+		if(!progressed("Saving surface...", 99))
+			return;
+		if(exportSurface)
+			savePly(filename, imageSet.width, imageSet.height, z);
 
-	filename = output.left(output.size() -4) + ".tif";
+		filename = output.left(output.size() -4) + ".tif";
 
-	if(exportDepthmap)
+		if(exportDepthmap)
 			saveTiff(filename + ".tif", imageSet.width, imageSet.height, z);
-    }
-    int end = clock();
-    qDebug() << "Time: " << ((double)(end - start) / CLOCKS_PER_SEC);
-    progressed("Finished", 100);
+	}
+	int end = clock();
+	qDebug() << "Time: " << ((double)(end - start) / CLOCKS_PER_SEC);
+	progressed("Finished", 100);
 }
 
 /**
@@ -163,24 +163,24 @@ void NormalsTask::run() {
 
 void NormalsWorker::run()
 {
-    switch (solver)
-    {
-    // L2 solver
-    case NORMALS_L2:
-        solveL2();
-        break;
-    // SBL solver
-    case NORMALS_SBL:
-        solveSBL();
-        break;
-    // RPCA solver
-    case NORMALS_RPCA:
-        solveRPCA();
-        break;
-    }
+	switch (solver)
+	{
+	// L2 solver
+	case NORMALS_L2:
+		solveL2();
+		break;
+		// SBL solver
+	case NORMALS_SBL:
+		solveSBL();
+		break;
+		// RPCA solver
+	case NORMALS_RPCA:
+		solveRPCA();
+		break;
+	}
 
-    // Deallocate line (TODO: useless?)
-    std::vector<Pixel>().swap(m_Row);
+	// Deallocate line (TODO: useless?)
+	std::vector<Pixel>().swap(m_Row);
 }
 
 
@@ -188,23 +188,23 @@ void NormalsWorker::solveL2()
 {
 	std::vector<Vector3f> &m_Lights = m_Imageset.lights;
 	std::vector<Vector3f> &m_Lights3d = m_Imageset.lights3d;
-    // Pixel data
+	// Pixel data
 	Eigen::MatrixXd mLights(m_Lights.size(), 3);
 	Eigen::MatrixXd mPixel(m_Lights.size(), 1);
-    Eigen::MatrixXd mNormals;
+	Eigen::MatrixXd mNormals;
 
-    unsigned int normalIdx = 0;
+	unsigned int normalIdx = 0;
 
 
-    // Fill the lights matrix
+	// Fill the lights matrix
 	for (size_t i = 0; i < m_Lights.size(); i++)
 		for (int j = 0; j < 3; j++)
-            mLights(i, j) = m_Lights[i][j];
+			mLights(i, j) = m_Lights[i][j];
 
-    // For each pixel in the line solve the system
-    //TODO do it in a single pass, it's faster.
+	// For each pixel in the line solve the system
+	//TODO do it in a single pass, it's faster.
 	for (size_t p = 0; p < m_Row.size(); p++) {
-        // Fill the pixel vector
+		// Fill the pixel vector
 		for (size_t m = 0; m < m_Lights.size(); m++)
 			mPixel(m, 0) = m_Row[p][m].mean();
 
@@ -221,9 +221,10 @@ void NormalsWorker::solveL2()
 
 		mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
 		mNormals.col(0).normalize();
-		m_Normals[normalIdx+0] = mNormals(0,0);
-		m_Normals[normalIdx+1] = mNormals(1,0);
-		m_Normals[normalIdx+2] = mNormals(2,0);
+		m_Normals[normalIdx+0] = mNormals(0, 0);
+		m_Normals[normalIdx+1] = mNormals(1, 0);
+		m_Normals[normalIdx+2] = mNormals(2, 0);
+
 		normalIdx += 3;
 	}
 }

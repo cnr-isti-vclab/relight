@@ -137,15 +137,16 @@ int main(int argc, char *argv[]) {
                 cerr << "Invalid resolution (must be 0 or >= 2 && <= 20)!\n" << endl;
                 return 1;
             }
-	    break;
-	}
-	case 'P':
-	    builder.pixelSize = atof(optarg);
-	    if(builder.pixelSize <= 0) {
-	        cerr << "Invalid parameter pixelSize (-P): " << optarg << endl;
-		return 1;
-	    }
-            break;
+		break;
+		}
+		case 'P':
+			builder.pixelSize = atof(optarg);
+			if(builder.pixelSize <= 0) {
+				cerr << "Invalid parameter pixelSize (-P): " << optarg << endl;
+				return 1;
+			}
+
+		break;
         case 'b': {
             string b = optarg;
             if(b == "rbf") {
