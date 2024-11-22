@@ -52,6 +52,7 @@ void FocalDialog::accept() {
 	lens.k1 = ui->k2->value();
 	lens.p1 = ui->p1->value();
 	lens.p1 = ui->p1->value();
+	QDialog::accept();
 }
 
 void FocalDialog::setAsReal() {
