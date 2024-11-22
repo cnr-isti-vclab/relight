@@ -57,13 +57,6 @@ if(NOT TIFF_FOUND)
 endif()
 
 
-find_package (TIFF)
-if(NOT TIFF_FOUND)
-	add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/external/tiff-4.7.0)
-	add_library(TIFF::TIFF ALIAS tiff)
-endif()
-
-
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/RELIGHT_VERSION")
 	# version is read from RELIGHT_VERSION file
 	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/RELIGHT_VERSION" RELIGHT_VERSION)
