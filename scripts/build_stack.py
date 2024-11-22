@@ -91,6 +91,7 @@ if args.verbose:
 
 # Save as a stacked tiled pyramid TIFF using SubIFDs
 if dpi == 0.0:
+
   stack.tiffsave( args.output, pyramid=True, subifd=True,
                   compression=args.compression, Q=args.quality,
                   tile=True, tile_width=args.tile, tile_height=args.tile )

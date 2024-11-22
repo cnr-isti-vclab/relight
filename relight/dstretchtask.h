@@ -8,9 +8,9 @@ class DStretchTask : public Task
 {
 public:
 	DStretchTask(QObject *parent) : Task(parent) {}
+
 	virtual ~DStretchTask(){}
 	virtual void run() override;
-
 };
 
 #endif // DSTRETCHTASK_H

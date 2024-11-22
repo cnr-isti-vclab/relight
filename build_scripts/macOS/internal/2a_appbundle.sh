@@ -4,7 +4,7 @@ SCRIPTS_PATH="$(dirname "$(realpath "$0")")"/..
 
 INSTALL_PATH=$SCRIPTS_PATH/../../install
 QT_DIR=""
-APPNAME="relight.app"
+APPNAME="relightlab.app"
 
 #checking for parameters
 for i in "$@"

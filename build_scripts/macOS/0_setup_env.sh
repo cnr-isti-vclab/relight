@@ -23,7 +23,8 @@ esac
 done
 
 
-brew install coreutils cmake ninja libomp eigen libjpeg
+brew install coreutils cmake ninja libomp eigen libjpeg libtiff
+
 npm install -g appdmg
 
 if [ "$DONT_INSTALL_QT" = false ] ; then

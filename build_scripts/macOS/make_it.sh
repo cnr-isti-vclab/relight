@@ -1,5 +1,5 @@
 #!/bin/bash
-# This is a script shell for compiling and deploying ReLight in a MacOS environment.
+# This is a script shell for compiling and deploying RelightLab in a MacOS environment.
 #
 # Requires a Qt environment which is set-up properly, and an accessible
 # cmake binary.

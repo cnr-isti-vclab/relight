@@ -72,7 +72,7 @@ void Sphere::ellipseFit() {
 
 
 	Eigen::VectorXd min_pos_eig = eigenvector.col(0);
-	for(int i = 0; i<3 ; i++){
+	for(int i = 0; i<3; i++) {
 		if(cond(i) > 0){
 			min_pos_eig = eigenvector.col(i);
 			break;
@@ -120,7 +120,7 @@ bool Sphere::fit() {
 	if(border.size() >= 5) {
 		ellipseFit();
 		if(isnan(eWidth)) {
-		ellipse = false;
+			ellipse = false;
 		} else {
 			radius = eWidth;
 			assert(eWidth >= eHeight);
@@ -227,8 +227,8 @@ void Sphere::findHighlight(QImage img, int n, bool update_positions) {
 					if(!inEllipse(cx, cy, eWidth, eHeight, eAngle))
 						continue;
 				} else {
-				float d = sqrt(cx*cx + cy*cy);
-				if(d > smallradius) continue;
+					float d = sqrt(cx*cx + cy*cy);
+					if(d > smallradius) continue;
 				}
 
 				QRgb c = img.pixel(x, y);

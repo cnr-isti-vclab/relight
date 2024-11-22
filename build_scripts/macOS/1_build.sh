@@ -1,9 +1,9 @@
 #!/bin/bash
-# this is a script shell for compiling relight in a MacOS environment.
+# this is a script shell for compiling relightlab in a MacOS environment.
 # Requires a Qt environment which is set-up properly, and an accessible
 # cmake binary.
 #
-# Without given arguments, relight will be built in the meshlab/src/build
+# Without given arguments, relightlab will be built in the relightlab/src/build
 # directory, and installed in $BUILD_PATH/../install.
 #
 # You can give as argument the BUILD_PATH and the INSTALL_PATH in the
