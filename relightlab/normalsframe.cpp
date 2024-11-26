@@ -28,6 +28,17 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 	group->addButton(png);
 	jpg->setChecked(true);
 
+	content->addWidget(new QLabel("<h2>Flatten normals</h2>"));
+	content->addWidget(radial = new QCheckBox("Radial"));
+	content->addWidget(fourier = new QCheckBox("Fourier"));
+	QHBoxLayout *fourier_layout = new QHBoxLayout;
+	content->addLayout(fourier_layout);
+
+	fourier_layout->addWidget(new HelpLabel("Fourier image percent: ", "normals/flatten"));
+	fourier_layout->addWidget(fourier_radius = new QSpinBox);
+	fourier_radius->setRange(0, 100);
+
+
 	content->addSpacing(30);
 	content->addWidget(new QLabel("<h2>Export 3D surface</h2>"));
 
@@ -43,15 +54,6 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 	content->addWidget(tif = new QCheckBox("TIF: depthmap"));
 	content->addWidget(ply = new QCheckBox("PLY: mesh"));
 
-	content->addWidget(new QLabel("<h2>Flatten normals</h2>"));
-	content->addWidget(radial = new QCheckBox("Radial"));
-	content->addWidget(fourier = new QCheckBox("Fourier"));
-	QHBoxLayout *fourier_layout = new QHBoxLayout;
-	content->addLayout(fourier_layout);
-
-	fourier_layout->addWidget(new HelpLabel("Fourier image percent: ", "normals/flatten"));
-	fourier_layout->addWidget(fourier_radius = new QSpinBox);
-	fourier_radius->setRange(0, 100);
 
 
 	QPushButton *save = new QPushButton("Export");

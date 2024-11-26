@@ -26,6 +26,7 @@ HomeFrame::HomeFrame() {
 
 	// Left column
 	QVBoxLayout *leftColumnLayout = new QVBoxLayout();
+	leftColumnLayout->setSizeConstraint(QVBoxLayout::SetMinimumSize);
 
 	// Title label
 	QLabel *titleLabel = new QLabel("<h1>RelightLab</h1>");
@@ -44,8 +45,12 @@ HomeFrame::HomeFrame() {
 	leftColumnLayout->addWidget(recentLabel);
 
 
-	for(QString filename: recentProjects()) {
-		QLabel *label = new QLabel("<a href='" + filename + "'>" + filename + "</a>");
+	for(QString path: recentProjects()) {
+		QFileInfo fileInfo(path);
+		QString filename = fileInfo.fileName();
+		QString directory = fileInfo.absolutePath();
+
+		QLabel *label = new QLabel("<p style='line-height:150%'><a href='" + path + "'>" + filename + "</a><br/><span style='color:grey; font-size:80%;'>" + directory + "</span></p>");
 		label->setProperty("class", "recent");
 		label->setWordWrap(true);
 		leftColumnLayout->addWidget(label);
