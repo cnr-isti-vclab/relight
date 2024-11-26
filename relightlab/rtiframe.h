@@ -4,28 +4,51 @@
 #include <QFrame>
 //TODO we should separate RTI definitions from actual implementation (materials etc).
 #include "../src/rti.h"
+#include "rtitask.h"
 
-class RtiPlan;
-class RtiCard;
 class RtiRecents;
 class RtiParameters;
 
+class RtiBasisRow;
+class RtiColorSpaceRow;
+class RtiPlanesRow;
+class RtiFormatRow;
+class RtiQualityRow;
+class RtiWebLayoutRow;
+class RtiExportRow;
+
 class RtiFrame: public QFrame {
 	Q_OBJECT
-
 public:
 	RtiFrame(QWidget *parent = nullptr);
-	void init();
+
+	RtiParameters parameters;
 
 public slots:
 	void exportRti();
 
+	void basisChanged();
+	void colorspaceChanged();
+	void nplanesChanged();
+	void formatChanged();
+	void qualityChanged();
+	void layoutChanged();
+
 signals:
 	void processStarted();
 
+
 private:
 	RtiRecents *recents;
-	RtiPlan *rti_plan;
+
+	RtiBasisRow *basis_row = nullptr;
+	RtiColorSpaceRow *colorspace_row = nullptr;
+	RtiPlanesRow *planes_row = nullptr;
+	RtiFormatRow *format_row = nullptr;
+	RtiQualityRow *quality_row = nullptr;
+	RtiWebLayoutRow *layout_row = nullptr;
+	RtiExportRow *export_row = nullptr;
 };
+
 
 #endif // RTIFRAME_H

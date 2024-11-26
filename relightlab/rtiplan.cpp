@@ -2,6 +2,7 @@
 #include "rtiframe.h"
 #include "qlabelbutton.h"
 #include "helpbutton.h"
+#include "relightapp.h"
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -10,6 +11,8 @@
 #include <QLineEdit>
 #include <QButtonGroup>
 #include <QComboBox>
+#include <QLineEdit>
+#include <QFileDialog>
 
 RtiPlanRow::RtiPlanRow(RtiParameters &param, QFrame *parent): QFrame(parent), parameters(param) {
 	QHBoxLayout *layout = new QHBoxLayout(this);
@@ -70,11 +73,11 @@ void RtiBasisRow::setBasis(Rti::Type basis, bool emitting) {
 	}
 
 	switch(basis) {
-		case Rti::PTM: ptm->setChecked(true); break;
-		case Rti::HSH: hsh->setChecked(true); break;
-		case Rti::RBF: rbf->setChecked(true); break;
-		case Rti::BILINEAR: bln->setChecked(true); break;
-		default: break;
+	case Rti::PTM: ptm->setChecked(true); break;
+	case Rti::HSH: hsh->setChecked(true); break;
+	case Rti::RBF: rbf->setChecked(true); break;
+	case Rti::BILINEAR: bln->setChecked(true); break;
+	default: break;
 	}
 }
 
@@ -123,10 +126,10 @@ void RtiColorSpaceRow::setColorspace(Rti::ColorSpace colorspace, bool emitting) 
 		return;
 	}
 	switch(colorspace) {
-		case Rti::RGB:  rgb->setChecked(true); break;
-		case Rti::LRGB: lrgb->setChecked(true); break;
-		case Rti::MRGB: mrgb->setChecked(true); break;
-		case Rti::YCC:  ycc->setChecked(true); break;
+	case Rti::RGB:  rgb->setChecked(true); break;
+	case Rti::LRGB: lrgb->setChecked(true); break;
+	case Rti::MRGB: mrgb->setChecked(true); break;
+	case Rti::YCC:  ycc->setChecked(true); break;
 	}
 }
 
@@ -142,7 +145,7 @@ RtiPlanesRow::RtiPlanesRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 	nplanesbox->setFixedWidth(100);
 	for(int i = 0; i < 7; i++) {
 		nplanesbox->addItem(QString::number(nimages[i]));
-	}	
+	}
 	connect(nplanesbox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int n) { setNPlanes(nimages[n]*3, true); });
 	buttons->addWidget(nplanesbox);
 
@@ -229,9 +232,9 @@ void RtiFormatRow::setFormat(RtiParameters::Format format, bool emitting) {
 		return;
 	}
 	switch(format) {
-		case RtiParameters::RTI: rti->setChecked(true); break;
-		case RtiParameters::WEB: web->setChecked(true); break;
-		case RtiParameters::IIP: iip->setChecked(true); break;
+	case RtiParameters::RTI: rti->setChecked(true); break;
+	case RtiParameters::WEB: web->setChecked(true); break;
+	case RtiParameters::IIP: iip->setChecked(true); break;
 	}
 
 }
@@ -311,111 +314,70 @@ void RtiWebLayoutRow::setWebLayout(RtiParameters::WebLayout layout, bool emittin
 }
 
 
+RtiExportRow::RtiExportRow(RtiParameters &parameters, QFrame *parent): RtiPlanRow(parameters, parent) {
+	label->label->setText("Directory/File:");
+	label->help->setId("rti/export");
 
-RtiPlan::RtiPlan(QWidget *parent): QFrame(parent) {
-	QVBoxLayout *layout = new QVBoxLayout(this);
-
-	basis_row = new RtiBasisRow(parameters, this);
-	colorspace_row = new RtiColorSpaceRow(parameters, this);
-	planes_row = new RtiPlanesRow(parameters, this);
-	format_row = new RtiFormatRow(parameters, this);
-	quality_row = new RtiQualityRow(parameters, this);
-	layout_row = new RtiWebLayoutRow(parameters, this);
-
-
-	layout->addWidget(basis_row);
-	layout->addWidget(colorspace_row);
-	layout->addWidget(planes_row);
-	layout->addWidget(format_row);
-	layout->addWidget(quality_row);
-	layout->addWidget(layout_row);
-
-	QHBoxLayout *save_row = new QHBoxLayout;
-	QPushButton *save = new QPushButton("Export RTI...", this);
-	save->setProperty("class", "large");
-	save_row->addWidget(save);
-
-	connect(save, &QPushButton::clicked, [this]() { emit exportRti(); });
-
-	layout->addLayout(save_row);
-	layout->addStretch();
-
-	connect(basis_row, &RtiBasisRow::basisChanged, this, &RtiPlan::basisChanged);
-	connect(colorspace_row, &RtiColorSpaceRow::colorspaceChanged, this, &RtiPlan::colorspaceChanged);
-	connect(planes_row, &RtiPlanesRow::nplanesChanged, this, &RtiPlan::nplanesChanged);
-	connect(format_row, &RtiFormatRow::formatChanged, this, &RtiPlan::formatChanged);
-	connect(layout_row, &RtiWebLayoutRow::layoutChanged, this, &RtiPlan::layoutChanged);
-	connect(quality_row, &RtiQualityRow::qualityChanged, this, &RtiPlan::qualityChanged);
+	path_edit = new QLineEdit;
+	buttons->addWidget(path_edit);
+	QPushButton *path_button = new QPushButton("...");
+	buttons->addWidget(path_button);
 }
 
+void RtiExportRow::setPath(QString path, bool emitting) {
+	path_edit->setText(path);
+}
 
-void RtiPlan::basisChanged() {
-	//when basis is changed we try to change the other values as little as possible.
-	//if the new basis is not compatible with the current color space we change it to the default one
-	//colorspace:
-	auto &basis = parameters.basis;
-	bool pca = basis == Rti::RBF || basis == Rti::BILINEAR;
+void RtiExportRow::selectOutput() {
+	//get folder if not legacy.
+	QString output;
+	if(parameters.format == RtiParameters::RTI) {
+		QString extension;
+		QString label;
 
-	// COLORSPACE
+		if(parameters.basis == Rti::HSH) {
+			extension = ".rti";
+			label = "RTI file (*.rti)";
+		} else if(parameters.basis == Rti::PTM) {
+			extension = ".ptm";
+			label = "PTM file (*.ptm)";
+		}
+		output = QFileDialog::getSaveFileName(this, "Select a file name", QString(), label);
+		if(output.isNull()) return;
 
-	auto &colorspace = parameters.colorspace;
-	if(!pca) {
-		if(colorspace != Rti::RGB && colorspace != Rti::LRGB)
-			colorspace = Rti::RGB;
+		if(!output.endsWith(extension))
+			output += extension;
 
 	} else {
-		if(colorspace != Rti::MRGB && colorspace != Rti::YCC)
-			colorspace = Rti::MRGB;
+		output = QFileDialog::getSaveFileName(this, "Select an output folder", QString());
+		if(output.isNull()) return;
 	}
-	colorspace_row->setColorspace(colorspace);
+	parameters.path = output;
+}
 
-	// PLANES
+void RtiExportRow::suggestPath() {
+	QDir input = qRelightApp->project().dir;
+	QString filename;
 
-	auto &nplanes = parameters.nplanes;
-	auto &nchroma = parameters.nchroma;
+	if(parameters.format == RtiParameters::RTI) {
+		filename = input.dirName() + (parameters.basis == Rti::PTM ? ".ptm" : ".rti");
 
-	switch(basis) {
-	case Rti::PTM: nplanes = 18; nchroma = 0; break;
-	case Rti::HSH: if(nplanes != 12 && nplanes != 27) nplanes = 27; nchroma = 0; break;
-	case Rti::RBF:
-	case Rti::BILINEAR:
-		if(colorspace != Rti::YCC) nchroma = 0;
+	} else {
+
+		switch(parameters.basis) {
+		case Rti::PTM: filename = parameters.colorspace == Rti::RGB ? "ptm" : "lptm"; break;
+		case Rti::HSH: filename = "hsh"; break;
+		case Rti::RBF: filename = "rbf" + QString::number(parameters.nplanes); break;
+		case Rti::BILINEAR: filename = "bln" + QString::number(parameters.nplanes); break;
+		default: filename = "rti"; break;
+		}
+		if(parameters.colorspace == Rti::MYCC || parameters.colorspace == Rti::YCC)
+			filename = "y" + filename + "." + QString::number(parameters.nchroma);
+		if(parameters.format == RtiParameters::IIP)
+			filename += ".tif";
 	}
-
-	planes_row->setNPlanes(nplanes);
-	planes_row->setNChroma(nchroma);
-
-	//FORMAT
-	format_row->allowLegacy(!pca);
-
-	if(pca && parameters.format == RtiParameters::RTI) {
-		format_row->setFormat(RtiParameters::WEB); //emit and cascade update other rows.
-	}
-}
-
-void RtiPlan::colorspaceChanged() {
-	planes_row->setNChroma(parameters.nchroma);
-
-	bool pca = parameters.basis == Rti::RBF || parameters.basis == Rti::BILINEAR;
-	if(pca && parameters.format == RtiParameters::RTI) {
-		format_row->setFormat(RtiParameters::WEB);
-	}
-}
-
-void RtiPlan::nplanesChanged() {
-	//actually nothing happens!
-}
-
-void RtiPlan::formatChanged() {
-	bool legacy = quality_row->parameters.format == RtiParameters::RTI;
-	//only RTI allows for lossless.
-	quality_row->allowLossless(legacy);
-	layout_row->setEnabled(quality_row->parameters.format == RtiParameters::WEB);
-}
-
-void RtiPlan::qualityChanged() {
-}
-
-void RtiPlan::layoutChanged() {
+	input.cdUp();
+	filename = input.filePath(filename);
+	setPath(filename);
 }
 

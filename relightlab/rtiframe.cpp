@@ -1,14 +1,10 @@
 #include "rtiframe.h"
+#include "rtiplan.h"
 #include "helpbutton.h"
 #include "relightapp.h"
-#include "rticard.h"
-#include "flowlayout.h"
-#include "rtiplan.h"
-#include "rtirow.h"
 #include "rtirecents.h"
-#include "rtiframe.h"
 #include "qlabelbutton.h"
-#include "rtitask.h"
+
 
 #include "processqueue.h"
 
@@ -25,7 +21,7 @@
 #include <QScrollArea>
 #include <QFileDialog>
 
-#include "rtiplan.h"
+
 
 
 RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
@@ -36,83 +32,70 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 
 	content->addWidget(recents = new RtiRecents);
 
-	content->addWidget(rti_plan = new RtiPlan, 1);
-	connect(rti_plan, SIGNAL(exportRti()), this, SLOT(exportRti()));
-	return;
-
-	QScrollArea *area = new QScrollArea;
-	area->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-	area->setWidgetResizable(true);
-	content->addWidget(area, 1);
-
-	QWidget *widget = new QWidget;
-	area->setWidget(widget);
+	basis_row      = new RtiBasisRow(parameters, this);
+	colorspace_row = new RtiColorSpaceRow(parameters, this);
+	planes_row     = new RtiPlanesRow(parameters, this);
+	format_row     = new RtiFormatRow(parameters, this);
+	quality_row    = new RtiQualityRow(parameters, this);
+	layout_row     = new RtiWebLayoutRow(parameters, this);
+	export_row     = new RtiExportRow(parameters, this);
 
 
-	FlowLayout *sample_layout = new FlowLayout(area->widget());
-	
-	sample_layout->addWidget(new RtiCard(Rti::PTM, Rti::LRGB, 9, 0));
-	sample_layout->addWidget(new RtiCard(Rti::PTM, Rti::RGB, 18, 0));
-	sample_layout->addWidget(new RtiCard(Rti::HSH, Rti::RGB, 27, 0));
-
-
-	sample_layout->addWidget(new RtiCard(Rti::RBF, Rti::MRGB, 18, 0));
-	sample_layout->addWidget(new RtiCard(Rti::BILINEAR, Rti::MRGB, 18, 0));
+	content->addWidget(basis_row);
+	content->addWidget(colorspace_row);
+	content->addWidget(planes_row);
+	content->addWidget(format_row);
+	content->addWidget(quality_row);
+	content->addWidget(layout_row);
+	content->addWidget(export_row);
 
 
 
-	/*
-	QGroupBox *model = new QGroupBox("Model");
-	content->addWidget(model);
-	QVBoxLayout *model_layout = new QVBoxLayout(model);
-	model_layout->addWidget(new HelpRadio("Polynomial Texture Maps (PTM)", "rti/ptm"));
-	model_layout->addWidget(new HelpRadio("HemiSpherical Harmonics (HSH)", "rti/hsh"));
-	model_layout->addWidget(new HelpRadio("Radial Basis Functions (RBF)", "rti/rbf"));
-	model_layout->addWidget(new HelpRadio("Bilinear sampling (BNL)", "rti/bln"));
-	model_layout->addWidget(new HelpRadio("Neural network", "rti/neural"));
+	connect(basis_row,      &RtiBasisRow::basisChanged,           this, &RtiFrame::basisChanged);
+	connect(colorspace_row, &RtiColorSpaceRow::colorspaceChanged, this, &RtiFrame::colorspaceChanged);
+	connect(planes_row,     &RtiPlanesRow::nplanesChanged,        this, &RtiFrame::nplanesChanged);
+	connect(format_row,     &RtiFormatRow::formatChanged,         this, &RtiFrame::formatChanged);
+	connect(layout_row,     &RtiWebLayoutRow::layoutChanged,      this, &RtiFrame::layoutChanged);
+	connect(quality_row,    &RtiQualityRow::qualityChanged,       this, &RtiFrame::qualityChanged);
 
-	QGroupBox *colorspace= new QGroupBox("Colorspace");
-	content->addWidget(colorspace);
-	QVBoxLayout *colorspace_layout = new QVBoxLayout(colorspace);
-	colorspace_layout->addWidget(new HelpRadio("RGB", "rti/rgb"));
-	colorspace_layout->addWidget(new HelpRadio("LRGB", "rti/lrgb"));
-	colorspace_layout->addWidget(new HelpRadio("MRGB", "rti/mrgb"));
-	colorspace_layout->addWidget(new HelpRadio("YCC", "rti/ycc"));
+	{
+		QHBoxLayout *save_row = new QHBoxLayout;
 
-	QGroupBox *planes = new QGroupBox("Planes");
-	content->addWidget(planes);
+		{
+			QLabel *label = new QLabel("");
+			label->setFixedWidth(200);
+			save_row->addWidget(label, 0, Qt::AlignLeft);
+		}
+		save_row->addStretch(1);
 
-	QGridLayout *planes_layout = new QGridLayout(planes);
-	planes_layout->addWidget(new HelpLabel("Total number of planes:", "rti/planes"), 0, 0);
+		{
+			QFrame *buttons_frame = new QFrame;
+			buttons_frame->setMinimumWidth(860);
 
-	QSpinBox *total_planes = new QSpinBox;
-	planes_layout->addWidget(total_planes, 0, 1);
+			{
+				QHBoxLayout *buttons_layout = new QHBoxLayout(buttons_frame);
 
-	planes_layout->addWidget(new HelpLabel("Number of luminance planes:", "rti/luminance"), 1, 0);
+				buttons_layout->addStretch(1);
+				QPushButton *save = new QPushButton("Export", this);
+				save->setIcon(QIcon::fromTheme("save"));
+				save->setProperty("class", "large");
+				save->setMinimumWidth(200);
+				connect(save, &QPushButton::clicked, [this]() { emit exportRti(); });
 
-	QSpinBox *luminance_planes = new QSpinBox;
-	planes_layout->addWidget(luminance_planes, 1, 1);
-*/
-/*
-	QGroupBox *legacy = new QGroupBox("Export .rti for RtiViewer");
-	content->addWidget(legacy);
+				buttons_layout->addWidget(save);
+			}
 
-	QGridLayout *legacy_layout = new QGridLayout(legacy);
-	
-	legacy_layout->addWidget(new HelpRadio("Lossless (heavy!)", "rti/legacy"), 0, 0);
+			save_row->addWidget(buttons_frame);
+		}
+		save_row->addStretch(1);
 
-	legacy_layout->addWidget(new HelpRadio("JPEG", "rti/legacy"), 1, 0);
-	legacy_layout->addWidget(new HelpLabel("Quality:", "rti/legacy"), 1, 1);
-	QSpinBox *quality = new QSpinBox;
-	legacy_layout->addWidget(quality, 1, 2);
 
-	legacy_layout->addWidget(new QLabel("Filename:"), 2, 0);	
-	legacy_layout->addWidget(new QLineEdit(), 2, 1);	
-	legacy_layout->addWidget(new QPushButton("..."), 2, 2);	
+		content->addLayout(save_row);
 
-	legacy_layout->addWidget(new QPushButton("Export"), 3, 2);	 */
+	}
 
 	content->addStretch();
+
 }
 
 void RtiFrame::exportRti() {
@@ -120,34 +103,10 @@ void RtiFrame::exportRti() {
 	//check for lights
 	if(qRelightApp->project().dome.directions.size() == 0) {
 		QMessageBox::warning(this, "Missing light directions.", "You need light directions for this dataset to build an RTI.\n"
-			"You can either load a dome or .lp file or mark a reflective sphere in the 'Lights' tab.");
+																"You can either load a dome or .lp file or mark a reflective sphere in the 'Lights' tab.");
 		return;
 	}
-	RtiParameters &parameters = rti_plan->parameters;
-	//get folder if not legacy.
-	QString output;
-	if(parameters.format == RtiParameters::RTI) {
-		QString extension;
-		QString label;
 
-		if(parameters.basis == Rti::HSH) {
-			extension = ".rti";
-			label = "RTI file (*.rti)";
-		} else if(parameters.basis == Rti::PTM) {
-			extension = ".ptm";
-			label = "PTM file (*.ptm)";
-		}
-		output = QFileDialog::getSaveFileName(this, "Select a file name", QString(), label);
-		if(output.isNull()) return;
-
-		if(!output.endsWith(extension))
-		output += extension;
-
-	} else {
-		output = QFileDialog::getSaveFileName(this, "Select an output folder", QString());
-		if(output.isNull()) return;
-	}
-	parameters.path = output;
 
 	RtiTask *rti_task = new RtiTask(qRelightApp->project());
 	rti_task->parameters = parameters;
@@ -156,6 +115,82 @@ void RtiFrame::exportRti() {
 	queue.addTask(rti_task);
 
 	emit processStarted();
+}
+
+
+void RtiFrame::basisChanged() {
+	//when basis is changed we try to change the other values as little as possible.
+	//if the new basis is not compatible with the current color space we change it to the default one
+	//colorspace:
+	auto &basis = parameters.basis;
+	bool pca = basis == Rti::RBF || basis == Rti::BILINEAR;
+
+	// COLORSPACE
+
+	auto &colorspace = parameters.colorspace;
+	if(!pca) {
+		if(colorspace != Rti::RGB && colorspace != Rti::LRGB)
+			colorspace = Rti::RGB;
+
+	} else {
+		if(colorspace != Rti::MRGB && colorspace != Rti::YCC)
+			colorspace = Rti::MRGB;
+	}
+	colorspace_row->setColorspace(colorspace);
+
+	// PLANES
+
+	auto &nplanes = parameters.nplanes;
+	auto &nchroma = parameters.nchroma;
+
+	switch(basis) {
+	case Rti::PTM: nplanes = 18; nchroma = 0; break;
+	case Rti::HSH: if(nplanes != 12 && nplanes != 27) nplanes = 27; nchroma = 0; break;
+	case Rti::RBF:
+	case Rti::BILINEAR:
+		if(colorspace != Rti::YCC) nchroma = 0;
+	}
+
+	planes_row->setNPlanes(nplanes);
+	planes_row->setNChroma(nchroma);
+
+	//FORMAT
+	format_row->allowLegacy(!pca);
+
+	if(pca && parameters.format == RtiParameters::RTI) {
+		format_row->setFormat(RtiParameters::WEB); //emit and cascade update other rows.
+	}
+	export_row->suggestPath();
+}
+
+void RtiFrame::colorspaceChanged() {
+	planes_row->setNChroma(parameters.nchroma);
+
+	bool pca = parameters.basis == Rti::RBF || parameters.basis == Rti::BILINEAR;
+	if(pca && parameters.format == RtiParameters::RTI) {
+		format_row->setFormat(RtiParameters::WEB);
+	}
+	export_row->suggestPath();
+
+}
+
+void RtiFrame::nplanesChanged() {
+	export_row->suggestPath();
+}
+
+void RtiFrame::formatChanged() {
+	bool legacy = quality_row->parameters.format == RtiParameters::RTI;
+	//only RTI allows for lossless.
+	quality_row->allowLossless(legacy);
+	layout_row->setEnabled(quality_row->parameters.format == RtiParameters::WEB);
+	export_row->suggestPath();
+}
+
+void RtiFrame::qualityChanged() {
+}
+
+void RtiFrame::layoutChanged() {
+
 }
 
 

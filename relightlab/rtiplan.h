@@ -11,6 +11,7 @@ class QSpinBox;
 class QLabelButton;
 class HelpLabel;
 class QHBoxLayout;
+class QLineEdit;
 
 class RtiPlanRow: public QFrame {
 	Q_OBJECT
@@ -107,36 +108,22 @@ private:
 	QLabelButton *image, *deepzoom, *tarzoom, *itarzoom;
 signals:
 	void layoutChanged();
-
 };
 
-
-class RtiPlan: public QFrame {
+class RtiExportRow: public RtiPlanRow {
 	Q_OBJECT
 public:
-	RtiPlan(QWidget *parent = nullptr);
-	void setParameters(RtiParameters parameters);
-
-	RtiParameters parameters;
-
+	RtiExportRow(RtiParameters &parameters, QFrame *parent = nullptr);
+	void setPath(QString path, bool emitting = false);
 public slots:
-	void basisChanged();
-	void colorspaceChanged();
-	void nplanesChanged();
-	void formatChanged();
-	void qualityChanged();
-	void layoutChanged();
-
-signals:
-	void exportRti();
+	void selectOutput();
+	void suggestPath();
 
 private:
-	RtiBasisRow *basis_row = nullptr;
-	RtiColorSpaceRow *colorspace_row = nullptr;
-	RtiPlanesRow *planes_row = nullptr;
-	RtiFormatRow *format_row = nullptr;
-	RtiQualityRow *quality_row = nullptr;
-	RtiWebLayoutRow *layout_row = nullptr;
+	QLineEdit *path_edit;
 };
+
+
+
 
 #endif // RTIPLAN_H
