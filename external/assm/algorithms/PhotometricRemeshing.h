@@ -1,11 +1,11 @@
 #pragma once
 
 #include <functional>
-#include <assm/algorithms/Triangulation.h>
+#include "Triangulation.h"
 
-#include <assm/algorithms/ScreenMeshing.h>
-#include <assm/algorithms/ScreenRemeshing.h>
-#include <assm/algorithms/Grid.h>
+#include "ScreenMeshing.h"
+#include "ScreenRemeshing.h"
+#include "../Grid.h"
 
 template <typename Projection = pmp::Orthographic>
 class PhotometricRemeshing
