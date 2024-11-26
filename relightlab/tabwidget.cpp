@@ -1,4 +1,5 @@
 #include "tabwidget.h"
+#include <QScrollArea>
 
 QSize TabBar::tabSizeHint(int index) const{
 	QSize s = QTabBar::tabSizeHint(index);
@@ -33,4 +34,12 @@ void TabBar::paintEvent(QPaintEvent * /*event*/){
 TabWidget::TabWidget(QWidget *parent):QTabWidget(parent) {
 	setTabBar(new TabBar);
 	setTabPosition(QTabWidget::West);
+}
+
+
+void TabWidget::addTab(QWidget *widget, QString label) {
+	QScrollArea *scrollArea = new QScrollArea();
+	scrollArea->setWidget(widget);
+	scrollArea->setWidgetResizable(true);
+	QTabWidget::addTab(scrollArea, label);
 }

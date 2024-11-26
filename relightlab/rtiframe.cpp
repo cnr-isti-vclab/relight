@@ -40,11 +40,6 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	connect(rti_plan, SIGNAL(exportRti()), this, SLOT(exportRti()));
 	return;
 
-/*	content->addWidget(new PtmRow());
-	content->addWidget(new HshRow()); 
-	content->addWidget(new RbfRow()); */
-
-
 	QScrollArea *area = new QScrollArea;
 	area->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 	area->setWidgetResizable(true);

@@ -41,8 +41,13 @@ HelpedButton::HelpedButton(QString id, QIcon icon, QString text, QWidget *parent
 
 void HelpedButton::init(QString id) {
 	QHBoxLayout *layout = new QHBoxLayout(this);
+	layout->setSizeConstraint(QHBoxLayout::SetMinimumSize);
+
+
 	button = new QPushButton;
-	button->setProperty("class", "large");
+	//button->setProperty("class", "large");
+	button->setMinimumSize(200, 40);
+	button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
 	help = new HelpButton(id);
 
