@@ -6,6 +6,10 @@
 #include "../src/bni_normal_integration.h"
 #include "../src/flatnormals.h"
 
+#include <assm/Grid.h>
+#include <assm/algorithms/PhotometricRemeshing.h>
+#include <assm/algorithms/Integration.h>
+
 #include <Eigen/Eigen>
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -129,6 +133,10 @@ void NormalsTask::run() {
 		bool proceed = progressed("Integrating normals...", 0);
 		if(!proceed)
 			return;
+		QString filename = output.left(output.size() -4) + ".obj";
+
+		float precision = 0.1f;
+		assm(filename, normals, precision);
 		std::vector<float> z;
 		bni_integrate(callback, imageset.width, imageset.height, normals, z, bni_k);
 		if(z.size() == 0) {
@@ -137,12 +145,58 @@ void NormalsTask::run() {
 			return;
 		}
 		//TODO remove extension properly
-		QString filename = output.left(output.size() -4) + ".ply";
 
 		progressed("Saving surface...", 99);
+		filename = output.left(output.size() -4) + ".ply";
 		savePly(filename, imageset.width, imageset.height, z);
 	}
 	progressed("Done", 100);
+}
+
+bool saveObj(const char *filename, pmp::SurfaceMesh &mesh) {
+	FILE *fp = fopen(filename, "wb");
+	if(!fp) {
+//		cerr << "Could not open file: " << filename << endl;
+		return false;
+	}
+	int nvertices = 0;
+	for(auto vertex: mesh.vertices()) {
+		auto p = mesh.position(vertex);
+		fprintf(fp, "v %f %f %f\n", p[0], p[1], p[2]);
+		nvertices++;
+	}
+	for (auto face : mesh.faces()) {
+		int indexes[3];
+		int count =0 ;
+		for (auto vertex : mesh.vertices(face)) {
+			auto p = mesh.position(vertex);
+			int v = indexes[count++] = vertex.idx() + 1;
+			assert(v > 0 && v <= nvertices);
+		}
+		fprintf(fp, "f %d %d %d\n", indexes[0], indexes[1], indexes[2]);
+	}
+	fclose(fp);
+	return true;
+}
+
+void NormalsTask::assm(QString filename, std::vector<float> &_normals, float approx_error) {
+	Grid<Eigen::Vector3f> normals(imageset.width, imageset.height, Eigen::Vector3f(0.0f, 0.0f, 0.0f));
+	for(int i = 0; i < _normals.size()/3; i++) {
+		normals[i] = Eigen::Vector3f(_normals[i*3], _normals[i*3+1], _normals[i*3+2]);
+	}
+	Grid<unsigned char> mask(imageset.width, imageset.height, 0);
+	mask.fill(255);
+
+	float l_min = 1;
+	float l_max = 100;
+
+	PhotometricRemeshing<pmp::Orthographic> remesher(normals, mask);
+	remesher.run(l_min, l_max, approx_error);
+
+	pmp::Integration<double, pmp::Orthographic> integrator(remesher.mesh(), normals, mask);
+	integrator.run();
+
+	saveObj(filename.toStdString().c_str(), remesher.mesh());
 }
 
 

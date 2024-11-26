@@ -20,6 +20,8 @@ if (APPLE)
 	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
+
+
 set (RELIGHT_HEADERS
     processqueue.h 
     ../src/align.h 
@@ -155,13 +157,18 @@ set (RELIGHTLAB_RESOURCES
 	res.qrc
 )
 
-add_executable(relightlab ${MACOSX_EXE_TARGET_OPTION} ${RELIGHTLAB_HEADERS} ${RELIGHTLAB_SOURCES} ${RELIGHTLAB_RESOURCES})
+file(GLOB ASSM_SOURCES ../external/assm/SurfaceMesh.cpp ../external/assm/algorithms/*.cpp)
+file(GLOB ASSM_HEADERS ../external/assm/*.h ../external/assm/algorithms/*.h)
+
+
+add_executable(relightlab ${MACOSX_EXE_TARGET_OPTION} ${RELIGHTLAB_HEADERS} ${RELIGHTLAB_SOURCES} ${ASSM_SOURCES} ${ASSM_HEADERS} ${RELIGHTLAB_RESOURCES})
 target_include_directories(
 	relightlab PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}
 		TIFF::TIFF
 		${EIGEN3_INCLUDE_DIR}
+		../external
 	)
 	
 target_link_libraries(

@@ -36,8 +36,11 @@ public:
 	}
 
 	virtual ~NormalsTask(){};
-	void initFromProject(Project &project);
 	virtual void run() override;
+
+	void initFromProject(Project &project);
+	void assm(QString filename, std::vector<float> &normals, float precision);
+
 };
 
 class NormalsWorker

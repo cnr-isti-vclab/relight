@@ -106,8 +106,8 @@ bool saveTiff(const QString &filename, int w, int h, std::vector<float> &depthma
 		max = std::max(h, max);
 	}
 
-	uint32 tileWidth = 256;
-	uint32 tileLength = 256;
+	uint32_t tileWidth = 256;
+	uint32_t tileLength = 256;
 
 	TIFF* outTiff = TIFFOpen(filename.toStdString().c_str(), "w");
 	if (!outTiff) {
@@ -126,8 +126,8 @@ bool saveTiff(const QString &filename, int w, int h, std::vector<float> &depthma
 	TIFFSetField(outTiff, TIFFTAG_TILELENGTH, tileLength);
 	TIFFSetField(outTiff, TIFFTAG_COMPRESSION, COMPRESSION_NONE); // No compression
 
-	uint32 numTilesX = (w + tileWidth - 1) / tileWidth;
-	uint32 numTilesY = (h + tileLength - 1) / tileLength;
+	uint32_t numTilesX = (w + tileWidth - 1) / tileWidth;
+	uint32_t numTilesY = (h + tileLength - 1) / tileLength;
 
 
 
