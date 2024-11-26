@@ -9,6 +9,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 DEFINES += _USE_MATH_DEFINES
 DEFINES += NOMINMAX
 
+INCLUDEPATH += ../external/
+
 win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
     ../external/eigen-3.3.9/ \
     ../src/
@@ -36,6 +38,11 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 SOURCES += main.cpp \
+    ../external/assm/SurfaceMesh.cpp \
+    ../external/assm/algorithms/DifferentialGeometry.cpp \
+    ../external/assm/algorithms/Rasterizer.cpp \
+    ../external/assm/algorithms/ScreenRemeshing.cpp \
+    ../external/assm/algorithms/Triangulation.cpp \
     ../relight-cli/convert_rti.cpp \
     ../relight-cli/rtibuilder.cpp \
     ../src/flatnormals.cpp \
@@ -108,6 +115,8 @@ RESOURCES += \
 
 
 HEADERS += \
+    ../external/assm/algorithms/Integration.h \
+    ../external/assm/algorithms/PhotometricRemeshing.h \
     ../relight-cli/rtibuilder.h \
     ../src/flatnormals.h \
     processqueue.h \
