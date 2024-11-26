@@ -4,7 +4,7 @@
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 #include "DifferentialGeometry.h"
-#include "Grid.h"
+#include "../Grid.h"
 #include "Rasterizer.h"
 
 namespace pmp
