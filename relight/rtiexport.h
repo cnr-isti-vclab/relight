@@ -1,13 +1,16 @@
 #ifndef RTIEXPORT_H
 #define RTIEXPORT_H
 
-#include <QDialog>
-#include <map>
-#include <QFutureWatcher>
-
 #include "httpserver.h"
 #include "../src/relight_vector.h"
 #include "../src/project.h"
+
+#include <QDialog>
+#include <QFutureWatcher>
+
+#include <Eigen/Core>
+#include <map>
+
 
 namespace Ui {
 	class RtiExport;
@@ -25,7 +28,7 @@ public:
 
 	Project *project = nullptr;
 	QStringList images;
-	std::vector<Vector3f> lights;
+	std::vector<Eigen::Vector3f> lights;
 	bool light3d = false;
 	float pixelSize = 0;
 	QRect crop;

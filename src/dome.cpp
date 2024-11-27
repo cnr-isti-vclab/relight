@@ -9,8 +9,9 @@
 #include <QFile>
 
 using namespace std;
-Dome::Dome() {}
+using namespace Eigen;
 
+Dome::Dome() {}
 
 static QStringList lightConfigs = { "directional", "spherical", "lights3d" };
 

@@ -34,7 +34,9 @@
 #include <set>
 #include <iostream>
 #include <assert.h>
+
 using namespace std;
+using namespace Eigen;
 
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
@@ -310,10 +312,10 @@ void MainWindow::esc() {
 }
 
 void MainWindow::undo(){
-	Action action = history.undo();
+	Event action = history.undo();
 	switch(action.type) {
-	case Action::NO_ACTION: return;
-    case Action::ADD_SPHERE: {        //a sphere was added: remove it.
+	case Event::NO_ACTION: return;
+	case Event::ADD_SPHERE: {        //a sphere was added: remove it.
         assert(action.sphere_id >= 0 && action.sphere_id < (int)project.spheres.size());
 		Sphere *sphere = project.spheres[action.sphere_id];
 		auto markers = ui->markerList->getItems();
@@ -329,12 +331,14 @@ void MainWindow::undo(){
 		delete sphere;
 		}
 		break;
+	default:
+		break;
 	}
 }
 
 void MainWindow::redo() {
-	Action action = history.redo();
-	if(action.type == Action::NO_ACTION)
+	Event action = history.redo();
+	if(action.type == Event::NO_ACTION)
 		return;
 
 }
@@ -564,7 +568,7 @@ void MainWindow::updateBorderPoints(QGraphicsEllipseItem *point) {
 		m->fit();
 		int sphere_id = project.indexOf(m->sphere);
 		assert(sphere_id != -1);
-		history.push(Action(Action::MOVE_BORDER, sphere_id, *(m->sphere)));
+		history.push(Event(Event::MOVE_BORDER, sphere_id, *(m->sphere)));
 	}
 }
 
@@ -598,7 +602,7 @@ void MainWindow::newSphere() {
 	ui->markerList->setSelected(marker);
 	connect(marker, SIGNAL(removed()), this, SLOT(removeSphere()));
 	marker->setEditing(true);
-	history.push(Action(Action::ADD_SPHERE, project.indexOf(sphere), *sphere));
+	history.push(Event(Event::ADD_SPHERE, project.indexOf(sphere), *sphere));
 }
 
 
@@ -640,7 +644,7 @@ void MainWindow::newWhite() {
 void MainWindow::removeSphere() {
 	auto marker = dynamic_cast<SphereMarker *>(QObject::sender());
 	int sphere_id = project.indexOf(marker->sphere);
-	history.push(Action(Action::REMOVE_SPHERE, sphere_id, *(marker->sphere)));
+	history.push(Event(Event::REMOVE_SPHERE, sphere_id, *(marker->sphere)));
 	project.spheres.erase(std::remove(project.spheres.begin(), project.spheres.end(), marker->sphere), project.spheres.end());
 	delete marker;
 }

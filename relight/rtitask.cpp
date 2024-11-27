@@ -1,3 +1,9 @@
+#include "rtitask.h"
+#include "zoom.h"
+#include "dstretch.h"
+#include "../src/rti.h"
+#include "../relight-cli/rtibuilder.h"
+
 #include <QDebug>
 #include <QFileInfo>
 #include <QFile>
@@ -7,15 +13,9 @@
 #include <QRect>
 #include <QTemporaryDir>
 
-#include "rtitask.h"
-#include "zoom.h"
-#include "dstretch.h"
-#include "../src/rti.h"
-#include "../relight-cli/rtibuilder.h"
-
-
 #include <iostream>
 using namespace std;
+using namespace Eigen;
 
 int convertToRTI(const char *filename, const char *output);
 int convertRTI(const char *file, const char *output, int quality);

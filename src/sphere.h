@@ -1,21 +1,22 @@
 #ifndef SPHERE_H
 #define SPHERE_H
 
+#include <vector>
+
 #include <QPoint>
 #include <QSize>
 #include <QRect>
 #include <QImage>
-#include <vector>
 
-#include "../src/relight_vector.h"
+#include <Eigen/Core>
 
 class QJsonObject;
 class Lens;
 class Dome;
 
 struct Line {
-	Vector3f origin;
-	Vector3f direction;
+	Eigen::Vector3f origin;
+	Eigen::Vector3f direction;
 };
 
 class Sphere {
@@ -41,7 +42,7 @@ public:
 
 	std::vector<QPointF> border;        //2d pixels sampled on the border of the sphere.
 	std::vector<QPointF> lights;       //2d pixel of the light spot for this sphere.
-	std::vector<Vector3f> directions;  //
+	std::vector<Eigen::Vector3f> directions;  //
 
 
 	Sphere(int n_lights = 0);
@@ -52,8 +53,8 @@ public:
 
 	//compute lights directions relative to the center of the sphere.
 	void computeDirections(Lens &lens);
-	Line toLine(Vector3f dir, Lens &lens);
-	static Vector3f intersection(std::vector<Line> &lines);
+	Line toLine(Eigen::Vector3f dir, Lens &lens);
+	static Eigen::Vector3f intersection(std::vector<Line> &lines);
 
 	void resetHighlight(size_t n); //reset light and direction of the detected highlight, of image n.
 
@@ -62,10 +63,10 @@ public:
 };
 
 //estimate light directions relative to the center of the image.
-void computeDirections(std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &directions);
+void computeDirections(std::vector<Sphere *> &spheres, Lens &lens, std::vector<Eigen::Vector3f> &directions);
 //estimate light positions using parallax (image width is the unit).
-void computeParallaxPositions(std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &positions);
+void computeParallaxPositions(std::vector<Sphere *> &spheres, Lens &lens, std::vector<Eigen::Vector3f> &positions);
 //estimate light positions assuming they live on a sphere (parameters provided by dome
-void computeSphericalPositions(std::vector<Sphere *> &spheres, Dome &dome, Lens &lens, std::vector<Vector3f> &positions);
+void computeSphericalPositions(std::vector<Sphere *> &spheres, Dome &dome, Lens &lens, std::vector<Eigen::Vector3f> &positions);
 
 #endif // SPHERE_H

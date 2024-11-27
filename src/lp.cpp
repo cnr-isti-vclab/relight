@@ -5,6 +5,7 @@
 #include <QTextStream>
 
 using namespace std;
+using namespace Eigen;
 
 void parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::vector<QString> &filenames) {
 	QFile sphere(sphere_path);

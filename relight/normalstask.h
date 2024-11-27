@@ -3,16 +3,19 @@
 
 #endif // NORMALSTASK_H
 
+#include "task.h"
+#include "../src/imageset.h"
+#include "../src/project.h"
 
-#include <string>
+
 #include <QJsonObject>
 #include <QMutex>
 #include <QRect>
-#include "../src/relight_vector.h"
-#include "../src/imageset.h"
-#include "../src/project.h"
-#include "task.h"
 #include <QRunnable>
+
+#include <string>
+
+#include <Eigen/Core>
 
 enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA };
 enum FlatMethod { NONE, RADIAL, FOURIER };

@@ -119,7 +119,7 @@ void RelightApp::notify(const QString &title, const QString &msg, int ms) {
 		return;
 	QIcon icon(":/relight.png");
 	systemTray->setVisible(true);
-	systemTray->showMessage(title, msg, icon, 5000);
+	systemTray->showMessage(title, msg, icon, ms);
 	systemTray->setVisible(false);
 
 }

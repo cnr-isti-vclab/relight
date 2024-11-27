@@ -107,8 +107,8 @@ void ReflectionView::update() {
 	}
 }
 
-void ReflectionView::resizeEvent(QResizeEvent *event) {
-	fitInView(img_item->boundingRect()); //.sceneRect()); //img_item);
+void ReflectionView::resizeEvent(QResizeEvent */*event*/) {
+	fitInView(img_item->boundingRect());
 }
 
 

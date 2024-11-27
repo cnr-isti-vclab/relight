@@ -20,6 +20,7 @@
 #include <assert.h>
 
 using namespace std;
+using namespace Eigen;
 
 Sphere::Sphere(int n_lights) {
 	lights.resize(n_lights);
@@ -361,8 +362,9 @@ void Sphere::computeDirections(Lens &lens) {
 
 		float d = sqrt(x*x + y*y);
 		float a = asin(d)*2;
+
 		//this takes into account large spheres
-		float delta = viewDir.angle(dir);
+		float delta = acos((viewDir.dot(dir))/(dir.norm() * viewDir.norm()));
 		a += delta;
 		float r = sin(a);
 		x *= r/d;
@@ -392,7 +394,7 @@ Vector3f intersection(std::vector<Line> &lines) {
 		A(i, 0) = lines[i].direction[0];
 		A(i, 1) = lines[i].direction[1];
 		A(i, 2) = lines[i].direction[2];
-		B(i) = lines[i].origin * lines[i].direction;
+		B(i) = lines[i].origin.dot(lines[i].direction);
 	}
 	Eigen::VectorXd X = A.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(B);
 	return Vector3f(X[0], X[1], X[2]);

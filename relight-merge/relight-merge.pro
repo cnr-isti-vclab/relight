@@ -13,12 +13,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
+    ../external/eigen-3.3.9/ \
+    ../src/
+win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
-win32:INCLUDEPATH += ../libjpeg/include
-win32:LIBS += ../libjpeg/lib/jpeg.lib
 
 unix:INCLUDEPATH += /usr/include/eigen3 /usr/include/python3.6m
-#unix:LIBS += -ljpeg -liomp5
+unix:LIBS += -ljpeg -liomp5
 #unix:QMAKE_CXXFLAGS += -fopenmp
 
 mac:INCLUDEPATH += /opt/homebrew/opt/jpeg-turbo/include \

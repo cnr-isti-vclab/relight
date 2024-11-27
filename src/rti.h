@@ -2,7 +2,8 @@
 #define RTI_H
 
 #include "material.h"
-#include "relight_vector.h"
+
+#include <Eigen/Core>
 
 #include <vector>
 #include <string>
@@ -56,7 +57,7 @@ public:
 	std::vector<float> basis; //for each material, first mean then each plane
 								//rbf ordered following lights
 								//bilinear as a matrix x + y*width
-	std::vector<Vector3f> lights; //for rgb lx, ly, lz
+	std::vector<Eigen::Vector3f> lights; //for rgb lx, ly, lz
 	uint32_t resolution = 8; // for bilinear
 	uint32_t ndimensions = 0; //for pca stuff
 

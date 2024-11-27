@@ -6,6 +6,7 @@
 #include "../src/rti.h"
 #include "../src/imageset.h"
 #include "../src/material.h"
+#include "../src/relight_vector.h"
 
 #include <Eigen/Core>
 
@@ -65,17 +66,17 @@ protected:
 
 	//TODO this should go inimageset!
 	//compute the 3d lights relative to the pixel x, y
-	std::vector<Vector3f> relativeNormalizedLights(int x, int y);
+	std::vector<Eigen::Vector3f> relativeNormalizedLights(int x, int y);
 
 	void resamplePixel(Pixel &sample, Pixel &pixel);
 
-	void buildResampleMap(std::vector<Vector3f> &lights, std::vector<std::vector<std::pair<int, float> > > &remap);
+	void buildResampleMap(std::vector<Eigen::Vector3f> &lights, std::vector<std::vector<std::pair<int, float> > > &remap);
 	void buildResampleMaps();
 	void remapPixel(Pixel &sample, Pixel &pixel, Resamplemap &resamplemap, float weight);
 
 
 
-	MaterialBuilder pickBase(PixelArray &sample, std::vector<Vector3f> &lights);
+	MaterialBuilder pickBase(PixelArray &sample, std::vector<Eigen::Vector3f> &lights);
 	//use for 3d lights
 	void pickBases(PixelArray &sample);
 	//PTM or HSH + bad light sampling could overestimate, here histogram is renormalized.
@@ -92,10 +93,10 @@ protected:
 	void getPixelBestMaterial(PixelArray &pixels, std::vector<size_t> &indices);
 
 	MaterialBuilder pickBasePCA(PixelArray &sample);
-	MaterialBuilder pickBasePTM(std::vector<Vector3f> &lights);
-	MaterialBuilder pickBaseHSH(std::vector<Vector3f> &lights, Type base = HSH);
+	MaterialBuilder pickBasePTM(std::vector<Eigen::Vector3f> &lights);
+	MaterialBuilder pickBaseHSH(std::vector<Eigen::Vector3f> &lights, Type base = HSH);
 
-	Vector3f getNormalThreeLights(std::vector<float> &pri); //use 3 virtual lights at 45 degs.
+	Eigen::Vector3f getNormalThreeLights(std::vector<float> &pri); //use 3 virtual lights at 45 degs.
 
 //DEBUG
 	

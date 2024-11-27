@@ -1,13 +1,15 @@
 #ifndef IMAGESET_H
 #define IMAGESET_H
 
-#include <vector>
-#include <string>
 #include "relight_vector.h"
 
-#include <QStringList>
+#include <vector>
+#include <string>
 #include <functional>
 #include <string>
+
+#include <Eigen/Core>
+#include <QStringList>
 
 class QJsonObject;
 class JpegDecoder;
@@ -26,10 +28,10 @@ public:
 
 	/* REPLACE THIS WITH DOME */
 	//Lights
-	std::vector<Vector3f> lights;
+	std::vector<Eigen::Vector3f> lights;
 
 	bool light3d = false;
-	std::vector<Vector3f> lights3d; //always expressed in mm.
+	std::vector<Eigen::Vector3f> lights3d; //always expressed in mm.
 
 	//Geometry
 	float image_width_mm = 0.0f;
@@ -42,8 +44,8 @@ public:
 	~ImageSet();
 
 	//light3d if lights are positional instead of directional.
-	static void parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::vector<QString> &filenames, int skip_image = -1);
-	static void parseJSON(QString filename,  std::vector<Vector3f> &lights);
+	static void parseLP(QString sphere_path, std::vector<Eigen::Vector3f> &lights, std::vector<QString> &filenames, int skip_image = -1);
+	static void parseJSON(QString filename,  std::vector<Eigen::Vector3f> &lights);
 
 
 	bool initFromFolder(const char *path, bool ignore_filenames = true, int skip_image = -1);
@@ -63,7 +65,7 @@ public:
 	void restart();
 	void skipToTop();
 
-	Vector3f relativeLight(const Vector3f &light, int x, int y);
+	Eigen::Vector3f relativeLight(const Eigen::Vector3f &light, int x, int y);
 
 protected:
 	std::function<bool(QString stage, int percent)> *callback;

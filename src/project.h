@@ -59,7 +59,7 @@ public:
 	void clear();
 	void load(QString filename);
 	void save(QString filename); //throws QString on error
-	void saveLP(QString filename, std::vector<Vector3f> &directions); //throws QString on error
+	void saveLP(QString filename, std::vector<Eigen::Vector3f> &directions); //throws QString on error
 	void loadLP(QString filename);
 	void computeDirections();
 	void computePixelSize();
@@ -93,8 +93,8 @@ public:
 	void checkImages();
 	void checkMissingImages();
 
-	std::vector<Vector3f> directions() {
-		std::vector<Vector3f> dirs;
+	std::vector<Eigen::Vector3f> directions() {
+		std::vector<Eigen::Vector3f> dirs;
 		for(Image &img: images)
 			if(!img.skip)
 				dirs.push_back(img.direction);
