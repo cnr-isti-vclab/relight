@@ -75,7 +75,7 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 
 
 	ProcessQueue &queue = ProcessQueue::instance();
-	connect(&queue, SIGNAL(finished(QString title, QString msg)), this, SLOT(notify(QString title, QString msg)));
+	connect(&queue, SIGNAL(finished(QString, QString)), this, SLOT(notify(QString, QString)));
 	queue.start();
 
 
