@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <math.h>
 #include <vector>
-
+/*
 
 template <class T> class Vector3 {
 public:
@@ -53,7 +53,7 @@ public:
 
 typedef Vector3<uint16_t> Vector3us;
 typedef Vector3<float> Vector3f;
-typedef Vector3<double> Vector3d;
+typedef Vector3<double> Vector3d; */
 
 
 template <class T> struct Color3 {

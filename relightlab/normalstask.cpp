@@ -22,6 +22,9 @@
 #include <iostream>
 #include <time.h>
 
+using namespace std;
+using namespace Eigen;
+
 //////////////////////////////////////////////////////// NORMALS TASK //////////////////////////////////////////////////////////
 /// \brief NormalsTask: Takes care of creating the normals from the images given in a folder (inputFolder) and saves the file
 ///         in the outputFolder. After applying the crop described in the QRect passed as an argument to the constructor,
@@ -51,7 +54,7 @@ void NormalsTask::run() {
 
 	imageset.setCallback(nullptr);
 
-	std::vector<float> normals(imageset.width * imageset.height * 3);
+	vector<float> normals(imageset.width * imageset.height * 3);
 
 
 	RelightThreadPool pool;
@@ -89,7 +92,7 @@ void NormalsTask::run() {
 
 	if(flatMethod != NONE) {
 		//TODO: do we really need double precision?
-		std::vector<double> normalsd(normals.size());
+		vector<double> normalsd(normals.size());
 		for(uint32_t i = 0; i < normals.size(); i++)
 			normalsd[i] = (double)normals[i];
 
@@ -113,7 +116,7 @@ void NormalsTask::run() {
 	}
 
 
-	std::vector<uint8_t> normalmap(imageset.width * imageset.height * 3);
+	vector<uint8_t> normalmap(imageset.width * imageset.height * 3);
 	for(size_t i = 0; i < normals.size(); i++)
 		normalmap[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
 
@@ -127,7 +130,7 @@ void NormalsTask::run() {
 		img.setDotsPerMeterY(dotsPerMeter);
 	}
 	img.save(output);
-	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
+	function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
 	if(exportPly) {
 		bool proceed = progressed("Integrating normals assm...", 0);
@@ -141,7 +144,7 @@ void NormalsTask::run() {
 		proceed = progressed("Integrating normals bni...", 50);
 		if(!proceed)
 			return;
-		std::vector<float> z;
+		vector<float> z;
 		bni_integrate(callback, imageset.width, imageset.height, normals, z, bni_k);
 		if(z.size() == 0) {
 			error = "Failed to integrate normals";
@@ -183,7 +186,7 @@ bool saveObj(const char *filename, pmp::SurfaceMesh &mesh) {
 	return true;
 }
 
-void NormalsTask::assm(QString filename, std::vector<float> &_normals, float approx_error) {
+void NormalsTask::assm(QString filename, vector<float> &_normals, float approx_error) {
 	Grid<Eigen::Vector3f> normals(imageset.width, imageset.height, Eigen::Vector3f(0.0f, 0.0f, 0.0f));
 	for(size_t y = 0; y < imageset.height; y++)
 		for(size_t x = 0; x < imageset.width; x++) {
@@ -229,8 +232,8 @@ void NormalsWorker::run() {
 
 void NormalsWorker::solveL2()
 {
-	std::vector<Vector3f> &m_Lights = m_Imageset.lights;
-	std::vector<Vector3f> &m_Lights3d = m_Imageset.lights3d;
+	vector<Vector3f> &m_Lights = m_Imageset.lights;
+	vector<Vector3f> &m_Lights3d = m_Imageset.lights3d;
 	// Pixel data
 	Eigen::MatrixXd mLights(m_Lights.size(), 3);
 	Eigen::MatrixXd mPixel(m_Lights.size(), 1);

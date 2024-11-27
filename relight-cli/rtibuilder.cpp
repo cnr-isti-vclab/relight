@@ -27,9 +27,10 @@
 
 #include <set>
 #include <iostream>
-
 #include <math.h>
+
 using namespace std;
+using namespace Eigen;
 
 /* reampling model:
  *

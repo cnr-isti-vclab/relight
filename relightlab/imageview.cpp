@@ -21,7 +21,7 @@ void ImageView::clear() {
 
 void ImageView::showImage(int id) {
 	Project &project = qRelightApp->project();
-	if(project.images.size() <= id)
+	if(project.images.size() <= size_t(id))
 		return;
 
 	QString filename = project.images[id].filename;
@@ -64,7 +64,7 @@ void ImageView::one() {
 }
 
 void ImageView::next() {
-	if(current_image < qRelightApp->project().images.size()-1)
+	if(size_t(current_image+1) < qRelightApp->project().images.size())
 		showImage(current_image+1);
 }
 

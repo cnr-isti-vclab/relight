@@ -1,3 +1,5 @@
+#include "scripts.h"
+
 #include <QFile>
 #include <QFileDialog>
 #include <QSettings>
@@ -8,10 +10,12 @@
 #include <QJsonObject>
 
 #include <iostream>
+
 using namespace std;
+using namespace Eigen;
 
 
-#include "scripts.h"
+
 
 Scripts::Scripts() {}
 

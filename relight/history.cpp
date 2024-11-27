@@ -1,19 +1,19 @@
 #include "history.h"
 
-void History::push(const Action &action) {
+void History::push(const Event &action) {
 	current_action++;
 	resize(current_action);
 	push_back(action);
 }
 
-Action History::undo() {
+Event History::undo() {
 	if(current_action == -1)
-		return Action();
+		return Event();
 	return (*this)[current_action--];
 }
 
-Action History::redo() {
+Event History::redo() {
     if(current_action >= (int)size())
-		return Action();
+		return Event();
 	return (*this)[current_action++];
 }

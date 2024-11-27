@@ -19,6 +19,7 @@
 #include <time.h>
 
 using namespace std;
+using namespace Eigen;
 
 //////////////////////////////////////////////////////// NORMALS TASK //////////////////////////////////////////////////////////
 /// \brief NormalsTask: Takes care of creating the normals from the images given in a folder (inputFolder) and saves the file

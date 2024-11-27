@@ -1,23 +1,24 @@
-#include <string>
-#include <set>
-#include <iostream>
-#include <QDir>
-#include <QFile>
-#include <QTextStream>
-#include <QImage>
-
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
-
 #include "lp.h"
 #include "imageset.h"
 #include "dome.h"
 #include "jpeg_decoder.h"
 
+#include <QDir>
+#include <QFile>
+#include <QTextStream>
+#include <QImage>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+
+#include <string>
+#include <set>
+#include <iostream>
+
 
 #include <assert.h>
 using namespace std;
+using namespace Eigen;
 
 ImageSet::ImageSet(const char *path) {
 	if(path)

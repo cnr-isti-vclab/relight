@@ -20,10 +20,12 @@
 #include <QPen>
 #include <QImageReader>
 
+#include <Eigen/Dense>
+
 #include <iostream>
 
 using namespace std;
-
+using namespace Eigen;
 
 Project::~Project() {
 	clear();
@@ -510,7 +512,7 @@ White *Project::newWhite() {
 }
 
 
-void Project::saveLP(QString filename, std::vector<Vector3f> &directions) {
+void Project::saveLP(QString filename, vector<Vector3f> &directions) {
 	QFile file(filename);
 	if(!file.open(QFile::WriteOnly)) {
 		QString error = file.errorString();
@@ -545,7 +547,7 @@ void Project::saveLP(QString filename, std::vector<Vector3f> &directions) {
 
 void Project::loadLP(QString filename) {
 	vector<QString> filenames;
-	std::vector<Vector3f> directions;
+	vector<Vector3f> directions;
 
 
 	parseLP(filename, directions, filenames); //might throw an error.
@@ -583,8 +585,8 @@ void Project::loadLP(QString filename) {
 
 float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, const Vector3f &center, float radius) {
 	float a = direction.norm();
-	float b = direction*(origin - center)*2.0f;
-	float c = center.squaredNorm() + origin.squaredNorm() + center*origin*2.0f - radius*radius;
+	float b = direction.dot(origin - center)*2.0f;
+	float c = center.squaredNorm() + origin.squaredNorm() + center.dot(origin)*2.0f - radius*radius;
 
 	float det = b*b - 4.0f*a*c;
 	if(det <= 0)
@@ -615,13 +617,20 @@ void  Project::computeDirections() {
 				float by = sphere->center.y();
 				Vector3f viewDir = lens.viewDirection(bx, by);
 				viewDir.normalize();
-				float angle = acos(Vector3f(0, 0, -1) * viewDir);
+				float angle = acos(Vector3f(0, 0, -1).dot(viewDir));
 				//cout << "angle: " << 180*angle/M_PI << endl;
 				Vector3f axis = Vector3f(viewDir[1], - viewDir[0], 0);
 				axis.normalize();
 
-				for(Vector3f &v: sphere->directions)
-					v = v.rotate(axis, angle);
+				AngleAxisf rotation(angle, axis);
+				for(Vector3f &v: sphere->directions) {
+					//TODO remove this after verification.
+					Vector3f g = v*cos(angle) + axis.cross(v)*sin(angle) + axis *(axis.dot(v)) * (1 - cos(angle));
+					v = rotation * v;
+					assert(fabs(v[0] - g[0]) < 0.01);
+					assert(fabs(v[1] - g[1]) < 0.01);
+					assert(fabs(v[2] - g[2]) < 0.01);
+				}
 
 				if(dome.domeDiameter) {
 				//find intersection between directions and sphere.

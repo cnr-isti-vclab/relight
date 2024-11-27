@@ -4,7 +4,8 @@
 #include <QStringList>
 #include <QRect>
 #include <vector>
-#include "../src/relight_vector.h"
+
+#include <Eigen/Core>
 
 namespace pybind11 {
 	class object;
@@ -15,7 +16,7 @@ public:
 	Scripts();
 	static void deepzoom(QString plane, int quality = 98);       //expects "path/plane_1"
 	static void tarzoom(QString plane);       //expects "path/plane_1"
-	static void normals(QString output, QStringList images, const std::vector<Vector3f> &lights, int method, QRect &crop);
+	static void normals(QString output, QStringList images, const std::vector<Eigen::Vector3f> &lights, int method, QRect &crop);
 
 	static bool checkModule(QString module);
 private:

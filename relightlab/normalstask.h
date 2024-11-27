@@ -1,13 +1,14 @@
 #ifndef NORMALSTASK_H
 #define NORMALSTASK_H
 
-#include <QJsonObject>
-#include <QMutex>
-#include <QRect>
-#include "../src/relight_vector.h"
 #include "task.h"
 #include "../src/project.h"
 #include "../src/imageset.h"
+
+#include <QJsonObject>
+#include <QMutex>
+#include <QRect>
+#include <Eigen/Core>
 #include <QRunnable>
 
 enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA };

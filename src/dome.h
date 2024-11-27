@@ -1,8 +1,10 @@
 #ifndef DOME_H
 #define DOME_H
 
+#include "relight_vector.h"
+
 #include <vector>
-#include "../src/relight_vector.h"
+#include <Eigen/Core>
 #include <QString>
 
 class QJsonObject;
@@ -27,9 +29,9 @@ class Dome {
 public:
 	QString label;
 	QString notes;
-	std::vector<Vector3f> directions;       //estimated infinite far away lights.
-	std::vector<Vector3f> positionsSphere;  //3d positions if sphericals
-	std::vector<Vector3f> positions3d;      //3d positions
+	std::vector<Eigen::Vector3f> directions;       //estimated infinite far away lights.
+	std::vector<Eigen::Vector3f> positionsSphere;  //3d positions if sphericals
+	std::vector<Eigen::Vector3f> positions3d;      //3d positions
 
 	//TODO rename
 	std::vector<Color3f> ledAdjust;  //multiply pixel valut to correct for led differences

@@ -3,7 +3,8 @@
 
 #include <QString>
 #include <QSize>
-#include "../src/relight_vector.h"
+
+#include <Eigen/Core>
 
 
 class QJsonObject;
@@ -14,8 +15,8 @@ public:
 	QString filename;
 	bool valid = true;
 	bool skip = false;
-	Vector3f direction = Vector3f(0, 0, 0);  //light direction (infinite distance assumed)
-	Vector3f position = Vector3f(0, 0, 0);   //3d light position
+	Eigen::Vector3f direction = Eigen::Vector3f(0, 0, 0);  //light direction (infinite distance assumed)
+	Eigen::Vector3f position = Eigen::Vector3f(0, 0, 0);   //3d light position
 	double exposureTime = 0;
 	double isoSpeedRatings = 0;
 	QSize size;

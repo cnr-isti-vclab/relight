@@ -1,4 +1,6 @@
 #include "rti.h"
+#include "jpeg_decoder.h"
+#include "imageset.h"
 
 #include <QDir>
 #include <QFile>
@@ -9,9 +11,7 @@
 #include <QJsonArray>
 #include <QImage>
 
-#include "jpeg_decoder.h"
-#include "relight_vector.h"
-#include "imageset.h"
+#include <Eigen/Core>
 
 #include <math.h>
 #include <iostream>
@@ -20,6 +20,7 @@
 #include <assert.h>
 
 using namespace std;
+using namespace Eigen;
 
 bool Rti::load(const char *filename, bool loadPlanes) {
 

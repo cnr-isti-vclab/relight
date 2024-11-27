@@ -1,10 +1,12 @@
 #include "image.h"
 #include "../src/exif.h"
+
 #include <QJsonArray>
 #include <QJsonObject>
 
 #include <iostream>
 using namespace std;
+using namespace Eigen;
 
 QJsonObject toJson(const Vector3f &v) {
 	QJsonObject jv;

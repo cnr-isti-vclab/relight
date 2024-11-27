@@ -4,6 +4,8 @@
 #include <QGraphicsEllipseItem>
 #include <QDebug>
 
+using namespace Eigen;
+
 DirectionsView::DirectionsView(QWidget *parent): QGraphicsView(parent) {
 	setScene(&scene);
 }
