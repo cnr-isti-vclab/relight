@@ -63,7 +63,7 @@ Span::Span(float h1_, int x1, float h2_, int x2) {
 
 void Rasterizer::SetPixel(unsigned int x, unsigned int y, float h, int id) {
 	if(x >= width || y >= height)
-        return;
+		return;
 	ids[x + y*width] = id;
 }
 
@@ -73,8 +73,8 @@ void Rasterizer::SetPixel(int x, int y, float h, int id) {
 }
 
 void Rasterizer::SetPixel(float x, float y, float h, int id) {
-    if(x < 0.0f || y < 0.0f)
-        return;
+	if(x < 0.0f || y < 0.0f)
+		return;
 
 	SetPixel((unsigned int)x, (unsigned int)y, h, id);
 }
