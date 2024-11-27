@@ -74,11 +74,10 @@ template<typename Camera = Orthographic>
 class ScreenDifferentialGeometry
 {
 public:
-	static constexpr Scalar degrees = M_PI / 180.;
-	static constexpr Scalar cos_max_angle = std::cos(85. * degrees);
-	static constexpr Scalar sin_max_angle = std::sqrt(1. - cos_max_angle * cos_max_angle);
-	static constexpr float sigma_ = std::sqrt(2);
-
+	static constexpr Scalar degrees       = 0.017453292; //M_PI / 180.;
+	static constexpr Scalar cos_max_angle = 0.087155743; //std::cos(85. * degrees);
+	static constexpr Scalar sin_max_angle = 0.996194698; //std::sqrt(1. - cos_max_angle * cos_max_angle);
+	static constexpr float sigma_         = 1.414213562; //std::sqrt(2);
 private:
 	SurfaceMesh& mesh_;
 	Camera camera_;

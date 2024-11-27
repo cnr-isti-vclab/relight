@@ -130,6 +130,8 @@ void RtiColorSpaceRow::setColorspace(Rti::ColorSpace colorspace, bool emitting) 
 	case Rti::LRGB: lrgb->setChecked(true); break;
 	case Rti::MRGB: mrgb->setChecked(true); break;
 	case Rti::YCC:  ycc->setChecked(true); break;
+	default:
+		break; //TODO check MYCC!
 	}
 }
 
