@@ -22,9 +22,11 @@ class RtiFrame: public QFrame {
 public:
 	RtiFrame(QWidget *parent = nullptr);
 
+
 	RtiParameters parameters;
 
 public slots:
+	void init();
 	void exportRti();
 
 	void basisChanged();

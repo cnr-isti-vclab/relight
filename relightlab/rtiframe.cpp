@@ -95,6 +95,9 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	}
 
 	content->addStretch();
+}
+
+void RtiFrame::init() {
 
 }
 
