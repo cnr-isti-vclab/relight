@@ -73,7 +73,8 @@ public:
 		int n = mesh_.n_vertices();
 
 		Eigen::SparseMatrix<T> L(n, n);
-		Eigen::Vector<T, -1> b = Eigen::Vector<T, -1>::Zero(n);
+		//Eigen::Vector<T, -1> b = Eigen::Vector<T, -1>::Zero(n);
+		Eigen::Matrix<T, -1, 1> b = Eigen::Matrix<T, -1, 1>::Zero(n);
 
 		// Assembly:
 		std::vector<Eigen::Triplet<T>> coefficients; // list of non-zeros coefficients
@@ -172,7 +173,8 @@ public:
 
 		Eigen::ConjugateGradient<Eigen::SparseMatrix<T>> cg;
 		cg.compute(L);
-		Eigen::Vector<T, -1> depth = cg.solve(b);
+		//Eigen::Vector<T, -1> depth = cg.solve(b);
+		Eigen::Matrix<T, -1, 1> depth = cg.solve(b);
 
 		depth.array() -= depth.mean();
 

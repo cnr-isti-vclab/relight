@@ -75,7 +75,7 @@ Grid<Eigen::Vector3f> loadNormalMap(const char *filename) {
 		for (int u = 0; u != normals_float.cols; ++u) {
 			cv::Vec3f n = normals_float.at<cv::Vec3f>(v, u);
 			n[0] = -n[0] + 127.0f;
-			n[1] = n[1] - 127.0f;
+			n[1] = -n[1] + 127.0f;
 			n[2] = -n[2] + 127.0f;
 			n /= sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
 

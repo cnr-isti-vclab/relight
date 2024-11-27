@@ -125,7 +125,7 @@ private:
 		int width = normals_.cols();
 		int height = normals_.rows();
 
-		max_abs_curvatures_ = Grid<float>(height, width, 0.0f);
+		max_abs_curvatures_ = Grid<float>(width, height, 0.0f);
 
 		Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::Matrix<Scalar, 2, 2>> solver;
 
@@ -297,7 +297,7 @@ public:
 		Scalar w, ww;
 
 		// and ... interpolate normal and max abs curvature from adjacent triangles with valid values
-		for (int i = 0; i != mesh_.n_faces() && !undefined.empty(); ++i)
+		for (size_t i = 0; i != mesh_.n_faces() && !undefined.empty(); ++i)
 		{
 			auto f = undefined.front(); undefined.pop();
 			ww = 0;

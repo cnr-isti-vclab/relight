@@ -130,13 +130,17 @@ void NormalsTask::run() {
 	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
 	if(exportPly) {
-		bool proceed = progressed("Integrating normals...", 0);
+		bool proceed = progressed("Integrating normals assm...", 0);
 		if(!proceed)
 			return;
 		QString filename = output.left(output.size() -4) + ".obj";
 
 		float precision = 0.1f;
 		assm(filename, normals, precision);
+
+		proceed = progressed("Integrating normals bni...", 50);
+		if(!proceed)
+			return;
 		std::vector<float> z;
 		bni_integrate(callback, imageset.width, imageset.height, normals, z, bni_k);
 		if(z.size() == 0) {
@@ -181,9 +185,12 @@ bool saveObj(const char *filename, pmp::SurfaceMesh &mesh) {
 
 void NormalsTask::assm(QString filename, std::vector<float> &_normals, float approx_error) {
 	Grid<Eigen::Vector3f> normals(imageset.width, imageset.height, Eigen::Vector3f(0.0f, 0.0f, 0.0f));
-	for(int i = 0; i < _normals.size()/3; i++) {
-		normals[i] = Eigen::Vector3f(_normals[i*3], _normals[i*3+1], _normals[i*3+2]);
-	}
+	for(size_t y = 0; y < imageset.height; y++)
+		for(size_t x = 0; x < imageset.width; x++) {
+			int i = 3*(x + y*imageset.width);
+			normals.at(y, x) = Eigen::Vector3f(-_normals[i+0], -_normals[i+1], -_normals[i+2]);
+		}
+
 	Grid<unsigned char> mask(imageset.width, imageset.height, 0);
 	mask.fill(255);
 

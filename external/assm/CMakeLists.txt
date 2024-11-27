@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package (Eigen3)
 if(NOT Eigen3_FOUND)
 	set(EIGEN3_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../eigen-3.3.9)
-	
 endif()
 
 include_directories(${EIGEN3_INCLUDE_DIR})

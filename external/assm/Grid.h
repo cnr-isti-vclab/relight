@@ -10,7 +10,7 @@ template <class T> class Grid: public std::vector<T> {
 
 public:
 	Grid() {}
-	Grid(size_t rows, size_t cols, const T &zero) {
+	Grid(size_t cols, size_t rows, const T &zero) {
 		_rows = rows;
 		_cols = cols;
 		_zero = zero;
@@ -18,8 +18,8 @@ public:
 	}
 	size_t rows() const { return _rows; }
 	size_t cols() const { return _cols; }
-	T &at(size_t row, size_t col) { return (*this)[row + col*_rows]; }
-	const T &at(size_t row, size_t col) const { return (*this)[row + col*_rows]; }
+	T &at(size_t row, size_t col) { return (*this)[row + col*_cols]; }
+	const T &at(size_t row, size_t col) const { return (*this)[row + col*_cols]; }
 	void fill(T t) {
 		for(T &v: *this)
 			v = t;
@@ -54,8 +54,8 @@ public:
 		Grid result(_rows, _cols, _zero);
 
 		if (alongRows) {
-			for (int i = 0; i < _rows; ++i) {
-				for (int j = 0; j < _cols; ++j) {
+			for (int i = 0; i < int(_rows); ++i) {
+				for (int j = 0; j < int(_cols); ++j) {
 					T sum = _zero;
 					for (int k = -radius; k <= radius; ++k) {
 						int idx = j + k;
@@ -67,12 +67,12 @@ public:
 				}
 			}
 		} else {
-			for (int j = 0; j < _cols; ++j) {
-				for (int i = 0; i < _rows; ++i) {
+			for (int j = 0; j < int(_cols); ++j) {
+				for (int i = 0; i < int(_rows); ++i) {
 					T sum = _zero;
 					for (int k = -radius; k <= radius; ++k) {
 						int idx = i + k;
-						if (idx >= 0 && idx < _rows) {
+						if (idx >= 0 && idx < int(_rows)) {
 							sum += at(idx, j) * kernel[k + radius];
 						}
 					}

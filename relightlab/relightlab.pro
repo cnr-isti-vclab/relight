@@ -16,7 +16,7 @@ win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
     ../src/
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
-unix:INCLUDEPATH += /usr/include/eigen3
+unix:INCLUDEPATH += ../external/eigen-3.3.9/
 unix:LIBS += -ljpeg -ltiff -lgomp
 unix:QMAKE_CXXFLAGS += -fopenmp
 
