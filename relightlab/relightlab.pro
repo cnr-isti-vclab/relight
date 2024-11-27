@@ -115,8 +115,14 @@ RESOURCES += \
 
 
 HEADERS += \
+    ../external/assm/algorithms/DifferentialGeometry.h \
     ../external/assm/algorithms/Integration.h \
     ../external/assm/algorithms/PhotometricRemeshing.h \
+    ../external/assm/algorithms/Rasterizer.h \
+    ../external/assm/algorithms/ScreenDifferentialGeometry.h \
+    ../external/assm/algorithms/ScreenMeshing.h \
+    ../external/assm/algorithms/ScreenRemeshing.h \
+    ../external/assm/algorithms/Triangulation.h \
     ../relight-cli/rtibuilder.h \
     ../src/flatnormals.h \
     processqueue.h \

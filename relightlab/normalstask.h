@@ -26,7 +26,7 @@ public:
 	bool exportTiff = false;
 
 	bool exportPly = false;
-	bool bni_k = 2.0;
+	float bni_k = 2.0;
 	ImageSet imageset;
 	Lens lens;
 	float pixelSize = 0.0f;

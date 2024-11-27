@@ -149,6 +149,8 @@ void RtiFrame::basisChanged() {
 	case Rti::RBF:
 	case Rti::BILINEAR:
 		if(colorspace != Rti::YCC) nchroma = 0;
+	default:
+		break;
 	}
 
 	planes_row->setNPlanes(nplanes);
