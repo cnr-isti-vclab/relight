@@ -23,40 +23,39 @@ void help() {
 	cout << "Usage: relight-cli [-bpqy3PnmMwkrsSRBcCeEv]<input folder> [output folder]\n\n";
 	cout << "       relight-cli [-q] <input.ptm|.rti> [output folder]\n\n";
 	cout << "       relight-cli [-q] <input.json> [output.ptm]\n\n";
-	cout << "\tinput folder containing a .lp with number of photos and light directions\n";
+	cout << "\tinput folder containing a .lp or .dome with number of photos and light directions\n";
 	cout << "\toptional output folder (default ./)\n\n";
-	cout << "\t-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear\n";
-	cout << "\t-p <int>  : number of planes (default: 9)\n";
-	cout << "\t-q <int>  : jpeg quality (default: 95)\n";
-	cout << "\t-y <int>  : number of Y planes in YCC\n\n";
-	cout << "\t-3 <radius[:offset]>: 3d light positions processing, ratio diameter_dome/image_width\n               and optionally vertical offset of the center of the sphere to the surface.\n";
+	cout << "\t  -b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear\n";
+	cout << "\t  -p <int>  : number of planes (default: 9)\n";
+	cout << "\t  -q <int>  : jpeg quality (default: 95)\n";
+	cout << "\t  -y <int>  : number of Y planes in YCC\n\n";
+	cout << "\t  -3 <radius[:offset]>: 3d light positions processing, ratio diameter_dome/image_width\n               and optionally vertical offset of the center of the sphere to the surface.\n";
 
-	cout << "\t-P <pixel size in MM>: this number is saved in .json output and within image metadata\n";
-	//	cout << "\t-m <int>  : number of materials (default 8)\n";
-	cout << "\t-n        : extract normals\n";
-	cout << "\t-m        : extract mean image\n";
-	cout << "\t-M        : extract median image (7/8th quantile) \n";
+	cout << "\t  -P <pixel size in MM>: this number is saved in .json output and within image metadata\n";
+	cout << "\t  -n        : extract normals\n";
+	cout << "\t  -m        : extract mean image\n";
+	cout << "\t  -M        : extract median image (7/8th quantile) \n";
 
-	cout << "\t-w        : number of workers (default 8)\n";
-	cout << "\t-k <int>x<int>+<int>+<int>: Cropping extracts only the widthxheight+offx+offy part\n";
+	cout << "\t  -w        : number of workers (default 8)\n";
+	cout << "\t  -k <int>x<int>+<int>+<int>: Cropping extracts only the widthxheight+offx+offy part\n";
 
 	cout << "\nIgnore exotic parameters below here\n\n";
-	cout << "\n-H        : fix overexposure in ptm and hsh due to bad sampling\n";
-	cout << "\t-r <int>  : side of the basis function (default 8, 0 means rbf interpolation)\n";
-	cout << "\t-s <int>  : sampling RAM for pca  in MB (default 500MB)\n";
-	cout << "\t-S <float>: sigma in rgf gaussian interpolation default 0.125 (~100 img)\n";
-	cout << "\t-R <float>: regularization coeff for bilinear default 0.1\n";
-	cout << "\t-B <float>: range compress bits for planes (default 0.0) 1.0 means compress\n";
-	cout << "\t-c <float>: coeff quantization (to test!) default 1.5\n";
-	cout << "\t-C        : apply chroma subsampling \n";
-	cout << "\t-e        : evaluate reconstruction error (default: false)\n";
-	cout << "\t-E <int>  : evaluate error on a single image (but remove it for fitting)\n";
+	cout << "\n  -H        : fix overexposure in ptm and hsh due to bad sampling\n";
+	cout << "\t  -r <int>  : side of the basis function (default 8, 0 means rbf interpolation)\n";
+	cout << "\t  -s <int>  : sampling RAM for pca  in MB (default 500MB)\n";
+	cout << "\t  -S <float>: sigma in rgf gaussian interpolation default 0.125 (~100 img)\n";
+	cout << "\t  -R <float>: regularization coeff for bilinear default 0.1\n";
+	cout << "\t  -B <float>: range compress bits for planes (default 0.0) 1.0 means compress\n";
+	cout << "\t  -c <float>: coeff quantization (to test!) default 1.5\n";
+	cout << "\t  -C        : apply chroma subsampling \n";
+	cout << "\t  -e        : evaluate reconstruction error (default: false)\n";
+	cout << "\t  -E <int>  : evaluate error on a single image (but remove it for fitting)\n";
 
 	cout << "\n\nTesting options, will use the input folder as an RTI source: \n";
 
-	cout << "\t-D <path> : directory to store rebuilt images\n";
-	cout << "\t-L <x:y:z> : reconstruct only one image from light parameters, output is the filename\n";
-	cout << "\t-v : verbose, prints progress info\n";
+	cout << "\t  -D <path> : directory to store rebuilt images\n";
+	cout << "\t  -L <x:y:z> : reconstruct only one image from light parameters, output is the filename\n";
+	cout << "\t  -v : verbose, prints progress info\n";
 }
 
 //convert PTM into relight format
@@ -99,13 +98,13 @@ int main(int argc, char *argv[]) {
 	}
 
 	RtiBuilder builder;
+	Dome dome;
 	int quality = 95;
 	bool evaluate_error = false;
 	QString redrawdir;
 	bool relighted = false;
 	Eigen::Vector3f light;
 	bool verbose = true;
-	bool histogram_fix = false;
 
 	opterr = 0;
 	char c;
@@ -137,8 +136,8 @@ int main(int argc, char *argv[]) {
 			break;
 		}
 		case 'P':
-			builder.pixelSize = atof(optarg);
-			if(builder.pixelSize <= 0) {
+			builder.imageset.pixel_size = atof(optarg);
+			if(builder.imageset.pixel_size <= 0) {
 				cerr << "Invalid parameter pixelSize (-P): " << optarg << endl;
 				return 1;
 			}
@@ -208,11 +207,11 @@ int main(int argc, char *argv[]) {
 			encoder.distortion = atof(optarg);
 			break; */
 		case '3': { //assume lights positionals. (0, 0) is in the center of the image, (might add these values), and unit is image width
-			builder.imageset.light3d = true;
-			builder.imageset.dome_radius = float(atof(optarg));
+			dome.lightConfiguration = Dome::SPHERICAL;
+			dome.domeDiameter = 2*float(atof(optarg));
 			QString params(optarg);
 			if(params.contains(':')) {
-				builder.imageset.vertical_offset = params.split(':')[1].toDouble();
+				dome.verticalOffset = params.split(':')[1].toDouble();
 			}
 		}
 			break;
@@ -329,7 +328,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	if(builder.imageset.light3d == true && builder.type == RtiBuilder::RBF) {
+	if(dome.lightConfiguration != Dome::DIRECTIONAL && builder.type == RtiBuilder::RBF) {
 		cerr << "RBF basis do not support positional lights (for the moment)\n";
 		return 1;
 	}
@@ -348,7 +347,7 @@ int main(int argc, char *argv[]) {
 		}
 		break;
 	case Rti::HSH:
-		if(builder.colorspace == Rti::RGB && (builder.nplanes != 27 || builder.nplanes != 12)) {
+		if(builder.colorspace == Rti::RGB && (builder.nplanes != 27 && builder.nplanes != 12)) {
 			cerr << "hsh basis requires 12 or 27 coefficient planes (option -p 12 or -p 27)\n";
 			return -1;
 		}
@@ -399,6 +398,8 @@ int main(int argc, char *argv[]) {
 	QElapsedTimer timer;
 	timer.start();
 
+
+
 	QFileInfo info(input.c_str());
 	if(!info.exists()) {
 		cerr << "Input \"" << input << "\" doesn't seems to exist." << endl;
@@ -406,7 +407,7 @@ int main(int argc, char *argv[]) {
 	}
 	if(info.isFile()) {
 		if(info.suffix() == "relight") {
-			if(!builder.initFromProject(input, callback)) {
+			if(!builder.setupFromProject(input)) {
 				cerr << builder.error << "\n" << endl;
 				return 1;
 			}
@@ -428,7 +429,7 @@ int main(int argc, char *argv[]) {
 		}
 	} else if(info.isDir()) {
 
-		if(!builder.initFromFolder(input, callback)) {
+		if(!builder.setupFromFolder(input)) {
 			cerr << builder.error << " !\n" << endl;
 			return 1;
 		}
@@ -437,6 +438,13 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	//if spherical dome has been specified, i
+	if(dome.lightConfiguration == Dome::SPHERICAL) {
+		dome.directions = builder.imageset.lights1;
+		dome.updateSphereDirections();
+	}
+
+	builder.init(callback);
 	int size = builder.save(output, quality);
 	if(size == 0) {
 		cerr << "Failed saving: " << builder.error << " !\n" << endl;
@@ -513,8 +521,9 @@ int main(int argc, char *argv[]) {
 		}
 
 		QDir out(output.c_str());
-		ImageSet imgset;
-		imgset.initFromFolder(input.c_str(), true);
+		builder.setupFromFolder(input.c_str());
+		ImageSet &imgset = builder.imageset;
+
 		double mse = 0;
 		mse = Rti::evaluateError(imgset, rti, out.filePath("error.png"), builder.skip_image);
 
@@ -526,7 +535,7 @@ int main(int argc, char *argv[]) {
 		}
 		//type, colorspace, nplanes, nmaterials, ny
 
-		Eigen::Vector3f light = imgset.lights[builder.skip_image];
+		Eigen::Vector3f light = dome.directions[builder.skip_image];
 		float r = sqrt(light[0]*light[0] + light[1]*light[1]);
 		float azimut = asin(r);
 		cout << output << "," << types[builder.type] << "," << colorspaces[builder.colorspace] << ","

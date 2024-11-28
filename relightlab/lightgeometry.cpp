@@ -118,7 +118,7 @@ void LightsGeometry::init() {
 
 	filename->setText(dome.label);
 	notes->setText(dome.notes);
-	images_number->setValue(dome.imagesCount());
+	images_number->setValue(dome.lightsCount());
 	group->button(dome.lightConfiguration)->setChecked(true);
 
 	bool spherical = dome.lightConfiguration == Dome::SPHERICAL;

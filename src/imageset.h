@@ -26,17 +26,11 @@ public:
 	int width = 0, height = 0;
 	int left = 0, top = 0, right = 0, bottom = 0;
 
-	/* REPLACE THIS WITH DOME */
-	//Lights
-	std::vector<Eigen::Vector3f> lights;
+	float pixel_size = 0;
 
+	std::vector<Eigen::Vector3f> lights1;
 	bool light3d = false;
-	std::vector<Eigen::Vector3f> lights3d; //always expressed in mm.
-
-	//Geometry
-	float image_width_mm = 0.0f;
-	float dome_radius = 0.0f;
-	float vertical_offset = 0.0f;
+	float idealLightDistance2 = 0.0f; //squared, used when rescaling intensity
 
 	int current_line = 0;
 	
@@ -48,12 +42,19 @@ public:
 	static void parseJSON(QString filename,  std::vector<Eigen::Vector3f> &lights);
 
 
-	bool initFromFolder(const char *path, bool ignore_filenames = true, int skip_image = -1);
+	//find images in a folder (calls initimages)
+	bool initFromFolder(const char *path, int skip_image = -1);
+	//load light configuration from dome.
+	void initFromDome(Dome &dome);
+
+	//find images in a project, set crop, loads light configuration in dome.
 	bool initFromProject(QJsonObject &obj, const QString &filename);
-	void initLights();
+
+	//open images and starts the decoders
 	bool initImages(const char *path); //path points to the dir of the images.
-	void initLightsFromDome(Dome &dome);
-	
+
+	size_t size() { return size_t(images.size()); }
+
 	QImage maxImage(std::function<bool(std::string stage, int percent)> *callback = nullptr); 
 	void crop(int _left, int _top, int _right, int _bottom);
 	void setCallback(std::function<bool(QString stage, int percent)> *_callback = nullptr) { callback = _callback; }
@@ -70,6 +71,9 @@ public:
 protected:
 	std::function<bool(QString stage, int percent)> *callback;
 	std::vector<JpegDecoder *> decoders;
+
+private:
+	void compensateIntensity(PixelArray &pixels);
 };
 
 #endif // IMAGESET_H

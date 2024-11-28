@@ -34,7 +34,7 @@ public:
 	float pixelSize = 0.0f;
 
 	NormalsTask(Project *_project, NormalSolver _solver, FlatMethod _flatMethod) :
-		project(_project), solver(_solver), flatMethod(_flatMethod) {
+		solver(_solver), flatMethod(_flatMethod), project(_project) {
 	}
 
 	virtual ~NormalsTask(){};

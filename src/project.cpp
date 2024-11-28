@@ -572,15 +572,16 @@ void Project::loadLP(QString filename) {
 
 	if(success) {
 		for(size_t i = 0; i < size(); i++)
-			images[i].direction = ordered_dir[i];
+			dome.directions[i] = ordered_dir[i];
 	} else {
 		auto response = QMessageBox::question(nullptr, "Light directions and images",
 			"Filenames in .lp do not match with images in the .lp directory. Do you want to just use the filename order?");
 		if(response == QMessageBox::Cancel || response == QMessageBox::No)
 			return;
 		for(size_t i = 0; i < size(); i++)
-			images[i].direction = directions[i];
+			dome.directions[i] = directions[i];
 	}
+	dome.lightConfiguration = Dome::DIRECTIONAL;
 }
 
 float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, const Vector3f &center, float radius) {
@@ -599,13 +600,22 @@ void  Project::computeDirections() {
 		QMessageBox::critical(nullptr, "Missing light directions.", "Light directions can be loaded from a .lp file or processing the spheres.");
 		return;
 	}
-	vector<Vector3f> directions(size(), Vector3f(0, 0, 0));
+	dome.directions.clear();
+	dome.directions.resize(size(), Vector3f(0, 0, 0));
+	dome.positions3d.clear();
+	dome.positions3d.resize(size(), Vector3f(0, 0, 0));
+	dome.positionsSphere.clear();
+	dome.positionsSphere.resize(size(), Vector3f(0, 0, 0));
+
 	vector<float> weights(size(), 0.0f);
+
 	if(spheres.size()) {
 		for(auto sphere: spheres) {
 			sphere->computeDirections(lens);
 			if(sphere->directions.size() != size())
 				throw QString("Sphere number of directions is different than images");
+
+			//TODO: this needs to be verified properly.
 
 			//if we have a focal length we can rotate the directions of the lights appropriately, unless in the center!
 			if(lens.focalLength && (sphere->center != QPointF(0, 0))) {
@@ -618,7 +628,7 @@ void  Project::computeDirections() {
 				Vector3f viewDir = lens.viewDirection(bx, by);
 				viewDir.normalize();
 				float angle = acos(Vector3f(0, 0, -1).dot(viewDir));
-				//cout << "angle: " << 180*angle/M_PI << endl;
+
 				Vector3f axis = Vector3f(viewDir[1], - viewDir[0], 0);
 				axis.normalize();
 
@@ -633,9 +643,12 @@ void  Project::computeDirections() {
 				}
 
 				if(dome.domeDiameter) {
-				//find intersection between directions and sphere.
+					//find intersection between reflection directions and sphere.
 					for(size_t i = 0; i < sphere->directions.size(); i++) {
-						Vector3f &direction = sphere->directions[i];
+						Vector3f direction = sphere->directions[i];
+						if(direction == Vector3f(0, 0, 0))
+							continue;
+
 						direction.normalize();
 						Vector3f origin = lens.viewDirection(sphere->lights[i].x(), sphere->lights[i].y());
 						//bring it back to surface plane
@@ -647,8 +660,8 @@ void  Project::computeDirections() {
 						Vector3f center(0, 0, dome.verticalOffset/dome.imageWidth);
 						float distance = lineSphereDistance(origin, direction, center, radius);
 						Vector3f position = origin + direction*distance;
-						images[i].position = position;
 						direction = (position - Vector3f(0, 0, dome.verticalOffset/dome.imageWidth))/radius;
+						dome.positionsSphere[i] += position;
 					}
 				}
 			}
@@ -657,16 +670,19 @@ void  Project::computeDirections() {
 				Vector3f d = sphere->directions[i];
 				if(d.isZero())
 					continue;
-				directions[i] += d;
+				dome.directions[i] += d;
 				weights[i] += 1.0f;
 			}
 		}
 	}
 
-	//Simple mean for the spheres directions (not certainly the smartest thing).
-	for(size_t i = 0; i < directions.size(); i++) {
-		if(weights[i] > 0)
-			images[i].direction = directions[i]/weights[i];
+	//Simple mean for the spheres directions (if we have a dome diameter, directions are corrected for sphere position.
+	for(size_t i = 0; i < dome.directions.size(); i++) {
+		if(weights[i] == 0)
+			continue;
+		dome.directions[i] /= weights[i];
+		dome.positions3d[i] /= weights[i];
+		dome.positionsSphere[i] /= weights[i];
 	}
 	needs_saving = true;
 }

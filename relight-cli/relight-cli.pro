@@ -32,26 +32,32 @@ mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 DESTDIR = "../bin"
 
 SOURCES += main.cpp \
+    ../src/dome.cpp \
     ../src/getopt.cpp \
     ../src/imageset.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/jpeg_encoder.cpp \
+    ../src/lens.cpp \
     ../src/rti.cpp \
     ../src/legacy_rti.cpp \
+	../src/sphere.cpp \
     rtibuilder.cpp \
     convert_rti.cpp \
     ../src/lp.cpp
 
 HEADERS += \
+    ../src/dome.h \
     ../src/getopt.h \
     ../src/imageset.h \
     ../src/jpeg_decoder.h \
     ../src/jpeg_encoder.h \
+    ../src/lens.h \
     ../src/material.h \
     ../src/vector.h \
     ../src/rti.h \
     ../src/legacy_rti.h \
     ../src/eigenpca.h \
+	../src/sphere.h \
     rtibuilder.h \
     ../src/lp.h
 

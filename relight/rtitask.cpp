@@ -67,7 +67,7 @@ void RtiTask::run() {
 
 void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 	builder = new RtiBuilder;
-	builder->pixelSize =(*this)["pixelSize"].value.toDouble();
+	builder->imageset.pixel_size =(*this)["pixelSize"].value.toDouble();
 	builder->commonMinMax = commonMinMax;
 
 	builder->nworkers = QSettings().value("nworkers", 8).toInt();
@@ -91,13 +91,8 @@ void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
 	for(int i = 0; i < qlights.size(); i+= 3)
 		for(int k = 0; k < 3; k++)
 			lights[i/3][k] = qlights[i+k].toDouble();
-	builder->lights = builder->imageset.lights = lights;
-	builder->imageset.light3d = project.dome.lightConfiguration != Dome::DIRECTIONAL;
-	builder->imageset.image_width_mm = project.dome.imageWidth;
-	builder->imageset.dome_radius = project.dome.domeDiameter/2.0;
-	builder->imageset.vertical_offset = project.dome.verticalOffset;
-	builder->imageset.initLights();
 
+	builder->imageset.initFromDome(project.dome);
 	builder->imageset.initImages(input_folder.toStdString().c_str());
 
 

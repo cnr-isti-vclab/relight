@@ -15,8 +15,8 @@ public:
 	QString filename;
 	bool valid = true;
 	bool skip = false;
-	Eigen::Vector3f direction = Eigen::Vector3f(0, 0, 0);  //light direction (infinite distance assumed)
-	Eigen::Vector3f position = Eigen::Vector3f(0, 0, 0);   //3d light position
+	/*Eigen::Vector3f direction = Eigen::Vector3f(0, 0, 0);  //light direction (infinite distance assumed)
+	Eigen::Vector3f position = Eigen::Vector3f(0, 0, 0);   //3d light position */
 	double exposureTime = 0;
 	double isoSpeedRatings = 0;
 	QSize size;
@@ -24,9 +24,9 @@ public:
 	Image(QString s = ""): filename(s) {}
 
 	QJsonObject toJson();
-	bool hasLightDirection() {
+	/*bool hasLightDirection() {
 		return !direction.isZero() || !position.isZero();
-	}
+	}*/
 	void fromJson(const QJsonObject &obj);
 	void readExif(Exif &exif);
 	/*bool matchSize(QSize &imgsize) {

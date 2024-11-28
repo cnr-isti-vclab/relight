@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "rtibuilder.h"
+#include "../src/lp.h"
 
 #include <QDir>
 #include <QFile>
@@ -73,18 +74,35 @@ static Vector3f fromOcta(int x, int y, int resolution) {
 RtiBuilder::RtiBuilder() {}
 RtiBuilder::~RtiBuilder() {}
 
-bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(QString stage, int percent)> *_callback) {
+bool RtiBuilder::setupFromFolder(const string &folder) {
 	
-	callback = _callback;
 	try {
-		if(!imageset.initFromFolder(folder.c_str(), true, skip_image)) {
-			error = "Failed imageset init.";
-			return false;
+		QDir dir(folder.c_str());
+
+		QStringList img_ext;
+		img_ext << "*.jpg" << "*.JPG";
+		imageset.images = dir.entryList(img_ext);
+
+		QStringList lp_ext;
+		lp_ext << "*.lp";
+		QStringList lps = dir.entryList(lp_ext);
+		if(lps.size() == 0)
+			throw QString("Could not find a .lp file in the folder")
+				;
+		Dome dome;
+		vector<QString> filenames;
+		parseLP(dir.filePath(lps[0]), dome.directions, filenames);
+
+		if(skip_image >= 0) {
+			imageset.images.removeAt(skip_image);
+			dome.directions.erase(dome.directions.begin() + skip_image);
 		}
-		if(imageset.lights.size() == 0) {
-			error = "Could not find .lp file with light information";
-			return false;
-		}
+		imageset.lights1 = dome.directions;
+		imageset.light3d = false;
+
+		imageset.initImages(folder.c_str());
+
+
 	} catch(QString e) {
 		error = e.toStdString();
 		return false;
@@ -94,13 +112,11 @@ bool RtiBuilder::initFromFolder(const string &folder, std::function<bool(QString
 
 	width = imageset.width;
 	height = imageset.height;
-	lights = imageset.lights;
-	return init(callback);
+	return true;
 }
 
 
-bool RtiBuilder::initFromProject(const std::string &_filename, std::function<bool(QString stage, int percent)> *_callback) {
-	callback = _callback;
+bool RtiBuilder::setupFromProject(const std::string &_filename) {
 	QString filename (_filename.c_str());
 	try {
 		QFile file(filename);
@@ -110,7 +126,7 @@ bool RtiBuilder::initFromProject(const std::string &_filename, std::function<boo
 		QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
 		QJsonObject obj = doc.object();
 		if(obj.contains("pixelSizeInMM"))
-			pixelSize = obj["pixelSizeInMM"].toDouble();
+			imageset.pixel_size = obj["pixelSizeInMM"].toDouble();
 
 
 		imageset.initFromProject(obj, filename);
@@ -120,12 +136,11 @@ bool RtiBuilder::initFromProject(const std::string &_filename, std::function<boo
 
 		width = imageset.width;
 		height = imageset.height;
-		lights = imageset.lights;
 	} catch(QString e) {
 		error = e.toStdString();
 		return false;
 	}
-	return init(_callback);
+	return true;
 }
 
 /*
@@ -168,12 +183,11 @@ bool RtiBuilder::init(std::function<bool(QString stage, int percent)> *_callback
 	callback = _callback;
 
 
-
 	if(type == BILINEAR) {
 		ndimensions = resolution*resolution;
 		buildResampleMaps();
 	} else {
-		ndimensions = lights.size();
+		ndimensions = imageset.size();
 	}
 	if(samplingram == 0) {
 		cerr << "Sampling RAM must be > 0\n";
@@ -460,13 +474,13 @@ MaterialBuilder RtiBuilder::pickBaseHSH(std::vector<Vector3f> &lights, Rti::Type
 void RtiBuilder::pickBases(PixelArray &sample) {
 	//rbf can't 3d, bilinear just resample (and then single base)
 	if(!imageset.light3d) {
-		materialbuilder = pickBase(sample, imageset.lights);
+		materialbuilder = pickBase(sample, imageset.lights1);
 
 	} else {
 
 		if(type == RBF || type == BILINEAR) {
 
-			materialbuilder = pickBase(sample, imageset.lights); //lights are unused for rbf
+			materialbuilder = pickBase(sample, imageset.lights1); //lights are unused for rbf
 
 		} else {
 			materialbuilders.resize(resample_width * resample_height);
@@ -741,8 +755,8 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 	QTextStream stream(&info);
 	stream << "{\n\"width\": " << width << ", \"height\": " << height << ",\n"
 		   << "\"format\": \"jpg\",\n";
-	if(pixelSize > 0)
-		stream << "\"pixelSizeInMM\": " << pixelSize << ",\n";
+	if(imageset.pixel_size > 0)
+		stream << "\"pixelSizeInMM\": " << imageset.pixel_size << ",\n";
 	stream << "\"type\":\"";
 	switch(type) {
 	case PTM: stream << "ptm"; break;
@@ -768,18 +782,19 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 	}
 	stream << "\",\n";
 	
-	if(lights.size()) {
+	if(imageset.lights1.size()) {
 		if(type == RBF)
 			stream << "\"sigma\": " << sigma << ",\n";
 		stream << "\"lights\": [";
-		for(uint32_t i = 0; i < imageset.lights.size(); i++) {
-			Vector3f &l = imageset.lights[i];
+		for(uint32_t i = 0; i < imageset.lights1.size(); i++) {
+			Vector3f &l = imageset.lights1[i];
 			stream << QString::number(l[0], 'f', 3) << ", " << QString::number(l[1], 'f', 3) << ", " << QString::number(l[2], 'f', 3);
-			if(i != imageset.lights.size()-1)
+			if(i != imageset.lights1.size()-1)
 				stream << ", ";
 		}
 		stream << "],\n";
 	}
+
 	if(colorspace == MYCC)
 		stream << "\"yccplanes\": [" << yccplanes[0] << ", " << yccplanes[1] << ", " << yccplanes[2] << "],\n";
 	else
@@ -831,10 +846,10 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 	return true;
 }
 
-Vector3f extractMean(Pixel &pixels, int n) {
+Vector3f extractMean(Pixel &pixels) {
+	int n = pixels.size();
 	double m[3] = { 0.0, 0.0, 0.0 };
-	for(int i = 0; i < n; i++) {
-		Color3f &c = pixels[i];
+	for(Color3f &c: pixels) {
 		m[0] += c[0];
 		m[1] += c[1];
 		m[2] += c[2];
@@ -843,7 +858,8 @@ Vector3f extractMean(Pixel &pixels, int n) {
 }
 
 
-Vector3f extractMedian(Pixel &pixels, int n) {
+Vector3f extractMedian(Pixel &pixels) {
+	int n = pixels.size();
 
 	Vector3f m;
 	std::vector<float> a(n);
@@ -942,7 +958,7 @@ public:
 		normals.resize(b.width*3);
 		means.resize(b.width*3);
 		medians.resize(b.width*3);
-		sample.resize(b.width, b.lights.size());
+		sample.resize(b.width, b.imageset.size());
 		resample.resize(b.width, b.ndimensions);
 
 		//setAutodelete(false);
@@ -1280,9 +1296,9 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			int side = 32;
 			QImage img(side*(nplanes+1), side, QImage::Format_RGB32);
 			img.fill(qRgb(0, 0, 0));
-			for(uint32_t i = 0; i < imageset.lights.size(); i++) {
+			for(uint32_t i = 0; i < imageset.lights1.size(); i++) {
 				float dx, dy;
-				toOcta(imageset.lights[i], dx, dy, side);
+				toOcta(imageset.lights1[i], dx, dy, side);
 				int x = dx;
 				int y = dy;
 				int r = (int)materialbuilder.mean[i*3+0];
@@ -1294,9 +1310,9 @@ size_t RtiBuilder::save(const string &output, int quality) {
 				Material::Plane &plane = material.planes[p];
 				float *eigen = materialbuilder.proj.data() + p*dim;
 				uint32_t X = (p+1)*side;
-				for(size_t i = 0; i < imageset.lights.size(); i++) {
+				for(size_t i = 0; i < imageset.lights1.size(); i++) {
 					float dx, dy;
-					toOcta(imageset.lights[i], dx, dy, side);
+					toOcta(imageset.lights1[i], dx, dy, side);
 					uint32_t x = dx;
 					int y = dy;
 					int r = (int)(127 + plane.range*eigen[i*3+0]);
@@ -1325,7 +1341,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		encoders[i]->setJpegColorSpace(JCS_YCbCr);
 
 		// Set spatial resolution if known. Convert to pixels/m as RtiBuilder stores this in mm/pixel
-		if(pixelSize > 0) encoders[i]->setDotsPerMeter(1000.0/pixelSize);
+		if(imageset.pixel_size > 0) encoders[i]->setDotsPerMeter(1000.0/imageset.pixel_size);
 
 		if(!chromasubsampling)
 			encoders[i]->setChromaSubsampling(false);
@@ -1354,8 +1370,8 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	QImage medians(width, height, QImage::Format_RGB32);
 
 	// Set spatial resolution if known. Convert to pixels/m as RtiBuilder stores this in mm/pixel
-	if (pixelSize > 0) {
-	        int dotsPerMeter = round(1000.0/pixelSize);
+	if (imageset.pixel_size > 0) {
+			int dotsPerMeter = round(1000.0/imageset.pixel_size);
 		normals.setDotsPerMeterX(dotsPerMeter);
 		normals.setDotsPerMeterY(dotsPerMeter);
 		means.setDotsPerMeterX(dotsPerMeter);
@@ -1458,10 +1474,10 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 			for(uint32_t y = 0; y < sample.nlights; y++)
 				A(y, 0) = sample[x][y].mean();
 
-			for(uint32_t y = 0; y < imageset.lights.size(); y++) {
-				b(y, 0) = imageset.lights[y][0];
-				b(y, 1) = imageset.lights[y][1];
-				b(y, 2) = imageset.lights[y][2];
+			for(uint32_t y = 0; y < imageset.lights1.size(); y++) {
+				b(y, 0) = imageset.lights1[y][0];
+				b(y, 1) = imageset.lights1[y][1];
+				b(y, 2) = imageset.lights1[y][2];
 			}
 
 			Eigen::MatrixXf r = (A.transpose() * A).ldlt().solve(A.transpose() * b);
@@ -1477,14 +1493,14 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 		vector<float> pri = toPrincipal(resample[x]);
 
 		if(savemeans) {
-			Vector3f n = extractMean(sample[x], lights.size());
+			Vector3f n = extractMean(sample[x]);
 			means[x*3+0] = n[0];
 			means[x*3+1] = n[1];
 			means[x*3+2] = n[2];
 		}
 
 		if(savemedians) {
-			Vector3f n = extractMedian(sample[x], lights.size());
+			Vector3f n = extractMedian(sample[x]);
 			medians[x*3+0] = n[0];
 			medians[x*3+1] = n[1];
 			medians[x*3+2] = n[2];
@@ -1669,7 +1685,7 @@ void RtiBuilder::resamplePixel(Pixel &sample, Pixel &pixel) { //pos in pixels.
 //notice how sample are already intensity corrected.
 vector<Vector3f> RtiBuilder::relativeNormalizedLights(int x, int y) {
 
-	vector<Vector3f> relights = imageset.lights3d;
+	vector<Vector3f> relights = imageset.lights1;;
 	for(Vector3f &light: relights) {
 		light = imageset.relativeLight(light, x, y);
 		light.normalize();
@@ -1679,7 +1695,7 @@ vector<Vector3f> RtiBuilder::relativeNormalizedLights(int x, int y) {
 
 void RtiBuilder::buildResampleMaps() {
 	if(!imageset.light3d) {
-		buildResampleMap(imageset.lights, resamplemap);
+		buildResampleMap(imageset.lights1, resamplemap);
 		return;
 	}
 	resamplemaps.resize(resample_height*resample_width);
@@ -1884,7 +1900,7 @@ std::vector<float> RtiBuilder::toPrincipal(Pixel &pixel, MaterialBuilder &materi
 		float weight = 0;
 		for(uint32_t i = 0; i < ndimensions; i++) {
 			Color3f &c = pixel[i];
-			float w = 0.25 - pow(asin(lights[i][2])/(M_PI/2) - 0.5, 2);
+			float w = 0.25 - pow(asin(imageset.lights1[i][2])/(M_PI/2) - 0.5, 2);
 			mean += c*w;
 			weight += w;
 		}

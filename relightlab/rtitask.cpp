@@ -32,7 +32,7 @@ void RtiTask::run() {
 	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
 	builder = new RtiBuilder;
-	builder->pixelSize = project.pixelSize;
+	builder->imageset.pixel_size = project.pixelSize;
 
 	builder->nworkers = QSettings().value("nworkers", 8).toInt();
 	builder->samplingram = QSettings().value("ram", 512).toInt();
@@ -48,7 +48,7 @@ void RtiTask::run() {
 	}
 	ImageSet &imageset = builder->imageset;
 	imageset.images = project.getImages();
-	imageset.initLightsFromDome(project.dome);
+	imageset.initFromDome(project.dome);
 	imageset.initImages(input_folder.toStdString().c_str());
 
 	if(!crop.isNull()) {
@@ -59,7 +59,6 @@ void RtiTask::run() {
 		imageset.crop(crop.left(), crop.top(), crop.width(), crop.height());
 	}
 
-	builder->lights = imageset.lights;
 	builder->width  = imageset.width;
 	builder->height = imageset.height;
 
