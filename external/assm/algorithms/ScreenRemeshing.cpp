@@ -657,7 +657,7 @@ void ScreenRemeshing<Projection>::tangential_smoothing(unsigned int iterations)
 	for (unsigned int iters = 0; iters < iterations; ++iters)
 	{
 #pragma omp parallel for private(v1, v2, v3, vv, e, w, ww, u, n, t, b) shared(update)
-		for (size_t i = 0; i < mesh_.n_vertices(); ++i)
+		for (int i = 0; i < int(mesh_.n_vertices()); ++i)
 		{
 			Vertex v(i);
 
@@ -720,7 +720,7 @@ void ScreenRemeshing<Projection>::tangential_smoothing(unsigned int iterations)
 
 		// update vertex positions
 #pragma omp parallel for private(v1, v2, v3, vv, e, w, ww, u, n, t, b) shared(update)
-		for (size_t i = 0; i != mesh_.n_vertices(); ++i)
+		for (int i = 0; i < int(mesh_.n_vertices()); ++i)
 		{
 			Vertex v(i);
 			if (!mesh_.is_boundary(v) && !vlocked_[v])
