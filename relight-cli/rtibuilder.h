@@ -5,6 +5,7 @@
 
 #include "../src/rti.h"
 #include "../src/imageset.h"
+#include "../src/dome.h"
 #include "../src/material.h"
 #include "../src/relight_vector.h"
 
@@ -19,7 +20,7 @@ typedef std::vector<std::vector<std::pair<int, float>>> Resamplemap;
 class RtiBuilder: public Rti {
 public:
 	ImageSet imageset;
-	float pixelSize = 0;
+	//float pixelSize = 0;
 	uint32_t samplingram = 500;
 	uint32_t nsamples = 1<<16; //TODO change to rate
 	float rangescale = 1.5;
@@ -39,8 +40,8 @@ public:
 
 	RtiBuilder();
 	~RtiBuilder();
-	bool initFromFolder(const std::string &folder, std::function<bool(QString stage, int percent)> *_callback = nullptr);
-	bool initFromProject(const std::string &filename, std::function<bool(QString stage, int percent)> *_callback = nullptr);
+	bool setupFromFolder(const std::string &folder);
+	bool setupFromProject(const std::string &filename);
 	bool init(std::function<bool(QString stage, int percent)> *_callback = nullptr);
 
 	size_t save(const std::string &output, int quality = 95);

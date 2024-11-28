@@ -1,6 +1,7 @@
 #include "dome.h"
 #include "sphere.h"
 #include "lens.h"
+#include "lp.h"
 
 #include <QJsonObject>
 #include <QJsonArray>
@@ -14,6 +15,13 @@ using namespace Eigen;
 Dome::Dome() {}
 
 static QStringList lightConfigs = { "directional", "spherical", "lights3d" };
+
+
+void Dome::parseLP(const QString &lp_path) {
+	std::vector<QString> filenames;
+	::parseLP(lp_path, directions, filenames);
+	lightConfiguration = DIRECTIONAL;
+}
 
 QJsonArray toJson(std::vector<Vector3f> &values) {
 	QJsonArray jvalues;
@@ -38,6 +46,15 @@ QJsonArray toJson(std::vector<Color3f> &values) {
 	}
 	return jvalues;
 }
+void Dome::updateSphereDirections() {
+	positionsSphere.resize(directions.size());
+	for(size_t i = 0; i < directions.size(); i++) {
+		Vector3f &p = positionsSphere[i] = directions[i];
+		p *= domeDiameter/2.0;
+		p[2] += verticalOffset;
+	}
+	positions3d = positionsSphere;
+}
 
 void Dome::fromSpheres(std::vector<Sphere *> &spheres, Lens &lens) {
 	switch(lightConfiguration) {
@@ -46,13 +63,7 @@ void Dome::fromSpheres(std::vector<Sphere *> &spheres, Lens &lens) {
 		break;
 	case Dome::SPHERICAL:
 		computeDirections(spheres, lens, directions);
-		positionsSphere.resize(directions.size());
-		for(size_t i = 0; i < directions.size(); i++) {
-			Vector3f &p = positionsSphere[i] = directions[i];
-			p *= domeDiameter/2.0;
-			p[2] += verticalOffset;
-		}
-		positions3d = positionsSphere;
+		updateSphereDirections();
 		break;
 	case Dome::LIGHTS3D:
 		computeParallaxPositions(spheres, lens, positions3d);

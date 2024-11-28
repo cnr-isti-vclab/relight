@@ -27,15 +27,11 @@ QJsonObject Image::toJson() {
 	QJsonObject obj;
 	obj.insert("filename", filename);
 	obj.insert("skip", skip);
-	obj.insert("direction", ::toJson(direction));
-	obj.insert("position", ::toJson(position));
 	return obj;
 }
 void Image::fromJson(const QJsonObject &obj) {
 	filename = obj["filename"].toString();
 	skip = obj["skip"].toBool();
-	::fromJson(obj["direction"].toObject(), direction);
-	::fromJson(obj["position"].toObject(), position);
 }
 
 void Image::readExif(Exif &exif) {

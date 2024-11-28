@@ -39,12 +39,7 @@ void NormalsTask::run() {
 
 	ImageSet imageSet;
 	imageSet.images = (*this)["images"].value.toStringList();
-	imageSet.lights = lights;
-	imageSet.light3d = project->dome.lightConfiguration != Dome::DIRECTIONAL;
-	imageSet.image_width_mm = project->dome.imageWidth;
-	imageSet.dome_radius = project->dome.domeDiameter/2.0;
-	imageSet.vertical_offset = project->dome.verticalOffset;
-	imageSet.initLights();
+	imageSet.initFromDome(project->dome);
 	imageSet.initImages(input_folder.toStdString().c_str());
 
 	if(hasParameter("crop")) {
@@ -187,8 +182,8 @@ void NormalsWorker::run()
 
 void NormalsWorker::solveL2()
 {
-	std::vector<Vector3f> &m_Lights = m_Imageset.lights;
-	std::vector<Vector3f> &m_Lights3d = m_Imageset.lights3d;
+	std::vector<Vector3f> &m_Lights = m_Imageset.lights1;
+
 	// Pixel data
 	Eigen::MatrixXd mLights(m_Lights.size(), 3);
 	Eigen::MatrixXd mPixel(m_Lights.size(), 1);
@@ -210,15 +205,13 @@ void NormalsWorker::solveL2()
 			mPixel(m, 0) = m_Row[p][m].mean();
 
 		if(m_Imageset.light3d) {
-			for(size_t i = 0; i < m_Lights3d.size(); i++) {
-				Vector3f light = m_Imageset.relativeLight(m_Lights3d[i], p, m_Imageset.height - row);
+			for(size_t i = 0; i < m_Lights.size(); i++) {
+				Vector3f light = m_Imageset.relativeLight(m_Lights[i], p, m_Imageset.height - row);
 				light.normalize();
 				for (int j = 0; j < 3; j++)
 					mLights(i, j) = light[j];
 			}
 		}
-
-
 
 		mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
 		mNormals.col(0).normalize();

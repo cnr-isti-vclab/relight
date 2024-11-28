@@ -1,9 +1,11 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+
 #include "graphics_view_zoom.h"
 #include "rtiexport.h"
 #include "../src/imageset.h"
+#include "../src/lp.h"
 #include "helpdialog.h"
 #include "focaldialog.h"
 #include "queuewindow.h"
@@ -366,7 +368,7 @@ bool MainWindow::init() {
 		item->setCheckState(a.valid ? Qt::Checked : Qt::Unchecked);
 		item->setData(a.valid ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
 		item->setData(count, Qt::UserRole+1);
-		item->setBackground(a.hasLightDirection() ? Qt::darkGreen : QBrush());
+		//item->setBackground(a.hasLightDirection() ? Qt::darkGreen : QBrush());
 		imageModel->setItem(count, item);
 
 		count++;
@@ -865,7 +867,8 @@ void MainWindow::loadLP(QString lp) {
 	std::vector<Vector3f> directions;
 
 	try {
-		ImageSet::parseLP(lp, directions, filenames);
+		vector<QString> filenames;
+		parseLP(lp, project.dome.directions, filenames);
 
 	} catch(QString error) {
 		QMessageBox::critical(this, "LP file invalid: ", error);
@@ -893,16 +896,17 @@ void MainWindow::loadLP(QString lp) {
 		ordered_dir[pos] = directions[i];
 	}
 
+	project.dome.lightConfiguration = Dome::DIRECTIONAL;
 	if(success) {
 		for(size_t i = 0; i < project.size(); i++)
-			project.images[i].direction = ordered_dir[i];
+			project.dome.directions[i] = ordered_dir[i];
 	} else {
 		auto response = QMessageBox::question(this, "Light directions and images",
 			"Filenames in .lp do not match with images in the .lp directory. Do you want to just use the filename order?");
 		if(response == QMessageBox::Cancel || response == QMessageBox::No)
 			return;
 		for(size_t i = 0; i < project.size(); i++)
-			project.images[i].direction = directions[i];
+			project.dome.directions[i] = directions[i];
 	}
 }
 
@@ -921,11 +925,8 @@ void MainWindow::saveLPs() {
 	QMessageBox::information(this, "Saved LPs", QString("Saved %1 .lp's in images folder.").arg(project.spheres.size()));
 	project.computeDirections();
 
-	vector<Vector3f> directions;
-	for(auto img: project.images)
-		directions.push_back(img.direction);
 
-	project.saveLP(basename + ".lp", directions);
+	project.saveLP(basename + ".lp", project.dome.directions);
 }
 
 void MainWindow::exportNormals() {
@@ -948,7 +949,7 @@ void MainWindow::exportRTI(bool normals) {
 		if(project.images[i].skip)
 			continue;
 
-		if(project.images[i].direction.isZero())
+		if(project.dome.directions[i].isZero())
 			nodir.push_back(project.images[i].filename);
 	}
 	if(nodir.size()) {
@@ -966,7 +967,7 @@ void MainWindow::exportRTI(bool normals) {
 	rtiexport->setImages(project.getImages());
 
 	rtiexport->showImage(imagePixmap->pixmap());
-	rtiexport->lights = project.directions();
+	rtiexport->lights = project.dome.directions;
 	rtiexport->light3d = project.dome.lightConfiguration  != Dome::DIRECTIONAL;
 	rtiexport->path = project.dir.path();
 	rtiexport->setModal(true);

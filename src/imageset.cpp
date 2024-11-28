@@ -1,4 +1,3 @@
-#include "lp.h"
 #include "imageset.h"
 #include "dome.h"
 #include "jpeg_decoder.h"
@@ -31,19 +30,9 @@ ImageSet::~ImageSet() {
 		delete dec;
 }
 
-void ImageSet::parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::vector<QString> &filenames, int skip_image) {
 
-	::parseLP(sphere_path, lights, filenames);
-	for(Vector3f &light: lights)
-		light.normalize();
 
-	if(skip_image >= 0 && skip_image < int(lights.size())) {
-		lights.erase(lights.begin() + skip_image);
-		filenames.erase(filenames.begin() + skip_image);
-	}
-}
-
-bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip_image) {
+bool ImageSet::initFromFolder(const char *_path, int skip_image) {
 
 	QDir dir(_path);
 
@@ -54,7 +43,7 @@ bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip
 	if(skip_image >= 0)
 		images.removeAt(skip_image);
 
-	QStringList lps = dir.entryList(QStringList() << "*.lp");
+/*	QStringList lps = dir.entryList(QStringList() << "*.lp");
 	if(lps.size() > 0) {
 
 		QString sphere_path = dir.filePath(lps[0]);
@@ -71,34 +60,28 @@ bool ImageSet::initFromFolder(const char *_path, bool ignore_filenames, int skip
 				throw QString("TODO: unimplemented.");
 
 				//TODO check and remove absolute parth of the image;
-				/*QString filepath = dir.filePath(images[i]);
-				QFileInfo info(filepath);
-				if(!info.exists()) {
-					cerr << "Could not find image: " << qPrintable(s) << endl;
-					return false;
-				}*/
+				//QString filepath = dir.filePath(images[i]);
+				//QFileInfo info(filepath);
+				//if(!info.exists()) {
+				//	cerr << "Could not find image: " << qPrintable(s) << endl;
+				//	return false;
+				//}
 			}
 		} catch(QString error) {
 			cerr << qPrintable(error) << endl;
 			return false;
 		}
 		initLights();
-	}
+	}*/
 
 	return initImages(_path);
 }
 
 bool ImageSet::initFromProject(QJsonObject &obj, const QString &filename) {
-	/*QFile file(filename);
-	if(!file.open(QFile::ReadOnly))
-		throw QString("Failed opening: ") + QString(filename);
-
-	QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-	QJsonObject obj = doc.object(); */
 
 	QFileInfo info(filename);
 	QDir folder = info.dir();
-    path = QString(folder.absolutePath());
+	path = QString(folder.absolutePath());
 	folder.cd(obj["folder"].toString());
 
 	for(auto img: obj["images"].toArray()) {
@@ -109,20 +92,12 @@ bool ImageSet::initFromProject(QJsonObject &obj, const QString &filename) {
 			continue;
 
 		QString filename = image["filename"].toString();
-		Vector3f direction;
-		auto dir = image["direction"].toObject();
-		direction[0] = dir["x"].toDouble();
-		direction[1] = dir["y"].toDouble();
-		direction[2] = dir["z"].toDouble();
-
-		if(direction.isZero())
-			continue;
 
 		QFileInfo imginfo(folder.filePath(filename));
 		if(!imginfo.exists())
 			throw QString("Could not find the image: " + filename) + " in folder: " + folder.absolutePath();
+
 		images.push_back(filename);
-		lights.push_back(direction);
 	}
 
 	bool ok = initImages(folder.path().toStdString().c_str());
@@ -142,17 +117,26 @@ bool ImageSet::initFromProject(QJsonObject &obj, const QString &filename) {
 	return true;
 }
 
-void ImageSet::initLightsFromDome(Dome &dome) {
+void ImageSet::initFromDome(Dome &dome) {
 	light3d = dome.lightConfiguration != Dome::DIRECTIONAL;
-	image_width_mm = dome.imageWidth;
-	dome_radius = dome.domeDiameter/2.0;
-	vertical_offset = dome.verticalOffset;
-	lights = dome.directions;
-	lights3d = dome.positionsSphere;
-	initLights();
+	assert(image_width != 0);
+	pixel_size = dome.imageWidth / image_width;
+	switch(dome.lightConfiguration) {
+		case Dome::DIRECTIONAL:
+			lights1 = dome.directions;
+		break;
+		case Dome::SPHERICAL:
+			lights1 = dome.positionsSphere;
+		break;
+		case Dome::LIGHTS3D:
+			lights1 = dome.positions3d;
+		break;
+	}
+	if(lights1.size() != size_t(images.size()))
+		throw QString("Number of lights in dome needs to be equal to the number of images");
 }
 
-
+/*
 void ImageSet::initLights() {
 	if(light3d) {
 		//if dome radius we assume lights are directionals
@@ -180,7 +164,7 @@ void ImageSet::initLights() {
 	for(Vector3f &light: lights)
 		light.normalize();
 }
-
+*/
 
 #ifdef _WIN32
 #include <stdio.h>
@@ -284,10 +268,10 @@ void ImageSet::decode(size_t img, unsigned char *buffer) {
 	decoders[img]->readRows(height, buffer);
 }
 
+
 //adjust light for pixel,light is mm coords, return light again in mm. //y is expected with UP axis.
 Vector3f ImageSet::relativeLight(const Vector3f &light3d, int x, int y){
 	Vector3f l = light3d;
-	float pixel_size = image_width_mm/image_width;
 	//relative position to the center in mm
 	float dx = pixel_size*(x - image_width/2.0f);
 	float dy = pixel_size*(y - image_height/2.0f);
@@ -318,20 +302,8 @@ void ImageSet::readLine(PixelArray &pixels) {
 			pixels[x - left][i].b = row[x*3 + 2];
 		}
 	}
-	//compensate intensity.
 	if(light3d) {
-		assert(lights3d.size() == size_t(images.size()));
-		for(Pixel &pixel: pixels) {
-			assert(pixel.size() == lights3d.size());
-			for(size_t i = 0; i < lights3d.size(); i++) {
-				Vector3f l = relativeLight(lights3d[i], pixel.x, pixel.y);
-				float r = l.squaredNorm();
-				float di = r / pow(dome_radius + vertical_offset, 2.0f);
-				pixel[i].r *= di;
-				pixel[i].g *= di;
-				pixel[i].b *= di;
-			}
-		}
+		compensateIntensity(pixels);
 	}
 	current_line++;
 }
@@ -365,7 +337,7 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 	resample.resize(nsamples, ndimensions);
 
 	StupidSampler sampler;
-	PixelArray sample(samplexrow, lights.size());
+	PixelArray sample(samplexrow, images.size());
 
 	uint32_t offset = 0;
 	vector<uint8_t> row(image_width*3);
@@ -390,8 +362,6 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 			}
 		}
 
-
-		//compensate intensity.
 		if(light3d) {
 
 			uint32_t x = 0;
@@ -400,18 +370,7 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 				sample[x].y = image_height - 1 - y;
 				x++;
 			}
-
-			for(Pixel &pixel: sample) {
-				for(size_t i = 0; i < lights3d.size(); i++) {
-					Vector3f l = relativeLight(lights3d[i], pixel.x, pixel.y);
-					float r = l.squaredNorm();
-					//TODO precompute
-					float di = r / pow(dome_radius + vertical_offset, 2.0f);
-					pixel[i].r *= di;
-					pixel[i].g *= di;
-					pixel[i].b *= di;
-				}
-			}
+			compensateIntensity(sample);
 		}
 
 		for(uint32_t x = 0; x < selection.size(); x++)
@@ -420,6 +379,22 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 		offset += samplexrow;
 	}
 	return nsamples;
+}
+
+void ImageSet::compensateIntensity(PixelArray &pixels) {
+	assert(pixel_size != 0.0f);
+	assert(lights1.size() == size_t(images.size()));
+	assert(lights1.size() == pixels.nlights);
+	for(Pixel &pixel: pixels) {
+		for(size_t i = 0; i < pixel.size(); i++) {
+			Vector3f l = relativeLight(lights1[i], pixel.x, pixel.y);
+			float f = l.squaredNorm() / idealLightDistance2;
+			pixel[i].r *= f;
+			pixel[i].g *= f;
+			pixel[i].b *= f;
+		}
+	}
+
 }
 
 void ImageSet::restart() {

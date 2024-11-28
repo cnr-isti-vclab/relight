@@ -47,9 +47,12 @@ public:
 	Dome();
 	Dome(const QString &filename) { load(filename); }
 	void fromSpheres(std::vector<Sphere *> &spheres, Lens &lens);
+	void updateSphereDirections();
+	void parseLP(const QString &lp_path);
 	void load(const QString &filename);
 	void save(const QString &filename);
-	size_t imagesCount() { return directions.size(); }
+	size_t lightsCount() { return directions.size(); }
+
 
 	QJsonObject toJson();
 	void fromJson(const QJsonObject &obj);

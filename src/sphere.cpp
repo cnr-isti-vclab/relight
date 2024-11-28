@@ -1,18 +1,13 @@
 #include "sphere.h"
-
-
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QMessageBox>
-#include <QRunnable>
-#include <QGradient>
-
-#include "mainwindow.h"
 #include "project.h"
 #include "lens.h"
 
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QRunnable>
+#include <QGradient>
+
 #include <Eigen/Dense>
-#include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 
 #include <iostream>

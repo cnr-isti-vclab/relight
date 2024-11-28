@@ -75,10 +75,7 @@ public:
 	void rotateImages();
     void rotateImages(bool clockwise);
 	bool hasDirections() {
-		for(auto &im: images)
-			if(!im.direction.isZero())
-				return true;
-		return false;
+		return dome.directions.size() > 0;
 	}
 	size_t size() { return images.size(); }
 
@@ -93,13 +90,13 @@ public:
 	void checkImages();
 	void checkMissingImages();
 
-	std::vector<Eigen::Vector3f> directions() {
+	/*std::vector<Eigen::Vector3f> directions() {
 		std::vector<Eigen::Vector3f> dirs;
 		for(Image &img: images)
 			if(!img.skip)
 				dirs.push_back(img.direction);
 		return dirs;
-	}
+	}*/
 	int indexOf(QString s) {
 		for(size_t i = 0; i < images.size(); i++)
 			if(images[i].filename == s)
