@@ -22,6 +22,9 @@ SET(HEADERS
 	../src/imageset.h
 	../src/lp.h
 	../src/jpeg_encoder.h
+	../src/lens.h
+	../src/dome.h
+	../src/sphere.h
 	../relight-cli/rtibuilder.h
 )
 
@@ -33,6 +36,9 @@ SET(SOURCES
 	../src/imageset.cpp
 	../src/lp.cpp
 	../src/jpeg_encoder.cpp
+	../src/lens.cpp
+	../src/dome.cpp
+	../src/sphere.cpp
 	../relight-cli/rtibuilder.cpp
 )
 
