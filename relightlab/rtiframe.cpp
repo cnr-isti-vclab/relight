@@ -98,7 +98,8 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 }
 
 void RtiFrame::init() {
-
+	//fill in last RTI used or a common one.
+	export_row->suggestPath();
 }
 
 void RtiFrame::exportRti() {
@@ -110,9 +111,13 @@ void RtiFrame::exportRti() {
 		return;
 	}
 
-
+	if(parameters.path.isEmpty()) {
+		QMessageBox::warning(this, "Destination path is missing.", "Fill in the output folder or the filename for the RTI.");
+		return;
+	}
 	RtiTask *rti_task = new RtiTask(qRelightApp->project());
 	rti_task->parameters = parameters;
+	rti_task->output = parameters.path;
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(rti_task);

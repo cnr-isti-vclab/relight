@@ -46,10 +46,17 @@ void RtiTask::run() {
 		builder->yccplanes[1] = builder->yccplanes[2] = (builder->nplanes - builder->yccplanes[0])/2;
 		builder->nplanes = builder->yccplanes[0] + 2*builder->yccplanes[1];
 	}
+
+	//legacy format uses the same scale and bias for each component (RBG)
+	if(parameters.format == RtiParameters::RTI)
+		builder->commonMinMax = true;
+
 	ImageSet &imageset = builder->imageset;
 	imageset.images = project.getImages();
-	imageset.initFromDome(project.dome);
+	imageset.pixel_size = project.pixelSize;
 	imageset.initImages(input_folder.toStdString().c_str());
+	imageset.initFromDome(project.dome); //lights after images
+
 
 	if(!crop.isNull()) {
 		builder->crop[0] = crop.left();

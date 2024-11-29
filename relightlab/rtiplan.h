@@ -117,6 +117,7 @@ public:
 	void setPath(QString path, bool emitting = false);
 public slots:
 	void selectOutput();
+	void verifyPath();
 	void suggestPath();
 
 private:
