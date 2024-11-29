@@ -220,8 +220,12 @@ void Depthmap::depthIntegrateNormals(){
 	for(size_t i = 0; i < normals.size(); i++)
 		for(int k = 0; k < 3; k++)
 			normals_float[i*3+k] = normals[i][k];
+	elevation.clear();
+	elevation.resize(normals.size(), 0);
 	bni_integrate(callback, width, height, normals_float, elevation);
-
+	for(float &h: elevation){
+		h = -h;
+	}
 }
 void Depthmap::resizeNormals (int factorPowerOfTwo, int step = 1) {
 	int factor = 1 << factorPowerOfTwo;
@@ -276,13 +280,14 @@ void Depthmap::resizeNormals (int factorPowerOfTwo, int step = 1) {
 	normals = resizedNormals;
 	width = targetWidth;
 	height = targetHeight;
+	resolution *= factor;
 
-	QString filename = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/surface.jpg";
-	saveNormals(filename.toStdString().c_str());
+	//QString filename = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/surface.jpg";
+	//saveNormals(filename.toStdString().c_str());
  //chiama l'integrale integra le normali e salva il ply
-	depthIntegrateNormals();
-	QString plyFilename = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/resize_normals.obj";
-	saveObj(plyFilename.toStdString().c_str());
+	//depthIntegrateNormals();
+	//QString plyFilename = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/resize_normals.obj";
+	//saveObj(plyFilename.toStdString().c_str());
 
 }
 
@@ -332,8 +337,6 @@ Eigen::Vector3f Depthmap::pixelToRealCoordinates(int pixelX, int pixelY, float p
 
 	return Eigen::Vector3f(realX, realY, realZ);
 }
-
-
 
 bool Camera::loadXml(const QString &pathXml){
 	//orientation xml

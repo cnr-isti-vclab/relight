@@ -10,9 +10,11 @@ CONFIG -= app_bundle
 
 LIBS += -L /opt/homebrew/lib -ltiff
 SOURCES += \
+        ../src/bni_normal_integration.cpp \
         depthmap.cpp \
         main.cpp
-INCLUDEPATH += -I /opt/homebrew/include
+INCLUDEPATH += /opt/homebrew/include \
+    /opt/homebrew/Cellar/eigen/3.4.0_1/include/eigen3
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -20,4 +22,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+    ../src/bni_normal_integration.h \
     depthmap.h

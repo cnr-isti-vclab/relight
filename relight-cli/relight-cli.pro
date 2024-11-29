@@ -31,7 +31,7 @@ mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 
 DESTDIR = "../bin"
 
-SOURCES += main.cpp \
+©main.cpp \
     ../src/getopt.cpp \
     ../src/imageset.cpp \
     ../src/jpeg_decoder.cpp \

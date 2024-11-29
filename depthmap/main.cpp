@@ -6,25 +6,31 @@
 #include <eigen3/Eigen/Dense>
 
 using namespace std;
-
+// carica il tif, calcola e integra normali per vedere se la superficie è la stessa.
+//
 int main(int argc, char *argv[]) {
 	/*if(argc != 3) {
 		cerr << "Usage: " << argv[0] << "<input.tiff> <output.png>" << endl;
 		return 1;
 	}*/
+
 	QString depthmapPath = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
 	QString orientationXmlPath = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/Ori-Relative/Orientation-L05C12.tif.xml";
 	QString output = "out.png";
 	Depthmap depth;
 	depth.load(qPrintable(depthmapPath));
 	depth.computeNormals();
-	depth.saveNormals(qPrintable(output));
-	depth.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/output.obj");
+	depth.saveNormals("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/original.obj");
+	depth.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/original.obj");
+
 	depth.depthIntegrateNormals();
-	depth.saveNormals("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/surface.jpg");
+	depth.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/integrated.obj");
+
 	int factorPowerOfTwo = 1;
 	depth.resizeNormals(factorPowerOfTwo, 2);
-	depth.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/resize_normals.obj");
+	depth.depthIntegrateNormals();
+	depth.saveNormals("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/resized_integrated.jpg");
+	depth.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/resized_integrated.obj");
 
 
 	Camera camera;
@@ -32,8 +38,6 @@ int main(int argc, char *argv[]) {
 	int pixelX = 165;
 	int pixelY = 144;
 	float pixelZ = 4.5;
-
-
 
 
 	Eigen::Matrix3f rotationMatrix;
