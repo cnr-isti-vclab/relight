@@ -13,6 +13,7 @@
 #include <QComboBox>
 #include <QLineEdit>
 #include <QFileDialog>
+#include <QMessageBox>
 
 RtiPlanRow::RtiPlanRow(RtiParameters &param, QFrame *parent): QFrame(parent), parameters(param) {
 	QHBoxLayout *layout = new QHBoxLayout(this);
@@ -321,17 +322,44 @@ RtiExportRow::RtiExportRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 	label->help->setId("rti/export");
 
 	path_edit = new QLineEdit;
+	connect(path_edit, &QLineEdit::editingFinished,this, &RtiExportRow::verifyPath);
 	buttons->addWidget(path_edit);
 	QPushButton *path_button = new QPushButton("...");
 	buttons->addWidget(path_button);
+	connect(path_button, &QPushButton::clicked, this, &RtiExportRow::selectOutput);
 }
 
 void RtiExportRow::setPath(QString path, bool emitting) {
 	path_edit->setText(path);
+	parameters.path = path;
+}
+
+void RtiExportRow::verifyPath() {
+	parameters.path = QString();
+	QString path = path_edit->text();
+	QDir path_dir(path);
+	path_dir.cdUp();
+	if(!path_dir.exists()) {
+		QMessageBox::warning(this, "Invalid output path", "The specified path is not valid");
+		return;
+	}
+	QString extension;
+	if(parameters.format == RtiParameters::RTI) {
+		extension = parameters.basis == Rti::HSH ? ".rti" : ".ptm";
+	} else if(parameters.format == RtiParameters::IIP) {
+		extension = ".tif";
+	}
+	if(!path.endsWith(extension)) {
+		path += extension;
+		path_edit->setText(path);
+	}
+	parameters.path = path;
 }
 
 void RtiExportRow::selectOutput() {
 	//get folder if not legacy.
+	QString output_parent = qRelightApp->lastOutputDir();
+
 	QString output;
 	if(parameters.format == RtiParameters::RTI) {
 		QString extension;
@@ -344,17 +372,20 @@ void RtiExportRow::selectOutput() {
 			extension = ".ptm";
 			label = "PTM file (*.ptm)";
 		}
-		output = QFileDialog::getSaveFileName(this, "Select a file name", QString(), label);
+		output = QFileDialog::getSaveFileName(this, "Select a file name", output_parent, label);
 		if(output.isNull()) return;
 
 		if(!output.endsWith(extension))
 			output += extension;
 
 	} else {
-		output = QFileDialog::getSaveFileName(this, "Select an output folder", QString());
+		output = QFileDialog::getSaveFileName(this, "Select an output folder", output_parent);
 		if(output.isNull()) return;
 	}
-	parameters.path = output;
+	QDir output_parent_dir(output);
+	output_parent_dir.cdUp();
+	qRelightApp->setLastOutputDir(output_parent_dir.absolutePath());
+	setPath(output);
 }
 
 void RtiExportRow::suggestPath() {

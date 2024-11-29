@@ -94,6 +94,19 @@ public:
 	void setLastProjectDir(QString dir) {
 		QSettings().setValue("LastProjectDir", dir);
 	}
+	QString lastOutputDir() {
+		if(!last_output_dir.isEmpty())
+			return last_output_dir;
+		QDir out = m_project.dir;
+		out.cdUp();
+		return out.absolutePath();
+	}
+	void setLastOutputDir(QString out) {
+		last_output_dir = out;
+	}
+	void clearLastOutputDir() {
+		last_output_dir = QString();
+	}
 	bool needsSavingProceed();
 
 	QStringList domes();
@@ -102,10 +115,9 @@ public:
 	void loadThumbnails();
 
 private:
-
-
 	//keep memory of current project filename for quick saving.
 	QString project_filename;
+	QString last_output_dir;
 	QPalette dark_palette;
 	ThumbailLoader *loader = nullptr;
 };

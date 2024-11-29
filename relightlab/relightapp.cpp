@@ -153,6 +153,7 @@ void RelightApp::setProject(const Project &_project) {
 	mainwindow->init();
 	mainwindow->setTabIndex(1);
 	qRelightApp->setLastProjectDir(m_project.dir.path());
+	qRelightApp->clearLastOutputDir();
 }
 
 void RelightApp::newProject() {

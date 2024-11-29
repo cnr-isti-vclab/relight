@@ -124,6 +124,7 @@ void MainWindow::init() {
 	scale_frame->init();
 	lights_frame->init();
 	crop_frame->init();
+	rti_frame->init();
 }
 
 
