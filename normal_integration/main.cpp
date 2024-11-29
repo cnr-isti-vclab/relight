@@ -4,7 +4,7 @@
 
 #include "../src/bni_normal_integration.h"
 
-#include "../src/getopt.h"
+#include "getopt.h"
 extern int opterr;
 
 #include <math.h>
@@ -53,31 +53,41 @@ void readBlob(QString filename, int &w, int &h, vector<float> &height) {
 	file.read((char *)&height[0], w*h*4);
 }
 
-void averageFilter(int window, int w, int h, vector<float> &height, vector<float> &filtered) {
+void averageFilter(float sigma, int w, int h, vector<float> &height, vector<float> &filtered) {
 
+	int window = ceil(3*sigma);
 	filtered.resize(w*h);
 
+	double a = 1.0 / (sigma * sqrt(2 * M_PI));
+	double b = -1/(2*pow(sigma, 2));
 	for(int y = 0; y < h; y++) {
 		for(int x = 0; x < w; x++) {
 			int pos = x + y*w;
-			double weight = 0;
+			double weight = 0.0;
 			double average = 0.0;
 
 			for(int dy = -window; dy <= window; dy++) {
+
 				if(y + dy < 0 || y + dy >= h)
 					continue;
 				for(int dx = -window; dx <= window; dx++) {
+
+					//TEST AND IN CASE REMOVE.
+					if(dx == 0 && dy == 0)
+						continue;
+
 					if(x + dx < 0 || x + dx >= w)
 						continue;
 
 					int dpos = x + dx + (y + dy)*w;
-					double sigma = window/2.0;
-					double gaussian = exp(-0.5*(dx*dx + dy*dy)/sigma*sigma)/(sigma*2*sqrt(M_PI));
+					double gaussian = a*exp(b*(dx*dx +dy*dy));
 					average += gaussian * height[dpos];
 					weight += gaussian;
 				}
 			}
 			double diff = height[pos] - average/weight;
+			//if(diff > 0.2)
+			//	diff = 0.2;
 
 			filtered[pos] = diff;
 		}
@@ -162,34 +172,53 @@ int main(int argc, char *argv[]) {
 	}
 	opterr = 0;
 
+//**********************************
 	std::vector<float> height;
-	int W, H;
+#define HEIGHTMAP = 1
+#ifdef HEIGHTMAP
+    int W, H;
 	readBlob("heightmap.ply.blob", W, H, height);
+
+
 	std::vector<float> filtered;
-	averageFilter(10, W, H, height, filtered);
-	//colorize:
-
-	auto boundaries = findMinMaxPercentilesWithHistogram(filtered, 0.05, 100);
-	float min = boundaries.first;
-	float max = boundaries.second;
-
-	auto minMax = std::minmax_element(filtered.begin(), filtered.end());
-	float minValue = *minMax.first;
-	float maxValue = *minMax.second;
-	cout << "Real min: " << minValue << " percent min: " << min << endl;
-	cout << "Real max: " << maxValue << " percent max: " << max << endl;
 	QImage img(W, H, QImage::Format_ARGB32);
-	for(int y = 0; y < H; y++) {
-		for(int x = 0; x < W; x++) {
-			float v = 2*(filtered[x + y*W] - min)/(max - min);
-			if(v > 1)	 v = 1;
-			int l = (int)(v*255.0f);
-			img.setPixel(x, y, qRgb(l, l, l));
-		}
-	}
-	img.save("heightmap.jpg");
-	return 0;
 
+	for(float filter_sigma = 1.0f; filter_sigma < 4.0f; filter_sigma+= 0.5) {
+		cout << "Sigma: " << filter_sigma << endl;
+		averageFilter(filter_sigma, W, H, height, filtered);
+		//colorize:
+		auto minMax = std::minmax_element(filtered.begin(), filtered.end());
+		float minValue = *minMax.first;
+		float maxValue = *minMax.second;
+
+		double low_percentile = 0.1;
+		double high_percentile =  65;
+		auto boundaries = findMinMaxPercentilesWithHistogram(filtered, low_percentile, high_percentile);
+		float min = boundaries.first;
+		//float max = boundaries.second;
+
+		//float min = minValue + low_percentile*(maxValue - minValue)/100.0f;
+		float max = minValue + high_percentile*(maxValue - minValue)/100.0f;
+
+
+
+		//min = minValue;
+		//max = maxValue;
+		//cout << "Real min: " << minValue << " percent min: " << min << endl;
+		//cout << "Real max: " << maxValue << " percent max: " << max << endl;
+		for(int y = 0; y < H; y++) {
+			for(int x = 0; x < W; x++) {
+				float v = 2*(filtered[x + y*W] - min)/(max - min);
+				if(v > 1)	 v = 1;
+				int l = (int)(v*255.0f);
+				img.setPixel(x, y, qRgb(l, l, l));
+			}
+		}
+
+		img.save(QString("heightmap_%1_%2.jpg").arg(filter_sigma).arg(low_percentile));
+	}
+	return 0;
+#endif
 	QString ply;
 	float k = 2; //discontinuity propensity
 	int max_solver_iterations = 5000;
@@ -254,7 +283,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	if(!ply.isNull()) {
-		savePly(ply, w, h, height_map);
+        cout<<"print"<<endl;
+        savePly(ply, w, h, height_map);
 		saveBlob(ply + ".blob", w, h, height_map);
 	}
 }
