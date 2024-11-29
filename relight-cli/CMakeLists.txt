@@ -23,6 +23,9 @@ SET(HEADERS
 	../src/relight_vector.h
 	../src/rti.h
 	../src/legacy_rti.h
+	../src/dome.h
+	../src/sphere.h
+	../src/lens.h
 )
 
 SET(SOURCES
@@ -35,6 +38,9 @@ SET(SOURCES
 	../src/rti.cpp
 	../src/legacy_rti.cpp
 	../src/lp.cpp
+	../src/dome.cpp
+	../src/lens.cpp
+	../src/sphere.cpp
 	convert_rti.cpp
 )
 
