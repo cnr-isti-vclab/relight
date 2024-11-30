@@ -124,7 +124,34 @@ void RtiFrame::exportRti() {
 
 	emit processStarted();
 }
+void RtiFrame::updateNPlanes() {
+	// PLANES
 
+	auto &nplanes = parameters.nplanes;
+	auto &nchroma = parameters.nchroma;
+
+	switch(parameters.basis) {
+	case Rti::PTM:
+		nplanes = parameters.colorspace == Rti::RGB? 18: 9;
+		nchroma = 0;
+		planes_row->forceNPlanes(nplanes);
+		break;
+	case Rti::HSH:
+		nplanes = parameters.colorspace == Rti::RGB? 27 : 12;
+		nchroma = 0;
+		planes_row->forceNPlanes(nplanes);
+		break;
+	case Rti::RBF:
+	case Rti::BILINEAR:
+		if(parameters.colorspace != Rti::YCC) nchroma = 0;
+		planes_row->forceNPlanes(-1);
+	default:
+		break;
+	}
+
+	planes_row->setNPlanes(nplanes);
+	planes_row->setNChroma(nchroma);
+}
 
 void RtiFrame::basisChanged() {
 	//when basis is changed we try to change the other values as little as possible.
@@ -146,23 +173,7 @@ void RtiFrame::basisChanged() {
 	}
 	colorspace_row->setColorspace(colorspace);
 
-	// PLANES
-
-	auto &nplanes = parameters.nplanes;
-	auto &nchroma = parameters.nchroma;
-
-	switch(basis) {
-	case Rti::PTM: nplanes = 18; nchroma = 0; break;
-	case Rti::HSH: if(nplanes != 12 && nplanes != 27) nplanes = 27; nchroma = 0; break;
-	case Rti::RBF:
-	case Rti::BILINEAR:
-		if(colorspace != Rti::YCC) nchroma = 0;
-	default:
-		break;
-	}
-
-	planes_row->setNPlanes(nplanes);
-	planes_row->setNChroma(nchroma);
+	updateNPlanes();
 
 	//FORMAT
 	format_row->allowLegacy(!pca);
@@ -174,7 +185,8 @@ void RtiFrame::basisChanged() {
 }
 
 void RtiFrame::colorspaceChanged() {
-	planes_row->setNChroma(parameters.nchroma);
+
+	updateNPlanes();
 
 	bool pca = parameters.basis == Rti::RBF || parameters.basis == Rti::BILINEAR;
 	if(pca && parameters.format == RtiParameters::RTI) {
