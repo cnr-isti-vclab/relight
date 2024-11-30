@@ -50,6 +50,8 @@ private:
 	RtiQualityRow *quality_row = nullptr;
 	RtiWebLayoutRow *layout_row = nullptr;
 	RtiExportRow *export_row = nullptr;
+
+	void updateNPlanes();
 };
 
 

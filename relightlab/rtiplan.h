@@ -58,7 +58,7 @@ public:
 	RtiPlanesRow(RtiParameters &parameters, QFrame *parent = nullptr);
 	void setNPlanes(int nplanes, bool emitting = false);
 	void setNChroma(int nchroma, bool emitting = false);
-
+	void forceNPlanes(int nplanes);
 private:
 	QComboBox *nplanesbox, *nchromabox;
 	int nimages[7] = { 3, 4, 5, 6, 7, 8, 9 };

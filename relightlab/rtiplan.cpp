@@ -11,10 +11,13 @@
 #include <QLineEdit>
 #include <QButtonGroup>
 #include <QComboBox>
+#include <QStandardItemModel>
 #include <QLineEdit>
 #include <QFileDialog>
 #include <QMessageBox>
 
+#include <iostream>
+using namespace std;
 RtiPlanRow::RtiPlanRow(RtiParameters &param, QFrame *parent): QFrame(parent), parameters(param) {
 	QHBoxLayout *layout = new QHBoxLayout(this);
 
@@ -147,9 +150,11 @@ RtiPlanesRow::RtiPlanesRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 	nplanesbox = new QComboBox;
 	nplanesbox->setFixedWidth(100);
 	for(int i = 0; i < 7; i++) {
-		nplanesbox->addItem(QString::number(nimages[i]));
+		nplanesbox->addItem(QString::number(nimages[i]), QVariant(nimages[i]));
 	}
-	connect(nplanesbox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int n) { setNPlanes(nimages[n]*3, true); });
+	connect(nplanesbox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int n) {
+		setNPlanes(nimages[n]*3, true);
+	});
 	buttons->addWidget(nplanesbox);
 
 	buttons->addStretch(1);
@@ -167,6 +172,17 @@ RtiPlanesRow::RtiPlanesRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 	setNChroma(parameters.nchroma);
 }
 
+void RtiPlanesRow::forceNPlanes(int nplanes) {
+	QStandardItemModel *model =	  qobject_cast<QStandardItemModel *>(nplanesbox->model());
+	Q_ASSERT(model != nullptr);
+	for(int i = 0; i < 7; i++) {
+		QStandardItem *item = model->item(i);
+		bool disabled = nplanes >= 0 && nplanes != nimages[i]*3;
+		item->setFlags(disabled ? item->flags() & ~Qt::ItemIsEnabled
+								: item->flags() | Qt::ItemIsEnabled);
+	}
+}
+
 void RtiPlanesRow::setNPlanes(int nplanes, bool emitting) {
 	nchromabox->setEnabled(parameters.colorspace == Rti::YCC);
 
@@ -175,8 +191,8 @@ void RtiPlanesRow::setNPlanes(int nplanes, bool emitting) {
 		emit nplanesChanged();
 		return;
 	}
-	for(int i = 0; i < 7; i++) {
-		if(nimages[i] == nplanes/3)
+	for(int i = 0; i < nplanesbox->count(); i++) {
+		if(nplanes/3 == nplanesbox->itemData(i).toInt())
 			nplanesbox->setCurrentIndex(i);
 	}
 }
@@ -399,7 +415,7 @@ void RtiExportRow::suggestPath() {
 
 		switch(parameters.basis) {
 		case Rti::PTM: filename = parameters.colorspace == Rti::RGB ? "ptm" : "lptm"; break;
-		case Rti::HSH: filename = "hsh"; break;
+		case Rti::HSH: filename = parameters.colorspace == Rti::RGB ? "hsh" : "lhsh"; break;
 		case Rti::RBF: filename = "rbf" + QString::number(parameters.nplanes); break;
 		case Rti::BILINEAR: filename = "bln" + QString::number(parameters.nplanes); break;
 		default: filename = "rti"; break;
