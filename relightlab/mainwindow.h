@@ -32,6 +32,8 @@ public:
 
 public slots:
 	void showQueue();
+	void showHelp();
+	void showAbout();
 
 protected:
 

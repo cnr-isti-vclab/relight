@@ -104,6 +104,11 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	addAction("show_list", "Show list", "list", "");
 	addAction("show_grid", "Show grid", "grid", "");
 
+	addAction("view_rti", "View RTI", "cast", "");
+
+	addAction("help", "Help", "help-circle", "");
+	addAction("about", "About", "info", "");
+
 
 	if(QSystemTrayIcon::isSystemTrayAvailable()) {
 		QIcon icon(":/relight.png");
