@@ -16,7 +16,7 @@
 #include "rtiframe.h"
 #include "normalsframe.h"
 #include "queueframe.h"
-
+#include "helpbutton.h"
 
 #include <QMessageBox>
 #include <QDebug>
@@ -85,6 +85,24 @@ void MainWindow::createMenu() {
 	menuFile->addSeparator();
 	menuFile->addAction(qRelightApp->action("exit"));
 
+	QMenu *menuView= new QMenu(menubar);
+	menuView->setTitle("View");
+
+	menuView->addAction(qRelightApp->action("view_rti"));
+	menubar->addAction(menuView->menuAction());
+
+	QMenu *menuHelp = new QMenu(menubar);
+	menuHelp->setTitle("Help");
+
+	QAction *help = qRelightApp->action("help");
+	connect(help, SIGNAL(triggered()), this, SLOT(showHelp()));
+	menuHelp->addAction(help);
+
+	QAction *about = qRelightApp->action("about");
+	connect(about, SIGNAL(triggered()), this, SLOT(showAbout()));
+	menuHelp->addAction(about);
+	menubar->addAction(menuHelp->menuAction());
+
 	setMenuBar(menubar);
 }
 
@@ -127,4 +145,12 @@ void MainWindow::init() {
 	rti_frame->init();
 }
 
+void MainWindow::showHelp() {
+	HelpDialog &dialog = HelpDialog::instance();
+	dialog.showPage("index");
+}
 
+void MainWindow::showAbout() {
+	HelpDialog &dialog = HelpDialog::instance();
+	dialog.showPage("about");
+}
