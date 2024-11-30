@@ -36,7 +36,6 @@
 
 * dark theme on windows conflicts
 * Accessing the crop tab before loading the project causes it to stop working.
-* ptm and hsh number of planes cannot be changed.
 * check for invalid inner circle when creating a sphere.
 * test pause/stop/play in queue.
 * deal with #lights  different from #images
