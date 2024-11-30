@@ -11,6 +11,7 @@ class QSpinBox;
 class QLabelButton;
 class HelpLabel;
 class QHBoxLayout;
+class QVBoxLayout;
 class QLineEdit;
 
 class RtiPlanRow: public QFrame {
@@ -21,6 +22,7 @@ public:
 	RtiParameters &parameters;
 	HelpLabel *label = nullptr;
 	QHBoxLayout *buttons = nullptr;
+	QFrame *buttonsFrame = nullptr;
 };
 
 

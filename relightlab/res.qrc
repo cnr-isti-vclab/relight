@@ -85,5 +85,10 @@
         <file>icons/light/scalable/chevrons-down.svg</file>
         <file>icons/light/scalable/chevrons-up.svg</file>
 		<file alias="relight.png">../build_scripts/relight.png</file>
+		<file alias="demo/index.html">../demo/index.html</file>
+		<file alias="demo/openlime.min.js">../demo/openlime.min.js</file>
+		<file alias="demo/skin.svg">../demo/skin.svg</file>
+		<file alias="demo/skin.css">../demo/skin.css</file>
+
     </qresource>
 </RCC>

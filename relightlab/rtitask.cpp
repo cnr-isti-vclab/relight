@@ -86,6 +86,9 @@ void RtiTask::run() {
 		} else
 			builder->save(output.toStdString(), parameters.quality);
 
+		if(parameters.openlime)
+			openlime();
+
 	} catch(std::string e) {
 		error = e.c_str();
 		status = STOPPED;
