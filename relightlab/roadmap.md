@@ -5,7 +5,6 @@
 ## Reinstate existing functions:
 
 * lp saving
-* normals filtering/flattening
 
 ## New Features
 
@@ -43,4 +42,5 @@
 ## Small Bugs
 
 * Check version is properly written and read from the .relight file
+* normal integrations callbacks.
 
