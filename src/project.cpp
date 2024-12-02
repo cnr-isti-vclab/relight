@@ -570,6 +570,7 @@ void Project::loadLP(QString filename) {
 		ordered_dir[pos] = directions[i];
 	}
 
+	dome.directions.resize(directions.size());
 	if(success) {
 		for(size_t i = 0; i < size(); i++)
 			dome.directions[i] = ordered_dir[i];
@@ -578,6 +579,7 @@ void Project::loadLP(QString filename) {
 			"Filenames in .lp do not match with images in the .lp directory. Do you want to just use the filename order?");
 		if(response == QMessageBox::Cancel || response == QMessageBox::No)
 			return;
+
 		for(size_t i = 0; i < size(); i++)
 			dome.directions[i] = directions[i];
 	}

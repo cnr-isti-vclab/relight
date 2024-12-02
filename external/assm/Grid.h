@@ -18,8 +18,8 @@ public:
 	}
 	size_t rows() const { return _rows; }
 	size_t cols() const { return _cols; }
-	T &at(size_t row, size_t col) { return (*this)[row + col*_cols]; }
-	const T &at(size_t row, size_t col) const { return (*this)[row + col*_cols]; }
+	T &at(size_t y, size_t x) { return (*this)[x + y*_cols]; }
+	const T &at(size_t y, size_t x) const { return (*this)[x + y*_cols]; }
 	void fill(T t) {
 		for(T &v: *this)
 			v = t;
@@ -51,32 +51,32 @@ public:
 
 	Grid convolve1D(const std::vector<float> &kernel, bool alongRows) const {
 		int radius = kernel.size() / 2;
-		Grid result(_rows, _cols, _zero);
+		Grid result(_cols, _rows, _zero);
 
 		if (alongRows) {
-			for (int i = 0; i < int(_rows); ++i) {
-				for (int j = 0; j < int(_cols); ++j) {
+			for (int y = 0; y < int(_rows); ++y) {
+				for (int x = 0; x < int(_cols); ++x) {
 					T sum = _zero;
 					for (int k = -radius; k <= radius; ++k) {
-						int idx = j + k;
+						int idx = x + k;
 						if (idx >= 0 && idx < _cols) {
-							sum += at(i, idx) * kernel[k + radius];
+							sum += at(y, idx) * kernel[k + radius];
 						}
 					}
-					result.at(i, j) = sum;
+					result.at(y, x) = sum;
 				}
 			}
 		} else {
-			for (int j = 0; j < int(_cols); ++j) {
-				for (int i = 0; i < int(_rows); ++i) {
+			for (int x = 0; x < int(_cols); ++x) {
+				for (int y = 0; y < int(_rows); ++y) {
 					T sum = _zero;
 					for (int k = -radius; k <= radius; ++k) {
-						int idx = i + k;
+						int idx = y + k;
 						if (idx >= 0 && idx < int(_rows)) {
-							sum += at(idx, j) * kernel[k + radius];
+							sum += at(idx, x) * kernel[k + radius];
 						}
 					}
-					result.at(i, j) = sum;
+					result.at(y, x) = sum;
 				}
 			}
 		}
