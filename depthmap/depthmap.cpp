@@ -211,6 +211,53 @@ void Depthmap::computeNormals() {
 		}
 	}
 }
+
+void Depthmap::projectToCameraDepthMap(const Camera& camera, const QString& outputPath) {
+
+	QImage depthMapImage(camera.width, camera.height, QImage::Format_RGB888);
+	depthMapImage.fill(qRgb(0, 0, 0));
+	//find the minimum and maximum for the Z coordinates
+	float minZ = std::numeric_limits<float>::max();
+	float maxZ = std::numeric_limits<float>::lowest();
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			float pixelZ = elevation[x + y * width];
+
+			Eigen::Vector3f realCoordinates = pixelToRealCoordinates(x, y, pixelZ);
+			Eigen::Vector3f imageCoords = camera.projectionToImage(realCoordinates);
+			if(pixelZ > 0){
+				minZ = std::min(minZ, pixelZ);
+				maxZ = std::max(maxZ, pixelZ);
+			}
+		}
+	}
+	if (minZ >= maxZ) {
+		qWarning("MinZ and MaxZ invalid. Skip depth map generation.");
+		return;
+	}
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			float pixelZ = elevation[x + y * width];
+
+			if (pixelZ <= 0) continue;
+			int pixelValue = (int)round(((pixelZ - minZ) / (maxZ - minZ)) * 255);
+			pixelValue = std::min(std::max(pixelValue, 0), 255);
+
+			Eigen::Vector3f realCoordinates = pixelToRealCoordinates(x, y, pixelZ);
+			Eigen::Vector3f imageCoords = camera.projectionToImage(realCoordinates);
+
+			int imageX =  (int)round(imageCoords[0]);
+			int imageY= (int)round(imageCoords[1]);
+			if (imageX >= 0 && imageX < camera.width && imageY >= 0 && imageY < camera.height) {
+				depthMapImage.setPixel(imageX, imageY, qRgb(pixelValue, pixelValue, pixelValue));
+				//cout << "Pixel projected (" << x << ", " << y << ") -> (" << imageX << ", " << imageY << "), Z = "
+					// << pixelZ << ", pixelValue = " << pixelValue << endl;
+			}
+		}
+	}
+	depthMapImage.save(outputPath, "png");
+}
+
 void Depthmap::depthIntegrateNormals(){
 	if (normals.empty()){
 		cerr << "Error: no normals found" << endl;
@@ -284,7 +331,7 @@ void Depthmap::resizeNormals (int factorPowerOfTwo, int step = 1) {
 
 	//QString filename = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/surface.jpg";
 	//saveNormals(filename.toStdString().c_str());
- //chiama l'integrale integra le normali e salva il ply
+	//chiama l'integrale integra le normali e salva il ply
 	//depthIntegrateNormals();
 	//QString plyFilename = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/resize_normals.obj";
 	//saveObj(plyFilename.toStdString().c_str());
@@ -325,6 +372,7 @@ void Depthmap::saveObj(const char *filename){
 		}
 	}
 }
+
 //prendi x=160,14 e y=140 dell'img
 //le coordinate del passo del pixel 0,016 sono nel xml della depth map Z_num ecc.
 
@@ -488,7 +536,7 @@ bool Camera::loadInternParameters(const QString &internePath){
 // ritorna pixel x e y img di l12 ori coord di pixel devono finire nell'ori-rel
 // Pc = Rk(Pg − Ok)
 // Pg = Ground point Pc = point camera. x y z orientati come la camera, moltiplica la matrice. Poi fai la proiezione.
-Eigen::Vector3f Camera::projectionToImage(Eigen::Vector3f realPosition){
+Eigen::Vector3f Camera::projectionToImage(Eigen::Vector3f realPosition) const{
 	//centre origine
 	//r matrice
 	//matrice r inversa rotation
@@ -513,7 +561,7 @@ Eigen::Vector3f Camera::projectionToImage(Eigen::Vector3f realPosition){
 
 }
 
-Eigen::Vector3f Camera::applyIntrinsicCalibration(Eigen::Vector3f& uvz) {
+Eigen::Vector3f Camera::applyIntrinsicCalibration(Eigen::Vector3f& uvz) const{
 
 	float u = uvz.x();
 	float v = uvz.y();
@@ -539,9 +587,3 @@ Eigen::Vector3f Camera::applyRadialDistortion(Eigen::Vector3f& uvz) {
 
 	return Eigen::Vector3f(u_dist, v_dist, uvz.z());
 }
-
-
-
-
-
-

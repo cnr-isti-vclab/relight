@@ -18,9 +18,9 @@ public:
 	Eigen::Vector3f center;
 	bool loadXml(const QString &path); //read the MicMac xml origin, origin resolution ecc.
 	bool loadInternParameters(const QString &internePath); // read the xml with the center, rotation, focal parameter, principal points parameters ecc.
-	Eigen::Vector3f projectionToImage(Eigen::Vector3f realPosition);
+	Eigen::Vector3f projectionToImage(Eigen::Vector3f realPosition) const;
 	Eigen::Vector3f applyRadialDistortion(Eigen::Vector3f& u);
-	Eigen::Vector3f applyIntrinsicCalibration(Eigen::Vector3f& u);
+	Eigen::Vector3f applyIntrinsicCalibration(Eigen::Vector3f& u) const;
 
 	Camera() {}
 };
@@ -44,6 +44,7 @@ public:
 	void saveObj(const char *filename);
 	void depthIntegrateNormals();
 	void resizeNormals(int factorPowerOfTwo, int step);
+	void projectToCameraDepthMap(const Camera& camera, const QString& outputPath);
 //	void getOrientationVector(const QString &xmlPath, Eigen::Matrix3f &rotation, Eigen::Vector3f &center);
 
 };
