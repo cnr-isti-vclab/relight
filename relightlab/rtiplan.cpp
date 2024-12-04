@@ -18,25 +18,7 @@
 
 #include <iostream>
 using namespace std;
-RtiPlanRow::RtiPlanRow(RtiParameters &param, QFrame *parent): QFrame(parent), parameters(param) {
-	QHBoxLayout *layout = new QHBoxLayout(this);
-
-	label = new HelpLabel("", "");
-	label->setFixedWidth(200);
-	layout->addWidget(label, 0, Qt::AlignLeft);
-	//layout->setSpacing(20);
-
-	layout->addStretch(1);
-
-	buttonsFrame = new QFrame;
-	buttonsFrame->setMinimumWidth(860);
-	buttonsFrame->setFrameStyle(QFrame::Box);
-
-	layout->addWidget(buttonsFrame);
-
-	buttons = new QHBoxLayout(buttonsFrame);
-
-	layout->addStretch(1);
+RtiPlanRow::RtiPlanRow(RtiParameters &param, QFrame *parent): PlanRow(parent), parameters(param) {
 }
 
 
@@ -44,15 +26,10 @@ RtiBasisRow::RtiBasisRow(RtiParameters &parameters, QFrame *parent): RtiPlanRow(
 	label->label->setText("Basis:");
 	label->help->setId("rti/basis");
 
-	ptm = new QLabelButton("PTM", "Polynomial Texture Map");
-	hsh = new QLabelButton("HSH", "HemiSpherical Harmonics");
-	rbf = new QLabelButton("RBF", "Radial Basis Functions");
-	bln = new QLabelButton("BNL", "Bilinear interplation");
-
-	buttons->addWidget(ptm, 0, Qt::AlignCenter);
-	buttons->addWidget(hsh, 0, Qt::AlignCenter);
-	buttons->addWidget(rbf, 0, Qt::AlignCenter);
-	buttons->addWidget(bln, 0, Qt::AlignCenter);
+	buttons->addWidget(ptm = new QLabelButton("PTM", "Polynomial Texture Map"));
+	buttons->addWidget(hsh = new QLabelButton("HSH", "HemiSpherical Harmonics"));
+	buttons->addWidget(rbf = new QLabelButton("RBF", "Radial Basis Functions"));
+	buttons->addWidget(bln = new QLabelButton("BNL", "Bilinear interplation"));
 
 	connect(ptm, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::PTM, true); });
 	connect(hsh, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::HSH, true); });
@@ -90,15 +67,10 @@ RtiColorSpaceRow::RtiColorSpaceRow(RtiParameters &parameters, QFrame *parent): R
 	label->label->setText("Colorspace:");
 	label->help->setId("rti/colorspace");
 
-	rgb  = new QLabelButton("RGB", "Standard");
-	lrgb = new QLabelButton("LRGB", "Albedo * Luminance.");
-	mrgb = new QLabelButton("MRGB", "Standard");
-	ycc  = new QLabelButton("YCC", "Dedicated chroma coefficients.");
-
-	buttons->addWidget(rgb, 0, Qt::AlignLeft);
-	buttons->addWidget(lrgb, 0, Qt::AlignRight);
-	buttons->addWidget(mrgb, 0, Qt::AlignLeft);
-	buttons->addWidget(ycc, 0, Qt::AlignRight);
+	buttons->addWidget(rgb  = new QLabelButton("RGB", "Standard"));
+	buttons->addWidget(lrgb = new QLabelButton("LRGB", "Albedo * Luminance."));
+	buttons->addWidget(mrgb = new QLabelButton("MRGB", "Standard"));
+	buttons->addWidget(ycc  = new QLabelButton("YCC", "Dedicated chroma coefficients."));
 
 	connect(rgb,  &QAbstractButton::clicked, this, [this](){ setColorspace(Rti::RGB, true);  });
 	connect(lrgb, &QAbstractButton::clicked, this, [this](){ setColorspace(Rti::LRGB, true); });
@@ -217,14 +189,9 @@ RtiFormatRow::RtiFormatRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 	label->label->setText("Format:");
 	label->help->setId("rti/format");
 
-
-	rti = new QLabelButton("Legacy", ".rti, .ptm");
-	web = new QLabelButton("Web", ".json, .jpg");
-	iip = new QLabelButton("IIP", ".tiff");
-
-	buttons->addWidget(rti, Qt::AlignLeft);
-	buttons->addWidget(web, Qt::AlignLeft);
-	buttons->addWidget(iip, Qt::AlignLeft);
+	buttons->addWidget(rti = new QLabelButton("Legacy", ".rti, .ptm"));
+	buttons->addWidget(web = new QLabelButton("Web", ".json, .jpg"));
+	buttons->addWidget(iip = new QLabelButton("IIP", ".tiff"));
 
 	connect(rti, &QAbstractButton::clicked, [this]() { setFormat(RtiParameters::RTI, true); });
 	connect(web, &QAbstractButton::clicked, [this]() { setFormat(RtiParameters::WEB, true); });

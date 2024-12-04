@@ -4,27 +4,23 @@
 #include <QFrame>
 #include "../src/rti.h"
 #include "rtitask.h"
+#include "planrow.h"
 
 class QComboBox;
 class QCheckBox;
 class QSpinBox;
 class QLabelButton;
 class HelpLabel;
-class QHBoxLayout;
 class QVBoxLayout;
 class QLineEdit;
 
-class RtiPlanRow: public QFrame {
+class RtiPlanRow: public PlanRow {
 	Q_OBJECT
 public:
 	RtiPlanRow(RtiParameters &parameters, QFrame *parent = nullptr);
 
 	RtiParameters &parameters;
-	HelpLabel *label = nullptr;
-	QHBoxLayout *buttons = nullptr;
-	QFrame *buttonsFrame = nullptr;
 };
-
 
 class RtiBasisRow: public RtiPlanRow {
 	Q_OBJECT

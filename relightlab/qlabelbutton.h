@@ -11,6 +11,7 @@ public:
 		setCheckable(true);
 		setIcon(QIcon());
 		setMinimumWidth(200);
+		setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 	}
 };
 

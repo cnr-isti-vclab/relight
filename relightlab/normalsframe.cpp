@@ -4,6 +4,7 @@
 #include "processqueue.h"
 #include "helpbutton.h"
 #include "../src/project.h"
+#include "normalsplan.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
@@ -21,6 +22,52 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 	content->addWidget(new QLabel("<h2>Export normals</h2>"));
 	content->addSpacing(30);
 
+
+	content->addWidget(source_row = new NormalsSourceRow(parameters, this));
+	content->addWidget(flatten_row = new NormalsFlattenRow(parameters, this));
+	content->addWidget(surface_row = new NormalsSurfaceRow(parameters, this));
+
+
+	{
+		QHBoxLayout *save_row = new QHBoxLayout;
+
+		{
+			QLabel *label = new QLabel("");
+			label->setFixedWidth(200);
+			save_row->addWidget(label, 0, Qt::AlignLeft);
+		}
+		save_row->addStretch(1);
+
+		{
+			QFrame *buttons_frame = new QFrame;
+			buttons_frame->setMinimumWidth(860);
+
+			{
+				QHBoxLayout *buttons_layout = new QHBoxLayout(buttons_frame);
+
+				buttons_layout->addStretch(1);
+				QPushButton *save = new QPushButton("Export", this);
+				save->setIcon(QIcon::fromTheme("save"));
+				save->setProperty("class", "large");
+				save->setMinimumWidth(200);
+				connect(save, &QPushButton::clicked, [this]() { this->save(); });
+
+				buttons_layout->addWidget(save);
+			}
+
+			save_row->addWidget(buttons_frame);
+		}
+		save_row->addStretch(1);
+
+
+		content->addLayout(save_row);
+
+	}
+
+
+	content->addStretch();
+
+	return;
 	content->addWidget(jpg = new QRadioButton("JPEG: normalmap"));
 	content->addWidget(png = new QRadioButton("PNG: normalmap"));
 	{
@@ -69,35 +116,15 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 }
 
 void NormalsFrame::save() {
-	if(qRelightApp->project().dome.directions.size() == 0) {
+	if(parameters.compute && qRelightApp->project().dome.directions.size() == 0) {
 		QMessageBox::warning(this, "Missing light directions.", "You need light directions for this dataset to build a normalmap.\n"
 																"You can either load a dome or .lp file or mark a reflective sphere in the 'Lights' tab.");
 		return;
 	}
-	QString filter = jpg->isChecked() ? "JPEG Images (*.jpg)" : "PNG Images (*.png)";
-	Project &project = qRelightApp->project();
-	QString output = QFileDialog::getSaveFileName(this, "Select a filename for the normal map.", project.dir.path(), filter);
-	if(output.isNull())
-		return;
-	QString extension = jpg->isChecked() ? ".jpg" : ".png";
-	if(!output.endsWith(extension))
-		output += extension;
 
-	NormalsTask *task = new NormalsTask(output);
-	if(ply->isChecked())
-		task->exportPly = true;
-	if(tif->isChecked())
-		task->exportTiff = true;
-
-	if(radial->isChecked())
-		task->flatMethod = RADIAL;
-
-	if(fourier->isChecked()) {
-		task->flatMethod = FOURIER;
-		task->m_FlatRadius = fourier_radius->value()/100.0f;
-	}
-
-	task->initFromProject(project);
+	NormalsTask *task = new NormalsTask();
+	task->parameters = parameters;
+	task->initFromProject(qRelightApp->project());
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);
