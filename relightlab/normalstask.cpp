@@ -52,45 +52,72 @@ void NormalsTask::run() {
 	status = RUNNING;
 
 
-	imageset.setCallback(nullptr);
+	function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
-	vector<float> normals(imageset.width * imageset.height * 3);
+	vector<float> normals;
 
+	int width = 0, height = 0;
 
-	RelightThreadPool pool;
-	PixelArray line;
+	if(parameters.compute) {
+		width = imageset.width;
+		height = imageset.height;
 
-	pool.start(QThread::idealThreadCount());
+		normals.resize(imageset.width * imageset.height * 3);
+		RelightThreadPool pool;
+		PixelArray line;
+		imageset.setCallback(nullptr);
+		pool.start(QThread::idealThreadCount());
 
-	for (int i = 0; i < imageset.height; i++) {
-		// Read a line
-		imageset.readLine(line);
+		for (int i = 0; i < imageset.height; i++) {
+			// Read a line
+			imageset.readLine(line);
 
-		// Create the normal task and get the run lambda
-		uint32_t idx = i * 3 * imageset.width;
-		//uint8_t* data = normals.data() + idx;
-		float* data = &normals[idx];
+			// Create the normal task and get the run lambda
+			uint32_t idx = i * 3 * imageset.width;
+			//uint8_t* data = normals.data() + idx;
+			float* data = &normals[idx];
 
-		NormalsWorker *task = new NormalsWorker(solver, i, line, data, imageset, lens);
+			NormalsWorker *task = new NormalsWorker(parameters.solver, i, line, data, imageset, lens);
 
-		std::function<void(void)> run = [this, task](void)->void {
-			task->run();
-			delete task;
-		};
+			std::function<void(void)> run = [this, task](void)->void {
+				task->run();
+				delete task;
+			};
 
-		// Launch the task
-		pool.queue(run);
-		pool.waitForSpace();
+			// Launch the task
+			pool.queue(run);
+			pool.waitForSpace();
 
-		bool proceed = progressed("Computing normals...", ((float)i / imageset.height) * 100);
-		if(!proceed)
+			bool proceed = progressed("Computing normals...", ((float)i / imageset.height) * 100);
+			if(!proceed)
+				return;
+		}
+
+		// Wait for the end of all the threads
+		pool.finish();
+	} else {
+		QImage normalmap(parameters.input_path);
+		if(normalmap.isNull()) {
+			status = FAILED;
+			error = "Could not load normalmap: " + parameters.input_path;
 			return;
+		}
+		width = normalmap.width();
+		height = normalmap.height();
+		//convert image into normals
+
+		normals.resize(width * height * 3);
+		for(int y = 0; y < height; y++)
+			for(int x = 0; x < width; x++) {
+				QRgb rgb = normalmap.pixel(x, y);
+				int i = 3*(x + y*width);
+				normals[i+0] = (qRed(rgb) / 255.0f) * 2.0f - 1.0f;
+				normals[i+1] = (qGreen(rgb) / 255.0f) * 2.0f - 1.0f;
+				normals[i+2] = (qBlue(rgb) / 255.0f) * 2.0f - 1.0f;
+			}
 	}
 
-	// Wait for the end of all the threads
-	pool.finish();
-
-	if(flatMethod != NONE) {
+	if(parameters.flatMethod != FLAT_NONE) {
 		//TODO: do we really need double precision?
 		vector<double> normalsd(normals.size());
 		for(uint32_t i = 0; i < normals.size(); i++)
@@ -98,14 +125,14 @@ void NormalsTask::run() {
 
 		NormalsImage ni;
 		ni.load(normalsd, imageset.width, imageset.height);
-		switch(flatMethod) {
-			case NONE: break;
-			case RADIAL:
+		switch(parameters.flatMethod) {
+			case FLAT_NONE: break;
+			case FLAT_RADIAL:
 				ni.flattenRadial();
 				break;
-			case FOURIER:
+			case FLAT_FOURIER:
 				//convert radius to frequencies
-				double sigma = 100/m_FlatRadius;
+				double sigma = 100/parameters.m_FlatRadius;
 				ni.flattenFourier(imageset.width/10, sigma);
 				break;
 		}
@@ -115,37 +142,42 @@ void NormalsTask::run() {
 
 	}
 
+	if(parameters.compute || parameters.flatMethod != FLAT_NONE) {
+		// Save the normals
 
-	vector<uint8_t> normalmap(imageset.width * imageset.height * 3);
-	for(size_t i = 0; i < normals.size(); i++)
-		normalmap[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
+		vector<uint8_t> normalmap(imageset.width * imageset.height * 3);
+		for(size_t i = 0; i < normals.size(); i++)
+			normalmap[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
 
-	// Save the final result
-	QImage img(normalmap.data(), imageset.width, imageset.height, imageset.width*3, QImage::Format_RGB888);
+		QImage img(normalmap.data(), imageset.width, imageset.height, imageset.width*3, QImage::Format_RGB888);
+	
 
-	// Set spatial resolution if known. Need to convert as pixelSize stored in mm/pixel whereas QImage requires pixels/m
-	if( pixelSize > 0 ) {
-		int dotsPerMeter = round(1000.0/pixelSize);
-		img.setDotsPerMeterX(dotsPerMeter);
-		img.setDotsPerMeterY(dotsPerMeter);
+		// Set spatial resolution if known. Need to convert as pixelSize stored in mm/pixel whereas QImage requires pixels/m
+		if( pixelSize > 0 ) {
+			int dotsPerMeter = round(1000.0/pixelSize);
+			img.setDotsPerMeterX(dotsPerMeter);
+			img.setDotsPerMeterY(dotsPerMeter);
+		}
+		img.save(output);
+	
 	}
-	img.save(output);
-	function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
+	
 
-	if(exportPly) {
-		bool proceed = progressed("Integrating normals assm...", 0);
+	if(parameters.surface_integration == SURFACE_ASSM) {
+		
+		bool proceed = progressed("Adaptive mesh normal integration...", 50);
 		if(!proceed)
 			return;
 		QString filename = output.left(output.size() -4) + ".obj";
 
-		float precision = 0.1f;
-		assm(filename, normals, precision);
-
-		proceed = progressed("Integrating normals bni...", 50);
+		assm(filename, normals, parameters.assm_error);
+	} else if(parameters.surface_integration == SURFACE_BNI) {
+		bool proceed = progressed("Integrating normals assm...", 0);
 		if(!proceed)
 			return;
+
 		vector<float> z;
-		bni_integrate(callback, imageset.width, imageset.height, normals, z, bni_k);
+		bni_integrate(callback, imageset.width, imageset.height, normals, z, parameters.bni_k);
 		if(z.size() == 0) {
 			error = "Failed to integrate normals";
 			status = FAILED;
@@ -154,7 +186,7 @@ void NormalsTask::run() {
 		//TODO remove extension properly
 
 		progressed("Saving surface...", 99);
-		filename = output.left(output.size() -4) + ".ply";
+		QString filename = output.left(output.size() -4) + ".ply";
 		savePly(filename, imageset.width, imageset.height, z);
 	}
 	progressed("Done", 100);

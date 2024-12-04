@@ -83,6 +83,8 @@ set (RELIGHT_HEADERS
     queueitem.h
     normalsframe.h
     normalstask.h
+    normalsplan.h
+    planrow.h
     scaleframe.h
 )
 
@@ -149,6 +151,8 @@ set (RELIGHTLAB_SOURCES
     queueitem.cpp
     normalsframe.cpp
     normalstask.cpp
+    normalsplan.cpp
+    planrow.cpp
     scaleframe.cpp
 )
 

@@ -12,31 +12,45 @@
 #include <QRunnable>
 
 enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA };
-enum FlatMethod { NONE, RADIAL, FOURIER };
+enum FlatMethod { FLAT_NONE, FLAT_RADIAL, FLAT_FOURIER };
+enum SurfaceIntegration { SURFACE_NONE, SURFACE_BNI, SURFACE_ASSM };
+
+class NormalsParameters {
+public:
+	bool compute = true;
+	QString input_path;
+
+	NormalSolver solver = NORMALS_L2;
+
+	FlatMethod flatMethod = FLAT_NONE;
+	double m_FlatRadius = 0.5;
+
+
+	SurfaceIntegration surface_integration = SURFACE_NONE;
+	float bni_k = 2.0;
+	float assm_error = 0.1;
+
+	//bool exportJpeg = true;
+	int quality = 95;
+	//bool exportPng = false;
+	//bool exportTiff = false;
+	//bool exportPly = false;
+	//bool exportObj = false;
+
+	QString path;
+
+};
 
 
 class NormalsTask :  public Task {
 public:
-	NormalSolver solver = NORMALS_L2;
-	FlatMethod flatMethod = NONE;
-	double m_FlatRadius = 0.5;
+	NormalsParameters parameters;
 
-	bool exportJpeg = true;
-	int quality = 95;
-	bool exportPng = false;
-	bool exportTiff = false;
-
-	bool exportPly = false;
-	float bni_k = 2.0;
 	ImageSet imageset;
 	Lens lens;
 	float pixelSize = 0.0f;
 
-	NormalsTask(const QString &outputPath) {
-		output = outputPath;
-	}
 
-	virtual ~NormalsTask(){};
 	virtual void run() override;
 
 	void initFromProject(Project &project);

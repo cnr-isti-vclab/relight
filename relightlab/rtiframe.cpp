@@ -80,7 +80,7 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 				save->setIcon(QIcon::fromTheme("save"));
 				save->setProperty("class", "large");
 				save->setMinimumWidth(200);
-				connect(save, &QPushButton::clicked, [this]() { emit exportRti(); });
+				connect(save, &QPushButton::clicked, [this]() { exportRti(); });
 
 				buttons_layout->addWidget(save);
 			}
