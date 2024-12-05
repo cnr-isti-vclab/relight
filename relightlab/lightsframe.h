@@ -21,7 +21,6 @@ public:
 	LightsFrame();
 
 public slots:
-	void newSphere();
 	void clear();
 	void init();
 	void setPixelSize();

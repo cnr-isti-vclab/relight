@@ -25,9 +25,10 @@ LightsFrame::LightsFrame() {
 	content->addWidget(new QLabel("<h2>Lights direction setup</h2>"));
 	content->addSpacing(30);
 
-	content->addWidget(dome_panel = new DomePanel(this));
-
 	content->addWidget(sphere_panel = new SpherePanel(this));
+	content->addSpacing(30);
+
+	content->addWidget(dome_panel = new DomePanel(this));
 	content->addSpacing(30);
 
 	geometry = new LightsGeometry(this);
@@ -43,9 +44,6 @@ void LightsFrame::clear() {
 	sphere_panel->clear();
 }
 
-void LightsFrame::newSphere() {
-	sphere_panel->newSphere();
-}
 
 void LightsFrame::init() {
 //	bool useSphere = qRelightApp->project().spheres.size();

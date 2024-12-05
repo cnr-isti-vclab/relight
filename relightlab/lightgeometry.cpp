@@ -34,6 +34,7 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 
 	content->addWidget( new QLabel("Filename:"), 0, 0);
 	content->addWidget(filename = new QLineEdit, 0, 1);
+	filename->setEnabled(false);
 
 	content->addWidget( new QLabel("Number of images:"), 1, 0);
 	content->addWidget(images_number = new QSpinBox, 1, 1);
