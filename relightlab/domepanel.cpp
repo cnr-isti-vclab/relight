@@ -23,12 +23,6 @@ DomePanel::DomePanel(QWidget *parent): QFrame(parent) {
 	QHBoxLayout *content = new QHBoxLayout(this);
 	//content->setHorizontalSpacing(20);
 
-	QPushButton *sphere = new QPushButton(QIcon::fromTheme("folder"), "New reflective sphere...");
-	sphere->setProperty("class", "large");
-	sphere->setMinimumWidth(200);
-	sphere->setMaximumWidth(300);
-	connect(sphere, SIGNAL(clicked()), parent, SLOT(newSphere()));
-	content->addWidget(sphere, 0, Qt::AlignTop);
 
 	QPushButton *save = new QPushButton(QIcon::fromTheme("save"), "Export dome...");
 	save->setProperty("class", "large");

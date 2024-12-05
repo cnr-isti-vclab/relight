@@ -20,11 +20,14 @@ SpherePanel::SpherePanel(QWidget *parent): QGroupBox("Reflective spheres", paren
 
 	QFrame *spheres_frame = new QFrame;
 
-	QScrollArea *sphere_area = new QScrollArea;
-	sphere_area->setWidget(spheres_frame);
-	sphere_area->setWidgetResizable(true);
+	QPushButton *sphere = new QPushButton(QIcon::fromTheme("folder"), "New reflective sphere...");
+	sphere->setProperty("class", "large");
+	sphere->setMinimumWidth(200);
+	sphere->setMaximumWidth(300);
+	connect(sphere, SIGNAL(clicked()), this, SLOT(newSphere()));
+	content->addWidget(sphere, 0, Qt::AlignTop);
 
-	content->addWidget(sphere_area);
+	content->addWidget(spheres_frame);
 
 	spheres = new QVBoxLayout(spheres_frame);
 
