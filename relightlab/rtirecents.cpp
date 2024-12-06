@@ -53,24 +53,7 @@ RtiRecents::RtiRecents(QFrame *parent): QFrame(parent) {
 
 	std::vector<RtiParameters> params = recentRtis();
 	for(RtiParameters &p: params) {
-		QString basisLabels[] =  { "PTM", "HSH", "RBF", "BLN", "NEURAL" };
-		QString colorspaceLabels[] =  { "RGB", "LRGB", "YCC", "RGB", "YCC" };
-		QString formatLabels[] = { "", "relight", "deepzoom", "tarzoom", "itarzoom", "tiff" };
 
-		QString basis  = basisLabels[p.basis];
-		QString colorspace = colorspaceLabels[p.colorspace];
-		QString planes = QString::number(p.nplanes);
-		if(p.nchroma) {
-			planes += "." + QString::number(p.nchroma);
-		}
-		QString format;
-		if(p.format == RtiParameters::RTI)
-			format = p.basis == Rti::PTM ? ".ptm" : ".rti";
-		else
-			format = formatLabels[p.format];
-
-		QString txt = QString("<h2>%1 <span style='font-size:80%'>(%2)</span> %3</h2>"
-							  "<p>%4</p>").arg(basis).arg(colorspace).arg(planes).arg(format);
-		content->addWidget(new QLabelButton(txt));
+		content->addWidget(new QLabelButton(p.summary()));
 	}
 }

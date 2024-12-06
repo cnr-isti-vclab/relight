@@ -29,6 +29,8 @@ public:
 
 	int quality = 95;
 	QString path;
+
+	QString summary();
 };
 
 class RtiTask: public Task {
@@ -41,6 +43,7 @@ public:
 	RtiTask(const Project &_project);
 	virtual ~RtiTask();
 	virtual void run() override;
+	void setParameters(RtiParameters &p);
 
 public slots:
 

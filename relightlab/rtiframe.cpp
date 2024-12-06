@@ -116,7 +116,7 @@ void RtiFrame::exportRti() {
 		return;
 	}
 	RtiTask *rti_task = new RtiTask(qRelightApp->project());
-	rti_task->parameters = parameters;
+	rti_task->setParameters(parameters);
 	rti_task->output = parameters.path;
 
 	ProcessQueue &queue = ProcessQueue::instance();
