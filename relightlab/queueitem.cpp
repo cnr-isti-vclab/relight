@@ -32,42 +32,39 @@ QueueItem::QueueItem(Task *_task, QListWidget *parent): QListWidgetItem(parent) 
 
 	QGridLayout *grid = new QGridLayout();
 
-	QLabel *label = new QLabel(task->label);
+	QLabel *label = new QLabel("<b>" + task->label + "<b>");
 	grid->addWidget(label, 0, 0, 1, 2);
 
 	QFont font = label->font();
 	font.setPointSize(10);
 
-	QLabel *input = new QLabel(task->input_folder);
-	input->setFont(font);
-	grid->addWidget(input, 1, 0, 1, 2);
-
 	QLabel *output = new QLabel(task->output);
 	output->setFont(font);
-	grid->addWidget(output, 2, 0, 1, 2);
+	grid->addWidget(output, 1, 0, 1, 2);
+
 
 	status = new QLabel();
 	status->setMinimumWidth(250);
 //	status->hide();
-	grid->addWidget(status, 3, 0, 1, 1);
+	grid->addWidget(status, 2, 0, 1, 1);
 
 	progressbar = new QProgressBar();
 	progressbar->setValue(0);
 //	progressbar->hide();
-	grid->addWidget(progressbar, 3, 1, 1, 1);
+	grid->addWidget(progressbar, 2, 1, 1, 1);
 
 
 	cast = new QPushButton();
 	cast->setIcon(QIcon::fromTheme("cast"));
 	cast->setEnabled(false);
-	grid->addWidget(cast, 0, 2, 4, 1);
+	grid->addWidget(cast, 0, 2, 3, 1);
 
 	connect(cast, SIGNAL(clicked(bool)), this, SLOT(casting()));
 
 	folder = new QPushButton();
 	folder->setIcon(QIcon::fromTheme("folder"));
 	folder->setEnabled(true);
-	grid->addWidget(folder, 0, 3, 4, 1);
+	grid->addWidget(folder, 0, 3, 3, 1);
 
 	connect(folder, SIGNAL(clicked(bool)), this, SLOT(openFolder()));
 

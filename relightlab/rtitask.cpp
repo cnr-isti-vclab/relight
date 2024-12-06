@@ -20,6 +20,28 @@ int convertToRTI(const char *filename, const char *output);
 int convertRTI(const char *file, const char *output, int quality);
 
 void setupLights(ImageSet &imageset, Dome &dome);
+
+QString RtiParameters::summary() {
+	QString basisLabels[] =  { "PTM", "HSH", "RBF", "BLN", "NEURAL" };
+	QString colorspaceLabels[] =  { "RGB", "LRGB", "YCC", "RGB", "YCC" };
+	QString formatLabels[] = { "", "images", "deepzoom", "tarzoom", "itarzoom", "tiff" };
+
+	QString s_basis  = basisLabels[basis];
+	QString s_colorspace = colorspaceLabels[colorspace];
+	QString s_planes = QString::number(nplanes);
+	if(nchroma) {
+		s_planes += "." + QString::number(nchroma);
+	}
+	QString s_format;
+	if(format == RtiParameters::RTI)
+		s_format = basis == Rti::PTM ? ".ptm" : ".rti";
+	else
+		s_format = formatLabels[format];
+
+	QString txt = QString("%1 (%2) %3 %4").arg(s_basis).arg(s_colorspace).arg(s_planes).arg(s_format).arg(path);
+	return txt;
+}
+
 RtiTask::RtiTask(const Project &_project): Task(), project(_project) {}
 
 RtiTask::~RtiTask() {
@@ -27,7 +49,14 @@ RtiTask::~RtiTask() {
 		delete builder;
 }
 
+void RtiTask::setParameters(RtiParameters &p) {
+	parameters = p;
+	label = parameters.summary();
+}
+
 void RtiTask::run() {
+	label = parameters.summary();
+
 	status = RUNNING;	
 	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
