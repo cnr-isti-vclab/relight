@@ -10,7 +10,8 @@
 
 using namespace std;
 
-bool Depthmap::load(const char *tiff) {
+
+bool Depthmap::loadTiff(const char *tiff, vector<float> &values, uint32_t &w, uint32_t &h) {
 	TIFF* inTiff = TIFFOpen(tiff, "r");
 
 	if (!inTiff) {
@@ -18,18 +19,9 @@ bool Depthmap::load(const char *tiff) {
 		return false;
 	}
 
-	// Check if the TIFF is tiled
-	uint32_t tileWidth, tileLength;
-	if (!TIFFGetField(inTiff, TIFFTAG_TILEWIDTH, &tileWidth) ||
-		!TIFFGetField(inTiff, TIFFTAG_TILELENGTH, &tileLength)) {
-		cerr << "Input TIFF is not tiled." << endl;
-		TIFFClose(inTiff);
-		return false;
-	}
-
 	// Get image width, height, and other necessary tags
-	TIFFGetField(inTiff, TIFFTAG_IMAGEWIDTH, &width);
-	TIFFGetField(inTiff, TIFFTAG_IMAGELENGTH, &height);
+	TIFFGetField(inTiff, TIFFTAG_IMAGEWIDTH, &w);
+	TIFFGetField(inTiff, TIFFTAG_IMAGELENGTH, &h);
 
 	uint16_t samplesPerPixel = 1;
 	TIFFGetField(inTiff, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
@@ -41,18 +33,30 @@ bool Depthmap::load(const char *tiff) {
 
 	uint16_t bitsPerSample = 32;
 	TIFFGetField(inTiff, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
-	if(bitsPerSample != 32) {
-		cerr << "Samples should be a float 32 bit" << endl;
+	if(bitsPerSample != 32 && bitsPerSample !=1) {
+		cerr << "Samples should be a float 32 bit or 1 bit boolean" << endl;
 		TIFFClose(inTiff);
 		return false;
 	}
 
 	uint16_t sampleFormat = SAMPLEFORMAT_IEEEFP; // Floating-point data
-	TIFFGetField(inTiff, TIFFTAG_SAMPLEFORMAT, &sampleFormat);
+	//TIFFGetField(inTiff, TIFFTAG_SAMPLEFORMAT, &sampleFormat);
+	if (!TIFFGetField(inTiff, TIFFTAG_SAMPLEFORMAT, &sampleFormat)) {
+		cerr << "Failed to retrieve SAMPLEFORMAT tag." << endl;
+		TIFFClose(inTiff);
+		return false;
+	}
 
-	//TODO: controllare che sia effettivamenet floating point 32 bit
+	values.resize(w * h);
 
-	// Compute tile size and total number of tiles
+	// Check if the TIFF is tiled
+	uint32_t tileWidth, tileLength;
+	if (!TIFFGetField(inTiff, TIFFTAG_TILEWIDTH, &tileWidth) ||
+		!TIFFGetField(inTiff, TIFFTAG_TILELENGTH, &tileLength)) {
+		return loadStripedTiff(inTiff, values, w, h, bitsPerSample);
+	} else {
+		return loadTiledTiff(inTiff, values, w, h, tileWidth, tileLength, bitsPerSample);
+	}
 	tsize_t tileSize = TIFFTileSize(inTiff);
 	if (tileSize == 0) {
 		cerr << "Error computing tile size." << endl;
@@ -60,45 +64,159 @@ bool Depthmap::load(const char *tiff) {
 		return 1;
 	}
 
-	uint32_t numTilesX = (width + tileWidth - 1) / tileWidth;
-	uint32_t numTilesY = (height + tileLength - 1) / tileLength;
+	return true;
 
-	elevation.resize(width * height * samplesPerPixel);
-	vector<float> tileData(tileSize / sizeof(float));
+}
+//TODO: controllare che sia effettivamenet floating point 32 bit
 
-	for (uint32_t y = 0; y < numTilesY; ++y) {
-		for (uint32_t x = 0; x < numTilesX; ++x) {
-			uint32_t tileIndex = TIFFComputeTile(inTiff, x * tileWidth, y * tileLength, 0, 0);
 
-			if (TIFFReadEncodedTile(inTiff, tileIndex, tileData.data(), tileSize) < 0) {
-				cerr << "Error reading tile " << tileIndex << endl;
-				TIFFClose(inTiff);
-				return 1;
-			}
+bool Depthmap::loadTiledTiff(TIFF* inTiff, vector<float> &values, uint32_t w, uint32_t h,
+							 uint32_t tileWidth, uint32_t tileLength, uint32_t bitsPerSample){
 
-			for (uint32_t tileY = 0; tileY < tileLength; ++tileY) {
-				uint32_t dstY = y * tileLength + tileY;
-				if(dstY >= height)
-					break;
-				for (uint32_t tileX = 0; tileX < tileWidth; ++tileX) {
-					uint32_t srcIndex = tileY * tileWidth + tileX;
-					uint32_t dstX = x * tileWidth + tileX;
+	tsize_t tileSize = TIFFTileSize(inTiff);
+	if (tileSize == 0) {
+		cerr << "Error computing tile size." << endl;
+		TIFFClose(inTiff);
+		return false;
+	}
+	// Compute tile size and total number of tiles
 
-					if (dstX >= width) {
-						continue;
+	uint32_t numTilesX = (w + tileWidth - 1) / tileWidth;
+	uint32_t numTilesY = (h + tileLength - 1) / tileLength;
+
+
+	if(bitsPerSample==32){
+		vector<float> tileData(tileSize / sizeof(float));
+
+		for (uint32_t y = 0; y < numTilesY; ++y) {
+			for (uint32_t x = 0; x < numTilesX; ++x) {
+				uint32_t tileIndex = TIFFComputeTile(inTiff, x * tileWidth, y * tileLength, 0, 0);
+
+				if (TIFFReadEncodedTile(inTiff, tileIndex, tileData.data(), tileSize) < 0) {
+					cerr << "Error reading tile " << tileIndex << endl;
+					TIFFClose(inTiff);
+					return 1;
+				}
+
+				for (uint32_t tileY = 0; tileY < tileLength; ++tileY) {
+					uint32_t dstY = y * tileLength + tileY;
+					if(dstY >= height)
+						break;
+					for (uint32_t tileX = 0; tileX < tileWidth; ++tileX) {
+						uint32_t srcIndex = tileY * tileWidth + tileX;
+						uint32_t dstX = x * tileWidth + tileX;
+
+						if (dstX >= width) {
+							continue;
+						}
+
+						uint32_t dstIndex = (dstY * w + dstX);
+						values[dstIndex] = tileData[srcIndex];
 					}
-
-					uint32_t dstIndex = (dstY * width + dstX) * samplesPerPixel;
-					elevation[dstIndex] = tileData[srcIndex];
 				}
 			}
 		}
 	}
+	if(bitsPerSample==1){
+		unsigned char * tileData= new unsigned char [tileSize];
 
-	TIFFClose(inTiff);
-	//togli estensione dal nome rimpiazza con xml e lo passi a loadXml
+		for (uint32_t y = 0; y < numTilesY; ++y) {
+			for (uint32_t x = 0; x < numTilesX; ++x) {
+				uint32_t tileIndex = TIFFComputeTile(inTiff, x * tileWidth, y * tileLength, 0, 0);
+
+				if (TIFFReadEncodedTile(inTiff, tileIndex, tileData, tileSize) < 0) {
+					cerr << "Error reading tile " << tileIndex << endl;
+					TIFFClose(inTiff);
+					return 1;
+				}
+
+				for (uint32_t tileY = 0; tileY < tileLength; ++tileY) {
+					uint32_t dstY = y * tileLength + tileY;
+					if(dstY >= height)
+						break;
+					for (uint32_t tileX = 0; tileX < tileWidth; ++tileX) {
+						uint32_t srcIndex = tileY * tileWidth + tileX;
+						uint32_t dstX = x * tileWidth + tileX;
+
+						if (dstX >= width) {
+							continue;
+						}
+						uint32_t bytePos = srcIndex >> 3;
+						uint32_t bitPos = srcIndex & 7;
+						uint32_t dstIndex = (dstY * w + dstX);
+
+						values[dstIndex] = (tileData[bytePos] & (1 << bitPos)) != 0;
+					}
+				}
+			}
+		}
+		delete[] tileData;
+	}
+	return true;
+}
+
+bool Depthmap::loadStripedTiff(TIFF* inTiff, std::vector<float> &values, uint32_t& w, uint32_t& h, uint32_t bitsPerSample){
+
+	tsize_t scanLineSize = TIFFScanlineSize(inTiff);
+	if (scanLineSize == 0) {
+		cerr << "Error computing strip size." << endl;
+		TIFFClose(inTiff);
+		return false;
+	}
+
+	// Temporary buffer for reading one strip of data
+	if(bitsPerSample==32) {
+		vector<float> stripData(scanLineSize / sizeof(float));
+
+		for (uint32_t row = 0; row < h; ++row) {
+			// Read the current strip
+			if (TIFFReadScanline(inTiff, stripData.data(), row, 1) < 0) {
+				cerr << "Error reading strip " << row << endl;
+				TIFFClose(inTiff);
+				return false;
+			}
+
+			for (uint32_t col = 0; col < w; ++col) {
+				uint32_t dstIndex = row * w + col;
+				values[dstIndex] = stripData[col];
+			}
+		}
+	}
+	if(bitsPerSample==1) {
+		unsigned char * stripData= new unsigned char [scanLineSize];
+
+		for (uint32_t row = 0; row < h; ++row) {
+			// Read the current strip
+			if (TIFFReadScanline(inTiff, stripData, row) < 0) {
+				cerr << "Error reading strip " << row << endl;
+				TIFFClose(inTiff);
+				return false;
+			}
+
+			for (uint32_t col = 0; col < w; ++col) {
+				uint32_t bytePos = col >> 3;
+				uint32_t bitPos = 7 - (col & 7);
+				uint32_t dstIndex = row * w + col;
+
+
+				values[dstIndex] = (stripData[bytePos] & (1 << bitPos)) != 0;
+				cout << values[dstIndex];
+			}
+			cout << endl;
+		}
+		delete[] stripData;
+	}
+	return true;
+}
+
+bool Depthmap::load(const char *tiff) {
+	if (!loadTiff(tiff, elevation, width, height)) {
+		cerr << "Failed to load TIFF file: " << tiff << endl;
+		return false;
+	}
 	QString tiffPath = QString(tiff);
 	QString xmlPath = tiffPath.left(tiffPath.lastIndexOf('.')) + ".xml";
+
 	if (!loadXml(xmlPath)) {
 		cerr << "Failed to load XML file: " << xmlPath.toStdString() << endl;
 		return false;
@@ -155,12 +273,6 @@ bool Depthmap::loadXml(const QString &xmlPath){
 }
 
 void Depthmap::computeNormals() {
-	float min = 1e20f;
-	float max = -1e20f;
-	for(float h: elevation) {
-		min = std::min(min, h);
-		max = std::max(max, h);
-	}
 
 	normals.resize(width*height);
 
@@ -225,10 +337,9 @@ void Depthmap::projectToCameraDepthMap(const Camera& camera, const QString& outp
 
 			Eigen::Vector3f realCoordinates = pixelToRealCoordinates(x, y, pixelZ);
 			Eigen::Vector3f imageCoords = camera.projectionToImage(realCoordinates);
-			if(pixelZ > 0){
-				minZ = std::min(minZ, pixelZ);
-				maxZ = std::max(maxZ, pixelZ);
-			}
+			minZ = std::min(minZ, imageCoords[2]);
+			maxZ = std::max(maxZ, imageCoords[2]);
+
 		}
 	}
 	if (minZ >= maxZ) {
@@ -237,25 +348,42 @@ void Depthmap::projectToCameraDepthMap(const Camera& camera, const QString& outp
 	}
 	for (int y = 0; y < height; y++) {
 		for (int x = 0; x < width; x++) {
+				if(mask[x+ y *width]==0.0f)
+					continue;
 			float pixelZ = elevation[x + y * width];
-
-			if (pixelZ <= 0) continue;
-			int pixelValue = (int)round(((pixelZ - minZ) / (maxZ - minZ)) * 255);
-			pixelValue = std::min(std::max(pixelValue, 0), 255);
 
 			Eigen::Vector3f realCoordinates = pixelToRealCoordinates(x, y, pixelZ);
 			Eigen::Vector3f imageCoords = camera.projectionToImage(realCoordinates);
+			int pixelValue = (int)round(((imageCoords[2] - minZ) / (maxZ - minZ)) * 255);
+			pixelValue = std::min(std::max(pixelValue, 0), 255);
 
-			int imageX =  (int)round(imageCoords[0]);
-			int imageY= (int)round(imageCoords[1]);
+			int imageX = (int)round(imageCoords[0]);
+			int imageY = (int)round(imageCoords[1]);
+
 			if (imageX >= 0 && imageX < camera.width && imageY >= 0 && imageY < camera.height) {
 				depthMapImage.setPixel(imageX, imageY, qRgb(pixelValue, pixelValue, pixelValue));
 				//cout << "Pixel projected (" << x << ", " << y << ") -> (" << imageX << ", " << imageY << "), Z = "
-					// << pixelZ << ", pixelValue = " << pixelValue << endl;
+				// << pixelZ << ", pixelValue = " << pixelValue << endl;
 			}
 		}
 	}
 	depthMapImage.save(outputPath, "png");
+}
+
+bool Depthmap::loadMask(const char *tifPath){
+	//loaded masq orthoplane MicMac
+	uint32_t w, h;
+	if (!loadTiff(tifPath, mask, w, h)) {
+		cerr << "Failed to load TIFF file: " << tifPath << endl;
+		return false;
+	}
+	if(width != w || height != h){
+		cerr << "Mask is not consistent with height or width" << endl;
+		return false;
+	}
+
+	return true;
+
 }
 
 void Depthmap::depthIntegrateNormals(){
@@ -300,7 +428,7 @@ void Depthmap::resizeNormals (int factorPowerOfTwo, int step = 1) {
 
 					if (srcX < width && srcY < height) {
 
-						// 1. produrre l'array dx e dy derivates resample derivates e poi le converto in normali
+						// 1. create the array dx and dy, after convert to normals
 						Eigen::Vector3f normal = normals[srcX + srcY * width];
 						float dzdx = -normal.x() / normal.z();
 						float dzdy = -normal.y() / normal.z();
@@ -320,7 +448,6 @@ void Depthmap::resizeNormals (int factorPowerOfTwo, int step = 1) {
 	}
 
 	/*
-			// prendi normali calcoli dx e dy e fai la media
 			resizedNormals[y * targetWidth + x] = avgNormal / (factor * factor);
 		}*/
 
@@ -331,10 +458,7 @@ void Depthmap::resizeNormals (int factorPowerOfTwo, int step = 1) {
 
 	//QString filename = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/surface.jpg";
 	//saveNormals(filename.toStdString().c_str());
-	//chiama l'integrale integra le normali e salva il ply
 	//depthIntegrateNormals();
-	//QString plyFilename = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/resize_normals.obj";
-	//saveObj(plyFilename.toStdString().c_str());
 
 }
 
@@ -362,7 +486,6 @@ void Depthmap::saveObj(const char *filename){
 	}
 	QTextStream out(&file);
 
-	//2. itera su i valori di vettori x e y prendi heights di x e y, converti x e y come pixeltoreal chiamala
 	for (uint32_t y = 0; y < height; y++) {
 		for (uint32_t x = 0; x < width; x++) {
 			float z = elevation[x + y * width];
@@ -451,11 +574,6 @@ bool Camera::loadXml(const QString &pathXml){
 		qDebug() << "Error to download the parameters to:" << fullInternePath;
 		return false;
 	}
-	//fai Qdir trova la directory dove si trova xml con QFileinfo.path ti dice dove è la dir
-	// cd .. per salire a photogrammetry
-	//crea percorso con QDir FilePath
-	// chiama loadInterne par e controlla return
-	// assume that path is relative to the photogrammetry folder
 
 	return true;
 	//autocal_foc.xml
@@ -481,9 +599,6 @@ bool Camera::loadInternParameters(const QString &internePath){
 		cerr << "No 'F' node found in internal XML" << endl;
 		return false;
 	}
-
-	//pp r1 r2 ecc.
-	//metti in 2 funzioni loadinternParameters
 
 	QDomElement sizeImg = calibNode.firstChildElement("SzIm");
 	if (!sizeImg.isNull()) {
@@ -532,8 +647,7 @@ bool Camera::loadInternParameters(const QString &internePath){
 	return true;
 
 }
-// prendi vector3f che ritorna pixelreal ti ritorna una posizione 3d, applichi la trasformazione: proiezione usando la camera
-// ritorna pixel x e y img di l12 ori coord di pixel devono finire nell'ori-rel
+
 // Pc = Rk(Pg − Ok)
 // Pg = Ground point Pc = point camera. x y z orientati come la camera, moltiplica la matrice. Poi fai la proiezione.
 Eigen::Vector3f Camera::projectionToImage(Eigen::Vector3f realPosition) const{

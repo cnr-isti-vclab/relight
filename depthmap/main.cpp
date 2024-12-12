@@ -16,9 +16,11 @@ int main(int argc, char *argv[]) {
 
 	QString depthmapPath = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
 	QString orientationXmlPath = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/Ori-Relative/Orientation-L05C12.tif.xml";
+	QString maskPath = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
 	Depthmap depth;
 	depth.load(qPrintable(depthmapPath));
 	depth.computeNormals();
+	depth.loadMask(qPrintable(maskPath));
 
 	depth.saveNormals("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/original.obj");
 	depth.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/original.obj");
@@ -26,15 +28,14 @@ int main(int argc, char *argv[]) {
 	depth.depthIntegrateNormals();
 	depth.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/integrated.obj");
 
-	int factorPowerOfTwo = 1;
+	/*int factorPowerOfTwo = 1;
 	depth.resizeNormals(factorPowerOfTwo, 2);
 	depth.depthIntegrateNormals();
 	depth.saveNormals("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/resized_integrated.jpg");
-	depth.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/resized_integrated.obj");
+	depth.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/resized_integrated.obj");*/
+
 
 	QString outputPath = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/depthmap_project.png";
-
-
 
 	Camera camera;
 	camera.loadXml(orientationXmlPath);
