@@ -18,6 +18,7 @@ int main(int argc, char *argv[]) {
 
 	RelightApp app(argc, argv);
 
+	QApplication::setAttribute(Qt::AA_MacDontSwapCtrlAndMeta);
 	setlocale(LC_ALL, "en_US.UTF8"); //needs to be called AFTER QApplication creation.
 
 	QCoreApplication::setOrganizationName("VCG");

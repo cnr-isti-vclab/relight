@@ -2,7 +2,7 @@
 #define IMAGESET_H
 
 #include "relight_vector.h"
-
+#include "dome.h"
 #include <vector>
 #include <string>
 #include <functional>
@@ -14,7 +14,6 @@
 class QJsonObject;
 class JpegDecoder;
 class QImage;
-class Dome;
 
 class ImageSet {
 public:
@@ -28,7 +27,6 @@ public:
 
 	float pixel_size = 0;
 
-	std::vector<Eigen::Vector3f> lights1;
 	bool light3d = false;
 	float idealLightDistance2 = 0.0f; //squared, used when rescaling intensity
 
@@ -53,6 +51,9 @@ public:
 	//open images and starts the decoders
 	bool initImages(const char *path); //path points to the dir of the images.
 
+	void setLights(std::vector<Eigen::Vector3f> &lights, Dome::LightConfiguration configuration);
+	std::vector<Eigen::Vector3f> &lights() { return lights1; }
+
 	size_t size() { return size_t(images.size()); }
 
 	QImage maxImage(std::function<bool(std::string stage, int percent)> *callback = nullptr); 
@@ -73,6 +74,7 @@ protected:
 	std::vector<JpegDecoder *> decoders;
 
 private:
+	std::vector<Eigen::Vector3f> lights1;
 	void compensateIntensity(PixelArray &pixels);
 };
 
