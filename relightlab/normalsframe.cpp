@@ -74,12 +74,24 @@ void NormalsFrame::init() {
 }
 
 void NormalsFrame::save() {
-	if(parameters.compute && qRelightApp->project().dome.directions.size() == 0) {
-		QMessageBox::warning(this, "Missing light directions.", "You need light directions for this dataset to build a normalmap.\n"
+	if(parameters.compute) {
+		//make sure we have some light directions defined
+		if(qRelightApp->project().dome.directions.size() == 0) {
+			QMessageBox::warning(this, "Missing light directions.", "You need light directions for this dataset to build a normalmap.\n"
 																"You can either load a dome or .lp file or mark a reflective sphere in the 'Lights' tab.");
-		return;
-	}
+			return;
+		}
+	} else {
+		if(parameters.flatMethod == FlatMethod::FLAT_NONE && parameters.surface_integration == SurfaceIntegration::SURFACE_NONE) {
+			QMessageBox::warning(this, "Nothing to do.", "Using an existing normalmap ma no flattening or integration method specified");
+			return;
+		}
 
+		if(parameters.input_path == parameters.path) {
+			QMessageBox::warning(this, "Input and output normalmap have the same name", "The input normal map would be overwritten. Change the output filename");
+			return;
+		}
+	}
 	NormalsTask *task = new NormalsTask();
 	task->parameters = parameters;
 	task->output = parameters.path;

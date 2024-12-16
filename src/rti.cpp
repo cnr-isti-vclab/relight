@@ -658,7 +658,7 @@ double Rti::evaluateError(ImageSet &imageset, Rti &rti, QString output, int refe
 	vector<uint8_t> original(size);
 	vector<uint8_t> buffer(size);
 
-	uint32_t nlights = imageset.lights1.size();
+	uint32_t nlights = imageset.lights().size();
 	vector<float> errors(rti.width*rti.height, 0.0f);
 	double tot = 0.0;
 
@@ -669,7 +669,7 @@ double Rti::evaluateError(ImageSet &imageset, Rti &rti, QString output, int refe
 		}
 
 		count++;
-		Vector3f &light = imageset.lights1[nl];
+		Vector3f &light = imageset.lights()[nl];
 
 		rti.render(light[0], light[1], buffer.data());
 

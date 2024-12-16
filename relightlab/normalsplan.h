@@ -20,15 +20,19 @@ public:
 
 
 class NormalsSourceRow: public NormalsPlanRow {
+	Q_OBJECT
 public:
 	NormalsSourceRow(NormalsParameters &_parameters, QFrame *parent = nullptr);
 
 	void setComputeSource(bool compute);
-	void setSourcePaht(QString path);
+	void setSourcePath(QString path);
+public slots:
+	void selectOutput();
 
+protected:
 	QLabelButton *compute = nullptr;
 	QLabelButton *file = nullptr;
-	QLineEdit *path = nullptr;
+	QLineEdit *input_path = nullptr;
 	QPushButton *open = nullptr;
 };
 

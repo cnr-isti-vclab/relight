@@ -23,21 +23,24 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 	label->help->setId("normals/normalmap");
 
 	compute = new QLabelButton("Compute", "Compute normals from images");
-
-	file = new QLabelButton("Normalmap", "Loat a normalmap image.");
 	buttons->addWidget(compute, 0, Qt::AlignCenter);
 
-	QVBoxLayout *button_layout =new QVBoxLayout;
-	button_layout->addWidget(file);
 
-	QHBoxLayout *loader_layout = new QHBoxLayout;
-	loader_layout->addWidget(path = new QLineEdit);
-	loader_layout->addWidget(open = new QPushButton("..."));
+	{
+		QVBoxLayout *button_layout =new QVBoxLayout;
+		file = new QLabelButton("Normalmap", "Load a normalmap image.");
 
-	button_layout->addLayout(loader_layout);
+		button_layout->addWidget(file);
+		{
+			QHBoxLayout *loader_layout = new QHBoxLayout;
+			loader_layout->addWidget(input_path = new QLineEdit);
+			loader_layout->addWidget(open = new QPushButton("..."));
+			button_layout->addLayout(loader_layout);
+			connect(open, &QPushButton::clicked, this, &NormalsSourceRow::selectOutput);
 
-
-	buttons->addLayout(button_layout, 0); //, Qt::AlignCenter);
+		}
+		buttons->addLayout(button_layout, 0); //, Qt::AlignCenter);
+	}
 
 	connect(compute, &QAbstractButton::clicked, this, [this](){ setComputeSource(true); });
 	connect(file, &QAbstractButton::clicked, this, [this](){ setComputeSource(false); });
@@ -59,6 +62,25 @@ void NormalsSourceRow::setComputeSource(bool build) {
 }
 
 
+void NormalsSourceRow::selectOutput() {
+	//get folder if not legacy.
+	QString output_parent = qRelightApp->lastOutputDir();
+
+	QString output = QFileDialog::getOpenFileName(this, "Select an output folder", output_parent);
+	if(output.isNull()) return;
+
+	QDir output_parent_dir(output);
+	output_parent_dir.cdUp();
+	setSourcePath(output);
+}
+
+void NormalsSourceRow::setSourcePath(QString path) {
+	parameters.input_path = path;
+	input_path->setText(path);
+}
+
+
+
 
 NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *parent):
 	NormalsPlanRow(_parameters, parent) {
@@ -78,7 +100,8 @@ NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *par
 	QHBoxLayout *loader_layout = new QHBoxLayout;
 	loader_layout->addWidget(new QLabel("Fourier low pass frequency."));
 	loader_layout->addWidget(max_frequency = new QDoubleSpinBox);
-	max_frequency->setRange(0.01, 1);
+	max_frequency->setRange(0.0001, 1);
+	max_frequency->setDecimals(4);
 
 	button_layout->addLayout(loader_layout);
 

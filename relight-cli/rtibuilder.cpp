@@ -97,11 +97,8 @@ bool RtiBuilder::setupFromFolder(const string &folder) {
 			imageset.images.removeAt(skip_image);
 			dome.directions.erase(dome.directions.begin() + skip_image);
 		}
-		imageset.lights1 = dome.directions;
-		imageset.light3d = false;
-
 		imageset.initImages(folder.c_str());
-
+		imageset.setLights(dome.directions, Dome::DIRECTIONAL);
 
 	} catch(QString e) {
 		error = e.toStdString();
@@ -474,13 +471,13 @@ MaterialBuilder RtiBuilder::pickBaseHSH(std::vector<Vector3f> &lights, Rti::Type
 void RtiBuilder::pickBases(PixelArray &sample) {
 	//rbf can't 3d, bilinear just resample (and then single base)
 	if(!imageset.light3d) {
-		materialbuilder = pickBase(sample, imageset.lights1);
+		materialbuilder = pickBase(sample, imageset.lights());
 
 	} else {
 
 		if(type == RBF || type == BILINEAR) {
 
-			materialbuilder = pickBase(sample, imageset.lights1); //lights are unused for rbf
+			materialbuilder = pickBase(sample, imageset.lights()); //lights are unused for rbf
 
 		} else {
 			materialbuilders.resize(resample_width * resample_height);
@@ -782,14 +779,14 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 	}
 	stream << "\",\n";
 	
-	if(imageset.lights1.size()) {
+	if(imageset.lights().size()) {
 		if(type == RBF)
 			stream << "\"sigma\": " << sigma << ",\n";
 		stream << "\"lights\": [";
-		for(uint32_t i = 0; i < imageset.lights1.size(); i++) {
-			Vector3f &l = imageset.lights1[i];
+		for(uint32_t i = 0; i < imageset.lights().size(); i++) {
+			Vector3f &l = imageset.lights()[i];
 			stream << QString::number(l[0], 'f', 3) << ", " << QString::number(l[1], 'f', 3) << ", " << QString::number(l[2], 'f', 3);
-			if(i != imageset.lights1.size()-1)
+			if(i != imageset.lights().size()-1)
 				stream << ", ";
 		}
 		stream << "],\n";
@@ -1296,9 +1293,9 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			int side = 32;
 			QImage img(side*(nplanes+1), side, QImage::Format_RGB32);
 			img.fill(qRgb(0, 0, 0));
-			for(uint32_t i = 0; i < imageset.lights1.size(); i++) {
+			for(uint32_t i = 0; i < imageset.lights().size(); i++) {
 				float dx, dy;
-				toOcta(imageset.lights1[i], dx, dy, side);
+				toOcta(imageset.lights()[i], dx, dy, side);
 				int x = dx;
 				int y = dy;
 				int r = (int)materialbuilder.mean[i*3+0];
@@ -1310,9 +1307,9 @@ size_t RtiBuilder::save(const string &output, int quality) {
 				Material::Plane &plane = material.planes[p];
 				float *eigen = materialbuilder.proj.data() + p*dim;
 				uint32_t X = (p+1)*side;
-				for(size_t i = 0; i < imageset.lights1.size(); i++) {
+				for(size_t i = 0; i < imageset.lights().size(); i++) {
 					float dx, dy;
-					toOcta(imageset.lights1[i], dx, dy, side);
+					toOcta(imageset.lights()[i], dx, dy, side);
 					uint32_t x = dx;
 					int y = dy;
 					int r = (int)(127 + plane.range*eigen[i*3+0]);
@@ -1474,10 +1471,11 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 			for(uint32_t y = 0; y < sample.nlights; y++)
 				A(y, 0) = sample[x][y].mean();
 
-			for(uint32_t y = 0; y < imageset.lights1.size(); y++) {
-				b(y, 0) = imageset.lights1[y][0];
-				b(y, 1) = imageset.lights1[y][1];
-				b(y, 2) = imageset.lights1[y][2];
+			for(uint32_t y = 0; y < imageset.lights().size(); y++) {
+				Eigen::Vector3f &l = imageset.lights()[y];
+				b(y, 0) = l[0];
+				b(y, 1) = l[1];
+				b(y, 2) = l[2];
 			}
 
 			Eigen::MatrixXf r = (A.transpose() * A).ldlt().solve(A.transpose() * b);
@@ -1685,7 +1683,7 @@ void RtiBuilder::resamplePixel(Pixel &sample, Pixel &pixel) { //pos in pixels.
 //notice how sample are already intensity corrected.
 vector<Vector3f> RtiBuilder::relativeNormalizedLights(int x, int y) {
 
-	vector<Vector3f> relights = imageset.lights1;;
+	vector<Vector3f> relights = imageset.lights();
 	for(Vector3f &light: relights) {
 		light = imageset.relativeLight(light, x, y);
 		light.normalize();
@@ -1695,7 +1693,7 @@ vector<Vector3f> RtiBuilder::relativeNormalizedLights(int x, int y) {
 
 void RtiBuilder::buildResampleMaps() {
 	if(!imageset.light3d) {
-		buildResampleMap(imageset.lights1, resamplemap);
+		buildResampleMap(imageset.lights(), resamplemap);
 		return;
 	}
 	resamplemaps.resize(resample_height*resample_width);
@@ -1900,7 +1898,7 @@ std::vector<float> RtiBuilder::toPrincipal(Pixel &pixel, MaterialBuilder &materi
 		float weight = 0;
 		for(uint32_t i = 0; i < ndimensions; i++) {
 			Color3f &c = pixel[i];
-			float w = 0.25 - pow(asin(imageset.lights1[i][2])/(M_PI/2) - 0.5, 2);
+			float w = 0.25 - pow(asin(imageset.lights()[i][2])/(M_PI/2) - 0.5, 2);
 			mean += c*w;
 			weight += w;
 		}

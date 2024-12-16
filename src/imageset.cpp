@@ -43,37 +43,6 @@ bool ImageSet::initFromFolder(const char *_path, int skip_image) {
 	if(skip_image >= 0)
 		images.removeAt(skip_image);
 
-/*	QStringList lps = dir.entryList(QStringList() << "*.lp");
-	if(lps.size() > 0) {
-
-		QString sphere_path = dir.filePath(lps[0]);
-		try {
-			std::vector<QString> filenames;
-			parseLP(sphere_path, lights, filenames, skip_image);
-
-			if(ignore_filenames) {
-				if(images.size() != int(filenames.size())) {
-					QString error = QString("Lp number of lights (%1) different from the number of images found (%2)").arg(filenames.size()).arg(images.size());
-					throw error;
-				}
-			} else {
-				throw QString("TODO: unimplemented.");
-
-				//TODO check and remove absolute parth of the image;
-				//QString filepath = dir.filePath(images[i]);
-				//QFileInfo info(filepath);
-				//if(!info.exists()) {
-				//	cerr << "Could not find image: " << qPrintable(s) << endl;
-				//	return false;
-				//}
-			}
-		} catch(QString error) {
-			cerr << qPrintable(error) << endl;
-			return false;
-		}
-		initLights();
-	}*/
-
 	return initImages(_path);
 }
 
@@ -123,14 +92,26 @@ void ImageSet::initFromDome(Dome &dome) {
 	pixel_size = dome.imageWidth / image_width;
 	switch(dome.lightConfiguration) {
 		case Dome::DIRECTIONAL:
-			lights1 = dome.directions;
+			setLights(dome.directions, dome.lightConfiguration);
 		break;
 		case Dome::SPHERICAL:
-			lights1 = dome.positionsSphere;
+			setLights(dome.positionsSphere, dome.lightConfiguration);
 		break;
 		case Dome::LIGHTS3D:
-			lights1 = dome.positions3d;
+			setLights(dome.positions3d, dome.lightConfiguration);
 		break;
+	}
+}
+
+void ImageSet::setLights(std::vector<Eigen::Vector3f> &lights, Dome::LightConfiguration configuration) {
+	lights1 = lights;
+	light3d = (configuration != Dome::DIRECTIONAL);
+	if(light3d) {
+		idealLightDistance2 = 0.0f;
+		for(auto l: lights1) {
+			idealLightDistance2 += l.squaredNorm();
+		}
+		idealLightDistance2 /= lights1.size();
 	}
 	if(lights1.size() != size_t(images.size()))
 		throw QString("Number of lights in dome needs to be equal to the number of images");

@@ -40,7 +40,7 @@ void NormalsTask::initFromProject(Project &project) {
 	imageset.images = project.getImages();
 	imageset.initImages(project.dir.absolutePath().toStdString().c_str());
 	imageset.initFromDome(project.dome);
-	assert(imageset.lights1.size() == imageset.images.size());
+	assert(imageset.lights().size() == imageset.images.size());
 	QRect &crop = project.crop;
 	if(!crop.isNull()) {
 		imageset.crop(crop.left(), crop.top(), crop.width(), crop.height());
@@ -124,7 +124,7 @@ void NormalsTask::run() {
 			normalsd[i] = (double)normals[i];
 
 		NormalsImage ni;
-		ni.load(normalsd, imageset.width, imageset.height);
+		ni.load(normalsd, width, height);
 		switch(parameters.flatMethod) {
 			case FLAT_NONE: break;
 			case FLAT_RADIAL:
@@ -132,8 +132,8 @@ void NormalsTask::run() {
 				break;
 			case FLAT_FOURIER:
 				//convert radius to frequencies
-				double sigma = 100/parameters.m_FlatRadius;
-				ni.flattenFourier(imageset.width/10, sigma);
+				double sigma = 100*parameters.m_FlatRadius;
+				ni.flattenFourier(width/10, sigma);
 				break;
 		}
 		normalsd = ni.normals;
@@ -145,11 +145,11 @@ void NormalsTask::run() {
 	if(parameters.compute || parameters.flatMethod != FLAT_NONE) {
 		// Save the normals
 
-		vector<uint8_t> normalmap(imageset.width * imageset.height * 3);
+		vector<uint8_t> normalmap(width * height * 3);
 		for(size_t i = 0; i < normals.size(); i++)
 			normalmap[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
 
-		QImage img(normalmap.data(), imageset.width, imageset.height, imageset.width*3, QImage::Format_RGB888);
+		QImage img(normalmap.data(), width, height, width*3, QImage::Format_RGB888);
 	
 
 		// Set spatial resolution if known. Need to convert as pixelSize stored in mm/pixel whereas QImage requires pixels/m
@@ -158,7 +158,7 @@ void NormalsTask::run() {
 			img.setDotsPerMeterX(dotsPerMeter);
 			img.setDotsPerMeterY(dotsPerMeter);
 		}
-		img.save(output);
+		img.save(parameters.path);
 	
 	}
 	
@@ -177,7 +177,7 @@ void NormalsTask::run() {
 			return;
 
 		vector<float> z;
-		bni_integrate(callback, imageset.width, imageset.height, normals, z, parameters.bni_k);
+		bni_integrate(callback, width, height, normals, z, parameters.bni_k);
 		if(z.size() == 0) {
 			error = "Failed to integrate normals";
 			status = FAILED;
@@ -187,7 +187,7 @@ void NormalsTask::run() {
 
 		progressed("Saving surface...", 99);
 		QString filename = output.left(output.size() -4) + ".ply";
-		savePly(filename, imageset.width, imageset.height, z);
+		savePly(filename, width, height, z);
 	}
 	progressed("Done", 100);
 }
@@ -220,8 +220,8 @@ bool saveObj(const char *filename, pmp::SurfaceMesh &mesh) {
 
 void NormalsTask::assm(QString filename, vector<float> &_normals, float approx_error) {
 	Grid<Eigen::Vector3f> normals(imageset.width, imageset.height, Eigen::Vector3f(0.0f, 0.0f, 0.0f));
-	for(size_t y = 0; y < imageset.height; y++)
-		for(size_t x = 0; x < imageset.width; x++) {
+	for(int y = 0; y < imageset.height; y++)
+		for(int x = 0; x < imageset.width; x++) {
 			int i = 3*(x + y*imageset.width);
 			normals.at(y, x) = Eigen::Vector3f(-_normals[i+0], -_normals[i+1], -_normals[i+2]);
 		}
@@ -245,15 +245,12 @@ void NormalsTask::assm(QString filename, vector<float> &_normals, float approx_e
 void NormalsWorker::run() {
 	switch (solver)
 	{
-	// L2 solver
 	case NORMALS_L2:
 		solveL2();
 		break;
-		// SBL solver
 	case NORMALS_SBL:
 		solveSBL();
 		break;
-		// RPCA solver
 	case NORMALS_RPCA:
 		solveRPCA();
 		break;
@@ -264,7 +261,7 @@ void NormalsWorker::run() {
 
 void NormalsWorker::solveL2()
 {
-	vector<Vector3f> &m_Lights = m_Imageset.lights1;
+	vector<Vector3f> &m_Lights = m_Imageset.lights();
 
 	// Pixel data
 	Eigen::MatrixXd mLights(m_Lights.size(), 3);
