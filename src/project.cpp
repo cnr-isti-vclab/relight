@@ -551,12 +551,7 @@ void Project::loadLP(QString filename) {
 
 
 	parseLP(filename, directions, filenames); //might throw an error.
-
-	if(size() != filenames.size()) {
-		throw QString("The folder contains %1 images, the .lp file specify %2 images.\n"
-					  "You might have some extraneous images, or just loading the wrong .lp file.")
-				.arg(size()).arg(filenames.size());
-	}
+	validateDome(filenames.size());
 
 	vector<Vector3f> ordered_dir(directions.size());
 	bool success = true;
@@ -687,4 +682,12 @@ void  Project::computeDirections() {
 		dome.positionsSphere[i] /= weights[i];
 	}
 	needs_saving = true;
+}
+
+void Project::validateDome(size_t n_lights) {
+	if(size() != n_lights) {
+		throw QString("The folder contains %1 images, the .lp file specify %2 images.\n"
+					  "You might have some extraneous images, or just loading the wrong .lp file.")
+				.arg(size()).arg(n_lights);
+	}
 }

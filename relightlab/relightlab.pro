@@ -110,7 +110,9 @@ SOURCES += main.cpp \
     ../src/bni_normal_integration.cpp \
     scaleframe.cpp \
     planrow.cpp \
-    normalsplan.cpp
+    normalsplan.cpp \
+    brdfframe.cpp \
+    metadataframe.cpp
 
 RESOURCES += \
     res.qrc
@@ -194,7 +196,9 @@ HEADERS += \
     scaleframe.h \
     ../src/flatnormals.h \
     planrow.h \
-    normalsplan.h
+    normalsplan.h \
+    brdfframe.h \
+    metadataframe.h
 
 FORMS +=
 

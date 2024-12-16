@@ -40,8 +40,7 @@ void AlignFrame::clear() {
 
 void AlignFrame::init() {
 	for(Align *align: qRelightApp->project().aligns) {
-		AlignRow * row = addAlign(align);
-//		row->detectHighlights(false);
+		addAlign(align);
 	}
 }
 
@@ -59,8 +58,7 @@ void AlignFrame::newAlign() {
 		return;
 	}
 	qRelightApp->project().aligns.push_back(align);
-	AlignRow *row = addAlign(align);
-	//row->detectHighlights();
+	addAlign(align);
 }
 
 AlignRow *AlignFrame::addAlign(Align *align) {

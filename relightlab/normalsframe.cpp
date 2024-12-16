@@ -26,6 +26,7 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 	content->addWidget(source_row = new NormalsSourceRow(parameters, this));
 	content->addWidget(flatten_row = new NormalsFlattenRow(parameters, this));
 	content->addWidget(surface_row = new NormalsSurfaceRow(parameters, this));
+	content->addWidget(export_row = new NormalsExportRow(parameters, this));
 
 
 	{
@@ -66,53 +67,10 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 
 
 	content->addStretch();
+}
 
-	return;
-	content->addWidget(jpg = new QRadioButton("JPEG: normalmap"));
-	content->addWidget(png = new QRadioButton("PNG: normalmap"));
-	{
-		QButtonGroup *group = new QButtonGroup(this);
-		group->addButton(jpg);
-		group->addButton(png);
-		jpg->setChecked(true);
-	}
-
-	content->addWidget(new QLabel("<h2>Flatten normals</h2>"));
-	content->addWidget(radial = new QCheckBox("Radial"));
-	content->addWidget(fourier = new QCheckBox("Fourier"));
-	{
-		QHBoxLayout *fourier_layout = new QHBoxLayout;
-
-		fourier_layout->addWidget(new HelpLabel("Fourier image percent: ", "normals/flatten"));
-		fourier_layout->addWidget(fourier_radius = new QSpinBox);
-		fourier_radius->setRange(0, 100);
-
-		content->addLayout(fourier_layout);
-	}
-
-	content->addSpacing(30);
-	content->addWidget(new QLabel("<h2>Export 3D surface</h2>"));
-	content->addSpacing(30);
-	{
-		QHBoxLayout *discontinuity_layout = new QHBoxLayout;
-
-		discontinuity_layout->addWidget(new HelpLabel("Disconitnuity parameter:", "normals/disconituity"));
-		discontinuity_layout->addWidget(discontinuity = new QDoubleSpinBox);
-		discontinuity->setRange(0.0, 4.0);
-		discontinuity->setValue(2.0);
-		content->addLayout(discontinuity_layout);
-	}
-
-	content->addWidget(tif = new QCheckBox("TIF: depthmap"));
-	content->addWidget(ply = new QCheckBox("PLY: mesh"));
-
-
-	QPushButton *save = new QPushButton("Export");
-	content->addWidget(save);
-
-	connect(save, SIGNAL(clicked()), this, SLOT(save()));
-
-	content->addStretch();
+void NormalsFrame::init() {
+	export_row->suggestPath();
 }
 
 void NormalsFrame::save() {
@@ -124,6 +82,7 @@ void NormalsFrame::save() {
 
 	NormalsTask *task = new NormalsTask();
 	task->parameters = parameters;
+	task->output = parameters.path;
 	task->initFromProject(qRelightApp->project());
 
 	ProcessQueue &queue = ProcessQueue::instance();

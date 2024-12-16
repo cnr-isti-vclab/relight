@@ -23,6 +23,7 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 	label->help->setId("normals/normalmap");
 
 	compute = new QLabelButton("Compute", "Compute normals from images");
+
 	file = new QLabelButton("Normalmap", "Loat a normalmap image.");
 	buttons->addWidget(compute, 0, Qt::AlignCenter);
 
@@ -47,11 +48,14 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 
 	group->addButton(compute);
 	group->addButton(file);
+
+	setComputeSource(parameters.compute);
 }
 
 
-void NormalsSourceRow::setComputeSource(bool compute) {
-	parameters.compute = compute;
+void NormalsSourceRow::setComputeSource(bool build) {
+	parameters.compute = build;
+	compute->setChecked(build);
 }
 
 
@@ -97,6 +101,8 @@ NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *par
 	group->addButton(none);
 	group->addButton(radial);
 	group->addButton(fourier);
+
+	setFlattenMethod(parameters.flatMethod);
 }
 
 void NormalsFlattenRow::setFlattenMethod(FlatMethod method) {
@@ -171,6 +177,8 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 	group->addButton(none);
 	group->addButton(bni);
 	group->addButton(assm);
+
+	setSurfaceMethod(parameters.surface_integration);
 }
 
 void NormalsSurfaceRow::setSurfaceMethod(SurfaceIntegration surface) {
@@ -231,9 +239,11 @@ void NormalsExportRow::selectOutput() {
 	setPath(output);
 }
 
+
 void NormalsExportRow::suggestPath() {
 	QDir input = qRelightApp->project().dir;
 	input.cdUp();
 	QString filename = input.filePath("normals");
 	setPath(filename);
 }
+
