@@ -73,4 +73,3 @@ private:
 	QLineEdit *path_edit;
 };
 
-

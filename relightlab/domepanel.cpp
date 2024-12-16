@@ -110,14 +110,19 @@ void DomePanel::exportDome() {
 
 void DomePanel::loadLP(QString path) {
 	std::vector<QString> filenames;
-	dome.lightConfiguration = Dome::DIRECTIONAL;
+	std::vector<Eigen::Vector3f> directions;
 
 	try {
-		parseLP(path, dome.directions, filenames);
+		parseLP(path, directions, filenames);
+		qRelightApp->project().validateDome(directions.size());
+
 	} catch(QString error) {
 		QMessageBox::critical(this, "Loading .lp file failed", error);
 		return;
 	}
+
+	dome.lightConfiguration = Dome::DIRECTIONAL;
+	dome.directions = directions;
 	QFileInfo info(path);
 	dome.label = info.filePath();
 	qRelightApp->addDome(path);
@@ -129,12 +134,16 @@ void DomePanel::loadLP(QString path) {
 
 void DomePanel::loadDome(QString path) {
 	float imageWidth = dome.imageWidth;
+	Dome new_dome;
 	try {
-		dome.load(path);
+		new_dome.load(path);
+		qRelightApp->project().validateDome(new_dome.directions.size());
+
 	} catch (QString error) {
 		QMessageBox::critical(this, "Loading .dome file failed", error);
 		return;
 	}
+	dome = new_dome;
 
 	QFileInfo info(path);
 	dome.label = info.filePath();

@@ -21,6 +21,7 @@ public:
 
 public slots:
 	void save();
+	void init();
 
 signals:
 	void processStarted();

@@ -110,6 +110,7 @@ public:
 		}
 		return -1;
 	}
+	void validateDome(size_t n_lights); //throw an error in case the number of lights is not consistent.
 
 };
 

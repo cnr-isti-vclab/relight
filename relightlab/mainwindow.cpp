@@ -143,6 +143,7 @@ void MainWindow::init() {
 	lights_frame->init();
 	crop_frame->init();
 	rti_frame->init();
+	normals_frame->init();
 }
 
 void MainWindow::showHelp() {

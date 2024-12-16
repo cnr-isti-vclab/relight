@@ -204,8 +204,13 @@ void RelightApp::newProject() {
 	QStringList lps = QDir(dir).entryList(img_ext);
 	if(lps.size() > 0) {
 		int answer = QMessageBox::question(mainwindow, "Found an .lp file: " + lps[0], "Do you wish to load " + lps[0] + "?", QMessageBox::Yes, QMessageBox::No);
-		if(answer != QMessageBox::No)
-			m_project.loadLP(lps[0]);
+		if(answer != QMessageBox::No) {
+			try {
+				m_project.loadLP(lps[0]);
+			} catch(QString error) {
+				QMessageBox::critical(mainwindow, "Could not load the .lp file", error);
+			}
+		}
 	}
 }
 
