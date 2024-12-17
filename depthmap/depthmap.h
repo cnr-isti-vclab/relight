@@ -25,36 +25,64 @@ public:
 	Camera() {}
 };
 
+
 class Depthmap {
 public:
 	uint32_t width, height;
-	Eigen::Vector3f resolution;
-	Eigen::Vector3f origin;
 	std::vector<float> elevation;
 	std::vector<float> mask;
 	std::vector<Eigen::Vector3f> normals;
-	Eigen::Vector3f pixelToRealCoordinates(int pixelX, int pixelY, float pixelZ);
 
 
 	//Eigen::Vector3f pixelTo3DCoordinates(int pixelX, int pixelY, float depth, const QString &depthXmlPath, const QString &oriXmlPath);
 
 	Depthmap() {}
+
+	bool loadDepth(const char *depth_path);
+	bool loadMask(const char *mask_path);
+	bool loadNormals(const char *normals_path);
+	void saveDepth(const char *depth_path);
+	void saveMask(const char *mask_path, std::vector<float> &values, uint32_t &w, uint32_t &h, uint32_t bitsPerSample);
+	void saveNormals(const char *normals_path);
+
+	float calculateMeanDepth(const std::vector<float>& values);
+
+	void computeNormals();
+	void depthIntegrateNormals();
+	void resizeNormals(int factorPowerOfTwo, int step = 1);
+
+protected:
 	bool loadTiff(const char *tiff, std::vector<float> &elevation, uint32_t &w, uint32_t &h);
 	bool loadTiledTiff(TIFF* inTiff, std::vector<float> &elevation, uint32_t w, uint32_t h,
 					   uint32_t tileWidth, uint32_t tileLength, uint32_t bitsPerSample);
 	bool loadStripedTiff(TIFF* inTiff, std::vector<float> &elevation, uint32_t& w, uint32_t& h, uint32_t bitsPerSample);
-	bool load(const char *tiff);
-	bool loadXml(const QString &xmlPath);
-
-	void computeNormals();
-	void saveNormals(const char *filename);
-	void saveObj(const char *filename);
-	void depthIntegrateNormals();
-	void resizeNormals(int factorPowerOfTwo, int step);
-	void projectToCameraDepthMap(const Camera& camera, const QString& outputPath);
-	bool loadMask(const char *tifPath);
-//	void getOrientationVector(const QString &xmlPath, Eigen::Matrix3f &rotation, Eigen::Vector3f &center);
 
 };
+class CameraDepthmap:
+					   public Depthmap {
+public:
+	Camera camera;
+	/*1. load tif filename, convertita in vector3f
+	 *
+*/
 
+};
+class OrthoDepthmap:
+					   public Depthmap {
+public:
+	Eigen::Vector3f resolution;
+	Eigen::Vector3f origin;
+
+	Eigen::Vector3f pixelToRealCoordinates(int pixelX, int pixelY, float pixelZ);
+	bool load(const char *filepath);
+	bool loadXml(const char *xmlPath);
+	void saveObj(const char *filename);
+	void projectToCameraDepthMap(const Camera& camera, const QString& outputPath);
+	void resizeNormals(int factorPowerOfTwo, int step = 1);
+
+
+	/*1.
+*/
+
+};
 #endif // DEPTHMAP_H
