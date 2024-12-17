@@ -61,9 +61,9 @@ void fft2(const MatrixXd& input, ComplexMatrix& output) {
 	}
 
 	// Perform FFT
-	size_t element_size = sizeof(std::complex<double>);
+	ptrdiff_t element_size = sizeof(std::complex<double>);
 	pocketfft::shape_t shape = {size_t(cols), size_t(rows)};
-	pocketfft::stride_t stride = { element_size, size_t(cols)*element_size };
+	pocketfft::stride_t stride = { element_size, ptrdiff_t(cols)*element_size };
 	pocketfft::shape_t axes{0, 1};
 
 	pocketfft::c2c(shape, stride, stride, axes, pocketfft::FORWARD, data.data(), data.data(), 1.0);
