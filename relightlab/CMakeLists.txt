@@ -35,6 +35,7 @@ set (RELIGHT_HEADERS
     ../src/sphere.h 
     ../src/white.h 
     ../src/bni_normal_integration.h
+    ../src/fft_normal_integration.h
     alignrow.h
     alignframe.h
     alignframe.h
@@ -102,6 +103,7 @@ set (RELIGHTLAB_SOURCES
     ../src/sphere.cpp 
     ../src/white.cpp 
     ../src/bni_normal_integration.cpp
+    ../src/fft_normal_integration.cpp
     alignframe.cpp
     alignpicking.cpp
     alignrow.cpp

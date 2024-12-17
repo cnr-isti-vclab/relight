@@ -440,7 +440,7 @@ int main(int argc, char *argv[]) {
 
 	//if spherical dome has been specified, i
 	if(dome.lightConfiguration == Dome::SPHERICAL) {
-		dome.directions = builder.imageset.lights1;
+		dome.directions = builder.imageset.lights();
 		dome.updateSphereDirections();
 	}
 
