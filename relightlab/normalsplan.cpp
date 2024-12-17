@@ -148,11 +148,13 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 	label->help->setId("normals/flattening");
 
 	none = new QLabelButton("None", "Do generate a mesh.");
+	fft = new QLabelButton("Fourier Normal Integration", "Dense, very fast");
 	bni = new QLabelButton("Bilateral Normal Integration", "Dense, allows discontinuity");
 	assm = new QLabelButton("Adaptive Surface Meshing.", "Adaptive, no discontinuities.");
 
 	buttons->addWidget(none, 0, Qt::AlignCenter);
 
+	buttons->addWidget(fft);
 	{
 		QVBoxLayout *bni_layout =new QVBoxLayout;
 		bni_layout->addWidget(bni);
@@ -185,6 +187,7 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 	}
 
 	connect(none, &QAbstractButton::clicked, this, [this](){ setSurfaceMethod(SURFACE_NONE); });
+	connect(fft, &QAbstractButton::clicked, this, [this](){ setSurfaceMethod(SURFACE_FFT); });
 	connect(bni, &QAbstractButton::clicked, this, [this](){ setSurfaceMethod(SURFACE_BNI); });
 	connect(assm, &QAbstractButton::clicked, this, [this](){ setSurfaceMethod(SURFACE_ASSM); });
 
@@ -198,6 +201,7 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 
 	QButtonGroup *group = new QButtonGroup(this);
 	group->addButton(none);
+	group->addButton(fft);
 	group->addButton(bni);
 	group->addButton(assm);
 
@@ -266,7 +270,7 @@ void NormalsExportRow::selectOutput() {
 void NormalsExportRow::suggestPath() {
 	QDir input = qRelightApp->project().dir;
 	input.cdUp();
-	QString filename = input.filePath("normals");
+	QString filename = input.filePath("normals.jpg");
 	setPath(filename);
 }
 

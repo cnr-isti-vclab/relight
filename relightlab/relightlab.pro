@@ -112,7 +112,8 @@ SOURCES += main.cpp \
     planrow.cpp \
     normalsplan.cpp \
     brdfframe.cpp \
-    metadataframe.cpp
+    metadataframe.cpp \
+    ../src/fft_normal_integration.cpp
 
 RESOURCES += \
     res.qrc
@@ -198,7 +199,9 @@ HEADERS += \
     planrow.h \
     normalsplan.h \
     brdfframe.h \
-    metadataframe.h
+    metadataframe.h \
+    ../src/fft_normal_integration.h \
+    ../src/pocketfft.h
 
 FORMS +=
 

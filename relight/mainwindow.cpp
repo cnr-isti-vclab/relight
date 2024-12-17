@@ -867,8 +867,7 @@ void MainWindow::loadLP(QString lp) {
 	std::vector<Vector3f> directions;
 
 	try {
-		vector<QString> filenames;
-		parseLP(lp, project.dome.directions, filenames);
+		parseLP(lp, directions, filenames);
 
 	} catch(QString error) {
 		QMessageBox::critical(this, "LP file invalid: ", error);
@@ -897,6 +896,7 @@ void MainWindow::loadLP(QString lp) {
 	}
 
 	project.dome.lightConfiguration = Dome::DIRECTIONAL;
+	project.dome.directions.resize(directions.size());
 	if(success) {
 		for(size_t i = 0; i < project.size(); i++)
 			project.dome.directions[i] = ordered_dir[i];

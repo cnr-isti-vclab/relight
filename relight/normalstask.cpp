@@ -39,8 +39,9 @@ void NormalsTask::run() {
 
 	ImageSet imageSet;
 	imageSet.images = (*this)["images"].value.toStringList();
-	imageSet.initFromDome(project->dome);
+
 	imageSet.initImages(input_folder.toStdString().c_str());
+	imageSet.initFromDome(project->dome);
 
 	if(hasParameter("crop")) {
 		QRect rect = (*this)["crop"].value.toRect();
@@ -182,7 +183,7 @@ void NormalsWorker::run()
 
 void NormalsWorker::solveL2()
 {
-	std::vector<Vector3f> &m_Lights = m_Imageset.lights1;
+	std::vector<Vector3f> &m_Lights = m_Imageset.lights();
 
 	// Pixel data
 	Eigen::MatrixXd mLights(m_Lights.size(), 3);

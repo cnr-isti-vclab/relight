@@ -13,7 +13,7 @@
 
 enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA };
 enum FlatMethod { FLAT_NONE, FLAT_RADIAL, FLAT_FOURIER };
-enum SurfaceIntegration { SURFACE_NONE, SURFACE_BNI, SURFACE_ASSM };
+enum SurfaceIntegration { SURFACE_NONE, SURFACE_BNI, SURFACE_ASSM, SURFACE_FFT };
 
 class NormalsParameters {
 public:
