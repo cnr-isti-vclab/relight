@@ -70,6 +70,7 @@ bool savePly(const QString &filename, int w, int h, std::vector<float> &z) {
 			start[0] = x;
 			start[1] = y;
 			start[2] = z[pos];
+			assert(!isnan(start[2]));
 		}
 	}
 	std::vector<uint8_t> indices(13*2*(w-1)*(h-1));
@@ -425,7 +426,7 @@ void bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int 
 		double relative_energy = fabs(energy - energy_old) / energy_old;
 		double total_progress = fabs(energy - start_energy) / start_energy;
 		if(progressed) {
-			bool proceed = progressed("Integrating normals...", 100*(log(relative_energy) - log(tolerance))/(log(total_progress) - log(tolerance)));
+			bool proceed = progressed("Integrating normals...", 100*(1 - (log(relative_energy) - log(tolerance))/(log(total_progress) - log(tolerance))));
 			if(!proceed) break;
 		}
 		if(relative_energy < tolerance)

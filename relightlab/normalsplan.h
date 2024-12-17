@@ -55,6 +55,7 @@ public:
 	void setSurfaceMethod(SurfaceIntegration surface);
 
 	QLabelButton *none = nullptr;
+	QLabelButton *fft = nullptr;
 	QLabelButton *bni = nullptr;
 	QLabelButton *assm = nullptr;
 

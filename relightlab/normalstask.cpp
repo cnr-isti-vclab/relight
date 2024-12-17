@@ -4,6 +4,7 @@
 #include "../src/imageset.h"
 #include "../src/relight_threadpool.h"
 #include "../src/bni_normal_integration.h"
+#include "../src/fft_normal_integration.h"
 #include "../src/flatnormals.h"
 
 #include <assm/Grid.h>
@@ -171,13 +172,18 @@ void NormalsTask::run() {
 		QString filename = output.left(output.size() -4) + ".obj";
 
 		assm(filename, normals, parameters.assm_error);
-	} else if(parameters.surface_integration == SURFACE_BNI) {
-		bool proceed = progressed("Integrating normals assm...", 0);
+
+	} else if(parameters.surface_integration == SURFACE_BNI || parameters.surface_integration == SURFACE_FFT) {
+		bool proceed = progressed("Bilateral normal integration...", 0);
 		if(!proceed)
 			return;
 
 		vector<float> z;
-		bni_integrate(callback, width, height, normals, z, parameters.bni_k);
+		if(parameters.surface_integration == SURFACE_BNI)
+			bni_integrate(callback, width, height, normals, z, parameters.bni_k);
+		else
+			fft_integrate(callback, width, height, normals, z);
+
 		if(z.size() == 0) {
 			error = "Failed to integrate normals";
 			status = FAILED;
