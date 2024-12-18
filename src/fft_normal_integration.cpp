@@ -114,8 +114,7 @@ void fft_integrate(std::function<bool(QString s, int n)> progressed,
 		for (int j = 0; j < cols; ++j) {
 			float *normal = &normals[3*(i * cols + j)];
 			dzdx(i, j) = normal[0] / normal[2]; // dz/dx = -nx/nz
-			dzdy(i, j) = -normal[1] / normal[2]; // dz/dy = -ny/nz
-			assert(!isnan(dzdx(i, j)));
+			dzdy(i, j) = -normal[1] / normal[2]; // dz/dy = -ny/nz			assert(!isnan(dzdx(i, j)));
 			assert(!isnan(dzdy(i, j)));
 		}
 	}

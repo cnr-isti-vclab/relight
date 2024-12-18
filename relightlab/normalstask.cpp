@@ -33,6 +33,23 @@ using namespace Eigen;
 ///         That NormalsWorker fills a vector with the colors of the normals in that line.
 ///
 
+QString NormalsParameters::summary() {
+	QString ret = "Normals";
+	if(flatMethod == FLAT_RADIAL)
+		ret += " , radial flattning";
+	if(flatMethod == FLAT_FOURIER)
+		ret += ", frequencies based flattening";
+
+	if(surface_integration == SURFACE_ASSM)
+		ret += ", adaptive surface reconstruction";
+	if(surface_integration == SURFACE_BNI)
+		ret += ", bilateral surface reconstruction";
+	if(surface_integration == SURFACE_FFT)
+		ret += ", Fourier transform surface reconstruction";
+	ret += ".";
+	return ret;
+}
+
 void NormalsTask::initFromProject(Project &project) {
 	lens = project.lens;
 	imageset.width = imageset.image_width = project.lens.width;
@@ -48,10 +65,14 @@ void NormalsTask::initFromProject(Project &project) {
 	}
 	pixelSize = project.pixelSize;
 }
+void NormalsTask::setParameters(NormalsParameters &param) {
+	parameters = param;
+	label = parameters.summary();
+}
 
 void NormalsTask::run() {
 	status = RUNNING;
-
+	label = parameters.summary();
 
 	function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
@@ -307,7 +328,7 @@ void NormalsTask::assm(QString filename, vector<float> &_normals, float approx_e
 
 	for(auto vertex: mesh.vertices()) {
 		auto &p = mesh.position(vertex);
-		p[1] *= imageset.height -p[1] -1;
+		p[1] = imageset.height -p[1] -1;
 		p[2] *= -1;
 	}
 	savePly(filename.toStdString().c_str(), mesh);
