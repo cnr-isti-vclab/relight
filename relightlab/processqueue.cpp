@@ -62,8 +62,11 @@ void ProcessQueue::startNewProcess() {
 	task = queue.front();
 	queue.pop_front();
 
-	task->start();
+	//task->mutex.lock();
 	task->status = Task::RUNNING;
+	//task->mutex.unlock();
+
+	task->start();
 	emit update();
 }
 

@@ -90,7 +90,6 @@ void QueueItem::update() {
 		break;
 	case Task::RUNNING:
 		status->setText("Starting...");
-
 		break;
 	case Task::DONE:
 		status->setText("Done");

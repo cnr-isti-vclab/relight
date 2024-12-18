@@ -153,8 +153,11 @@ void NormalsTask::run() {
 				ni.flattenRadial();
 				break;
 			case FLAT_FOURIER:
+			//0 remove all details.
+			//1 remove detail on the scale of the image only.
+			//from 0 to width;
 				//convert radius to frequencies
-				double sigma = 100*parameters.m_FlatRadius;
+				double sigma = width*parameters.flatPercentage/100;
 				ni.flattenFourier(width/10, sigma);
 				break;
 		}
@@ -218,6 +221,7 @@ void NormalsTask::run() {
 		savePly(filename, width, height, z);
 	}
 	progressed("Done", 100);
+	status = DONE;
 }
 
 bool savePly(const char *filename, pmp::SurfaceMesh &mesh) {

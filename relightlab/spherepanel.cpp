@@ -18,25 +18,24 @@ SpherePanel::SpherePanel(QWidget *parent): QGroupBox("Reflective spheres", paren
 
 	content->addSpacing(10);
 
-	QFrame *spheres_frame = new QFrame;
-
-	QPushButton *sphere = new QPushButton(QIcon::fromTheme("folder"), "New reflective sphere...");
-	sphere->setProperty("class", "large");
-	sphere->setMinimumWidth(200);
-	sphere->setMaximumWidth(300);
-	connect(sphere, SIGNAL(clicked()), this, SLOT(newSphere()));
-	content->addWidget(sphere, 0, Qt::AlignTop);
-
-	content->addWidget(spheres_frame);
-
-	spheres = new QVBoxLayout(spheres_frame);
-
-	QHBoxLayout *buttons = new QHBoxLayout;
-	content->addLayout(buttons);
+	{
+		QPushButton *sphere = new QPushButton(QIcon::fromTheme("folder"), "New reflective sphere...");
+		sphere->setProperty("class", "large");
+		sphere->setMinimumWidth(200);
+		sphere->setMaximumWidth(300);
+		connect(sphere, SIGNAL(clicked()), this, SLOT(newSphere()));
+		content->addWidget(sphere, 0, Qt::AlignTop);
+	}
+	{
+		QFrame *spheres_frame = new QFrame;
+		spheres = new QVBoxLayout;
+		spheres_frame->setLayout(spheres);
+		content->addWidget(spheres_frame);
+	}
 }
 
 void SpherePanel::clear() {
-	setVisible(false);
+	//setVisible(false);
 	while(spheres->count() > 0) {
 		QLayoutItem *item = spheres->takeAt(0);
 		SphereRow *row =  dynamic_cast<SphereRow *>(item->widget());
@@ -47,7 +46,7 @@ void SpherePanel::clear() {
 
 void SpherePanel::init() {
 	auto &project_spheres = qRelightApp->project().spheres;
-	setVisible(project_spheres.size() > 0);
+	//setVisible(project_spheres.size() > 0);
 	for(Sphere *sphere: project_spheres) {
 		sphere->fit();
 		SphereRow * row = addSphere(sphere);
