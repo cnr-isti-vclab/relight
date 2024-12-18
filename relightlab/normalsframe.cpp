@@ -93,7 +93,7 @@ void NormalsFrame::save() {
 		}
 	}
 	NormalsTask *task = new NormalsTask();
-	task->parameters = parameters;
+	task->setParameters(parameters);
 	task->output = parameters.path;
 	task->initFromProject(qRelightApp->project());
 

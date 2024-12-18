@@ -30,15 +30,10 @@ public:
 	float bni_k = 2.0;
 	float assm_error = 0.1;
 
-	//bool exportJpeg = true;
 	int quality = 95;
-	//bool exportPng = false;
-	//bool exportTiff = false;
-	//bool exportPly = false;
-	//bool exportObj = false;
-
 	QString path;
 
+	QString summary();
 };
 
 
@@ -53,6 +48,7 @@ public:
 
 	virtual void run() override;
 
+	void setParameters(NormalsParameters &param);
 	void initFromProject(Project &project);
 	void assm(QString filename, std::vector<float> &normals, float precision);
 

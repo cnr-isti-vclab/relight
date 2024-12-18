@@ -78,6 +78,7 @@ void QueueItem::update() {
 	case Task::PAUSED:
 		status->setText("Paused");
 	case Task::ON_QUEUE:
+		status->setText("On queue");
 	case Task::RUNNING:
 		break;
 	case Task::DONE:
