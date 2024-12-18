@@ -44,7 +44,7 @@ void ProcessQueue::run() {
 		task->wait(100);
 
 		if(task->isFinished()) {
-			QString msg = task->status == Task::DONE ? "Successfully finished" : task->error;
+			QString msg = task->status == Task::DONE ? "Done" : task->error;
 			msg = task->output + "\n" + msg;
 			emit finished(task->label, msg);
 

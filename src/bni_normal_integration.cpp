@@ -68,8 +68,8 @@ bool savePly(const QString &filename, int w, int h, std::vector<float> &z) {
 			int pos = x + y*w;
 			float *start = &vertices[3*pos];
 			start[0] = x;
-			start[1] = y;
-			start[2] = z[pos];
+			start[1] = h - y -1;
+			start[2] = -z[pos];
 			assert(!isnan(start[2]));
 		}
 	}

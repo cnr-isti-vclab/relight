@@ -209,6 +209,7 @@ bool savePly(const char *filename, pmp::SurfaceMesh &mesh) {
 	std::vector<float> vertices;
 	for(auto vertex: mesh.vertices()) {
 		auto p = mesh.position(vertex);
+		assert(vertex.idx() == vertices.size()/3);
 		vertices.push_back(p[0]);
 		vertices.push_back(p[1]);
 		vertices.push_back(p[2]);
@@ -223,9 +224,16 @@ bool savePly(const char *filename, pmp::SurfaceMesh &mesh) {
 		int *triangle = (int *)(start + 1);
 
 		int i = 0;
+		int index[3];
 		for (auto vertex : mesh.vertices(face)) {
-			triangle[i++] = vertex.idx() + 1;
+			index[i++] = vertex.idx();
+
 		}
+		//flip triangle order for consistency.
+		triangle[0] = index[0];
+		triangle[1] = index[2];
+		triangle[2] = index[1];
+		count++;
 	}
 
 	{
@@ -294,8 +302,15 @@ void NormalsTask::assm(QString filename, vector<float> &_normals, float approx_e
 
 	pmp::Integration<double, pmp::Orthographic> integrator(remesher.mesh(), normals, mask);
 	integrator.run();
+	//flip y and z.
+	auto &mesh = remesher.mesh();
 
-	savePly(filename.toStdString().c_str(), remesher.mesh());
+	for(auto vertex: mesh.vertices()) {
+		auto &p = mesh.position(vertex);
+		p[1] *= imageset.height -p[1] -1;
+		p[2] *= -1;
+	}
+	savePly(filename.toStdString().c_str(), mesh);
 }
 
 
