@@ -169,7 +169,8 @@ void NormalsTask::run() {
 		bool proceed = progressed("Adaptive mesh normal integration...", 50);
 		if(!proceed)
 			return;
-		QString filename = output.left(output.size() -4) + ".obj";
+		//TODO move to saveply
+		QString filename = output.left(output.size() -4) + ".ply";
 
 		assm(filename, normals, parameters.assm_error);
 
@@ -196,6 +197,56 @@ void NormalsTask::run() {
 		savePly(filename, width, height, z);
 	}
 	progressed("Done", 100);
+}
+
+bool savePly(const char *filename, pmp::SurfaceMesh &mesh) {
+	QFile file(filename);
+	bool success = file.open(QFile::WriteOnly);
+	if(!success)
+		return false;
+
+
+	std::vector<float> vertices;
+	for(auto vertex: mesh.vertices()) {
+		auto p = mesh.position(vertex);
+		vertices.push_back(p[0]);
+		vertices.push_back(p[1]);
+		vertices.push_back(p[2]);
+	}
+	std::vector<uint8_t> indices;
+
+	int count =0 ;
+	for (auto face : mesh.faces()) {
+		indices.resize(13*(count+1));
+		uint8_t *start = &indices[13*count];
+		start[0] = 3;
+		int *triangle = (int *)(start + 1);
+
+		int i = 0;
+		for (auto vertex : mesh.vertices(face)) {
+			triangle[i++] = vertex.idx() + 1;
+		}
+	}
+
+	{
+		QTextStream stream(&file);
+
+		stream << "ply\n";
+		stream << "format binary_little_endian 1.0\n";
+		stream << "element vertex " << vertices.size()/3 << "\n";
+		stream << "property float x\n";
+		stream << "property float y\n";
+		stream << "property float z\n";
+		stream << "element face " << indices.size()/13 << "\n";
+		stream << "property list uchar int vertex_index\n";
+		stream << "end_header\n";
+	}
+
+
+	file.write((const char *)vertices.data(), vertices.size()*4);
+	file.write((const char *)indices.data(), indices.size());
+	file.close();
+	return true;
 }
 
 bool saveObj(const char *filename, pmp::SurfaceMesh &mesh) {
@@ -244,7 +295,7 @@ void NormalsTask::assm(QString filename, vector<float> &_normals, float approx_e
 	pmp::Integration<double, pmp::Orthographic> integrator(remesher.mesh(), normals, mask);
 	integrator.run();
 
-	saveObj(filename.toStdString().c_str(), remesher.mesh());
+	savePly(filename.toStdString().c_str(), remesher.mesh());
 }
 
 
