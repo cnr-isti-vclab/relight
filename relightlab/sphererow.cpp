@@ -58,15 +58,8 @@ SphereRow::SphereRow(Sphere *_sphere, QWidget *parent): QWidget(parent) {
 	reflections->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	columns->addWidget(reflections);
 
-	//QVBoxLayout *status_layout = new QVBoxLayout;
-	//columns->addLayout(status_layout, 2);
-	//status_layout->addStretch();
-	//status = new QLabel("Locating highlights...");
-	//status_layout->addWidget(status);
 	progress = new QProgressBar;
 	progress->setValue(0);
-	//status_layout->addWidget(progress);
-	//status_layout->addStretch();
 	columns->addWidget(progress, 2);
 
 	QPushButton *edit = new QPushButton(QIcon::fromTheme("edit"), "Edit...");

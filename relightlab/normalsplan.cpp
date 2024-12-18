@@ -100,8 +100,9 @@ NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *par
 	QHBoxLayout *loader_layout = new QHBoxLayout;
 	loader_layout->addWidget(new QLabel("Fourier low pass frequency."));
 	loader_layout->addWidget(max_frequency = new QDoubleSpinBox);
-	max_frequency->setRange(0.0001, 1);
+	max_frequency->setRange(0, 100);
 	max_frequency->setDecimals(4);
+	max_frequency->setValue(parameters.flatPercentage);
 
 	button_layout->addLayout(loader_layout);
 
@@ -113,9 +114,9 @@ NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *par
 	connect(fourier, &QAbstractButton::clicked, this, [this](){ setFlattenMethod(FLAT_FOURIER); });
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-	connect(max_frequency, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.m_FlatRadius = v; });
+	connect(max_frequency, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.flatPercentage = v; });
 #else
-	connect(max_frequency, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.m_FlatRadius = v; });
+	connect(max_frequency, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.flatPercentage = v; });
 #endif
 
 
@@ -136,7 +137,7 @@ void NormalsFlattenRow::setFlattenMethod(FlatMethod method) {
 }
 
 void NormalsFlattenRow::setFourierFrequency(double f) {
-	parameters.m_FlatRadius = f;
+	parameters.flatPercentage = f;
 	max_frequency->setValue(f);
 }
 

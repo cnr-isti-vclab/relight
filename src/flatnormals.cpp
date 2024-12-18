@@ -188,11 +188,19 @@ void NormalsImage::flattenFourier(int padding, double sigma) {
 			n[1] = normals[3*(x + y*w)+1];
 			n[2] = normals[3*(x + y*w)+2];
 
+
 			if(exponential) {
 				double t = acos(n[2]);
-				n[0] = n[0]*t/sin(t);
-				n[1] = n[1]*t/sin(t);
+				if(t > 0) {
+					n[0] = n[0]*t/sin(t);
+					n[1] = n[1]*t/sin(t);
+				}
 			}
+
+			assert(!isnan(n[0]));
+			assert(!isnan(n[1]));
+			assert(!isnan(n[2]));
+
 
 			int X = x + padding_amount;
 			int Y = y + padding_amount;
@@ -241,6 +249,8 @@ void NormalsImage::flattenFourier(int padding, double sigma) {
 			 * double g = 1.0;
 			if(r2 < sigma*sigma/4)
 				g = 1.0 - pow(cos(M_PI*r2/sigma), 2); */
+			assert(!isnan(datax[x + y*W].real()));
+			assert(!isnan(datay[x + y*W].imag()));
 
 			datax[x + y*W] *= g;
 			datay[x + y*W] *= g;
@@ -259,8 +269,10 @@ void NormalsImage::flattenFourier(int padding, double sigma) {
 			double g = datay[X + Y*W].real();
 			double d = sqrt(r*r + g*g);
 			if(exponential) {
-				r = r*sin(d)/d;
-				g = g*sin(d)/d;
+				if(d > 0) {
+					r = r*sin(d)/d;
+					g = g*sin(d)/d;
+				}
 			}
 
 			double b = sqrt(1 - r*r - g*g);

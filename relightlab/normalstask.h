@@ -23,7 +23,7 @@ public:
 	NormalSolver solver = NORMALS_L2;
 
 	FlatMethod flatMethod = FLAT_NONE;
-	double m_FlatRadius = 0.5;
+	double flatPercentage = 50;
 
 
 	SurfaceIntegration surface_integration = SURFACE_NONE;
