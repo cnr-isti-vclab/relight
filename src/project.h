@@ -58,8 +58,8 @@ public:
 
 	void clear();
 	void load(QString filename);
-	void save(QString filename); //throws QString on error
-	void saveLP(QString filename, std::vector<Eigen::Vector3f> &directions); //throws QString on error
+	void save(QString filename);
+	void saveLP(QString filename, std::vector<Eigen::Vector3f> &directions);
 	void loadLP(QString filename);
 	void computeDirections();
 	void computePixelSize();

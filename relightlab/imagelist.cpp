@@ -25,7 +25,7 @@ void ImageList::verifyItem(QListWidgetItem *item) {
 	bool skip = item->checkState() != Qt::Checked;
 
 	Project &project = qRelightApp->project();
-	assert(img_number >= 0 && img_number < project.images.size());
+	assert(img_number >= 0 && size_t(img_number) < project.images.size());
 
 	project.images[img_number].skip = skip;
 

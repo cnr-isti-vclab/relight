@@ -101,7 +101,7 @@ void SphereRow::remove() {
 	emit removeme(this);
 }
 
-void SphereRow::updateStatus(QString msg, int percent) {
+void SphereRow::updateStatus(QString /*msg*/, int percent) {
 //	status->setText(msg);
 	progress->setValue(percent);
 	reflections->update();

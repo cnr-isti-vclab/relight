@@ -103,9 +103,62 @@ void ifft2(const ComplexMatrix& input, MatrixXd& output) {
 		}
 }
 
+void pad(int &w, int &h, std::vector<float> &normals, int padding) {
+	int W = w + padding;
+	int H = h + padding;
+	std::vector<float> n(W*H*3);
+	for(int y = 0; y < H;  y++) {
+		for(int x = 0; x < W; x++) {
+			int X = x - padding;
+			int Y = y - padding;
+			if(x < padding) {
+				X = padding -x;
+			}
+
+			if(x >= w + padding) {
+				X = 2*w + padding - 1 - x;
+			}
+
+			if(y < padding) {
+				Y = padding - y;
+			}
+
+			if(y >= h + padding) {
+				Y = 2*h + padding - 1 - y;
+				Y = H - padding + h - 1 -y;
+			}
+			for(int k = 0; k < 3; k++)
+				n[3*(x + y*W) + k] = normals[3*(X + Y*w) + k];
+			assert(!isnan(n[x + y*W]));
+		}
+	}
+	w = W;
+	h = H;
+	swap(normals, n);
+}
+
+void depad(int &w, int &h, std::vector<float> &heights, int padding) {
+
+	int W = w;
+	int H = h;
+	w -= padding;
+	h -= padding;
+	std::vector<float> elev(w*h);
+	for(int y = 0; y < h; y++) {
+		for(int x = 0; x < w; x++) {
+			elev[x + w*y] = heights[x + padding + (y + padding)*W];
+		}
+	}
+	swap(elev, heights);
+}
+
 void fft_integrate(std::function<bool(QString s, int n)> progressed,
 				   int cols, int rows, std::vector<float> &normals, std::vector<float> &heights) {
 
+
+	int minsize = std::min(cols, rows);
+	int padding = minsize/4;
+	pad(cols, rows, normals, padding);
 
 
 	MatrixXd dzdx(rows, cols);
@@ -151,6 +204,8 @@ void fft_integrate(std::function<bool(QString s, int n)> progressed,
 			heights[i * cols + j] = static_cast<float>(z(i, j));
 		}
 	}
+
+	depad(cols, rows, heights, padding);
 
 	/*
 	[wx, wy] = meshgrid(([1:cols]-(fix(cols/2)+1))/(cols-mod(cols,2)), ...

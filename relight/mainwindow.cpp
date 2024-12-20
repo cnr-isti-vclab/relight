@@ -234,8 +234,9 @@ void MainWindow::openProject() {
 	project.clear();
 	try {
 		project.load(filename);
-	} catch(QString e) {
-		QMessageBox::critical(this, "Could not load the project: " + filename, "Error: " + e);
+	} catch(Error err) {
+		//TODO replace with something that can display help
+		QMessageBox::critical(this, err.title,  err.text);
 		return;
 	}
 	project_filename = filename; //project.dir.relativeFilePath(filename);

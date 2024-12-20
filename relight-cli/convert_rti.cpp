@@ -26,7 +26,7 @@ int convertRTI(const char *file, const char *output, int quality) {
 	rti.chromasubsampling = lrti.chromasubsampled;
 	switch(lrti.type) {
 	case LRti::UNKNOWN:
-		throw "Unknown RTI type!\n";
+		throw QString("Unknown RTI type!\n");
 		return 1;
 	case LRti::PTM_LRGB:
 		rti.type = Rti::PTM;
@@ -76,7 +76,7 @@ int convertRTI(const char *file, const char *output, int quality) {
 	if(!dir.exists()) {
 		QDir here("./");
 		if(!here.mkdir(output))
-			throw "Could not create output dir!\n";
+			throw QString("Could not create output dir!\n");
 	}
 
 	rti.saveJSON(dir, quality);
