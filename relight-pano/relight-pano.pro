@@ -22,7 +22,7 @@ HEADERS += \
     panobuilder.h
 
 mac:INCLUDEPATH += /opt/homebrew/include/eigen3
-
+unix:INCLUDEPATH += ../external/eigen-3.3.9
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

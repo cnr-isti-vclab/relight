@@ -1,8 +1,8 @@
 #include "exiftransplant.h"
-#include <iostream>
 #include <stdio.h>
 #include <unistd.h>
 #include <string>
+#include <stdint.h>
 using namespace std;
 
 static void swap16(uint16_t &us) {
@@ -16,6 +16,7 @@ bool ExifTransplant::transplant(const char *src_path, const char *dst_path) {
 		error = "Could not open source file ";
 		return false;
 	}
+
 
 	unsigned int exif_size;
 	unsigned char *exif = getExif(src, exif_size);

@@ -13,8 +13,8 @@ SOURCES += \
         ../src/bni_normal_integration.cpp \
         depthmap.cpp \
         main.cpp
-INCLUDEPATH += /opt/homebrew/include \
-    /opt/homebrew/Cellar/eigen/3.4.0_1/include/eigen3
+mac:INCLUDEPATH += /opt/homebrew/include
+unix:INCLUDEPATH += ../external/eigen-3.3.9
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

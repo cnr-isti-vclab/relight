@@ -42,7 +42,7 @@ public:
 	bool loadMask(const char *mask_path);
 	bool loadNormals(const char *normals_path);
 	void saveDepth(const char *depth_path);
-	void saveMask(const char *mask_path, std::vector<float> &values, uint32_t &w, uint32_t &h, uint32_t bitsPerSample);
+	void saveMask(const char *depth_path);
 	void saveNormals(const char *normals_path);
 
 	float calculateMeanDepth(const std::vector<float>& values);
@@ -56,6 +56,7 @@ protected:
 	bool loadTiledTiff(TIFF* inTiff, std::vector<float> &elevation, uint32_t w, uint32_t h,
 					   uint32_t tileWidth, uint32_t tileLength, uint32_t bitsPerSample);
 	bool loadStripedTiff(TIFF* inTiff, std::vector<float> &elevation, uint32_t& w, uint32_t& h, uint32_t bitsPerSample);
+	void saveTiff(const char *mask_path, std::vector<float> &values, uint32_t &w, uint32_t &h, uint32_t bitsPerSample);
 
 };
 class CameraDepthmap:
@@ -74,7 +75,7 @@ public:
 	Eigen::Vector3f origin;
 
 	Eigen::Vector3f pixelToRealCoordinates(int pixelX, int pixelY, float pixelZ);
-	bool load(const char *filepath);
+	bool load(const char *depth_path, const char *mask_path);
 	bool loadXml(const char *xmlPath);
 	void saveObj(const char *filename);
 	void projectToCameraDepthMap(const Camera& camera, const QString& outputPath);

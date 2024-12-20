@@ -65,7 +65,7 @@ bool Camera::loadXml(const QString &pathXml){
 		return false;
 	}
 	QString internePath = fileInterneNode.text();
-	QFileInfo fileInfo(fileInterneNode.text());
+	QFileInfo fileInfo(pathXml);
 	QString dirPath = fileInfo.path();
 	QDir dir(dirPath);
 	dir.cd("..");
@@ -255,12 +255,6 @@ bool Depthmap::loadTiff(const char *tiff, vector<float> &values, uint32_t &w, ui
 	} else {
 		return loadTiledTiff(inTiff, values, w, h, tileWidth, tileLength, bitsPerSample);
 	}
-	tsize_t tileSize = TIFFTileSize(inTiff);
-	if (tileSize == 0) {
-		cerr << "Error computing tile size." << endl;
-		TIFFClose(inTiff);
-		return 1;
-	}
 
 	return true;
 
@@ -351,6 +345,7 @@ bool Depthmap::loadTiledTiff(TIFF* inTiff, vector<float> &values, uint32_t w, ui
 		}
 		delete[] tileData;
 	}
+	TIFFClose(inTiff);
 	return true;
 }
 
@@ -404,6 +399,7 @@ bool Depthmap::loadStripedTiff(TIFF* inTiff, std::vector<float> &values, uint32_
 		}
 		delete[] stripData;
 	}
+	TIFFClose(inTiff);
 	return true;
 }
 
@@ -412,7 +408,7 @@ bool Depthmap::loadDepth(const char *tiff) {
 		cerr << "Failed to load TIFF file: " << tiff << endl;
 		return false;
 	}
-
+	return true;
 }
 
 bool Depthmap::loadMask(const char *tifPath){
@@ -464,7 +460,7 @@ bool Depthmap::loadNormals(const char *normals_path){
 
 	return true;
 }
-void Depthmap::saveMask(const char *mask_path, vector<float> &values, uint32_t &w, uint32_t &h, uint32_t bitsPerSample){
+void Depthmap::saveTiff(const char *mask_path, vector<float> &values, uint32_t &w, uint32_t &h, uint32_t bitsPerSample){
 	//save e scrive la maschera
 
 	TIFF* maskTiff = TIFFOpen(mask_path, "w");
@@ -520,6 +516,12 @@ void Depthmap::saveMask(const char *mask_path, vector<float> &values, uint32_t &
 
 	}
 	TIFFClose(maskTiff);
+}
+void Depthmap::saveDepth(const char *depth_path){
+	saveTiff(depth_path, elevation, width, height, 32);
+}
+void Depthmap::saveMask(const char *depth_path){
+	saveTiff(depth_path, mask, width, height, 1);
 }
 void Depthmap::saveNormals(const char *filename) {
 
@@ -727,11 +729,21 @@ bool OrthoDepthmap::loadXml(const char *xmlPath){
 
 }
 
-bool OrthoDepthmap::load(const char *filepath){
+bool OrthoDepthmap::load(const char *depth_path, const char *mask_path){
 
-	QString tiffPath = QString(filepath);
-	QString xmlPath = tiffPath.left(tiffPath.lastIndexOf('.')) + ".xml";
+	QString qdepth_path = QString(depth_path);
+	if(!loadDepth(qdepth_path.toStdString().c_str())){
+		cerr << "Failed to load tiff file: " << qdepth_path.toStdString() << endl;
+		return false;
+	}
 
+	QString qmask_path = QString(mask_path);
+	if(!loadMask(qmask_path.toStdString().c_str())){
+		cerr << "Failed to load tiff file: " << qmask_path.toStdString() << endl;
+		return false;
+	}
+
+	QString xmlPath = qdepth_path.left(qdepth_path.lastIndexOf('.')) + ".xml";
 	if (!loadXml(xmlPath.toStdString().c_str())) {
 		cerr << "Failed to load XML file: " << xmlPath.toStdString() << endl;
 		return false;

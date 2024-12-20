@@ -14,30 +14,54 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}*/
 	//input
-	QString depthmapPath = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
-	QString orientationXmlPath = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/Ori-Relative/Orientation-L05C12.tif.xml";
-	QString maskPath = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
+//#define MACOS 1
+#ifdef MACOS
+	QString base = "/User/erika/Desktop/";
+#else
+	QString base = "/home/erika/";
+#endif
+
+	QString depthmapPath = base + "testcenterRel_copia/photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
+	QString orientationXmlPath = base + "testcenterRel_copia/photogrammetry/Ori-Relative/Orientation-L05C12.tif.xml";
+	QString maskPath = base + "testcenterRel_copia/photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
+
 
 	//output
-	QString outputPath = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/depthmap_projectL05C13.png";
+	QString outputPath = base + "testcenterRel_copia/photogrammetry/depthmap_projectL05C13.png";
+	QString output_mask = base + "testcenterRel_copia/photogrammetry/mask_test.png";
+	QString output_depth = base + "testcenterRel_copia/photogrammetry/depth_test.png";
 	Depthmap depth;
 	OrthoDepthmap ortho;
 
-	depth.loadDepth(qPrintable(depthmapPath));
-	depth.computeNormals();
-	depth.loadNormals("/Users/erika/Desktop/testcenterRel_copia/rti/L05C12/means.png");
-	depth.saveNormals("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/original.obj");
-	ortho.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/original.obj");
+	if(!ortho.load(qPrintable(depthmapPath), qPrintable(maskPath))){
+		cout <<"accidenti" << endl;
+		return -1;
+	}
+	//ortho.computeNormals();
+	//ortho.saveNormals(qPrintable(base + "testcenterRel_copia/photogrammetry/original.png"));
+	//ortho.saveObj(qPrintable(base + "testcenterRel_copia/photogrammetry/original.obj"));
+	ortho.saveDepth(qPrintable(output_depth));
+	ortho.saveMask(qPrintable(output_mask));
 
-	depth.loadMask(qPrintable(maskPath));
-	depth.saveDepth(qPrintable(depthmapPath));
+	Camera camera;
+	camera.loadXml(orientationXmlPath);
+	//int pixelX = 165;
+	//int pixelY = 144;
+	//float pixelZ = 4.5;
+	ortho.projectToCameraDepthMap(camera, outputPath);
+
+	Eigen::Matrix3f rotationMatrix;
+	Eigen::Vector3f center;
+
+//	depth.loadMask(qPrintable(maskPath));
+//	depth.saveDepth(qPrintable(depthmapPath));
 //	depth.saveMask(qPrintable(maskPath));
-	//QString maskObjPath = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/mask.obj";
-	ortho.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/depthmap_projectL05C13.obj");
+	//QString maskObjPath = base + "testcenterRel_copia/photogrammetry/mask.obj";
+//	ortho.saveObj(qPrintable(base + "testcenterRel_copia/photogrammetry/depthmap_projectL05C13.obj"));
 
 
-	depth.depthIntegrateNormals();
-	ortho.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/integrated.obj");
+	//depth.depthIntegrateNormals();
+//	ortho.saveObj(qPrintable(base + "testcenterRel_copia/photogrammetry/integrated.obj"));
 
 
 
@@ -78,21 +102,11 @@ fai la formula inversa, inverti la matrice. interpola bilinarmente dati 4 valori
 	/*int factorPowerOfTwo = 1;
 	depth.resizeNormals(factorPowerOfTwo, 2);
 	depth.depthIntegrateNormals();
-	depth.saveNormals("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/resized_integrated2.jpg");
-	depth.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/resized_integrated2.obj");*/
+	depth.saveNormals(base + "testcenterRel_copia/photogrammetry/resized_integrated2.jpg");
+	depth.saveObj(base + "testcenterRel_copia/photogrammetry/resized_integrated2.obj");*/
 
 
 
-
-	Camera camera;
-	camera.loadXml(orientationXmlPath);
-	//int pixelX = 165;
-	//int pixelY = 144;
-	//float pixelZ = 4.5;
-	ortho.projectToCameraDepthMap(camera, outputPath);
-
-	Eigen::Matrix3f rotationMatrix;
-	Eigen::Vector3f center;
 
 	//depth.getOrientationVector(orientationXmlPath, rotationMatrix, center);
 	//Eigen::Vector3f realCoordinates = depth.pixelToRealCoordinates(pixelX, pixelY, pixelZ);
