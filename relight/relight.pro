@@ -81,8 +81,7 @@ SOURCES += main.cpp \
     convertdialog.cpp \
     aligndialog.cpp \
     zoomdialog.cpp \
-    zoomtask.cpp \
-    error.cpp
+    zoomtask.cpp
 
 
 
@@ -142,8 +141,7 @@ HEADERS += \
     zoom.h \
     zoomdialog.h \
     zoomtask.h \
-    ../src/deepzoom.h \
-    error.h
+    ../src/deepzoom.h
 
 FORMS += \
     dstretchdialog.ui \
