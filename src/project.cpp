@@ -275,7 +275,7 @@ void Project::rotateImages() {
 void Project::load(QString filename) {
 	QFile file(filename);
 	if(!file.open(QFile::ReadOnly))
-		throw QString("Failed opening: " + filename);
+		throw QString("The project file could not be opened.\nThe path might be wrong, or the file missing.");
 
 	QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
 	QJsonObject obj = doc.object();
@@ -293,14 +293,14 @@ void Project::load(QString filename) {
 	imgsize.setWidth(obj["width"].toInt());
 	imgsize.setHeight(obj["height"].toInt());
 	if(!imgsize.isValid())
-		throw "Missing or invalid width and/or height.";
+		throw QString("Missing or invalid width and/or height in project.");
 
 	QFileInfo info(filename);
 	QDir folder = info.dir();
 	folder.cd(obj["folder"].toString());
 
 	if(!setDir(folder))
-		throw(QString("Can't load a project without a valid folder"));
+		throw QString("The folder " + obj["folder"].toString() + " does not exists.");
 
 	lens.fromJson(obj["lens"].toObject());
 	lens.width = imgsize.width();
@@ -365,8 +365,7 @@ void Project::checkMissingImages() {
 		QFileInfo imginfo(image.filename);
 		if(!imginfo.exists()) {
 			missing.push_back(int(i));
-			//throw QString("Could not find the image: " + image.filename) + " in folder: " + dir.absolutePath();
-			continue;
+			throw "Could not find the image:\n" + image.filename + " in folder: " + dir.absolutePath();
 		}
 	}
 }

@@ -199,7 +199,8 @@ void NormalsTask::run() {
 		assm(filename, normals, parameters.assm_error);
 
 	} else if(parameters.surface_integration == SURFACE_BNI || parameters.surface_integration == SURFACE_FFT) {
-		bool proceed = progressed("Bilateral normal integration...", 0);
+		QString type = parameters.surface_integration == SURFACE_BNI ? "Bilateral" : "Fourier";
+		bool proceed = progressed(type + " normal integration...", 0);
 		if(!proceed)
 			return;
 

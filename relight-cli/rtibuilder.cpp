@@ -231,7 +231,7 @@ MaterialBuilder RtiBuilder::pickBasePCA(PixelArray &sample) {
 	
 	if(callback)
 		if(!(*callback)("Computing PCA:", 0))
-			throw std::string("Cancelled.");
+			throw QString("Cancelled.");
 
 	if(colorspace == MRGB) {
 		uint32_t dim = sample.components()*3;
@@ -255,7 +255,7 @@ MaterialBuilder RtiBuilder::pickBasePCA(PixelArray &sample) {
 			d /= nsamples;
 
 		if(callback && !(*callback)("Computing PCA:", 5))
-			throw std::string("Cancelled.");
+			throw QString("Cancelled.");
 
 		for(uint32_t i = 0; i < sample.size(); i++) {
 			Pixel &pixel = sample[i];
@@ -269,7 +269,7 @@ MaterialBuilder RtiBuilder::pickBasePCA(PixelArray &sample) {
 		}
 
 		if(callback && !(*callback)("Computing PCA:", 10))
-			throw std::string("Cancelled.");
+			throw QString("Cancelled.");
 
 		pca.solve(nplanes);
 
@@ -349,7 +349,7 @@ MaterialBuilder RtiBuilder::pickBasePCA(PixelArray &sample) {
 
 
 			if(callback && !(*callback)("Computing PCA:", 100*component/3))
-				throw std::string("Cancelled.");
+				throw QString("Cancelled.");
 		}
 	}
 	//normalize coeffs
@@ -366,7 +366,7 @@ MaterialBuilder RtiBuilder::pickBasePCA(PixelArray &sample) {
 	}
 
 	if(callback && !(*callback)("Computing PCA:", 100))
-		throw std::string("Cancelled.");
+		throw QString("Cancelled.");
 	return mat;
 }
 

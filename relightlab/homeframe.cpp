@@ -44,7 +44,7 @@ HomeFrame::HomeFrame() {
 	leftColumnLayout->addSpacing(20);
 	leftColumnLayout->addWidget(recentLabel);
 
-
+	cleanRecentProjects();
 	for(QString path: recentProjects()) {
 		QFileInfo fileInfo(path);
 		QString filename = fileInfo.fileName();

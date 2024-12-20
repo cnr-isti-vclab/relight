@@ -125,7 +125,7 @@ void CropFrame::init() {
 	int count = 0;
 	while(project.images[count].skip == true) {
 		count++;
-		if(count >= project.images.size())
+		if(size_t(count) >= project.images.size())
 			break;
 		filename = project.images[count].filename;
 	}

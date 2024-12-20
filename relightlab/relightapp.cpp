@@ -4,6 +4,7 @@
 #include "recentprojects.h"
 #include "mainwindow.h"
 #include "preferences.h"
+#include "../src/error.h"
 
 #include <QMessageBox>
 #include <QFileDialog>
@@ -228,7 +229,7 @@ void RelightApp::openProject(const QString &filename) {
 	try {
 		project.load(filename);
 	} catch(QString e) {
-		QMessageBox::critical(mainwindow, "Could not load the project: " + filename, "Error: " + e);
+		QMessageBox::critical(mainwindow, "Could not load project", e);
 		return;
 	}
 
@@ -325,9 +326,13 @@ void RelightApp::loadThumbnails() {
 		Image &image = m_project.images[i];
 		if(i == 0) {
 			QImage img(image.filename);
+			if(img.isNull()) {
+				img = QImage(256, 256, QImage::Format_ARGB32);
+				img.fill(Qt::black);
+			}
 			m_thumbnails[i] = img.scaledToHeight(256);
 		} else {
-			QImage img(m_thumbnails[0].size().scaled(2560, 256, Qt::KeepAspectRatio), QImage::Format_ARGB32);
+			QImage img(m_thumbnails[0].size().scaled(256, 256, Qt::KeepAspectRatio), QImage::Format_ARGB32);
 			img.fill(Qt::black);
 			m_thumbnails[i] = img;
 			paths.push_back(image.filename);
