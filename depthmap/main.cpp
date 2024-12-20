@@ -22,8 +22,10 @@ int main(int argc, char *argv[]) {
 	QString outputPath = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/depthmap_projectL05C13.png";
 	Depthmap depth;
 	OrthoDepthmap ortho;
+
 	depth.loadDepth(qPrintable(depthmapPath));
 	depth.computeNormals();
+	depth.loadNormals("/Users/erika/Desktop/testcenterRel_copia/rti/L05C12/means.png");
 	depth.saveNormals("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/original.obj");
 	ortho.saveObj("/Users/erika/Desktop/testcenterRel_copia/photogrammetry/original.obj");
 
