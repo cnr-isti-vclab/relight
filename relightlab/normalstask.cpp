@@ -140,31 +140,18 @@ void NormalsTask::run() {
 	}
 
 	if(parameters.flatMethod != FLAT_NONE) {
-		//TODO: do we really need double precision?
-		vector<double> normalsd(normals.size());
-		for(uint32_t i = 0; i < normals.size(); i++)
-			normalsd[i] = (double)normals[i];
 
-		NormalsImage ni;
-		ni.load(normalsd, width, height);
 		switch(parameters.flatMethod) {
 			case FLAT_NONE: break;
 			case FLAT_RADIAL:
-				ni.flattenRadial();
+				flattenRadialNormals(width, height, normals, 100);
 				break;
 			case FLAT_FOURIER:
-			//0 remove all details.
-			//1 remove detail on the scale of the image only.
-			//from 0 to width;
 				//convert radius to frequencies
 				double sigma = width*parameters.flatPercentage/100;
-				ni.flattenFourier(width/10, sigma);
+				flattenFourierNormals(width, height, normals, 0.2, sigma);
 				break;
 		}
-		normalsd = ni.normals;
-		for(uint32_t i = 0; i < normals.size(); i++)
-			normals[i] = (float)ni.normals[i];
-
 	}
 
 	if(parameters.compute || parameters.flatMethod != FLAT_NONE) {
@@ -217,9 +204,19 @@ void NormalsTask::run() {
 		}
 		//TODO remove extension properly
 
+
 		progressed("Saving surface...", 99);
 		QString filename = output.left(output.size() -4) + ".ply";
 		savePly(filename, width, height, z);
+
+/*		auto tmp = z;
+		flattenRadialHeights(width, height, tmp);
+		filename = output.left(output.size() -4) + "_radialflat.ply";
+		savePly(filename, width, height, tmp);
+
+		flattenFourierHeights(width, height, z);
+		filename = output.left(output.size() -4) + "_fftflat.ply";
+		savePly(filename, width, height, z); */
 	}
 	progressed("Done", 100);
 	status = DONE;

@@ -68,7 +68,8 @@ void NormalsImage::save(QString filename) {
 	flat.save(filename);
 }
 
-void NormalsImage::flattenRadial(double binSize) {
+void flattenRadialNormals(int w, int h, std::vector<float> &normals, double binSize) {
+
 	//don't use normals not flat enough
 	double z_threshold = 0.7171;
 	vector<double> binCount;
@@ -78,9 +79,9 @@ void NormalsImage::flattenRadial(double binSize) {
 			int index = 3*(x + y*w);
 
 			Vector3d n;
-			n[0] = normals[index];
-			n[1] = normals[index+1];
-			n[2] = normals[index+2];
+			n[0] = double(normals[index]);
+			n[1] = double(normals[index+1]);
+			n[2] = double(normals[index+2]);
 
 			assert(!isnan(n[0]));
 			assert(!isnan(n[1]));
@@ -146,9 +147,9 @@ void NormalsImage::flattenRadial(double binSize) {
 	for(int y = 0; y < h; y++) {
 		for(int x = 0; x < w; x++) {
 			Vector3d n;
-			n[0] = normals[3*(x + y*w)];
-			n[1] = normals[3*(x + y*w) + 1];
-			n[2] = normals[3*(x + y*w) + 2];
+			n[0] = double(normals[3*(x + y*w)]);
+			n[1] = double(normals[3*(x + y*w) + 1]);
+			n[2] = double(normals[3*(x + y*w) + 2]);
 			Vector3d radial;
 			radial[0] = x - w/2.0;
 			radial[1] = h/2.0 - y;
@@ -159,16 +160,54 @@ void NormalsImage::flattenRadial(double binSize) {
 			radial = radial * inward;
 			n -= radial;
 			n.normalize();
-			normals[3*(x + y*w)] = n[0];
-			normals[3*(x + y*w) + 1] = n[1];
-			normals[3*(x + y*w) + 2] = n[2];
+			normals[3*(x + y*w)] = float(n[0]);
+			normals[3*(x + y*w) + 1] = float(n[1]);
+			normals[3*(x + y*w) + 2] = float(n[2]);
 
 		}
 	}
 }
 
-void NormalsImage::flattenFourier(int padding, double sigma) {
-	padding_amount = padding;
+
+void flattenRadialHeights(int w, int h, std::vector<float> &heights, double binSize) {
+
+	vector<double> z(heights.size());
+
+	//subsampling?
+	Eigen::MatrixXd A(w*h, 6);
+	for(int y = 0; y < h; y++) {
+		for(int x= 0; x < w; x++) {
+			int i = x + y*w;
+			A(i, 0) = 1;
+			A(i, 1) = x;
+			A(i, 2) = y;
+			A(i, 3) = x * x;
+			A(i, 4) = y * y;
+			A(i, 5) = x * y;
+			z[i] = double(heights[i]);
+		}
+	}
+
+	Eigen::VectorXd b = Eigen::Map<const Eigen::VectorXd>(z.data(), w*h);
+
+	// Solve  A^T * A * coeffs = A^T * b
+	Eigen::VectorXd coeffs = (A.transpose() * A).ldlt().solve(A.transpose() * b);
+	cout << coeffs << endl;
+
+	for(int y = 0; y < h; y++) {
+		for(int x= 0; x < w; x++) {
+			int i = x + y*w;
+			double h = coeffs(0) + coeffs(1) * x + coeffs(2) * y
+					+ coeffs(3) * x * x + coeffs(4) * y * y
+					+ coeffs(5) * x * y;
+			heights[i]  = float(z[i] - h);
+		}
+	}
+}
+
+void flattenFourierNormals(int w, int h, std::vector<float> &normals, int padding, double sigma, bool exponential) {
+
+	int padding_amount = round(padding* std::min(w, h));
 	unsigned int W = w + padding_amount*2;
 	unsigned int H = h + padding_amount*2;
 
@@ -184,9 +223,9 @@ void NormalsImage::flattenFourier(int padding, double sigma) {
 	for(int y = 0; y < h; y++) {
 		for(int x = 0; x < w; x++) {
 			Vector3d n;
-			n[0] = normals[3*(x + y*w)];
-			n[1] = normals[3*(x + y*w)+1];
-			n[2] = normals[3*(x + y*w)+2];
+			n[0] = double(normals[3*(x + y*w)]);
+			n[1] = double(normals[3*(x + y*w)+1]);
+			n[2] = double(normals[3*(x + y*w)+2]);
 
 
 			if(exponential) {
@@ -277,9 +316,9 @@ void NormalsImage::flattenFourier(int padding, double sigma) {
 
 			double b = sqrt(1 - r*r - g*g);
 
-			normals[3*(x + y*w)] = r;
-			normals[3*(x + y*w) + 1] = g;
-			normals[3*(x + y*w) + 2] = b;
+			normals[3*(x + y*w)] = float(r);
+			normals[3*(x + y*w) + 1] = float(g);
+			normals[3*(x + y*w) + 2] = float(b);
 
 			/*
 			 //differences might be nice to export.
@@ -293,4 +332,43 @@ void NormalsImage::flattenFourier(int padding, double sigma) {
 			*/
 		}
 	}
+}
+
+void filterLowFrequencies(int w, int h, std::vector<std::complex<double>>& freq_data, double cutoff) {
+	for (size_t y = 0; y < h; ++y) {
+		for (size_t x = 0; x < w; ++x) {
+			double fx = (x <= w / 2) ? x : x - w;
+			double fy = (y <= h / 2) ? y : y - h;
+			double freq_mag = std::sqrt(fx * fx + fy * fy);
+
+			if (freq_mag < cutoff) {
+				freq_data[y * w +x] = 0.0;
+			}
+		}
+	}
+}
+
+void flattenFourierHeights(int w, int h, std::vector<float> &heights, int padding, double sigma) {
+
+	vector<double> heightmap(w*h);
+	for(size_t i = 0; i < heights.size(); i++)
+		heightmap[i] = heights[i];
+
+	pocketfft::shape_t shape = { size_t(w), size_t(h) };
+	pocketfft::stride_t stride = { ptrdiff_t(sizeof(double)), ptrdiff_t(sizeof(double)*w) };
+	pocketfft::stride_t stride_freq = { ptrdiff_t(sizeof(std::complex<double>)), ptrdiff_t(sizeof(std::complex<double>)*w) };
+	pocketfft::shape_t axes{0, 1};
+
+	size_t n_elements = w*h;
+
+	std::vector<std::complex<double>> freq_data(n_elements);
+
+	pocketfft::r2c<double>(shape, stride, stride_freq, axes, FORWARD, heightmap.data(), freq_data.data(), 1.0);
+
+	filterLowFrequencies(w, h, freq_data, sigma);
+
+	pocketfft::c2r<double>(shape, stride_freq, stride, axes, BACKWARD, freq_data.data(), heightmap.data(), 1.0 / n_elements);
+
+	for(size_t i = 0; i < heights.size(); i++)
+		heights[i] = heightmap[i];
 }

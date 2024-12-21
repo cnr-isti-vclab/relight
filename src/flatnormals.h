@@ -5,6 +5,12 @@
 #include <QImage>
 #include <vector>
 
+void flattenRadialNormals(int w, int h, std::vector<float> &normals, double binSize = 20);
+void flattenFourierNormals(int w, int h, std::vector<float> &normals, int padding = 0.2, double sigma = 20, bool exponential = true);
+
+void flattenRadialHeights(int w, int h, std::vector<float> &heights, double binSize = 20);
+void flattenFourierHeights(int w, int h, std::vector<float> &heights, int padding = 0.2, double sigma = 20);
+
 class NormalsImage {
 public:
 	//radial
@@ -25,8 +31,7 @@ public:
 	void save(QString filename);
 
 	//fit a line radial normal divergence, bin size 20px
-	void flattenRadial(double binSize = 20);
-	void flattenFourier(int padding, double sigma = 20);
+
 };
 
 #endif // NORMALSIMAGE_H

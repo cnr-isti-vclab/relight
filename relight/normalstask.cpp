@@ -86,26 +86,15 @@ void NormalsTask::run() {
 	pool.finish();
 
 	if(flatMethod != NONE) {
-		//TODO: do we really need double precision?
-		std::vector<double> normalsd(normals.size());
-		for(uint32_t i = 0; i < normals.size(); i++)
-			normalsd[i] = (double)normals[i];
-
-		NormalsImage ni;
-		ni.load(normalsd, imageSet.width, imageSet.height);
 		switch(flatMethod) {
 		case RADIAL:
-			ni.flattenRadial();
+			flattenRadialNormals(imageSet.width, imageSet.height, normals);
 			break;
 		case FOURIER:
-			//convert radius to frequencies
-			double sigma = 100/flat_radius;
-			ni.flattenFourier(imageSet.width/10, sigma);
+			double sigma = imageSet.width*0.2;
+			flattenFourierNormals(imageSet.width, imageSet.height, normals, sigma);
 			break;
 		}
-		for(uint32_t i = 0; i < ni.normals.size(); i++)
-			normals[i] = (float)ni.normals[i];
-
 	}
 
 

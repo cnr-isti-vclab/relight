@@ -352,8 +352,6 @@ void bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int 
 	Eigen::SparseMatrix<double> A(n*4, n);
 	A.setFromTriplets(triples.begin(), triples.end());
 
-
-
 	Eigen::VectorXd b(n*4);
 	b << -nx, -nx, -ny, -ny;
 

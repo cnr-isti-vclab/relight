@@ -14,7 +14,7 @@ void bni_integrate(std::function<bool(QString s, int n)> progressed,
 								  double k = 2.0,
 								  double tolerance = 1e-5,
 								  double solver_tolerance = 1e-5,
-								  int max_iterations = 150,
+								  int max_iterations = 10,
 								  int max_solver_iterations = 5000);
 
 std::vector<float> bni_pyramid(std::function<bool(QString s, int n)> progressed,
