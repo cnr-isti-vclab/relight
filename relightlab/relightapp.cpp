@@ -4,7 +4,6 @@
 #include "recentprojects.h"
 #include "mainwindow.h"
 #include "preferences.h"
-#include "../src/error.h"
 
 #include <QMessageBox>
 #include <QFileDialog>
