@@ -50,6 +50,7 @@ public:
 	void computeNormals();
 	void depthIntegrateNormals();
 	void resizeNormals(int factorPowerOfTwo, int step = 1);
+	void sampleDepth();
 
 protected:
 	bool loadTiff(const char *tiff, std::vector<float> &elevation, uint32_t &w, uint32_t &h);

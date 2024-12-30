@@ -14,9 +14,9 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}*/
 	//input
-//#define MACOS 1
+#define MACOS 1
 #ifdef MACOS
-	QString base = "/User/erika/Desktop/";
+	QString base = "/Users/erika/Desktop/";
 #else
 	QString base = "/home/erika/";
 #endif
@@ -24,17 +24,17 @@ int main(int argc, char *argv[]) {
 	QString depthmapPath = base + "testcenterRel_copia/photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
 	QString orientationXmlPath = base + "testcenterRel_copia/photogrammetry/Ori-Relative/Orientation-L05C12.tif.xml";
 	QString maskPath = base + "testcenterRel_copia/photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
-
+	Depthmap depth;
 
 	//output
 	QString outputPath = base + "testcenterRel_copia/photogrammetry/depthmap_projectL05C13.png";
 	QString output_mask = base + "testcenterRel_copia/photogrammetry/mask_test.png";
 	QString output_depth = base + "testcenterRel_copia/photogrammetry/depth_test.png";
-	Depthmap depth;
+
 	OrthoDepthmap ortho;
 
 	if(!ortho.load(qPrintable(depthmapPath), qPrintable(maskPath))){
-		cout <<"accidenti" << endl;
+		cout << "accidenti" << endl;
 		return -1;
 	}
 	//ortho.computeNormals();
@@ -49,7 +49,6 @@ int main(int argc, char *argv[]) {
 	//int pixelY = 144;
 	//float pixelZ = 4.5;
 	ortho.projectToCameraDepthMap(camera, outputPath);
-
 	Eigen::Matrix3f rotationMatrix;
 	Eigen::Vector3f center;
 

@@ -405,7 +405,7 @@ bool Depthmap::loadStripedTiff(TIFF* inTiff, std::vector<float> &values, uint32_
 
 bool Depthmap::loadDepth(const char *tiff) {
 	if (!loadTiff(tiff, elevation, width, height)) {
-		cerr << "Failed to load TIFF file: " << tiff << endl;
+		cerr << "Failed to load depth TIFF file: " << tiff << endl;
 		return false;
 	}
 	return true;
@@ -415,7 +415,7 @@ bool Depthmap::loadMask(const char *tifPath){
 	//loaded masq orthoplane MicMac
 	uint32_t w, h;
 	if (!loadTiff(tifPath, mask, w, h)) {
-		cerr << "Failed to load TIFF file: " << tifPath << endl;
+		cerr << "Failed to load mask TIFF file: " << tifPath << endl;
 		return false;
 	}
 	if(width != w || height != h){
@@ -468,15 +468,26 @@ void Depthmap::saveTiff(const char *mask_path, vector<float> &values, uint32_t &
 		cerr << "Could not open mask TIFF file for writing: " << mask_path << endl;
 		return;
 	}
+
+	TIFFSetField(maskTiff, TIFFTAG_IMAGEWIDTH, w);
+	TIFFSetField(maskTiff, TIFFTAG_IMAGELENGTH, h);
+	//TIFFSetField(maskTiff, TIFFTAG_SAMPLESPERPIXEL, 1);
+
 	tsize_t scanLineSize = TIFFScanlineSize(maskTiff);
 	if (scanLineSize == 0) {
-		cerr << "Error computing strip size." << endl;
+		cerr << "Error computing scanline size for 1-bit TIFF." << endl;
 		TIFFClose(maskTiff);
 		return;
 	}
 
+
 	for (uint32_t y = 0; y < h; ++y) {
 		if (bitsPerSample == 32) {
+
+			TIFFSetField(maskTiff, TIFFTAG_BITSPERSAMPLE, 32);
+			TIFFSetField(maskTiff, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
+			TIFFSetField(maskTiff, TIFFTAG_COMPRESSION, COMPRESSION_LZW);
+
 			std::vector<float> stripData(scanLineSize / sizeof(float));
 			for (uint32_t x = 0; x < w; ++x) {
 				uint32_t index = y * w + x;
@@ -484,17 +495,22 @@ void Depthmap::saveTiff(const char *mask_path, vector<float> &values, uint32_t &
 			}
 
 			if (TIFFWriteScanline(maskTiff, stripData.data(), y, 0) < 0) {
-				cerr << "Error writing scanline " << y << " for mask." << std::endl;
+				cerr << "Error writing scanline " << y << " for mask." << endl;
 				TIFFClose(maskTiff);
 				return;
 			}
 		}
 		if (bitsPerSample == 1) {
+
+			TIFFSetField(maskTiff, TIFFTAG_BITSPERSAMPLE, 1);
+			TIFFSetField(maskTiff, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT);
+			TIFFSetField(maskTiff, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
+
 			unsigned char * scanline= new unsigned char [scanLineSize];
 			memset(scanline, 0, scanLineSize);
+
 			for (uint32_t row = 0; row < h; ++row) {
 				// write the current strip
-
 				for (uint32_t col = 0; col < w; ++col) {
 					uint32_t bytePos = col >> 3;
 					uint32_t bitPos = 7 - (col & 7);
@@ -516,13 +532,17 @@ void Depthmap::saveTiff(const char *mask_path, vector<float> &values, uint32_t &
 
 	}
 	TIFFClose(maskTiff);
+
 }
+
 void Depthmap::saveDepth(const char *depth_path){
 	saveTiff(depth_path, elevation, width, height, 32);
 }
-void Depthmap::saveMask(const char *depth_path){
-	saveTiff(depth_path, mask, width, height, 1);
+
+void Depthmap::saveMask(const char *mask_path){
+	saveTiff(mask_path, mask, width, height, 1);
 }
+
 void Depthmap::saveNormals(const char *filename) {
 
 	QImage img(width, height, QImage::Format::Format_ARGB32);
@@ -673,8 +693,28 @@ void Depthmap::resizeNormals (int factorPowerOfTwo, int step) {
 	//depthIntegrateNormals();
 
 }
+/*void Depthmap::sampleDepth() {
+	std::vector<float> sampledDepths;
+	float sum = 0.0f;
 
+	for (int y = 0; y < height; y += 100) {
+		for (int x = 0; x < width; x += 100) {
+			float depth = elevation[y * width + x];
+			sampledDepths.push_back(depth);
 
+			cout << "Sampled Depth at (" << x << ", " << y << "): " << depth << endl;
+
+			sum += depth;
+		}
+	}
+
+	float dz = (sampledDepths.size() > 0) ? (sum / sampledDepths.size()) : 0.0f;
+	cout << "Average Depth (DZ): " << dz << endl;
+
+	for (int i = 0; i < sampledDepths.size(); i++) {
+		cout << "Sampled Depth[" << i << "]: " << sampledDepths[i] << endl;
+	}
+}*/
 
 //take the x=160,14 e y=140
 //the coordinates of the pixel step 0.016 are in the depth map xml Z_num etc.
@@ -733,13 +773,13 @@ bool OrthoDepthmap::load(const char *depth_path, const char *mask_path){
 
 	QString qdepth_path = QString(depth_path);
 	if(!loadDepth(qdepth_path.toStdString().c_str())){
-		cerr << "Failed to load tiff file: " << qdepth_path.toStdString() << endl;
+		cerr << "Failed to load ortho depth tiff file: " << qdepth_path.toStdString() << endl;
 		return false;
 	}
 
 	QString qmask_path = QString(mask_path);
 	if(!loadMask(qmask_path.toStdString().c_str())){
-		cerr << "Failed to load tiff file: " << qmask_path.toStdString() << endl;
+		cerr << "Failed to load ortho mask tiff file: " << qmask_path.toStdString() << endl;
 		return false;
 	}
 
