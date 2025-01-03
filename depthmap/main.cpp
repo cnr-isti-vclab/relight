@@ -28,8 +28,8 @@ int main(int argc, char *argv[]) {
 
 	//output
 	QString outputPath = base + "testcenterRel_copia/photogrammetry/depthmap_projectL05C13.png";
-	QString output_mask = base + "testcenterRel_copia/photogrammetry/mask_test.png";
-	QString output_depth = base + "testcenterRel_copia/photogrammetry/depth_test.png";
+	QString output_mask = base + "testcenterRel_copia/photogrammetry/mask_test.tif";
+	QString output_depth = base + "testcenterRel_copia/photogrammetry/depth_test.tif";
 
 	OrthoDepthmap ortho;
 
@@ -40,6 +40,7 @@ int main(int argc, char *argv[]) {
 	//ortho.computeNormals();
 	//ortho.saveNormals(qPrintable(base + "testcenterRel_copia/photogrammetry/original.png"));
 	//ortho.saveObj(qPrintable(base + "testcenterRel_copia/photogrammetry/original.obj"));
+
 	ortho.saveDepth(qPrintable(output_depth));
 	ortho.saveMask(qPrintable(output_mask));
 

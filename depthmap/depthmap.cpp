@@ -223,7 +223,8 @@ bool Depthmap::loadTiff(const char *tiff, vector<float> &values, uint32_t &w, ui
 
 	uint16_t samplesPerPixel = 1;
 	TIFFGetField(inTiff, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
-	if(samplesPerPixel != 1) {
+	if(samplesPerPixel !=
+		1) {
 		cerr << "Not a depthmap, expecting just 1 channel" << endl;
 		TIFFClose(inTiff);
 		return false;
@@ -244,6 +245,7 @@ bool Depthmap::loadTiff(const char *tiff, vector<float> &values, uint32_t &w, ui
 		TIFFClose(inTiff);
 		return false;
 	}
+
 
 	values.resize(w * h);
 
@@ -427,10 +429,10 @@ bool Depthmap::loadMask(const char *tifPath){
 	return true;
 
 }
+
 //1. scrivere la depth map e la masq fai tif .save con i nomi.
 //2. prendi la superficie dell rti e trovi la media delle due superfici della depth e della rti. sottraiamo la media del rti per vedere se hanno la stessa media.
 //void Depthmap::
-
 
 bool Depthmap::loadNormals(const char *normals_path){
 
@@ -469,13 +471,25 @@ void Depthmap::saveTiff(const char *mask_path, vector<float> &values, uint32_t &
 		return;
 	}
 
-	TIFFSetField(maskTiff, TIFFTAG_IMAGEWIDTH, w);
-	TIFFSetField(maskTiff, TIFFTAG_IMAGELENGTH, h);
-	//TIFFSetField(maskTiff, TIFFTAG_SAMPLESPERPIXEL, 1);
+	TIFFSetField(maskTiff, TIFFTAG_IMAGEWIDTH, &w);
+	TIFFSetField(maskTiff, TIFFTAG_IMAGELENGTH, &h);
+	TIFFSetField(maskTiff, TIFFTAG_SAMPLESPERPIXEL, 1);
+
+	if (bitsPerSample == 32) {
+		TIFFSetField(maskTiff, TIFFTAG_BITSPERSAMPLE, bitsPerSample);
+		TIFFSetField(maskTiff, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
+		TIFFSetField(maskTiff, TIFFTAG_COMPRESSION, COMPRESSION_LZW);
+	} else if (bitsPerSample == 1) {
+		TIFFSetField(maskTiff, TIFFTAG_BITSPERSAMPLE, 1);
+		TIFFSetField(maskTiff, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT);
+		TIFFSetField(maskTiff, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
+	}
+
+
 
 	tsize_t scanLineSize = TIFFScanlineSize(maskTiff);
 	if (scanLineSize == 0) {
-		cerr << "Error computing scanline size for 1-bit TIFF." << endl;
+		cerr << "Error computing scanline size." << endl;
 		TIFFClose(maskTiff);
 		return;
 	}
@@ -483,10 +497,6 @@ void Depthmap::saveTiff(const char *mask_path, vector<float> &values, uint32_t &
 
 	for (uint32_t y = 0; y < h; ++y) {
 		if (bitsPerSample == 32) {
-
-			TIFFSetField(maskTiff, TIFFTAG_BITSPERSAMPLE, 32);
-			TIFFSetField(maskTiff, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
-			TIFFSetField(maskTiff, TIFFTAG_COMPRESSION, COMPRESSION_LZW);
 
 			std::vector<float> stripData(scanLineSize / sizeof(float));
 			for (uint32_t x = 0; x < w; ++x) {
@@ -501,10 +511,6 @@ void Depthmap::saveTiff(const char *mask_path, vector<float> &values, uint32_t &
 			}
 		}
 		if (bitsPerSample == 1) {
-
-			TIFFSetField(maskTiff, TIFFTAG_BITSPERSAMPLE, 1);
-			TIFFSetField(maskTiff, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT);
-			TIFFSetField(maskTiff, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
 
 			unsigned char * scanline= new unsigned char [scanLineSize];
 			memset(scanline, 0, scanLineSize);
@@ -529,11 +535,11 @@ void Depthmap::saveTiff(const char *mask_path, vector<float> &values, uint32_t &
 			}
 			delete[] scanline;
 		}
+		TIFFClose(maskTiff);
 
 	}
-	TIFFClose(maskTiff);
-
 }
+
 
 void Depthmap::saveDepth(const char *depth_path){
 	saveTiff(depth_path, elevation, width, height, 32);
@@ -693,7 +699,7 @@ void Depthmap::resizeNormals (int factorPowerOfTwo, int step) {
 	//depthIntegrateNormals();
 
 }
-/*void Depthmap::sampleDepth() {
+void Depthmap::sampleDepth() {
 	std::vector<float> sampledDepths;
 	float sum = 0.0f;
 
@@ -714,7 +720,7 @@ void Depthmap::resizeNormals (int factorPowerOfTwo, int step) {
 	for (int i = 0; i < sampledDepths.size(); i++) {
 		cout << "Sampled Depth[" << i << "]: " << sampledDepths[i] << endl;
 	}
-}*/
+}
 
 //take the x=160,14 e y=140
 //the coordinates of the pixel step 0.016 are in the depth map xml Z_num etc.
