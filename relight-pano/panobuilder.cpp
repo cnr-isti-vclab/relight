@@ -215,6 +215,7 @@ void PanoBuilder::process(Steps starting_step, bool stop){
 
 	}
 }
+
 void PanoBuilder::means(){
 	//1. iterare sulle sottodir di datasets
 	QStringList subDirNames = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
@@ -286,6 +287,9 @@ void PanoBuilder::rti(){
 	executeProcess(relight_merge_path, arguments_merge);
 
 }
+/*Tie Points computation using Tapioca: Tapioca runs Pastis program (for tie points matching) using SIFT algorithm an
+transforms the pictures (creating .tif files in grayscale) to make them usable for the
+different steps of micmac*/
 
 void PanoBuilder::tapioca(){
 
@@ -347,7 +351,7 @@ void PanoBuilder::schnaps(){
 	}
 }
 
-
+// different modes for the calibration/orientation
 void PanoBuilder::tapas(){
 
 	QDir currentDir = cd("photogrammetry");
@@ -373,7 +377,7 @@ void PanoBuilder::apericloud(){
 		throw QString("Homol directory does not exist in current directory: ") + homolDir.absolutePath();
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "AperiCloud" << ".*" + format << "Relative";
+	arguments << "AperiCloud" << ".*" + format << "Relative" << "Bin=0" << "SH=_mini" << "WithCam=0";
 
 	executeProcess(program, arguments);
 }

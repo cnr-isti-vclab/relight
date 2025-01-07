@@ -81,6 +81,7 @@ per ogni punto c è un dz ci sono freq lunghe e freq corte, per il dz portare le
 I buchi: Laplaciano è un operatore cjhe trasforma un campo di valori come nel gas e il calore si espande. prendo un punto e faccio la media dei 4 valori intorno ecc.
 fino a che non cambia più. per frequenze basse lo fccio su una griglia campionata, fai l'interpolazione bilineare. dz la apllico a rti
 
+3b. corrispondenze salvate nel xml
 
 
 interpolazione rti e masq calcoli i puntiprendi la media nelle zone dove non hai il fit perchè c è un buco. Inverso della proiezione:
@@ -98,12 +99,25 @@ fai la formula inversa, inverti la matrice. interpola bilinarmente dati 4 valori
 3a. devi salvarla come img per vedere cosa viene (trova min e max e scala * 255).
 6a. salva come img.
 
+
+
+
+1b. prendi i punti in Apericloud (lo lanci per il formato testo), prendiamo i punti e li proiettiamo,(stessa per la proiezione delle coord 3d)
+prendi un punto se va fuori si butta, sennò vediamo in che punto della griglia cade, per ogni blocco griglia cerchiamo di capire
+la funzione, h di partenza e h di arrivo quindi abbiamo la coppia (la z si ricostruisce dall'altro lato), quando non si ha niente nei quadratini
+serve interpolare; quando c è solo una coppia non si può stimare niente; con più coppie si stiamano la A e la B. (devi fare la regressione
+lineare per la serie di coppie per trovare a e b). Pesa i punti.
+2b. valori calcolati e non, per quelli non si fa la diffusione laplaciana, peso che va per distanza, stessa riga e stessa colonna.
+3b. prendi tutti i pixel
+
  */
 	/*int factorPowerOfTwo = 1;
 	depth.resizeNormals(factorPowerOfTwo, 2);
 	depth.depthIntegrateNormals();
 	depth.saveNormals(base + "testcenterRel_copia/photogrammetry/resized_integrated2.jpg");
 	depth.saveObj(base + "testcenterRel_copia/photogrammetry/resized_integrated2.obj");*/
+
+
 
 
 
