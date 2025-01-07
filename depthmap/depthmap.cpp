@@ -223,8 +223,7 @@ bool Depthmap::loadTiff(const char *tiff, vector<float> &values, uint32_t &w, ui
 
 	uint16_t samplesPerPixel = 1;
 	TIFFGetField(inTiff, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
-	if(samplesPerPixel !=
-		1) {
+	if(samplesPerPixel !=1) {
 		cerr << "Not a depthmap, expecting just 1 channel" << endl;
 		TIFFClose(inTiff);
 		return false;
@@ -425,7 +424,6 @@ bool Depthmap::loadMask(const char *tifPath){
 		return false;
 	}
 
-
 	return true;
 
 }
@@ -471,8 +469,8 @@ void Depthmap::saveTiff(const char *mask_path, vector<float> &values, uint32_t &
 		return;
 	}
 
-	TIFFSetField(maskTiff, TIFFTAG_IMAGEWIDTH, &w);
-	TIFFSetField(maskTiff, TIFFTAG_IMAGELENGTH, &h);
+	TIFFSetField(maskTiff, TIFFTAG_IMAGEWIDTH, w);
+	TIFFSetField(maskTiff, TIFFTAG_IMAGELENGTH, h);
 	TIFFSetField(maskTiff, TIFFTAG_SAMPLESPERPIXEL, 1);
 
 	if (bitsPerSample == 32) {
@@ -513,31 +511,31 @@ void Depthmap::saveTiff(const char *mask_path, vector<float> &values, uint32_t &
 		if (bitsPerSample == 1) {
 
 			unsigned char * scanline= new unsigned char [scanLineSize];
+
 			memset(scanline, 0, scanLineSize);
+			// write the current strip
+			for (uint32_t col = 0; col < w; ++col) {
+				uint32_t bytePos = col >> 3;
+				uint32_t bitPos = 7 - (col & 7);
+				uint32_t dstIndex = y * w + col;
 
-			for (uint32_t row = 0; row < h; ++row) {
-				// write the current strip
-				for (uint32_t col = 0; col < w; ++col) {
-					uint32_t bytePos = col >> 3;
-					uint32_t bitPos = 7 - (col & 7);
-					uint32_t dstIndex = row * w + col;
-
-					//values[dstIndex] = (scanline[bytePos] & (1 << bitPos)) != 0;
-					if(values[dstIndex]){
-						scanline[bytePos] |= (1 << bitPos);
-					}
-				}
-				if (TIFFWriteScanline(maskTiff, scanline, y, 0) < 0) {
-					cerr << "Error writing strip " << row << endl;
-					TIFFClose(maskTiff);
-					return;
+				//values[dstIndex] = (scanline[bytePos] & (1 << bitPos)) != 0;
+				if(values[dstIndex] != 0.0f){
+					scanline[bytePos] |= (1 << bitPos);
 				}
 			}
+			if (TIFFWriteScanline(maskTiff, scanline, y, 0) < 0) {
+				cerr << "Error writing strip " << y << endl;
+				TIFFClose(maskTiff);
+				return;
+			}
+
 			delete[] scanline;
 		}
-		TIFFClose(maskTiff);
+
 
 	}
+	TIFFClose(maskTiff);
 }
 
 
