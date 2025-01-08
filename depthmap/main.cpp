@@ -24,12 +24,14 @@ int main(int argc, char *argv[]) {
 	QString depthmapPath = base + "testcenterRel_copia/photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
 	QString orientationXmlPath = base + "testcenterRel_copia/photogrammetry/Ori-Relative/Orientation-L05C12.tif.xml";
 	QString maskPath = base + "testcenterRel_copia/photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
+	QString plyFile = base +"testcenterRel_copia/photogrammetry/AperiCloud_Relative__mini.ply";
 	Depthmap depth;
 
 	//output
 	QString outputPath = base + "testcenterRel_copia/photogrammetry/depthmap_projectL05C13.png";
 	QString output_mask = base + "testcenterRel_copia/photogrammetry/mask_test.tif";
 	QString output_depth = base + "testcenterRel_copia/photogrammetry/depth_test.tif";
+	QString output_text = base + "testcenterRel_copia/photogrammetry/point.txt";
 
 	OrthoDepthmap ortho;
 
@@ -43,6 +45,7 @@ int main(int argc, char *argv[]) {
 
 	ortho.saveDepth(qPrintable(output_depth));
 	ortho.saveMask(qPrintable(output_mask));
+	ortho.loadText(qPrintable(plyFile), qPrintable(output_text));
 
 	Camera camera;
 	camera.loadXml(orientationXmlPath);

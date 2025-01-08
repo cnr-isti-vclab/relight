@@ -41,6 +41,7 @@ public:
 	bool loadDepth(const char *depth_path);
 	bool loadMask(const char *mask_path);
 	bool loadNormals(const char *normals_path);
+	bool loadPly(const char *textPath, const char *outputPath);
 	void saveDepth(const char *depth_path);
 	void saveMask(const char *depth_path);
 	void saveNormals(const char *normals_path);
@@ -50,7 +51,7 @@ public:
 	void computeNormals();
 	void depthIntegrateNormals();
 	void resizeNormals(int factorPowerOfTwo, int step = 1);
-	void sampleDepth();
+
 
 protected:
 	bool loadTiff(const char *tiff, std::vector<float> &elevation, uint32_t &w, uint32_t &h);

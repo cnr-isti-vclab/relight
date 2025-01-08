@@ -7,6 +7,7 @@
 #include "depthmap.h"
 #include "../src/bni_normal_integration.h"
 #include <QFile>
+#include <QRegularExpression>
 #include <fstream>
 
 using namespace std;
@@ -697,28 +698,53 @@ void Depthmap::resizeNormals (int factorPowerOfTwo, int step) {
 	//depthIntegrateNormals();
 
 }
-void Depthmap::sampleDepth() {
-	std::vector<float> sampledDepths;
-	float sum = 0.0f;
+bool Depthmap::loadPly(const char *textPath, const char *outputPath){
 
-	for (int y = 0; y < height; y += 100) {
-		for (int x = 0; x < width; x += 100) {
-			float depth = elevation[y * width + x];
-			sampledDepths.push_back(depth);
+	//apri file di testo e scarta tutto quello che non è un numero. fai un char vettore di punti
+	QFile file(textPath);
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		cerr << "Error opening input file: " << textPath << endl;
+		return false;
+	}
 
-			cout << "Sampled Depth at (" << x << ", " << y << "): " << depth << endl;
+	QTextStream in(&file);
+	QVector<QString> validLines;
 
-			sum += depth;
+	while (!in.atEnd()) {
+		QString line = in.readLine().trimmed();
+		QStringList parts = line.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+
+
+		if (parts.size() >= 3) {
+			bool isNumber1 = false, isNumber2 = false, isNumber3 = false;
+
+			parts[0].toDouble(&isNumber1);
+			parts[1].toDouble(&isNumber2);
+			parts[2].toDouble(&isNumber3);
+
+			if (isNumber1 && isNumber2 && isNumber3) {
+				validLines.append(line);
+			}
 		}
 	}
 
-	float dz = (sampledDepths.size() > 0) ? (sum / sampledDepths.size()) : 0.0f;
-	cout << "Average Depth (DZ): " << dz << endl;
+	QFile outFile(outputPath);
+	if (outFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		QTextStream out(&outFile);
 
-	for (int i = 0; i < sampledDepths.size(); i++) {
-		cout << "Sampled Depth[" << i << "]: " << sampledDepths[i] << endl;
+		for (const QString &line : validLines) {
+			out << line << "\n";
+		}
+
+		cout << "Punti salvati in " << outputPath << endl;
+	} else {
+		cerr << "Errore nell'aprire il file di output: " << outputPath << endl;
+		return false;
 	}
+
+	return true;
 }
+
 
 //take the x=160,14 e y=140
 //the coordinates of the pixel step 0.016 are in the depth map xml Z_num etc.
