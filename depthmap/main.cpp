@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}*/
 	//input
-#define MACOS 1
+//#define MACOS 1
 #ifdef MACOS
 	QString base = "/Users/erika/Desktop/";
 #else
@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
 	QString depthmapPath = base + "testcenterRel_copia/photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
 	QString orientationXmlPath = base + "testcenterRel_copia/photogrammetry/Ori-Relative/Orientation-L05C12.tif.xml";
 	QString maskPath = base + "testcenterRel_copia/photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
-	QString plyFile = base +"testcenterRel_copia/photogrammetry/AperiCloud_Relative__mini.ply";
+	QString plyFile = base +"testcenterRel_copia/photogrammetry/AperiCloud_Relative_mini.ply";
 	Depthmap depth;
 
 	//output

@@ -698,7 +698,7 @@ void Depthmap::resizeNormals (int factorPowerOfTwo, int step) {
 	//depthIntegrateNormals();
 
 }
-bool Depthmap::loadPly(const char *textPath, const char *outputPath){
+bool Depthmap::loadText(const char *textPath, const char *outputPath){
 
 	//apri file di testo e scarta tutto quello che non è un numero. fai un char vettore di punti
 	QFile file(textPath);
@@ -713,197 +713,209 @@ bool Depthmap::loadPly(const char *textPath, const char *outputPath){
 	while (!in.atEnd()) {
 		QString line = in.readLine().trimmed();
 		QStringList parts = line.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+		if (line.isEmpty() || !line[0].isDigit() && line[0] != '-' && line[0] != '+') {
+			continue;
+		}
+		QVector<QString> numbers;
 
-
-		if (parts.size() >= 3) {
-			bool isNumber1 = false, isNumber2 = false, isNumber3 = false;
-
-			parts[0].toDouble(&isNumber1);
-			parts[1].toDouble(&isNumber2);
-			parts[2].toDouble(&isNumber3);
-
-			if (isNumber1 && isNumber2 && isNumber3) {
-				validLines.append(line);
+		bool isValid = true;
+		for (int i = 0; i < 3 && i < parts.size(); ++i) {
+			bool isNumber = false;
+			parts[i].toFloat(&isNumber);
+			if (!isNumber) {
+				isValid = false;
+				break;
+			}
+		}
+		if (isValid) {
+			for (const QString &part : parts) {
+				bool isNumber = false;
+				part.toFloat(&isNumber);
+				if (isNumber) {
+					numbers.append(part);
+				}
+			}
+			if (!numbers.isEmpty()) {
+				validLines.append(numbers.join(" "));
 			}
 		}
 	}
 
 	QFile outFile(outputPath);
-	if (outFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-		QTextStream out(&outFile);
-
-		for (const QString &line : validLines) {
-			out << line << "\n";
-		}
-
-		cout << "Punti salvati in " << outputPath << endl;
-	} else {
+	if (!outFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		cerr << "Errore nell'aprire il file di output: " << outputPath << endl;
 		return false;
 	}
+	QTextStream out(&outFile);
+	for (const QString &line : validLines) {
+		out << line << "\n";
+	}
+
+	cout << "Punti salvati in " << outputPath << endl;
 
 	return true;
 }
 
 
-//take the x=160,14 e y=140
-//the coordinates of the pixel step 0.016 are in the depth map xml Z_num etc.
 
-/* ---------------------------------------------------------------------------------------------------------------------------*/
-//start OrthoDepthMap class
+	//take the x=160,14 e y=140
+	//the coordinates of the pixel step 0.016 are in the depth map xml Z_num etc.
 
-bool OrthoDepthmap::loadXml(const char *xmlPath){
-	//depthmap in Malt Z deZoom ecc
-	QFile file(xmlPath);
-	if (!file.open(QIODevice::ReadOnly)) {
-		cerr << "Cannot open XML file: " << xmlPath << endl;
-		return false;
-	}
+	/* ---------------------------------------------------------------------------------------------------------------------------*/
+	//start OrthoDepthMap class
 
-	QDomDocument doc;
-	doc.setContent(&file);
-
-	QDomElement root = doc.documentElement();
-	QDomNodeList originePlaniNodes = root.elementsByTagName("OriginePlani");
-	QDomNodeList resolutionPlaniNodes = root.elementsByTagName("ResolutionPlani");
-	QDomNodeList origineAltiNodes = root.elementsByTagName("OrigineAlti");
-	QDomNodeList resolutionAltiNodes = root.elementsByTagName("ResolutionAlti");
-
-
-	if (originePlaniNodes.isEmpty() || resolutionPlaniNodes.isEmpty() ||
-		origineAltiNodes.isEmpty() || resolutionAltiNodes.isEmpty()) {
-		cerr << "OriginePlani, ResolutionPlani, OrigineAlti, or ResolutionAlti not found in XML." << endl;
-		return false;
-
-	}
-
-	//  <OriginePlani>-2.72 3.04</OriginePlani>
-	QStringList origineValues = originePlaniNodes.at(0).toElement().text().split(" ");
-	if (origineValues.size() >= 2) {
-		origin[0] = origineValues.at(0).toFloat();
-		origin[1] = origineValues.at(1).toFloat();
-	}
-	QStringList resolutionValues = resolutionPlaniNodes.at(0).toElement().text().split(" ");
-	if (resolutionValues.size() >= 2) {
-		resolution[0] = resolutionValues.at(0).toFloat();
-		resolution[1] = resolutionValues.at(1).toFloat();
-	}
-
-	// <ResolutionPlani>0.128 -0.128</ResolutionPlani> passo
-
-	//resAlti e oriAlti
-	origin[2] = origineAltiNodes.at(0).toElement().text().toFloat();
-	resolution[2] = resolutionAltiNodes.at(0).toElement().text().toFloat();
-
-	return true;
-
-}
-
-bool OrthoDepthmap::load(const char *depth_path, const char *mask_path){
-
-	QString qdepth_path = QString(depth_path);
-	if(!loadDepth(qdepth_path.toStdString().c_str())){
-		cerr << "Failed to load ortho depth tiff file: " << qdepth_path.toStdString() << endl;
-		return false;
-	}
-
-	QString qmask_path = QString(mask_path);
-	if(!loadMask(qmask_path.toStdString().c_str())){
-		cerr << "Failed to load ortho mask tiff file: " << qmask_path.toStdString() << endl;
-		return false;
-	}
-
-	QString xmlPath = qdepth_path.left(qdepth_path.lastIndexOf('.')) + ".xml";
-	if (!loadXml(xmlPath.toStdString().c_str())) {
-		cerr << "Failed to load XML file: " << xmlPath.toStdString() << endl;
-		return false;
-	}
-	return true;
-
-}
-Eigen::Vector3f OrthoDepthmap::pixelToRealCoordinates(int pixelX, int pixelY, float pixelZ) {
-
-	// converto in punti 3d. origine dell'img + passoX * 160x
-	float realX = origin[0] + resolution[0] * pixelX;
-	float realY = realY = origin[1] + resolution[1] * pixelY;
-	float realZ = origin[2] + resolution[2] * pixelZ;
-
-	return Eigen::Vector3f(realX, realY, realZ);
-}
-
-
-void OrthoDepthmap::saveObj(const char *filename){
-	// use QFile for write the file and after QTextStream
-	QFile file(filename);
-	if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-		qDebug() << "Cannot open file for writing:" << filename;
-		return;
-	}
-	QTextStream out(&file);
-
-	for (uint32_t y = 0; y < height; y++) {
-		for (uint32_t x = 0; x < width; x++) {
-			float z = elevation[x + y * width];
-			Eigen::Vector3f realPos = pixelToRealCoordinates(x, y, z);
-			//obj coordinates of a point v first string v second string etc. and then exit call in main
-			out << "v " << realPos.x() << " " << realPos.y() << " " << realPos.z() << "\n";
+	bool OrthoDepthmap::loadXml(const char *xmlPath){
+		//depthmap in Malt Z deZoom ecc
+		QFile file(xmlPath);
+		if (!file.open(QIODevice::ReadOnly)) {
+			cerr << "Cannot open XML file: " << xmlPath << endl;
+			return false;
 		}
-	}
-}
-void OrthoDepthmap::projectToCameraDepthMap(const Camera& camera, const QString& outputPath) {
 
-	QImage depthMapImage(camera.width, camera.height, QImage::Format_RGB888);
-	depthMapImage.fill(qRgb(0, 0, 0));
-	//find the minimum and maximum for the Z coordinates
-	float minZ = std::numeric_limits<float>::max();
-	float maxZ = std::numeric_limits<float>::lowest();
-	for (int y = 0; y < height; y++) {
-		for (int x = 0; x < width; x++) {
-			float pixelZ = elevation[x + y * width];
+		QDomDocument doc;
+		doc.setContent(&file);
 
-			Eigen::Vector3f realCoordinates = pixelToRealCoordinates(x, y, pixelZ);
-			Eigen::Vector3f imageCoords = camera.projectionToImage(realCoordinates);
-			minZ = std::min(minZ, imageCoords[2]);
-			maxZ = std::max(maxZ, imageCoords[2]);
+		QDomElement root = doc.documentElement();
+		QDomNodeList originePlaniNodes = root.elementsByTagName("OriginePlani");
+		QDomNodeList resolutionPlaniNodes = root.elementsByTagName("ResolutionPlani");
+		QDomNodeList origineAltiNodes = root.elementsByTagName("OrigineAlti");
+		QDomNodeList resolutionAltiNodes = root.elementsByTagName("ResolutionAlti");
+
+
+		if (originePlaniNodes.isEmpty() || resolutionPlaniNodes.isEmpty() ||
+			origineAltiNodes.isEmpty() || resolutionAltiNodes.isEmpty()) {
+			cerr << "OriginePlani, ResolutionPlani, OrigineAlti, or ResolutionAlti not found in XML." << endl;
+			return false;
 
 		}
+
+		//  <OriginePlani>-2.72 3.04</OriginePlani>
+		QStringList origineValues = originePlaniNodes.at(0).toElement().text().split(" ");
+		if (origineValues.size() >= 2) {
+			origin[0] = origineValues.at(0).toFloat();
+			origin[1] = origineValues.at(1).toFloat();
+		}
+		QStringList resolutionValues = resolutionPlaniNodes.at(0).toElement().text().split(" ");
+		if (resolutionValues.size() >= 2) {
+			resolution[0] = resolutionValues.at(0).toFloat();
+			resolution[1] = resolutionValues.at(1).toFloat();
+		}
+
+		// <ResolutionPlani>0.128 -0.128</ResolutionPlani> passo
+
+		//resAlti e oriAlti
+		origin[2] = origineAltiNodes.at(0).toElement().text().toFloat();
+		resolution[2] = resolutionAltiNodes.at(0).toElement().text().toFloat();
+
+		return true;
+
 	}
-	if (minZ >= maxZ) {
-		qWarning("MinZ and MaxZ invalid. Skip depth map generation.");
-		return;
+
+	bool OrthoDepthmap::load(const char *depth_path, const char *mask_path){
+
+		QString qdepth_path = QString(depth_path);
+		if(!loadDepth(qdepth_path.toStdString().c_str())){
+			cerr << "Failed to load ortho depth tiff file: " << qdepth_path.toStdString() << endl;
+			return false;
+		}
+
+		QString qmask_path = QString(mask_path);
+		if(!loadMask(qmask_path.toStdString().c_str())){
+			cerr << "Failed to load ortho mask tiff file: " << qmask_path.toStdString() << endl;
+			return false;
+		}
+
+		QString xmlPath = qdepth_path.left(qdepth_path.lastIndexOf('.')) + ".xml";
+		if (!loadXml(xmlPath.toStdString().c_str())) {
+			cerr << "Failed to load XML file: " << xmlPath.toStdString() << endl;
+			return false;
+		}
+		return true;
+
 	}
-	for (int y = 0; y < height; y++) {
-		for (int x = 0; x < width; x++) {
-			if(mask[x+ y *width]==0.0f)
-				continue;
-			float pixelZ = elevation[x + y * width];
+	Eigen::Vector3f OrthoDepthmap::pixelToRealCoordinates(int pixelX, int pixelY, float pixelZ) {
 
-			Eigen::Vector3f realCoordinates = pixelToRealCoordinates(x, y, pixelZ);
-			Eigen::Vector3f imageCoords = camera.projectionToImage(realCoordinates);
-			int pixelValue = (int)round(((imageCoords[2] - minZ) / (maxZ - minZ)) * 255);
-			pixelValue = std::min(std::max(pixelValue, 0), 255);
+		// converto in punti 3d. origine dell'img + passoX * 160x
+		float realX = origin[0] + resolution[0] * pixelX;
+		float realY = realY = origin[1] + resolution[1] * pixelY;
+		float realZ = origin[2] + resolution[2] * pixelZ;
 
-			int imageX = (int)round(imageCoords[0]);
-			int imageY = (int)round(imageCoords[1]);
+		return Eigen::Vector3f(realX, realY, realZ);
+	}
 
-			if (imageX >= 0 && imageX < camera.width && imageY >= 0 && imageY < camera.height) {
-				depthMapImage.setPixel(imageX, imageY, qRgb(pixelValue, pixelValue, pixelValue));
-				//cout << "Pixel projected (" << x << ", " << y << ") -> (" << imageX << ", " << imageY << "), Z = "
-				// << pixelZ << ", pixelValue = " << pixelValue << endl;
+
+	void OrthoDepthmap::saveObj(const char *filename){
+		// use QFile for write the file and after QTextStream
+		QFile file(filename);
+		if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			qDebug() << "Cannot open file for writing:" << filename;
+			return;
+		}
+		QTextStream out(&file);
+
+		for (uint32_t y = 0; y < height; y++) {
+			for (uint32_t x = 0; x < width; x++) {
+				float z = elevation[x + y * width];
+				Eigen::Vector3f realPos = pixelToRealCoordinates(x, y, z);
+				//obj coordinates of a point v first string v second string etc. and then exit call in main
+				out << "v " << realPos.x() << " " << realPos.y() << " " << realPos.z() << "\n";
 			}
 		}
 	}
-	depthMapImage.save(outputPath, "png");
-}
-void OrthoDepthmap::resizeNormals (int factorPowerOfTwo, int step) {
-	int factor = 1 << factorPowerOfTwo;
-	Depthmap::resizeNormals(factorPowerOfTwo, step);
-	resolution *= factor;
-	origin /= factor;
-}
+	void OrthoDepthmap::projectToCameraDepthMap(const Camera& camera, const QString& outputPath) {
+
+		QImage depthMapImage(camera.width, camera.height, QImage::Format_RGB888);
+		depthMapImage.fill(qRgb(0, 0, 0));
+		//find the minimum and maximum for the Z coordinates
+		float minZ = std::numeric_limits<float>::max();
+		float maxZ = std::numeric_limits<float>::lowest();
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				float pixelZ = elevation[x + y * width];
+
+				Eigen::Vector3f realCoordinates = pixelToRealCoordinates(x, y, pixelZ);
+				Eigen::Vector3f imageCoords = camera.projectionToImage(realCoordinates);
+				minZ = std::min(minZ, imageCoords[2]);
+				maxZ = std::max(maxZ, imageCoords[2]);
+
+			}
+		}
+		if (minZ >= maxZ) {
+			qWarning("MinZ and MaxZ invalid. Skip depth map generation.");
+			return;
+		}
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				if(mask[x+ y *width]==0.0f)
+					continue;
+				float pixelZ = elevation[x + y * width];
+
+				Eigen::Vector3f realCoordinates = pixelToRealCoordinates(x, y, pixelZ);
+				Eigen::Vector3f imageCoords = camera.projectionToImage(realCoordinates);
+				int pixelValue = (int)round(((imageCoords[2] - minZ) / (maxZ - minZ)) * 255);
+				pixelValue = std::min(std::max(pixelValue, 0), 255);
+
+				int imageX = (int)round(imageCoords[0]);
+				int imageY = (int)round(imageCoords[1]);
+
+				if (imageX >= 0 && imageX < camera.width && imageY >= 0 && imageY < camera.height) {
+					depthMapImage.setPixel(imageX, imageY, qRgb(pixelValue, pixelValue, pixelValue));
+					//cout << "Pixel projected (" << x << ", " << y << ") -> (" << imageX << ", " << imageY << "), Z = "
+					// << pixelZ << ", pixelValue = " << pixelValue << endl;
+				}
+			}
+		}
+		depthMapImage.save(outputPath, "png");
+	}
+	void OrthoDepthmap::resizeNormals (int factorPowerOfTwo, int step) {
+		int factor = 1 << factorPowerOfTwo;
+		Depthmap::resizeNormals(factorPowerOfTwo, step);
+		resolution *= factor;
+		origin /= factor;
+	}
 
 
 
-/* ---------------------------------------------------------------------------------------------------------------------------*/
+	/* ---------------------------------------------------------------------------------------------------------------------------*/
 
 

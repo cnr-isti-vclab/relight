@@ -41,7 +41,7 @@ public:
 	bool loadDepth(const char *depth_path);
 	bool loadMask(const char *mask_path);
 	bool loadNormals(const char *normals_path);
-	bool loadPly(const char *textPath, const char *outputPath);
+	bool loadText(const char *textPath, const char *outputPath);
 	void saveDepth(const char *depth_path);
 	void saveMask(const char *depth_path);
 	void saveNormals(const char *normals_path);
