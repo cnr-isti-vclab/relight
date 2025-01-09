@@ -195,7 +195,7 @@ void RelightApp::newProject() {
 			QMessageBox::critical(mainwindow, "Resolution problem", "Not all of the images in the folder have the same resolution,\nyou might need to fix this problem manually.");
 	}
 
-
+	project_filename = QString();
 	qRelightApp->setProject(project);
 
 	//Check for .lp files in the folder
