@@ -40,11 +40,8 @@ public:
 	LightsGeometry(QWidget *parent = nullptr);
 	~LightsGeometry();
 
-	void init();
-
-
 public slots:
-	void setDome(Dome dome);        //when a dome is selected
+	void init();
 	void setFromSpheres();              //when reflective spheres reflections have been processed
 	void setSpherical(QAbstractButton *button);
 	void exportDome();

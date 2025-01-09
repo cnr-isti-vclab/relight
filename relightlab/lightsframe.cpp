@@ -37,7 +37,7 @@ LightsFrame::LightsFrame() {
 	content->addStretch();
 
 	connect(sphere_panel, SIGNAL(updated()), geometry, SLOT(setFromSpheres()));
-	connect(dome_panel, SIGNAL(accept(Dome)), geometry, SLOT(setDome(Dome)));
+	connect(dome_panel, SIGNAL(updated()), geometry, SLOT(init()));
 }
 
 void LightsFrame::clear() {

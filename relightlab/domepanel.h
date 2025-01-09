@@ -23,7 +23,7 @@ public slots:
 	void updateDomeList();
 
 signals:
-	void accept(Dome dome);
+	void updated();
 
 private:
 	Dome dome;
