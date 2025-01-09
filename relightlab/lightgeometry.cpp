@@ -132,10 +132,6 @@ void LightsGeometry::init() {
 	directions_view->initFromDome(dome);
 }
 
-void LightsGeometry::setDome(Dome dome) {
-	qRelightApp->project().dome = dome;
-	init();
-}
 
 void LightsGeometry::setFromSpheres() {
 	//get spheres & lens from project

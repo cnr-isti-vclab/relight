@@ -120,7 +120,7 @@ void DomePanel::loadLP(QString path) {
 		QMessageBox::critical(this, "Loading .lp file failed", error);
 		return;
 	}
-
+	Dome &dome = qRelightApp->project().dome;
 	dome.lightConfiguration = Dome::DIRECTIONAL;
 	dome.directions = directions;
 	QFileInfo info(path);
@@ -129,7 +129,7 @@ void DomePanel::loadLP(QString path) {
 
 	updateDomeList();
 
-	emit accept(dome);
+	emit updated();
 }
 
 void DomePanel::loadDome(QString path) {
@@ -143,6 +143,7 @@ void DomePanel::loadDome(QString path) {
 		QMessageBox::critical(this, "Loading .dome file failed", error);
 		return;
 	}
+	Dome &dome = qRelightApp->project().dome;
 	dome = new_dome;
 
 	QFileInfo info(path);
@@ -152,7 +153,7 @@ void DomePanel::loadDome(QString path) {
 	if(imageWidth != 0 && qRelightApp->project().measures.size() != 0)
 		dome.imageWidth = imageWidth;
 	updateDomeList();
-	emit accept(dome);
+	emit updated();
 }
 
 
