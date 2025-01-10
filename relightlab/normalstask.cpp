@@ -204,19 +204,11 @@ void NormalsTask::run() {
 		}
 		//TODO remove extension properly
 
-
 		progressed("Saving surface...", 99);
 		QString filename = output.left(output.size() -4) + ".ply";
 		savePly(filename, width, height, z);
-
-/*		auto tmp = z;
-		flattenRadialHeights(width, height, tmp);
-		filename = output.left(output.size() -4) + "_radialflat.ply";
-		savePly(filename, width, height, tmp);
-
-		flattenFourierHeights(width, height, z);
-		filename = output.left(output.size() -4) + "_fftflat.ply";
-		savePly(filename, width, height, z); */
+		filename = output.left(output.size() -4) + ".tiff";
+		saveTiff(filename, width, height, z);
 	}
 	progressed("Done", 100);
 	status = DONE;
