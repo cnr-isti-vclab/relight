@@ -49,6 +49,8 @@ public:
 	void fromSpheres(std::vector<Sphere *> &spheres, Lens &lens);
 	void updateSphereDirections();
 	void parseLP(const QString &lp_path);
+	//TODO: move savelp here from project
+	//void saveLP(const QString &lp_path);
 	void load(const QString &filename);
 	void save(const QString &filename);
 	size_t lightsCount() { return directions.size(); }

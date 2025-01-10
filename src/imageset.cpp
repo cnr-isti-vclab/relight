@@ -88,13 +88,15 @@ bool ImageSet::initFromProject(QJsonObject &obj, const QString &filename) {
 
 void ImageSet::initFromDome(Dome &dome) {
 	light3d = dome.lightConfiguration != Dome::DIRECTIONAL;
+
 	assert(image_width != 0);
 	pixel_size = dome.imageWidth / image_width;
 	switch(dome.lightConfiguration) {
 		case Dome::DIRECTIONAL:
 			setLights(dome.directions, dome.lightConfiguration);
 		break;
-		case Dome::SPHERICAL:
+		case Dome::SPHERICAL:			
+			dome.updateSphereDirections();
 			setLights(dome.positionsSphere, dome.lightConfiguration);
 		break;
 		case Dome::LIGHTS3D:
