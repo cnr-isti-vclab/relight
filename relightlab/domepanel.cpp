@@ -19,7 +19,7 @@
 
 DomePanel::DomePanel(QWidget *parent): QFrame(parent) {
 
-//	setContentsMargins(10, 10, 10, 10);
+	//	setContentsMargins(10, 10, 10, 10);
 	QHBoxLayout *content = new QHBoxLayout(this);
 	//content->setHorizontalSpacing(20);
 
@@ -92,18 +92,36 @@ void DomePanel::loadDomeFile(QString path) {
 		loadLP(path);
 	if(path.endsWith(".dome"))
 		loadDome(path);
-//	dome_list->clearSelection();
+	//	dome_list->clearSelection();
 }
 
 void DomePanel::exportDome() {
-	QString filename = QFileDialog::getSaveFileName(this, "Select a dome file", qRelightApp->lastProjectDir(), "*.dome");
+	QString filename = QFileDialog::getSaveFileName(this, "Select a dome file", qRelightApp->lastProjectDir(), "*.dome *.lp");
 	if(filename.isNull())
 		return;
-	if(!filename.endsWith(".dome"))
-		filename += ".dome";
-	//TODO Basic checks, label is a problem (use filename!
+
 	Dome &dome = qRelightApp->project().dome;
-	dome.save(filename);
+
+	if(filename.endsWith(".lp")) {
+		try {
+			qRelightApp->project().saveLP(filename, dome.directions);
+		} catch(QString error) {
+			QMessageBox::critical(this, "Failed to save the .lp file", error);
+			return;
+		}
+
+	} else {
+
+		if(!filename.endsWith(".dome"))
+			filename += ".dome";
+
+		try {
+			dome.save(filename);
+		} catch(QString error) {
+			QMessageBox::critical(this, "Failed to save the .dome file", error);
+			return;
+		}
+	}
 	qRelightApp->addDome(filename);
 }
 
