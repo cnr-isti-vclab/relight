@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}*/
 	//input
-//#define MACOS 1
+#define MACOS 1
 #ifdef MACOS
 	QString base = "/Users/erika/Desktop/";
 #else
@@ -24,14 +24,13 @@ int main(int argc, char *argv[]) {
 	QString depthmapPath = base + "testcenterRel_copia/photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
 	QString orientationXmlPath = base + "testcenterRel_copia/photogrammetry/Ori-Relative/Orientation-L05C12.tif.xml";
 	QString maskPath = base + "testcenterRel_copia/photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
-	QString plyFile = base +"testcenterRel_copia/photogrammetry/AperiCloud_Relative_mini.ply";
+	QString plyFile = base +"testcenterRel_copia/photogrammetry/AperiCloud_Relative__mini.ply";
 	Depthmap depth;
 
 	//output
 	QString outputPath = base + "testcenterRel_copia/photogrammetry/depthmap_projectL05C13.png";
 	QString output_mask = base + "testcenterRel_copia/photogrammetry/mask_test.tif";
 	QString output_depth = base + "testcenterRel_copia/photogrammetry/depth_test.tif";
-	QString output_text = base + "testcenterRel_copia/photogrammetry/point.txt";
 
 	OrthoDepthmap ortho;
 
@@ -42,13 +41,26 @@ int main(int argc, char *argv[]) {
 	//ortho.computeNormals();
 	//ortho.saveNormals(qPrintable(base + "testcenterRel_copia/photogrammetry/original.png"));
 	//ortho.saveObj(qPrintable(base + "testcenterRel_copia/photogrammetry/original.obj"));
-
-	ortho.saveDepth(qPrintable(output_depth));
-	ortho.saveMask(qPrintable(output_mask));
-	ortho.loadText(qPrintable(plyFile), qPrintable(output_text));
+	try{
+		ortho.saveDepth(qPrintable(output_depth));
+		ortho.saveMask(qPrintable(output_mask));
+		ortho.loadPointCloud(qPrintable(plyFile));
+	} catch(QString e){
+		cout << qPrintable(e) << endl;
+		exit(-1);
+	}
+	ortho.verifyPointCloud();
+	ortho.fitLinearRegressionFromPairs();
 
 	Camera camera;
 	camera.loadXml(orientationXmlPath);
+	CameraDepthmap depthCam;
+//xml per camera e tiff per la depth map
+	depthCam.camera.loadXml(orientationXmlPath);
+	depthCam.loadDepth(qPrintable(depthmapPath));
+	ortho.integratedCamera(depthCam);
+
+
 	//int pixelX = 165;
 	//int pixelY = 144;
 	//float pixelZ = 4.5;
@@ -56,20 +68,20 @@ int main(int argc, char *argv[]) {
 	Eigen::Matrix3f rotationMatrix;
 	Eigen::Vector3f center;
 
-//	depth.loadMask(qPrintable(maskPath));
-//	depth.saveDepth(qPrintable(depthmapPath));
-//	depth.saveMask(qPrintable(maskPath));
+	//	depth.loadMask(qPrintable(maskPath));
+	//	depth.saveDepth(qPrintable(depthmapPath));
+	//	depth.saveMask(qPrintable(maskPath));
 	//QString maskObjPath = base + "testcenterRel_copia/photogrammetry/mask.obj";
-//	ortho.saveObj(qPrintable(base + "testcenterRel_copia/photogrammetry/depthmap_projectL05C13.obj"));
+	ortho.saveObj(qPrintable(base + "testcenterRel_copia/photogrammetry/depthmap_projectL05C13.obj"));
 
 
 	//depth.depthIntegrateNormals();
-//	ortho.saveObj(qPrintable(base + "testcenterRel_copia/photogrammetry/integrated.obj"));
+	//	ortho.saveObj(qPrintable(base + "testcenterRel_copia/photogrammetry/integrated.obj"));
 
 
 
 
-// modifica maschere e depth map per migliorare la depth
+	// modifica maschere e depth map per migliorare la depth
 
 	/*1. test prendi varie masq e modificale in maniera consistente: 1. masq depth 2. masq per ogni camera, cosa modifico?
 	tawny usa la masq della depth da rti a ortho piano, quelle per camera le usa quando fa l'orthopiano mosaico
@@ -140,7 +152,7 @@ lineare per la serie di coppie per trovare a e b). Pesa i punti.
 	//cout << "Coordinate immagine: (" << imageCoords[0] << ", " << imageCoords[1] << ")" << endl;
 
 
-//d = (h + zerolevel) *f scala
+	//d = (h + zerolevel) *f scala
 	return 0;
 }
 

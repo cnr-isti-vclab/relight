@@ -41,7 +41,6 @@ public:
 	bool loadDepth(const char *depth_path);
 	bool loadMask(const char *mask_path);
 	bool loadNormals(const char *normals_path);
-	bool loadText(const char *textPath, const char *outputPath);
 	void saveDepth(const char *depth_path);
 	void saveMask(const char *depth_path);
 	void saveNormals(const char *normals_path);
@@ -65,6 +64,7 @@ class CameraDepthmap:
 					   public Depthmap {
 public:
 	Camera camera;
+
 	/*1. load tif filename, convertita in vector3f
 	 *
 */
@@ -75,13 +75,25 @@ class OrthoDepthmap:
 public:
 	Eigen::Vector3f resolution;
 	Eigen::Vector3f origin;
+	std::vector<Eigen::Vector3f> point_cloud;
+
 
 	Eigen::Vector3f pixelToRealCoordinates(int pixelX, int pixelY, float pixelZ);
+	Eigen::Vector3f realToPixelCoord(float realX, float realY, float realZ);
 	bool load(const char *depth_path, const char *mask_path);
 	bool loadXml(const char *xmlPath);
 	void saveObj(const char *filename);
 	void projectToCameraDepthMap(const Camera& camera, const QString& outputPath);
 	void resizeNormals(int factorPowerOfTwo, int step = 1);
+	void loadPointCloud(const char *textPath);
+	//itera sui punti, chiama l'inversa, prima converte a intero perche sono float vede se xy stanno in w e h, se non dentro problema
+	//legge nella depth l h corrispondente
+	void verifyPointCloud();
+	void integratedCamera(const CameraDepthmap& camera);
+	void fitLinearRegressionFromPairs();
+
+
+
 
 
 	/*1.

@@ -698,55 +698,56 @@ void Depthmap::resizeNormals (int factorPowerOfTwo, int step) {
 	//depthIntegrateNormals();
 
 }
-void Depthmap::loadPointCloud(const char *textPath, std::vector<float> &points){
 
-	//apri file di testo e scarta tutto quello che non è un numero. fai un char vettore di punti
-	QFile file(textPath);
-	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		throw QString("Error opening input file: ")+ textPath;
+
+/*
+
+void Depthmap::depth(const char *depth_path){
+	std::vector<float> depthValues;
+	if (!load(depth_path)) {
+		cerr << "Failed to load depth map." << endl;
+		return;
 	}
+	for (size_t i = 0; i < depthValues.size(); i++) {
+		float realX = depthValues[i];
+		float realY = depthValues[++i];
+		float realZ = depthValues[++i];
 
-	QTextStream in(&file);
+		Eigen::Vector3f pixelCoords = realToPixelCoord(realX, realY, realZ);
+		int pixelX = pixelCoords[0];
+		int pixelY = pixelCoords[1];
+		float calcZ = pixelCoords[2];
 
-	while (!in.atEnd()) {
-		QString line = in.readLine().trimmed();
-		QStringList parts = line.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
-		if (line.isEmpty() || (!line[0].isDigit() && line[0] != '-' && line[0] != '+') || parts.size() != 6) {
-			continue;
-		}
+		Eigen::Vector3f  = projectToCameraDepthMap(pixelCoord);
 
-		//check the line if the line not begin with float number break
-		bool isValid = true;
-		float v[3];
-		for (int i = 0; i < 3; ++i) {
-			bool isNumber = false;
-			v[i] = parts[i].toFloat(&isNumber);
-			if (!isNumber) {
-				isValid = false;
-				break;
-			}
-		}
-		if (!isValid)
-			throw QString("Invalide ply");
-
-		for (int i = 0; i < 3; ++i){
-			points.push_back(v[i]);
-		}
 	}
 
 }
 
 //funzione inversa da 3d a xyh; xy z=0 h? pixel,pixel, h
-void Depthmap::t3DToCamera(P){
+void Depthmap::t3DToCamera(float h, ){
 	//xyz coord 3d fai l'inversa: aperi txt, x e y. prendi funz 3d la trosformi in x y e h e poi applichi quella già fatta camerato3d e deve venire uguale
 	//poi prendi apericloud e vedi se coincide con la depth
 	//2. scrivi la funzione inversa da un punto in 3d ci trova la x e la y in pixel e la h dalla depth del mic mac
 	//3. verifica se la h trovata per i punti di aperi corrisponde all h della depth map
 
+	for (size_t i = 0; i < points.size(); i += 3) {
+		float realX = points[i];
+		float realY = points[i + 1];
+		float realZ = points[i + 2];
 
+		Eigen::Vector3f pixelCoords = realToPixelCoordinates(realX, realY, realZ);
+
+		int pixelX = pixelCoords[0];
+		int pixelY = pixelCoords[1];
+		float calcZ = pixelCoords[2];
+
+
+		float invH= (h - origin[2]) / resolution[2];
+	}
 }
 
-
+*/
 //take the x=160,14 e y=140
 //the coordinates of the pixel step 0.016 are in the depth map xml Z_num etc.
 
@@ -897,6 +898,7 @@ void OrthoDepthmap::projectToCameraDepthMap(const Camera& camera, const QString&
 	}
 	depthMapImage.save(outputPath, "png");
 }
+
 void OrthoDepthmap::resizeNormals (int factorPowerOfTwo, int step) {
 	int factor = 1 << factorPowerOfTwo;
 	Depthmap::resizeNormals(factorPowerOfTwo, step);
@@ -904,7 +906,137 @@ void OrthoDepthmap::resizeNormals (int factorPowerOfTwo, int step) {
 	origin /= factor;
 }
 
+void OrthoDepthmap::loadPointCloud(const char *textPath){
 
+	//apri file di testo e scarta tutto quello che non è un numero. fai un char vettore di punti
+	QFile file(textPath);
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		throw QString("Error opening input file: ")+ textPath;
+	}
+
+	QTextStream in(&file);
+
+
+	while (!in.atEnd()) {
+		QString line = in.readLine().trimmed();
+		QStringList parts = line.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+		if (line.isEmpty() || (!line[0].isDigit() && line[0] != '-' && line[0] != '+') || parts.size() != 6) {
+			continue;
+		}
+
+		//check the line if the line not begin with float number break
+		bool isValid = true;
+		Eigen::Vector3f v;
+		for (int i = 0; i < 3; ++i) {
+			bool isNumber = false;
+			v[i] = parts[i].toFloat(&isNumber);
+			if (!isNumber) {
+				isValid = false;
+				break;
+			}
+		}
+		if (!isValid)
+			throw QString("Invalide ply");
+
+		point_cloud.push_back(v);
+
+	}
+
+
+}
+
+Eigen::Vector3f OrthoDepthmap::realToPixelCoord(float realX, float realY, float realZ){
+	float pixelX = (realX - origin[0]) / resolution[0];
+	float pixelY = (realY - origin[1]) / resolution[1];
+	float h = (realZ - origin[2]) / resolution[2];
+	return  Eigen::Vector3f(pixelX, pixelY, h);
+
+}
+
+void OrthoDepthmap::verifyPointCloud(){
+
+	for(const auto& point : point_cloud){
+
+		float realX = point[0];
+		float realY = point[1];
+		float realZ = point[2];
+
+		Eigen::Vector3f pixelCoord = realToPixelCoord(realX, realY, realZ);
+
+		Eigen::Vector3f realCoord = pixelToRealCoordinates(pixelCoord[0], pixelCoord[1], pixelCoord[2]);
+
+
+		//	int pixelX = static_cast<int>(round(pixelCoord[0]));
+		//	int pixelY = static_cast<int>(round(pixelCoord[1]));
+
+		int pixelX = static_cast<int>(round(pixelCoord[0]));
+		int pixelY = static_cast<int>(round(pixelCoord[1]));
+
+		if (pixelX < 0 || pixelX >= width || pixelY < 0 || pixelY >= height) {
+			continue;
+		}
+		cerr << "point inside the image limits "
+			 << "Point 3D: (" << realX << ", " << realY << ", " << pixelCoord[2] << "), "
+			 << "Coordinate pixel: (" << pixelX << ", " << pixelY <<  " " << elevation[pixelX + pixelY * width]<< ")\n";
+
+	}
+
+
+}
+void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera){
+	int count =0;
+	for (size_t i = 0; i < point_cloud.size(); i++) {
+
+		Eigen::Vector3f& realCoord = point_cloud[i];
+		Eigen::Vector3f imageCoords = camera.camera.projectionToImage(realCoord);
+		Eigen::Vector3f pixelCoord = realToPixelCoord(realCoord[0], realCoord[1], realCoord[2]);
+
+		int pixelX = static_cast<int>(round(imageCoords[0]));
+		int pixelY = static_cast<int>(round(imageCoords[1]));
+
+		if (pixelX >= 0 && pixelX < camera.width && pixelY >= 0 && pixelY < camera.height) {
+			float depthValue = elevation[pixelX + pixelY * camera.width];
+			float h = pixelCoord[2];
+			count++;
+			cout << depthValue << h << endl;
+
+
+		}
+	}
+	cout << count << endl;
+}
+//fit h = a+b*elev
+
+void OrthoDepthmap::fitLinearRegressionFromPairs() {
+	float sumElevation = 0;     // Somma delle elevazioni (x)
+	float sumH = 0;             // Somma dei valori h (y)
+	float sumElevationH = 0;    // Somma delle moltiplicazioni elevation * h
+	float sumElevationSquared = 0; // Somma delle elevazioni al quadrato
+	size_t n = point_cloud.size();  // Numero di punti nella nuvola di punti
+
+	// Ciclo sui punti per raccogliere i dati
+	for (const auto& point : point_cloud) {
+		float elevation = point[0]; // Elevation (x)
+		float h = point[2];         // Altezza (y)
+
+		sumElevation += elevation;
+		sumH += h;
+		sumElevationH += elevation * h;
+		sumElevationSquared += elevation * elevation;
+	}
+
+	float b = (n * sumElevationH - sumElevation * sumH) / (n * sumElevationSquared - sumElevation * sumElevation);
+	float a = (sumH - b * sumElevation) / n;
+
+	for (const auto& point : point_cloud) {
+		float elevation = point[0];
+		float hCalculated = a + b * elevation;
+		cout << "For elevation:" << elevation << "calculated h:" << hCalculated << endl;
+	}
+
+}
+//Real to Pixel Coordinates: (-0.981, 2.041, -11.132) -> Pixel: (110.688, 65.4375, -27.75)
+//point outside the image limits Point 3D: (-0.981, 2.041, -11.132), Coordinate pixel: (-1, 2)
 
 
 /* ---------------------------------------------------------------------------------------------------------------------------*/
