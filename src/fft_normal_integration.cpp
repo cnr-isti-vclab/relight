@@ -159,7 +159,7 @@ void depad(int &w, int &h, std::vector<float> &heights, int padding) {
 	swap(elev, heights);
 }
 
-bool savePly(const QString &filename, int w, int h, std::vector<float> &z);
+bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z);
 
 void fft_integrate(std::function<bool(QString s, int n)> progressed,
 				   int cols, int rows, std::vector<float> &normals, std::vector<float> &heights) {
@@ -213,9 +213,9 @@ void fft_integrate(std::function<bool(QString s, int n)> progressed,
 			heights[i * cols + j] = static_cast<float>(z(i, j));
 		}
 	}
-
-	savePly("test.ply", cols, rows, heights);
 	depad(cols, rows, heights, padding);
+	savePly("test.ply", cols, rows, heights);
+
 
 	/*
 	[wx, wy] = meshgrid(([1:cols]-(fix(cols/2)+1))/(cols-mod(cols,2)), ...

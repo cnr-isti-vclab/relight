@@ -149,7 +149,11 @@ void NormalsTask::run() {
 			case FLAT_FOURIER:
 				//convert radius to frequencies
 				double sigma = width*parameters.flatPercentage/100;
-				flattenFourierNormals(width, height, normals, 0.2, sigma);
+				try {
+					flattenFourierNormals(width, height, normals, 0.2, sigma);
+				} catch(std::length_error e) {
+					return;
+				}
 				break;
 		}
 	}
@@ -194,8 +198,16 @@ void NormalsTask::run() {
 		vector<float> z;
 		if(parameters.surface_integration == SURFACE_BNI)
 			bni_integrate(callback, width, height, normals, z, parameters.bni_k);
-		else
-			fft_integrate(callback, width, height, normals, z);
+		else {
+
+			try {
+				fft_integrate(callback, width, height, normals, z);
+			} catch(std::length_error e) {
+				error = "Failed to integrate normals, length error.";
+				status = FAILED;
+				return;
+			}
+		}
 
 		if(z.size() == 0) {
 			error = "Failed to integrate normals";
