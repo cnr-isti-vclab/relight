@@ -95,7 +95,8 @@ void NormalsFrame::save() {
 	NormalsTask *task = new NormalsTask();
 	task->setParameters(parameters);
 	task->output = parameters.path;
-	task->initFromProject(qRelightApp->project());
+	if(parameters.compute)
+		task->initFromProject(qRelightApp->project());
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);

@@ -1,4 +1,4 @@
-#include <Eigen/Core>
+﻿#include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <Eigen/IterativeLinearSolvers>
@@ -23,15 +23,15 @@ double sigmoid(const double x, const double k = 1.0) {
 	return 1.0 / (1.0 + exp(-x*k));
 }
 
-bool saveDepthMap(const QString &filename, int w, int h, std::vector<float> &z) {
+bool saveDepthMap(const QString &filename, size_t w, size_t h, std::vector<float> &z) {
 	return false;
 }
 
-bool saveNormalMap(const QString &filename, int w, int h, std::vector<float> &normals) {
+bool saveNormalMap(const QString &filename, size_t w, size_t h, std::vector<float> &normals) {
 	QImage img(w, h, QImage::Format_ARGB32);
-	for(int y = 0; y < h; y++) {
+	for(size_t y = 0; y < h; y++) {
 		uint8_t *line = img.scanLine(y);
-		for(int x = 0; x < w; x++) {
+		for(size_t x = 0; x < w; x++) {
 			float *n = &normals[3*(x + y*w)];
 			line[4*x + 0] = 255;
 			line[4*x + 1] = floor(n[0]*255.0f);
@@ -43,7 +43,7 @@ bool saveNormalMap(const QString &filename, int w, int h, std::vector<float> &no
 	return true;
 }
 
-bool savePly(const QString &filename, int w, int h, std::vector<float> &z) {
+bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z) {
 	QFile file(filename);
 	bool success = file.open(QFile::WriteOnly);
 	if(!success)
@@ -63,9 +63,9 @@ bool savePly(const QString &filename, int w, int h, std::vector<float> &z) {
 	}
 
 	std::vector<float> vertices(w*h*3);
-	for(int y = 0; y < h; y++) {
-		for(int x = 0; x < w; x++) {
-			int pos = x + y*w;
+	for(size_t y = 0; y < h; y++) {
+		for(size_t x = 0; x < w; x++) {
+			size_t pos = x + y*w;
 			float *start = &vertices[3*pos];
 			start[0] = x;
 			start[1] = h - y -1;
@@ -74,9 +74,9 @@ bool savePly(const QString &filename, int w, int h, std::vector<float> &z) {
 		}
 	}
 	std::vector<uint8_t> indices(13*2*(w-1)*(h-1));
-	for(int y = 0; y < h-1; y++) {
-		for(int x = 0; x < w-1; x++) {
-			int pos = x + y*w;
+	for(size_t y = 0; y < h-1; y++) {
+		for(size_t x = 0; x < w-1; x++) {
+			size_t pos = x + y*w;
 			uint8_t *start = &indices[26*(x + y*(w-1))];
 			start[0] = 3;
 			int *face = (int *)(start + 1);
@@ -99,7 +99,7 @@ bool savePly(const QString &filename, int w, int h, std::vector<float> &z) {
 	return true;
 }
 
-bool saveTiff(const QString &filename, int w, int h, std::vector<float> &depthmap) {
+bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &depthmap) {
 	float min = 1e20;
 	float max = -1e20;
 	for(float h: depthmap) {
@@ -140,8 +140,8 @@ bool saveTiff(const QString &filename, int w, int h, std::vector<float> &depthma
 
 			for(uint32_t dy = 0; dy < tileLength; dy++) {
 				for(uint32_t dx = 0; dx < tileWidth; dx++) {
-					uint32_t x = tx*tileWidth + dx;
-					uint32_t y = ty*tileLength + dy;
+					size_t x = tx*tileWidth + dx;
+					size_t y = ty*tileLength + dy;
 					if(x < w && y < h)
 						data[dx + dy*tileWidth] = depthmap[x + y*w];
 				}
