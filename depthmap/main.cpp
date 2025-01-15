@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}*/
 	//input
-#define MACOS 1
+//#define MACOS 1
 #ifdef MACOS
 	QString base = "/Users/erika/Desktop/";
 #else
@@ -25,7 +25,8 @@ int main(int argc, char *argv[]) {
 	QString cameraDepthmap = base + "testcenterRel_copia/datasets/L04C12_depth_rti.tiff";
 	QString orientationXmlPath = base + "testcenterRel_copia/photogrammetry/Ori-Relative/Orientation-L04C12.tif.xml";
 	QString maskPath = base + "testcenterRel_copia/photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
-	QString plyFile = base +"testcenterRel_copia/photogrammetry/AperiCloud_Relative__mini.ply";
+	QString plyFile = base +"testcenterRel_copia/photogrammetry/AperiCloud_Relative_mini.ply";
+	QString point_txt = base + "testcenterRel_copia/photogrammetry/points_h.txt";
 	Depthmap depth;
 
 	//output
@@ -52,7 +53,6 @@ int main(int argc, char *argv[]) {
 		exit(-1);
 	}
 	ortho.verifyPointCloud();
-	ortho.fitLinearRegressionFromPairs();
 
 	CameraDepthmap depthCam;
 //xml per camera e tiff per la depth map
@@ -63,6 +63,8 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	ortho.integratedCamera(depthCam, qPrintable(output_points));
+
+	ortho.gaussianWeightedAvg(qPrintable(point_txt), 40, 40, 0.025);
 
 
 	//int pixelX = 165;

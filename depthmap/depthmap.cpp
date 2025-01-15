@@ -1019,34 +1019,74 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 }
 //fit h = a+b*elev
 
-void OrthoDepthmap::fitLinearRegressionFromPairs() {
-	float sumElevation = 0;     // Somma delle elevazioni (x)
-	float sumH = 0;             // Somma dei valori h (y)
-	float sumElevationH = 0;    // Somma delle moltiplicazioni elevation * h
-	float sumElevationSquared = 0; // Somma delle elevazioni al quadrato
-	size_t n = point_cloud.size();  // Numero di punti nella nuvola di punti
+void OrthoDepthmap::gaussianWeightedAvg(const char *textPath, int grid_x, int grid_y, float sigma) {
 
-	// Ciclo sui punti per raccogliere i dati
-	for (const auto& point : point_cloud) {
-		float elevation = point[0]; // Elevation (x)
-		float h = point[2];         // Altezza (y)
-
-		sumElevation += elevation;
-		sumH += h;
-		sumElevationH += elevation * h;
-		sumElevationSquared += elevation * elevation;
-	}
-
-	float b = (n * sumElevationH - sumElevation * sumH) / (n * sumElevationSquared - sumElevation * sumElevation);
-	float a = (sumH - b * sumElevation) / n;
+	loadPointCloud(textPath);
+	std::vector<float> x, y, z;
 
 	for (const auto& point : point_cloud) {
-		float elevation = point[0];
-		float hCalculated = a + b * elevation;
-		cout << "For elevation:" << elevation << "calculated h:" << hCalculated << endl;
+		x.push_back(point[0]);
+		y.push_back(point[1]);
+		z.push_back(point[2]);
 	}
 
+	float x_min = *std::min_element(x.begin(), x.end());
+	float x_max = *std::max_element(x.begin(), x.end());
+	float y_min = *std::min_element(y.begin(), y.end());
+	float y_max = *std::max_element(y.begin(), y.end());
+
+	float x_step = (x_max - x_min) / (grid_x - 1);
+	float y_step = (y_max - y_min) / (grid_y - 1);
+
+	std::vector<std::vector<float>> z_grid(grid_x, std::vector<float>(grid_y, std::numeric_limits<float>::quiet_NaN()));
+	float max_distance = 3 * sigma;
+	for (size_t p = 0; p < x.size(); p++) {
+		float px = x[p];
+		float py = y[p];
+		float pz = z[p];
+		int x_start = std::max(0, static_cast<int>((px - max_distance - x_min) / x_step));
+		int x_end = std::min(grid_x - 1, static_cast<int>((px + max_distance - x_min) / x_step));
+		int y_start = std::max(0, static_cast<int>((py - max_distance - y_min) / y_step));
+		int y_end = std::min(grid_y - 1, static_cast<int>((py + max_distance - y_min) / y_step));
+
+		for (int i = x_start; i <= x_end; i++) {
+			for (int j = y_start; j <= y_end; j++) {
+				float xg = x_min + i * x_step;
+				float yg = y_min + j * y_step;
+
+				float distance = std::sqrt((px - xg) * (px - xg) + (py - yg) * (py - yg));
+				if (distance <= max_distance) {
+					float weight = std::exp(-(distance * distance) / (2 * sigma * sigma));
+
+					if (qIsNaN(z_grid[i][j])) {
+						z_grid[i][j] = weight * pz;
+					} else {
+						z_grid[i][j] += weight * pz;
+					}
+				}
+			}
+		}
+	}
+
+	for (int i = 0; i < grid_x; i++) {
+		for (int j = 0; j < grid_y; j++) {
+			if (!std::isnan(z_grid[i][j])) {
+				z_grid[i][j] /= (3 * sigma);
+			}
+		}
+	}
+	for (int i = 0; i < grid_x; i++) {
+		for (int j = 0; j < grid_y; j++) {
+			if (!std::isnan(z_grid[i][j])) {
+				qDebug() << "z_grid[" << i << "][" << j << "] = " << z_grid[i][j];
+			} else {
+				qDebug() << "z_grid[" << i << "][" << j << "] = NaN";
+			}
+		}
+	}
 }
+
+
 //Real to Pixel Coordinates: (-0.981, 2.041, -11.132) -> Pixel: (110.688, 65.4375, -27.75)
 //point outside the image limits Point 3D: (-0.981, 2.041, -11.132), Coordinate pixel: (-1, 2)
 

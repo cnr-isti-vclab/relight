@@ -90,12 +90,7 @@ public:
 	//legge nella depth l h corrispondente
 	void verifyPointCloud();
 	void integratedCamera(const CameraDepthmap& camera, const char *outputFile);
-	void fitLinearRegressionFromPairs();
-
-
-
-
-
+	void gaussianWeightedAvg(const char *textPath, int grid_x, int grid_y, float sigma);
 	/*1.
 */
 
