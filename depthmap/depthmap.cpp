@@ -983,8 +983,21 @@ void OrthoDepthmap::verifyPointCloud(){
 
 
 }
-void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera){
-	int count =0;
+void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *outputFile){
+
+	QFile outFile(outputFile);
+	if (!outFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		cerr << "Errore nell'aprire il file di output: " << outputFile << endl;
+		return;
+	}
+	//test
+	float z = point_cloud[0][2];
+	auto o = camera.camera.projectionToImage(Eigen::Vector3f(0, 0, z));
+	auto u = camera.camera.projectionToImage(Eigen::Vector3f(1, 0, z));
+	float pixel_size = 1 / (u[0] - o[0]);
+
+	QTextStream out(&outFile);
+
 	for (size_t i = 0; i < point_cloud.size(); i++) {
 
 		Eigen::Vector3f& realCoord = point_cloud[i];
@@ -995,15 +1008,14 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera){
 		int pixelY = static_cast<int>(round(imageCoords[1]));
 
 		if (pixelX >= 0 && pixelX < camera.width && pixelY >= 0 && pixelY < camera.height) {
-			float depthValue = elevation[pixelX + pixelY * camera.width];
-			float h = pixelCoord[2];
-			count++;
-			cout << depthValue << h << endl;
+			float depthValue = camera.elevation[pixelX + pixelY * camera.width]* pixel_size;
+			float h = realCoord[2];
+
+			out << depthValue << "\t" << h << "\t" << imageCoords[0]/camera.width << "\t" << imageCoords[1]/camera.height <<"\n"; //red e green
 
 
 		}
 	}
-	cout << count << endl;
 }
 //fit h = a+b*elev
 

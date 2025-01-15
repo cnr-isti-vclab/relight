@@ -22,7 +22,8 @@ int main(int argc, char *argv[]) {
 #endif
 
 	QString depthmapPath = base + "testcenterRel_copia/photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
-	QString orientationXmlPath = base + "testcenterRel_copia/photogrammetry/Ori-Relative/Orientation-L05C12.tif.xml";
+	QString cameraDepthmap = base + "testcenterRel_copia/datasets/L04C12_depth_rti.tiff";
+	QString orientationXmlPath = base + "testcenterRel_copia/photogrammetry/Ori-Relative/Orientation-L04C12.tif.xml";
 	QString maskPath = base + "testcenterRel_copia/photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
 	QString plyFile = base +"testcenterRel_copia/photogrammetry/AperiCloud_Relative__mini.ply";
 	Depthmap depth;
@@ -31,6 +32,7 @@ int main(int argc, char *argv[]) {
 	QString outputPath = base + "testcenterRel_copia/photogrammetry/depthmap_projectL05C13.png";
 	QString output_mask = base + "testcenterRel_copia/photogrammetry/mask_test.tif";
 	QString output_depth = base + "testcenterRel_copia/photogrammetry/depth_test.tif";
+	QString output_points = base + "testcenterRel_copia/photogrammetry/points_h.txt";
 
 	OrthoDepthmap ortho;
 
@@ -52,19 +54,21 @@ int main(int argc, char *argv[]) {
 	ortho.verifyPointCloud();
 	ortho.fitLinearRegressionFromPairs();
 
-	Camera camera;
-	camera.loadXml(orientationXmlPath);
 	CameraDepthmap depthCam;
 //xml per camera e tiff per la depth map
 	depthCam.camera.loadXml(orientationXmlPath);
-	depthCam.loadDepth(qPrintable(depthmapPath));
-	ortho.integratedCamera(depthCam);
+	depthCam.loadDepth(qPrintable(cameraDepthmap));
+	if(depthCam.width != depthCam.camera.width || depthCam.height != depthCam.camera.height){
+		cerr << "width is not the same" << endl;
+		return -1;
+	}
+	ortho.integratedCamera(depthCam, qPrintable(output_points));
 
 
 	//int pixelX = 165;
 	//int pixelY = 144;
 	//float pixelZ = 4.5;
-	ortho.projectToCameraDepthMap(camera, outputPath);
+	ortho.projectToCameraDepthMap(depthCam.camera, outputPath);
 	Eigen::Matrix3f rotationMatrix;
 	Eigen::Vector3f center;
 
@@ -144,8 +148,8 @@ lineare per la serie di coppie per trovare a e b). Pesa i punti.
 	//realCoordinates[2] = -10.4198828;
 	//Eigen::Vector3f imageCoords = camera.projectionToImage(realCoordinates);
 
-	cout << "Rotation matrix:"<< endl << camera.rotation << endl;
-	cout << "Central vector: (" << camera.center << endl;
+	//cout << "Rotation matrix:"<< endl << camera.rotation << endl;
+	//cout << "Central vector: (" << camera.center << endl;
 	//cout << "Real coordinates: (" << realCoordinates[0] << ", "
 	//		  << realCoordinates[1] << ", " << realCoordinates[2] << ")" << endl;
 
