@@ -104,8 +104,9 @@ void RtiFrame::init() {
 
 void RtiFrame::exportRti() {
 
+	Project &project = qRelightApp->project();
 	//check for lights
-	if(qRelightApp->project().dome.directions.size() == 0) {
+	if(project.dome.directions.size() == 0) {
 		QMessageBox::warning(this, "Missing light directions.", "You need light directions for this dataset to build an RTI.\n"
 																"You can either load a dome or .lp file or mark a reflective sphere in the 'Lights' tab.");
 		return;
@@ -118,6 +119,7 @@ void RtiFrame::exportRti() {
 	RtiTask *rti_task = new RtiTask(qRelightApp->project());
 	rti_task->setParameters(parameters);
 	rti_task->output = parameters.path;
+	rti_task->crop = project.crop;
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(rti_task);

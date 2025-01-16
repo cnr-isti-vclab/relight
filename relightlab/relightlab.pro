@@ -113,7 +113,8 @@ SOURCES += main.cpp \
     normalsplan.cpp \
     brdfframe.cpp \
     metadataframe.cpp \
-    ../src/fft_normal_integration.cpp
+    ../src/fft_normal_integration.cpp \
+    ../src/deepzoom.cpp
 
 RESOURCES += \
     res.qrc
@@ -201,7 +202,8 @@ HEADERS += \
     brdfframe.h \
     metadataframe.h \
     ../src/fft_normal_integration.h \
-    ../src/pocketfft.h
+    ../src/pocketfft.h \
+    ../src/deepzoom.h
 
 FORMS +=
 

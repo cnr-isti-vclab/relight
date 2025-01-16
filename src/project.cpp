@@ -381,6 +381,15 @@ void Project::checkImages() {
 
 void Project::save(QString filename) {
 
+	QFile file(filename);
+	bool opened  = file.open(QFile::WriteOnly | QFile::Truncate);
+	if(!opened) {
+		QString error = file.errorString();
+		throw error;
+	}
+
+	lastUpdated = QDateTime::currentDateTime();
+
 	QJsonObject project;
 	version = RELIGHT_STRINGIFY(RELIGHT_VERSION);
 
@@ -457,12 +466,7 @@ void Project::save(QString filename) {
 	QJsonDocument doc(project);
 
 
-	QFile file(filename);
-	bool opened  = file.open(QFile::WriteOnly | QFile::Truncate);
-	if(!opened) {
-		QString error = file.errorString();
-		throw error;
-	}
+
 	file.write(doc.toJson());
 
 	needs_saving = false;
