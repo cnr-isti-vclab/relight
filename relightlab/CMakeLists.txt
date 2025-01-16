@@ -33,7 +33,7 @@ set (RELIGHT_HEADERS
     ../src/measure.h 
     ../src/project.h 
     ../src/sphere.h 
-    ../src/white.h 
+    ../src/white.h
     ../src/bni_normal_integration.h
     ../src/fft_normal_integration.h
     alignrow.h
@@ -73,6 +73,8 @@ set (RELIGHT_HEADERS
     rtitask.h
     ../relight/imagecropper.h
     ../relight-cli/rtibuilder.h
+    ../relight/zoom.h  
+    ../src/deepzoom.h
     ../src/rti.h
     ../src/legacy_rti.h
     ../src/imageset.h
@@ -142,6 +144,7 @@ set (RELIGHTLAB_SOURCES
     rtitask.cpp
     ../relight/imagecropper.cpp
     ../relight-cli/rtibuilder.cpp
+    ../src/deepzoom.cpp
     ../src/rti.cpp
     ../src/legacy_rti.cpp
     ../src/imageset.cpp
