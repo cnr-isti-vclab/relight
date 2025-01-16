@@ -118,37 +118,23 @@ void RtiTask::run() {
 		if(parameters.openlime)
 			openlime();
 
+		if(parameters.web_layout != RtiParameters::PLAIN) {
+			deepZoom(output, output, parameters.quality, 0, 256, callback);
+		}
+		if(parameters.web_layout == RtiParameters::TARZOOM) {
+			tarZoom(output, output, callback);
+		}
+		if(parameters.web_layout == RtiParameters::ITARZOOM) {
+			itarZoom(output, output, callback);
+		}
+
+
 	} catch(std::string e) {
 		error = e.c_str();
 		status = STOPPED;
 		return;
 	}
 
-/*
-		else if(step == "fromRTI")
-			fromRTI();
-		//TODO! deepZOOM should set error and status?
-		else if(step == "deepzoom") {
-			if ((err = deepZoom(output, output, 95, 0, 256, callback)).compare("OK") != 0) {
-				error = err;
-				status = FAILED;
-			}
-		}
-		else if(step == "tarzoom") {
-			if ((err = tarZoom(output, output, callback)).compare("OK") != 0) {
-				error = err;
-				status = FAILED;
-			}
-		}
-		else if(step == "itarzoom") {
-			if ((err = itarZoom(output, output, callback)).compare("OK") != 0) {
-				error = err;
-				status = FAILED;
-			}
-		}
-		else if(step == "openlime")
-			openlime();
-	} */
 	if(status != FAILED)
 		status = DONE;
 }
