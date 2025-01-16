@@ -60,6 +60,23 @@ protected:
 	void saveTiff(const char *mask_path, std::vector<float> &values, uint32_t &w, uint32_t &h, uint32_t bitsPerSample);
 
 };
+class GaussianGrid {
+public:
+	int width, height;
+	std::vector<float> values;
+	std::vector<float> weights;
+	float sigma;
+
+	void init(std::vector<Eigen::Vector3f> &differences);
+
+	void computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &differences);
+	void fillLaplacian(float precision);
+	void imageGrid(const char* filename);
+	//interpola la griglia per spostare la depthmap, serve per creare la funzione
+	float value(float x, float y);
+
+};
+
 class CameraDepthmap:
 					   public Depthmap {
 public:
@@ -76,7 +93,10 @@ public:
 	Eigen::Vector3f resolution;
 	Eigen::Vector3f origin;
 	std::vector<Eigen::Vector3f> point_cloud;
-
+	std::vector<float> x, y, z;
+	std::vector<float> z_grid;
+	int grid_x, grid_y;
+	float sigma;
 
 	Eigen::Vector3f pixelToRealCoordinates(int pixelX, int pixelY, float pixelZ);
 	Eigen::Vector3f realToPixelCoord(float realX, float realY, float realZ);
@@ -90,7 +110,8 @@ public:
 	//legge nella depth l h corrispondente
 	void verifyPointCloud();
 	void integratedCamera(const CameraDepthmap& camera, const char *outputFile);
-	void gaussianWeightedAvg(const char *textPath, int grid_x, int grid_y, float sigma);
+
+
 	/*1.
 */
 

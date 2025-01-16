@@ -997,7 +997,7 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 	float pixel_size = 1 / (u[0] - o[0]);
 
 	QTextStream out(&outFile);
-
+	std::vector<Eigen::Vector3f> differences;
 	for (size_t i = 0; i < point_cloud.size(); i++) {
 
 		Eigen::Vector3f& realCoord = point_cloud[i];
@@ -1010,81 +1010,203 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 		if (pixelX >= 0 && pixelX < camera.width && pixelY >= 0 && pixelY < camera.height) {
 			float depthValue = camera.elevation[pixelX + pixelY * camera.width]* pixel_size;
 			float h = realCoord[2];
-
+			differences.push_back(Eigen::Vector3f(imageCoords[0]/camera.width, imageCoords[1]/camera.height, h + depthValue));
 			out << depthValue << "\t" << h << "\t" << imageCoords[0]/camera.width << "\t" << imageCoords[1]/camera.height <<"\n"; //red e green
-
 
 		}
 	}
+	GaussianGrid gaussianGrid;
+	gaussianGrid.init(differences);
+	gaussianGrid.imageGrid(("test.png"));
+
 }
 //fit h = a+b*elev
+void GaussianGrid::init(std::vector<Eigen::Vector3f> &differences){
+	int side = static_cast<int>(sqrt(differences.size())) / 2;
+	sigma = 1.0f / side;
+	width = side;
+	height = side;
+	float precision = 0.00001f;
+	//TODO: w and h proportional to aspect ratio of camera
+	computeGaussianWeightedGrid(differences);
+	fillLaplacian(precision);
+}
 
-void OrthoDepthmap::gaussianWeightedAvg(const char *textPath, int grid_x, int grid_y, float sigma) {
-
-	loadPointCloud(textPath);
-	std::vector<float> x, y, z;
-
-	for (const auto& point : point_cloud) {
-		x.push_back(point[0]);
-		y.push_back(point[1]);
-		z.push_back(point[2]);
+void GaussianGrid::fillLaplacian(float precision){
+	float mean = 0;
+	float count = 0;
+	for(int i = 0; i < values.size(); i++){
+		if(weights[i] != 0){
+			mean += values[i];
+			count++;
+		}
+	}
+	mean/=count;
+	for(int i = 0; i < values.size(); i++){
+		if(weights[i] == 0){
+			values[i] = mean;
+		}
 	}
 
-	float x_min = *std::min_element(x.begin(), x.end());
-	float x_max = *std::max_element(x.begin(), x.end());
-	float y_min = *std::min_element(y.begin(), y.end());
-	float y_max = *std::max_element(y.begin(), y.end());
+	std::vector<float> old_values = values;
+	std::vector<float> new_values = values;
 
-	float x_step = (x_max - x_min) / (grid_x - 1);
-	float y_step = (y_max - y_min) / (grid_y - 1);
+	bool converged = false;
+	float max_iter = 1000;
 
-	std::vector<std::vector<float>> z_grid(grid_x, std::vector<float>(grid_y, std::numeric_limits<float>::quiet_NaN()));
+	for (int i = 0; i < max_iter; i++) {
+
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; ++x) {
+				int index = y * width + x;
+
+				if (weights[index] > 0) {
+					continue;
+				}
+
+				float sum_neighbors = 0.0f;
+				int count_neighbors = 0;
+
+				//neighbors up
+				if (y > 0) {
+					sum_neighbors += old_values[(y - 1) * width + x];
+					count_neighbors++;
+				}
+
+				// neigh down
+				if (y < height - 1) {
+					sum_neighbors += old_values[(y + 1) * width + x];
+					count_neighbors++;
+				}
+
+				// neigh left
+				if (x > 0) {
+					sum_neighbors += old_values[y * width + (x - 1)];
+					count_neighbors++;
+				}
+
+				// neigh right
+				if (x < width - 1) {
+					sum_neighbors += old_values[y * width + (x + 1)];
+					count_neighbors++;
+				}
+
+				// update the value
+				if (count_neighbors > 0) {
+					new_values[index] = sum_neighbors / count_neighbors;
+				}
+			}
+		}
+
+		float max_difference = 0.0f;
+		for (size_t i = 0; i < values.size(); ++i) {
+			max_difference = std::max(max_difference, std::abs(new_values[i] - old_values[i]));
+		}
+
+		if (max_difference < precision) {
+			qDebug() << "Converged after" << i + 1 << "iterations.";
+			converged = true;
+			break;
+		}
+
+		old_values = new_values;
+	}
+
+	if (!converged) {
+		qDebug() << "Reached maximum iterations without full convergence.";
+	}
+
+	values = new_values;
+}
+
+float GaussianGrid::value(float x, float y){
+
+}
+
+void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &differences) {
+
+	float x_min = 0;
+	float x_max = 1;
+	float y_min = 0;
+	float y_max = 1;
+
+	float x_step = (x_max - x_min) / (width - 1);
+	float y_step = (y_max - y_min) / (height - 1);
+
+	values.resize(width * height, 0);
+	weights.resize(width * height, 0);
+
+
 	float max_distance = 3 * sigma;
-	for (size_t p = 0; p < x.size(); p++) {
-		float px = x[p];
-		float py = y[p];
-		float pz = z[p];
-		int x_start = std::max(0, static_cast<int>((px - max_distance - x_min) / x_step));
-		int x_end = std::min(grid_x - 1, static_cast<int>((px + max_distance - x_min) / x_step));
-		int y_start = std::max(0, static_cast<int>((py - max_distance - y_min) / y_step));
-		int y_end = std::min(grid_y - 1, static_cast<int>((py + max_distance - y_min) / y_step));
+	for (auto &p : differences) {
+
+
+		int x_start = std::max(0, static_cast<int>((p[0] - max_distance - x_min) / x_step));
+		int x_end = std::min(width - 1, static_cast<int>((p[0] + max_distance - x_min) / x_step));
+		int y_start = std::max(0, static_cast<int>((p[1] - max_distance - y_min) / y_step));
+		int y_end = std::min(height - 1, static_cast<int>((p[1] + max_distance - y_min) / y_step));
 
 		for (int i = x_start; i <= x_end; i++) {
 			for (int j = y_start; j <= y_end; j++) {
 				float xg = x_min + i * x_step;
 				float yg = y_min + j * y_step;
 
-				float distance = std::sqrt((px - xg) * (px - xg) + (py - yg) * (py - yg));
+				float distance = sqrt((p[0] - xg) * (p[0] - xg) + (p[1] - yg) * (p[1] - yg));
 				if (distance <= max_distance) {
-					float weight = std::exp(-(distance * distance) / (2 * sigma * sigma));
-
-					if (qIsNaN(z_grid[i][j])) {
-						z_grid[i][j] = weight * pz;
-					} else {
-						z_grid[i][j] += weight * pz;
-					}
+					float weight = exp(-(distance * distance) / (2 * sigma * sigma));
+					values[i * width + j] += weight * p[2];
+					weights[i * width + j] += weight;
 				}
 			}
 		}
 	}
 
-	for (int i = 0; i < grid_x; i++) {
-		for (int j = 0; j < grid_y; j++) {
-			if (!std::isnan(z_grid[i][j])) {
-				z_grid[i][j] /= (3 * sigma);
-			}
+	for (int i = 0; i < values.size(); i++) {
+		if (weights[i] != 0) {
+			values[i] /= (weights[i]);
 		}
 	}
-	for (int i = 0; i < grid_x; i++) {
-		for (int j = 0; j < grid_y; j++) {
-			if (!std::isnan(z_grid[i][j])) {
-				qDebug() << "z_grid[" << i << "][" << j << "] = " << z_grid[i][j];
-			} else {
-				qDebug() << "z_grid[" << i << "][" << j << "] = NaN";
-			}
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			qDebug() << "z_grid[" << i << "][" << j << "] = " << values[i * height +j];
 		}
 	}
 }
+
+
+void GaussianGrid::imageGrid(const char* filename) {
+
+	auto min_max = minmax_element(values.begin(), values.end());
+	float z_min = *min_max.first;
+	float z_max = *min_max.second;
+
+	if (z_max == z_min) {
+		cerr << "All values in z_grid are the same. Cannot normalize." << endl;
+		return;
+	}
+
+	QImage image(width, height, QImage::Format_Grayscale8);
+	if (!QFile::exists(QFileInfo(filename).absolutePath())) {
+		qDebug() << "Directory does not exist: " << QFileInfo(filename).absolutePath();
+		return;
+	}
+
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			float value = values[i * width + j];
+			float normalized_value = (value - z_min) / (z_max - z_min);
+			int gray_value = static_cast<int>(normalized_value * 255);
+			image.setPixel(j, i, qRgb(gray_value, gray_value, gray_value));
+		}
+	}
+	image.save(filename, "png");
+}
+
+
+
+
+//scala tra 0 e 1. img
+
 
 
 //Real to Pixel Coordinates: (-0.981, 2.041, -11.132) -> Pixel: (110.688, 65.4375, -27.75)

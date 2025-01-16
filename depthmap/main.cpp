@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QDomDocument>
 #include <eigen3/Eigen/Dense>
+#include <math.h>
 
 using namespace std;
 // carica il tif, calcola e integra normali per vedere se la superficie è la stessa.
@@ -14,7 +15,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}*/
 	//input
-//#define MACOS 1
+#define MACOS 1
 #ifdef MACOS
 	QString base = "/Users/erika/Desktop/";
 #else
@@ -25,7 +26,7 @@ int main(int argc, char *argv[]) {
 	QString cameraDepthmap = base + "testcenterRel_copia/datasets/L04C12_depth_rti.tiff";
 	QString orientationXmlPath = base + "testcenterRel_copia/photogrammetry/Ori-Relative/Orientation-L04C12.tif.xml";
 	QString maskPath = base + "testcenterRel_copia/photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
-	QString plyFile = base +"testcenterRel_copia/photogrammetry/AperiCloud_Relative_mini.ply";
+	QString plyFile = base +"testcenterRel_copia/photogrammetry/AperiCloud_Relative__mini.ply";
 	QString point_txt = base + "testcenterRel_copia/photogrammetry/points_h.txt";
 	Depthmap depth;
 
@@ -34,6 +35,7 @@ int main(int argc, char *argv[]) {
 	QString output_mask = base + "testcenterRel_copia/photogrammetry/mask_test.tif";
 	QString output_depth = base + "testcenterRel_copia/photogrammetry/depth_test.tif";
 	QString output_points = base + "testcenterRel_copia/photogrammetry/points_h.txt";
+	QString output_grid = base + "testcenterRel_copia/photogrammetry/grid.png";
 
 	OrthoDepthmap ortho;
 
@@ -55,6 +57,7 @@ int main(int argc, char *argv[]) {
 	ortho.verifyPointCloud();
 
 	CameraDepthmap depthCam;
+
 //xml per camera e tiff per la depth map
 	depthCam.camera.loadXml(orientationXmlPath);
 	depthCam.loadDepth(qPrintable(cameraDepthmap));
@@ -63,8 +66,10 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	ortho.integratedCamera(depthCam, qPrintable(output_points));
+	// sqrt
 
-	ortho.gaussianWeightedAvg(qPrintable(point_txt), 40, 40, 0.025);
+
+	//ortho.computeGaussianWeightedGrid(qPrintable(point_txt));
 
 
 	//int pixelX = 165;
