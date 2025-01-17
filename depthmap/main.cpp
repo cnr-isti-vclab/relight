@@ -66,6 +66,7 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	ortho.integratedCamera(depthCam, qPrintable(output_points));
+	ortho.saveDepth(qPrintable(base + "testcenterRel_copia/photogrammetry/testDepth.tiff"));
 	// sqrt
 
 

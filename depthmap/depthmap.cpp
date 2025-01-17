@@ -461,7 +461,7 @@ bool Depthmap::loadNormals(const char *normals_path){
 
 	return true;
 }
-void Depthmap::saveTiff(const char *mask_path, vector<float> &values, uint32_t &w, uint32_t &h, uint32_t bitsPerSample){
+void Depthmap::saveTiff(const char *mask_path,const vector<float> &values, uint32_t w, uint32_t h, uint32_t bitsPerSample) const{
 	//save e scrive la maschera
 
 	TIFF* maskTiff = TIFFOpen(mask_path, "w");
@@ -540,7 +540,7 @@ void Depthmap::saveTiff(const char *mask_path, vector<float> &values, uint32_t &
 }
 
 
-void Depthmap::saveDepth(const char *depth_path){
+void Depthmap::saveDepth(const char *depth_path) const{
 	saveTiff(depth_path, elevation, width, height, 32);
 }
 
@@ -975,10 +975,10 @@ void OrthoDepthmap::verifyPointCloud(){
 		if (pixelX < 0 || pixelX >= width || pixelY < 0 || pixelY >= height) {
 			continue;
 		}
-		cerr << "point inside the image limits "
+		/*	cerr << "point inside the image limits "
 			 << "Point 3D: (" << realX << ", " << realY << ", " << pixelCoord[2] << "), "
 			 << "Coordinate pixel: (" << pixelX << ", " << pixelY <<  " " << elevation[pixelX + pixelY * width]<< ")\n";
-
+*/
 	}
 
 
@@ -996,30 +996,86 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 	auto u = camera.camera.projectionToImage(Eigen::Vector3f(1, 0, z));
 	float pixel_size = 1 / (u[0] - o[0]);
 
+
 	QTextStream out(&outFile);
 	std::vector<Eigen::Vector3f> differences;
 	for (size_t i = 0; i < point_cloud.size(); i++) {
 
 		Eigen::Vector3f& realCoord = point_cloud[i];
-		Eigen::Vector3f imageCoords = camera.camera.projectionToImage(realCoord);
+		float h = realCoord[2];
 		Eigen::Vector3f pixelCoord = realToPixelCoord(realCoord[0], realCoord[1], realCoord[2]);
-
+		// project from ortho plane to camera plane, hence the fixed z
+		realCoord[2] = z;
+		Eigen::Vector3f imageCoords = camera.camera.projectionToImage(realCoord);
 		int pixelX = static_cast<int>(round(imageCoords[0]));
 		int pixelY = static_cast<int>(round(imageCoords[1]));
 
+
 		if (pixelX >= 0 && pixelX < camera.width && pixelY >= 0 && pixelY < camera.height) {
-			float depthValue = camera.elevation[pixelX + pixelY * camera.width]* pixel_size;
-			float h = realCoord[2];
-			differences.push_back(Eigen::Vector3f(imageCoords[0]/camera.width, imageCoords[1]/camera.height, h + depthValue));
+			float depthValue = z - camera.elevation[pixelX + pixelY * camera.width]* pixel_size;
+
+			if(fabs(pixelCoord[0] - 170) < 3 && fabs(pixelCoord[1] - 150) < 3){
+				cout << "elevation: " << elevation[int(pixelCoord[0]) + int(pixelCoord[1]) *width] << endl;
+
+				cout << "PixelX: " << pixelCoord[0] << ", PixelY: " << pixelCoord[1] << "pixelZ " << pixelCoord[2] << endl;
+				cout << "h: " << h << endl;
+				cout << "depthValue: " << depthValue << endl;
+				cout << "Image Coords X: " << imageCoords[0] << ", Y: " << imageCoords[1] << endl;
+				cout << "Camera Width: " << camera.width << ", Camera Height: " << camera.height << endl;
+			}
+
+
+			differences.push_back(Eigen::Vector3f(imageCoords[0]/camera.width, imageCoords[1]/camera.height, h - depthValue));
 			out << depthValue << "\t" << h << "\t" << imageCoords[0]/camera.width << "\t" << imageCoords[1]/camera.height <<"\n"; //red e green
 
 		}
 	}
+
 	GaussianGrid gaussianGrid;
 	gaussianGrid.init(differences);
 	gaussianGrid.imageGrid(("test.png"));
 
+	float ortho_z = realToPixelCoord(0,0,z)[2];
+
+	for(int y=0; y< height/2; y++){
+		for(int x=0; x<width; x++){
+			//if(x,y )
+			Eigen::Vector3f r = pixelToRealCoordinates(x, y, ortho_z);
+			assert(fabs(z-r[2]) < 0.1f);
+			Eigen::Vector3f p = camera.camera.projectionToImage(r);
+
+			int px = round(p[0]);
+			int py = round(p[1]);
+
+			if(px >= 0 && px< camera.width && py >= 0 && py< camera.height){
+				float depthValue = z - camera.elevation[px + py * camera.width]* pixel_size;
+				p[0] /= camera.width;
+				p[1] /= camera.height;
+				float h = gaussianGrid.value(p[0], p[1]) + depthValue;
+				Eigen::Vector3f d = realToPixelCoord(r[0], r[1], h);
+
+				//p0 e p1 devono venire uguale e vedi se depth è ugusle, h dovrebbe venire simile
+				if (fabs(x - 170) < 1 && fabs(y - 150) < 1){
+					cout << "Real Coord r:" << r[0] << endl;
+					cout << "Projected Coords p:" << p[0] << endl;
+					cout << "comparison:" << endl;
+					cout << "PixelX: " << px << ", PixelY: " << py << endl;
+					cout << "p[0]: " << p[0] << ", p[1]: " << p[1] << endl;
+					cout << "Depth Value: " << depthValue << endl;
+					cout <<"gaussian grid" << gaussianGrid.value(p[0], p[1]) << endl;
+					cout << "elevation: " << elevation[x+y * width] << endl;
+					cout << " h: " << h << endl;
+					cout << " d: " << d << endl;
+				}
+				elevation[x + y * width] = d[2];
+
+
+		}
+	}
+
 }
+}
+
 //fit h = a+b*elev
 void GaussianGrid::init(std::vector<Eigen::Vector3f> &differences){
 	int side = static_cast<int>(sqrt(differences.size())) / 2;
@@ -1120,7 +1176,11 @@ void GaussianGrid::fillLaplacian(float precision){
 }
 
 float GaussianGrid::value(float x, float y){
-
+	//bicubic interpolation
+	//nearest
+	int pixelX = std::max(0, std::min(width-1, (int)(x * (width-1))));
+	int pixelY = std::max(0, std::min(height-1, (int)(y * (height-1))));
+	return values[pixelX + pixelY * width];
 }
 
 void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &differences) {
@@ -1166,11 +1226,11 @@ void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &dif
 			values[i] /= (weights[i]);
 		}
 	}
-	for (int i = 0; i < height; i++) {
+	/*for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
 			qDebug() << "z_grid[" << i << "][" << j << "] = " << values[i * height +j];
 		}
-	}
+	}*/
 }
 
 

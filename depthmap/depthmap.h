@@ -41,7 +41,7 @@ public:
 	bool loadDepth(const char *depth_path);
 	bool loadMask(const char *mask_path);
 	bool loadNormals(const char *normals_path);
-	void saveDepth(const char *depth_path);
+	void saveDepth(const char *depth_path) const;
 	void saveMask(const char *depth_path);
 	void saveNormals(const char *normals_path);
 
@@ -57,7 +57,7 @@ protected:
 	bool loadTiledTiff(TIFF* inTiff, std::vector<float> &elevation, uint32_t w, uint32_t h,
 					   uint32_t tileWidth, uint32_t tileLength, uint32_t bitsPerSample);
 	bool loadStripedTiff(TIFF* inTiff, std::vector<float> &elevation, uint32_t& w, uint32_t& h, uint32_t bitsPerSample);
-	void saveTiff(const char *mask_path, std::vector<float> &values, uint32_t &w, uint32_t &h, uint32_t bitsPerSample);
+	void saveTiff(const char *mask_path, const std::vector<float> &values, uint32_t w, uint32_t h, uint32_t bitsPerSample) const;
 
 };
 class GaussianGrid {
