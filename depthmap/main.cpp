@@ -15,27 +15,27 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}*/
 	//input
-#define MACOS 1
+//#define MACOS 1
 #ifdef MACOS
 	QString base = "/Users/erika/Desktop/";
 #else
-	QString base = "/home/erika/";
+	QString base = "";
 #endif
 
-	QString depthmapPath = base + "testcenterRel_copia/photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
-	QString cameraDepthmap = base + "testcenterRel_copia/datasets/L04C12_depth_rti.tiff";
-	QString orientationXmlPath = base + "testcenterRel_copia/photogrammetry/Ori-Relative/Orientation-L04C12.tif.xml";
-	QString maskPath = base + "testcenterRel_copia/photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
-	QString plyFile = base +"testcenterRel_copia/photogrammetry/AperiCloud_Relative__mini.ply";
-	QString point_txt = base + "testcenterRel_copia/photogrammetry/points_h.txt";
+	QString depthmapPath = base + "Z_Num7_DeZoom4_STD-MALT.tif";
+	QString cameraDepthmap = base + "L04C12_depth_rti.tiff";
+	QString orientationXmlPath = base + "Orientation-L04C12.tif.xml";
+	QString maskPath = base + "Masq_STD-MALT_DeZoom4.tif";
+	QString plyFile = base +"AperiCloud_Relative__mini.ply";
+	QString point_txt = base + "points_h.txt";
 	Depthmap depth;
 
 	//output
-	QString outputPath = base + "testcenterRel_copia/photogrammetry/depthmap_projectL05C13.png";
-	QString output_mask = base + "testcenterRel_copia/photogrammetry/mask_test.tif";
-	QString output_depth = base + "testcenterRel_copia/photogrammetry/depth_test.tif";
-	QString output_points = base + "testcenterRel_copia/photogrammetry/points_h.txt";
-	QString output_grid = base + "testcenterRel_copia/photogrammetry/grid.png";
+	QString outputPath = base + "tdepthmap_projectL05C13.png";
+	QString output_mask = base + "mask_test.tif";
+	QString output_depth = base + "depth_test.tif";
+	QString output_points = base + "points_h.txt";
+	QString output_grid = base + "tgrid.png";
 
 	OrthoDepthmap ortho;
 
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	ortho.integratedCamera(depthCam, qPrintable(output_points));
-	ortho.saveDepth(qPrintable(base + "testcenterRel_copia/photogrammetry/testDepth.tiff"));
+	ortho.saveDepth(qPrintable(base + "testDepth.tiff"));
 	// sqrt
 
 

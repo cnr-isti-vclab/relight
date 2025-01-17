@@ -7,6 +7,7 @@
 #include "depthmap.h"
 #include "../src/bni_normal_integration.h"
 #include <QFile>
+#include <QDebug>
 #include <QRegularExpression>
 #include <fstream>
 
@@ -252,7 +253,7 @@ bool Depthmap::loadTiff(const char *tiff, vector<float> &values, uint32_t &w, ui
 	// Check if the TIFF is tiled
 	uint32_t tileWidth, tileLength;
 	if (!TIFFGetField(inTiff, TIFFTAG_TILEWIDTH, &tileWidth) ||
-		!TIFFGetField(inTiff, TIFFTAG_TILELENGTH, &tileLength)) {
+			!TIFFGetField(inTiff, TIFFTAG_TILELENGTH, &tileLength)) {
 		return loadStripedTiff(inTiff, values, w, h, bitsPerSample);
 	} else {
 		return loadTiledTiff(inTiff, values, w, h, tileWidth, tileLength, bitsPerSample);
@@ -452,10 +453,10 @@ bool Depthmap::loadNormals(const char *normals_path){
 			int i = x + y * width;
 
 			normals[i] = Eigen::Vector3f(
-				(qRed(rgb) / 255.0f) * 2.0f - 1.0f,
-				(qGreen(rgb) / 255.0f) * 2.0f - 1.0f,
-				(qBlue(rgb) / 255.0f) * 2.0f - 1.0f
-				);
+						(qRed(rgb) / 255.0f) * 2.0f - 1.0f,
+						(qGreen(rgb) / 255.0f) * 2.0f - 1.0f,
+						(qBlue(rgb) / 255.0f) * 2.0f - 1.0f
+						);
 		}
 	}
 
@@ -693,7 +694,6 @@ void Depthmap::resizeNormals (int factorPowerOfTwo, int step) {
 	width = targetWidth;
 	height = targetHeight;
 
-	//QString filename = "/Users/erika/Desktop/testcenterRel_copia/photogrammetry/surface.jpg";
 	//saveNormals(filename.toStdString().c_str());
 	//depthIntegrateNormals();
 
@@ -774,7 +774,7 @@ bool OrthoDepthmap::loadXml(const char *xmlPath){
 
 
 	if (originePlaniNodes.isEmpty() || resolutionPlaniNodes.isEmpty() ||
-		origineAltiNodes.isEmpty() || resolutionAltiNodes.isEmpty()) {
+			origineAltiNodes.isEmpty() || resolutionAltiNodes.isEmpty()) {
 		cerr << "OriginePlani, ResolutionPlani, OrigineAlti, or ResolutionAlti not found in XML." << endl;
 		return false;
 
@@ -980,9 +980,9 @@ void OrthoDepthmap::verifyPointCloud(){
 			 << "Coordinate pixel: (" << pixelX << ", " << pixelY <<  " " << elevation[pixelX + pixelY * width]<< ")\n";
 */
 	}
-
-
 }
+
+
 void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *outputFile){
 
 	QFile outFile(outputFile);
@@ -994,11 +994,11 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 	float z = point_cloud[0][2];
 	auto o = camera.camera.projectionToImage(Eigen::Vector3f(0, 0, z));
 	auto u = camera.camera.projectionToImage(Eigen::Vector3f(1, 0, z));
-	float pixel_size = 1 / (u[0] - o[0]);
-
 
 	QTextStream out(&outFile);
-	std::vector<Eigen::Vector3f> differences;
+	std::vector<Eigen::Vector3f> imageCloud;
+	std::vector<float> source;
+
 	for (size_t i = 0; i < point_cloud.size(); i++) {
 
 		Eigen::Vector3f& realCoord = point_cloud[i];
@@ -1012,8 +1012,7 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 
 
 		if (pixelX >= 0 && pixelX < camera.width && pixelY >= 0 && pixelY < camera.height) {
-			float depthValue = z - camera.elevation[pixelX + pixelY * camera.width]* pixel_size;
-
+			float depthValue = camera.elevation[pixelX + pixelY * camera.width];
 			if(fabs(pixelCoord[0] - 170) < 3 && fabs(pixelCoord[1] - 150) < 3){
 				cout << "elevation: " << elevation[int(pixelCoord[0]) + int(pixelCoord[1]) *width] << endl;
 
@@ -1025,20 +1024,22 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 			}
 
 
-			differences.push_back(Eigen::Vector3f(imageCoords[0]/camera.width, imageCoords[1]/camera.height, h - depthValue));
+			imageCloud.push_back(Eigen::Vector3f(imageCoords[0]/camera.width, imageCoords[1]/camera.height, h));
+			source.push_back(depthValue);
 			out << depthValue << "\t" << h << "\t" << imageCoords[0]/camera.width << "\t" << imageCoords[1]/camera.height <<"\n"; //red e green
 
 		}
+
 	}
 
 	GaussianGrid gaussianGrid;
-	gaussianGrid.init(differences);
+	gaussianGrid.init(imageCloud, source);
 	gaussianGrid.imageGrid(("test.png"));
 
 	float ortho_z = realToPixelCoord(0,0,z)[2];
 
-	for(int y=0; y< height/2; y++){
-		for(int x=0; x<width; x++){
+	for(size_t y=0; y < height; y++){
+		for(size_t x=0; x < width; x++){
 			//if(x,y )
 			Eigen::Vector3f r = pixelToRealCoordinates(x, y, ortho_z);
 			assert(fabs(z-r[2]) < 0.1f);
@@ -1048,10 +1049,10 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 			int py = round(p[1]);
 
 			if(px >= 0 && px< camera.width && py >= 0 && py< camera.height){
-				float depthValue = z - camera.elevation[px + py * camera.width]* pixel_size;
+				float depthValue = camera.elevation[px + py * camera.width];
 				p[0] /= camera.width;
 				p[1] /= camera.height;
-				float h = gaussianGrid.value(p[0], p[1]) + depthValue;
+				float h = gaussianGrid.target(p[0], p[1], depthValue);
 				Eigen::Vector3f d = realToPixelCoord(r[0], r[1], h);
 
 				//p0 e p1 devono venire uguale e vedi se depth è ugusle, h dovrebbe venire simile
@@ -1068,23 +1069,51 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 					cout << " d: " << d << endl;
 				}
 				elevation[x + y * width] = d[2];
-
-
+			} else {
+				//elevation[x + y*width] = origin[2] + resolution[2] * elevation[x + y*width];
+			}
 		}
 	}
-
 }
+void GaussianGrid::fitLinear(std::vector<float> &x, std::vector<float> &y, float &a, float &b) {
+	if (x.size() != y.size()) {
+		cout << "Errore: i vettori x e y devono avere la stessa lunghezza." << endl;
+		return;
+	}
+
+	int n = x.size();
+	float sum_x = 0.0, sum_y = 0.0, sum_xy = 0.0, sum_x2 = 0.0;
+
+	for (int i = 0; i < n; i++) {
+		sum_x += x[i];
+		sum_y += y[i];
+		sum_xy += x[i] * y[i];
+		sum_x2 += x[i] * x[i];
+	}
+
+	// Calcolo dei coefficienti a e b
+	a = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x * sum_x);
+	b = (sum_y - a * sum_x) / n;
 }
 
 //fit h = a+b*elev
-void GaussianGrid::init(std::vector<Eigen::Vector3f> &differences){
-	int side = static_cast<int>(sqrt(differences.size())) / 2;
+void GaussianGrid::init(std::vector<Eigen::Vector3f> &cloud, std::vector<float> &source) {
+	int side = static_cast<int>(sqrt(cloud.size())) / 2;
 	sigma = 1.0f / side;
 	width = side;
 	height = side;
 	float precision = 0.00001f;
+
+	vector<float> cloudZ;
+	for(auto &v: cloud)
+		cloudZ.push_back(v[2]);
+
+	fitLinear(source, cloudZ, a, b);
 	//TODO: w and h proportional to aspect ratio of camera
-	computeGaussianWeightedGrid(differences);
+	for(size_t i = 0; i < cloud.size(); i++) {
+		cloud[i][2] -= depthmapToCloud(source[i]);
+	}
+	computeGaussianWeightedGrid(cloud);
 	fillLaplacian(precision);
 }
 
@@ -1181,6 +1210,11 @@ float GaussianGrid::value(float x, float y){
 	int pixelX = std::max(0, std::min(width-1, (int)(x * (width-1))));
 	int pixelY = std::max(0, std::min(height-1, (int)(y * (height-1))));
 	return values[pixelX + pixelY * width];
+}
+
+float GaussianGrid::target(float x, float y, float h) {
+	h = depthmapToCloud(h);
+	return h - value(x, y);
 }
 
 void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &differences) {
