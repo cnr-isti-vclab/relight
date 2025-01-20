@@ -1,96 +1,119 @@
 <RCC>
-    <qresource prefix="/">
-        <file>css/style.qss</file>
-        <file>icons/dark/scalable/camera.svg</file>
-        <file>icons/dark/scalable/cast.svg</file>
-        <file>icons/dark/scalable/check.svg</file>
-        <file>icons/dark/scalable/chevron-left.svg</file>
-        <file>icons/dark/scalable/chevron-right.svg</file>
-        <file>icons/dark/scalable/crop.svg</file>
-        <file>icons/dark/scalable/download.svg</file>
-        <file>icons/dark/scalable/edit.svg</file>
-        <file>icons/dark/scalable/file.svg</file>
-        <file>icons/dark/scalable/folder.svg</file>
-        <file>icons/dark/scalable/highlight.svg</file>
-        <file>icons/dark/scalable/home.svg</file>
-        <file>icons/dark/scalable/image.svg</file>
-        <file>icons/dark/scalable/list.svg</file>
-        <file>icons/dark/scalable/maximize.svg</file>
-        <file>icons/dark/scalable/pause.svg</file>
-        <file>icons/dark/scalable/play.svg</file>
-        <file>icons/dark/scalable/ruler.svg</file>
-        <file>icons/dark/scalable/save.svg</file>
-        <file>icons/dark/scalable/settings.svg</file>
-        <file>icons/dark/scalable/trash-2.svg</file>
-        <file>icons/dark/scalable/zoom-in.svg</file>
-        <file>icons/dark/index.theme</file>
-        <file>icons/dark/scalable/grid.svg</file>
-        <file>icons/dark/scalable/help-circle.svg</file>
-		<file>icons/dark/scalable/info.svg</file>
-        <file>icons/dark/scalable/rotate-ccw</file>
-        <file>icons/dark/scalable/rotate-ccw.svg</file>
-        <file>icons/dark/scalable/rotate-cw</file>
-        <file>icons/dark/scalable/rotate-cw.svg</file>
-        <file>icons/dark/scalable/sliders.svg</file>
-        <file>icons/dark/scalable/square.svg</file>
-        <file>icons/dark/scalable/sun.svg</file>
-        <file>icons/dark/scalable/zoom-out.svg</file>
-        <file>icons/dark/scalable/minus.svg</file>
-        <file>icons/dark/scalable/plus.svg</file>
-        <file>icons/dark/scalable/cancel.svg</file>
-        <file>icons/dark/scalable/loader.svg</file>
-        <file>icons/light/scalable/camera.svg</file>
-        <file>icons/light/index.theme</file>
-        <file>icons/light/scalable/cast.svg</file>
-        <file>icons/light/scalable/check.svg</file>
-        <file>icons/light/scalable/chevron-left.svg</file>
-        <file>icons/light/scalable/chevron-right.svg</file>
-        <file>icons/light/scalable/crop.svg</file>
-        <file>icons/light/scalable/download.svg</file>
-        <file>icons/light/scalable/edit.svg</file>
-        <file>icons/light/scalable/file.svg</file>
-        <file>icons/light/scalable/folder.svg</file>
-        <file>icons/light/scalable/grid.svg</file>
-        <file>icons/light/scalable/help-circle.svg</file>
-		<file>icons/light/scalable/info.svg</file>
-        <file>icons/light/scalable/highlight.svg</file>
-        <file>icons/light/scalable/home.svg</file>
-        <file>icons/light/scalable/image.svg</file>
-        <file>icons/light/scalable/list.svg</file>
-        <file>icons/light/scalable/maximize.svg</file>
-        <file>icons/light/scalable/pause.svg</file>
-        <file>icons/light/scalable/play.svg</file>
-        <file>icons/light/scalable/rotate-ccw.svg</file>
-        <file>icons/light/scalable/rotate-cw.svg</file>
-        <file>icons/light/scalable/ruler.svg</file>
-        <file>icons/light/scalable/save.svg</file>
-        <file>icons/light/scalable/settings.svg</file>
-        <file>icons/light/scalable/sliders.svg</file>
-        <file>icons/light/scalable/square.svg</file>
-        <file>icons/light/scalable/sun.svg</file>
-        <file>icons/light/scalable/trash-2.svg</file>
-        <file>icons/light/scalable/zoom-in.svg</file>
-        <file>icons/light/scalable/zoom-out.svg</file>
-        <file>icons/light/scalable/cancel.svg</file>
-        <file>icons/light/scalable/loader.svg</file>
-        <file>icons/light/scalable/minus.svg</file>
-        <file>icons/light/scalable/plus.svg</file>
-        <file>docs/home.md</file>
-        <file>docs/index.md</file>
-        <file>docs/interface/new_project.md</file>
-        <file>docs/interface/open_project.md</file>
-        <file>docs/formats/dome.md</file>
-        <file>docs/formats/relight.md</file>
-        <file>docs/formats/config.md</file>
-        <file>icons/dark/scalable/chevrons-down.svg</file>
-        <file>icons/dark/scalable/chevrons-up.svg</file>
-        <file>icons/light/scalable/chevrons-down.svg</file>
-        <file>icons/light/scalable/chevrons-up.svg</file>
-		<file alias="relight.png">../build_scripts/relight.png</file>
-		<file alias="demo/index.html">../demo/index.html</file>
-		<file alias="demo/openlime.min.js">../demo/openlime.min.js</file>
-		<file alias="demo/skin.svg">../demo/skin.svg</file>
-		<file alias="demo/skin.css">../demo/skin.css</file>
+<qresource prefix="/">
+<file>css/style.qss</file>
+<file>icons/dark/scalable/camera.svg</file>
+<file>icons/dark/scalable/cast.svg</file>
+<file>icons/dark/scalable/check.svg</file>
+<file>icons/dark/scalable/chevron-left.svg</file>
+<file>icons/dark/scalable/chevron-right.svg</file>
+<file>icons/dark/scalable/crop.svg</file>
+<file>icons/dark/scalable/download.svg</file>
+<file>icons/dark/scalable/edit.svg</file>
+<file>icons/dark/scalable/file.svg</file>
+<file>icons/dark/scalable/folder.svg</file>
+<file>icons/dark/scalable/highlight.svg</file>
+<file>icons/dark/scalable/home.svg</file>
+<file>icons/dark/scalable/image.svg</file>
+<file>icons/dark/scalable/list.svg</file>
+<file>icons/dark/scalable/maximize.svg</file>
+<file>icons/dark/scalable/pause.svg</file>
+<file>icons/dark/scalable/play.svg</file>
+<file>icons/dark/scalable/ruler.svg</file>
+<file>icons/dark/scalable/save.svg</file>
+<file>icons/dark/scalable/settings.svg</file>
+<file>icons/dark/scalable/trash-2.svg</file>
+<file>icons/dark/scalable/zoom-in.svg</file>
+<file>icons/dark/index.theme</file>
+<file>icons/dark/scalable/grid.svg</file>
+<file>icons/dark/scalable/help-circle.svg</file>
+<file>icons/dark/scalable/info.svg</file>
+<file>icons/dark/scalable/rotate-ccw</file>
+<file>icons/dark/scalable/rotate-ccw.svg</file>
+<file>icons/dark/scalable/rotate-cw</file>
+<file>icons/dark/scalable/rotate-cw.svg</file>
+<file>icons/dark/scalable/sliders.svg</file>
+<file>icons/dark/scalable/square.svg</file>
+<file>icons/dark/scalable/sun.svg</file>
+<file>icons/dark/scalable/zoom-out.svg</file>
+<file>icons/dark/scalable/minus.svg</file>
+<file>icons/dark/scalable/plus.svg</file>
+<file>icons/dark/scalable/cancel.svg</file>
+<file>icons/dark/scalable/loader.svg</file>
+<file>icons/light/scalable/camera.svg</file>
+<file>icons/light/index.theme</file>
+<file>icons/light/scalable/cast.svg</file>
+<file>icons/light/scalable/check.svg</file>
+<file>icons/light/scalable/chevron-left.svg</file>
+<file>icons/light/scalable/chevron-right.svg</file>
+<file>icons/light/scalable/crop.svg</file>
+<file>icons/light/scalable/download.svg</file>
+<file>icons/light/scalable/edit.svg</file>
+<file>icons/light/scalable/file.svg</file>
+<file>icons/light/scalable/folder.svg</file>
+<file>icons/light/scalable/grid.svg</file>
+<file>icons/light/scalable/help-circle.svg</file>
+<file>icons/light/scalable/info.svg</file>
+<file>icons/light/scalable/highlight.svg</file>
+<file>icons/light/scalable/home.svg</file>
+<file>icons/light/scalable/image.svg</file>
+<file>icons/light/scalable/list.svg</file>
+<file>icons/light/scalable/maximize.svg</file>
+<file>icons/light/scalable/pause.svg</file>
+<file>icons/light/scalable/play.svg</file>
+<file>icons/light/scalable/rotate-ccw.svg</file>
+<file>icons/light/scalable/rotate-cw.svg</file>
+<file>icons/light/scalable/ruler.svg</file>
+<file>icons/light/scalable/save.svg</file>
+<file>icons/light/scalable/settings.svg</file>
+<file>icons/light/scalable/sliders.svg</file>
+<file>icons/light/scalable/square.svg</file>
+<file>icons/light/scalable/sun.svg</file>
+<file>icons/light/scalable/trash-2.svg</file>
+<file>icons/light/scalable/zoom-in.svg</file>
+<file>icons/light/scalable/zoom-out.svg</file>
+<file>icons/light/scalable/cancel.svg</file>
+<file>icons/light/scalable/loader.svg</file>
+<file>icons/light/scalable/minus.svg</file>
+<file>icons/light/scalable/plus.svg</file>
+<file>docs/home.md</file>
+<file>docs/index.md</file>
+<file>docs/gettingstarted.md</file>
+<file>docs/interface/domes.md</file>
+<file>docs/interface/general.md</file>
+<file>docs/interface/geometry.md</file>
+<file>docs/interface/image_list.md</file>
+<file>docs/interface/measurements.md</file>
+<file>docs/interface/new_project.md</file>
+<file>docs/interface/open_project.md</file>
+<file>docs/interface/queue.md</file>
+<file>docs/interface/spheres.md</file>
+<file>docs/normals/export.md</file>
+<file>docs/normals/flattening.md</file>
+<file>docs/normals/normalmap.md</file>
+<file>docs/normals/surface</file>
+<file>docs/rti/basis.md</file>
+<file>docs/rti/coefficients.md</file>
+<file>docs/rti/colorspace.md</file>
+<file>docs/rti/export.md</file>
+<file>docs/rti/format.md</file>
+<file>docs/rti/general.md</file>
+<file>docs/rti/quality.md</file>
+<file>docs/rti/web.md</file>
+<file>docs/formats/config.md</file>
+<file>docs/formats/dome.md</file>
+<file>docs/formats/project.md</file>
+<file>docs/formats/iif.md</file>
+<file>docs/formats/legacy.md</file>
+<file>docs/formats/web.md</file>
+<file>icons/dark/scalable/chevrons-down.svg</file>
+<file>icons/dark/scalable/chevrons-up.svg</file>
+<file>icons/light/scalable/chevrons-down.svg</file>
+<file>icons/light/scalable/chevrons-up.svg</file>
+<file alias="relight.png">../build_scripts/relight.png</file>
+<file alias="demo/index.html">../demo/index.html</file>
+<file alias="demo/openlime.min.js">../demo/openlime.min.js</file>
+<file alias="demo/skin.svg">../demo/skin.svg</file>
+<file alias="demo/skin.css">../demo/skin.css</file>
 
-    </qresource>
+</qresource>
 </RCC>
