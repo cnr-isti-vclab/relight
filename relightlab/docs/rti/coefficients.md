@@ -1,0 +1,5 @@
+#Coefficients
+
+<!-- RTI models generate cofficient planes (n float numbers per pixel), this are saved
+as images, RGB or other (see colorspace) -->
+<!-- PTM and HSH have degrees, but RBF and BLN have a variable number

@@ -1,7 +1,7 @@
 # Dome configuration file format
 
 Dome configuration is saved in a JSON file (.dome extension) and contains all the informations
-related to geometry and calibration of the lights, dimensions, offsets etc.
+related to geometry and calibration of the lights.
 
 | key | value |
 | --- | --- |
