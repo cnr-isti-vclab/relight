@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
 
 #if QT_VERSION >= 0x060000
 	//large images wont load because of this limit!
-	QImageReader::setAllocationLimit(uint62_t(1)<<32);
+	QImageReader::setAllocationLimit(uint64_t(1)<<32);
 #endif
 
 

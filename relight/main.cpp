@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
 	QApplication app(argc, argv);
 #if QT_VERSION >= 0x060000
 	//large images wont load because of this limit!
-	QImageReader::setAllocationLimit(uint62_t(1)<<32);
+	QImageReader::setAllocationLimit(uint64_t(1)<<32);
 #endif
 	QCoreApplication::setOrganizationName("VCG");
 	QCoreApplication::setOrganizationDomain("vcg.isti.cnr.it");
