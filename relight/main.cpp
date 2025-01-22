@@ -13,6 +13,7 @@
 #include <QTimer>
 #include <QIcon>
 #include <QPixmap>
+#include <QImageReader>
 #include "mainwindow.h"
 #include "processqueue.h"
 #include <iostream>
@@ -72,7 +73,7 @@ int main(int argc, char *argv[]) {
 	QApplication app(argc, argv);
 #if QT_VERSION >= 0x060000
 	//large images wont load because of this limit!
-	QImage::setAllocationLimit(32768*32768*4);
+	QImageReader::setAllocationLimit(uint62_t(1)<<32);
 #endif
 	QCoreApplication::setOrganizationName("VCG");
 	QCoreApplication::setOrganizationDomain("vcg.isti.cnr.it");

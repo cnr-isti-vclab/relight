@@ -3,6 +3,7 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QLabel>
+#include <QImageReader>
 
 #include "relightapp.h"
 #include "mainwindow.h"
@@ -23,7 +24,7 @@ int main(int argc, char *argv[]) {
 
 #if QT_VERSION >= 0x060000
 	//large images wont load because of this limit!
-	QImage::setAllocationLimit(32768*32768*4);
+	QImageReader::setAllocationLimit(uint62_t(1)<<32);
 #endif
 
 
