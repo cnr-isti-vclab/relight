@@ -33,14 +33,15 @@ void AlignFrame::clear() {
 	while(aligns->count() > 0) {
 		QLayoutItem *item = aligns->takeAt(0);
 		AlignRow *row =  dynamic_cast<AlignRow *>(item->widget());
-		//row->stopDetecting();
+		row->stopFinding();
 		delete row;
 	}
 }
 
 void AlignFrame::init() {
 	for(Align *align: qRelightApp->project().aligns) {
-		addAlign(align);
+		AlignRow *row = addAlign(align);
+		row->findAlignment(false);
 	}
 }
 
@@ -49,7 +50,6 @@ void AlignFrame::newAlign() {
 	if(!marker_dialog)
 		marker_dialog = new MarkerDialog(MarkerDialog::ALIGN, this);
 
-	//TODO ACTUALLY images might be skipped!
 	Align *align = new Align(qRelightApp->project().images.size());
 	marker_dialog->setAlign(align);
 	int answer = marker_dialog->exec();
@@ -58,13 +58,14 @@ void AlignFrame::newAlign() {
 		return;
 	}
 	qRelightApp->project().aligns.push_back(align);
-	addAlign(align);
+	AlignRow *row = addAlign(align);
+	row->findAlignment();
+
 }
 
 AlignRow *AlignFrame::addAlign(Align *align) {
 	AlignRow *row = new AlignRow(align);
 	aligns->addWidget(row);
-
 
 	connect(row, SIGNAL(removeme(AlignRow *)), this, SLOT(removeAlign(AlignRow *)));
 	connect(row, SIGNAL(updated()), this, SIGNAL(updated()));
@@ -74,7 +75,7 @@ AlignRow *AlignFrame::addAlign(Align *align) {
 void AlignFrame::removeAlign(AlignRow *row) {
 	layout()->removeWidget(row);
 
-//	row->stopDetecting();
+	row->stopFinding();
 
 	Align *align = row->align;
 	auto &aligns = qRelightApp->project().aligns;

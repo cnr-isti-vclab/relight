@@ -7,24 +7,35 @@
 #include <QPen>
 #include <QKeyEvent>
 
+
+QVariant AlignRect::itemChange(GraphicsItemChange change, const QVariant &value)	{
+	if ((change == ItemPositionChange  && scene()) || change == ItemScenePositionHasChanged) {
+		picker->updateAlignPoint();
+	}
+	return QGraphicsItem::itemChange(change, value);
+}
+
 AlignPicking::AlignPicking(QWidget *parent): ImageViewer(parent) {
 
 	marker_side = 40;
-
 	connect(view, SIGNAL(clicked(QPoint)), this, SLOT(click(QPoint)));
+	rect = new AlignRect(this, 0, 0, 0, 0);
+	rect->setPen(QPen(Qt::yellow, 2));
+	rect->setBrush(Qt::transparent);
 }
 
 
 void AlignPicking::clear() {
-	scene().clear();
-	rect = nullptr;
+	if(rect) {
+		scene().removeItem(rect);
+	}
 }
 
 void AlignPicking::setAlign(Align *a) {
 	clear();
 	align = a;
-
-	rect = scene().addRect(a->rect, QPen(Qt::yellow), Qt::red);
+	rect->setRect(align->rect);
+	scene().addItem(rect);
 
 	showImage(0);
 	fit();
@@ -33,7 +44,7 @@ void AlignPicking::setAlign(Align *a) {
 
 
 void AlignPicking::click(QPoint p) {
-	clear();
+	//clear();
 
 	QSize imgsize = qRelightApp->project().imgsize;
 	QPointF pos = view->mapToScene(p);
@@ -47,5 +58,10 @@ void AlignPicking::click(QPoint p) {
 	pos.setY(std::min(imgsize.height()-marker_side/2.0, pos.y()));
 
 	align->rect = QRect(pos.x()-marker_side/2.0, pos.y()-marker_side/2.0, marker_side, marker_side);
-	rect = scene().addRect(align->rect, QPen(Qt::yellow), Qt::red);
+	rect->setRect(align->rect);
 }
+
+void AlignPicking::updateAlignPoint() {
+	align->rect = rect->rect().toRect();
+}
+

@@ -49,12 +49,12 @@ SphereRow::SphereRow(Sphere *_sphere, QWidget *parent): QWidget(parent) {
 	QHBoxLayout *columns = new QHBoxLayout(this);
 	columns->setSpacing(20);
 
-	position = new PositionView(sphere, rowHeight);
+	position = new SphereOverview(sphere->center, sphere->radius, rowHeight);
 	position->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	columns->addWidget(position);
 
 
-	reflections = new ReflectionView(sphere, rowHeight);
+	reflections = new ReflectionOverview(sphere, rowHeight);
 	reflections->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	columns->addWidget(reflections);
 
@@ -79,6 +79,9 @@ void SphereRow::edit() {
 	sphere_dialog->setSphere(sphere);
 	int answer = sphere_dialog->exec();
 	if(answer == QDialog::Accepted) {
+		position->center = sphere->center;
+		position->radius = sphere->radius;
+
 		position->update();
 		reflections->init();
 		detectHighlights();

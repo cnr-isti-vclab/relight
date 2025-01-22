@@ -10,7 +10,7 @@
 class Align;
 class QLabel;
 class QProgressBar;
-class ReflectionView;
+class AlignOverview;
 class QGraphicsPixmapItem;
 
 class FindAlignment: public Task {
@@ -26,10 +26,10 @@ public:
 class AlignRow: public QWidget {
 	Q_OBJECT
 public:
-	Align *align;
 	int rowHeight = 92;
-	QLabel *thumb;
-	ReflectionView *reflections;
+	Align *align = nullptr;
+	QLabel *thumb = nullptr;
+	AlignOverview *position = nullptr;
 	QLabel *status = nullptr;
 	QProgressBar *progress = nullptr;
 	FindAlignment *find_alignment = nullptr;

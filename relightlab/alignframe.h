@@ -21,7 +21,8 @@ public:
 public slots:
 	void newAlign();
 	void removeAlign(AlignRow *align);
-
+signals:
+	void updated();
 
 private:
 	MarkerDialog *marker_dialog = nullptr;

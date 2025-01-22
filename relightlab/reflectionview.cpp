@@ -7,8 +7,7 @@
 #include <QRectF>
 #include <QDebug>
 
-PositionView::PositionView(Sphere *_sphere, int _height, QWidget *parent): QGraphicsView(parent) {
-	sphere = _sphere;
+MarkerOverview::MarkerOverview(int _height, QWidget *parent): QGraphicsView(parent) {
 	height = _height;
 	setScene(&scene);
 
@@ -19,15 +18,18 @@ PositionView::PositionView(Sphere *_sphere, int _height, QWidget *parent): QGrap
 	img_item = scene.addPixmap(pix);
 
 	setFixedSize(pix.width()*height/pix.height(), height);
-
-	update();
 }
 
-void PositionView::resizeEvent(QResizeEvent */*event*/) {
+void MarkerOverview::resizeEvent(QResizeEvent */*event*/) {
 	fitInView(scene.sceneRect()); //img_item);
 }
 
-void PositionView::update() {
+SphereOverview::SphereOverview(QPointF _center, double _radius, int height, QWidget *parent):
+	MarkerOverview(height, parent), center(_center), radius(_radius) {
+	update();
+}
+
+void SphereOverview::update() {
 //	scene.clear();
 	if(ellipse)
 		scene.removeItem(ellipse);
@@ -36,13 +38,30 @@ void PositionView::update() {
 
 	double scale = size.width()/(double)qRelightApp->project().imgsize.width();
 
-	double radius = sphere->radius*scale;
-	QPointF scaled_center = sphere->center*scale;
-	ellipse = scene.addEllipse(QRectF(scaled_center - QPointF(radius, radius), QSize(2*radius, 2*radius)), Qt::NoPen, Qt::green);
+	double r = radius*scale;
+	QPointF scaled_center = center*scale;
+	ellipse = scene.addEllipse(QRectF(scaled_center - QPointF(r, r), QSize(2*r, 2*r)), Qt::NoPen, Qt::green);
+}
+
+AlignOverview::AlignOverview(QRectF _rect, int height, QWidget *parent):
+	MarkerOverview(height, parent), rect(_rect) {
+	update();
+}
+
+void AlignOverview::update() {
+
+	QSizeF size = img_item->boundingRect().size();
+
+	double scale = size.width()/(double)qRelightApp->project().imgsize.width();
+	QRectF r = QRectF(rect.x()*scale, rect.y()*scale, rect.width()*scale, rect.height()*scale);
+	if(item)
+		scene.removeItem(item);
+
+	item = scene.addRect(r, Qt::NoPen, Qt::green);
 }
 
 
-ReflectionView::ReflectionView(Sphere *_sphere, int _height, QWidget *parent ): QGraphicsView(parent) {
+ReflectionOverview::ReflectionOverview(Sphere *_sphere, int _height, QWidget *parent ): QGraphicsView(parent) {
 	sphere = _sphere;
 	height = _height;
 	setScene(&scene);
@@ -56,7 +75,7 @@ ReflectionView::ReflectionView(Sphere *_sphere, int _height, QWidget *parent ): 
 	update();
 }
 
-ReflectionView::~ReflectionView() {
+ReflectionOverview::~ReflectionOverview() {
 	for(auto l: lights) {
 		scene.removeItem(l);
 		delete l;
@@ -64,7 +83,7 @@ ReflectionView::~ReflectionView() {
 	lights.clear();
 }
 
-void ReflectionView::init() {
+void ReflectionOverview::init() {
 	scene.clear();
 	lights.clear();
 
@@ -84,7 +103,7 @@ void ReflectionView::init() {
 	area->setRotation(sphere->eAngle);
 }
 
-void ReflectionView::update() {
+void ReflectionOverview::update() {
 	for(auto l: lights) {
 		scene.removeItem(l);
 		delete l;
@@ -107,7 +126,7 @@ void ReflectionView::update() {
 	}
 }
 
-void ReflectionView::resizeEvent(QResizeEvent */*event*/) {
+void ReflectionOverview::resizeEvent(QResizeEvent */*event*/) {
 	fitInView(img_item->boundingRect());
 }
 
