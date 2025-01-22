@@ -2,6 +2,8 @@
 #include "../src/bni_normal_integration.h"
 #include <iostream>
 #include <QFile>
+#include <QDir>
+#include <QFileInfoList>
 #include <QDomDocument>
 #include <eigen3/Eigen/Dense>
 #include <math.h>
@@ -15,19 +17,21 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}*/
 	//input
-//#define MACOS 1
+#define MACOS 1
 #ifdef MACOS
-	QString base = "/Users/erika/Desktop/";
+	QString base = "/Users/erika/Desktop/testcenterRel_copia/";
 #else
 	QString base = "";
 #endif
 
-	QString depthmapPath = base + "Z_Num7_DeZoom4_STD-MALT.tif";
-	QString cameraDepthmap = base + "L04C12_depth_rti.tiff";
-	QString orientationXmlPath = base + "Orientation-L04C12.tif.xml";
-	QString maskPath = base + "Masq_STD-MALT_DeZoom4.tif";
-	QString plyFile = base +"AperiCloud_Relative__mini.ply";
-	QString point_txt = base + "points_h.txt";
+
+
+	QString depthmapPath = base + "photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
+	//QString cameraDepthmap = base + "datasets/L04C12.tif";
+	//QString orientationXmlPath = base + "photogrammetry/Ori-Relative/Orientation-L04C12.tif.xml";
+	QString maskPath = base + "photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
+	QString plyFile = base +"photogrammetry/AperiCloud_Relative__mini.ply";
+	QString point_txt = base + "photogrammetry/points_h.txt";
 	Depthmap depth;
 
 	//output
@@ -43,6 +47,24 @@ int main(int argc, char *argv[]) {
 		cout << "accidenti" << endl;
 		return -1;
 	}
+
+	QDir datasetsDir(base + "datasets");
+	QDir xmlDir(base + "photogrammetry/Ori-Relative");
+	QStringList tiffFilters = {"*.tif"};
+	QStringList xmlFilters = {"Orientation-*.tif.xml"};
+
+	QFileInfoList tiffFiles = datasetsDir.entryInfoList(tiffFilters, QDir::Files);
+	if (tiffFiles.isEmpty()) {
+		cerr << "No .tiff files found in " << datasetsDir.absolutePath().toStdString() << endl;
+		return -1;
+	}
+
+	QFileInfoList xmlFiles = xmlDir.entryInfoList(xmlFilters, QDir::Files);
+	if (xmlFiles.isEmpty()) {
+		cerr << "No .xml files found in " << xmlDir.absolutePath().toStdString() << endl;
+		return -1;
+	}
+
 	//ortho.computeNormals();
 	//ortho.saveNormals(qPrintable(base + "testcenterRel_copia/photogrammetry/original.png"));
 	//ortho.saveObj(qPrintable(base + "testcenterRel_copia/photogrammetry/original.obj"));
@@ -54,29 +76,58 @@ int main(int argc, char *argv[]) {
 		cout << qPrintable(e) << endl;
 		exit(-1);
 	}
+
 	ortho.verifyPointCloud();
+	ortho.beginIntegration();
 
-	CameraDepthmap depthCam;
 
-//xml per camera e tiff per la depth map
-	depthCam.camera.loadXml(orientationXmlPath);
-	depthCam.loadDepth(qPrintable(cameraDepthmap));
-	if(depthCam.width != depthCam.camera.width || depthCam.height != depthCam.camera.height){
-		cerr << "width is not the same" << endl;
-		return -1;
+	for (const QFileInfo &tiffFile : tiffFiles) {
+
+		CameraDepthmap depthCam;
+		QString cameraName = tiffFile.completeBaseName();
+		QString orientationXmlPath = xmlDir.absoluteFilePath("Orientation-" + cameraName + ".tif.xml");
+
+		cout << "Looking for XML: " << orientationXmlPath.toStdString() << endl;
+
+		if (!depthCam.camera.loadXml(orientationXmlPath)) {
+			cerr << "Failed to load XML: " << orientationXmlPath.toStdString() << endl;
+			continue;
+		}
+
+		if (!depthCam.loadDepth(qPrintable(tiffFile.absoluteFilePath()))) {
+			cerr << "Failed to load depth map: " << tiffFile.fileName().toStdString() << endl;
+			continue;
+		}
+		if(depthCam.width != depthCam.camera.width || depthCam.height != depthCam.camera.height){
+			cerr << "width is not the same" << endl;
+			return -1;
+		}
+		cout << "Processed: " << tiffFile.fileName().toStdString() << endl;
+
+		ortho.integratedCamera(depthCam, qPrintable(output_points));
+		//ortho.projectToCameraDepthMap(depthCam.camera, outputPath);
+
+		QString outputTiffPath = base +"output_" + tiffFile.fileName();
+		cout << "Output TIFF Path: " << outputTiffPath.toStdString() << endl;
+
+
+
 	}
-	ortho.integratedCamera(depthCam, qPrintable(output_points));
-	ortho.saveDepth(qPrintable(base + "testDepth.tiff"));
-	// sqrt
+	ortho.endIntegration();
+	ortho.saveDepth(qPrintable("final_depth.tif"));
 
 
+		//depthCam.camera.loadXml(orientationXmlPath);
+		//depthCam.loadDepth(qPrintable(tiffFile.absoluteFilePath()));
+
+	//ortho.saveDepth(qPrintable(base + "testDepth.tiff"));
 	//ortho.computeGaussianWeightedGrid(qPrintable(point_txt));
 
 
 	//int pixelX = 165;
 	//int pixelY = 144;
 	//float pixelZ = 4.5;
-	ortho.projectToCameraDepthMap(depthCam.camera, outputPath);
+
 	Eigen::Matrix3f rotationMatrix;
 	Eigen::Vector3f center;
 
@@ -84,7 +135,7 @@ int main(int argc, char *argv[]) {
 	//	depth.saveDepth(qPrintable(depthmapPath));
 	//	depth.saveMask(qPrintable(maskPath));
 	//QString maskObjPath = base + "testcenterRel_copia/photogrammetry/mask.obj";
-	ortho.saveObj(qPrintable(base + "testcenterRel_copia/photogrammetry/depthmap_projectL05C13.obj"));
+	ortho.saveObj(qPrintable(base + "depthmap_projectL05C13.obj"));
 
 
 	//depth.depthIntegrateNormals();

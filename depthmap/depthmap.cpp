@@ -163,7 +163,7 @@ Eigen::Vector3f Camera::projectionToImage(Eigen::Vector3f realPosition) const{
 
 	//proiezione
 	if (cameraCoords.z() == 0) {
-		cerr << "Warning: Z è zero, impossibile proiettare il punto." << endl;
+		cerr << "Z è zero, impossibile proiettare il punto." << endl;
 		return Eigen::Vector3f(0, 0, 0);
 	}
 	//Normalize by dividing by the z coordinate to get the image coordinates u and v as projected 2D coordinates
@@ -1001,7 +1001,7 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 
 	for (size_t i = 0; i < point_cloud.size(); i++) {
 
-		Eigen::Vector3f& realCoord = point_cloud[i];
+		Eigen::Vector3f realCoord = point_cloud[i];
 		float h = realCoord[2];
 		Eigen::Vector3f pixelCoord = realToPixelCoord(realCoord[0], realCoord[1], realCoord[2]);
 		// project from ortho plane to camera plane, hence the fixed z
@@ -1013,17 +1013,7 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 
 		if (pixelX >= 0 && pixelX < camera.width && pixelY >= 0 && pixelY < camera.height) {
 			float depthValue = camera.elevation[pixelX + pixelY * camera.width];
-			if(fabs(pixelCoord[0] - 170) < 3 && fabs(pixelCoord[1] - 150) < 3){
-				cout << "elevation: " << elevation[int(pixelCoord[0]) + int(pixelCoord[1]) *width] << endl;
-
-				cout << "PixelX: " << pixelCoord[0] << ", PixelY: " << pixelCoord[1] << "pixelZ " << pixelCoord[2] << endl;
-				cout << "h: " << h << endl;
-				cout << "depthValue: " << depthValue << endl;
-				cout << "Image Coords X: " << imageCoords[0] << ", Y: " << imageCoords[1] << endl;
-				cout << "Camera Width: " << camera.width << ", Camera Height: " << camera.height << endl;
-			}
-
-
+			cout << pixelX << " " <<  pixelY << " " << depthValue << endl;
 			imageCloud.push_back(Eigen::Vector3f(imageCoords[0]/camera.width, imageCoords[1]/camera.height, h));
 			source.push_back(depthValue);
 			out << depthValue << "\t" << h << "\t" << imageCoords[0]/camera.width << "\t" << imageCoords[1]/camera.height <<"\n"; //red e green
@@ -1050,31 +1040,24 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 
 			if(px >= 0 && px< camera.width && py >= 0 && py< camera.height){
 				float depthValue = camera.elevation[px + py * camera.width];
-				p[0] /= camera.width;
-				p[1] /= camera.height;
+				p[0] = px / float(camera.width);
+				p[1] = py / float(camera.height);
 				float h = gaussianGrid.target(p[0], p[1], depthValue);
 				Eigen::Vector3f d = realToPixelCoord(r[0], r[1], h);
 
+				float w = camera.calculateWeight(px, py);
+
 				//p0 e p1 devono venire uguale e vedi se depth è ugusle, h dovrebbe venire simile
-				if (fabs(x - 170) < 1 && fabs(y - 150) < 1){
-					cout << "Real Coord r:" << r[0] << endl;
-					cout << "Projected Coords p:" << p[0] << endl;
-					cout << "comparison:" << endl;
-					cout << "PixelX: " << px << ", PixelY: " << py << endl;
-					cout << "p[0]: " << p[0] << ", p[1]: " << p[1] << endl;
-					cout << "Depth Value: " << depthValue << endl;
-					cout <<"gaussian grid" << gaussianGrid.value(p[0], p[1]) << endl;
-					cout << "elevation: " << elevation[x+y * width] << endl;
-					cout << " h: " << h << endl;
-					cout << " d: " << d << endl;
-				}
-				elevation[x + y * width] = d[2];
+				elevation[x + y * width] += w * d[2];
+				mask[x+ y * width] += w;
 			} else {
 				//elevation[x + y*width] = origin[2] + resolution[2] * elevation[x + y*width];
 			}
 		}
 	}
+	saveObj("testElev.obj");
 }
+/*_-----------------------------------------------------------------------------------------*/
 void GaussianGrid::fitLinear(std::vector<float> &x, std::vector<float> &y, float &a, float &b) {
 	if (x.size() != y.size()) {
 		cout << "Errore: i vettori x e y devono avere la stessa lunghezza." << endl;
@@ -1096,6 +1079,32 @@ void GaussianGrid::fitLinear(std::vector<float> &x, std::vector<float> &y, float
 	b = (sum_y - a * sum_x) / n;
 }
 
+float GaussianGrid::bilinearInterpolation(float x, float y) {
+
+	float x1 = floor(x);
+	float y1 = floor(y);
+	float x2 = x1+1;
+	float y2 = y1+1;
+
+
+	if (x1 < 0 || x2 >= width || y1 < 0 || y2 >= height) {
+		cerr << "Coordinate fuori dai limiti della griglia!" << endl;
+		return 0.0f;
+	}
+
+
+	float Q11 = values[x1 + y1 * width];
+	float Q12 = values[x1 + y2 * width];
+	float Q21 = values[x2 + y1 * width];
+	float Q22 = values[x2 + y2 * width];
+
+	float R1 = (x2 - x) * Q11 + (x - x1) * Q21;
+	float R2 = (x2 - x) * Q12 + (x - x1) * Q22;
+
+	float P = (y2 - y) * R1 + (y - y1) * R2;
+
+	return P;
+}
 //fit h = a+b*elev
 void GaussianGrid::init(std::vector<Eigen::Vector3f> &cloud, std::vector<float> &source) {
 	int side = static_cast<int>(sqrt(cloud.size())) / 2;
@@ -1113,6 +1122,7 @@ void GaussianGrid::init(std::vector<Eigen::Vector3f> &cloud, std::vector<float> 
 	for(size_t i = 0; i < cloud.size(); i++) {
 		cloud[i][2] -= depthmapToCloud(source[i]);
 	}
+
 	computeGaussianWeightedGrid(cloud);
 	fillLaplacian(precision);
 }
@@ -1207,14 +1217,18 @@ void GaussianGrid::fillLaplacian(float precision){
 float GaussianGrid::value(float x, float y){
 	//bicubic interpolation
 	//nearest
-	int pixelX = std::max(0, std::min(width-1, (int)(x * (width-1))));
-	int pixelY = std::max(0, std::min(height-1, (int)(y * (height-1))));
-	return values[pixelX + pixelY * width];
+	float pixelX = x * (width-1);
+	float pixelY = y * (height-1);
+
+	 return bilinearInterpolation(pixelX, pixelY);
+
+	//return values[pixelX + pixelY * width];
+
 }
 
 float GaussianGrid::target(float x, float y, float h) {
 	h = depthmapToCloud(h);
-	return h - value(x, y);
+	return h + value(x, y);
 }
 
 void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &differences) {
@@ -1230,8 +1244,10 @@ void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &dif
 	values.resize(width * height, 0);
 	weights.resize(width * height, 0);
 
+	std::vector<int> count(width*height, 0);
 
-	float max_distance = 3 * sigma;
+
+	float max_distance = 1.2 * sigma;
 	for (auto &p : differences) {
 
 
@@ -1240,22 +1256,30 @@ void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &dif
 		int y_start = std::max(0, static_cast<int>((p[1] - max_distance - y_min) / y_step));
 		int y_end = std::min(height - 1, static_cast<int>((p[1] + max_distance - y_min) / y_step));
 
-		for (int i = x_start; i <= x_end; i++) {
-			for (int j = y_start; j <= y_end; j++) {
-				float xg = x_min + i * x_step;
-				float yg = y_min + j * y_step;
+		for (int x = x_start; x <= x_end; x++) {
+			for (int y = y_start; y <= y_end; y++) {
+				float xg = x_min + x * x_step;
+				float yg = y_min + y * y_step;
 
 				float distance = sqrt((p[0] - xg) * (p[0] - xg) + (p[1] - yg) * (p[1] - yg));
 				if (distance <= max_distance) {
 					float weight = exp(-(distance * distance) / (2 * sigma * sigma));
-					values[i * width + j] += weight * p[2];
-					weights[i * width + j] += weight;
+					values[y * width + x] += weight * p[2];
+					weights[y * width + x] += weight;
+					count[y*width + x]++;
 				}
 			}
 		}
 	}
+//chiama camere tutte e 4 e vedi come vengono
+	// pesare per il blanding funzione intervallo 0, 1 * 0, 1 0 ai bordi 1 al centro, che sia una funzione continua
+	//polinomio di 2 grado in x * pol 2 grado in y. derivata e peso a 0 sul bordo
+	//fai somma pesata e veedi come vieni
+	//funz target ritorna valore e peso
 
 	for (int i = 0; i < values.size(); i++) {
+		if(count[i] < 3)
+			weights[i] = 0;
 		if (weights[i] != 0) {
 			values[i] /= (weights[i]);
 		}
@@ -1266,7 +1290,31 @@ void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &dif
 		}
 	}*/
 }
+//
+float Depthmap::calculateWeight(float x, float y) const{
 
+	x/=width;
+	y/= height;
+
+	float weightX =pow(cos(M_PI * (x-0.5f)), 2);
+	float weightY = pow(cos(M_PI * (y-0.5f)), 2);
+
+	return weightX * weightY;
+}
+void OrthoDepthmap::beginIntegration(){
+	elevation.clear();
+	elevation.resize(width * height, 0);
+	mask.clear();
+	mask.resize(width * height, 0);
+
+}
+void OrthoDepthmap::endIntegration(){
+	for(size_t i =0; i < elevation.size(); i++){
+		if(mask[i]){
+			elevation[i] /= mask[i];
+		}
+	}
+}
 
 void GaussianGrid::imageGrid(const char* filename) {
 
