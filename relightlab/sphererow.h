@@ -9,8 +9,8 @@
 class Sphere;
 class QLabel;
 class QProgressBar;
-class ReflectionView;
-class PositionView;
+class ReflectionOverview;
+class SphereOverview;
 
 class DetectHighlights: public Task {
 public:
@@ -25,10 +25,10 @@ public:
 class SphereRow: public QWidget {
 	Q_OBJECT
 public:
-	Sphere *sphere;
 	int rowHeight = 92;
-	PositionView *position;
-	ReflectionView *reflections;
+	Sphere *sphere = nullptr;
+	SphereOverview *position = nullptr;
+	ReflectionOverview *reflections = nullptr;
 	QLabel *status = nullptr;
 	QProgressBar *progress = nullptr;
 	DetectHighlights *detect_highlights = nullptr;

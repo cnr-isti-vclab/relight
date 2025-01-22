@@ -1,10 +1,11 @@
 #include "alignrow.h"
+
 #include "markerdialog.h"
 #include "relightapp.h"
 #include "verifydialog.h"
 #include "reflectionview.h"
 #include "../src/project.h"
-#include "../src/sphere.h"
+#include "../src/align.h"
 #include "processqueue.h"
 
 #include <QHBoxLayout>
@@ -22,7 +23,7 @@ void FindAlignment::run() {
 	mutex.lock();
 	status = RUNNING;
 	mutex.unlock();
-/*
+
 	Project &project = qRelightApp->project();
 	for(size_t i = 0; i < project.images.size(); i++) {
 
@@ -30,11 +31,11 @@ void FindAlignment::run() {
 		if(image.skip) continue;
 
 		QImage img(image.filename);
-		sphere->findHighlight(img, i, update_positions);
+		align->readThumb(img, i);
 
 		int progress = std::min(99, (int)(100*(i+1) / project.images.size()));
 		progressed(QString("Detecting highlights"), progress);
-	} */
+	}
 	progressed(QString("Done"), 100);
 	mutex.lock();
 	status = DONE;
@@ -48,19 +49,19 @@ AlignRow::AlignRow(Align *_align, QWidget *parent): QWidget(parent) {
 	columns->setSpacing(20);
 
 	columns->addWidget(thumb = new QLabel());
-/*	position = new PositionView(sphere, rowHeight);
+	position = new AlignOverview(align->rect, rowHeight);
 	position->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	columns->addWidget(position);
 
 
-	reflections = new ReflectionView(sphere, rowHeight);
+	/*reflections = new ReflectionView(sphere, rowHeight);
 	reflections->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	columns->addWidget(reflections); */
 
 	QVBoxLayout *status_layout = new QVBoxLayout;
 	columns->addLayout(status_layout, 2);
 	status_layout->addStretch();
-	status = new QLabel("Locating highlights...");
+	status = new QLabel("Loading patches...");
 	status_layout->addWidget(status);
 	progress = new QProgressBar;
 	progress->setValue(0);
@@ -78,15 +79,17 @@ AlignRow::AlignRow(Align *_align, QWidget *parent): QWidget(parent) {
 	connect(remove, SIGNAL(clicked()), this, SLOT(remove()));
 	connect(verify, SIGNAL(clicked()), this, SLOT(verify()));
 
+
 }
 void AlignRow::edit() {
 	MarkerDialog *marker_dialog = new MarkerDialog(MarkerDialog::ALIGN, this);
 	marker_dialog->setAlign(align);
 	int answer = marker_dialog->exec();
 	if(answer == QDialog::Accepted) {
-		//position->update();
+		position->rect = align->rect;
+		position->update();
 		//reflections->init();
-		//detectHighlights();
+		findAlignment();
 	}
 }
 
@@ -105,36 +108,31 @@ void AlignRow::remove() {
 void AlignRow::updateStatus(QString msg, int percent) {
 	status->setText(msg);
 	progress->setValue(percent);
-	reflections->update();
+	//reflections->update();
 	if(percent == 100) {
 		emit updated();
 	}
 }
 
 void AlignRow::findAlignment(bool update) {
-/*	if(sphere->center.isNull()) {
-		status->setText("Needs at least 3 points.");
-		return;
+	if(!find_alignment) {
+		find_alignment = new FindAlignment(align, update);
+		connect(find_alignment, &FindAlignment::progress, this, &AlignRow::updateStatus); //, Qt::QueuedConnection);
 	}
-	if(!detect_highlights) {
-		detect_highlights = new DetectHighlights(sphere, update);
-		connect(detect_highlights, &DetectHighlights::progress, this, &SphereRow::updateStatus); //, Qt::QueuedConnection);
-	}
-	detect_highlights->stop();
+	find_alignment->stop();
 
 	ProcessQueue &queue = ProcessQueue::instance();
-	queue.removeTask(detect_highlights);
-	queue.addTask(detect_highlights);
-	queue.start(); */
+	queue.removeTask(find_alignment);
+	queue.addTask(find_alignment);
+	queue.start();
 }
 
 void AlignRow::stopFinding() {
-	/*
-	if(detect_highlights) {
-		if(detect_highlights->isRunning()) {
-			detect_highlights->stop();
-			detect_highlights->wait();
+	if(find_alignment) {
+		if(find_alignment->isRunning()) {
+			find_alignment->stop();
+			find_alignment->wait();
 		}
-		detect_highlights->deleteLater();
-	} */
+		find_alignment->deleteLater();
+	}
 }

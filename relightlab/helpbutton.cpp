@@ -60,6 +60,7 @@ void HelpedButton::init(QString id) {
 HelpButton::HelpButton(QString id, QWidget *parent): QToolButton(parent) {
 	setCursor(Qt::PointingHandCursor);
 	setIcon(QIcon::fromTheme("help-circle"));
+	setId(id);
 	//setStyleSheet("QToolButton { color: #ff00ff; }");
 	connect(this, SIGNAL(clicked()), this, SLOT(showHelp()));
 
@@ -74,8 +75,6 @@ void HelpButton::showHelp() {
 	QString id = objectName();
 	HelpDialog &dialog = HelpDialog::instance();
 	dialog.showPage(id);
-	//dialog.raise();
-	//dialog.exec();
 }
 
 HelpLabel::HelpLabel(QString txt, QString help_id, QWidget *parent): QWidget(parent) {

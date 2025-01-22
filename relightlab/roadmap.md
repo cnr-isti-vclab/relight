@@ -13,9 +13,7 @@
 * ellipse reflections geometrically accurate
 * cancel button on sphere reflection processing.
 * better info on queue items.
-* if scale exists don't overwrite imageWith with dome scale.
 * remove relight_vector and jus use eigen.
-* settings: notifications
 * allow resize for normals integration (it's too slow...).
 
 ## Long term new features
@@ -38,6 +36,7 @@
 * check for invalid inner circle when creating a sphere.
 * test pause/stop/play in queue.
 * deal with #lights  different from #images
+* when the sphere changes size, the icon with the reflection overview is not resized properly
 
 ## Small Bugs
 

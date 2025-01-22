@@ -38,3 +38,9 @@ void Align::fromJson(QJsonObject obj) {
 		offsets.push_back(QPointF(j[0].toDouble(), j[1].toDouble()));
 	}
 }
+
+void Align::readThumb(QImage img, int n) {
+	if(n == 0)
+		thumbs.clear();
+	thumbs.push_back(img.copy(rect));
+}

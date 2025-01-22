@@ -1,6 +1,6 @@
 # Index
 
-0. <a href="start/gettingstarted.md"> Getting started </a>
+0. <a href="gettingstarted.md"> Getting started </a>
 
 1. <a href="interface/index.md"> Interface </a>
 
