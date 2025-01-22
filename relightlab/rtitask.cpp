@@ -38,7 +38,7 @@ QString RtiParameters::summary() {
 	else
 		s_format = formatLabels[format];
 
-	QString txt = QString("%1 (%2) %3 %4").arg(s_basis).arg(s_colorspace).arg(s_planes).arg(s_format).arg(path);
+	QString txt = QString("%1 (%2) %3 %4").arg(s_basis).arg(s_colorspace).arg(s_planes).arg(s_format);
 	return txt;
 }
 
