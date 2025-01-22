@@ -90,7 +90,7 @@
 <file>docs/normals/export.md</file>
 <file>docs/normals/flattening.md</file>
 <file>docs/normals/normalmap.md</file>
-<file>docs/normals/surface</file>
+<file>docs/normals/surface.md</file>
 <file>docs/rti/basis.md</file>
 <file>docs/rti/coefficients.md</file>
 <file>docs/rti/colorspace.md</file>
@@ -102,7 +102,7 @@
 <file>docs/formats/config.md</file>
 <file>docs/formats/dome.md</file>
 <file>docs/formats/project.md</file>
-<file>docs/formats/iif.md</file>
+<file>docs/formats/iiif.md</file>
 <file>docs/formats/legacy.md</file>
 <file>docs/formats/web.md</file>
 <file>icons/dark/scalable/chevrons-down.svg</file>
