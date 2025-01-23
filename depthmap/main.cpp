@@ -41,6 +41,7 @@ int main(int argc, char *argv[]) {
 	QString output_points = base + "points_h.txt";
 	QString output_grid = base + "tgrid.png";
 
+
 	OrthoDepthmap ortho;
 
 	if(!ortho.load(qPrintable(depthmapPath), qPrintable(maskPath))){
@@ -65,6 +66,9 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
+//doortho = 1 domec =0;
+
+
 	//ortho.computeNormals();
 	//ortho.saveNormals(qPrintable(base + "testcenterRel_copia/photogrammetry/original.png"));
 	//ortho.saveObj(qPrintable(base + "testcenterRel_copia/photogrammetry/original.obj"));
@@ -80,6 +84,10 @@ int main(int argc, char *argv[]) {
 	ortho.verifyPointCloud();
 	ortho.beginIntegration();
 
+	if (QFile::copy(depthmapPath + "_backup.tif", depthmapPath))
+		cout << "Copia di backup salvata come: " << (depthmapPath + "_backup.tif").toStdString() << endl;
+	if (QFile::copy( maskPath + "_backup.tif", maskPath))
+		cout << "Copia di backup salvata come: " << (maskPath + "_backup.tif").toStdString() << endl;
 
 	for (const QFileInfo &tiffFile : tiffFiles) {
 
@@ -114,7 +122,12 @@ int main(int argc, char *argv[]) {
 
 	}
 	ortho.endIntegration();
-	ortho.saveDepth(qPrintable("final_depth.tif"));
+	ortho.saveDepth(qPrintable(depthmapPath));
+	ortho.saveMask(qPrintable(maskPath));
+	ortho.saveObj("weightsElev2.obj");
+
+
+
 
 
 		//depthCam.camera.loadXml(orientationXmlPath);

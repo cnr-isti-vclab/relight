@@ -31,6 +31,8 @@ public:
 	uint32_t width, height;
 	std::vector<float> elevation;
 	std::vector<float> mask;
+	std::vector<float> weights;
+
 	std::vector<Eigen::Vector3f> normals;
 
 
@@ -66,6 +68,8 @@ public:
 	int width, height;
 	std::vector<float> values;
 	std::vector<float> weights;
+	float sideFactor = 0.5f;  // corrective factor over the 1/sqrt(n) formula.
+	int minSamples = 3;       // minimum number of samples needed in a pixel
 	float sigma;
 	float a, b;//coefficient of linear transform from source to point cloud space.
 

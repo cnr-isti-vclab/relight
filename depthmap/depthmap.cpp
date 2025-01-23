@@ -253,7 +253,7 @@ bool Depthmap::loadTiff(const char *tiff, vector<float> &values, uint32_t &w, ui
 	// Check if the TIFF is tiled
 	uint32_t tileWidth, tileLength;
 	if (!TIFFGetField(inTiff, TIFFTAG_TILEWIDTH, &tileWidth) ||
-			!TIFFGetField(inTiff, TIFFTAG_TILELENGTH, &tileLength)) {
+		!TIFFGetField(inTiff, TIFFTAG_TILELENGTH, &tileLength)) {
 		return loadStripedTiff(inTiff, values, w, h, bitsPerSample);
 	} else {
 		return loadTiledTiff(inTiff, values, w, h, tileWidth, tileLength, bitsPerSample);
@@ -453,10 +453,10 @@ bool Depthmap::loadNormals(const char *normals_path){
 			int i = x + y * width;
 
 			normals[i] = Eigen::Vector3f(
-						(qRed(rgb) / 255.0f) * 2.0f - 1.0f,
-						(qGreen(rgb) / 255.0f) * 2.0f - 1.0f,
-						(qBlue(rgb) / 255.0f) * 2.0f - 1.0f
-						);
+				(qRed(rgb) / 255.0f) * 2.0f - 1.0f,
+				(qGreen(rgb) / 255.0f) * 2.0f - 1.0f,
+				(qBlue(rgb) / 255.0f) * 2.0f - 1.0f
+				);
 		}
 	}
 
@@ -774,7 +774,7 @@ bool OrthoDepthmap::loadXml(const char *xmlPath){
 
 
 	if (originePlaniNodes.isEmpty() || resolutionPlaniNodes.isEmpty() ||
-			origineAltiNodes.isEmpty() || resolutionAltiNodes.isEmpty()) {
+		origineAltiNodes.isEmpty() || resolutionAltiNodes.isEmpty()) {
 		cerr << "OriginePlani, ResolutionPlani, OrigineAlti, or ResolutionAlti not found in XML." << endl;
 		return false;
 
@@ -999,6 +999,40 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 	std::vector<Eigen::Vector3f> imageCloud;
 	std::vector<float> source;
 
+	//1. togliere dalla point tutti i punti che cadono dentro la maschera
+	//2. aggiungere un campionamento regolare dentro la maschera
+
+	int count = 0;
+
+	for(int i = 0; i < point_cloud.size(); i++) {
+
+		Eigen::Vector3f point = point_cloud[i];
+		Eigen::Vector3f pixel = realToPixelCoord(point[0], point[1], point[2]);
+
+		int mx = std::max<float>(0, std::min<float>(width-1, int(pixel[0])));
+		int my = std::max<float>(0, std::min<float>(height-1, int(pixel[1])));
+
+		bool inside = mask[mx + my*width] == 0.0f;
+		if(inside)
+			continue;
+
+		point_cloud[count++] = point;
+	}
+	point_cloud.resize(count);
+
+
+	int step = 10;
+
+	for(int y = 0; y < height; y+= step) {
+		for(int x = 0; x < width; x += step) {
+			bool inside = mask[x + y*width] == 0.0f;
+			if(!inside)
+				continue;
+			auto point = pixelToRealCoordinates(x, y, elevation[x + y*width]);
+			point_cloud.push_back(point);
+	}
+}
+
 	for (size_t i = 0; i < point_cloud.size(); i++) {
 
 		Eigen::Vector3f realCoord = point_cloud[i];
@@ -1023,14 +1057,19 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 	}
 
 	GaussianGrid gaussianGrid;
+	gaussianGrid.minSamples = 3; // 1, 3, 5
+	gaussianGrid.sideFactor = 1; // 0.25, 0.5, 1
 	gaussianGrid.init(imageCloud, source);
 	gaussianGrid.imageGrid(("test.png"));
 
+	static float c = 1.0f;
 	float ortho_z = realToPixelCoord(0,0,z)[2];
 
 	for(size_t y=0; y < height; y++){
 		for(size_t x=0; x < width; x++){
-			//if(x,y )
+			if(mask[x + y * width] != 0.0f){
+				continue;
+			}
 			Eigen::Vector3f r = pixelToRealCoordinates(x, y, ortho_z);
 			assert(fabs(z-r[2]) < 0.1f);
 			Eigen::Vector3f p = camera.camera.projectionToImage(r);
@@ -1046,16 +1085,19 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 				Eigen::Vector3f d = realToPixelCoord(r[0], r[1], h);
 
 				float w = camera.calculateWeight(px, py);
-
 				//p0 e p1 devono venire uguale e vedi se depth è ugusle, h dovrebbe venire simile
+
 				elevation[x + y * width] += w * d[2];
-				mask[x+ y * width] += w;
-			} else {
+
+				weights[x+ y * width] += w;
+
+			}else {
 				//elevation[x + y*width] = origin[2] + resolution[2] * elevation[x + y*width];
 			}
 		}
 	}
-	saveObj("testElev.obj");
+
+
 }
 /*_-----------------------------------------------------------------------------------------*/
 void GaussianGrid::fitLinear(std::vector<float> &x, std::vector<float> &y, float &a, float &b) {
@@ -1107,7 +1149,7 @@ float GaussianGrid::bilinearInterpolation(float x, float y) {
 }
 //fit h = a+b*elev
 void GaussianGrid::init(std::vector<Eigen::Vector3f> &cloud, std::vector<float> &source) {
-	int side = static_cast<int>(sqrt(cloud.size())) / 2;
+	int side = static_cast<int>(sideFactor * sqrt(cloud.size()));
 	sigma = 1.0f / side;
 	width = side;
 	height = side;
@@ -1220,7 +1262,7 @@ float GaussianGrid::value(float x, float y){
 	float pixelX = x * (width-1);
 	float pixelY = y * (height-1);
 
-	 return bilinearInterpolation(pixelX, pixelY);
+	return bilinearInterpolation(pixelX, pixelY);
 
 	//return values[pixelX + pixelY * width];
 
@@ -1247,7 +1289,7 @@ void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &dif
 	std::vector<int> count(width*height, 0);
 
 
-	float max_distance = 1.2 * sigma;
+	float max_distance = 2 * sigma;
 	for (auto &p : differences) {
 
 
@@ -1271,14 +1313,14 @@ void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &dif
 			}
 		}
 	}
-//chiama camere tutte e 4 e vedi come vengono
+	//chiama camere tutte e 4 e vedi come vengono
 	// pesare per il blanding funzione intervallo 0, 1 * 0, 1 0 ai bordi 1 al centro, che sia una funzione continua
 	//polinomio di 2 grado in x * pol 2 grado in y. derivata e peso a 0 sul bordo
 	//fai somma pesata e veedi come vieni
 	//funz target ritorna valore e peso
 
 	for (int i = 0; i < values.size(); i++) {
-		if(count[i] < 3)
+		if(count[i] < minSamples)
 			weights[i] = 0;
 		if (weights[i] != 0) {
 			values[i] /= (weights[i]);
@@ -1290,29 +1332,48 @@ void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &dif
 		}
 	}*/
 }
-//
+//se < 1/4 è -8x^2, else se è < 3/4. 8*(x-1)^2, data una x mi ritorna una x+1
+
+static float bell(float x){
+	if(x < 0.25f){
+		return 8.0f* x * x;
+	}
+	else if(x< 0.75f){
+		return -8.0f * x *x + 8.0f * x-1.0f;
+	}
+	else {
+		x = 1.0f - x;
+		return 8.0f * x * x;
+	}
+
+}
+
 float Depthmap::calculateWeight(float x, float y) const{
 
-	x/=width;
-	y/= height;
+	x /= width;
+	y /= height;
 
-	float weightX =pow(cos(M_PI * (x-0.5f)), 2);
-	float weightY = pow(cos(M_PI * (y-0.5f)), 2);
-
-	return weightX * weightY;
+	//	float weightX =pow(cos(M_PI * (x-0.5f)), 2);
+	//float weightY = pow(cos(M_PI * (y-0.5f)), 2);
+	return bell(x)*bell(y);
+	//return weightX * weightY;
 }
 void OrthoDepthmap::beginIntegration(){
-	elevation.clear();
-	elevation.resize(width * height, 0);
-	mask.clear();
-	mask.resize(width * height, 0);
+	for(size_t i =0; i < elevation.size(); i++){
+		if(mask[i] == 0.0f){
+			elevation[i] = 0.0f;
+		}
+	}
+//	elevation.clear();
+//	elevation.resize(width * height, 0);
+//	weights.clear();
+//	weights.resize(width * height, 0);
 
 }
 void OrthoDepthmap::endIntegration(){
 	for(size_t i =0; i < elevation.size(); i++){
-		if(mask[i]){
-			elevation[i] /= mask[i];
-		}
+		//if(mask[i] == 0.0f) {// && weights[i] != 0.0f){
+			elevation[i] =4; ///= weights[i];
 	}
 }
 
