@@ -9,6 +9,7 @@
 class Sphere;
 class QLabel;
 class QProgressBar;
+class QPushButton;
 class ReflectionOverview;
 class SphereOverview;
 
@@ -31,6 +32,7 @@ public:
 	ReflectionOverview *reflections = nullptr;
 	QLabel *status = nullptr;
 	QProgressBar *progress = nullptr;
+	QPushButton *verify_button = nullptr;
 	DetectHighlights *detect_highlights = nullptr;
 
 	SphereRow(Sphere *sphere, QWidget *parent = nullptr);

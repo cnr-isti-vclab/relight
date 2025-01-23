@@ -34,7 +34,7 @@ void FindAlignment::run() {
 		align->readThumb(img, i);
 
 		int progress = std::min(99, (int)(100*(i+1) / project.images.size()));
-		progressed(QString("Detecting highlights"), progress);
+		progressed(QString("Collecting patches"), progress);
 	}
 	progressed(QString("Done"), 100);
 	mutex.lock();
@@ -70,14 +70,15 @@ AlignRow::AlignRow(Align *_align, QWidget *parent): QWidget(parent) {
 
 	QPushButton *edit = new QPushButton(QIcon::fromTheme("edit"), "Edit...");
 	columns->addWidget(edit, 1);
-	QPushButton *verify = new QPushButton(QIcon::fromTheme("check"), "Verify...");
-	columns->addWidget(verify, 1);
+	verify_button = new QPushButton(QIcon::fromTheme("check"), "Verify...");
+	verify_button->setEnabled(false);
+	columns->addWidget(verify_button, 1);
 	QPushButton *remove = new QPushButton(QIcon::fromTheme("trash-2"), "Delete");
 	columns->addWidget(remove, 1);
 
 	connect(edit, SIGNAL(clicked()), this, SLOT(edit()));
 	connect(remove, SIGNAL(clicked()), this, SLOT(remove()));
-	connect(verify, SIGNAL(clicked()), this, SLOT(verify()));
+	connect(verify_button, SIGNAL(clicked()), this, SLOT(verify()));
 
 
 }
@@ -94,10 +95,7 @@ void AlignRow::edit() {
 }
 
 void AlignRow::verify() {
-	std::vector<QPointF> centers;
-	std::vector<QImage> thumbs;
-//	assert(0); //todo needs to initialize those vaules and update align.
-	VerifyDialog *verify_dialog = new VerifyDialog(thumbs, centers, this);
+	VerifyDialog *verify_dialog = new VerifyDialog(align->thumbs, align->offsets, VerifyDialog::ALIGN, this);
 	verify_dialog->exec();
 }
 
@@ -111,10 +109,12 @@ void AlignRow::updateStatus(QString msg, int percent) {
 	//reflections->update();
 	if(percent == 100) {
 		emit updated();
+		verify_button->setEnabled(true);
 	}
 }
 
 void AlignRow::findAlignment(bool update) {
+	verify_button->setEnabled(false);
 	if(!find_alignment) {
 		find_alignment = new FindAlignment(align, update);
 		connect(find_alignment, &FindAlignment::progress, this, &AlignRow::updateStatus); //, Qt::QueuedConnection);

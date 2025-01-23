@@ -43,4 +43,5 @@ void Align::readThumb(QImage img, int n) {
 	if(n == 0)
 		thumbs.clear();
 	thumbs.push_back(img.copy(rect));
+	offsets.push_back(QPointF(0, 0));
 }

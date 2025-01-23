@@ -9,7 +9,8 @@ class Sphere;
 
 class VerifyDialog: public QDialog {
 public:
-	VerifyDialog(std::vector<QImage> &thumbs, std::vector<QPointF> &positions, QWidget *parent = nullptr);
+	enum Markers { REFLECTION, ALIGN };
+	VerifyDialog(std::vector<QImage> &thumbs, std::vector<QPointF> &positions, Markers marker, QWidget *parent = nullptr);
 
 private:
 	FlowLayout *flowlayout = nullptr;
