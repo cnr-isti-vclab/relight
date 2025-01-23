@@ -10,6 +10,7 @@
 class Align;
 class QLabel;
 class QProgressBar;
+class QPushButton;
 class AlignOverview;
 class QGraphicsPixmapItem;
 
@@ -32,6 +33,7 @@ public:
 	AlignOverview *position = nullptr;
 	QLabel *status = nullptr;
 	QProgressBar *progress = nullptr;
+	QPushButton *verify_button = nullptr;
 	FindAlignment *find_alignment = nullptr;
 
 	AlignRow(Align *align, QWidget *parent = nullptr);

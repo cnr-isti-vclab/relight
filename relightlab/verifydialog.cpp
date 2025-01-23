@@ -11,8 +11,10 @@
 #include <QDialogButtonBox>
 #include "assert.h"
 
+#include <iostream>
+using namespace std;
 
-VerifyDialog::VerifyDialog(std::vector<QImage> &_thumbs, std::vector<QPointF> &_positions, QWidget *parent):
+VerifyDialog::VerifyDialog(std::vector<QImage> &_thumbs, std::vector<QPointF> &_positions, Markers marker, QWidget *parent):
 	QDialog(parent), thumbs(_thumbs), positions(_positions) {
 	setModal(true);
 
@@ -28,9 +30,16 @@ VerifyDialog::VerifyDialog(std::vector<QImage> &_thumbs, std::vector<QPointF> &_
 
 	area->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
+	cout << "Thumbs.size: " << thumbs.size() << endl;
 	for(size_t i = 0; i < thumbs.size(); i++) {
-		VerifyView *thumb = new VerifyView(thumbs[i], positions[i], 192);
-		flowlayout->addWidget(thumb);
+		assert(!thumbs[i].isNull());
+		if(marker == REFLECTION ) {
+			ReflectionVerify *thumb = new ReflectionVerify(thumbs[i], 192, positions[i]);
+			flowlayout->addWidget(thumb);
+		} else {
+			AlignVerify *thumb = new AlignVerify(thumbs[i], 192, positions[i]);
+			flowlayout->addWidget(thumb);
+		}
 	}
 
 	QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);

@@ -64,14 +64,15 @@ SphereRow::SphereRow(Sphere *_sphere, QWidget *parent): QWidget(parent) {
 
 	QPushButton *edit = new QPushButton(QIcon::fromTheme("edit"), "Edit...");
 	columns->addWidget(edit, 1);
-	QPushButton *verify = new QPushButton(QIcon::fromTheme("check"), "Verify...");
-	columns->addWidget(verify, 1);
+	verify_button = new QPushButton(QIcon::fromTheme("check"), "Verify...");
+	verify_button->setEnabled(false);
+	columns->addWidget(verify_button, 1);
 	QPushButton *remove = new QPushButton(QIcon::fromTheme("trash-2"), "Delete");
 	columns->addWidget(remove, 1);
 
 	connect(edit, SIGNAL(clicked()), this, SLOT(edit()));
 	connect(remove, SIGNAL(clicked()), this, SLOT(remove()));
-	connect(verify, SIGNAL(clicked()), this, SLOT(verify()));
+	connect(verify_button, SIGNAL(clicked()), this, SLOT(verify()));
 
 }
 void SphereRow::edit() {
@@ -92,8 +93,7 @@ void SphereRow::verify() {
 	std::vector<QPointF> &positions = sphere->lights;
 	for(QPointF &pos: positions)
 		pos -= sphere->inner.topLeft();
-
-	VerifyDialog *verify_dialog = new VerifyDialog(sphere->thumbs, positions, this);
+	VerifyDialog *verify_dialog = new VerifyDialog(sphere->thumbs, positions, VerifyDialog::REFLECTION, this);
 	verify_dialog->exec();
 
 	for(QPointF &pos: positions)
@@ -110,14 +110,18 @@ void SphereRow::updateStatus(QString /*msg*/, int percent) {
 	reflections->update();
 	if(percent == 100) {
 		emit updated();
+		verify_button->setEnabled(true);
 	}
 }
 
 void SphereRow::detectHighlights(bool update) {
+
+
 	if(sphere->center.isNull()) {
 //		status->setText("Needs at least 3 points.");
 		return;
 	}
+	verify_button->setEnabled(false);
 	if(!detect_highlights) {
 		detect_highlights = new DetectHighlights(sphere, update);
 		connect(detect_highlights, &DetectHighlights::progress, this, &SphereRow::updateStatus); //, Qt::QueuedConnection);
@@ -137,5 +141,6 @@ void SphereRow::stopDetecting() {
 			detect_highlights->wait();
 		}
 		detect_highlights->deleteLater();
+		verify_button->setEnabled(true);
 	}
 }
