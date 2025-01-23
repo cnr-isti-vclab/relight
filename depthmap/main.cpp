@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}*/
 	//input
-#define MACOS 1
+//#define MACOS 1
 #ifdef MACOS
 	QString base = "/Users/erika/Desktop/testcenterRel_copia/";
 #else
@@ -26,12 +26,12 @@ int main(int argc, char *argv[]) {
 
 
 
-	QString depthmapPath = base + "photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
+	QString depthmapPath = base + base + "Z_Num7_DeZoom4_STD-MALT.tif";
 	//QString cameraDepthmap = base + "datasets/L04C12.tif";
 	//QString orientationXmlPath = base + "photogrammetry/Ori-Relative/Orientation-L04C12.tif.xml";
-	QString maskPath = base + "photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
-	QString plyFile = base +"photogrammetry/AperiCloud_Relative__mini.ply";
-	QString point_txt = base + "photogrammetry/points_h.txt";
+	QString maskPath = base + "Masq_STD-MALT_DeZoom4.tif";
+	QString plyFile = base +"AperiCloud_Relative__mini.ply";
+	//QString point_txt = base + "photogrammetry/points_h.txt";
 	Depthmap depth;
 
 	//output
@@ -44,13 +44,25 @@ int main(int argc, char *argv[]) {
 
 	OrthoDepthmap ortho;
 
+
+	QFile::remove(depthmapPath);
+	if (!QFile::copy(depthmapPath + "_backup.tif", depthmapPath)) {
+		cout << "Errror copying depthmap" << endl;
+		exit(0);
+	}
+	QFile::remove(maskPath);
+	if (!QFile::copy( maskPath + "_backup.tif", maskPath)) {
+		cout << "Error copying mask" << endl;
+		exit(0);
+	}
+
 	if(!ortho.load(qPrintable(depthmapPath), qPrintable(maskPath))){
 		cout << "accidenti" << endl;
 		return -1;
 	}
 
-	QDir datasetsDir(base + "datasets");
-	QDir xmlDir(base + "photogrammetry/Ori-Relative");
+	QDir datasetsDir(base + "../datasets");
+	QDir xmlDir(base + "Ori-Relative");
 	QStringList tiffFilters = {"*.tif"};
 	QStringList xmlFilters = {"Orientation-*.tif.xml"};
 
@@ -84,10 +96,6 @@ int main(int argc, char *argv[]) {
 	ortho.verifyPointCloud();
 	ortho.beginIntegration();
 
-	if (QFile::copy(depthmapPath + "_backup.tif", depthmapPath))
-		cout << "Copia di backup salvata come: " << (depthmapPath + "_backup.tif").toStdString() << endl;
-	if (QFile::copy( maskPath + "_backup.tif", maskPath))
-		cout << "Copia di backup salvata come: " << (maskPath + "_backup.tif").toStdString() << endl;
 
 	for (const QFileInfo &tiffFile : tiffFiles) {
 
@@ -117,8 +125,6 @@ int main(int argc, char *argv[]) {
 
 		QString outputTiffPath = base +"output_" + tiffFile.fileName();
 		cout << "Output TIFF Path: " << outputTiffPath.toStdString() << endl;
-
-
 
 	}
 	ortho.endIntegration();

@@ -253,7 +253,7 @@ bool Depthmap::loadTiff(const char *tiff, vector<float> &values, uint32_t &w, ui
 	// Check if the TIFF is tiled
 	uint32_t tileWidth, tileLength;
 	if (!TIFFGetField(inTiff, TIFFTAG_TILEWIDTH, &tileWidth) ||
-		!TIFFGetField(inTiff, TIFFTAG_TILELENGTH, &tileLength)) {
+			!TIFFGetField(inTiff, TIFFTAG_TILELENGTH, &tileLength)) {
 		return loadStripedTiff(inTiff, values, w, h, bitsPerSample);
 	} else {
 		return loadTiledTiff(inTiff, values, w, h, tileWidth, tileLength, bitsPerSample);
@@ -453,10 +453,10 @@ bool Depthmap::loadNormals(const char *normals_path){
 			int i = x + y * width;
 
 			normals[i] = Eigen::Vector3f(
-				(qRed(rgb) / 255.0f) * 2.0f - 1.0f,
-				(qGreen(rgb) / 255.0f) * 2.0f - 1.0f,
-				(qBlue(rgb) / 255.0f) * 2.0f - 1.0f
-				);
+						(qRed(rgb) / 255.0f) * 2.0f - 1.0f,
+						(qGreen(rgb) / 255.0f) * 2.0f - 1.0f,
+						(qBlue(rgb) / 255.0f) * 2.0f - 1.0f
+						);
 		}
 	}
 
@@ -774,7 +774,7 @@ bool OrthoDepthmap::loadXml(const char *xmlPath){
 
 
 	if (originePlaniNodes.isEmpty() || resolutionPlaniNodes.isEmpty() ||
-		origineAltiNodes.isEmpty() || resolutionAltiNodes.isEmpty()) {
+			origineAltiNodes.isEmpty() || resolutionAltiNodes.isEmpty()) {
 		cerr << "OriginePlani, ResolutionPlani, OrigineAlti, or ResolutionAlti not found in XML." << endl;
 		return false;
 
@@ -981,7 +981,73 @@ void OrthoDepthmap::verifyPointCloud(){
 */
 	}
 }
+//#define PRESERVE_INTERIOR
 
+void OrthoDepthmap::beginIntegration(){
+
+	bool use_depthmap = false;
+	if(use_depthmap) {
+		//1. togliere dalla point tutti i punti che cadono dentro la maschera
+		//2. aggiungere un campionamento regolare dentro la maschera
+		int count = 0;
+		for(size_t i = 0; i < point_cloud.size(); i++) {
+
+			Eigen::Vector3f point = point_cloud[i];
+			Eigen::Vector3f pixel = realToPixelCoord(point[0], point[1], point[2]);
+
+			int mx = std::max<float>(0, std::min<float>(width-1, int(pixel[0])));
+			int my = std::max<float>(0, std::min<float>(height-1, int(pixel[1])));
+
+			bool inside = mask[mx + my*width] == 0.0f;
+			if(inside)
+				continue;
+
+			point_cloud[count++] = point;
+		}
+		point_cloud.resize(count);
+
+		int step = 1;
+
+		for(int y = 0; y < height; y+= step) {
+			for(int x = 0; x < width; x += step) {
+				bool inside = (mask[x + y*width] != 0.0f);
+				if(!inside)
+					continue;
+				auto point = pixelToRealCoordinates(x, y, elevation[x + y*width]);
+				point_cloud.push_back(point);
+			}
+		}
+	}
+
+	for(size_t i =0; i < elevation.size(); i++) {
+#ifdef PRESERVE_INTERIOR
+		if(mask[i] == 0.0f){
+#endif
+			elevation[i] = 0.0f;
+#ifdef PRESERVE_INTERIOR
+		}
+#endif
+	}
+	//	elevation.clear();
+	//	elevation.resize(width * height, 0);
+	weights.clear();
+	weights.resize(width * height, 0);
+
+}
+
+void OrthoDepthmap::endIntegration(){
+	for(size_t i =0; i < elevation.size(); i++){
+#ifdef PRESERVE_INTERIOR
+		if(mask[i] == 0.0f) {
+#endif
+			if(weights[i] != 0.0f) {
+				elevation[i] /= weights[i];
+			}
+#ifdef PRESERVE_INTERIOR
+		}
+#endif
+	}
+}
 
 void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *outputFile){
 
@@ -999,40 +1065,6 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 	std::vector<Eigen::Vector3f> imageCloud;
 	std::vector<float> source;
 
-	//1. togliere dalla point tutti i punti che cadono dentro la maschera
-	//2. aggiungere un campionamento regolare dentro la maschera
-
-	int count = 0;
-
-	for(int i = 0; i < point_cloud.size(); i++) {
-
-		Eigen::Vector3f point = point_cloud[i];
-		Eigen::Vector3f pixel = realToPixelCoord(point[0], point[1], point[2]);
-
-		int mx = std::max<float>(0, std::min<float>(width-1, int(pixel[0])));
-		int my = std::max<float>(0, std::min<float>(height-1, int(pixel[1])));
-
-		bool inside = mask[mx + my*width] == 0.0f;
-		if(inside)
-			continue;
-
-		point_cloud[count++] = point;
-	}
-	point_cloud.resize(count);
-
-
-	int step = 10;
-
-	for(int y = 0; y < height; y+= step) {
-		for(int x = 0; x < width; x += step) {
-			bool inside = mask[x + y*width] == 0.0f;
-			if(!inside)
-				continue;
-			auto point = pixelToRealCoordinates(x, y, elevation[x + y*width]);
-			point_cloud.push_back(point);
-	}
-}
-
 	for (size_t i = 0; i < point_cloud.size(); i++) {
 
 		Eigen::Vector3f realCoord = point_cloud[i];
@@ -1047,11 +1079,9 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 
 		if (pixelX >= 0 && pixelX < camera.width && pixelY >= 0 && pixelY < camera.height) {
 			float depthValue = camera.elevation[pixelX + pixelY * camera.width];
-			cout << pixelX << " " <<  pixelY << " " << depthValue << endl;
 			imageCloud.push_back(Eigen::Vector3f(imageCoords[0]/camera.width, imageCoords[1]/camera.height, h));
 			source.push_back(depthValue);
 			out << depthValue << "\t" << h << "\t" << imageCoords[0]/camera.width << "\t" << imageCoords[1]/camera.height <<"\n"; //red e green
-
 		}
 
 	}
@@ -1062,14 +1092,15 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 	gaussianGrid.init(imageCloud, source);
 	gaussianGrid.imageGrid(("test.png"));
 
-	static float c = 1.0f;
 	float ortho_z = realToPixelCoord(0,0,z)[2];
 
 	for(size_t y=0; y < height; y++){
 		for(size_t x=0; x < width; x++){
+#ifdef PRESERVE_INTERIOR
 			if(mask[x + y * width] != 0.0f){
 				continue;
 			}
+#endif
 			Eigen::Vector3f r = pixelToRealCoordinates(x, y, ortho_z);
 			assert(fabs(z-r[2]) < 0.1f);
 			Eigen::Vector3f p = camera.camera.projectionToImage(r);
@@ -1081,6 +1112,7 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 				float depthValue = camera.elevation[px + py * camera.width];
 				p[0] = px / float(camera.width);
 				p[1] = py / float(camera.height);
+
 				float h = gaussianGrid.target(p[0], p[1], depthValue);
 				Eigen::Vector3f d = realToPixelCoord(r[0], r[1], h);
 
@@ -1091,7 +1123,7 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 
 				weights[x+ y * width] += w;
 
-			}else {
+			} else {
 				//elevation[x + y*width] = origin[2] + resolution[2] * elevation[x + y*width];
 			}
 		}
@@ -1357,24 +1389,6 @@ float Depthmap::calculateWeight(float x, float y) const{
 	//float weightY = pow(cos(M_PI * (y-0.5f)), 2);
 	return bell(x)*bell(y);
 	//return weightX * weightY;
-}
-void OrthoDepthmap::beginIntegration(){
-	for(size_t i =0; i < elevation.size(); i++){
-		if(mask[i] == 0.0f){
-			elevation[i] = 0.0f;
-		}
-	}
-//	elevation.clear();
-//	elevation.resize(width * height, 0);
-//	weights.clear();
-//	weights.resize(width * height, 0);
-
-}
-void OrthoDepthmap::endIntegration(){
-	for(size_t i =0; i < elevation.size(); i++){
-		//if(mask[i] == 0.0f) {// && weights[i] != 0.0f){
-			elevation[i] =4; ///= weights[i];
-	}
 }
 
 void GaussianGrid::imageGrid(const char* filename) {
