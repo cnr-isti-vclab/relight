@@ -491,7 +491,7 @@ void Depthmap::saveTiff(const char *mask_path,const vector<float> &values, uint3
 	if (scanLineSize == 0) {
 		cerr << "Error computing scanline size." << endl;
 		TIFFClose(maskTiff);
-		return;
+		throw QString("Width is zero");
 	}
 
 
@@ -667,7 +667,7 @@ void Depthmap::resizeNormals (int factorPowerOfTwo, int step) {
 
 					if (srcX < width && srcY < height) {
 
-						// 1. create the array dx and dy, after convert to normals
+						// 1. create the array dx and dxy, after convert to normals
 						Eigen::Vector3f normal = normals[srcX + srcY * width];
 						float dzdx = -normal.x() / normal.z();
 						float dzdy = -normal.y() / normal.z();
@@ -939,10 +939,7 @@ void OrthoDepthmap::loadPointCloud(const char *textPath){
 			throw QString("Invalide ply");
 
 		point_cloud.push_back(v);
-
 	}
-
-
 }
 
 Eigen::Vector3f OrthoDepthmap::realToPixelCoord(float realX, float realY, float realZ){
@@ -1042,6 +1039,7 @@ void OrthoDepthmap::endIntegration(){
 #endif
 			if(weights[i] != 0.0f) {
 				elevation[i] /= weights[i];
+				mask[i] = 1;
 			}
 #ifdef PRESERVE_INTERIOR
 		}

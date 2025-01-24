@@ -563,6 +563,12 @@ void PanoBuilder::malt_ortho(){
 
 		executeProcess(program, arguments);
 
+		QString depthmapPath = "../photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
+		if (!QFile::copy(depthmapPath + "_backup.tif", depthmapPath)) {
+			cout << "Error copying depthmap" << depthmapPath.toStdString() << endl;
+			exit(0);
+		}
+
 		QStringList ortImages = QDir(orthoPlaneDirName).entryList(QStringList() << "Ort_*.tif", QDir::Files);
 		if (ortImages.isEmpty()) {
 			throw QString("Error: No output images found in ").arg(orthoPlaneDirName);

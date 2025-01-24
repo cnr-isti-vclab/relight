@@ -17,20 +17,20 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}*/
 	//input
-//#define MACOS 1
+#define MACOS 1
 #ifdef MACOS
-	QString base = "/Users/erika/Desktop/testcenterRel_copia/";
+	QString base = "/Users/erika/Desktop/testRelightMicMac/";
 #else
 	QString base = "";
 #endif
 
 
 
-	QString depthmapPath = base + base + "Z_Num7_DeZoom4_STD-MALT.tif";
+	QString depthmapPath = base + "photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
 	//QString cameraDepthmap = base + "datasets/L04C12.tif";
 	//QString orientationXmlPath = base + "photogrammetry/Ori-Relative/Orientation-L04C12.tif.xml";
-	QString maskPath = base + "Masq_STD-MALT_DeZoom4.tif";
-	QString plyFile = base +"AperiCloud_Relative__mini.ply";
+	QString maskPath = base + "photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
+	QString plyFile = base + "photogrammetry/AperiCloud_Relative__mini.ply";
 	//QString point_txt = base + "photogrammetry/points_h.txt";
 	Depthmap depth;
 
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
 
 	QFile::remove(depthmapPath);
 	if (!QFile::copy(depthmapPath + "_backup.tif", depthmapPath)) {
-		cout << "Errror copying depthmap" << endl;
+		cout << "Error copying depthmap" << depthmapPath.toStdString() << endl;
 		exit(0);
 	}
 	QFile::remove(maskPath);
@@ -61,10 +61,12 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
-	QDir datasetsDir(base + "../datasets");
-	QDir xmlDir(base + "Ori-Relative");
-	QStringList tiffFilters = {"*.tif"};
-	QStringList xmlFilters = {"Orientation-*.tif.xml"};
+	QDir datasetsDir(base + "datasets");
+	QDir xmlDir(base + "photogrammetry/Ori-Relative");
+
+	QStringList extensions = {".tiff", ".tif", ".jpg", ".jpeg"};
+	QStringList tiffFilters = {"*.tiff"};
+
 
 	QFileInfoList tiffFiles = datasetsDir.entryInfoList(tiffFilters, QDir::Files);
 	if (tiffFiles.isEmpty()) {
@@ -72,21 +74,21 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
-	QFileInfoList xmlFiles = xmlDir.entryInfoList(xmlFilters, QDir::Files);
+	QFileInfoList xmlFiles = xmlDir.entryInfoList({"*.xml"}, QDir::Files);
 	if (xmlFiles.isEmpty()) {
 		cerr << "No .xml files found in " << xmlDir.absolutePath().toStdString() << endl;
 		return -1;
 	}
 
-//doortho = 1 domec =0;
 
+//doortho = 1 domec =0;
 
 	//ortho.computeNormals();
 	//ortho.saveNormals(qPrintable(base + "testcenterRel_copia/photogrammetry/original.png"));
 	//ortho.saveObj(qPrintable(base + "testcenterRel_copia/photogrammetry/original.obj"));
 	try{
-		ortho.saveDepth(qPrintable(output_depth));
-		ortho.saveMask(qPrintable(output_mask));
+		ortho.loadDepth(qPrintable(depthmapPath));
+		ortho.loadMask(qPrintable(maskPath));
 		ortho.loadPointCloud(qPrintable(plyFile));
 	} catch(QString e){
 		cout << qPrintable(e) << endl;
@@ -95,15 +97,23 @@ int main(int argc, char *argv[]) {
 
 	ortho.verifyPointCloud();
 	ortho.beginIntegration();
-
+	QString orientationXmlPath;
 
 	for (const QFileInfo &tiffFile : tiffFiles) {
 
 		CameraDepthmap depthCam;
 		QString cameraName = tiffFile.completeBaseName();
-		QString orientationXmlPath = xmlDir.absoluteFilePath("Orientation-" + cameraName + ".tif.xml");
+		QString orientationXmlPath;
+		for (const QString &ext : extensions) {
+			QString potentialPath = xmlDir.absoluteFilePath("Orientation-" + cameraName + ext + ".xml");
+			if (QFile::exists(potentialPath)) {
+				orientationXmlPath = potentialPath;
+				break;
+			}
+		}
+		/*QString orientationXmlPath = xmlDir.absoluteFilePath("Orientation-" + cameraName + ext + ".xml");
 
-		cout << "Looking for XML: " << orientationXmlPath.toStdString() << endl;
+		cout << "Looking for XML: " << orientationXmlPath.toStdString() << endl;*/
 
 		if (!depthCam.camera.loadXml(orientationXmlPath)) {
 			cerr << "Failed to load XML: " << orientationXmlPath.toStdString() << endl;
@@ -112,7 +122,7 @@ int main(int argc, char *argv[]) {
 
 		if (!depthCam.loadDepth(qPrintable(tiffFile.absoluteFilePath()))) {
 			cerr << "Failed to load depth map: " << tiffFile.fileName().toStdString() << endl;
-			continue;
+			exit(0);
 		}
 		if(depthCam.width != depthCam.camera.width || depthCam.height != depthCam.camera.height){
 			cerr << "width is not the same" << endl;
@@ -130,7 +140,7 @@ int main(int argc, char *argv[]) {
 	ortho.endIntegration();
 	ortho.saveDepth(qPrintable(depthmapPath));
 	ortho.saveMask(qPrintable(maskPath));
-	ortho.saveObj("weightsElev2.obj");
+	ortho.saveObj("weightsElev3.obj");
 
 
 
@@ -154,7 +164,7 @@ int main(int argc, char *argv[]) {
 	//	depth.saveDepth(qPrintable(depthmapPath));
 	//	depth.saveMask(qPrintable(maskPath));
 	//QString maskObjPath = base + "testcenterRel_copia/photogrammetry/mask.obj";
-	ortho.saveObj(qPrintable(base + "depthmap_projectL05C13.obj"));
+	//ortho.saveObj(qPrintable(base + "depthmap_projectL05C13.obj"));
 
 
 	//depth.depthIntegrateNormals();
