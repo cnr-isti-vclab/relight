@@ -15,6 +15,7 @@ void ImageList::init() {
 		item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
 		item->setCheckState(img.skip? Qt::Unchecked : Qt::Checked);
 		addItem(item);
+		count++;
 	}
 
 	connect(this, SIGNAL(itemChanged(QListWidgetItem *)), this, SLOT(verifyItem(QListWidgetItem *)));

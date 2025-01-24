@@ -347,6 +347,7 @@ void Project::load(QString filename) {
 			_align->fromJson(align.toObject());
 			aligns.push_back(_align);
 		}
+		computeOffsets();
 	}
 	if(obj.contains("whites")) {
 		for(auto white: obj["whites"].toArray()) {
@@ -595,6 +596,23 @@ float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, cons
 	float d = (-b + sqrt(det))/(2.0f*a);
 	return d;
 }
+void Project::computeOffsets() {
+	offsets.resize(images.size(), QPointF(0,0));
+	std::vector<float> weights(offsets.size(), 0);
+	for(Align *align: aligns) {
+		for(size_t i = 0; i < align->offsets.size(); i++) {
+			offsets[i] += align->offsets[i];
+			weights[i] += 1.0f;
+		}
+	}
+	for(size_t i = 0; i < offsets.size(); i++) {
+		if(weights[i] > 0)
+			offsets[i] /= weights[i];
+	}
+}
+
+
+/* This is obsolete, used only in legacy relight app */
 void  Project::computeDirections() {
 	if(spheres.size() == 0) {
 		QMessageBox::critical(nullptr, "Missing light directions.", "Light directions can be loaded from a .lp file or processing the spheres.");

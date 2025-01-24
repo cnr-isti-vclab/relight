@@ -1,4 +1,5 @@
 #include "alignframe.h"
+#include "alignpicking.h"
 #include "imageview.h"
 #include "flowlayout.h"
 #include "relightapp.h"
@@ -24,6 +25,9 @@ AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
 	QFrame *aligns_frame = new QFrame;
 	content->addWidget(aligns_frame);
 	aligns = new QVBoxLayout(aligns_frame);
+
+	AlignPicking *picking = new AlignPicking();
+	content->addWidget(picking);
 
 	//content->addStretch();
 	connect(new_align, SIGNAL(clicked()), this, SLOT(newAlign()));

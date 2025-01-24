@@ -37,6 +37,7 @@ public:
 	std::vector<Align *> aligns;
 	std::vector<White *> whites;
 	QRect crop;
+	std::vector<QPointF> offsets;
 	float pixelSize = 0; //if computed from measures in mm
 
 	QString name;
@@ -61,7 +62,9 @@ public:
 	void save(QString filename);
 	void saveLP(QString filename, std::vector<Eigen::Vector3f> &directions);
 	void loadLP(QString filename);
-	void computeDirections();
+
+	void computeOffsets(); //from aligns
+	void computeDirections(); //obsolete
 	void computePixelSize();
 
 	Measure *newMeasure();
