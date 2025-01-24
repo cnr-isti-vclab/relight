@@ -50,7 +50,6 @@ SpherePicking::SpherePicking(QWidget *parent): ImageViewer(parent) {
 	scene().addItem(axis[1]);
 
 	connect(view, SIGNAL(clicked(QPoint)), this, SLOT(click(QPoint)));
-	//TODO: rename something, it conflicts!
 	view->setCursor(Qt::CrossCursor);
 
 	//QApplication::setOverrideCursor(Qt::CrossCursor);

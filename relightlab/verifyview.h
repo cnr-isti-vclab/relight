@@ -8,70 +8,44 @@
 class Sphere;
 class VerifyView;
 
-
-class ReflectionPoint: public QGraphicsEllipseItem {
+class VerifyMarker: public QGraphicsItem {
 public:
-	ReflectionPoint(VerifyView *_view, QRectF rect, QGraphicsItem *parent = Q_NULLPTR);
-	void init();
-	virtual ~ReflectionPoint() {}
+	enum Marker { REFLECTION, ALIGN };
+	Marker marker;
 
-protected:
-	VerifyView *view;
+	bool active = true;
+
+	float radius = 0.0f;
+	QPointF center;
+
+	VerifyView *view = nullptr;
+
+	VerifyMarker(VerifyView *_view, Marker _marker, QGraphicsItem *parent = Q_NULLPTR);
+	QPainterPath shape() const override;
+	QRectF boundingRect() const override;
+	void paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*) override;
 	QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 };
-
-class AlignPoint: public QGraphicsPathItem {
-public:
-	AlignPoint(VerifyView *_view, QGraphicsItem *parent = Q_NULLPTR);
-	AlignPoint(VerifyView *_view, qreal x, qreal y, QGraphicsItem *parent = Q_NULLPTR);
-	void init();
-	virtual ~AlignPoint() {}
-
-protected:
-	VerifyView *view;
-	QVariant itemChange(GraphicsItemChange change, const QVariant &value);
-};
-
 
 class VerifyView: public QGraphicsView {
 	Q_OBJECT
 public:
-	VerifyView(QImage &image, int height, QPointF &pos, QWidget *parent = nullptr);
-	virtual void update() = 0;
+	VerifyMarker::Marker marker;
+
+	VerifyView(QImage &image, int height, QPointF &pos, VerifyMarker::Marker _marker, QWidget *parent = nullptr);
+	void update();
 
 protected:
 	void resizeEvent(QResizeEvent *event);
 
 protected:
-	QGraphicsPixmapItem *img_item;
-	QGraphicsScene scene;
+	VerifyMarker *marker_item = nullptr;
+	QGraphicsPixmapItem *img_item = nullptr;
+	QGraphicsScene scene = nullptr;
 	QImage &image;
 	QPointF &pos;
 	int id;
 	int height;
-};
-
-class ReflectionVerify: public VerifyView {
-	Q_OBJECT
-public:
-	double lightSize = 10.0;
-
-	ReflectionVerify(QImage &image,int height,  QPointF &pos, QWidget *parent = nullptr);
-	virtual void update();
-
-private:
-	ReflectionPoint *reflection;
-
-};
-
-class AlignVerify: public VerifyView {
-	Q_OBJECT
-public:
-	AlignVerify(QImage &image,int height,  QPointF &pos, QWidget *parent = nullptr);
-	virtual void update();
-
-private:
-	AlignPoint *align;
 };
 
 #endif // VERIFYVIEW_H

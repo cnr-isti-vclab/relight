@@ -22,6 +22,8 @@ AlignPicking::AlignPicking(QWidget *parent): ImageViewer(parent) {
 	rect = new AlignRect(this, 0, 0, 0, 0);
 	rect->setPen(QPen(Qt::yellow, 2));
 	rect->setBrush(Qt::transparent);
+
+	view->setCursor(Qt::CrossCursor);
 }
 
 

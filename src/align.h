@@ -16,7 +16,7 @@ public:
 	}
 
 	QRect rect;
-	std::vector<QPointF> offsets; //from the center of the rect
+	std::vector<QPointF> offsets; //from the center of the rect, [0,0] is not used.
 	std::vector<QImage> thumbs;
 
 	QJsonObject toJson();

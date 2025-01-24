@@ -34,10 +34,10 @@ VerifyDialog::VerifyDialog(std::vector<QImage> &_thumbs, std::vector<QPointF> &_
 	for(size_t i = 0; i < thumbs.size(); i++) {
 		assert(!thumbs[i].isNull());
 		if(marker == REFLECTION ) {
-			ReflectionVerify *thumb = new ReflectionVerify(thumbs[i], 192, positions[i]);
+			VerifyView *thumb = new VerifyView(thumbs[i], 192, positions[i], VerifyMarker::REFLECTION);
 			flowlayout->addWidget(thumb);
 		} else {
-			AlignVerify *thumb = new AlignVerify(thumbs[i], 192, positions[i]);
+			VerifyView *thumb = new VerifyView(thumbs[i], 192, positions[i], VerifyMarker::ALIGN);
 			flowlayout->addWidget(thumb);
 		}
 	}
