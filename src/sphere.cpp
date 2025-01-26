@@ -117,6 +117,8 @@ bool Sphere::fit() {
 		ellipseFit();
 		if(isnan(eWidth)) {
 			ellipse = false;
+			eWidth = eHeight = radius;
+			eAngle = 0.0f;
 		} else {
 			radius = eWidth;
 			assert(eWidth >= eHeight);
@@ -194,9 +196,11 @@ bool inEllipse(double x, double y, double a, double b, double theta) {
 void Sphere::findHighlight(QImage img, int n, bool update_positions) {
 	if(sphereImg.isNull()) {
 		sphereImg = QImage(inner.width(), inner.height(), QImage::Format_ARGB32);
-		sphereImg.fill(0);
 	}
-	if(n == 0) thumbs.clear();
+	if(n == 0) {
+		sphereImg.fill(0);
+		thumbs.clear();
+	}
 
 	thumbs.push_back(img.copy(inner));
 
@@ -472,6 +476,7 @@ QJsonObject Sphere::toJson() {
 	sphere["center"] = jcenter;
 	sphere["radius"] = radius;
 	sphere["smallradius"] = smallradius;
+
 	QJsonObject jinner;
 	jinner.insert("left", inner.left());
 	jinner.insert("top", inner.top());
@@ -534,4 +539,5 @@ void Sphere::fromJson(QJsonObject obj) {
 		//TODO cleanp this code replicated in mainwindow.
 		border.push_back(QPointF(b[0].toDouble(), b[1].toDouble()));
 	}
+	fit();
 }

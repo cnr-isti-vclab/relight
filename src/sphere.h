@@ -26,16 +26,16 @@ public:
 	QPointF center;      //center of circle or ellipse, in pixel coordinates of the image
 
 	/* Circle parameters */
-	float radius;        //fitted radius
-	float smallradius;   //innner radius where to look for reflections
+	float radius = 0.0f;        //fitted radius
+	float smallradius = 0.0f;   //innner radius where to look for reflections
 
 	/* Ellipse parameters */
 	bool ellipse = false;
-	float eWidth, eHeight, eAngle;
+	float eWidth = 0.0f, eHeight = 0.0f, eAngle = 0.0f;
 	float eFocal; //estimated focal
 
 	QRect inner;         //box of the inner part of the circle/ellipse
-	bool fitted;         //we have a valid fit
+	bool fitted = false;         //we have a valid fit
 	QImage sphereImg;
 	std::vector<QImage> thumbs;
 

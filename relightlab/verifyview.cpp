@@ -6,6 +6,7 @@
 
 #include <QGraphicsPixmapItem>
 #include <QGraphicsPathItem>
+#include <QKeyEvent>
 #include <QRectF>
 #include <QDebug>
 #include <assert.h>
