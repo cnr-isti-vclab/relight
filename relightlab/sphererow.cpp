@@ -91,13 +91,19 @@ void SphereRow::edit() {
 
 void SphereRow::verify() {
 	std::vector<QPointF> &positions = sphere->lights;
-	for(QPointF &pos: positions)
-		pos -= sphere->inner.center();
+	for(QPointF &pos: positions) {
+		if(!pos.isNull())
+			pos -= sphere->inner.center();
+	}
 	VerifyDialog *verify_dialog = new VerifyDialog(sphere->thumbs, positions, VerifyDialog::REFLECTION, this);
 	verify_dialog->exec();
 
-	for(QPointF &pos: positions)
-		pos += sphere->inner.center();
+	for(QPointF &pos: positions) {
+		if(!pos.isNull())
+			pos += sphere->inner.center();
+	}
+
+	emit updated();
 }
 
 void SphereRow::remove() {

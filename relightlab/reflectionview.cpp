@@ -84,17 +84,21 @@ ReflectionOverview::~ReflectionOverview() {
 }
 
 void ReflectionOverview::init() {
+
 	scene.clear();
 	lights.clear();
 
-	QPixmap pix = QPixmap::fromImage(sphere->sphereImg);//.scaledToHeight(height);
+	QPixmap pix = QPixmap::fromImage(sphere->sphereImg);
 	img_item = scene.addPixmap(pix);
 	setFixedSize(pix.width()*height/pix.height(), height);
-	//setFixedSize(pix.width(), pix.height());
 
 	QPointF c = sphere->center - sphere->inner.topLeft();
-	double w = sphere->eWidth;
-	double h = sphere->eHeight;
+	double w = sphere->radius;
+	double h = sphere->radius;
+	if(sphere->ellipse) {
+		w = sphere->eWidth;
+		h = sphere->eHeight;
+	}
 
 	w *= sphere->smallradius/sphere->radius;
 	h *= sphere->smallradius/sphere->radius;
@@ -103,6 +107,7 @@ void ReflectionOverview::init() {
 	area->setRotation(sphere->eAngle);
 }
 
+#include <iostream>
 void ReflectionOverview::update() {
 	for(auto l: lights) {
 		scene.removeItem(l);
@@ -129,5 +134,6 @@ void ReflectionOverview::update() {
 void ReflectionOverview::resizeEvent(QResizeEvent */*event*/) {
 	fitInView(img_item->boundingRect());
 }
+
 
 
