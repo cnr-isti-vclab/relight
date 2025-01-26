@@ -68,6 +68,7 @@ VerifyView:: VerifyView(QImage &_image, int _height, QPointF &_pos, VerifyMarker
 	height = _height;
 	setScene(&scene);
 
+	setFocusPolicy(Qt::StrongFocus);
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
@@ -76,16 +77,12 @@ VerifyView:: VerifyView(QImage &_image, int _height, QPointF &_pos, VerifyMarker
 	double scale = height/(double)pix.height();
 	setFixedSize(pix.width()*scale, height);
 
+	center = QPointF(image.width()/2.0f, image.height()/2.0f);
+
 	marker_item = new VerifyMarker(this, marker);
 	marker_item->radius = 8*scale;
-	if(pos.isNull()) {
-		marker_item->setPos(image.width()/2, image.height()/2);
-		marker_item->active = false;
-
-	} else {
-		marker_item->setPos(pos);
-		marker_item->active = true;
-	}
+	marker_item->setPos(pos + center);
+	marker_item->active = !pos.isNull();
 	scene.addItem(marker_item);
 }
 
@@ -93,18 +90,22 @@ VerifyView:: VerifyView(QImage &_image, int _height, QPointF &_pos, VerifyMarker
 void VerifyView::update() {
 	QPointF p = marker_item->pos();
 	if(!img_item->boundingRect().contains(p)) {
-		marker_item->setPos(image.width()/2, image.height()/2);
-		marker_item->active = false;
-		pos = QPointF(0, 0); //order is important: setPos triggers again.
-
-	} else {
-		pos = p;
-		marker_item->active = true;
+		marker_item->setPos(center);
 	}
+	pos = p - center;
+	marker_item->active = !pos.isNull();
 }
 
 void VerifyView::resizeEvent(QResizeEvent *) {
 	fitInView(img_item->boundingRect()); //.sceneRect()); //img_item);
 }
 
+void VerifyView::keyPressEvent(QKeyEvent *event) {
+	if (event->key() == Qt::Key_Delete) {
+		marker_item->setPos(center);
+		update();
+		return;
+	}
+	QWidget::keyPressEvent(event);
+}
 

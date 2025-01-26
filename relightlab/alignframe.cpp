@@ -23,12 +23,10 @@ AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
 	new_align->setMaximumWidth(300);
 
 	QFrame *aligns_frame = new QFrame;
-	content->addWidget(aligns_frame);
+	content->addWidget(aligns_frame, 0);
 	aligns = new QVBoxLayout(aligns_frame);
 
-	AlignPicking *picking = new AlignPicking();
-	content->addWidget(picking);
-
+	content->addStretch(1);
 	//content->addStretch();
 	connect(new_align, SIGNAL(clicked()), this, SLOT(newAlign()));
 }
@@ -77,16 +75,16 @@ AlignRow *AlignFrame::addAlign(Align *align) {
 }
 
 void AlignFrame::removeAlign(AlignRow *row) {
-	layout()->removeWidget(row);
-
 	row->stopFinding();
+
+	layout()->removeWidget(row);
 
 	Align *align = row->align;
 	auto &aligns = qRelightApp->project().aligns;
 
 	auto it = std::find(aligns.begin(), aligns.end(), align);
 
-//	assert(it != aligns.end());
+	assert(it != aligns.end());
 
 	delete align;
 	aligns.erase(it);

@@ -63,7 +63,9 @@ void DomePanel::updateDomeList() {
 		try {
 			dome.load(path);
 		} catch (QString error) {
-			qDebug() << error;
+			qDebug() << "Problems loading dome at" << path << ": " << error;
+			qRelightApp->removeDome(path);
+			continue;
 		}
 
 		QFileInfo info(path);
