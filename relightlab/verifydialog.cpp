@@ -30,7 +30,6 @@ VerifyDialog::VerifyDialog(std::vector<QImage> &_thumbs, std::vector<QPointF> &_
 
 	area->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
-	cout << "Thumbs.size: " << thumbs.size() << endl;
 	for(size_t i = 0; i < thumbs.size(); i++) {
 		assert(!thumbs[i].isNull());
 		if(marker == REFLECTION ) {

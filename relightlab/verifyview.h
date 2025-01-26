@@ -36,13 +36,14 @@ public:
 	void update();
 
 protected:
-	void resizeEvent(QResizeEvent *event);
-
+	void resizeEvent(QResizeEvent *event) override;
+	void keyPressEvent(QKeyEvent *event) override;
 protected:
 	VerifyMarker *marker_item = nullptr;
 	QGraphicsPixmapItem *img_item = nullptr;
-	QGraphicsScene scene = nullptr;
+	QGraphicsScene scene ;
 	QImage &image;
+	QPointF center;
 	QPointF &pos;
 	int id;
 	int height;
