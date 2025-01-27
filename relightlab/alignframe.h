@@ -19,10 +19,9 @@ public:
 	AlignRow *addAlign(Align *align);
 
 public slots:
+	void projectUpdate();
 	void newAlign();
 	void removeAlign(AlignRow *align);
-signals:
-	void updated();
 
 private:
 	MarkerDialog *marker_dialog = nullptr;

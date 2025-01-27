@@ -395,17 +395,17 @@ void ImageSet::setCrop(QRect &_crop, std::vector<QPointF> &_offsets) {
 
 	//find min and max of offsets to adjust the maxCrop;
 	int l = 0;
-	int r = 0;
-	int t = image_width;
+	int r = image_width;;
+	int t = 0;
 	int b = image_height;
 	for(QPoint &o: int_offsets) {
-		l = std::max(l,            -o.x());
-		r = std::min(image_width,  -o.x());
-		t = std::max(b,            -o.y());
-		b = std::min(image_height, -o.y());
+		l = std::max(l, -o.x());
+		r = std::min(r, image_width-o.x());
+		t = std::max(t, -o.y());
+		b = std::min(b, image_height-o.y());
 	}
 	//TODO check +1 problem
-	QRect max_crop(l, t, r -l, t - b);
+	QRect max_crop(l, t, r - l, b - t);
 	if(_crop.isNull())
 		_crop = max_crop;
 	else
