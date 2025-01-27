@@ -278,11 +278,12 @@ void ImageSet::readLine(PixelArray &pixels) {
 
 	for(size_t i = 0; i < decoders.size(); i++) {
 		decoders[i]->readRows(1, row.data());
+		int x_offset = offsets.size() ? offsets[i].x() : 0;
 
 		for(int x = left; x < right; x++) {
-			pixels[x - left][i].r = row[x*3 + 0];
-			pixels[x - left][i].g = row[x*3 + 1];
-			pixels[x - left][i].b = row[x*3 + 2];
+			pixels[x - left][i].r = row[(x + x_offset)*3 + 0];
+			pixels[x - left][i].g = row[(x + x_offset)*3 + 1];
+			pixels[x - left][i].b = row[(x + x_offset)*3 + 2];
 		}
 	}
 	if(light3d) {
@@ -387,11 +388,40 @@ void ImageSet::restart() {
 	current_line = 0;
 }
 
+void ImageSet::setCrop(QRect &_crop, std::vector<QPointF> &_offsets) {
+	std::vector<QPoint> int_offsets;
+	for(QPointF &p: _offsets)
+		int_offsets.push_back(p.toPoint());
+
+	//find min and max of offsets to adjust the maxCrop;
+	int l = 0;
+	int r = 0;
+	int t = image_width;
+	int b = image_height;
+	for(QPoint &o: int_offsets) {
+		l = std::max(l,            -o.x());
+		r = std::min(image_width,  -o.x());
+		t = std::max(b,            -o.y());
+		b = std::min(image_height, -o.y());
+	}
+	//TODO check +1 problem
+	QRect max_crop(l, t, r -l, t - b);
+	if(_crop.isNull())
+		_crop = max_crop;
+	else
+		_crop = max_crop.intersected(_crop);
+
+	left =_crop.left();
+	crop(_crop.left(), _crop.top(), _crop.width(), _crop.height());
+	offsets = int_offsets;
+}
+
 void ImageSet::skipToTop() {
 	std::vector<uint8_t> row(image_width*3);
 
 	for(uint32_t i = 0; i < decoders.size(); i++) {
-		for(int y = 0; y < top; y++)
+		int y_offset = offsets.size() ? offsets[i].y() : 0;
+		for(int y = 0; y < top + y_offset; y++)
 			decoders[i]->readRows(1, row.data());
 		
 		if(callback && !(*callback)("Skipping cropped lines...", 100*i/(decoders.size()-1)))
@@ -399,4 +429,5 @@ void ImageSet::skipToTop() {
 	}
 	current_line += top;
 }
+
 

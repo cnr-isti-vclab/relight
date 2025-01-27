@@ -60,6 +60,7 @@ void RtiTask::run() {
 	status = RUNNING;	
 	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
+	//TODO mnove all this to the constructor (except what parameters can set.
 	builder = new RtiBuilder;
 	builder->imageset.pixel_size = project.pixelSize;
 
@@ -84,15 +85,16 @@ void RtiTask::run() {
 	imageset.images = project.getImages();
 	imageset.pixel_size = project.pixelSize;
 	imageset.initImages(input_folder.toStdString().c_str());
+
 	imageset.initFromDome(project.dome); //lights after images
+	imageset.setCrop(crop,project.offsets);
 
-
+	//TODO too many crop locations!
 	if(!crop.isNull()) {
-		builder->crop[0] = crop.left();
-		builder->crop[1] = crop.top();
-		builder->crop[2] = crop.width();
-		builder->crop[3] = crop.height();
-		imageset.crop(crop.left(), crop.top(), crop.width(), crop.height());
+		builder->crop[0] = imageset.left;
+		builder->crop[1] = imageset.top;
+		builder->crop[2] = imageset.width;
+		builder->crop[3] = imageset.height;
 	}
 
 	builder->width  = imageset.width;
