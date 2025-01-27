@@ -130,7 +130,6 @@ void RelightApp::notify(const QString &title, const QString &msg, int ms) {
 }
 
 void RelightApp::run() {
-	//qDebug() << "Settings: " << QSettings().allKeys();
 	bool dark = QSettings().value("dark", false).toBool();
 	if(dark) {
 		QIcon::setThemeName("dark");
