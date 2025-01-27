@@ -10,19 +10,28 @@ class Align;
 
 class AlignPicking;
 
-class AlignRect: public QGraphicsRectItem {
+class AlignRect: public QGraphicsItem {
 public:
-	AlignRect(AlignPicking *_picker, qreal x, qreal y, qreal w, qreal h, QGraphicsItem *parent = Q_NULLPTR):
-		QGraphicsRectItem(x, y, w, h, parent), picker(_picker) {
+	int side;
+	QRectF rect;
+
+	AlignRect(AlignPicking *_picker, int _side, QGraphicsItem *parent = Q_NULLPTR):
+		QGraphicsItem(parent), side(_side), picker(_picker) {
 		setCursor(Qt::CrossCursor);
 		setFlag(QGraphicsItem::ItemIsMovable);
 		setFlag(QGraphicsItem::ItemIsSelectable);
 		setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
+		rect = QRectF(-side/2.0f, -side/2.0f, side, side);
 
 	}
 	virtual ~AlignRect() {}
+	QRect getRect(); //return the portion of the image selected
+	QRectF boundingRect() const override;
+	void paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *) override;
+	void setRect(QRectF r);
 
 protected:
+
 	AlignPicking *picker;
 	QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 };
