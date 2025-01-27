@@ -87,7 +87,9 @@ void RtiTask::run() {
 	imageset.initImages(input_folder.toStdString().c_str());
 
 	imageset.initFromDome(project.dome); //lights after images
-	imageset.setCrop(crop,project.offsets);
+	imageset.setCrop(crop, project.offsets);
+
+	qDebug() << project.offsets << endl;
 
 	//TODO too many crop locations!
 	if(!crop.isNull()) {

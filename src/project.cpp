@@ -598,6 +598,7 @@ float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, cons
 	return d;
 }
 void Project::computeOffsets() {
+	offsets.clear();
 	offsets.resize(images.size(), QPointF(0,0));
 	std::vector<float> weights(offsets.size(), 0);
 	for(Align *align: aligns) {

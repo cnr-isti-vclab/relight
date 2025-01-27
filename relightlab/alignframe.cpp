@@ -62,7 +62,10 @@ void AlignFrame::newAlign() {
 	qRelightApp->project().aligns.push_back(align);
 	AlignRow *row = addAlign(align);
 	row->findAlignment();
+}
 
+void AlignFrame::projectUpdate() {
+	qRelightApp->project().computeOffsets();
 }
 
 AlignRow *AlignFrame::addAlign(Align *align) {
@@ -70,7 +73,7 @@ AlignRow *AlignFrame::addAlign(Align *align) {
 	aligns->addWidget(row);
 
 	connect(row, SIGNAL(removeme(AlignRow *)), this, SLOT(removeAlign(AlignRow *)));
-	connect(row, SIGNAL(updated()), this, SIGNAL(updated()));
+	connect(row, SIGNAL(updated()), this, SLOT(projectUpdate()));
 	return row;
 }
 
@@ -89,4 +92,5 @@ void AlignFrame::removeAlign(AlignRow *row) {
 	delete align;
 	aligns.erase(it);
 	delete row;
+	projectUpdate();
 }
