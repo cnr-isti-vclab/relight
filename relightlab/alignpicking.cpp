@@ -14,13 +14,12 @@ QRectF AlignRect::boundingRect() const {
 
 QRect AlignRect::getRect() {
 
-	QPointF p = pos();
 	QRectF r(rect.left() + pos().x(),
 			 rect.top() + pos().y(),
 			 rect.width(),
 			 rect.height());
 
-	//r.moveCenter(p);
+	//r.moveCenter(p); //unfortunately there is a -1 in the formula for legacy reasons.
 	return r.toRect();
 }
 
@@ -61,13 +60,9 @@ void AlignPicking::clear() {
 void AlignPicking::setAlign(Align *a) {
 	clear();
 	align = a;
-	QPointF p = align->rect.center();
-	rect->setPos(p);
+	rect->setPos(align->rect.center());
 	rect->side = align->rect.width();
 
-	QRectF r = rect->getRect();
-
-	assert(rect->getRect() == align->rect);
 	scene().addItem(rect);
 
 	showImage(0);
@@ -77,7 +72,6 @@ void AlignPicking::setAlign(Align *a) {
 
 
 void AlignPicking::click(QPoint p) {
-	//clear();
 
 	QSize imgsize = qRelightApp->project().imgsize;
 	QPointF pos = view->mapToScene(p);
@@ -85,7 +79,6 @@ void AlignPicking::click(QPoint p) {
 	//ensure that the marker is inside the image
 	pos.setX(std::max(marker_side/2.0, pos.x()));
 	pos.setY(std::max(marker_side/2.0, pos.y()));
-
 
 	pos.setX(std::min(imgsize.width()-marker_side/2.0, pos.x()));
 	pos.setY(std::min(imgsize.height()-marker_side/2.0, pos.y()));

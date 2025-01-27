@@ -33,7 +33,7 @@ public:
 protected:
 
 	AlignPicking *picker;
-	QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+	QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 };
 
 
