@@ -59,10 +59,8 @@ void NormalsTask::initFromProject(Project &project) {
 	imageset.initImages(project.dir.absolutePath().toStdString().c_str());
 	imageset.initFromDome(project.dome);
 	assert(imageset.lights().size() == imageset.images.size());
-	QRect &crop = project.crop;
-	if(!crop.isNull()) {
-		imageset.crop(crop.left(), crop.top(), crop.width(), crop.height());
-	}
+	imageset.setCrop(project.crop, project.offsets);
+
 	pixelSize = project.pixelSize;
 }
 void NormalsTask::setParameters(NormalsParameters &param) {

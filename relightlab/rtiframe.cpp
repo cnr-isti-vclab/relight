@@ -116,7 +116,7 @@ void RtiFrame::exportRti() {
 		QMessageBox::warning(this, "Destination path is missing.", "Fill in the output folder or the filename for the RTI.");
 		return;
 	}
-	RtiTask *rti_task = new RtiTask(qRelightApp->project());
+	RtiTask *rti_task = new RtiTask(project);
 	rti_task->setParameters(parameters);
 	rti_task->output = parameters.path;
 	rti_task->crop = project.crop;

@@ -27,7 +27,7 @@
 * shadow removal
 * 3d lights on sphere should take into account sphere posistion/
 * allow rescaling when building rti and normals
-
+* rotate and crop an existing rti.
 
 ## Bugs
 

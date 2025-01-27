@@ -139,6 +139,7 @@ void MainWindow::clear() {
 
 void MainWindow::init() {
 	image_frame->init();
+	align_frame->init();
 	scale_frame->init();
 	lights_frame->init();
 	crop_frame->init();

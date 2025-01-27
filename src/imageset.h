@@ -10,10 +10,12 @@
 
 #include <Eigen/Core>
 #include <QStringList>
+#include <QPoint>
 
 class QJsonObject;
 class JpegDecoder;
 class QImage;
+class QRect;
 
 class ImageSet {
 public:
@@ -31,6 +33,7 @@ public:
 	float idealLightDistance2 = 0.0f; //squared, used when rescaling intensity
 
 	int current_line = 0;
+	std::vector<QPoint> offsets; //align offsets
 	
 	ImageSet(const char *path = nullptr);
 	~ImageSet();
@@ -50,6 +53,9 @@ public:
 
 	//open images and starts the decoders
 	bool initImages(const char *path); //path points to the dir of the images.
+
+	void setCrop(QRect &crop, std::vector<QPointF> &offsets);
+
 
 	void setLights(std::vector<Eigen::Vector3f> &lights, Dome::LightConfiguration configuration);
 	std::vector<Eigen::Vector3f> &lights() { return lights1; }

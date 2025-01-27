@@ -50,6 +50,7 @@ void Project::operator=(const Project& project) {
 		whites.push_back(new White(*w));
 
 	crop = project.crop;
+	offsets = project.offsets;
 	pixelSize = project.pixelSize;
 	name = project.name;
 	authors = project.authors;
