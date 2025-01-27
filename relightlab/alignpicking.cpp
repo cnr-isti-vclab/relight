@@ -8,6 +8,30 @@
 #include <QKeyEvent>
 
 
+QRectF AlignRect::boundingRect() const {
+	return rect.adjusted(-2, -2, 2, 2);
+}
+
+QRect AlignRect::getRect() {
+
+	QPointF p = pos();
+	QRectF r(rect.left() + pos().x(),
+			 rect.top() + pos().y(),
+			 rect.width(),
+			 rect.height());
+
+	//r.moveCenter(p);
+	return r.toRect();
+}
+
+void AlignRect::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *) {
+	painter->setPen(QPen(Qt::yellow, 2));
+	painter->setBrush(Qt::NoBrush);
+	painter->drawRect(rect);
+
+	painter->drawEllipse(QPoint(0, 0), 1, 1);
+}
+
 QVariant AlignRect::itemChange(GraphicsItemChange change, const QVariant &value)	{
 	if ((change == ItemPositionChange  && scene()) || change == ItemScenePositionHasChanged) {
 		picker->updateAlignPoint();
@@ -15,13 +39,14 @@ QVariant AlignRect::itemChange(GraphicsItemChange change, const QVariant &value)
 	return QGraphicsItem::itemChange(change, value);
 }
 
+
+
+
 AlignPicking::AlignPicking(QWidget *parent): ImageViewer(parent) {
 
 	marker_side = 40;
 	connect(view, SIGNAL(clicked(QPoint)), this, SLOT(click(QPoint)));
-	rect = new AlignRect(this, 0, 0, 0, 0);
-	rect->setPen(QPen(Qt::yellow, 2));
-	rect->setBrush(Qt::transparent);
+	rect = new AlignRect(this, marker_side);
 
 	view->setCursor(Qt::CrossCursor);
 }
@@ -36,7 +61,13 @@ void AlignPicking::clear() {
 void AlignPicking::setAlign(Align *a) {
 	clear();
 	align = a;
-	rect->setRect(align->rect);
+	QPointF p = align->rect.center();
+	rect->setPos(p);
+	rect->side = align->rect.width();
+
+	QRectF r = rect->getRect();
+
+	assert(rect->getRect() == align->rect);
 	scene().addItem(rect);
 
 	showImage(0);
@@ -51,7 +82,7 @@ void AlignPicking::click(QPoint p) {
 	QSize imgsize = qRelightApp->project().imgsize;
 	QPointF pos = view->mapToScene(p);
 
-//ensure that the marker is inside the image
+	//ensure that the marker is inside the image
 	pos.setX(std::max(marker_side/2.0, pos.x()));
 	pos.setY(std::max(marker_side/2.0, pos.y()));
 
@@ -59,11 +90,12 @@ void AlignPicking::click(QPoint p) {
 	pos.setX(std::min(imgsize.width()-marker_side/2.0, pos.x()));
 	pos.setY(std::min(imgsize.height()-marker_side/2.0, pos.y()));
 
-	align->rect = QRect(pos.x()-marker_side/2.0, pos.y()-marker_side/2.0, marker_side, marker_side);
-	rect->setRect(align->rect);
+	rect->setPos(pos);
+	rect->update();
+	updateAlignPoint();
 }
 
 void AlignPicking::updateAlignPoint() {
-	align->rect = rect->rect().toRect();
+	align->rect = rect->getRect();
 }
 

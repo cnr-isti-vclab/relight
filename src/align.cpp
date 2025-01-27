@@ -27,10 +27,10 @@ void Align::fromJson(QJsonObject obj) {
 
 
 	auto jrect = obj["rect"].toObject();
-	rect.setLeft(jrect["left"].toInt());
-	rect.setTop(jrect["top"].toInt());
-	rect.setWidth(jrect["width"].toInt());
-	rect.setHeight(jrect["height"].toInt());
+	rect.setLeft(jrect["left"].toDouble());
+	rect.setTop(jrect["top"].toDouble());
+	rect.setWidth(jrect["width"].toDouble());
+	rect.setHeight(jrect["height"].toDouble());
 
 	offsets.clear();
 	for(auto joffsets: obj["offsets"].toArray()) {
@@ -42,5 +42,5 @@ void Align::fromJson(QJsonObject obj) {
 void Align::readThumb(QImage img, int n) {
 	if(n == 0)
 		thumbs.clear();
-	thumbs.push_back(img.copy(rect));
+	thumbs.push_back(img.copy(rect.toRect()));
 }

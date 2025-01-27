@@ -15,7 +15,7 @@ public:
 		offsets.resize(n_lights);
 	}
 
-	QRect rect;
+	QRectF rect;
 	std::vector<QPointF> offsets; //from the center of the rect, [0,0] is not used.
 	std::vector<QImage> thumbs;
 
