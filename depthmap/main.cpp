@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
 	//input
 #define MACOS 1
 #ifdef MACOS
-	QString base = "/Users/erika/Desktop/testRelightMicMac/";
+	QString base = "/Users/erika/Desktop/testcenterRel_resize/";
 #else
 	QString base = "";
 #endif

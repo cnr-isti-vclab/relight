@@ -1025,6 +1025,9 @@ void OrthoDepthmap::beginIntegration(){
 		}
 #endif
 	}
+	//foto von bilinear, se non funziona riduci le dimensione x4  con image magik a parte con for
+	// guarda quanto è un pixel. scali la depth anche dell rti, con image magik
+
 	//	elevation.clear();
 	//	elevation.resize(width * height, 0);
 	weights.clear();

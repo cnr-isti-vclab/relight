@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
 										 "starting step (rti, tapioca, )", "rti");
 	parser.addOption(stepOption);
 
+
 	QCommandLineOption stopOption(QStringList() << "S" << "stop",
 								  "stop after first step");
 	parser.addOption(stopOption);
