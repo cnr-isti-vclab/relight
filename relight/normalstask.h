@@ -28,7 +28,7 @@ public:
 	double flat_radius = 0.5;
 	bool exportSurface = false;
 	bool exportDepthmap = false;
-	bool exportK = 2.0;
+	double exportK = 2.0;
 	QRect m_Crop;
 
 	float pixelSize = 0.0f;
