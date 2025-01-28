@@ -205,7 +205,7 @@ void flattenRadialHeights(int w, int h, std::vector<float> &heights, double binS
 	}
 }
 
-void flattenFourierNormals(int w, int h, std::vector<float> &normals, int padding, double sigma, bool exponential) {
+void flattenFourierNormals(int w, int h, std::vector<float> &normals, float padding, double sigma, bool exponential) {
 
 	int padding_amount = round(padding* std::min(w, h));
 	unsigned int W = w + padding_amount*2;
@@ -348,7 +348,8 @@ void filterLowFrequencies(int w, int h, std::vector<std::complex<double>>& freq_
 	}
 }
 
-void flattenFourierHeights(int w, int h, std::vector<float> &heights, int padding, double sigma) {
+//TODO do the padding!
+void flattenFourierHeights(int w, int h, std::vector<float> &heights, float padding, double sigma) {
 
 	vector<double> heightmap(w*h);
 	for(size_t i = 0; i < heights.size(); i++)
