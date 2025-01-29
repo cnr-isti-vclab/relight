@@ -6,7 +6,7 @@
 #include <QImage>
 #include <QPoint>
 #include <QDir>
-#include <QApplication>
+#include <QGuiApplication>
 
 #include "aligndialog.h"
 
@@ -59,13 +59,16 @@ double mutualInformation(QImage a, QImage b, int max, int dx, int dy) {
 
 //a and b image must be decently larger than max min is 3 timess
 //bw images
-QPoint align(QImage a, QImage b, int max) {
+QPoint align(QImage a, QImage b, int max, double &best_info, double &initial) {
 
-	double best_info = 0.0;
+	best_info = 0.0;
 	QPoint best(0, 0);
 	for(int dy = -max; dy <= max; dy++) {
 		for(int dx = -max; dx <= max; dx++) {
 			double info = mutualInformation(a, b, max, dx, dy);
+			if(dx == 0 && dy == 0) {
+				initial = info;
+			}
 			//cout << info << " ";
 			if(info > best_info) {
 				best_info = info;
@@ -78,16 +81,71 @@ QPoint align(QImage a, QImage b, int max) {
 	return best;
 }
 
+#include "../src/getopt.h"
+#include <QImage>
+
 int main(int argc, char *argv[]) {
 
-	const auto &app = QApplication(argc, argv);
+	if(argc == 1) {
+		auto dialog = new AlignDialog;
+		dialog->show();
+		int res = dialog->exec();
+		return res;
+	}
 
-	auto dialog = new AlignDialog;
-	dialog->show();
-	int res = dialog->exec();
+	//dir max_offset crop
+	if(argc != 4) {
+		cerr << "Usage: " << argv[0] << " directory max_offset top:left:width:height" << endl;
+		return 0;
+	}
 
+	QDir dir = QDir(argv[1]);
+	if(!dir.exists()) {
+		cerr << "Could not find " << qPrintable(argv[1]) << " folder.\n";
+		return -1;
+	}
+	QStringList img_ext;
+	img_ext << "*.jpg" << "*.JPG";;
+	QStringList images = dir.entryList(img_ext);
+	if(!images.size()) {
+		cerr << "No images to align!" << endl;
+		return -1;
+	}
+	QImage first(images[0]);
+	if(first.isNull()) {
+		cerr << "Could not load image: " << qPrintable(images[0]) << endl;
+		return -1;
+	}
 
-/*
+	int max_offset = QString(argv[2]).toInt();
+	QStringList c = QString(argv[3]).split(":");
+	QRect crop(c[0].toInt(), c[1].toInt(), c[2].toInt(), c[3].toInt());
+	crop.adjust(-max_offset, -max_offset, max_offset, max_offset);
+
+	if(!QRect(0, 0, first.width(), first.height()).contains(crop)) {
+		cerr << "Alignment sample (+offset) is not contained in the image" << endl;
+		return -1;
+	}
+
+	vector<QImage> samples;
+	for(int i = 0; i < images.size(); i++) {
+		cout << qPrintable(images[i]) << endl;
+		QImage img(images[i]);
+		QImage sub = img.copy(crop);
+		samples.push_back(sub);
+	}
+
+	int reference = 0;
+	vector<QPoint> offsets;
+	for(int i = 0; i < samples.size(); i++) {
+		double best = 0.0f;
+		double initial = 0.0f;
+		QPoint p = align(samples[reference], samples[i], max_offset, best, initial);
+		cout << p.x() << " " << p.y() << ": " << best << endl;
+		offsets.push_back(p);
+	}
+
+	/*
 	QDir dir("./");
 	dir.setNameFilters(QStringList()<<"*.jpg"<<"*.JPG");
 	QStringList images = dir.entryList();

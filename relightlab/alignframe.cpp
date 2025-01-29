@@ -12,6 +12,9 @@
 #include <QGraphicsRectItem>
 #include <QPushButton>
 
+#include <iostream>
+using namespace std;
+
 AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);
 
@@ -65,7 +68,15 @@ void AlignFrame::newAlign() {
 }
 
 void AlignFrame::projectUpdate() {
-	qRelightApp->project().computeOffsets();
+	auto &project = qRelightApp->project();
+	project.computeOffsets();
+
+	auto offsets = qRelightApp->project().offsets;
+	for(auto &o: offsets) {
+		o -= project.offsets[0];
+		cout << o.x() << " " << o.y() << endl;
+	}
+
 }
 
 AlignRow *AlignFrame::addAlign(Align *align) {
