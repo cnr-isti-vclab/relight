@@ -18,17 +18,17 @@ win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
 unix:INCLUDEPATH += ../external/eigen-3.3.9/
 unix:LIBS += -ljpeg -ltiff -lgomp
-unix:QMAKE_CXXFLAGS += -fopenmp
+#unix:QMAKE_CXXFLAGS += -fopenmp
 
 
-mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/2.0.6/include \
+mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/3.1.0/include \
     /usr/local/include \
     /usr/local/include/eigen3
-mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/2.0.6/lib/ -ljpeg
+mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/3.1.0/lib/ -ljpeg
 mac:LIBS += -framework Accelerate
-mac:QMAKE_CXXFLAGS += -fopenmp
-mac:QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp -lomp -I/usr/local/include
-mac:QMAKE_LFLAGS += -lomp
+#mac:QMAKE_CXXFLAGS += -fopenmp
+mac:QMAKE_CXXFLAGS += -Xpreprocessor -I/usr/local/include #fopenmp -lomp
+# mac:QMAKE_LFLAGS += -lomp
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 
 
