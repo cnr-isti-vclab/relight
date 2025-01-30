@@ -29,7 +29,7 @@ RtiBasisRow::RtiBasisRow(RtiParameters &parameters, QFrame *parent): RtiPlanRow(
 	buttons->addWidget(ptm = new QLabelButton("PTM", "Polynomial Texture Map"));
 	buttons->addWidget(hsh = new QLabelButton("HSH", "HemiSpherical Harmonics"));
 	buttons->addWidget(rbf = new QLabelButton("RBF", "Radial Basis Functions"));
-	buttons->addWidget(bln = new QLabelButton("BNL", "Bilinear interplation"));
+	buttons->addWidget(bln = new QLabelButton("BLN", "Bilinear interplation"));
 
 	connect(ptm, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::PTM, true); });
 	connect(hsh, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::HSH, true); });

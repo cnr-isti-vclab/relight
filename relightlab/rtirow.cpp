@@ -14,7 +14,7 @@ RtiRow::RtiRow(QWidget *parent): QFrame(parent) {
 PtmRow::PtmRow(QWidget *parent): RtiRow(parent) {
 	row->addWidget(new HelpLabel("PTM: Polynomial Texture Maps", "rti/ptm"), 1);
 	row->addStretch(1);
-    QCheckBox *lrgb = new QCheckBox("LRGB");
+	QCheckBox *lrgb = new QCheckBox("LRGB");
 	row->addWidget(lrgb, 1);
 
 
@@ -31,7 +31,7 @@ HshRow::HshRow(QWidget *parent): RtiRow(parent) {
 
 	row->addWidget(nharmonics, 1);
 
-    QCheckBox *lrgb = new QCheckBox("LRGB");
+	QCheckBox *lrgb = new QCheckBox("LRGB");
 	row->addWidget(lrgb, 1);
 
 	row->addWidget(new QPushButton("Create"), 1);

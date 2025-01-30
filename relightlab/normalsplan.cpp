@@ -145,7 +145,7 @@ void NormalsFlattenRow::setFourierFrequency(double f) {
 
 NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *parent):
 	NormalsPlanRow(_parameters, parent) {
-	label->label->setText("Flatten:");
+	label->label->setText("Surface:");
 	label->help->setId("normals/flattening");
 
 	none = new QLabelButton("None", "Do generate a mesh.");
