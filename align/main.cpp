@@ -41,6 +41,8 @@ double mutualInformation(QImage a, QImage b, int max, int dx, int dy) {
 			bprob[cb]++;
 		}
 	}
+	// w * h vettore, trova min e max, scala tra 0 e 1 e dopo lo metti su una qimg
+	//
 	double tot = (height - 2*max)*(width - 2*max);
 	double info = 0.0;
 
@@ -57,18 +59,26 @@ double mutualInformation(QImage a, QImage b, int max, int dx, int dy) {
 }
 
 
+
+
 //a and b image must be decently larger than max min is 3 timess
 //bw images
 QPoint align(QImage a, QImage b, int max, double &best_info, double &initial) {
 
+	int max_side = max;
 	best_info = 0.0;
+	double worst_info = 1e20;
 	QPoint best(0, 0);
-	for(int dy = -max; dy <= max; dy++) {
-		for(int dx = -max; dx <= max; dx++) {
+	int side = 2*max_side;
+	std::vector<double> values(side*side);
+	for(int dy = -max_side; dy <= max_side; dy++) {
+		for(int dx = -max_side; dx <= max_side; dx++) {
 			double info = mutualInformation(a, b, max, dx, dy);
 			if(dx == 0 && dy == 0) {
 				initial = info;
 			}
+			values[dx+max_side + (dy+max_side)*side] = info;
+			worst_info = std::min(worst_info, info);
 			//cout << info << " ";
 			if(info > best_info) {
 				best_info = info;
@@ -78,8 +88,104 @@ QPoint align(QImage a, QImage b, int max, double &best_info, double &initial) {
 		}
 		//cout << endl;
 	}
+	QImage img(side, side, QImage::Format::Format_RGB888);
+	for(int y = 0; y < side; y++) {
+		for(int x = 0; x < side; x++) {
+			double g = 255*(values[x + y*side] - worst_info)/(best_info - worst_info);
+			img.setPixel(x, y, qRgb(g, g, g));
+		}
+	}
+	static int count = 0;
+	img.save(QString("mutual%1.png").arg(count++));
 	return best;
 }
+
+struct Offset {
+	int x;
+	int y;
+};
+
+std::vector<Offset> readOffsetsCSV(const QString &filePath) {
+	std::vector<Offset> offsets;
+	QFile file(filePath);
+
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		cerr << "Could not open: " << qPrintable(filePath) << endl;
+		return offsets;
+	}
+
+	QTextStream in(&file);
+	bool firstLine = true;
+	while (!in.atEnd()) {
+		QString line = in.readLine().trimmed();
+		if (firstLine) {
+			firstLine = false;
+			continue;
+		}
+		QStringList values = line.split(",", Qt::SkipEmptyParts);
+		if (values.size() >= 2) {
+			offsets.push_back({values[0].trimmed().toInt(), values[1].trimmed().toInt()});
+		}
+	}
+	file.close();
+	return offsets;
+}
+
+void analyzeErrors(const std::vector<QPoint> &calculatedOffsets, const std::vector<Offset> &trueOffsets) {
+	if (calculatedOffsets.size() != trueOffsets.size()) {
+		cerr << "Number of compute offsets and real offsets not matching" << endl;
+		return;
+	}
+	double sumSqErrorX = 0, sumSqErrorY = 0;
+	int countPixel1 = 0, countPixel2 = 0, countPixel3 = 0;
+	double minErrorX = std::numeric_limits<double>::max();
+	double maxErrorX = std::numeric_limits<double>::min();
+	double minErrorY = std::numeric_limits<double>::max();
+	double maxErrorY = std::numeric_limits<double>::min();
+
+	cout << "Differenze calcolate:" << endl;
+	for (size_t i = 0; i < calculatedOffsets.size(); i++) {
+		int dx = std::abs(calculatedOffsets[i].x() - trueOffsets[i].x);
+		int dy = std::abs(calculatedOffsets[i].y() - trueOffsets[i].y);
+		double error = std::sqrt(dx * dx + dy * dy);  // Distanza euclidea
+
+		cout << "Offset [" << i << "] - Calcolato: (" << calculatedOffsets[i].x() << ", " << calculatedOffsets[i].y()
+			 << "), Reale: (" << trueOffsets[i].x << ", " << trueOffsets[i].y << "), ΔX: " << dx << ", ΔY: " << dy
+			 << ", Errore: " << error << endl;
+
+		sumSqErrorX += dx * dx;
+		sumSqErrorY += dy * dy;
+
+		minErrorX = std::min(minErrorX, (double)dx);
+		maxErrorX = std::max(maxErrorX, (double)dx);
+		minErrorY = std::min(minErrorY, (double)dy);
+		maxErrorY = std::max(maxErrorY, (double)dy);
+
+		if (error >= 1) countPixel1++;
+		if (error >= 2) countPixel2++;
+		if (error >= 3) countPixel3++;
+
+
+	}
+/*
+		if (dx >= 1 || dy >= 1) countPixel1++;
+		if (dx >= 2 || dy >= 2) countPixel2++;
+		if (dx >= 3 || dy >= 3) countPixel3++;
+	}*/
+
+
+	double rmseX = std::sqrt(sumSqErrorX / calculatedOffsets.size());
+	double rmseY = std::sqrt(sumSqErrorY / calculatedOffsets.size());
+	cout << "\nStatistiche Errori:" << endl;
+	cout << "Errore quadratico medio (RMSE) X: " << rmseX << ", Y: " << rmseY << endl;
+	cout << "Errore minimo X: " << minErrorX << ", Y: " << minErrorY << endl;
+	cout << "Errore massimo X: " << maxErrorX << ", Y: " << maxErrorY << endl;
+	cout << "Offset con errore ≥ 1 pixel: " << countPixel1 << " (" << (countPixel1 * 100.0) / calculatedOffsets.size() << "%)" << endl;
+	cout << "Offset con errore ≥ 2 pixel: " << countPixel2 << " (" << (countPixel2 * 100.0) / calculatedOffsets.size() << "%)" << endl;
+	cout << "Offset con errore ≥ 3 pixel: " << countPixel3 << " (" << (countPixel3 * 100.0) / calculatedOffsets.size() << "%)" << endl;
+}
+
+
 
 #include "../src/getopt.h"
 #include <QImage>
@@ -112,7 +218,7 @@ int main(int argc, char *argv[]) {
 		cerr << "No images to align!" << endl;
 		return -1;
 	}
-	QImage first(images[0]);
+	QImage first(dir.filePath(images[0]));
 	if(first.isNull()) {
 		cerr << "Could not load image: " << qPrintable(images[0]) << endl;
 		return -1;
@@ -120,6 +226,7 @@ int main(int argc, char *argv[]) {
 
 	int max_offset = QString(argv[2]).toInt();
 	QStringList c = QString(argv[3]).split(":");
+
 	QRect crop(c[0].toInt(), c[1].toInt(), c[2].toInt(), c[3].toInt());
 	crop.adjust(-max_offset, -max_offset, max_offset, max_offset);
 
@@ -131,13 +238,14 @@ int main(int argc, char *argv[]) {
 	vector<QImage> samples;
 	for(int i = 0; i < images.size(); i++) {
 		cout << qPrintable(images[i]) << endl;
-		QImage img(images[i]);
+		QImage img(dir.filePath(images[i]));
 		QImage sub = img.copy(crop);
 		samples.push_back(sub);
 	}
 
 	int reference = 0;
 	vector<QPoint> offsets;
+	QPoint origin(0,0);
 	for(int i = 0; i < samples.size(); i++) {
 		double best = 0.0f;
 		double initial = 0.0f;
@@ -145,6 +253,15 @@ int main(int argc, char *argv[]) {
 		cout << p.x() << " " << p.y() << ": " << best << endl;
 		offsets.push_back(p);
 	}
+
+	QString offsetsFile = dir.filePath("offsets.csv");
+	vector<Offset> trueOffsets = readOffsetsCSV(offsetsFile);
+
+	analyzeErrors(offsets, trueOffsets);
+
+//1. cerca file offsets.csv, split per " ", confronti i due array e confronti la differenza.
+// 2. calcola differenza e percentuale >= 1 pixel in x e y, quante volte arrivi al pixel 1, 2, 3 ecc.
+// 3. errore quadr medio, errore min, err mass, elenco errori
 
 	/*
 	QDir dir("./");
