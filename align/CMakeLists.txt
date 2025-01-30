@@ -14,15 +14,9 @@ if (APPLE)
 endif()
 
 
-SET(HEADERS
-	aligndialog.h
-	aligninspector.h
-)
 
 SET(SOURCES
 	main.cpp
-	aligndialog.cpp
-	aligninspector.cpp
 )
 
 
@@ -38,8 +32,7 @@ target_link_libraries(
 		${JPEG_LIBRARIES}
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui
-		${RELIGHT_QT}::Widgets
-		${RELIGHT_QT}::Concurrent)
+)
 
 target_compile_definitions(align PUBLIC _USE_MATH_DEFINES NOMINMAX)
 

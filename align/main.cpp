@@ -6,9 +6,9 @@
 #include <QImage>
 #include <QPoint>
 #include <QDir>
-#include <QGuiApplication>
+//#include <QGuiApplication>
 
-#include "aligndialog.h"
+//#include "aligndialog.h"
 
 using namespace std;
 
@@ -87,10 +87,11 @@ QPoint align(QImage a, QImage b, int max, double &best_info, double &initial) {
 int main(int argc, char *argv[]) {
 
 	if(argc == 1) {
+/*		QGuiApplication app(argc, argv);
 		auto dialog = new AlignDialog;
 		dialog->show();
 		int res = dialog->exec();
-		return res;
+		return res; */
 	}
 
 	//dir max_offset crop
