@@ -24,7 +24,7 @@ void setupLights(ImageSet &imageset, Dome &dome);
 QString RtiParameters::summary() {
 	QString basisLabels[] =  { "PTM", "HSH", "RBF", "BLN", "NEURAL" };
 	QString colorspaceLabels[] =  { "RGB", "LRGB", "YCC", "RGB", "YCC" };
-	QString formatLabels[] = { "", "images", "deepzoom", "tarzoom", "itarzoom", "tiff" };
+	QString formatLabels[] = { "", "web: images", "web: deepzoom", "web: tarzoom", "web: itarzoom", "IIIF: tiff" };
 
 	QString s_basis  = basisLabels[basis];
 	QString s_colorspace = colorspaceLabels[colorspace];
@@ -38,7 +38,7 @@ QString RtiParameters::summary() {
 	else
 		s_format = formatLabels[format];
 
-	QString txt = QString("%1 (%2) %3 %4").arg(s_basis).arg(s_colorspace).arg(s_planes).arg(s_format);
+	QString txt = QString("%1%3 (%2) %4").arg(s_basis).arg(s_colorspace).arg(s_planes).arg(s_format);
 	return txt;
 }
 

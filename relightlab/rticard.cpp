@@ -19,7 +19,7 @@ RtiCard::RtiCard(Rti::Type _type, Rti::ColorSpace _colorspace, int _nplanes, int
 		"PTM" <<
 		"HSH" <<
 		"RBF" <<
-		"BNL" <<
+		"BLN" <<
 		"Neural";
 
 	QStringList tooltips;
@@ -94,7 +94,7 @@ void RtiCard::updateTitle() {
 		"PTM" <<
 		"HSH" <<
 		"RBF" <<
-		"BNL" <<
+		"BLN" <<
 		"Neural";
 
 	QString title = titles[(int)type];
