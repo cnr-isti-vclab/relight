@@ -171,7 +171,7 @@ void analyzeErrors(const std::vector<QPoint> &calculatedOffsets, const std::vect
 
 
 	}
-/*
+	/*
 		if (dx >= 1 || dy >= 1) countPixel1++;
 		if (dx >= 2 || dy >= 2) countPixel2++;
 		if (dx >= 3 || dy >= 3) countPixel3++;
@@ -189,15 +189,135 @@ void analyzeErrors(const std::vector<QPoint> &calculatedOffsets, const std::vect
 	cout << "Offset con errore ≥ 3 pixel: " << countPixel3 << " (" << (countPixel3 * 100.0) / calculatedOffsets.size() << "%)" << endl;
 }
 
+#include <opencv4/opencv2/opencv.hpp>
+#include <vector>
+#pragma once
+#include <opencv2/opencv.hpp>
+#include <vector>
+#include <cmath>
+
+class ImageAlignment {
+public:
+	cv::Rect2f region;  // Defined rectangular region
+	std::vector<cv::Mat> samples; // Small images
+	std::vector<cv::Point2f> offsets; // Translation offsets
+
+	// Constructor
+	ImageAlignment(const cv::Rect2f& region_): region(region_) {}
+
+	// Align all samples to the first using ECC or Mutual Information
+	void alignSamples(bool useECC = true) {
+		if (samples.empty()) return;
+
+		const cv::Mat& ref = samples[0];
+		offsets.resize(samples.size(), cv::Point2f(0, 0));
+
+		for (size_t i = 1; i < samples.size(); i++) {
+			try {
+				cv::Mat warpMat = useECC ? computeECC(samples[i], ref) : computeMutualInformation(samples[i], ref);
+
+				offsets[i] = cv::Point2f(warpMat.at<float>(0, 2), warpMat.at<float>(1, 2));
+			} catch(cv::Exception e) {
+				offsets[i] = cv::Point2f(-1000, -1000);
+			}
+		}
+	}
+
+private:
+	double computeECCValue(const cv::Mat& src, const cv::Mat& ref) {
+		   cv::Mat srcFloat, refFloat;
+		   src.convertTo(srcFloat, CV_32F);
+		   ref.convertTo(refFloat, CV_32F);
+
+		   cv::Mat srcSquared, refSquared, srcRefMult;
+		   cv::multiply(srcFloat, srcFloat, srcSquared);
+		   cv::multiply(refFloat, refFloat, refSquared);
+		   cv::multiply(srcFloat, refFloat, srcRefMult);
+
+		   double num = cv::sum(srcRefMult)[0];
+		   double denom = std::sqrt(cv::sum(srcSquared)[0] * cv::sum(refSquared)[0]);
+
+		   return (denom > 0) ? num / denom : 0.0;
+	   }
+
+	// Alignment methods
+	cv::Mat computeECC(const cv::Mat& src, const cv::Mat& ref) {
+		cv::Mat warpMat = cv::Mat::eye(2, 3, CV_32F);
+		cv::findTransformECC(ref, src, warpMat, cv::MOTION_TRANSLATION);
+		return warpMat;
+	}
+
+	double computeMutualInformationValue(const cv::Mat& src, const cv::Mat& ref) {
+		const int histSize = 256;
+		float range[] = { 0, 256 };
+		const float* histRange = { range };
+
+		cv::Mat histSrc, histRef, jointHist;
+		cv::calcHist(&src, 1, 0, cv::Mat(), histSrc, 1, &histSize, &histRange);
+		cv::calcHist(&ref, 1, 0, cv::Mat(), histRef, 1, &histSize, &histRange);
+		cv::calcHist(&src, 1, 0, ref, jointHist, 2, &histSize, &histRange);
+
+		cv::normalize(histSrc, histSrc, 1, 0, cv::NORM_L1);
+		cv::normalize(histRef, histRef, 1, 0, cv::NORM_L1);
+		cv::normalize(jointHist, jointHist, 1, 0, cv::NORM_L1);
+
+		double Hs = 0, Hr = 0, Hsr = 0;
+		for (int i = 0; i < histSize; i++) {
+			float ps = histSrc.at<float>(i);
+			float pr = histRef.at<float>(i);
+			if (ps > 0) Hs -= ps * std::log2(ps);
+			if (pr > 0) Hr -= pr * std::log2(pr);
+		}
+		for (int i = 0; i < histSize; i++) {
+			for (int j = 0; j < histSize; j++) {
+				float psr = jointHist.at<float>(i, j);
+				if (psr > 0) Hsr -= psr * std::log2(psr);
+			}
+		}
+
+		return Hs + Hr - Hsr;
+	}
+
+	cv::Mat computeMutualInformation(const cv::Mat& src, const cv::Mat& ref) {
+		cv::Mat warpMat = cv::Mat::eye(2, 3, CV_32F);
+
+		cv::Matx21f delta(0, 0);
+		double prevMI = computeMutualInformationValue(src, ref);
+
+		for (int iter = 0; iter < 20; iter++) {
+			cv::Mat warpedSrc;
+			cv::warpAffine(src, warpedSrc, warpMat, ref.size());
+
+			double newMI = computeMutualInformationValue(warpedSrc, ref);
+			if (newMI <= prevMI) break;
+			prevMI = newMI;
+
+			// Compute gradient approximation
+			cv::Matx21f grad;
+			grad(0) = (computeMutualInformationValue(warpedSrc(cv::Rect(1, 0, warpedSrc.cols - 1, warpedSrc.rows)), ref) - newMI);
+			grad(1) = (computeMutualInformationValue(warpedSrc(cv::Rect(0, 1, warpedSrc.cols, warpedSrc.rows - 1)), ref) - newMI);
+
+			// Use OpenCV's solve function to refine translation parameters
+			cv::solve(cv::Matx22f(1, 0, 0, 1), grad, delta, cv::DECOMP_SVD);
+
+			warpMat.at<float>(0, 2) += delta(0);
+			warpMat.at<float>(1, 2) += delta(1);
+		}
+		return warpMat;
+	}
+};
+
+
 
 
 #include "../src/getopt.h"
 #include <QImage>
+#include <QRandomGenerator>
 
 int main(int argc, char *argv[]) {
 
 	if(argc == 1) {
-/*		QGuiApplication app(argc, argv);
+		/*		QGuiApplication app(argc, argv);
 		auto dialog = new AlignDialog;
 		dialog->show();
 		int res = dialog->exec();
@@ -229,7 +349,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	int max_offset = QString(argv[2]).toInt();
+	int radius = max_offset / 4;
 	QStringList c = QString(argv[3]).split(":");
+
+	//random
+	QRandomGenerator *generator = QRandomGenerator::global();
 
 	QRect crop(c[0].toInt(), c[1].toInt(), c[2].toInt(), c[3].toInt());
 	crop.adjust(-max_offset, -max_offset, max_offset, max_offset);
@@ -238,39 +362,49 @@ int main(int argc, char *argv[]) {
 		cerr << "Alignment sample (+offset) is not contained in the image" << endl;
 		return -1;
 	}
-
-	vector<QImage> samples;
+	cv::Rect2f rect(crop.left(), crop.top(), crop.width(), crop.height());
+	ImageAlignment alignment(rect);
+	vector<cv::Point2f> original_offsets;
+	vector<cv::Mat> &samples = alignment.samples;
 	for(int i = 0; i < images.size(); i++) {
 		cout << qPrintable(images[i]) << endl;
-		QImage img(dir.filePath(images[i]));
-		QImage sub = img.copy(crop);
-		samples.push_back(sub);
+		cv::Mat img = cv::imread(images[i].toStdString(), cv::IMREAD_GRAYSCALE);
+		int dx = generator->bounded(-radius, radius);
+		int dy = generator->bounded(-radius, radius);
+		if(i == 0) {
+			dx = dy = 0;
+		}
+		cv::Rect2f region(crop.left() + dx, crop.top() + dy, crop.width(), crop.height());
+
+		samples.push_back(img(region));
+		original_offsets.push_back(cv::Point2f(-dx, -dy));
 	}
 
-	/*for(int i = 0; i < samples.size(); i++) {
-		samples[i].save(QString("/home/ponchio/tmp/aligntest/%1.jpg").arg(i));
+	alignment.alignSamples(true);
+	for(int i = 0; i < original_offsets.size(); i++) {
+		cout << alignment.offsets[i].x - original_offsets[i].x << "       " << alignment.offsets[i].y - original_offsets[i].y << endl;
 	}
-	exit(0); */
 
+	/*
 	int reference = 0;
-	vector<QPoint> offsets;
+	vector<QPoint> original_offsets;
 	QPoint origin(0,0);
 	for(int i = 0; i < samples.size(); i++) {
 		double best = 0.0f;
 		double initial = 0.0f;
 		QPoint p = align(samples[reference], samples[i], max_offset, best, initial);
 		cout << p.x() << " " << p.y() << ": " << best << endl;
-		offsets.push_back(p);
+		original_offsets.push_back(p);
 	}
 
 	QString offsetsFile = dir.filePath("offsets.csv");
 	vector<Offset> trueOffsets = readOffsetsCSV(offsetsFile);
 
-	analyzeErrors(offsets, trueOffsets);
+	analyzeErrors(offsets, trueOffsets); */
 
-//1. cerca file offsets.csv, split per " ", confronti i due array e confronti la differenza.
-// 2. calcola differenza e percentuale >= 1 pixel in x e y, quante volte arrivi al pixel 1, 2, 3 ecc.
-// 3. errore quadr medio, errore min, err mass, elenco errori
+	//1. cerca file offsets.csv, split per " ", confronti i due array e confronti la differenza.
+	// 2. calcola differenza e percentuale >= 1 pixel in x e y, quante volte arrivi al pixel 1, 2, 3 ecc.
+	// 3. errore quadr medio, errore min, err mass, elenco errori
 
 	/*
 	QDir dir("./");
