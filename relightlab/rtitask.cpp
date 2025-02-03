@@ -89,8 +89,6 @@ void RtiTask::run() {
 	imageset.initFromDome(project.dome); //lights after images
 	imageset.setCrop(crop, project.offsets);
 
-	qDebug() << "offsets: " << project.offsets;
-
 	//TODO too many crop locations!
 	if(!crop.isNull()) {
 		builder->crop[0] = imageset.left;

@@ -11,7 +11,6 @@
 #include <QLabel>
 #include <QProgressBar>
 #include <QPushButton>
-#include <QDebug>
 
 DetectHighlights::DetectHighlights(Sphere *_sphere, bool update) {
 	sphere = _sphere;

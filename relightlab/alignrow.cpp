@@ -12,7 +12,6 @@
 #include <QLabel>
 #include <QProgressBar>
 #include <QPushButton>
-#include <QDebug>
 
 FindAlignment::FindAlignment(Align *_align, bool update) {
 	align = _align;
@@ -68,16 +67,28 @@ AlignRow::AlignRow(Align *_align, QWidget *parent): QWidget(parent) {
 	status_layout->addWidget(progress);
 	status_layout->addStretch();
 
-	QPushButton *edit = new QPushButton(QIcon::fromTheme("edit"), "Edit...");
-	columns->addWidget(edit, 1);
+	QGridLayout *edit_layout = new QGridLayout;
+	columns->addLayout(edit_layout, 2);
+
+
+	edit_layout->setRowStretch(0,1);
+
+	region= new QLabel;
+	updateRegion();
+	edit_layout->addWidget(region, 1, 0, 1, 3);
+
+	edit_button = new QPushButton(QIcon::fromTheme("edit"), "Edit...");
+	edit_layout->addWidget(edit_button, 2, 0);
 	verify_button = new QPushButton(QIcon::fromTheme("check"), "Verify...");
 	verify_button->setEnabled(false);
-	columns->addWidget(verify_button, 1);
-	QPushButton *remove = new QPushButton(QIcon::fromTheme("trash-2"), "Delete");
-	columns->addWidget(remove, 1);
+	edit_layout->addWidget(verify_button, 2, 1);
+	QPushButton *remove_button = new QPushButton(QIcon::fromTheme("trash-2"), "Delete");
+	edit_layout->addWidget(remove_button, 2, 2);
 
-	connect(edit, SIGNAL(clicked()), this, SLOT(edit()));
-	connect(remove, SIGNAL(clicked()), this, SLOT(remove()));
+	edit_layout->setRowStretch(3,1);
+
+	connect(edit_button, SIGNAL(clicked()), this, SLOT(edit()));
+	connect(remove_button, SIGNAL(clicked()), this, SLOT(remove()));
 	connect(verify_button, SIGNAL(clicked()), this, SLOT(verify()));
 
 
@@ -89,6 +100,7 @@ void AlignRow::edit() {
 	if(answer == QDialog::Accepted) {
 		position->rect = align->rect;
 		position->update();
+		updateRegion();
 		//reflections->init();
 		findAlignment();
 	}
@@ -101,6 +113,11 @@ void AlignRow::verify() {
 
 void AlignRow::remove() {
 	emit removeme(this);
+}
+
+void AlignRow::updateRegion() {
+	QRectF r = align->rect;
+	region->setText(QString("Sample region: %1x%2+%3+%4").arg(r.width()).arg(r.height()).arg(r.left()).arg(r.top()));
 }
 
 void AlignRow::updateStatus(QString msg, int percent) {

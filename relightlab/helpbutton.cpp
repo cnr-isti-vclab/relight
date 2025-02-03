@@ -18,8 +18,6 @@
 #include <QUrl>
 #include <QFile>
 
-#include <QDebug>
-
 
 HelpDialog* HelpDialog::m_instance = nullptr; // Initialize static instance to nullptr
 

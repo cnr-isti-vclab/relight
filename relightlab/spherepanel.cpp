@@ -8,7 +8,6 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QPushButton>
-#include <QDebug>
 
 #include <assert.h>
 

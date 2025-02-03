@@ -5,7 +5,6 @@
 #include <QGraphicsPixmapItem>
 #include <QScrollBar>
 #include <QRectF>
-#include <QDebug>
 
 MarkerOverview::MarkerOverview(int _height, QWidget *parent): QGraphicsView(parent) {
 	height = _height;

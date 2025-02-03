@@ -2,7 +2,6 @@
 #include "../src/dome.h"
 
 #include <QGraphicsEllipseItem>
-#include <QDebug>
 
 using namespace Eigen;
 

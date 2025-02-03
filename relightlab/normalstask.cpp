@@ -17,8 +17,8 @@
 
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QDebug>
 #include <QImage>
+#include <QTextStream>
 #include <vector>
 #include <iostream>
 #include <time.h>
