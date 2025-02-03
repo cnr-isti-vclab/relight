@@ -53,6 +53,9 @@ public:
 public slots:
 	void click(QPoint);
 	void updateAlignPoint();
+
+protected:
+	void keyPressEvent(QKeyEvent *event) override;
 };
 
 #endif

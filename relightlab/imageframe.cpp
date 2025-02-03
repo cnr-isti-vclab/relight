@@ -5,7 +5,6 @@
 #include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
 #include <QResizeEvent>
-#include <QDebug>
 
 #include "relightapp.h"
 #include "imageframe.h"

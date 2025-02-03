@@ -6,6 +6,7 @@
 #include <QButtonGroup>
 #include <QPushButton>
 #include <QLineEdit>
+#include <QLabel>
 #include <QHBoxLayout>
 #include <QDoubleSpinBox>
 #include <QMessageBox>

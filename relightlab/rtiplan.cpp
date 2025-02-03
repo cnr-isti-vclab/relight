@@ -13,6 +13,7 @@
 #include <QComboBox>
 #include <QStandardItemModel>
 #include <QLineEdit>
+#include <QLabel>
 #include <QFileDialog>
 #include <QMessageBox>
 

@@ -3,7 +3,6 @@
 #include "jpeg_decoder.h"
 
 #include <QDir>
-#include <QDebug>
 
 #include <iostream>
 #include <fstream>

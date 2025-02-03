@@ -6,6 +6,9 @@
 #include <QImage>
 #include <QPoint>
 #include <QDir>
+#include <QTextStream>
+
+#include <assert.h>
 //#include <QGuiApplication>
 
 //#include "aligndialog.h"
@@ -69,7 +72,7 @@ QPoint align(QImage a, QImage b, int max, double &best_info, double &initial) {
 	best_info = 0.0;
 	double worst_info = 1e20;
 	QPoint best(0, 0);
-	int side = 2*max_side;
+	int side = 2*max_side + 1;
 	std::vector<double> values(side*side);
 	for(int dy = -max_side; dy <= max_side; dy++) {
 		for(int dx = -max_side; dx <= max_side; dx++) {
@@ -77,6 +80,7 @@ QPoint align(QImage a, QImage b, int max, double &best_info, double &initial) {
 			if(dx == 0 && dy == 0) {
 				initial = info;
 			}
+			assert(dx+max_side + (dy+max_side)*side < values.size());
 			values[dx+max_side + (dy+max_side)*side] = info;
 			worst_info = std::min(worst_info, info);
 			//cout << info << " ";
@@ -122,7 +126,7 @@ std::vector<Offset> readOffsetsCSV(const QString &filePath) {
 			firstLine = false;
 			continue;
 		}
-		QStringList values = line.split(",", Qt::SkipEmptyParts);
+		QStringList values = line.split(",");
 		if (values.size() >= 2) {
 			offsets.push_back({values[0].trimmed().toInt(), values[1].trimmed().toInt()});
 		}
@@ -242,6 +246,11 @@ int main(int argc, char *argv[]) {
 		QImage sub = img.copy(crop);
 		samples.push_back(sub);
 	}
+
+	/*for(int i = 0; i < samples.size(); i++) {
+		samples[i].save(QString("/home/ponchio/tmp/aligntest/%1.jpg").arg(i));
+	}
+	exit(0); */
 
 	int reference = 0;
 	vector<QPoint> offsets;

@@ -32,13 +32,16 @@ public:
 	QLabel *thumb = nullptr;
 	AlignOverview *position = nullptr;
 	QLabel *status = nullptr;
+	QLabel *region = nullptr;
 	QProgressBar *progress = nullptr;
+	QPushButton *edit_button = nullptr;
 	QPushButton *verify_button = nullptr;
 	FindAlignment *find_alignment = nullptr;
 
 	AlignRow(Align *align, QWidget *parent = nullptr);
 	void findAlignment(bool update = true);
 	void stopFinding();
+	void updateRegion();
 	
 signals:
 	void removeme(AlignRow *row);

@@ -2,8 +2,6 @@
 #define QLABELBUTTON_H
 
 #include <QCommandLinkButton>
-#include <QLabel>
-#include <QDebug>
 
 class QLabelButton: public QCommandLinkButton {
 public:

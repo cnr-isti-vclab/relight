@@ -11,7 +11,6 @@
 #include <QGroupBox>
 #include <QComboBox>
 #include <QMessageBox>
-#include <QDebug>
 
 CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 

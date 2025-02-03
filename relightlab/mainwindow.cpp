@@ -19,7 +19,6 @@
 #include "helpbutton.h"
 
 #include <QMessageBox>
-#include <QDebug>
 #include <QScrollArea>
 #include <QVBoxLayout>
 

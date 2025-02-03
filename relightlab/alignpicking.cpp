@@ -92,3 +92,15 @@ void AlignPicking::updateAlignPoint() {
 	align->rect = rect->getRect();
 }
 
+void AlignPicking::keyPressEvent(QKeyEvent *event) {
+	if(event->key() == Qt::Key_Plus)
+		marker_side += 5;
+	if(event->key() == Qt::Key_Minus)
+		marker_side -= 5;
+	QPointF center = rect->rect.center();
+
+	rect->rect.setTopLeft(center - QPointF(marker_side, marker_side));
+	rect->rect.setBottomRight(center + QPointF(marker_side, marker_side));
+	rect->update();
+	updateAlignPoint();
+}

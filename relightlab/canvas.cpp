@@ -3,7 +3,6 @@
 #include <QMouseEvent>
 #include <QApplication>
 #include <QScrollBar>
-#include <QDebug>
 
 #include <qmath.h>
 
