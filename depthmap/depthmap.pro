@@ -11,8 +11,11 @@ CONFIG -= app_bundle
 LIBS += -L /opt/homebrew/lib -ltiff
 SOURCES += \
         ../src/bni_normal_integration.cpp \
+        camera.cpp \
         depthmap.cpp \
-        main.cpp
+        gaussiangrid.cpp \
+        main.cpp \
+        orthodepthmap.cpp
 mac:INCLUDEPATH += /opt/homebrew/include
 unix:INCLUDEPATH += ../external/eigen-3.3.9
 
@@ -23,4 +26,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     ../src/bni_normal_integration.h \
-    depthmap.h
+    camera.h \
+    depthmap.h \
+    gaussiangrid.h \
+    orthodepthmap.h
