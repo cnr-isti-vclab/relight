@@ -21,6 +21,64 @@ void ImageAlignment::alignSamples(bool useECC) {
 	}
 }
 
+
+double mutualInformation(const cv::Mat& a, const cv::Mat& b) {
+	std::vector<int> histo(256*256, 0);
+	std::vector<int> aprob(256, 0);
+	std::vector<int> bprob(256, 0);
+	int width = a.cols;
+	int height = a.rows;
+	//x and y refer to the image pixels!
+	for(int y = 0; y < height; y++) {
+		for(int x = 0; x < width; x++) {
+			int ca = a.at<unsigned char>(y, x);
+			int cb = b.at<unsigned char>(y, x);
+			histo[ca + 256*cb]++;
+			aprob[ca]++;
+			bprob[cb]++;
+		}
+	}
+	// w * h vettore, trova min e max, scala tra 0 e 1 e dopo lo metti su una qimg
+	//
+	double tot = height*width;
+	double info = 0.0;
+
+	for(int y = 0; y < 256; y++) {
+		for(int x = 0; x < 256; x++) {
+			double p = histo[x + 256*y]/tot;
+			if(p == 0) continue;
+			double pa = aprob[x]/tot;
+			double pb = bprob[y]/tot;
+			info += p * log(p/(pa*pb));
+		}
+	}
+	return info;
+}
+
+
+void ImageAlignment::testAlign() {
+	int k = 10;
+	int w = samples[0].cols;
+	int h = samples[0].rows;
+	cv::Mat a = samples[0](cv::Rect(k, k, w-2*k, h-2*k));
+	for(int i = 0; i < samples.size(); i++) {
+		cv::Mat result(2*k+1, 2*k+1, CV_32F);
+		for(int dy = -k; dy <= k; dy++) {
+			for(int dx = -k; dx <= k; dx++) {
+				cv::Mat b = samples[i](cv::Rect(k + dx, k+dy, w-2*k, h-2*k));
+				float my = mutualInformation(a, b);
+				//float my = computeECCValue(a, b);
+				result.at<float>(dy +k, dx+k) = my;
+			}
+		}
+		cv::Mat normalizedMat, uint8Mat;
+		cv::normalize(result, normalizedMat, 0, 255, cv::NORM_MINMAX);
+		normalizedMat.convertTo(uint8Mat, CV_8U);
+		cv::imwrite(std::to_string(i) + ".png", uint8Mat);
+	}
+}
+
+
 double ImageAlignment::computeECCValue(const cv::Mat& src, const cv::Mat& ref) {
 	cv::Mat srcFloat, refFloat;
 	src.convertTo(srcFloat, CV_32F);
@@ -44,14 +102,16 @@ cv::Mat ImageAlignment::computeECC(const cv::Mat& src, const cv::Mat& ref) {
 }
 
 double ImageAlignment::computeMutualInformationValue(const cv::Mat& src, const cv::Mat& ref) {
+	return mutualInformation(src, ref);
 	const int histSize = 256;
 	float range[] = { 0, 256 };
 	const float* histRange = { range };
 
 	cv::Mat histSrc, histRef, jointHist;
-	cv::calcHist(&src, 1, 0, cv::Mat(), histSrc, 1, &histSize, &histRange);
-	cv::calcHist(&ref, 1, 0, cv::Mat(), histRef, 1, &histSize, &histRange);
-	cv::calcHist(&src, 1, 0, ref, jointHist, 2, &histSize, &histRange);
+	int channels[] = {0};
+	cv::calcHist(&src, 1, channels, cv::Mat(), histSrc, 1, &histSize, &histRange);
+	cv::calcHist(&ref, 1, channels, cv::Mat(), histRef, 1, &histSize, &histRange);
+	cv::calcHist(&src, 1, channels, ref, jointHist, 2, &histSize, &histRange);
 
 	cv::normalize(histSrc, histSrc, 1, 0, cv::NORM_L1);
 	cv::normalize(histRef, histRef, 1, 0, cv::NORM_L1);

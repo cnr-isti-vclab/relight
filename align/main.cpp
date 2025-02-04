@@ -258,8 +258,9 @@ int main(int argc, char *argv[]) {
 		samples.push_back(img(region));
 		original_offsets.push_back(cv::Point2f(-dx, -dy));
 	}
-
-	alignment.alignSamples(true);
+	alignment.testAlign();
+	return 0;
+	alignment.alignSamples(false);
 	for(int i = 0; i < original_offsets.size(); i++) {
 		auto o  = alignment.offsets[i];
 		if(o.x == 0 && o.y == 0 && i != 0) {
