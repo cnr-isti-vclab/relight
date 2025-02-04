@@ -4,7 +4,7 @@ on:
   [push, pull_request]
 
 env:
-  QT_VERSION: '6.7.*'
+  QT_VERSION: '6.8.*'
   MAC_CERT: ${{secrets.MACOS_CERT_ID}}
   WIN_CERT: ${{secrets.WIN_CERTIFICATE}}
 
