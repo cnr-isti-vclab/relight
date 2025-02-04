@@ -4,7 +4,6 @@ on:
   [push, pull_request]
 
 env:
-  QT_VERSION: '6.8.*'
   MAC_CERT: ${{secrets.MACOS_CERT_ID}}
   WIN_CERT: ${{secrets.WIN_CERTIFICATE}}
 
@@ -37,18 +36,23 @@ jobs:
 
     - name: Install OpenCV on Ubuntu
       if: matrix.os == 'ubuntu-latest'
-      run: sudo apt-get update && sudo apt-get install -y libopencv-dev
+      run: |
+        sudo apt-get update && sudo apt-get install -y libopencv-dev
+        echo "QT_VERSION: '6.6.*'" >> $GITHUB_ENV
 
     - name: Install OpenCV on macOS
       if: matrix.os == 'macos-latest'
-      run: brew install opencv
+      run: |
+        brew install opencv
+        echo "QT_VERSION: '6.7.*'" >> $GITHUB_ENV
 
     - name: Install OpenCV on Windows
       if: matrix.os == 'windows-latest'
       run: |
         choco install opencv -y
         echo "OpenCV installed at C:\tools\opencv\build"
-        echo "OpenCV_DIR=C:\tools\opencv\build" >> $GITHUB_ENV
+        echo "OpenCV_DIR=C:\tools" >> $GITHUB_ENV
+        echo "QT_VERSION: '6.6.*'" >> $GITHUB_ENV
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
