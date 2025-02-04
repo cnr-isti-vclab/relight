@@ -23,7 +23,8 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     aligndialog.cpp \
-    aligninspector.cpp
+    aligninspector.cpp \
+    imagealignment.cpp
 
 FORMS += \
     aligndialog.ui \
@@ -31,5 +32,6 @@ FORMS += \
 
 HEADERS += \
     aligndialog.h \
-    aligninspector.h
+    aligninspector.h \
+    imagealignment.h
 
