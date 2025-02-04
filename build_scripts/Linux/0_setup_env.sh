@@ -24,7 +24,7 @@ sudo apt-get update
 echo "=== installing mesa packages..."
 sudo apt-get install -y mesa-common-dev libglu1-mesa-dev 
 
-sudo apt-get install -y cmake ninja-build patchelf libjpeg-dev libeigen3-dev
+sudo apt-get install -y cmake ninja-build patchelf fuse libjpeg-dev libeigen3-dev
 
 # qt dependencies (for deployment)
 sudo apt-get install -y libxcb-cursor0
