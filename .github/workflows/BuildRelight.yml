@@ -49,10 +49,6 @@ jobs:
         choco install opencv -y
         echo "OpenCV installed at C:\tools\opencv\build"
 
-    - name: Verify OpenCV installation
-      run: |
-        python -c "import cv2; print('OpenCV version:', cv2.__version__)" || echo "Python OpenCV not installed"
-
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
       with:
