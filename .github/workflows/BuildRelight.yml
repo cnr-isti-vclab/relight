@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu-20.04', 'macos-latest', 'windows-latest']
+        os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
     steps:
     - uses: actions/checkout@v4
       with:
@@ -34,19 +34,25 @@ jobs:
         New-Item -ItemType directory -Path certificate
         Set-Content -Path certificate\certificate.txt -Value '${{ secrets.WIN_CERTIFICATE }}'
         certutil -decode certificate\certificate.txt certificate\certificate.pfx
-    - name: Cache OpenCV
-      id: opencv-cache
-      uses: actions/cache@v2
-      with:
-        path: ./opencv-install
-        key: ${{ runner.os }}-opencv-cache
 
-    - name: Install OpenCV
-      uses: rayandrews/with-opencv-action@v1
-      with:  
-        dir: ./opencv-install
-        cached: ${{ steps.opencv-cache.outputs.cache-hit }}
-        opencv-version: '4.0.0'
+    - name: Install OpenCV on Ubuntu
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get update && sudo apt-get install -y libopencv-dev
+
+    - name: Install OpenCV on macOS
+      if: matrix.os == 'macos-latest'
+      run: brew install opencv
+
+    - name: Install OpenCV on Windows
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install opencv -y
+        echo "OpenCV installed at C:\tools\opencv\build"
+
+    - name: Verify OpenCV installation
+      run: |
+        python -c "import cv2; print('OpenCV version:', cv2.__version__)" || echo "Python OpenCV not installed"
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
       with:
