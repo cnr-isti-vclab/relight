@@ -17,9 +17,11 @@ endif()
 
 SET(SOURCES
 	main.cpp
+	imagealignment.cpp
 )
 
-
+find_package(OpenCV REQUIRED)
+message(STATUS ${OpenCV_LIBS})
 
 add_executable(align ${HEADERS} ${SOURCES})
 target_include_directories(
@@ -30,6 +32,7 @@ target_include_directories(
 target_link_libraries(
 	align PUBLIC
 		${JPEG_LIBRARIES}
+		opencv_core  opencv_imgcodecs opencv_imgproc opencv_video
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui
 )

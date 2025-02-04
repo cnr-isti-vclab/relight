@@ -18,6 +18,7 @@ public:
 	ImageAlignment(const cv::Rect2f& region_): region(region_) {}
 
 	void alignSamples(bool useECC = true);
+	void testAlign();
 
 private:
 	double computeECCValue(const cv::Mat& src, const cv::Mat& ref);

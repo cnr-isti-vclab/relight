@@ -23,7 +23,7 @@ esac
 done
 
 
-brew install coreutils cmake ninja libomp eigen libjpeg libtiff
+brew install coreutils cmake ninja libomp eigen libjpeg libtiff #opencv
 
 npm install -g appdmg
 
