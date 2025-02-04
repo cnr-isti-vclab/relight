@@ -31,9 +31,9 @@ sudo apt-get install -y libxcb-cursor0
 
 #sudo apt-get install libopencv-dev
 
-if [ "$DONT_INSTALL_QT" = false ] ; then
-    echo "=== installing qt packages..."
-    sudo apt-get install -y qt5-default qttools5-dev-tools qtdeclarative5-dev
-else
-    echo "=== jumping installation of qt packages..."
-fi
+#if [ "$DONT_INSTALL_QT" = false ] ; then
+#    echo "=== installing qt packages..."
+#    sudo apt-get install -y qt5-default qttools5-dev-tools qtdeclarative5-dev
+#else
+#    echo "=== jumping installation of qt packages..."
+#fi
