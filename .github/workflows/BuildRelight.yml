@@ -51,8 +51,8 @@ jobs:
       run: |
         choco install opencv -y
         echo "OpenCV installed at C:\tools\opencv\build"
-        echo "OpenCV_DIR=C:\tools" >> $GITHUB_ENV
-        echo "QT_VERSION=6.6.0" >> $GITHUB_ENV
+        echo ("OpenCV_DIR=C:\tools") >> $env:GITHUB_ENV
+        echo ("QT_VERSION=6.6.*") >> $env:GITHUB_ENV
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
