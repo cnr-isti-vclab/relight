@@ -4,7 +4,7 @@ on:
   [push, pull_request]
 
 env:
-  QT_VERSION: '6.6.*'
+  QT_VERSION: '6.7.*'
   MAC_CERT: ${{secrets.MACOS_CERT_ID}}
   WIN_CERT: ${{secrets.WIN_CERTIFICATE}}
 
@@ -48,6 +48,7 @@ jobs:
       run: |
         choco install opencv -y
         echo "OpenCV installed at C:\tools\opencv\build"
+        echo "OpenCV_DIR=C:\tools\opencv\build" >> $GITHUB_ENV
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v4

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPTS_PATH="$(dirname "$(realpath "$0")")"/../
+SCRIPTS_PATH="$(dirname "$(realpath "$0")")"/..
 SOURCE_PATH=$SCRIPTS_PATH/../../src
 INSTALL_PATH=$SOURCE_PATH/../install
 
@@ -20,7 +20,7 @@ done
 
 mkdir -p $INSTALL_PATH/usr/share/applications/
 mkdir -p $INSTALL_PATH/usr/share/icons/Yaru/512x512/apps/
-cp $SCRIPTS_PATH/resources/relight.desktop $INSTALL_PATH/usr/share/applications/relight.desktop
+cp $SCRIPTS_PATH/resources/relightlab.desktop $INSTALL_PATH/usr/share/applications/relight.desktop
 cp $SCRIPTS_PATH/resources/relightlab.desktop $INSTALL_PATH/usr/share/applications/relightlab.desktop
 cp $SCRIPTS_PATH/../relight.png $INSTALL_PATH/usr/share/icons/Yaru/512x512/apps/relight.png
 
