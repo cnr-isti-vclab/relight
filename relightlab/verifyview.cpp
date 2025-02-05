@@ -12,7 +12,7 @@
 
 
 VerifyMarker::VerifyMarker(VerifyView *_view, Marker _marker, QGraphicsItem *parent):
-	QGraphicsItem(parent), view(_view), marker(_marker) {
+	QGraphicsItem(parent), marker(_marker), view(_view)  {
 	setCursor(Qt::CrossCursor);
 	setFlag(QGraphicsItem::ItemIsMovable);
 	setFlag(QGraphicsItem::ItemIsSelectable);
@@ -94,6 +94,10 @@ void VerifyView::update() {
 	}
 	pos = p - center;
 	marker_item->active = !pos.isNull();
+}
+
+void VerifyView::set() {
+	marker_item->setPos(center + pos);
 }
 
 void VerifyView::resizeEvent(QResizeEvent *) {

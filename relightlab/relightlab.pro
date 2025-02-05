@@ -16,8 +16,8 @@ win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
     ../src/
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
-unix:INCLUDEPATH += ../external/eigen-3.3.9/
-unix:LIBS += -ljpeg -ltiff -lgomp
+unix:INCLUDEPATH += ../external/eigen-3.3.9/ /usr/include/opencv4
+unix:LIBS += -ljpeg -ltiff -lgomp -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_video
 #unix:QMAKE_CXXFLAGS += -fopenmp
 
 

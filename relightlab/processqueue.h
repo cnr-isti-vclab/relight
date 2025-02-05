@@ -35,6 +35,7 @@ public:
 
 	bool hasTasks();
 	void addTask(Task *a, bool paused = false);
+	bool contains(Task *a);
 	void removeTask(Task *a);
 	void removeTask(int id);
 	void pushFront(int id);

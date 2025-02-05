@@ -70,6 +70,10 @@ void Project::clear() {
 		delete sphere;
 	spheres.clear();
 
+	for(auto align: aligns)
+		delete align;
+	aligns.clear();
+
 	for(auto m: measures)
 		delete m;
 	measures.clear();

@@ -75,6 +75,12 @@ bool ProcessQueue::hasTasks() {
 	if(task) return true;
 	return queue.size() > 0;
 }
+bool ProcessQueue::contains(Task *a) {
+	QMutexLocker locker(&lock);
+	return queue.indexOf(a) >= 0 || past.indexOf(a) >= 0;
+
+}
+
 
 void ProcessQueue::addTask(Task *a, bool paused) {
 	if(paused)
@@ -87,11 +93,15 @@ void ProcessQueue::addTask(Task *a, bool paused) {
 
 void ProcessQueue::removeTask(Task *a) {
 	QMutexLocker locker(&lock);
-	int index = queue.indexOf(a);
-	if(index < 0)
-		return;
+	int index = past.indexOf(a);
+	if(index >= 0) {
+		past.takeAt(index);
 
-	queue.takeAt(index);
+	}
+	index = queue.indexOf(a);
+	if(index >= 0) {
+		queue.takeAt(index);
+	}
 	emit update();
 }
 

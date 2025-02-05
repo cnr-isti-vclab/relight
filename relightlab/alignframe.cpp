@@ -19,7 +19,7 @@ AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);
 
 	content->addSpacing(10);
-	QPushButton *new_align = new QPushButton("New align...");
+	QPushButton *new_align = new QPushButton("New alignment...");
 	new_align->setProperty("class", "large");
 	content->addWidget(new_align);
 	new_align->setMinimumWidth(200);
