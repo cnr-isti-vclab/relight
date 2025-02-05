@@ -20,14 +20,16 @@ SET(SOURCES
 	imagealignment.cpp
 )
 
-find_package(OpenCV REQUIRED)
-message(STATUS ${OpenCV_LIBS})
+
+
 
 add_executable(align ${HEADERS} ${SOURCES})
 target_include_directories(
 	align PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
-		${JPEG_INCLUDE_DIR})
+		${JPEG_INCLUDE_DIR}
+		${OpenCV_INCLUDE_DIRS}
+)
 
 target_link_libraries(
 	align PUBLIC
