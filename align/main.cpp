@@ -136,7 +136,7 @@ std::vector<Offset> readOffsetsCSV(const QString &filePath) {
 	return offsets;
 }
 
-void analyzeErrors(const std::vector<QPoint> &calculatedOffsets, const std::vector<Offset> &trueOffsets) {
+void analyzeErrors(const std::vector<cv::Point2f> &calculatedOffsets, const std::vector<cv::Point2f> &trueOffsets) {
 	if (calculatedOffsets.size() != trueOffsets.size()) {
 		cerr << "Number of compute offsets and real offsets not matching" << endl;
 		return;
@@ -150,11 +150,11 @@ void analyzeErrors(const std::vector<QPoint> &calculatedOffsets, const std::vect
 
 	cout << "Differenze calcolate:" << endl;
 	for (size_t i = 0; i < calculatedOffsets.size(); i++) {
-		int dx = std::abs(calculatedOffsets[i].x() - trueOffsets[i].x);
-		int dy = std::abs(calculatedOffsets[i].y() - trueOffsets[i].y);
+		int dx = std::abs(calculatedOffsets[i].x - trueOffsets[i].x);
+		int dy = std::abs(calculatedOffsets[i].y - trueOffsets[i].y);
 		double error = std::sqrt(dx * dx + dy * dy);  // Distanza euclidea
 
-		cout << "Offset [" << i << "] - Calcolato: (" << calculatedOffsets[i].x() << ", " << calculatedOffsets[i].y()
+		cout << "Offset [" << i << "] - Calcolato: (" << calculatedOffsets[i].x << ", " << calculatedOffsets[i].y
 			 << "), Reale: (" << trueOffsets[i].x << ", " << trueOffsets[i].y << "), ΔX: " << dx << ", ΔY: " << dy
 			 << ", Errore: " << error << endl;
 
@@ -228,7 +228,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	int max_offset = QString(argv[2]).toInt();
-	int radius = max_offset / 4;
+	int radius = max_offset / 8;
 	QStringList c = QString(argv[3]).split(":");
 
 	//random
@@ -258,9 +258,8 @@ int main(int argc, char *argv[]) {
 		samples.push_back(img(region));
 		original_offsets.push_back(cv::Point2f(-dx, -dy));
 	}
-	alignment.testAlign();
-	return 0;
-	alignment.alignSamples(false);
+	alignment.alignSamples(true);
+
 	for(int i = 0; i < original_offsets.size(); i++) {
 		auto o  = alignment.offsets[i];
 		if(o.x == 0 && o.y == 0 && i != 0) {

@@ -16,6 +16,7 @@
 FindAlignment::FindAlignment(Align *_align, bool update) {
 	align = _align;
 	update_positions = update;
+	visible = false;
 }
 
 void FindAlignment::run() {

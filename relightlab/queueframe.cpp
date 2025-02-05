@@ -161,14 +161,19 @@ void QueueFrame::selectionChanged(const QItemSelection & selected, const QItemSe
 
 
 void QueueFrame::update() {
+	ProcessQueue &queue = ProcessQueue::instance();
 	QSet<int> tasks;
 	//check status of each widget
 	for(int i = 0; i < list->count(); i++) {
 		QueueItem *item = (QueueItem *)list->item(i);
+		//check for deleted tasks
+		if(!queue.contains(item->task)) {
+			throw QString("Delete task!");
+		}
 		item->update();
 		tasks.insert(item->id);
 	}
-	ProcessQueue &queue = ProcessQueue::instance();
+
 
 	//add all task not already present.
 	for(Task *task: queue.queue) {

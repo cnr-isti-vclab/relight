@@ -185,6 +185,7 @@ target_link_libraries(
 		${JPEG_LIBRARIES}
 		TIFF::TIFF
 		OpenMP::OpenMP_CXX
+		opencv_core  opencv_imgcodecs opencv_imgproc opencv_video
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui
 		${RELIGHT_QT}::Widgets

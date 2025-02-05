@@ -33,7 +33,8 @@ public:
 	VerifyMarker::Marker marker;
 
 	VerifyView(QImage &image, int height, QPointF &pos, VerifyMarker::Marker _marker, QWidget *parent = nullptr);
-	void update();
+	void update(); //update pos from marker
+	void set(); //update marker from pos
 
 protected:
 	void resizeEvent(QResizeEvent *event) override;
