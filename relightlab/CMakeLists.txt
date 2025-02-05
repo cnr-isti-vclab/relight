@@ -177,6 +177,7 @@ target_include_directories(
 		${JPEG_INCLUDE_DIR}
 		TIFF::TIFF
 		${EIGEN3_INCLUDE_DIR}
+		${OpenCV_INCLUDE_DIRS}
 		../external
 	)
 	
