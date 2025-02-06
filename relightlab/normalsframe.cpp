@@ -93,10 +93,18 @@ void NormalsFrame::save() {
 		}
 	}
 	NormalsTask *task = new NormalsTask();
-	task->setParameters(parameters);
-	task->output = parameters.path;
-	if(parameters.compute)
-		task->initFromProject(qRelightApp->project());
+	try {
+
+		task->setParameters(parameters);
+		task->output = parameters.path;
+		if(parameters.compute)
+			task->initFromProject(qRelightApp->project());
+
+	} catch(QString error) {
+		QMessageBox::critical(this, "Something went wrong", error);
+		delete task;
+		return;
+	}
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(task);

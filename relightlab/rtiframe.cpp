@@ -116,10 +116,18 @@ void RtiFrame::exportRti() {
 		QMessageBox::warning(this, "Destination path is missing.", "Fill in the output folder or the filename for the RTI.");
 		return;
 	}
-	RtiTask *rti_task = new RtiTask(project);
-	rti_task->setParameters(parameters);
-	rti_task->output = parameters.path;
-	rti_task->crop = project.crop;
+	RtiTask *rti_task = new RtiTask();
+	try {
+		rti_task->setProject(project);
+		rti_task->setParameters(parameters);
+		rti_task->output = parameters.path;
+		rti_task->crop = project.crop;
+
+	} catch(QString error) {
+		QMessageBox::critical(this, "Something went wrong", error);
+		delete rti_task;
+		return;
+	}
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.addTask(rti_task);

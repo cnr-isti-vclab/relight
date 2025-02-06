@@ -36,14 +36,16 @@ public:
 class RtiTask: public Task {
 	Q_OBJECT
 public:
-	Project project;
 	RtiParameters parameters;
 	QRect crop;
 
-	RtiTask(const Project &_project);
+	RtiTask();
 	virtual ~RtiTask();
-	virtual void run() override;
+
+	void setProject(Project &_project);
 	void setParameters(RtiParameters &p);
+	virtual void run() override;
+
 
 public slots:
 

@@ -99,6 +99,7 @@ void ImageFrame::init() {
 
 	if(qRelightApp->project().images.size()) {
 		showImage(0);
+		image_list->setCurrentRow(0);
 		image_view->fit();
 	}
 	listMode(); //TODO actually use last used mode used by the user but only in imageframe
@@ -113,7 +114,7 @@ void ImageFrame::showImage(int id) {
 
 	Project &project = qRelightApp->project();
 
-	image_list->setCurrentRow(id);
+	//image_list->setCurrentRow(id);
 	qRelightApp->action("previous_image")->setEnabled(id != 0);
 	qRelightApp->action("next_image")->setEnabled(id != (int)project.images.size()-1);
 

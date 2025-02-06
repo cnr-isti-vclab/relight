@@ -5,6 +5,8 @@
 #include <assert.h>
 
 void ImageList::init() {
+	setSelectionMode(QAbstractItemView::ExtendedSelection);
+
 	Project &project = qRelightApp->project();
 	clear();
 	int count =0;
@@ -31,7 +33,6 @@ void ImageList::verifyItem(QListWidgetItem *item) {
 	project.images[img_number].skip = skip;
 
 	emit skipChanged(img_number, skip);
-
 }
 
 void ImageList::setSkipped(int img_number, bool skip) {

@@ -82,9 +82,9 @@ public:
 	}
 	size_t size() { return images.size(); }
 
-	QStringList getImages() {
+	QStringList getImages() const {
 		QStringList imgs;
-		for(Image &img: images)
+		for(Image img: images)
 			if(!img.skip)
 				imgs.push_back(img.filename);
 		return imgs;
