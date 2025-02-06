@@ -31,6 +31,9 @@ void ImageView::showImage(int id) {
 		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
 		return;
 	}
+	if(imagePixmap) {
+		delete imagePixmap;
+	}
 	imagePixmap = new QGraphicsPixmapItem(QPixmap::fromImage(img));
 	imagePixmap->setZValue(-1);
 	scene.addItem(imagePixmap);

@@ -35,8 +35,11 @@ public:
 	void init();
 	int currentImage();
 	void showImage(int id); //new project loaded.
+	void rotateImage(int id, bool clockwise);
 
 public slots:
+	void rotateLeft();
+	void rotateRight();
 	void previousImage();
 	void nextImage();
 	void showImageItem(QListWidgetItem *item);
