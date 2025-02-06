@@ -33,6 +33,7 @@ public:
 	VerifyMarker::Marker marker;
 
 	VerifyView(QImage &image, int height, QPointF &pos, VerifyMarker::Marker _marker, QWidget *parent = nullptr);
+	void setImageNumber(int n);
 	void update(); //update pos from marker
 	void set(); //update marker from pos
 
@@ -42,6 +43,7 @@ protected:
 protected:
 	VerifyMarker *marker_item = nullptr;
 	QGraphicsPixmapItem *img_item = nullptr;
+	QGraphicsSimpleTextItem *img_number = nullptr;
 	QGraphicsScene scene ;
 	QImage &image;
 	QPointF center;

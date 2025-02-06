@@ -42,10 +42,15 @@ VerifyDialog::VerifyDialog(std::vector<QImage> &_thumbs, std::vector<QPointF> &_
 	area->widget()->setLayout(flowlayout);
 
 	area->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-
+	int view_size = 192;
+	int max_size = 512;
+	if(thumbs[0].width() > 2*view_size) {
+		view_size = std::min(max_size, thumbs[0].width()/2);
+	}
 	for(size_t i = 0; i < thumbs.size(); i++) {
 		assert(!thumbs[i].isNull());
-		VerifyView *thumb = new VerifyView(thumbs[i], 192, positions[i], marker == REFLECTION? VerifyMarker::REFLECTION : VerifyMarker::ALIGN);
+		VerifyView *thumb = new VerifyView(thumbs[i], view_size, positions[i], marker == REFLECTION? VerifyMarker::REFLECTION : VerifyMarker::ALIGN);
+		thumb->setImageNumber(i+1);
 		views.push_back(thumb);
 		flowlayout->addWidget(thumb);
 	}
