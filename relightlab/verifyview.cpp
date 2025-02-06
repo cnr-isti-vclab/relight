@@ -84,8 +84,20 @@ VerifyView:: VerifyView(QImage &_image, int _height, QPointF &_pos, VerifyMarker
 	marker_item->setPos(pos + center);
 	marker_item->active = !pos.isNull();
 	scene.addItem(marker_item);
+
+	img_number = new QGraphicsSimpleTextItem();
+	img_number->setBrush(Qt::green);
+	img_number->setPos(pix.height()/100.0f, pix.height()/100.0f);
+	QFont font = img_number->font();
+	font.setPointSize(pix.height()/20.0f);  // Set font size to 20
+	img_number->setFont(font);
+
+	scene.addItem(img_number);
 }
 
+void VerifyView::setImageNumber(int n) {
+	img_number->setText(QString::number(n));
+}
 
 void VerifyView::update() {
 	QPointF p = marker_item->pos();
