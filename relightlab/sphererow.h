@@ -36,6 +36,7 @@ public:
 	DetectHighlights *detect_highlights = nullptr;
 
 	SphereRow(Sphere *sphere, QWidget *parent = nullptr);
+	virtual ~SphereRow();
 	void detectHighlights(bool update = true);
 	void stopDetecting();
 	

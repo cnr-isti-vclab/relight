@@ -91,9 +91,15 @@ AlignRow::AlignRow(Align *_align, QWidget *parent): QWidget(parent) {
 	connect(edit_button, SIGNAL(clicked()), this, SLOT(edit()));
 	connect(remove_button, SIGNAL(clicked()), this, SLOT(remove()));
 	connect(verify_button, SIGNAL(clicked()), this, SLOT(verify()));
-
-
 }
+
+AlignRow::~AlignRow() {
+	if(find_alignment) {
+		stopFinding();
+	}
+	delete find_alignment;
+}
+
 void AlignRow::edit() {
 	MarkerDialog *marker_dialog = new MarkerDialog(MarkerDialog::ALIGN, this);
 	marker_dialog->setAlign(align);
@@ -102,7 +108,6 @@ void AlignRow::edit() {
 		position->rect = align->rect;
 		position->update();
 		updateRegion();
-		//reflections->init();
 		findAlignment();
 	}
 }
@@ -131,6 +136,8 @@ void AlignRow::updateStatus(QString msg, int percent) {
 	}
 }
 
+//AlignRow owns the task and is resnponsible of deleting it.
+
 void AlignRow::findAlignment(bool update) {
 	verify_button->setEnabled(false);
 	if(!find_alignment) {
@@ -151,6 +158,7 @@ void AlignRow::stopFinding() {
 			find_alignment->stop();
 			find_alignment->wait();
 		}
-		find_alignment->deleteLater();
+		ProcessQueue &queue = ProcessQueue::instance();
+		queue.removeTask(find_alignment);
 	}
 }

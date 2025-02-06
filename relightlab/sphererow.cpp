@@ -72,8 +72,15 @@ SphereRow::SphereRow(Sphere *_sphere, QWidget *parent): QWidget(parent) {
 	connect(edit, SIGNAL(clicked()), this, SLOT(edit()));
 	connect(remove, SIGNAL(clicked()), this, SLOT(remove()));
 	connect(verify_button, SIGNAL(clicked()), this, SLOT(verify()));
-
 }
+
+SphereRow::~SphereRow() {
+	if(detect_highlights) {
+		stopDetecting();
+	}
+	delete detect_highlights;
+}
+
 void SphereRow::edit() {
 	SphereDialog *sphere_dialog = new SphereDialog(this);
 	sphere_dialog->setSphere(sphere);
@@ -145,7 +152,9 @@ void SphereRow::stopDetecting() {
 			detect_highlights->stop();
 			detect_highlights->wait();
 		}
-		detect_highlights->deleteLater();
 		verify_button->setEnabled(true);
+		ProcessQueue &queue = ProcessQueue::instance();
+		queue.removeTask(detect_highlights);
+
 	}
 }

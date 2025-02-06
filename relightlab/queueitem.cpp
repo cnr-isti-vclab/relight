@@ -6,11 +6,14 @@
 #include <QMessageBox>
 #include <QFileInfo>
 #include <QDesktopServices>
+#include <QMimeDatabase>
+#include <QProcess>
+#include <QMutexLocker>
 #include <QUrl>
 
 #include "task.h"
 #include "../relight/httpserver.h"
-
+#include "processqueue.h"
 
 #include <iostream>
 using namespace std;
@@ -82,9 +85,12 @@ void QueueItem::progress(QString text, int percent) {
 }
 
 void QueueItem::update() {
+	ProcessQueue &queue = ProcessQueue::instance();
+
 	switch(task->status) {
 	case Task::PAUSED:
 		status->setText("Paused");
+		break;
 	case Task::ON_QUEUE:
 		status->setText("On queue");
 		break;
@@ -118,15 +124,49 @@ void QueueItem::setSelected(bool selected) {
 		widget->setStyleSheet(style[task->status]);
 }
 
+void openFile(const QString& filePath) {
+	QMimeDatabase db;
+	QMimeType type = db.mimeTypeForFile(filePath);
+
+	qDebug() << type.aliases();
+	qDebug() << type.allAncestors();
+	qDebug() << type.name();
+	if (type.isValid() && type.name() != "application/octet-stream") {
+#ifdef Q_OS_WIN
+		QProcess::startDetached("explorer", { QDir::toNativeSeparators(filePath) });
+#elif defined(Q_OS_MAC)
+		QProcess::startDetached("open", { filePath });
+#elif defined(Q_OS_LINUX)
+		QProcess::startDetached("xdg-open", { filePath });
+#else
+		QDesktopServices::openUrl(QUrl::fromLocalFile(filePath)); // Fallback
+#endif
+	} else {
+		QMessageBox::warning(nullptr, "No Associated Application",
+							 "No default application is set for this file type.");
+	}
+}
+
 void QueueItem::casting() {
-	try {
-		HttpServer &server = HttpServer::instance();
-		server.stop();
-		server.port = 8880;
-		server.start(task->output);
-		server.show();
-	} catch(QString error) {
-		QMessageBox::critical(nullptr, "Could not cast!", error);
+	switch(task->mime) {
+	case Task::IMAGE:
+	case Task::RTI:
+	case Task::PTM:
+		openFile(task->output);
+		break;
+	case Task::RELIGHT:
+		try {
+			HttpServer &server = HttpServer::instance();
+			server.stop();
+			server.port = 8880;
+			server.start(task->output);
+			server.show();
+		} catch(QString error) {
+			QMessageBox::critical(nullptr, "Could not cast!", error);
+		}
+		break;
+	default:
+		break;
 	}
 }
 

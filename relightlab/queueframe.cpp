@@ -162,6 +162,7 @@ void QueueFrame::selectionChanged(const QItemSelection & selected, const QItemSe
 
 void QueueFrame::update() {
 	ProcessQueue &queue = ProcessQueue::instance();
+
 	QSet<int> tasks;
 	//check status of each widget
 	for(int i = 0; i < list->count(); i++) {
@@ -174,7 +175,7 @@ void QueueFrame::update() {
 		tasks.insert(item->id);
 	}
 
-
+	QMutexLocker lock(&queue.lock);
 	//add all task not already present.
 	for(Task *task: queue.queue) {
 		if(!tasks.contains(task->id) && task->visible) {
@@ -182,16 +183,8 @@ void QueueFrame::update() {
 			list->addItem(item);
 		}
 	}
-	if(queue.task && !tasks.contains(queue.task->id) && queue.task->visible) {
+	/*if(queue.task && !tasks.contains(queue.task->id) && queue.task->visible) {
 		QueueItem *item = new QueueItem(queue.task, list);
 		list->addItem(item);
-	}
-/* task might have been deleted already.
-	for(Task *task: queue.past) {
-		if(!tasks.contains(task->id) && task->visible) {
-			QueueItem *item = new QueueItem(task, list);
-			list->addItem(item);
-		}
 	} */
-
 }
