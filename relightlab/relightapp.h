@@ -72,6 +72,7 @@ public slots:
 	void saveProject();
 	void saveProjectAs();
 	void close();
+	void rtiView();
 
 	void openPreferences();
 	void setDarkTheme(bool on);
@@ -88,6 +89,7 @@ public:
 
 	QAction *addAction(const QString &id, const QString &label, const QString &icon, const QString &shortcut, const char *method = nullptr);
 	QAction *action(const QString &id) { return actions[id]; }
+
 	QString lastProjectDir() {
 		return QSettings().value("LastProjectDir", QDir::homePath()).toString();
 	}
@@ -107,6 +109,14 @@ public:
 	void clearLastOutputDir() {
 		last_output_dir = QString();
 	}
+
+	QString lastViewDir() {
+		return QSettings().value("LastViewDir", QDir::homePath()).toString();
+	}
+	void setLastViewDir(QString dir) {
+		QSettings().setValue("LastViewDir", dir);
+	}
+
 	bool needsSavingProceed();
 
 	QStringList domes();
