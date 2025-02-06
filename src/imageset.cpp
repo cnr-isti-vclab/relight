@@ -105,7 +105,7 @@ void ImageSet::initFromDome(Dome &dome) {
 	}
 }
 
-void ImageSet::setLights(std::vector<Eigen::Vector3f> &lights, Dome::LightConfiguration configuration) {
+void ImageSet::setLights(const std::vector<Eigen::Vector3f> &lights, const Dome::LightConfiguration configuration) {
 	lights1 = lights;
 	light3d = (configuration != Dome::DIRECTIONAL);
 	if(light3d) {
@@ -388,9 +388,9 @@ void ImageSet::restart() {
 	current_line = 0;
 }
 
-void ImageSet::setCrop(QRect &_crop, std::vector<QPointF> &_offsets) {
+void ImageSet::setCrop(QRect &_crop, const std::vector<QPointF> &_offsets) {
 	std::vector<QPoint> int_offsets;
-	for(QPointF &p: _offsets)
+	for(const QPointF &p: _offsets)
 		int_offsets.push_back(p.toPoint());
 
 	//find min and max of offsets to adjust the maxCrop;

@@ -42,7 +42,37 @@ QString RtiParameters::summary() {
 	return txt;
 }
 
-RtiTask::RtiTask(const Project &_project): Task(), project(_project) {}
+RtiTask::RtiTask(): Task() {
+	builder = new RtiBuilder;
+}
+
+void RtiTask::setProject(Project &project) {
+	builder->imageset.pixel_size = project.pixelSize;
+
+	builder->nworkers = QSettings().value("nworkers", 8).toInt();
+	builder->samplingram = QSettings().value("ram", 512).toInt();
+
+
+	ImageSet &imageset = builder->imageset;
+
+	imageset.images = project.getImages();
+	imageset.initImages(project.dir.absolutePath().toStdString().c_str());
+
+	imageset.initFromDome(project.dome); //lights after images
+	imageset.setCrop(crop, project.offsets);
+	imageset.pixel_size = project.pixelSize;
+
+	//TODO too many crop locations!
+	if(!crop.isNull()) {
+		builder->crop[0] = imageset.left;
+		builder->crop[1] = imageset.top;
+		builder->crop[2] = imageset.width;
+		builder->crop[3] = imageset.height;
+	}
+
+	builder->width  = imageset.width;
+	builder->height = imageset.height;
+}
 
 RtiTask::~RtiTask() {
 	if(builder)
@@ -52,20 +82,6 @@ RtiTask::~RtiTask() {
 void RtiTask::setParameters(RtiParameters &p) {
 	parameters = p;
 	label = parameters.summary();
-}
-
-void RtiTask::run() {
-	label = parameters.summary();
-
-	status = RUNNING;	
-	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
-
-	//TODO mnove all this to the constructor (except what parameters can set.
-	builder = new RtiBuilder;
-	builder->imageset.pixel_size = project.pixelSize;
-
-	builder->nworkers = QSettings().value("nworkers", 8).toInt();
-	builder->samplingram = QSettings().value("ram", 512).toInt();
 
 	builder->type         = parameters.basis;
 	builder->colorspace   = parameters.colorspace;
@@ -81,24 +97,12 @@ void RtiTask::run() {
 	if(parameters.format == RtiParameters::RTI)
 		builder->commonMinMax = true;
 
-	ImageSet &imageset = builder->imageset;
-	imageset.images = project.getImages();
-	imageset.pixel_size = project.pixelSize;
-	imageset.initImages(input_folder.toStdString().c_str());
+}
 
-	imageset.initFromDome(project.dome); //lights after images
-	imageset.setCrop(crop, project.offsets);
+void RtiTask::run() {
 
-	//TODO too many crop locations!
-	if(!crop.isNull()) {
-		builder->crop[0] = imageset.left;
-		builder->crop[1] = imageset.top;
-		builder->crop[2] = imageset.width;
-		builder->crop[3] = imageset.height;
-	}
-
-	builder->width  = imageset.width;
-	builder->height = imageset.height;
+	status = RUNNING;	
+	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
 	QString output = parameters.path; //masking Task::output.
 	try {

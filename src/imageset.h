@@ -54,10 +54,10 @@ public:
 	//open images and starts the decoders
 	bool initImages(const char *path); //path points to the dir of the images.
 
-	void setCrop(QRect &crop, std::vector<QPointF> &offsets);
+	void setCrop(QRect &crop, const std::vector<QPointF> &offsets);
 
 
-	void setLights(std::vector<Eigen::Vector3f> &lights, Dome::LightConfiguration configuration);
+	void setLights(const std::vector<Eigen::Vector3f> &lights, const Dome::LightConfiguration configuration);
 	std::vector<Eigen::Vector3f> &lights() { return lights1; }
 
 	size_t size() { return size_t(images.size()); }
