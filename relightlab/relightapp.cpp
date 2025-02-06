@@ -4,6 +4,7 @@
 #include "recentprojects.h"
 #include "mainwindow.h"
 #include "preferences.h"
+#include "../relight/httpserver.h"
 
 #include <QMessageBox>
 #include <QFileDialog>
@@ -104,7 +105,7 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	addAction("show_list", "Show list", "list", "");
 	addAction("show_grid", "Show grid", "grid", "");
 
-	addAction("view_rti", "View RTI", "cast", "");
+	addAction("view_rti", "View RTI in browser", "cast", "", SLOT(rtiView()));
 
 	addAction("help", "Help", "help-circle", "");
 	addAction("about", "About", "info", "");
@@ -350,6 +351,29 @@ void RelightApp::loadThumbnails() {
 	});
 	loader->start();
 
+}
+
+void RelightApp::rtiView() {
+	QString last = lastViewDir();
+	QString dirname = QFileDialog::getExistingDirectory(nullptr, "Select a folder containing an RTI in relight format: json and jpeg", last);
+	if(dirname.isNull())
+		return;
+	QDir dir(dirname);
+	QFileInfo info(dir.filePath("info.json"));
+	if(!info.exists()) {
+		QMessageBox::warning(nullptr, "Could not open relight folder", "It seems this folder do not contains an rti in relight format");
+		return;
+	}
+	setLastViewDir(dirname);
+	try {
+		HttpServer &server = HttpServer::instance();
+		server.stop();
+		server.port = 8880;
+		server.start(dirname);
+		server.show();
+	} catch(QString error) {
+		QMessageBox::critical(nullptr, "Could not cast!", error);
+	}
 }
 
 void RelightApp::openPreferences() {

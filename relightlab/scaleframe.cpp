@@ -21,7 +21,7 @@ ScaleFrame::ScaleFrame(QWidget *parent): QFrame(parent) {
 	QHBoxLayout *controls = new QHBoxLayout;
 	content->addLayout(controls);
 
-	QPushButton *take = new QPushButton("Take a new measurement...");
+	QPushButton *take = new QPushButton("Set new scale measurement...");
 	controls->addWidget(take);
 
 	scale = new QDoubleSpinBox;
