@@ -79,6 +79,7 @@ void NormalsTask::run() {
 	int width = 0, height = 0;
 
 	if(parameters.compute) {
+		mime = IMAGE;
 		width = imageset.width;
 		height = imageset.height;
 
@@ -173,7 +174,6 @@ void NormalsTask::run() {
 			img.setDotsPerMeterY(dotsPerMeter);
 		}
 		img.save(parameters.path);
-	
 	}
 	
 

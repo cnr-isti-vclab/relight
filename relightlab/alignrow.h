@@ -39,6 +39,7 @@ public:
 	FindAlignment *find_alignment = nullptr;
 
 	AlignRow(Align *align, QWidget *parent = nullptr);
+	virtual ~AlignRow();
 	void findAlignment(bool update = true);
 	void stopFinding();
 	void updateRegion();

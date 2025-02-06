@@ -108,16 +108,20 @@ void RtiTask::run() {
 			return;
 		}
 		if(parameters.format == RtiParameters::RTI) {
-			if(builder->type == Rti::HSH)
+			if(builder->type == Rti::HSH) {
+				mime = RTI;
 				builder->saveUniversal(output.toStdString());
-			else if(builder->type == Rti::PTM)
+			} else if(builder->type == Rti::PTM) {
+				mime = PTM;
 				builder->savePTM(output.toStdString());
-			else
+			} else
 				throw "Legacy RTI and PTM formats are supported only for HSH and PTM basis";
-		} else
+		} else {
+			mime = RELIGHT;
 			builder->save(output.toStdString(), parameters.quality);
+		}
 
-		if(parameters.openlime)
+		if(parameters.openlime && parameters.format == RtiParameters::WEB)
 			openlime();
 
 		if(parameters.web_layout != RtiParameters::PLAIN) {
