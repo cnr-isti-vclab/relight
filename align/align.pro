@@ -7,7 +7,10 @@ CONFIG += console
 CONFIG -= app_bundle
 
 INCLUDEPATH += /usr/include/opencv4
+mac:INCLUDEPATH += /opt/homebrew/include/opencv4
+
 LIBS += -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_video
+mac:LIBS +=  -L/opt/homebrew/lib -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_video
 #-lopencv_stitching -lopencv_alphamat -lopencv_aruco -lopencv_barcode -lopencv_bgsegm
 #-lopencv_bioinspired -lopencv_ccalib -lopencv_dnn_objdetect -lopencv_dnn_superres
 #-lopencv_dpm -lopencv_face -lopencv_freetype -lopencv_fuzzy -lopencv_hdf -lopencv_hfs
