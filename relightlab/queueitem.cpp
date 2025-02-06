@@ -10,6 +10,7 @@
 #include <QProcess>
 #include <QMutexLocker>
 #include <QUrl>
+#include <QDir>
 
 #include "task.h"
 #include "../relight/httpserver.h"
