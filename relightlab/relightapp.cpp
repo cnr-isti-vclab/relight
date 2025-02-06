@@ -330,6 +330,7 @@ void RelightApp::loadThumbnails() {
 				img.fill(Qt::black);
 			}
 			m_thumbnails[i] = img.scaledToHeight(256);
+			emit updateThumbnail(0);
 		} else {
 			QImage img(m_thumbnails[0].size().scaled(256, 256, Qt::KeepAspectRatio), QImage::Format_ARGB32);
 			img.fill(Qt::black);

@@ -67,6 +67,9 @@ ImageFrame::ImageFrame(QWidget *parent): QFrame(parent) {
 	connect(image_view, SIGNAL(skipChanged(int,bool)), image_grid, SLOT(setSkipped(int,bool)));
 	connect(image_view, SIGNAL(skipChanged(int,bool)), image_list, SLOT(setSkipped(int,bool)));
 
+	connect(qRelightApp->action("rotate_left"),  SIGNAL(triggered(bool)), this, SLOT(rotateLeft()));
+	connect(qRelightApp->action("rotate_right"),  SIGNAL(triggered(bool)), this, SLOT(rotateRight()));
+
 	connect(qRelightApp->action("zoom_fit"),  SIGNAL(triggered(bool)), image_view, SLOT(fit()));
 	connect(qRelightApp->action("zoom_one"),  SIGNAL(triggered(bool)), image_view, SLOT(one()));
 	connect(qRelightApp->action("zoom_in"),  SIGNAL(triggered(bool)), image_view, SLOT(zoomIn()));
@@ -108,6 +111,40 @@ void ImageFrame::init() {
 int ImageFrame::currentImage() {
 	//TODO not properly elegant....
 	return image_list->currentRow();
+}
+
+void ImageFrame::rotateLeft() {
+	QList<QListWidgetItem*> selectedItems = image_list->selectedItems();
+	for(QListWidgetItem *item: selectedItems) {
+		int id = item->data(Qt::UserRole).toInt();
+		rotateImage(id, false);
+	}
+	showImage(image_list->currentRow());
+}
+
+void ImageFrame::rotateRight() {
+	QList<QListWidgetItem*> selectedItems = image_list->selectedItems();
+	for(QListWidgetItem *item: selectedItems) {
+		int id = item->data(Qt::UserRole).toInt();
+		rotateImage(id, true);
+	}
+	showImage(image_list->currentRow());
+}
+
+void ImageFrame::rotateImage(int id, bool clockwise) {
+	QTransform rotate;
+	rotate.rotate(clockwise ? 90 : -90);
+
+	Project &project = qRelightApp->project();
+
+	assert(id >= 0 && id < project.images.size());
+
+	Image &image = project.images[id];
+	QImage source(image.filename);
+	QImage rotated = source.transformed(rotate);
+	rotated.save(image.filename, "jpg", 100);
+	//thumbs needs to be rotated!!!
+	qRelightApp->loadThumbnails();
 }
 
 void ImageFrame::showImage(int id) {
