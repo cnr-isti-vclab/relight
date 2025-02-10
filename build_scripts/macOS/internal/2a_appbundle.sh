@@ -36,7 +36,7 @@ fi
 message=$(${QT_BASE_DIR}macdeployqt $INSTALL_PATH/$APPNAME \
     $ARGUMENTS 2>&1)
 
-dylibbundler $INSTALL_PATH/$APPNAME/Content/MacOs/%{APPNAME%.app} $INSTALL_PATH/$APPNAME/Framework @executable_path/../Framework
+dylibbundler $INSTALL_PATH/$APPNAME/Content/MacOS/${APPNAME%.app} $INSTALL_PATH/$APPNAME/Framework @executable_path/../Framework
 
 # if message contains "ERROR" then macdeployqt failed
 if [[ $message == *"ERROR"* ]]; then
