@@ -825,7 +825,7 @@ int MainWindow::detectHighlight(int n) {
 
 	for(auto sphere: project.spheres) {
 		if(sphere->fitted) {
-			sphere->findHighlight(img, n);
+			sphere->findHighlight(img, n, project.images[n].skip);
 		}
 	}
 	return 1;
