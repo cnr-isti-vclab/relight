@@ -7,12 +7,14 @@
 #include <QSize>
 #include <QRect>
 #include <QImage>
+#include <QMutex>
 
 #include <Eigen/Core>
 
 class QJsonObject;
 class Lens;
 class Dome;
+class Image;
 
 struct Line {
 	Eigen::Vector3f origin;
@@ -38,6 +40,7 @@ public:
 	bool fitted = false;         //we have a valid fit
 	QImage sphereImg;
 	std::vector<QImage> thumbs;
+	QMutex lock;
 
 
 	std::vector<QPointF> border;        //2d pixels sampled on the border of the sphere.
@@ -49,7 +52,7 @@ public:
 
 	bool fit();
 	void ellipseFit();
-	void findHighlight(QImage im, int n, bool update_positions = true);
+	void findHighlight(QImage im, int n, bool skip, bool update_positions = true);
 
 	//compute lights directions relative to the center of the sphere.
 	void computeDirections(Lens &lens);
@@ -63,10 +66,10 @@ public:
 };
 
 //estimate light directions relative to the center of the image.
-void computeDirections(std::vector<Sphere *> &spheres, Lens &lens, std::vector<Eigen::Vector3f> &directions);
+void computeDirections(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Eigen::Vector3f> &directions);
 //estimate light positions using parallax (image width is the unit).
-void computeParallaxPositions(std::vector<Sphere *> &spheres, Lens &lens, std::vector<Eigen::Vector3f> &positions);
+void computeParallaxPositions(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Eigen::Vector3f> &positions);
 //estimate light positions assuming they live on a sphere (parameters provided by dome
-void computeSphericalPositions(std::vector<Sphere *> &spheres, Dome &dome, Lens &lens, std::vector<Eigen::Vector3f> &positions);
+void computeSphericalPositions(std::vector<Image> &images, std::vector<Sphere *> &spheres, Dome &dome, Lens &lens, std::vector<Eigen::Vector3f> &positions);
 
 #endif // SPHERE_H

@@ -45,7 +45,6 @@ void SpherePanel::clear() {
 
 void SpherePanel::init() {
 	auto &project_spheres = qRelightApp->project().spheres;
-	//setVisible(project_spheres.size() > 0);
 	for(Sphere *sphere: project_spheres) {
 		sphere->fit();
 		SphereRow * row = addSphere(sphere);
@@ -58,7 +57,6 @@ void SpherePanel::newSphere() {
 	if(!sphere_dialog)
 		sphere_dialog = new SphereDialog(this);
 
-	//TODO ACTUALLY images might be skipped!
 	Sphere *sphere = new Sphere(qRelightApp->project().images.size());
 	sphere_dialog->setSphere(sphere);
 	int answer = sphere_dialog->exec();

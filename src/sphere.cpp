@@ -193,16 +193,16 @@ bool inEllipse(double x, double y, double a, double b, double theta) {
 }
 
 
-void Sphere::findHighlight(QImage img, int n, bool update_positions) {
+void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) {
 	if(sphereImg.isNull()) {
 		sphereImg = QImage(inner.width(), inner.height(), QImage::Format_ARGB32);
 	}
-	if(n == 0) {
-		sphereImg.fill(0);
-		thumbs.clear();
-	}
+
 
 	thumbs.push_back(img.copy(inner));
+
+	if(skip)
+		return;
 
 	uchar threshold = 240;
 
@@ -328,7 +328,6 @@ void Sphere::computeDirections(Lens &lens) {
 		radial = { center.x() - lens.width/2.0f, center.y() - lens.height/2.0f};
 		radial.normalize();
 		float deviation = 180*acos(fabs(major.dot(radial)))/M_PI;
-		cout << "Deviation from axis to direction to center In degrees: " << deviation << endl;
 	}
 
 
@@ -400,7 +399,7 @@ Vector3f intersection(std::vector<Line> &lines) {
 }
 
 //estimate light directions relative to the center of the image.
-void computeDirections(std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &directions) {
+void computeDirections(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &directions) {
 
 	if(spheres.size() == 0)
 		return;
@@ -414,6 +413,9 @@ void computeDirections(std::vector<Sphere *> &spheres, Lens &lens, std::vector<V
 	}
 	//compute just average direction
 	for(size_t i = 0; i < spheres[0]->lights.size(); i++) {
+		if(images[i].skip)
+			continue;
+
 		Vector3f dir(0, 0, 0);
 		for(Sphere *sphere: spheres) {
 			if(sphere->directions[i].isZero()) continue;
@@ -425,7 +427,7 @@ void computeDirections(std::vector<Sphere *> &spheres, Lens &lens, std::vector<V
 }
 
 //estimate light positions using parallax (image width is the unit).
-void computeParallaxPositions(std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &positions) {
+void computeParallaxPositions(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &positions) {
 	positions.clear();
 
 	for(Sphere *sphere: spheres)
@@ -438,6 +440,9 @@ void computeParallaxPositions(std::vector<Sphere *> &spheres, Lens &lens, std::v
 	//for each reflection, compute the lines and the best intersection, estimate the radiuus of the positions vertices
 	float radius = 0;
 	for(size_t i = 0; i < spheres[0]->directions.size(); i++) {
+		if(images[i].skip)
+			continue;
+
 		std::vector<Line> lines;
 		for(Sphere *sphere: spheres) {
 			if(sphere->directions[i].isZero()) continue;
@@ -459,9 +464,9 @@ void computeParallaxPositions(std::vector<Sphere *> &spheres, Lens &lens, std::v
 }
 
 //estimate light positions assuming they live on a sphere (parameters provided by dome
-void computeSphericalPositions(std::vector<Sphere *> &spheres, Dome &dome, Lens &lens, std::vector<Vector3f> &positions) {
+void computeSphericalPositions(std::vector<Image> &images, std::vector<Sphere *> &spheres, Dome &dome, Lens &lens, std::vector<Vector3f> &positions) {
 	positions.clear();
-	computeDirections(spheres, lens, positions);
+	computeDirections(images, spheres, lens, positions);
 	assert(dome.imageWidth > 0 && dome.domeDiameter > 0);
 
 	for(Vector3f &p: positions) {

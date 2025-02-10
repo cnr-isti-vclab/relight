@@ -55,7 +55,6 @@ public:
 		needs_saving = false;
 	}
 	~Project();
-	void operator=(const Project& project);
 
 	void clear();
 	void load(QString filename);
@@ -76,10 +75,8 @@ public:
 	bool setDir(QDir folder);
 	bool scanDir(); //load images from project.dir, and return false if some problems with resolution.
 	void rotateImages();
-    void rotateImages(bool clockwise);
-	bool hasDirections() {
-		return dome.directions.size() > 0;
-	}
+	void rotateImages(bool clockwise);
+	bool hasDirections() { return dome.directions.size() > 0; }
 	size_t size() { return images.size(); }
 
 	QStringList getImages() const {
@@ -92,14 +89,6 @@ public:
 	//check size and validity
 	void checkImages();
 	void checkMissingImages();
-
-	/*std::vector<Eigen::Vector3f> directions() {
-		std::vector<Eigen::Vector3f> dirs;
-		for(Image &img: images)
-			if(!img.skip)
-				dirs.push_back(img.direction);
-		return dirs;
-	}*/
 	int indexOf(QString s) {
 		for(size_t i = 0; i < images.size(); i++)
 			if(images[i].filename == s)

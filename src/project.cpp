@@ -31,34 +31,6 @@ Project::~Project() {
 	clear();
 }
 
-void Project::operator=(const Project& project) {
-	clear();
-	version = project.version;
-	dir = project.dir;
-	imgsize = project.imgsize;
-	lens = project.lens;
-	dome = project.dome;
-	images = project.images;
-	missing = project.missing;
-	for(Sphere *s: project.spheres)
-		spheres.push_back(new Sphere(*s));
-	for(Measure *m: project.measures)
-		measures.push_back(new Measure(*m));
-	for(Align *a: project.aligns)
-		aligns.push_back(new Align(*a));
-	for(White *w: project.whites)
-		whites.push_back(new White(*w));
-
-	crop = project.crop;
-	offsets = project.offsets;
-	pixelSize = project.pixelSize;
-	name = project.name;
-	authors = project.authors;
-	platform = project.platform;
-	created = project.created;
-	lastUpdated = project.lastUpdated;
-	needs_saving = project.needs_saving;
-}
 
 void Project::clear() {
 	dir = QDir();
@@ -440,9 +412,29 @@ void Project::save(QString filename) {
 		project.insert("crop", jcrop);
 	}
 
+	//ensure resources folder has been created
+	QDir resources = dir.filePath("resources");
+	if (!resources.exists() && !dir.mkpath("resources")) {
+		throw QString("Could not create the resources folder in %1").arg(dir.absolutePath());
+	}
+	//remove all sphere images.
+	QStringList sphereSummary = resources.entryList(QStringList() << "sphere_*x*+*+*.jpg");
+	for(QString file: sphereSummary) {
+		QFile::remove(resources.filePath(file));
+	}
+
 	QJsonArray jspheres;
-	for(auto sphere: spheres)
+	for(auto sphere: spheres) {
+		if(!sphere->sphereImg.isNull()) {
+			QString filename = QString("sphere_%1x%2+%3+%4.jpg")
+					.arg(sphere->inner.width())
+					.arg(sphere->inner.height())
+					.arg(sphere->inner.left())
+					.arg(sphere->inner.top());
+			sphere->sphereImg.save(resources.filePath(filename));
+		}
 		jspheres.append(sphere->toJson());
+	}
 	project.insert("spheres", jspheres);
 
 
@@ -507,12 +499,14 @@ Sphere *Project::newSphere() {
 	needs_saving = true;
 	return s;
 }
+
 Align *Project::newAlign() {
 	auto s = new Align(images.size());
 	aligns.push_back(s);
 	needs_saving = true;
 	return s;
 }
+
 White *Project::newWhite() {
 	auto s = new White();
 	whites.push_back(s);
@@ -580,7 +574,7 @@ void Project::loadLP(QString filename) {
 			dome.directions[i] = ordered_dir[i];
 	} else {
 		auto response = QMessageBox::question(nullptr, "Light directions and images",
-			"Filenames in .lp do not match with images in the .lp directory. Do you want to just use the filename order?");
+											  "Filenames in .lp do not match with images in the .lp directory. Do you want to just use the filename order?");
 		if(response == QMessageBox::Cancel || response == QMessageBox::No)
 			return;
 

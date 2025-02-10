@@ -24,14 +24,16 @@ void DetectHighlights::run() {
 	status = RUNNING;
 	mutex.unlock();
 
+	sphere->sphereImg.fill(0);
+	sphere->thumbs.clear();
+
 	Project &project = qRelightApp->project();
 	for(size_t i = 0; i < project.images.size(); i++) {
 
 		Image &image = project.images[i];
-		if(image.skip) continue;
 
 		QImage img(image.filename);
-		sphere->findHighlight(img, i, update_positions);
+		sphere->findHighlight(img, i, image.skip, update_positions);
 
 		int progress = std::min(99, (int)(100*(i+1) / project.images.size()));
 		progressed(QString("Detecting highlights"), progress);
@@ -128,11 +130,10 @@ void SphereRow::updateStatus(QString /*msg*/, int percent) {
 
 void SphereRow::detectHighlights(bool update) {
 
-
 	if(sphere->center.isNull()) {
-//		status->setText("Needs at least 3 points.");
 		return;
 	}
+	//look for cached data.
 	verify_button->setEnabled(false);
 	if(!detect_highlights) {
 		detect_highlights = new DetectHighlights(sphere, update);
