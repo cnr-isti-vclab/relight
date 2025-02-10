@@ -171,6 +171,8 @@ file(GLOB ASSM_HEADERS ../external/assm/*.h ../external/assm/algorithms/*.h)
 
 
 add_executable(relightlab ${MACOSX_EXE_TARGET_OPTION} ${RELIGHTLAB_HEADERS} ${RELIGHTLAB_SOURCES} ${ASSM_SOURCES} ${ASSM_HEADERS} ${RELIGHTLAB_RESOURCES})
+
+
 target_include_directories(
 	relightlab PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
@@ -201,6 +203,9 @@ target_compile_definitions(relightlab
 		RELIGHT_VERSION=${RELIGHT_VERSION})
 
 if (APPLE)
+	include(BundleUtilities)
+	fixup_bundle("${CMAKE_CURRENT_BINARY_DIR}/relightlab.app/Contents/MacOS/relightlab" TRUE)
+
 	set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../build_scripts/relightlab.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../build_scripts/relightlab.icns DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/relightlab.app/Contents/Resources/")
 	set_target_properties(relightlab PROPERTIES 
