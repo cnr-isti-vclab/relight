@@ -78,7 +78,11 @@ void ImageGrid::setSkipped(int image, bool skip) {
 }
 
 void ImageGrid::updateThumbnail(int pos) {
-	ImageThumb *thumb = dynamic_cast<ImageThumb *>(flowlayout->itemAt(pos)->widget());
+	QLayoutItem *item = flowlayout->itemAt(pos);
+	if(!item) //thumbnail updated before init.
+		return;
+
+	ImageThumb *thumb = dynamic_cast<ImageThumb *>(item->widget());
 
 	QMutexLocker lock(&qRelightApp->thumbails_lock);
 	thumb->setThumbnail(qRelightApp->thumbnails()[pos]);
