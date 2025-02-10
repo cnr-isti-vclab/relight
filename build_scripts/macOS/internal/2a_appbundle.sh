@@ -36,6 +36,9 @@ fi
 message=$(${QT_BASE_DIR}macdeployqt $INSTALL_PATH/$APPNAME \
     $ARGUMENTS 2>&1)
 
+
+install_name_tool -add_rpath "@executable_path/../Frameworks" $INSTALL_PATH/$APPNAME/Contents/MacOS/${APPNAME%.app}
+
 dylibbundler -b -x $INSTALL_PATH/$APPNAME/Contents/MacOS/${APPNAME%.app} -d $INSTALL_PATH/$APPNAME/Contents/Frameworks -p @executable_path/../Frameworks
 
 
