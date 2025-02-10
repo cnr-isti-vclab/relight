@@ -53,7 +53,7 @@ protected:
 class RelightApp: public QApplication {
 	Q_OBJECT
 public:
-	Project m_project;
+	Project *m_project = nullptr;
 	std::vector<QImage> m_thumbnails;
 
 	QMap<QString, QAction *> actions;
@@ -62,7 +62,7 @@ public:
 	QSystemTrayIcon *systemTray = nullptr;
 
 	RelightApp(int &argc, char **argv);
-	virtual ~RelightApp() {}
+	virtual ~RelightApp() { delete m_project; }
 	void run();
 
 public slots:
@@ -81,8 +81,8 @@ signals:
 	void updateThumbnail(int pos);
 
 public:
-	void setProject(const Project &project);
-	Project &project() { return m_project; }
+	void setProject(Project *project);
+	Project &project() { return *m_project; }
 
 	QMutex thumbails_lock;
 	std::vector<QImage> &thumbnails() { return m_thumbnails; }
@@ -99,7 +99,7 @@ public:
 	QString lastOutputDir() {
 		if(!last_output_dir.isEmpty())
 			return last_output_dir;
-		QDir out = m_project.dir;
+		QDir out = m_project->dir;
 		out.cdUp();
 		return out.absolutePath();
 	}

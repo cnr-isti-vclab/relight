@@ -1,4 +1,5 @@
 #include "dome.h"
+#include "image.h"
 #include "sphere.h"
 #include "lens.h"
 #include "lp.h"
@@ -56,17 +57,17 @@ void Dome::updateSphereDirections() {
 	positions3d = positionsSphere;
 }
 
-void Dome::fromSpheres(std::vector<Sphere *> &spheres, Lens &lens) {
+void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens) {
 	switch(lightConfiguration) {
 	case Dome::DIRECTIONAL:
-		computeDirections(spheres, lens, directions);
+		computeDirections(images, spheres, lens, directions);
 		break;
 	case Dome::SPHERICAL:
-		computeDirections(spheres, lens, directions);
+		computeDirections(images, spheres, lens, directions);
 		updateSphereDirections();
 		break;
 	case Dome::LIGHTS3D:
-		computeParallaxPositions(spheres, lens, positions3d);
+		computeParallaxPositions(images, spheres, lens, positions3d);
 		directions = positions3d;
 		for(size_t i = 0; i < directions.size(); i++) {
 			float len = directions[i].norm();

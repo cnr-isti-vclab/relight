@@ -8,6 +8,7 @@
 #include <QString>
 
 class QJsonObject;
+class Image;
 class Lens;
 class Sphere;
 
@@ -46,7 +47,7 @@ public:
 
 	Dome();
 	Dome(const QString &filename) { load(filename); }
-	void fromSpheres(std::vector<Sphere *> &spheres, Lens &lens);
+	void fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens);
 	void updateSphereDirections();
 	void parseLP(const QString &lp_path);
 	//TODO: move savelp here from project

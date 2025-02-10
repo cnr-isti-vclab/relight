@@ -139,7 +139,7 @@ void LightsGeometry::setFromSpheres() {
 	//call appropriate compute directions/positions
 	Dome &dome = project.dome;
 	dome.label = "";
-	dome.fromSpheres(project.spheres, project.lens);
+	dome.fromSpheres(project.images, project.spheres, project.lens);
 
 	init();
 }

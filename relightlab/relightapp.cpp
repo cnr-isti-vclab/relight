@@ -118,6 +118,7 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 		systemTray->setVisible(false);
 	}
 
+	m_project = new Project;
 
 }
 void RelightApp::notify(const QString &title, const QString &msg, int ms) {
@@ -148,16 +149,18 @@ void RelightApp::setDarkTheme(bool dark) {
 	QSettings().setValue("dark", dark);
 }
 
-void RelightApp::setProject(const Project &_project) {
+void RelightApp::setProject(Project *_project) {
 	//cleanup interface and stop (and remove) project related tasks.
 	mainwindow->clear();
+
+	delete m_project;
 
 	m_project = _project;
 	loadThumbnails();
 
 	mainwindow->init();
 	mainwindow->setTabIndex(1);
-	qRelightApp->setLastProjectDir(m_project.dir.path());
+	qRelightApp->setLastProjectDir(m_project->dir.path());
 	qRelightApp->clearLastOutputDir();
 }
 
@@ -169,28 +172,28 @@ void RelightApp::newProject() {
 	if(dir.isNull()) return;
 
 
-	Project project;
-	project.setDir(QDir(dir));
-	bool ok = project.scanDir();
-	if(!project.size()) {
-		QMessageBox::critical(mainwindow, "Houston we have a problem!", "Could not find images in directory: " + project.dir.path());
+	Project *project = new Project;
+	project->setDir(QDir(dir));
+	bool ok = project->scanDir();
+	if(!project->size()) {
+		QMessageBox::critical(mainwindow, "Houston we have a problem!", "Could not find images in directory: " + project->dir.path());
 		return;
 	}
 
 	if(!ok) {
 		//check if we can rotate a few images.
 		bool canrotate = false;
-		for(Image &image: project.images) {
-			if(image.size == project.imgsize)
+		for(Image &image: project->images) {
+			if(image.size == project->imgsize)
 				continue;
 
-			if(image.isRotated(project.imgsize))
+			if(image.isRotated(project->imgsize))
 				canrotate = true;
 		}
 		if(canrotate) {
 			int answer = QMessageBox::question(mainwindow, "Some images are rotated.", "Do you wish to uniform image rotation?", QMessageBox::Yes, QMessageBox::No);
 			if(answer != QMessageBox::No)
-				project.rotateImages();
+				project->rotateImages();
 		} else
 			QMessageBox::critical(mainwindow, "Resolution problem", "Not all of the images in the folder have the same resolution,\nyou might need to fix this problem manually.");
 	}
@@ -206,7 +209,7 @@ void RelightApp::newProject() {
 		int answer = QMessageBox::question(mainwindow, "Found an .lp file: " + lps[0], "Do you wish to load " + lps[0] + "?", QMessageBox::Yes, QMessageBox::No);
 		if(answer != QMessageBox::No) {
 			try {
-				m_project.loadLP(lps[0]);
+				m_project->loadLP(lps[0]);
 			} catch(QString error) {
 				QMessageBox::critical(mainwindow, "Could not load the .lp file", error);
 			}
@@ -224,9 +227,9 @@ void RelightApp::openProject() {
 }
 
 void RelightApp::openProject(const QString &filename) {
-	Project project;
+	Project *project = new Project;
 	try {
-		project.load(filename);
+		project->load(filename);
 	} catch(QString e) {
 		QMessageBox::critical(mainwindow, "Could not load project", e);
 		return;
@@ -235,11 +238,11 @@ void RelightApp::openProject(const QString &filename) {
 	QFileInfo info(filename);
 	QDir::setCurrent(info.canonicalPath());
 
-	while(project.missing.size() != 0) {
+	while(project->missing.size() != 0) {
 
 		QString msg = "Could not find this images:\n";
-		for(int i: project.missing)
-			msg += "\t" + project.images[i].filename + "\n";
+		for(int i: project->missing)
+			msg += "\t" + project->images[i].filename + "\n";
 
 		QMessageBox box(mainwindow);
 		box.setText(msg);
@@ -251,21 +254,21 @@ void RelightApp::openProject(const QString &filename) {
 
 		switch(ret) {
 		case 1: {
-			QString imagefolder = QFileDialog::getExistingDirectory(mainwindow, "Could not find the images, please select the image folder:", project.dir.absolutePath());
+			QString imagefolder = QFileDialog::getExistingDirectory(mainwindow, "Could not find the images, please select the image folder:", project->dir.absolutePath());
 			if(imagefolder.isNull()) {
 				QMessageBox::critical(mainwindow, "No folder selected", "No folder selected.");
 				return;
 			}
-			project.dir.setPath(imagefolder);
+			project->dir.setPath(imagefolder);
 			QDir::setCurrent(imagefolder);
-			project.checkMissingImages();
-			project.checkImages();
+			project->checkMissingImages();
+			project->checkImages();
 			}
 			break;
 		case 2: //cancel
 			return;
 		case 3: //ignore
-			project.missing.clear();
+			project->missing.clear();
 			break;
 		}
 	}
@@ -288,7 +291,7 @@ void RelightApp::saveProject() {
 		project_filename = filename;
 	}
 
-	m_project.save(project_filename);
+	m_project->save(project_filename);
 
 	QFileInfo info(project_filename);
 	mainwindow->setWindowTitle("Relight - " + info.fileName());
@@ -304,7 +307,7 @@ void RelightApp::saveProjectAs() {
 		filename += ".relight";
 	project_filename = filename;
 
-	m_project.save(project_filename);
+	m_project->save(project_filename);
 	QFileInfo info(project_filename);
 	mainwindow->setWindowTitle("Relight - " + info.fileName());
 	addRecentProject(project_filename);
@@ -319,10 +322,10 @@ void RelightApp::loadThumbnails() {
 		delete loader;
 		loader = nullptr;
 	}
-	m_thumbnails.resize(m_project.images.size());
+	m_thumbnails.resize(m_project->images.size());
 	QStringList paths;
-	for(size_t i = 0; i < m_project.images.size(); i++) {
-		Image &image = m_project.images[i];
+	for(size_t i = 0; i < m_project->images.size(); i++) {
+		Image &image = m_project->images[i];
 		if(i == 0) {
 			QImage img(image.filename);
 			if(img.isNull()) {
@@ -399,7 +402,7 @@ void RelightApp::close() {
 
 
 bool RelightApp::needsSavingProceed() {
-	if(!m_project.needs_saving)
+	if(!m_project->needs_saving)
 		return true;
 	auto answer = QMessageBox::question(mainwindow, "Current project is unsaved", "Do you want to proceed without saving?");
 	return answer == QMessageBox::Yes;
