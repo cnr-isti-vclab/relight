@@ -129,9 +129,6 @@ void openFile(const QString& filePath) {
 	QMimeDatabase db;
 	QMimeType type = db.mimeTypeForFile(filePath);
 
-	qDebug() << type.aliases();
-	qDebug() << type.allAncestors();
-	qDebug() << type.name();
 	if (type.isValid() && type.name() != "application/octet-stream") {
 #ifdef Q_OS_WIN
 		QProcess::startDetached("explorer", { QDir::toNativeSeparators(filePath) });

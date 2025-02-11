@@ -36,8 +36,6 @@ fi
 message=$(${QT_BASE_DIR}macdeployqt $INSTALL_PATH/$APPNAME \
     $ARGUMENTS 2>&1)
 
-dylibbundler -b -x $INSTALL_PATH/$APPNAME/Contents/MacOS/${APPNAME%.app} -d $INSTALL_PATH/$APPNAME/Contents/Frameworks -p @executable_path/../Frameworks
-
 # if message contains "ERROR" then macdeployqt failed
 if [[ $message == *"ERROR"* ]]; then
     echo "macdeployqt failed."
@@ -45,6 +43,10 @@ if [[ $message == *"ERROR"* ]]; then
     echo $message
     exit 1
 fi
+
+ls $INSTALL_PATH/$APPNAME/Contents/Frameworks 
+# trying to install libgcc_s lib
+dylibbundler -b -x $INSTALL_PATH/$APPNAME/Contents/MacOS/${APPNAME%.app} -d $INSTALL_PATH/$APPNAME/Contents/Frameworks -p @executable_path/../Frameworks/
 
 # remove everything from install path, except the appbundle
 cd $INSTALL_PATH
