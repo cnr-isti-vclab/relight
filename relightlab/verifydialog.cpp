@@ -11,7 +11,9 @@
 #include <QLabel>
 #include <QDialogButtonBox>
 
+#ifdef WITH_OPENCV
 #include <opencv2/opencv.hpp>
+#endif
 
 #include "assert.h"
 #include <iostream>
@@ -28,10 +30,14 @@ VerifyDialog::VerifyDialog(std::vector<QImage> &_thumbs, std::vector<QPointF> &_
 		layout->addLayout(operations_layout);
 		QPushButton *reset = new QPushButton("Reset");
 		operations_layout->addWidget(reset);
+		connect(reset, SIGNAL(clicked()), this, SLOT(resetAligns()));
+
+#ifdef WITH_OPENCV
 		QPushButton *ecc = new QPushButton("Align");
 		operations_layout->addWidget(ecc);
-		connect(reset, SIGNAL(clicked()), this, SLOT(resetAligns()));
+
 		connect(ecc, SIGNAL(clicked()), this, SLOT(alignSamples()));
+#endif
 	}
 	QScrollArea *area = new QScrollArea(this);
 	layout->addWidget(area);
@@ -65,14 +71,16 @@ void VerifyDialog::resetAligns() {
 		p = QPointF(0, 0);
 	update();
 }
-
+#ifdef WITH_OPENCV
 cv::Mat qimg2mat(QImage img) {
 	QImage gray = img.convertToFormat(QImage::Format_Grayscale8);
 	return cv::Mat(gray.height(), gray.width(), CV_8UC1,
 				  const_cast<uchar*>(gray.bits()), gray.bytesPerLine()).clone();
 }
+#endif
 
 void VerifyDialog::alignSamples() {
+	#ifdef WITH_OPENCV
 	if (positions.empty()) return;
 
 	cv::Mat ref = qimg2mat(thumbs[0]);
@@ -90,6 +98,7 @@ void VerifyDialog::alignSamples() {
 		}
 	}
 	update();
+#endif
 }
 
 void VerifyDialog::update() {
