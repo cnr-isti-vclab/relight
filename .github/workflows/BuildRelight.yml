@@ -41,10 +41,10 @@ jobs:
         echo "QT_VERSION=6.6.*" >> $GITHUB_ENV
 
     - name: Install OpenCV on macOS
-      if: matrix.os == 'macos-latest'
+      if: matrix.os == 'macos-14'
       run: |
         brew install opencv
-        echo "QT_VERSION=6.7.*" >> $GITHUB_ENV
+        echo "QT_VERSION=6.7.3" >> $GITHUB_ENV
 
     - name: Install OpenCV on Windows
       if: matrix.os == 'windows-latest'
