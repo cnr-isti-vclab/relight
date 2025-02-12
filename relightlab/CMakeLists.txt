@@ -18,7 +18,12 @@ if (APPLE)
 	set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version" FORCE)
 	SET(CMAKE_INSTALL_RPATH $ORIGIN/../Frameworks)
 	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+else()
+	set(OPENCV_RELIGHT_LIBS opencv_core  opencv_imgcodecs opencv_imgproc opencv_video)
+#	add_compile_definitions(WITH_OPENCV)
 endif()
+
+
 
 
 
@@ -188,7 +193,7 @@ target_link_libraries(
 		${JPEG_LIBRARIES}
 		TIFF::TIFF
 		OpenMP::OpenMP_CXX
-		opencv_core  opencv_imgcodecs opencv_imgproc opencv_video
+		${OPENCV_RELIGHT_LIBS}
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui
 		${RELIGHT_QT}::Widgets
