@@ -9,6 +9,7 @@ class Align;
 class AlignRow;
 class MarkerDialog;
 class QVBoxLayout;
+class QStackedWidget;
 
 class AlignFrame: public QFrame {
 Q_OBJECT
@@ -21,11 +22,18 @@ public:
 public slots:
 	void projectUpdate();
 	void newAlign();
+	void editAlign(AlignRow *align);
 	void removeAlign(AlignRow *align);
+	void okMarker();
+	void cancelMarker();
 
 private:
+	Align *provisional_align = nullptr;
+	QStackedWidget *stack = nullptr;
 	MarkerDialog *marker_dialog = nullptr;
 	QVBoxLayout *aligns = nullptr;
+
+	AlignRow *findRow(Align *align);
 };
 
 #endif // ALIGNFRAME_H

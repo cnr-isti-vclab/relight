@@ -100,6 +100,7 @@ void SpherePicking::clear() {
 		delete b;
 	}
 	border.clear();
+	sphere = nullptr;
 }
 
 void SpherePicking::setSphere(Sphere *s) {
@@ -118,6 +119,7 @@ void SpherePicking::setSphere(Sphere *s) {
 }
 
 void SpherePicking::updateSphere() {
+	assert(sphere);
 	if(sphere->center.isNull())
 		return;
 
@@ -151,6 +153,7 @@ void SpherePicking::updateSphere() {
 }
 
 void SpherePicking::fitSphere() {
+	assert(sphere);
 	if(sphere->border.size() < 3)
 		sphere->center = QPointF();
 	else
@@ -161,6 +164,7 @@ void SpherePicking::fitSphere() {
 
 
 void SpherePicking::click(QPoint p) {
+	assert(sphere);
 	QPointF pos = view->mapToScene(p);
 
 	//min distance between border points in pixels.
@@ -191,6 +195,7 @@ void SpherePicking::addBorderPoint(QPointF pos) {
 }
 
 void SpherePicking::updateBorderPoints() {
+	assert(sphere);
 	for(size_t i = 0; i < border.size(); i++) {
 		sphere->border[i] = border[i]->pos();
 	}
@@ -200,6 +205,7 @@ void SpherePicking::updateBorderPoints() {
 
 
 void SpherePicking::showHighlight(size_t n) {
+	assert(sphere);
 	highlight->setVisible(sphere->fitted);
 
 	if(!sphere->fitted)
@@ -221,6 +227,7 @@ void SpherePicking::showHighlight(size_t n) {
 }
 
 void SpherePicking::updateHighlightPosition() {
+	assert(sphere);
 	highlight->setBrush(Qt::green);
 	QPen pen = highlight->pen();
 	pen.setColor(Qt::green);
@@ -229,6 +236,7 @@ void SpherePicking::updateHighlightPosition() {
 }
 
 void SpherePicking::deleteSelected(int currentImage) {
+	assert(sphere);
 	size_t j = 0;
 	for(size_t i = 0; i < border.size(); i++, j++) {
 		if(i != j) {
@@ -252,6 +260,7 @@ void SpherePicking::deleteSelected(int currentImage) {
 }
 
 void SpherePicking::keyReleaseEvent(QKeyEvent *e) {
+	assert(sphere);
 	switch(e->key()) {
 	case Qt::Key_Backspace:
 	case Qt::Key_Delete:

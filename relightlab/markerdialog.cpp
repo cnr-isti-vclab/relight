@@ -5,6 +5,7 @@
 
 #include <QVBoxLayout>
 #include <QDialogButtonBox>
+#include "../src/align.h"
 
 MarkerDialog::MarkerDialog(Marker marker, QWidget *parent): QDialog(parent) {
 
@@ -32,14 +33,27 @@ MarkerDialog::MarkerDialog(Marker marker, QWidget *parent): QDialog(parent) {
 	showMaximized();
 }
 
+
 void MarkerDialog::setAlign(Align *align) {
-	align_picking->setAlign(align);
+	align_picking->setAlign(align->rect);
 }
 
+QRectF MarkerDialog::getAlign() {
+	return align_picking->getRect();
+
+}
 void MarkerDialog::setSphere(Sphere *sphere) {
 	sphere_picking->setSphere(sphere);
 }
 
+void  MarkerDialog::clear() {
+	if(align_picking) {
+		align_picking->clear();
+	}
+	if(sphere_picking)
+		sphere_picking->clear();
+
+}
 
 void MarkerDialog::accept() {
 	QDialog::accept();

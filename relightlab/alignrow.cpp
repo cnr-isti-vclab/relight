@@ -88,8 +88,8 @@ AlignRow::AlignRow(Align *_align, QWidget *parent): QWidget(parent) {
 
 	edit_layout->setRowStretch(3,1);
 
-	connect(edit_button, SIGNAL(clicked()), this, SLOT(edit()));
-	connect(remove_button, SIGNAL(clicked()), this, SLOT(remove()));
+	connect(edit_button, &QPushButton::clicked, [this]() { emit edit(this); });
+	connect(remove_button, &QPushButton::clicked, [this]() { emit removeme(this); });
 	connect(verify_button, SIGNAL(clicked()), this, SLOT(verify()));
 }
 
@@ -99,7 +99,7 @@ AlignRow::~AlignRow() {
 	}
 	delete find_alignment;
 }
-
+/*
 void AlignRow::edit() {
 	MarkerDialog *marker_dialog = new MarkerDialog(MarkerDialog::ALIGN, this);
 	marker_dialog->setAlign(align);
@@ -110,20 +110,24 @@ void AlignRow::edit() {
 		updateRegion();
 		findAlignment();
 	}
-}
+}*/
 
 void AlignRow::verify() {
 	VerifyDialog *verify_dialog = new VerifyDialog(align->thumbs, align->offsets, VerifyDialog::ALIGN, this);
 	verify_dialog->exec();
 }
 
-void AlignRow::remove() {
-	emit removeme(this);
-}
 
 void AlignRow::updateRegion() {
 	QRectF r = align->rect;
 	region->setText(QString("Sample region: %1x%2+%3+%4").arg(r.width()).arg(r.height()).arg(r.left()).arg(r.top()));
+}
+
+void AlignRow::setRect(QRectF rect) {
+	position->rect = align->rect;
+	position->update();
+	updateRegion();
+	findAlignment();
 }
 
 void AlignRow::updateStatus(QString msg, int percent) {

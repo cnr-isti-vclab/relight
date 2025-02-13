@@ -41,18 +41,19 @@ class AlignPicking: public ImageViewer {
 	Q_OBJECT
 public:
 	int marker_side = 40;
-	Align *align = nullptr;
+	//Align *align = nullptr;
 
 	AlignRect *rect = nullptr;
 
 	AlignPicking(QWidget *parent = nullptr);
-	void setAlign(Align *sphere);
+	void setAlign(QRectF r);
 	void updateAlign();
 	void clear();
+	QRectF getRect() { return rect->getRect(); }
 
 public slots:
 	void click(QPoint);
-	void updateAlignPoint();
+	//void updateAlignPoint();
 
 protected:
 	void keyPressEvent(QKeyEvent *event) override;

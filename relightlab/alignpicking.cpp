@@ -33,9 +33,16 @@ void AlignRect::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidg
 
 QVariant AlignRect::itemChange(GraphicsItemChange change, const QVariant &value)	{
 	if ((change == ItemPositionChange  && scene()) || change == ItemScenePositionHasChanged) {
-		picker->updateAlignPoint();
+//		picker->updateAlignPoint();
 	}
 	return QGraphicsItem::itemChange(change, value);
+}
+
+void AlignRect::setRect(QRectF r) {
+	prepareGeometryChange();  // Notify the scene about bounding rect change
+	QRectF oldRect = boundingRect();
+	rect = r;
+	update(oldRect.united(boundingRect()));  // Repaint both old and new areas
 }
 
 
@@ -55,13 +62,14 @@ void AlignPicking::clear() {
 	if(rect) {
 		scene().removeItem(rect);
 	}
+//	align = nullptr;
 }
 
-void AlignPicking::setAlign(Align *a) {
+void AlignPicking::setAlign(QRectF align_rect) {
 	clear();
-	align = a;
-	rect->setPos(align->rect.center());
-	rect->side = align->rect.width();
+//	align = a;
+	rect->setPos(align_rect.center());
+	rect->side = align_rect.width();
 
 	scene().addItem(rect);
 
@@ -85,12 +93,12 @@ void AlignPicking::click(QPoint p) {
 
 	rect->setPos(pos);
 	rect->update();
-	updateAlignPoint();
+//	updateAlignPoint();
 }
 
-void AlignPicking::updateAlignPoint() {
+/*void AlignPicking::updateAlignPoint() {
 	align->rect = rect->getRect();
-}
+}*/
 
 void AlignPicking::keyPressEvent(QKeyEvent *event) {
 	if(event->key() == Qt::Key_Plus)
@@ -99,8 +107,9 @@ void AlignPicking::keyPressEvent(QKeyEvent *event) {
 		marker_side -= 5;
 	QPointF center = rect->rect.center();
 
-	rect->rect.setTopLeft(center - QPointF(marker_side, marker_side));
-	rect->rect.setBottomRight(center + QPointF(marker_side, marker_side));
+	QRectF r(center - QPointF(marker_side/2.0, marker_side/2.0),
+			center + QPointF(marker_side/2.0, marker_side/2.0));
+	rect->setRect(r);
 	rect->update();
-	updateAlignPoint();
+//	updateAlignPoint();
 }
