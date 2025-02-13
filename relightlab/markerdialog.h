@@ -15,6 +15,8 @@ public:
 	MarkerDialog(Marker marker, QWidget *parent = nullptr);
 	void setAlign(Align *align);
 	void setSphere(Sphere *sphere);
+	QRectF getAlign();
+	void clear();
 
 public slots:
 	void accept();

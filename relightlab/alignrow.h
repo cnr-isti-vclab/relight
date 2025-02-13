@@ -43,14 +43,14 @@ public:
 	void findAlignment(bool update = true);
 	void stopFinding();
 	void updateRegion();
+	void setRect(QRectF rect);
 	
 signals:
+	void edit(AlignRow *row);
 	void removeme(AlignRow *row);
 	void updated(); //emit when status changes
 
 public slots:
-	void edit();
-	void remove();
 	void verify();
 	void updateStatus(QString msg, int percent);
 };

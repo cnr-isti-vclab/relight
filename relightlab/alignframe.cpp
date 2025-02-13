@@ -11,27 +11,47 @@
 #include <QHBoxLayout>
 #include <QGraphicsRectItem>
 #include <QPushButton>
+#include <QStackedWidget>
 
 #include <iostream>
 using namespace std;
 
 AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
-	QVBoxLayout *content = new QVBoxLayout(this);
 
-	content->addSpacing(10);
-	QPushButton *new_align = new QPushButton("New alignment...");
-	new_align->setProperty("class", "large");
-	content->addWidget(new_align);
-	new_align->setMinimumWidth(200);
-	new_align->setMaximumWidth(300);
+	stack = new QStackedWidget;
 
-	QFrame *aligns_frame = new QFrame;
-	content->addWidget(aligns_frame, 0);
-	aligns = new QVBoxLayout(aligns_frame);
+	{
+		QFrame *align_rows = new QFrame;
+		QVBoxLayout *content = new QVBoxLayout(align_rows);
+		content->addSpacing(10);
+		{
+			QPushButton *new_align = new QPushButton("New alignment...");
+			new_align->setProperty("class", "large");
+			new_align->setMinimumWidth(200);
+			new_align->setMaximumWidth(300);
+			connect(new_align, SIGNAL(clicked()), this, SLOT(newAlign()));
+			content->addWidget(new_align);
+		}
+		{
+			QFrame *aligns_frame = new QFrame;
+			content->addWidget(aligns_frame, 0);
+			aligns = new QVBoxLayout(aligns_frame);
+		}
+		content->addStretch(1);
 
-	content->addStretch(1);
-	//content->addStretch();
-	connect(new_align, SIGNAL(clicked()), this, SLOT(newAlign()));
+		stack->addWidget(align_rows);
+	}
+
+	{
+		marker_dialog = new MarkerDialog(MarkerDialog::ALIGN, this);
+		marker_dialog->setWindowFlags(Qt::Widget);
+		connect(marker_dialog, SIGNAL(accepted()), this, SLOT(okMarker()));
+		connect(marker_dialog, SIGNAL(rejected()), this, SLOT(cancelMarker()));
+		stack->addWidget(marker_dialog);
+	}
+
+	QVBoxLayout *layout = new QVBoxLayout(this);
+	layout->addWidget(stack);
 }
 
 void AlignFrame::clear() {
@@ -50,39 +70,61 @@ void AlignFrame::init() {
 	}
 }
 
+void AlignFrame::okMarker() {
+
+	AlignRow *row = findRow(provisional_align);
+
+	provisional_align->rect = marker_dialog->getAlign();
+	if(!row) { //new align
+		qRelightApp->project().aligns.push_back(provisional_align);
+		row = addAlign(provisional_align);
+	} else {
+		row->setRect(provisional_align->rect);
+	}
+	row->findAlignment();
+
+	provisional_align = nullptr;
+	stack->setCurrentIndex(0);
+
+}
+
+void AlignFrame::cancelMarker() {
+	AlignRow *row = findRow(provisional_align);
+
+	if(!row) //this was a new align cancelled
+		delete provisional_align;
+
+	provisional_align = nullptr;
+	stack->setCurrentIndex(0);
+}
+
+
 /* on user button press */
 void AlignFrame::newAlign() {
-	if(!marker_dialog)
-		marker_dialog = new MarkerDialog(MarkerDialog::ALIGN, this);
+	stack->setCurrentIndex(1);
+	provisional_align = new Align(qRelightApp->project().images.size());
+	marker_dialog->setAlign(provisional_align);
+}
 
-	Align *align = new Align(qRelightApp->project().images.size());
-	marker_dialog->setAlign(align);
-	int answer = marker_dialog->exec();
-	if(answer == QDialog::Rejected) {
-		delete align;
-		return;
-	}
-	qRelightApp->project().aligns.push_back(align);
-	AlignRow *row = addAlign(align);
-	row->findAlignment();
+
+void AlignFrame::editAlign(AlignRow *row) {
+	stack->setCurrentIndex(1); //needs to be called before setAlign, for correct resize.
+	provisional_align = row->align;
+	marker_dialog->setAlign(provisional_align);
 }
 
 void AlignFrame::projectUpdate() {
 	auto &project = qRelightApp->project();
 	project.computeOffsets();
-
-	auto offsets = qRelightApp->project().offsets;
-	for(auto &o: offsets) {
-		o -= project.offsets[0];
-		cout << o.x() << " " << o.y() << endl;
-	}
-
 }
 
 AlignRow *AlignFrame::addAlign(Align *align) {
 	AlignRow *row = new AlignRow(align);
 	aligns->addWidget(row);
 
+	cout << aligns->children().size() << endl;
+
+	connect(row, SIGNAL(edit(AlignRow *)), this, SLOT(editAlign(AlignRow *)));
 	connect(row, SIGNAL(removeme(AlignRow *)), this, SLOT(removeAlign(AlignRow *)));
 	connect(row, SIGNAL(updated()), this, SLOT(projectUpdate()));
 	return row;
@@ -104,4 +146,13 @@ void AlignFrame::removeAlign(AlignRow *row) {
 	aligns.erase(it);
 	delete row;
 	projectUpdate();
+}
+
+AlignRow *AlignFrame::findRow(Align *align) {
+	for(int i = 0; i < aligns->count(); i++) {
+		AlignRow *r = static_cast<AlignRow *>(aligns->itemAt(i)->widget());
+		if(r->align == align)
+			return r;
+	}
+	return nullptr;
 }
