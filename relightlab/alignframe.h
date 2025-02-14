@@ -28,9 +28,10 @@ public slots:
 	void cancelMarker();
 
 private:
-	Align *provisional_align = nullptr;
 	QStackedWidget *stack = nullptr;
 	MarkerDialog *marker_dialog = nullptr;
+
+	Align *provisional_align = nullptr;
 	QVBoxLayout *aligns = nullptr;
 
 	AlignRow *findRow(Align *align);

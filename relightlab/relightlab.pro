@@ -91,7 +91,6 @@ SOURCES += main.cpp \
     lightsframe.cpp \
     ../src/lp.cpp \
     directionsview.cpp \
-    spherepanel.cpp \
     spheredialog.cpp \
     verifyview.cpp \
     verifydialog.cpp \
@@ -114,7 +113,8 @@ SOURCES += main.cpp \
     brdfframe.cpp \
     metadataframe.cpp \
     ../src/fft_normal_integration.cpp \
-    ../src/deepzoom.cpp
+    ../src/deepzoom.cpp \
+    sphereframe.cpp
 
 RESOURCES += \
     res.qrc
@@ -177,7 +177,6 @@ HEADERS += \
     ../src/lp.h \
     domepanel.h \
     directionsview.h \
-    spherepanel.h \
     spheredialog.h \
     verifyview.h \
     verifydialog.h \
@@ -203,7 +202,8 @@ HEADERS += \
     metadataframe.h \
     ../src/fft_normal_integration.h \
     ../src/pocketfft.h \
-    ../src/deepzoom.h
+    ../src/deepzoom.h \
+    sphereframe.h
 
 FORMS +=
 
