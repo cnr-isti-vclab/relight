@@ -9,7 +9,7 @@
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QGraphicsRectItem>
+//#include <QGraphicsRectItem>
 #include <QPushButton>
 #include <QStackedWidget>
 
@@ -121,8 +121,6 @@ void AlignFrame::projectUpdate() {
 AlignRow *AlignFrame::addAlign(Align *align) {
 	AlignRow *row = new AlignRow(align);
 	aligns->addWidget(row);
-
-	cout << aligns->children().size() << endl;
 
 	connect(row, SIGNAL(edit(AlignRow *)), this, SLOT(editAlign(AlignRow *)));
 	connect(row, SIGNAL(removeme(AlignRow *)), this, SLOT(removeAlign(AlignRow *)));

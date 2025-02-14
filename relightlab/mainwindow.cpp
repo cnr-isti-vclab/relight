@@ -11,6 +11,7 @@
 #include "imageframe.h"
 #include "alignframe.h"
 #include "scaleframe.h"
+#include "sphereframe.h"
 #include "lightsframe.h"
 #include "cropframe.h"
 #include "rtiframe.h"
@@ -36,6 +37,7 @@ MainWindow::MainWindow() {
 	tabs->addTab(image_frame = new ImageFrame, "Images");
 	tabs->addTab(align_frame = new AlignFrame, "Align");
 	tabs->addTab(scale_frame = new ScaleFrame, "Scale");
+	tabs->addTab(sphere_frame = new SphereFrame, "Spheres");
 	tabs->addTab(lights_frame = new LightsFrame, "Lights");
 	tabs->addTab(crop_frame = new CropFrame, "Crop");
 	tabs->addTab(rti_frame = new RtiFrame, "RTI");

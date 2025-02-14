@@ -104,10 +104,9 @@ void SpherePicking::clear() {
 }
 
 void SpherePicking::setSphere(Sphere *s) {
-	sphere = s;
-
-	//TODO uupdatescene, not set sphere
 	clear();
+
+	sphere = s;
 
 	for(QPointF pos: sphere->border)
 		addBorderPoint(pos);
