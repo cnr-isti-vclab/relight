@@ -42,6 +42,7 @@ public:
 	void stopDetecting();
 	
 signals:
+	void edit(SphereRow *row);
 	void removeme(SphereRow *row);
 	void updated(); //emit when status changes
 

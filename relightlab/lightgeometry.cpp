@@ -26,7 +26,7 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 
 	QVBoxLayout *page = new QVBoxLayout(this);
 
-	page->addWidget(new QLabel("<h3>Current dome configuration<h3>"));
+	page->addWidget(new QLabel("<h3>Current lights configuration<h3>"));
 	//page->addSpacing(10);
 
 	QGridLayout * content = new QGridLayout();

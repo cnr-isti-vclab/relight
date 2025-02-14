@@ -37,12 +37,16 @@ LightsFrame::LightsFrame() {
 
 //	connect(sphere_panel, SIGNAL(updated()), geometry, SLOT(setFromSpheres()));
 	connect(dome_panel, SIGNAL(updated()), geometry, SLOT(init()));
+	connect(dome_panel, SIGNAL(useSpheres()), this, SLOT(updateSphere()));
 }
 
 void LightsFrame::clear() {
 //	sphere_panel->clear();
 }
 
+void LightsFrame::updateSphere() {
+	geometry->setFromSpheres();
+}
 
 void LightsFrame::init() {
 //	bool useSphere = qRelightApp->project().spheres.size();
