@@ -44,7 +44,9 @@ MainWindow::MainWindow() {
 	tabs->addTab(normals_frame = new NormalsFrame, "Normals");
 	tabs->addTab(queue_frame = new QueueFrame, "Queue");
 
+
 	connect(scale_frame, SIGNAL(pixelSizeChanged()), lights_frame, SLOT(setPixelSize()));
+	connect(sphere_frame, SIGNAL(updated()), lights_frame, SLOT(updateSphere()));
 	connect(rti_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
 	connect(normals_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
 

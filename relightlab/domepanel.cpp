@@ -16,12 +16,93 @@
 #include <QDebug>
 
 #include <vector>
+#include <iostream>
+using namespace std;
+
+#include <QAbstractItemView>
+#include <QFontMetrics>
+#include <QVBoxLayout>
+#include <QWidget>
+
+class ElidedComboBox : public QComboBox {
+public:
+	using QComboBox::QComboBox;
+
+protected:
+	void paintEvent(QPaintEvent *event) override {
+		QStyleOptionComboBox opt;
+		initStyleOption(&opt);
+		QPainter painter(this);
+
+		// Draw the combo box background and frame
+		style()->drawComplexControl(QStyle::CC_ComboBox, &opt, &painter, this);
+
+		// Get the selected text and elide if necessary
+		QString text = currentText();
+		QFontMetrics fm(font());
+		opt.currentText = fm.elidedText(text, Qt::ElideRight, width() - 20); // Leave space for arrow
+
+		// Draw the elided text inside the box
+		style()->drawControl(QStyle::CE_ComboBoxLabel, &opt, &painter, this);
+	}
+
+	void showPopup() override {
+		view()->setMinimumWidth(view()->sizeHintForColumn(0) + 20); // Ensure full text is visible
+		QComboBox::showPopup();
+	}
+};
+
 
 DomePanel::DomePanel(QWidget *parent): QFrame(parent) {
 
 	//	setContentsMargins(10, 10, 10, 10);
 	QHBoxLayout *content = new QHBoxLayout(this);
 	//content->setHorizontalSpacing(20);
+
+	{
+		sphere_frame = new QFrame;
+		sphere_frame->setFrameShape(QFrame::Panel);
+		sphere_frame->setAutoFillBackground(true);
+
+		QHBoxLayout *sphere_layout = new QHBoxLayout(sphere_frame);
+		{
+			sphere_button = new QPushButton(QIcon::fromTheme("highlight"), "Use reflective spheres");
+			sphere_button->setProperty("class", "large");
+			sphere_button->setMinimumWidth(200);
+			sphere_button->setMaximumWidth(300);
+			connect(sphere_button, SIGNAL(clicked()), this, SLOT(setSpheres()));
+
+			sphere_layout->addWidget(sphere_button);
+		}
+		content->addWidget(sphere_frame, 0, Qt::AlignTop);
+	}
+
+	{
+		dome_frame = new QFrame;
+		dome_frame->setFrameShape(QFrame::Panel);
+		dome_frame->setAutoFillBackground(true);
+
+		QHBoxLayout *dome_layout = new QHBoxLayout(dome_frame);
+		{
+			QPushButton *load = new QPushButton(QIcon::fromTheme("folder"), "Load dome file...");
+			load->setProperty("class", "large");
+			load->setMinimumWidth(200);
+			load->setMaximumWidth(300);
+			connect(load, SIGNAL(clicked()), this, SLOT(loadDomeFile()));
+
+			dome_layout->addWidget(load);
+
+			dome_list = new ElidedComboBox;
+			dome_list->setMinimumWidth(200);
+			dome_list->setMaximumWidth(300);
+			dome_list->setProperty("class", "large");
+			connect(dome_list, SIGNAL(currentIndexChanged(int)), this, SLOT(setDome(int)));
+
+			dome_layout->addWidget(dome_list);
+		}
+		content->addWidget(dome_frame, 0, Qt::AlignTop);
+	}
+
 
 
 	QPushButton *save = new QPushButton(QIcon::fromTheme("save"), "Export dome...");
@@ -31,27 +112,28 @@ DomePanel::DomePanel(QWidget *parent): QFrame(parent) {
 	connect(save, SIGNAL(clicked()), this, SLOT(exportDome()));
 	content->addWidget(save, 0, Qt::AlignTop);
 
-	QPushButton *load = new QPushButton(QIcon::fromTheme("folder"), "Load dome file...");
-	load->setProperty("class", "large");
-	load->setMinimumWidth(200);
-	load->setMaximumWidth(300);
-	connect(load, SIGNAL(clicked()), this, SLOT(loadDomeFile()));
-	content->addWidget(load, 0, Qt::AlignTop);
 
-
-	dome_list = new QComboBox;
-	dome_list->setProperty("class", "large");
-	content->addWidget(dome_list, 1, Qt::AlignTop);
-	connect(dome_list, SIGNAL(currentIndexChanged(int)), this, SLOT(setDome(int)));
 	init();
+}
+
+void DomePanel::setSphereSelected() {
+	bool use_sphere = qRelightApp->project().dome.label.isEmpty();
+	QPalette pal = palette();
+	QColor highlightColor = pal.color(QPalette::Highlight);  // Theme-defined highlight color
+	QColor normalColor = pal.color(QPalette::Window);
+	sphere_frame->setPalette(QPalette(use_sphere? highlightColor : normalColor));
+	dome_frame->setPalette(QPalette(use_sphere? normalColor : highlightColor));
 }
 
 void DomePanel::init() {
 	dome = qRelightApp->project().dome;
+	//TODO something more explicit than the dome label would be better.
+	setSphereSelected();
 	updateDomeList();
 }
 
-void DomePanel::updateDomeList() {
+void DomePanel::updateDomeList(QString path) {
+	//if path is present and not current
 	//dome_labels.clear();
 	dome_paths.clear();
 	dome_list->clear();
@@ -75,12 +157,41 @@ void DomePanel::updateDomeList() {
 		dome_paths.append(path);
 		dome_list->addItem(dome.label);
 	}
+	if(!path.isNull()) {
+		int index = dome_paths.indexOf(path);
+		assert(index != -1);
+
+		if(dome_list->currentIndex() != index+1) {
+			dome_list->blockSignals(true);
+			dome_list->setCurrentIndex(index+1);
+			dome_list->blockSignals(false);
+		}
+	}
+}
+
+void DomePanel::setSpheres() {
+	dome_list->blockSignals(true);
+	dome_list->setCurrentIndex(0);
+	dome_list->blockSignals(false);
+
+	emit useSpheres();
+	setSphereSelected();
 }
 
 void DomePanel::setDome(int index) {
 	if(index <= 0)
 		return;
-	loadDomeFile(dome_paths[index-1]); //First index is "Seelect a recent dome..."
+	try {
+		loadDomeFile(dome_paths[index-1]); //First index is "Seelect a recent dome..."
+	} catch(QString error) {
+		QMessageBox::critical(this, "Could not load this dome:", error);
+		Dome &dome = qRelightApp->project().dome;
+		int index = dome_paths.indexOf(dome.label) +1; //if not found returns -1 and goes to 0. Lucky!
+		dome_list->blockSignals(true);
+		dome_list->setCurrentIndex(index);
+		dome_list->blockSignals(false);
+	}
+	setSphereSelected();
 }
 void DomePanel::loadDomeFile() {
 	QString path = QFileDialog::getOpenFileName(this, "Load a .lp or .dome file", QDir::currentPath(), "Light directions and domes (*.lp *.dome )");
@@ -132,14 +243,9 @@ void DomePanel::loadLP(QString path) {
 	std::vector<QString> filenames;
 	std::vector<Eigen::Vector3f> directions;
 
-	try {
-		parseLP(path, directions, filenames);
-		qRelightApp->project().validateDome(directions.size());
+	parseLP(path, directions, filenames);
+	qRelightApp->project().validateDome(directions.size());
 
-	} catch(QString error) {
-		QMessageBox::critical(this, "Loading .lp file failed", error);
-		return;
-	}
 	Dome &dome = qRelightApp->project().dome;
 	dome.lightConfiguration = Dome::DIRECTIONAL;
 	dome.directions = directions;
@@ -147,22 +253,16 @@ void DomePanel::loadLP(QString path) {
 	dome.label = info.filePath();
 	qRelightApp->addDome(path);
 
-	updateDomeList();
-
+	updateDomeList(path);
 	emit updated();
 }
 
 void DomePanel::loadDome(QString path) {
 	float imageWidth = dome.imageWidth;
 	Dome new_dome;
-	try {
-		new_dome.load(path);
-		qRelightApp->project().validateDome(new_dome.directions.size());
+	new_dome.load(path);
+	qRelightApp->project().validateDome(new_dome.directions.size());
 
-	} catch (QString error) {
-		QMessageBox::critical(this, "Loading .dome file failed", error);
-		return;
-	}
 	Dome &dome = qRelightApp->project().dome;
 	dome = new_dome;
 
@@ -172,16 +272,6 @@ void DomePanel::loadDome(QString path) {
 	//preserve image width if we actually have a measurement.
 	if(imageWidth != 0 && qRelightApp->project().measures.size() != 0)
 		dome.imageWidth = imageWidth;
-	updateDomeList();
+	updateDomeList(path);
 	emit updated();
 }
-
-
-
-/*void DomePanel::setSelectedDome() {
-	auto list = dome_list->selectedItems();
-	if(!list.size())
-		return;
-	int pos = dome_list->row(list[0]);
-	loadDomeFile(dome_paths[pos]);
-}*/

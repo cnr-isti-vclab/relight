@@ -102,20 +102,6 @@ void SphereFrame::newSphere() {
 	stack->setCurrentIndex(1);
 	provisional_sphere = new Sphere(qRelightApp->project().images.size());
 	marker_dialog->setSphere(provisional_sphere);
-
-	/*if(!sphere_dialog)
-		sphere_dialog = new SphereDialog(this);
-
-	Sphere *sphere = new Sphere(qRelightApp->project().images.size());
-	sphere_dialog->setSphere(sphere);
-	int answer = sphere_dialog->exec();
-	if(answer == QDialog::Rejected) {
-		delete sphere;
-		return;
-	}
-	qRelightApp->project().spheres.push_back(sphere);
-	SphereRow *row = addSphere(sphere);
-	row->detectHighlights(); */
 }
 
 
