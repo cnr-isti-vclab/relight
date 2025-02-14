@@ -65,7 +65,7 @@ set (RELIGHT_HEADERS
     domepanel.h 
     directionsview.h 
     rtiexportdialog.h
-    spherepanel.h 
+    sphereframe.h 
     spherepicking.h 
     spheredialog.h 
     task.h 
@@ -133,7 +133,7 @@ set (RELIGHTLAB_SOURCES
     lightsframe.cpp 
     markerdialog.cpp
     directionsview.cpp 
-    spherepanel.cpp 
+    sphereframe.cpp 
     spherepicking.cpp 
     spheredialog.cpp 
     task.cpp 
