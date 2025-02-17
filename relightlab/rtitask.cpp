@@ -53,22 +53,22 @@ void RtiTask::setProject(Project &project) {
 	builder->samplingram = QSettings().value("ram", 512).toInt();
 
 
+
 	ImageSet &imageset = builder->imageset;
 
 	imageset.images = project.getImages();
 	imageset.initImages(project.dir.absolutePath().toStdString().c_str());
 
 	imageset.initFromDome(project.dome); //lights after images
-	imageset.setCrop(crop, project.offsets);
+	imageset.setCrop(project.crop, project.offsets);
 	imageset.pixel_size = project.pixelSize;
+	builder->sigma = 0.125*100/imageset.images.size();
+	cout << "builder->sigma: " << builder->sigma << endl;
 
-	//TODO too many crop locations!
-	if(!crop.isNull()) {
-		builder->crop[0] = imageset.left;
-		builder->crop[1] = imageset.top;
-		builder->crop[2] = imageset.width;
-		builder->crop[3] = imageset.height;
-	}
+	builder->crop[0] = imageset.left;
+	builder->crop[1] = imageset.top;
+	builder->crop[2] = imageset.width;
+	builder->crop[3] = imageset.height;
 
 	builder->width  = imageset.width;
 	builder->height = imageset.height;
@@ -86,11 +86,15 @@ void RtiTask::setParameters(RtiParameters &p) {
 	builder->type         = parameters.basis;
 	builder->colorspace   = parameters.colorspace;
 	builder->nplanes      = parameters.nplanes;
-	builder->yccplanes[0] = parameters.nchroma;
+	builder->yccplanes[1] = builder->yccplanes[2] = parameters.nchroma;
 
 	if( builder->colorspace == Rti::MYCC) {
-		builder->yccplanes[1] = builder->yccplanes[2] = (builder->nplanes - builder->yccplanes[0])/2;
-		builder->nplanes = builder->yccplanes[0] + 2*builder->yccplanes[1];
+		if((parameters.nchroma + parameters.nplanes)%2 == 1) {
+			builder->nplanes += 3;
+		}
+		builder->yccplanes[0] = (builder->nplanes - 2*builder->yccplanes[1]);
+		//builder->yccplanes[1] = builder->yccplanes[2] = (builder->nplanes - builder->yccplanes[0])/2;
+		//builder->nplanes = builder->yccplanes[0] + 2*builder->yccplanes[1];
 	}
 
 	//legacy format uses the same scale and bias for each component (RBG)

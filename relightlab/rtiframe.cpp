@@ -121,7 +121,7 @@ void RtiFrame::exportRti() {
 		rti_task->setProject(project);
 		rti_task->setParameters(parameters);
 		rti_task->output = parameters.path;
-		rti_task->crop = project.crop;
+
 
 	} catch(QString error) {
 		QMessageBox::critical(this, "Something went wrong", error);
@@ -153,7 +153,7 @@ void RtiFrame::updateNPlanes() {
 		break;
 	case Rti::RBF:
 	case Rti::BILINEAR:
-		if(parameters.colorspace != Rti::YCC) nchroma = 0;
+		nchroma = parameters.colorspace == Rti::MYCC ? 1 : 0;
 		planes_row->forceNPlanes(-1);
 	default:
 		break;
@@ -178,7 +178,7 @@ void RtiFrame::basisChanged() {
 			colorspace = Rti::RGB;
 
 	} else {
-		if(colorspace != Rti::MRGB && colorspace != Rti::YCC)
+		if(colorspace != Rti::MRGB && colorspace != Rti::MYCC)
 			colorspace = Rti::MRGB;
 	}
 	colorspace_row->setColorspace(colorspace);

@@ -167,7 +167,7 @@ void RtiBuilder::savePixel(Color3f *p, int side, const QString &file) {
 */
 
 bool RtiBuilder::init(std::function<bool(QString stage, int percent)> *_callback) {
-	if((type == PTM || type == HSH || type == SH || type == H) && colorspace == MRGB) {
+	if((type == PTM || type == HSH || type == SH || type == H) && (colorspace == MRGB || colorspace == MYCC)) {
 		error = "PTM and HSH do not support MRGB";
 		return false;
 	}
@@ -293,7 +293,7 @@ MaterialBuilder RtiBuilder::pickBasePCA(PixelArray &sample) {
 		vector<double> means;
 		
 		for(int component = 0; component < 3; component++) {
-			std::vector<PCA *> pcas;
+			//std::vector<PCA *> pcas;
 			means.resize(dim, 0.0);
 			
 			PCA pca(dim, nsamples);
@@ -343,8 +343,10 @@ MaterialBuilder RtiBuilder::pickBasePCA(PixelArray &sample) {
 						p = yccplanes[1]*2 + yp;
 				} else
 					p = yp*3 + component;
-				for(uint32_t k = 0; k < dim; k++)
+				for(uint32_t k = 0; k < dim; k++) {
+					assert(k*3 + component + p*dim*3 < mat.proj.size());
 					mat.proj[k*3 + component + p*dim*3] = pca.proj()(k, yp);
+				}
 			}
 
 

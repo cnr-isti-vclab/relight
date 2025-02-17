@@ -76,7 +76,7 @@ RtiColorSpaceRow::RtiColorSpaceRow(RtiParameters &parameters, QFrame *parent): R
 	connect(rgb,  &QAbstractButton::clicked, this, [this](){ setColorspace(Rti::RGB, true);  });
 	connect(lrgb, &QAbstractButton::clicked, this, [this](){ setColorspace(Rti::LRGB, true); });
 	connect(mrgb, &QAbstractButton::clicked, this, [this](){ setColorspace(Rti::MRGB, true); });
-	connect(ycc,  &QAbstractButton::clicked, this, [this](){ setColorspace(Rti::YCC, true);  });
+	connect(ycc,  &QAbstractButton::clicked, this, [this](){ setColorspace(Rti::MYCC, true);  });
 
 	QButtonGroup *group = new QButtonGroup(this);
 	group->addButton(rgb);
@@ -106,7 +106,7 @@ void RtiColorSpaceRow::setColorspace(Rti::ColorSpace colorspace, bool emitting) 
 	case Rti::RGB:  rgb->setChecked(true); break;
 	case Rti::LRGB: lrgb->setChecked(true); break;
 	case Rti::MRGB: mrgb->setChecked(true); break;
-	case Rti::YCC:  ycc->setChecked(true); break;
+	case Rti::MYCC:  ycc->setChecked(true); break;
 	default:
 		break; //TODO check MYCC!
 	}
@@ -157,7 +157,7 @@ void RtiPlanesRow::forceNPlanes(int nplanes) {
 }
 
 void RtiPlanesRow::setNPlanes(int nplanes, bool emitting) {
-	nchromabox->setEnabled(parameters.colorspace == Rti::YCC);
+	nchromabox->setEnabled(parameters.colorspace == Rti::MYCC);
 
 	parameters.nplanes = nplanes;
 	if(emitting) {
@@ -171,7 +171,7 @@ void RtiPlanesRow::setNPlanes(int nplanes, bool emitting) {
 }
 
 void RtiPlanesRow::setNChroma(int nchroma, bool emitting) {
-	nchromabox->setEnabled(parameters.colorspace == Rti::YCC);
+	nchromabox->setEnabled(parameters.colorspace == Rti::MYCC);
 
 	parameters.nchroma = nchroma;
 	if(emitting) {
