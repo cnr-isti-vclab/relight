@@ -54,7 +54,7 @@ MainWindow::MainWindow() {
 }
 
 void MainWindow::showQueue() {
-	tabs->setCurrentIndex(8);
+	tabs->setCurrentIndex(9);
 }
 
 void MainWindow::setTabIndex(int index) {
