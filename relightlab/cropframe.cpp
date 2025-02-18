@@ -73,10 +73,10 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	aspect_layout->setSpacing(10);
 
 	aspect_combo = new QComboBox;
-	aspect_combo->addItem("None");      //0
-	aspect_combo->addItem("Custom");    //1
-	aspect_combo->addItem("Square");    //2
-	aspect_combo->addItem("4:3 Photo"); //3
+	aspect_combo->addItem("None");                  //0
+	aspect_combo->addItem("Custom");                //1
+	aspect_combo->addItem("Square");                //2
+	aspect_combo->addItem("4:3 Photo");             //3
 	aspect_combo->addItem("3:2 Postcard");          //4
 	aspect_combo->addItem("16:10 Widescreen");      //5
 	aspect_combo->addItem("16:9 Widescreen");       //6
@@ -142,17 +142,15 @@ void CropFrame::setAspectRatio() {
 	int aspect = aspect_combo->currentIndex();
 	double aspects[9][2] = { {1, 1}, {1, 1}, {1, 1}, {4, 3} , {3, 2}, {16, 10}, {16, 9}, {2, 3}, {3, 4} };
 
-	switch(aspect) {
-	case 0: return; //none
-	case 1:
-		aspects[1][0] = aspect_width->value();
-		aspects[1][1] = aspect_height->value();
-		break;
+	if(aspect == 1) { //custom
+		aspects[aspect][0] = aspect_width->value();
+		aspects[aspect][1] = aspect_height->value();
 	}
-
 	double *s = aspects[aspect];
-	cropper->setProportion(QSizeF(s[0], s[1]));
 	cropper->setProportionFixed(aspect > 0);
+	if(aspect != 0)
+		cropper->setProportion(QSizeF(s[0], s[1]));
+
 }
 
 void CropFrame::setArea(QRect rect) {

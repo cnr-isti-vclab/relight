@@ -51,12 +51,8 @@ void ImageCropper::setProportion(const QSizeF& _proportion) {
 	emit areaChanged(croppedRect());
 }
 
-void ImageCropper::setProportionFixed(const bool _isFixed)
-{
-	if (isProportionFixed != _isFixed) {
-		isProportionFixed = _isFixed;
-		setProportion(proportion);
-	}
+void ImageCropper::setProportionFixed(const bool _isFixed) {
+	isProportionFixed = _isFixed;
 }
 
 //returns cropped rect in image ccords
