@@ -3,6 +3,7 @@
 
 #include <QFileInfo>
 #include <QStyledItemDelegate>
+#include <QMouseEvent>
 #include <assert.h>
 
 class RightDelegate : public QStyledItemDelegate {

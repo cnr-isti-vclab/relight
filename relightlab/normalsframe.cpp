@@ -92,6 +92,13 @@ void NormalsFrame::save() {
 			return;
 		}
 	}
+	//check for existing normals:
+	if(QFile::exists(parameters.path)) {
+		int answer = QMessageBox::question(this, parameters.path + " already exists.", "Do you wish to overwrite it?", QMessageBox::Yes, QMessageBox::No);
+		if(answer == QMessageBox::No)
+			return;
+	}
+
 	NormalsTask *task = new NormalsTask();
 	try {
 
