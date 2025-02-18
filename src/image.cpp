@@ -27,11 +27,13 @@ QJsonObject Image::toJson() {
 	QJsonObject obj;
 	obj.insert("filename", filename);
 	obj.insert("skip", skip);
+	obj.insert("visible", visible);
 	return obj;
 }
 void Image::fromJson(const QJsonObject &obj) {
 	filename = obj["filename"].toString();
-	skip = obj["skip"].toBool();
+	skip = obj["skip"].toBool(false);
+	visible = obj["visible"].toBool(true);
 }
 
 void Image::readExif(Exif &exif) {

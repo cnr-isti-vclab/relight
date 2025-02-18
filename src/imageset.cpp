@@ -1,6 +1,7 @@
 #include "imageset.h"
 #include "dome.h"
 #include "jpeg_decoder.h"
+#include "project.h"
 
 #include <QDir>
 #include <QFile>
@@ -44,6 +45,31 @@ bool ImageSet::initFromFolder(const char *_path, int skip_image) {
 		images.removeAt(skip_image);
 
 	return initImages(_path);
+}
+
+bool ImageSet::initFromProject(Project &project) {
+
+	vector<bool> visibles;
+	for(Image &img: project.images) {
+		if(img.skip)
+			continue;
+		visibles.push_back(img.visible);
+		if(img.visible) {
+			images.push_back(img.filename);
+		}
+	}
+
+	initImages(project.dir.absolutePath().toStdString().c_str());
+	initFromDome(project.dome);
+	if(lights1.size() != visibles.size()) {
+		throw QString("Number of lights in dome needs to be equal to the number of images");
+	}
+	int count = 0;
+	for(int i = 0; i < lights1.size(); i++) {
+		if(visibles[i])
+			lights1[count++] = lights1[i];
+	}
+	lights1.resize(count);
 }
 
 bool ImageSet::initFromProject(QJsonObject &obj, const QString &filename) {
@@ -115,8 +141,6 @@ void ImageSet::setLights(const std::vector<Eigen::Vector3f> &lights, const Dome:
 		}
 		idealLightDistance2 /= lights1.size();
 	}
-	if(lights1.size() != size_t(images.size()))
-		throw QString("Number of lights in dome needs to be equal to the number of images");
 }
 
 /*

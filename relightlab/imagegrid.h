@@ -6,18 +6,22 @@
 
 
 class FlowLayout;
+class QCheckBox;
+class QLabel;
 
 
 class ImageThumb : public QWidget {
 	Q_OBJECT
 public:
-	ImageThumb(QImage img, const QString& text, bool skip, QWidget* parent = nullptr);
-	void setSkipped(bool skip);
+	ImageThumb(QImage img, const QString& text, bool skip, bool visible, QWidget* parent = nullptr);
+	void setSkipped(bool skip, bool visible);
 	void setThumbnail(QImage thumb);
 signals:
 	void skipChanged(int state);
 
-
+private:
+	QCheckBox *skipbox = nullptr;
+	QLabel *visibleicon = nullptr;
 };
 
 

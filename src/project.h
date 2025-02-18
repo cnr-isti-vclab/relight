@@ -79,6 +79,7 @@ public:
 	bool hasDirections() { return dome.directions.size() > 0; }
 	size_t size() { return images.size(); }
 
+	//remove skipped
 	QStringList getImages() const {
 		QStringList imgs;
 		for(Image img: images)
