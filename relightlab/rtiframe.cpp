@@ -116,12 +116,19 @@ void RtiFrame::exportRti() {
 		QMessageBox::warning(this, "Destination path is missing.", "Fill in the output folder or the filename for the RTI.");
 		return;
 	}
+
+	//check for existing normals:
+	if(QFile::exists(parameters.path)) {
+		int answer = QMessageBox::question(this, parameters.path + " already exists.", "Do you wish to overwrite it?", QMessageBox::Yes, QMessageBox::No);
+		if(answer == QMessageBox::No)
+			return;
+	}
+
 	RtiTask *rti_task = new RtiTask();
 	try {
 		rti_task->setProject(project);
 		rti_task->setParameters(parameters);
 		rti_task->output = parameters.path;
-
 
 	} catch(QString error) {
 		QMessageBox::critical(this, "Something went wrong", error);
@@ -134,6 +141,7 @@ void RtiFrame::exportRti() {
 
 	emit processStarted();
 }
+
 void RtiFrame::updateNPlanes() {
 	// PLANES
 
