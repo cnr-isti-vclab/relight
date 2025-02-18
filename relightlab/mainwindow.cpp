@@ -137,6 +137,7 @@ void MainWindow::clear() {
 	image_frame->clear();
 	align_frame->clear();
 	scale_frame->clear();
+	sphere_frame->clear();
 	lights_frame->clear();
 	crop_frame->clear();
 }
