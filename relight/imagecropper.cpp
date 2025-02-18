@@ -23,6 +23,7 @@ ImageCropper::~ImageCropper() {}
 void ImageCropper::setImage(const QPixmap& _image) {
 	image = _image;
 	realSizeRect = QRect(QPoint(0, 0), image.size());
+	updateDeltaAndScale();
 	update();
 }
 
@@ -70,8 +71,9 @@ QRect ImageCropper::croppedRect() {
 }
 
 void ImageCropper::setCrop(QRect rect) {
-	if(!rect.isValid())
-		return;
+	if(!rect.isValid()) {
+		rect = realSizeRect;
+	}
 	enforceBounds(rect, CursorPositionMiddle);
 }
 
