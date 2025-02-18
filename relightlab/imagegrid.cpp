@@ -13,26 +13,39 @@
 #include <iostream>
 using namespace std;
 
-ImageThumb::ImageThumb(QImage img, const QString& text, bool skip, QWidget* parent): QWidget(parent) {
+ImageThumb::ImageThumb(QImage img, const QString& text, bool skip, bool visible, QWidget* parent): QWidget(parent) {
 
 	QVBoxLayout* layout = new QVBoxLayout(this);
+	{
+		QLabel *label = new QLabel;
+		label->setPixmap(QPixmap::fromImage(img));
+		layout->addWidget(label);
+	}
+	{
+		QHBoxLayout *checkline = new QHBoxLayout;
+		layout->addLayout(checkline);
+		{
+			skipbox = new QCheckBox(text);
+			skipbox->setChecked(!skip);
+			connect(skipbox, SIGNAL(stateChanged(int)), this, SIGNAL(skipChanged(int)));
+			checkline->addWidget(skipbox);
+		}
+		{
+			visibleicon = new QLabel();
+			visibleicon->setPixmap(QIcon::fromTheme(visible ?"eye":"eye-off").pixmap(20, 20));
+			checkline->addWidget(visibleicon);
 
-	QLabel *label = new QLabel;
-	label->setPixmap(QPixmap::fromImage(img));
-	layout->addWidget(label);
+		}
 
-	QCheckBox *checkbox = new QCheckBox(text);
-
-	checkbox->setChecked(!skip);
-	connect(checkbox, SIGNAL(stateChanged(int)), this, SIGNAL(skipChanged(int)));
-	layout->addWidget(checkbox);
-
+	}
 	layout->setSpacing(5);
 	layout->setContentsMargins(5, 5, 5, 5);
 }
 
-void ImageThumb::setSkipped(bool skip) {
-	findChild<QCheckBox *>()->setChecked(!skip);
+void ImageThumb::setSkipped(bool skip, bool visible) {
+	skipbox->setChecked(!skip);
+	visibleicon->setPixmap(QIcon::fromTheme(visible ?"eye":"eye-off").pixmap(20, 20));
+
 }
 
 void ImageThumb::setThumbnail(QImage thumb) {
@@ -63,7 +76,7 @@ void ImageGrid::init() {
 		QImage thumbnail = thumbnails[i];
 		Image &image = project.images[i];
 		QFileInfo info(image.filename);
-		ImageThumb *thumb = new ImageThumb(thumbnail, info.fileName(), image.skip);
+		ImageThumb *thumb = new ImageThumb(thumbnail, info.fileName(), image.skip, image.visible);
 		connect(thumb, &ImageThumb::skipChanged, [this, i, &image](int state){
 			image.skip = (state==0);
 			this->emit skipChanged(i, image.skip);
@@ -72,9 +85,13 @@ void ImageGrid::init() {
 	}
 }
 
-void ImageGrid::setSkipped(int image, bool skip) {
-	ImageThumb *thumb = dynamic_cast<ImageThumb *>(flowlayout->itemAt(image)->widget());
-	thumb->setSkipped(skip);
+void ImageGrid::setSkipped(int img_number, bool skip) {
+	auto &images = qRelightApp->project().images;
+	assert(img_number >= 0 && img_number < images.size());
+	Image &img = images[img_number];
+
+	ImageThumb *thumb = dynamic_cast<ImageThumb *>(flowlayout->itemAt(img_number)->widget());
+	thumb->setSkipped(img.skip, img.visible);
 }
 
 void ImageGrid::updateThumbnail(int pos) {

@@ -14,7 +14,9 @@ class Image {
 public:
 	QString filename;
 	bool valid = true;
-	bool skip = false;
+	bool skip = false;  //not counted for lps or spheres
+	bool visible = true;  //counted with lp but still not used for rti.
+
 	/*Eigen::Vector3f direction = Eigen::Vector3f(0, 0, 0);  //light direction (infinite distance assumed)
 	Eigen::Vector3f position = Eigen::Vector3f(0, 0, 0);   //3d light position */
 	double exposureTime = 0;

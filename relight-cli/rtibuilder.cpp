@@ -167,6 +167,10 @@ void RtiBuilder::savePixel(Color3f *p, int side, const QString &file) {
 */
 
 bool RtiBuilder::init(std::function<bool(QString stage, int percent)> *_callback) {
+
+	if(imageset.lights1.size() != size_t(imageset.images.size()))
+		throw QString("Number of lights in dome needs to be equal to the number of images");
+
 	if((type == PTM || type == HSH || type == SH || type == H) && (colorspace == MRGB || colorspace == MYCC)) {
 		error = "PTM and HSH do not support MRGB";
 		return false;

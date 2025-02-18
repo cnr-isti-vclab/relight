@@ -16,11 +16,14 @@ class QJsonObject;
 class JpegDecoder;
 class QImage;
 class QRect;
+class Image;
+class Project;
 
 class ImageSet {
 public:
 	QString path;
 	QStringList images;
+	std::vector<Eigen::Vector3f> lights1;
 
 	int image_width = 0, image_height = 0; //in pixels original size of the image.
 	//current crop: left, top is pixel [0, 0];
@@ -51,9 +54,13 @@ public:
 	//find images in a project, set crop, loads light configuration in dome.
 	bool initFromProject(QJsonObject &obj, const QString &filename);
 
+	bool initFromProject(Project &project);
+
 	//open images and starts the decoders
 	bool initImages(const char *path); //path points to the dir of the images.
 
+	//remove not visible images and relative lights.
+	void cleanHidden(std::vector<Image> &images);
 	void setCrop(QRect &crop, const std::vector<QPointF> &offsets);
 
 
@@ -80,7 +87,7 @@ protected:
 	std::vector<JpegDecoder *> decoders;
 
 private:
-	std::vector<Eigen::Vector3f> lights1;
+
 	void compensateIntensity(PixelArray &pixels);
 };
 

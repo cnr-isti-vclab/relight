@@ -55,14 +55,12 @@ void NormalsTask::initFromProject(Project &project) {
 	imageset.width = imageset.image_width = project.lens.width;
 	imageset.height = imageset.image_height = project.lens.height;
 
-	imageset.images = project.getImages();
-	imageset.initImages(project.dir.absolutePath().toStdString().c_str());
-	imageset.initFromDome(project.dome);
-	assert(imageset.lights().size() == imageset.images.size());
+	imageset.initFromProject(project);
 	imageset.setCrop(project.crop, project.offsets);
 
 	pixelSize = project.pixelSize;
 }
+
 void NormalsTask::setParameters(NormalsParameters &param) {
 	parameters = param;
 	label = parameters.summary();

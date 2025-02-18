@@ -55,15 +55,11 @@ void RtiTask::setProject(Project &project) {
 
 
 	ImageSet &imageset = builder->imageset;
+	imageset.initFromProject(project);
 
-	imageset.images = project.getImages();
-	imageset.initImages(project.dir.absolutePath().toStdString().c_str());
-
-	imageset.initFromDome(project.dome); //lights after images
 	imageset.setCrop(project.crop, project.offsets);
 	imageset.pixel_size = project.pixelSize;
 	builder->sigma = 0.125*100/imageset.images.size();
-	cout << "builder->sigma: " << builder->sigma << endl;
 
 	builder->crop[0] = imageset.left;
 	builder->crop[1] = imageset.top;
