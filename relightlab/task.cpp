@@ -93,6 +93,7 @@ void Task::runScript(QString program, QString script, QStringList arguments, QSt
 
 void Task::pause() {
 	mutex.lock();
+	assert(status == RUNNING);
 	status = PAUSED;
 }
 
@@ -103,10 +104,24 @@ void Task::resume() {
 	}
 }
 
+void Task::setStatus(Status s) {
+	if(s == PAUSED) {
+		assert(status != PAUSED);
+		pause();
+		return;
+	}
+	if(status != PAUSED) {
+		mutex.lock();
+	}
+	status = s;
+	mutex.unlock();
+}
+
 void Task::stop() {
 	if(status == PAUSED) { //we were already locked then.
 		status = STOPPED;
 		mutex.unlock();
+		return;
 	}
 	status = STOPPED;
 }
