@@ -11,6 +11,7 @@
 #include <QLabel>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QMessageBox>
 
 DetectHighlights::DetectHighlights(Sphere *_sphere, bool update) {
 	sphere = _sphere;
@@ -20,6 +21,7 @@ DetectHighlights::DetectHighlights(Sphere *_sphere, bool update) {
 }
 
 void DetectHighlights::run() {
+	//TODO: create a setStatus function in Task.
 	mutex.lock();
 	status = RUNNING;
 	mutex.unlock();
@@ -32,7 +34,14 @@ void DetectHighlights::run() {
 
 		Image &image = project.images[i];
 
-		QImage img(image.filename);
+		QImage img(project.dir.filePath(image.filename));
+		if(img.isNull()) {
+			mutex.lock();
+			status = FAILED;
+			mutex.unlock();
+			progressed(QString("Failed loading image: %1").arg(image.filename), 100);
+			return;
+		}
 		sphere->findHighlight(img, i, image.skip, update_positions);
 
 		int progress = std::min(99, (int)(100*(i+1) / project.images.size()));
@@ -118,8 +127,12 @@ void SphereRow::remove() {
 	emit removeme(this);
 }
 
-void SphereRow::updateStatus(QString /*msg*/, int percent) {
-//	status->setText(msg);
+void SphereRow::updateStatus(QString msg, int percent) {
+	if(detect_highlights->status == Task::FAILED) {
+		QMessageBox::critical(this, "Could not detect highlights!", msg);
+		progress->setValue(0);
+		return;
+	}
 	progress->setValue(percent);
 	reflections->update();
 	if(percent == 100) {
