@@ -227,55 +227,52 @@ void RelightApp::openProject() {
 }
 
 void RelightApp::openProject(const QString &filename) {
+
+	QString current = QDir::currentPath();
+
 	Project *project = new Project;
 	try {
 		project->load(filename);
 	} catch(QString e) {
 		QMessageBox::critical(mainwindow, "Could not load project", e);
+		QDir::setCurrent(current);
 		return;
 	}
 
-	QFileInfo info(filename);
-	QDir::setCurrent(info.canonicalPath());
-
 	while(project->missing.size() != 0) {
-
-		QString msg = "Could not find this images:\n";
+		QString msg = "Could not find these images:\n";
 		for(int i: project->missing)
 			msg += "\t" + project->images[i].filename + "\n";
+
+		if(msg.size() > 300)
+		msg = msg.left(297) + "...";
 
 		QMessageBox box(mainwindow);
 		box.setText(msg);
 		box.setWindowTitle("Missing images");
-		box.addButton("Ignore missing images", QMessageBox::AcceptRole);
 		box.addButton("Select a different folder...", QMessageBox::ActionRole);
 		box.addButton("Cancel", QMessageBox::RejectRole);
 		int ret = box.exec();
 
-		switch(ret) {
-		case 1: {
-			QString imagefolder = QFileDialog::getExistingDirectory(mainwindow, "Could not find the images, please select the image folder:", project->dir.absolutePath());
-			if(imagefolder.isNull()) {
-				QMessageBox::critical(mainwindow, "No folder selected", "No folder selected.");
-				return;
-			}
-			project->dir.setPath(imagefolder);
-			QDir::setCurrent(imagefolder);
-			project->checkMissingImages();
-			project->checkImages();
-			}
-			break;
-		case 2: //cancel
+		if(ret == 2) {
+			QDir::setCurrent(current);
 			return;
-		case 3: //ignore
-			project->missing.clear();
-			break;
 		}
-	}
 
+		QString imagefolder = QFileDialog::getExistingDirectory(mainwindow, "Could not find the images, please select the image folder:", project->dir.absolutePath());
+		if(imagefolder.isNull()) {
+			QMessageBox::critical(mainwindow, "No folder selected", "No folder selected.");
+			QDir::setCurrent(current);
+			return;
+		}
+		project->dir.setPath(imagefolder);
+		QDir::setCurrent(imagefolder);
+		project->checkMissingImages();
+		project->checkImages();
+	}
 	qRelightApp->setProject(project);
 
-	project_filename = filename; //project.dir.relativeFilePath(filename);
+	project_filename = filename;
 	addRecentProject(filename);
 	mainwindow->updateRecentProjectsMenu();
 }

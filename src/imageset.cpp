@@ -65,11 +65,12 @@ bool ImageSet::initFromProject(Project &project) {
 		throw QString("Number of lights in dome needs to be equal to the number of images");
 	}
 	int count = 0;
-	for(int i = 0; i < lights1.size(); i++) {
+	for(size_t i = 0; i < lights1.size(); i++) {
 		if(visibles[i])
 			lights1[count++] = lights1[i];
 	}
 	lights1.resize(count);
+	return true;
 }
 
 bool ImageSet::initFromProject(QJsonObject &obj, const QString &filename) {

@@ -254,6 +254,7 @@ void Project::load(QString filename) {
 	if(!file.open(QFile::ReadOnly))
 		throw QString("The project file could not be opened.\nThe path might be wrong, or the file missing.");
 
+
 	QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
 	QJsonObject obj = doc.object();
 
@@ -340,16 +341,17 @@ void Project::checkMissingImages() {
 	missing.clear();
 	for(size_t i = 0; i < images.size(); i++) {
 		Image &image = images[i];
-		QFileInfo imginfo(image.filename);
+		QFileInfo imginfo(dir.filePath(image.filename));
 		if(!imginfo.exists()) {
 			missing.push_back(int(i));
-			throw "Could not find the image:\n" + image.filename + " in folder: " + dir.absolutePath();
 		}
 	}
 }
 void Project::checkImages() {
 	for(Image &image:images) {
 		QImageReader reader(image.filename);
+		if(!reader.canRead())
+			continue;
 		QSize size = reader.size();
 		image.valid = (size == imgsize);
 		if(!image.valid) image.skip = true;
