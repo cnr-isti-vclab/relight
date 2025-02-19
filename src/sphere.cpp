@@ -196,6 +196,7 @@ bool inEllipse(double x, double y, double a, double b, double theta) {
 void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) {
 	if(sphereImg.isNull()) {
 		sphereImg = QImage(inner.width(), inner.height(), QImage::Format_ARGB32);
+		sphereImg.fill(0);
 	}
 
 
@@ -230,8 +231,6 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 					float d = sqrt(cx*cx + cy*cy);
 					if(d > smallradius) continue;
 				}
-				assert(x < img.width());
-				assert(y < img.height());
 				QRgb c = img.pixel(x, y);
 				int g = qGray(c);
 

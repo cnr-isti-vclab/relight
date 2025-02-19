@@ -10,12 +10,16 @@
 
 #include <locale.h>
 
+#include <iostream>
+using namespace std;
+
 #define RELIGHT_STRINGIFY0(v) #v
 #define RELIGHT_STRINGIFY(v) RELIGHT_STRINGIFY0(v)
 
 Project project;
 
 int main(int argc, char *argv[]) {
+
 
 	RelightApp app(argc, argv);
 
@@ -24,9 +28,8 @@ int main(int argc, char *argv[]) {
 
 #if QT_VERSION >= 0x060000
 	//large images wont load because of this limit!
-	QImageReader::setAllocationLimit(uint64_t(1)<<31);
+	QImageReader::setAllocationLimit(0);
 #endif
-
 
 	QCoreApplication::setOrganizationName("VCG");
 	QCoreApplication::setOrganizationDomain("vcg.isti.cnr.it");

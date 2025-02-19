@@ -34,7 +34,7 @@ void DetectHighlights::run() {
 
 		Image &image = project.images[i];
 
-		QImage img(project.dir.filePath(image.filename));
+		QImage img(image.filename);
 		if(img.isNull()) {
 			mutex.lock();
 			status = FAILED;

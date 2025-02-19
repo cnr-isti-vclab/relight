@@ -26,7 +26,7 @@ void ImageView::showImage(int id) {
 
 	QString filename = project.images[id].filename;
 
-	QImage img(project.dir.filePath(filename));
+	QImage img(filename);
 	if(img.isNull()) {
 		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
 		return;

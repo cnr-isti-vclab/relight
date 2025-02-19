@@ -31,6 +31,13 @@ void FindAlignment::run() {
 		if(image.skip) continue;
 
 		QImage img(image.filename);
+		if(img.isNull()) {
+			mutex.lock();
+			status = FAILED;
+			mutex.unlock();
+			progressed(QString("Failed loading image: %1").arg(image.filename), 100);
+			return;
+		}
 		align->readThumb(img, i);
 
 		int progress = std::min(99, (int)(100*(i+1) / project.images.size()));

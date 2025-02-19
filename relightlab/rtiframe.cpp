@@ -123,12 +123,21 @@ void RtiFrame::exportRti() {
 		if(answer == QMessageBox::No)
 			return;
 	}
+	Dome::LightConfiguration previous = project.dome.lightConfiguration;
+
+	if(parameters.basis == Rti::RBF && project.dome.lightConfiguration == Dome::SPHERICAL) {
+		QMessageBox::warning(this, "RBF limitations",
+			"RBF basis do not support positional lights. (BLN does)\n"
+			"Using directiona lights instead.");
+		project.dome.lightConfiguration = Dome::DIRECTIONAL;
+	}
 
 	RtiTask *rti_task = new RtiTask();
 	try {
 		rti_task->setProject(project);
 		rti_task->setParameters(parameters);
 		rti_task->output = parameters.path;
+		project.dome.lightConfiguration = previous;
 
 	} catch(QString error) {
 		QMessageBox::critical(this, "Something went wrong", error);
