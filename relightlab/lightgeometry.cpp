@@ -68,15 +68,15 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	grid->setColumnMinimumWidth(0, 200);
 	grid->addWidget(new QLabel("Image width:"), 2, 0);
 	grid->addWidget(image_width = new QDoubleSpinBox, 2, 1);
-	image_width->setRange(0, 1000);
+	image_width->setRange(0, 10000);
 	grid->addWidget(new QLabel("mm"), 2, 2);
 	connect(image_width, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) { qRelightApp->project().dome.imageWidth = v; });
 
-	grid->addWidget(new QLabel("Diameter:"), 3, 0);
+	grid->addWidget(new QLabel("Dome radius:"), 3, 0);
 	grid->addWidget(diameter = new QDoubleSpinBox, 3, 1);
-	diameter->setRange(0, 1000);
+	diameter->setRange(0, 10000);
 	grid->addWidget(new QLabel("mm"), 3, 2);
-	connect(diameter, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) { qRelightApp->project().dome.domeDiameter = v; });
+	connect(diameter, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) { qRelightApp->project().dome.domeDiameter = v*2.0; });
 
 	grid->addWidget(new QLabel("Vertical offset:"), 4, 0);
 	grid->addWidget(vertical_offset = new QDoubleSpinBox, 4, 1);
@@ -127,7 +127,7 @@ void LightsGeometry::init() {
 	vertical_offset->setEnabled(spherical);
 
 	image_width->setValue(dome.imageWidth);
-	diameter->setValue(dome.domeDiameter);
+	diameter->setValue(dome.domeDiameter/2.0);
 	vertical_offset->setValue(dome.verticalOffset);
 	directions_view->initFromDome(dome);
 }

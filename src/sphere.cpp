@@ -230,7 +230,8 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 					float d = sqrt(cx*cx + cy*cy);
 					if(d > smallradius) continue;
 				}
-
+				assert(x < img.width());
+				assert(y < img.height());
 				QRgb c = img.pixel(x, y);
 				int g = qGray(c);
 

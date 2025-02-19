@@ -146,6 +146,7 @@ void MainWindow::init() {
 	image_frame->init();
 	align_frame->init();
 	scale_frame->init();
+	sphere_frame->init();
 	lights_frame->init();
 	crop_frame->init();
 	rti_frame->init();
