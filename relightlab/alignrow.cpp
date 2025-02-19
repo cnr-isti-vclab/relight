@@ -20,9 +20,7 @@ FindAlignment::FindAlignment(Align *_align, bool update) {
 }
 
 void FindAlignment::run() {
-	mutex.lock();
-	status = RUNNING;
-	mutex.unlock();
+	setStatus(RUNNING);
 
 	Project &project = qRelightApp->project();
 	for(size_t i = 0; i < project.images.size(); i++) {
@@ -32,21 +30,18 @@ void FindAlignment::run() {
 
 		QImage img(image.filename);
 		if(img.isNull()) {
-			mutex.lock();
-			status = FAILED;
-			mutex.unlock();
+			setStatus(FAILED);
 			progressed(QString("Failed loading image: %1").arg(image.filename), 100);
 			return;
 		}
 		align->readThumb(img, i);
 
 		int progress = std::min(99, (int)(100*(i+1) / project.images.size()));
-		progressed(QString("Collecting patches"), progress);
+		if(!progressed(QString("Collecting patches"), progress))
+			return;
 	}
 	progressed(QString("Done"), 100);
-	mutex.lock();
-	status = DONE;
-	mutex.unlock();
+	setStatus(DONE);
 }
 
 

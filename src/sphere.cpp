@@ -206,14 +206,15 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 		return;
 
 	uchar threshold = 240;
-
+	//0.5% of the area allocated to the reflection.
+	int highlight_area = (inner.width()*inner.height())/200;
 	vector<int> histo;
 
 	//lower threshold until we find something.
 	QPointF bari(0, 0); //in image coords
 	int count = 0;
 	int iter = 0;
-	while(count < 10 && threshold > 100) {
+	while(count < highlight_area && threshold > 100) {
 		bari = QPointF(0, 0);
 		count = 0;
 		for(int y = inner.top(); y < inner.bottom(); y++) {
@@ -265,7 +266,7 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 	//threshold now is 10 lower so we get more points.
 	threshold += 10;
 
-	if(threshold < 200) {
+	if(threshold < 127) {
 		//highlight in the mid greys? probably all the sphere is in shadow.
 		lights[n] = QPointF(0, 0);
 		return;

@@ -21,10 +21,7 @@ DetectHighlights::DetectHighlights(Sphere *_sphere, bool update) {
 }
 
 void DetectHighlights::run() {
-	//TODO: create a setStatus function in Task.
-	mutex.lock();
-	status = RUNNING;
-	mutex.unlock();
+	setStatus(RUNNING);
 
 	sphere->sphereImg.fill(0);
 	sphere->thumbs.clear();
@@ -36,21 +33,18 @@ void DetectHighlights::run() {
 
 		QImage img(image.filename);
 		if(img.isNull()) {
-			mutex.lock();
-			status = FAILED;
-			mutex.unlock();
+			setStatus(FAILED);
 			progressed(QString("Failed loading image: %1").arg(image.filename), 100);
 			return;
 		}
 		sphere->findHighlight(img, i, image.skip, update_positions);
 
 		int progress = std::min(99, (int)(100*(i+1) / project.images.size()));
-		progressed(QString("Detecting highlights"), progress);
+		if(!progressed(QString("Detecting highlights"), progress))
+			return;
 	}
 	progressed(QString("Done."), 100);
-	mutex.lock();
-	status = DONE;
-	mutex.unlock();
+	setStatus(DONE);
 }
 
 

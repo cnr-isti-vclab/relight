@@ -27,6 +27,7 @@ public:
 	virtual void stop();
 	virtual void pause();
 	virtual void resume();
+	virtual void setStatus(Status s);
 
 
 	void runPythonScript(QString script, QStringList arguments, QString workingdir = QString());
