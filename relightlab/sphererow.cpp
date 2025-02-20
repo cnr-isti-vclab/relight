@@ -147,6 +147,7 @@ void SphereRow::detectHighlights(bool update) {
 		connect(detect_highlights, &DetectHighlights::progress, this, &SphereRow::updateStatus); //, Qt::QueuedConnection);
 	}
 	detect_highlights->stop();
+	detect_highlights->update_positions = update;
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.removeTask(detect_highlights);
