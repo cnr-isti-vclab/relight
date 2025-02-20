@@ -44,11 +44,13 @@ void ProcessQueue::run() {
 		task->wait(100);
 
 		if(task->isFinished()) {
-			QString msg = task->status == Task::DONE ? "Done" : task->error;
-			msg = task->output + "\n" + msg;
-			emit finished(task->label, msg);
-
-			past.push_back(task);
+			if(task->visible) {
+				QString msg = task->status == Task::DONE ? "Done" : task->error;
+				msg = task->output + "\n" + msg;
+				emit finished(task->label, msg);
+			}
+			if(!task->owned)
+				past.push_back(task);
 			task = nullptr;
 			emit update();
 		}
