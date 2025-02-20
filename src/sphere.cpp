@@ -208,14 +208,17 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 	uchar threshold = 240;
 	//0.5% of the area allocated to the reflection.
 	int highlight_area = (inner.width()*inner.height())/200;
+	if(n == 0)
+		cout << "Area: " << highlight_area << endl;
 	vector<int> histo;
 
 	//lower threshold until we find something.
+	int max_luma_pixel = 0;
 	QPointF bari(0, 0); //in image coords
 	int count = 0;
 	int iter = 0;
 	while(count < highlight_area && threshold > 100) {
-		bari = QPointF(0, 0);
+		QPointF new_bari = QPointF(0, 0);
 		count = 0;
 		for(int y = inner.top(); y < inner.bottom(); y++) {
 			for(int x = inner.left(); x < inner.right(); x++) {
@@ -237,13 +240,13 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 
 				assert(X >= 0 && X < sphereImg.width());
 				assert(Y >= 0 && Y < sphereImg.height());
-				int mg = qGray(sphereImg.pixel(X, Y));
-				if(g > mg) sphereImg.setPixel(X, Y, qRgb(g, g, g));
+				int thumb_g = qGray(sphereImg.pixel(X, Y));
+				if(g > thumb_g) sphereImg.setPixel(X, Y, qRgb(g, g, g));
 
+				max_luma_pixel = std::max(max_luma_pixel, g);
 				if(g < threshold) continue;
-				//sphereImg.setPixel(X, Y, qRgb(threshold, 0, 0));
-				
-				bari += QPointF(x, y);
+
+				new_bari += QPointF(x, y);
 				count++;
 
 			}
@@ -251,24 +254,29 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 		histo.push_back(count);
 
 		if(count > 0) {
-			bari.rx() /= count;
-			bari.ry() /= count;
+			new_bari.rx() /= count;
+			new_bari.ry() /= count;
+			bari = new_bari;
 		}
-		//sphereImg.setPixel(int(bari.x()) - inner.left(), int(bari.y()) - inner.top(), qRgb(255, 255, 255));
-		
-		
+
 		threshold -= 10;
 		iter++;
 	}
-	if(!update_positions)
-		return;
-	
 	//threshold now is 10 lower so we get more points.
 	threshold += 10;
 
-	if(threshold < 127) {
+	if(bari.isNull()) {
+		cout << "Bari null! " << n << endl;
+	}
+
+	if(!update_positions)
+		return;
+	
+
+	if(max_luma_pixel < 127) {
 		//highlight in the mid greys? probably all the sphere is in shadow.
 		lights[n] = QPointF(0, 0);
+		cout << "Probably in shadow: " << n << endl;
 		return;
 	}
 
@@ -306,16 +314,7 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 		bari = newbari/weight;
 		radius *= 0.5;
 	}
-	//sphereImg.setPixel(int(bari.x()) - inner.left(), int(bari.y()) - inner.top(), qRgb(0, 255, 0));
-	
 
-	/*	if(!sphere) {
-		sphere = new QGraphicsPixmapItem(QPixmap::fromImage(sphereImg));
-		sphere->setZValue(-0.5);
-		sphere->setPos(inner.topLeft());
-	} else {
-		sphere->setPixmap(QPixmap::fromImage(sphereImg));
-	} */
 	lights[n] = bari;
 }
 

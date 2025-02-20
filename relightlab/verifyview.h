@@ -31,19 +31,27 @@ class VerifyView: public QGraphicsView {
 	Q_OBJECT
 public:
 	VerifyMarker::Marker marker;
+	bool selected = false;
 
 	VerifyView(QImage &image, int height, QPointF &pos, VerifyMarker::Marker _marker, QWidget *parent = nullptr);
 	void setImageNumber(int n);
 	void update(); //update pos from marker
 	void set(); //update marker from pos
+	void setSelected(bool isSelected);
+
+signals:
+	void clicked(QMouseEvent *event);
 
 protected:
 	void resizeEvent(QResizeEvent *event) override;
 	void keyPressEvent(QKeyEvent *event) override;
-protected:
+	void mousePressEvent(QMouseEvent *event) override {
+		emit clicked(event);
+	}
 	VerifyMarker *marker_item = nullptr;
 	QGraphicsPixmapItem *img_item = nullptr;
 	QGraphicsSimpleTextItem *img_number = nullptr;
+	QGraphicsRectItem *border = nullptr;
 	QGraphicsScene scene ;
 	QImage &image;
 	QPointF center;

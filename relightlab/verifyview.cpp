@@ -80,7 +80,7 @@ VerifyView:: VerifyView(QImage &_image, int _height, QPointF &_pos, VerifyMarker
 	center = QPointF(image.width()/2.0f, image.height()/2.0f);
 
 	marker_item = new VerifyMarker(this, marker);
-	marker_item->radius = 8*scale;
+	marker_item->radius = 8/scale;
 	marker_item->setPos(pos + center);
 	marker_item->active = !pos.isNull();
 	scene.addItem(marker_item);
@@ -92,11 +92,21 @@ VerifyView:: VerifyView(QImage &_image, int _height, QPointF &_pos, VerifyMarker
 	font.setPointSize(pix.height()/20.0f);  // Set font size to 20
 	img_number->setFont(font);
 
+	border = new QGraphicsRectItem(img_item->boundingRect(), img_item);
+	border->setPen(QPen(Qt::transparent, 2.0*scale));
+
 	scene.addItem(img_number);
+
+	setSelected(true);
 }
 
 void VerifyView::setImageNumber(int n) {
 	img_number->setText(QString::number(n));
+}
+
+void VerifyView::setSelected(bool isSelected) {
+	selected = isSelected;
+	border->setPen(isSelected ? QPen(Qt::blue, 2) : QPen(Qt::transparent));
 }
 
 void VerifyView::update() {
