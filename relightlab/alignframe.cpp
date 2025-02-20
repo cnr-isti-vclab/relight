@@ -74,13 +74,14 @@ void AlignFrame::okMarker() {
 
 	AlignRow *row = findRow(provisional_align);
 
-	provisional_align->rect = marker_dialog->getAlign();
+	provisional_align->rect = marker_dialog->getAlign().toRect();
 	if(!row) { //new align
 		qRelightApp->project().aligns.push_back(provisional_align);
 		row = addAlign(provisional_align);
 	} else {
 		row->setRect(provisional_align->rect);
 	}
+	qRelightApp->project().cleanAlignCache();
 	row->findAlignment();
 
 	provisional_align = nullptr;
@@ -98,8 +99,6 @@ void AlignFrame::cancelMarker() {
 	stack->setCurrentIndex(0);
 }
 
-
-/* on user button press */
 void AlignFrame::newAlign() {
 	stack->setCurrentIndex(1);
 	provisional_align = new Align(qRelightApp->project().images.size());
@@ -122,27 +121,17 @@ AlignRow *AlignFrame::addAlign(Align *align) {
 	AlignRow *row = new AlignRow(align);
 	aligns->addWidget(row);
 
-	connect(row, SIGNAL(edit(AlignRow *)), this, SLOT(editAlign(AlignRow *)));
+	connect(row, SIGNAL(editme(AlignRow *)),   this, SLOT(editAlign(AlignRow *)));
 	connect(row, SIGNAL(removeme(AlignRow *)), this, SLOT(removeAlign(AlignRow *)));
-	connect(row, SIGNAL(updated()), this, SLOT(projectUpdate()));
+	connect(row, SIGNAL(updated()),            this, SLOT(projectUpdate()));
 	return row;
 }
 
 void AlignFrame::removeAlign(AlignRow *row) {
-	row->stopFinding();
 
 	layout()->removeWidget(row);
-
-	Align *align = row->align;
-	auto &aligns = qRelightApp->project().aligns;
-
-	auto it = std::find(aligns.begin(), aligns.end(), align);
-
-	assert(it != aligns.end());
-
-	delete align;
-	aligns.erase(it);
 	delete row;
+
 	projectUpdate();
 }
 

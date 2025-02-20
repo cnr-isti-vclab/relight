@@ -6,6 +6,7 @@
 #include <QJsonArray>
 #include <QRunnable>
 #include <QGradient>
+#include <QPainter>
 
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
@@ -20,6 +21,7 @@ using namespace Eigen;
 Sphere::Sphere(int n_lights) {
 	lights.resize(n_lights);
 	directions.resize(n_lights);
+	thumbs.resize(n_lights);
 }
 
 void Sphere::resetHighlight(size_t n) {
@@ -200,7 +202,7 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 	}
 
 
-	thumbs.push_back(img.copy(inner));
+	thumbs[n] =img.copy(inner);
 
 	if(skip)
 		return;
@@ -208,8 +210,6 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 	uchar threshold = 240;
 	//0.5% of the area allocated to the reflection.
 	int highlight_area = (inner.width()*inner.height())/200;
-	if(n == 0)
-		cout << "Area: " << highlight_area << endl;
 	vector<int> histo;
 
 	//lower threshold until we find something.
@@ -532,6 +532,7 @@ void Sphere::fromJson(QJsonObject obj) {
 		auto j = jlight.toArray();
 		lights.push_back(QPointF(j[0].toDouble(), j[1].toDouble()));
 	}
+	thumbs.resize(lights.size());
 
 	directions.clear();
 	for(auto jdir: obj["directions"].toArray()) {
@@ -546,3 +547,43 @@ void Sphere::fromJson(QJsonObject obj) {
 	}
 	fit();
 }
+
+
+void Sphere::readCacheThumbs(QImage img) {
+	assert(thumbs.size() > 0);
+	int w = 20*inner.width();
+	int h = (1 + (thumbs.size() + 1)/20)*inner.height();
+	assert(img.width() == w);
+	assert(img.height() == h);
+	sphereImg = img.copy(0, 0, inner.width(), inner.height());
+	for(int i = 0; i < thumbs.size(); i++) {
+		int j = i+1;
+		int x = (j%20)*inner.width();
+		int y = (j/20)*inner.height();
+		thumbs[i] = img.copy(x, y, inner.width(), inner.height());
+	}
+
+
+}
+
+void Sphere::saveCacheThumbs(QString filename) {
+	//set quality 95
+
+	int w = 20*inner.width();
+	int h = (1 + (thumbs.size()+1)/20)*inner.height();
+	QImage img(w, h, QImage::Format_ARGB32);
+	img.fill(0);
+	QPainter painter(&img);
+	painter.drawImage(0, 0, sphereImg);
+	for(int i = 0; i < thumbs.size(); i++) {
+		if(thumbs[i].isNull())
+			continue;
+		int j = i+1;
+		int x = (j%20)*inner.width();
+		int y = (j/20)*inner.height();
+
+		painter.drawImage(x, y, thumbs[i]);
+	}
+	img.save(filename, "jpg", 95);
+}
+

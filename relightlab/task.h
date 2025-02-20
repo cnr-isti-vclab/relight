@@ -11,6 +11,7 @@ public:
 	int id = 0;
 	QString label;
 	bool visible = true; //visible on the queueframe.
+	bool owned = false;
 	enum Mime { UNKNOWN, IMAGE, RELIGHT, RTI, PTM, MESH };
 	Mime mime = UNKNOWN;
 

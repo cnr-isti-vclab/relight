@@ -47,6 +47,7 @@ protected:
 	void keyPressEvent(QKeyEvent *event) override;
 	void mousePressEvent(QMouseEvent *event) override {
 		emit clicked(event);
+		QGraphicsView::mousePressEvent(event);
 	}
 	VerifyMarker *marker_item = nullptr;
 	QGraphicsPixmapItem *img_item = nullptr;

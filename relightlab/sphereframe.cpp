@@ -51,7 +51,6 @@ SphereFrame::SphereFrame(QWidget *parent): QGroupBox("Reflective spheres", paren
 }
 
 void SphereFrame::clear() {
-	//setVisible(false);
 	while(spheres->count() > 0) {
 		QLayoutItem *item = spheres->takeAt(0);
 		SphereRow *row =  dynamic_cast<SphereRow *>(item->widget());
@@ -79,6 +78,7 @@ void SphereFrame::okMarker() {
 		qRelightApp->project().spheres.push_back(provisional_sphere);
 		row = addSphere(provisional_sphere);
 	}
+	qRelightApp->project().cleanSphereCache();
 	row->detectHighlights();
 
 	provisional_sphere = nullptr;
@@ -115,29 +115,18 @@ SphereRow *SphereFrame::addSphere(Sphere *sphere) {
 	SphereRow *row = new SphereRow(sphere);
 	spheres->addWidget(row);
 
-	connect(row, SIGNAL(edit(SphereRow *)), this, SLOT(editSphere(SphereRow *)));
+	connect(row, SIGNAL(editme(SphereRow *)), this, SLOT(editSphere(SphereRow *)));
 	connect(row, SIGNAL(removeme(SphereRow *)), this, SLOT(removeSphere(SphereRow *)));
 	connect(row, SIGNAL(updated()), this, SIGNAL(updated()));
 	return row;
 }
 
 void SphereFrame::removeSphere(SphereRow *row) {
-	row->stopDetecting();
 
 	layout()->removeWidget(row);
-
-	Sphere *sphere = row->sphere;
-	auto &spheres = qRelightApp->project().spheres;
-
-
-	auto it = std::find(spheres.begin(), spheres.end(), sphere);
-
-	assert(it != spheres.end());
-
-	delete sphere;
 	delete row;
 
-	spheres.erase(it);
+
 }
 
 SphereRow *SphereFrame::findRow(Sphere *sphere) {

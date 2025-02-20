@@ -22,7 +22,7 @@ public:
 
 public slots:
 	void showImage(int id);
-	void setSkipped(int image, bool skip);
+	void setSkipped(int image);
 
 	void fit();  //fit image on screen
 	void one();  //scale to 1:1 zoom
@@ -30,7 +30,7 @@ public slots:
 	void prev(); //show previous image
 
 signals:
-	void skipChanged(int image, bool skip);
+	void skipChanged(int image);
 
 protected:
 	QGraphicsPixmapItem *imagePixmap = nullptr;

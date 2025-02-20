@@ -118,7 +118,8 @@ void ProcessQueue::removeTask(int id) {
 
 		queue.takeAt(index);
 		//processqueue is never the owner!
-		//delete task;
+		if(!task->owned)
+			delete task;
 	}
 	emit update();
 }

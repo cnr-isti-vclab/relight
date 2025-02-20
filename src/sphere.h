@@ -63,6 +63,9 @@ public:
 
 	QJsonObject toJson();
 	void fromJson(QJsonObject obj);
+
+	void readCacheThumbs(QImage img);
+	void saveCacheThumbs(QString filename);
 };
 
 //estimate light directions relative to the center of the image.

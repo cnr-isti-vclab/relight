@@ -13,7 +13,7 @@
 
 VerifyMarker::VerifyMarker(VerifyView *_view, Marker _marker, QGraphicsItem *parent):
 	QGraphicsItem(parent), marker(_marker), view(_view)  {
-	setCursor(Qt::CrossCursor);
+	setCursor(Qt::OpenHandCursor);
 	setFlag(QGraphicsItem::ItemIsMovable);
 	setFlag(QGraphicsItem::ItemIsSelectable);
 	setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
@@ -22,14 +22,16 @@ VerifyMarker::VerifyMarker(VerifyView *_view, Marker _marker, QGraphicsItem *par
 QPainterPath VerifyMarker::shape() const {
 	QPainterPath path;
 	if(marker == ALIGN)
-		path.addRect(-3, -3, 6, 6);
+		path.addRect(-4, -4, 8, 8);
 	else
 		path.addRect(-radius-2, -radius-2, 2*(radius+2), 2*(radius+2));
 	return path;
 }
 
 QRectF VerifyMarker::boundingRect() const {
-	return QRectF(-3, -3, 6, 6);
+	if(marker == ALIGN)
+		return QRectF(-8, -8, 16, 16);
+	return QRectF(-radius, -radius, 2*radius, 2*radius);
 }
 
 void VerifyMarker::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*) {
@@ -92,8 +94,8 @@ VerifyView:: VerifyView(QImage &_image, int _height, QPointF &_pos, VerifyMarker
 	font.setPointSize(pix.height()/20.0f);  // Set font size to 20
 	img_number->setFont(font);
 
-	border = new QGraphicsRectItem(img_item->boundingRect(), img_item);
-	border->setPen(QPen(Qt::transparent, 2.0*scale));
+	//border = new QGraphicsRectItem(img_item->boundingRect(), img_item);
+	//border->setPen(QPen(Qt::transparent, 2.0*scale));
 
 	scene.addItem(img_number);
 
@@ -106,7 +108,7 @@ void VerifyView::setImageNumber(int n) {
 
 void VerifyView::setSelected(bool isSelected) {
 	selected = isSelected;
-	border->setPen(isSelected ? QPen(Qt::blue, 2) : QPen(Qt::transparent));
+	//border->setPen(isSelected ? QPen(Qt::blue, 2) : QPen(Qt::transparent));
 }
 
 void VerifyView::update() {
