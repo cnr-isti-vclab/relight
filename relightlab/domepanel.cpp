@@ -198,6 +198,7 @@ void DomePanel::loadDomeFile() {
 	if(path.isNull())
 		return;
 	loadDomeFile(path);
+	setSphereSelected();
 }
 
 void DomePanel::loadDomeFile(QString path) {
