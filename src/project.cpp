@@ -472,6 +472,57 @@ void Project::save(QString filename) {
 	needs_saving = false;
 }
 
+void Project::cleanAlignCache() {
+	QStringList filenames;
+	for(Align *align: aligns) {
+		QRect inner = align->rect;
+		QString filename = QString("align_%1x%2+%3+%4.jpg")
+				.arg(inner.width())
+				.arg(inner.height())
+				.arg(inner.left())
+				.arg(inner.top());
+		filenames.push_back(filename);
+	}
+	QDir dir("./");
+	if(!dir.exists("resources"))
+		dir.mkdir("resources");
+	dir.cd("resources");
+
+	QStringList filters;
+	filters << "align_*";
+	QStringList files = dir.entryList(filters, QDir::Files);
+	for (const QString &file : files) {
+		if(!filenames.contains(file))
+			QFile::remove(dir.filePath(file));
+	}
+}
+
+void Project::cleanSphereCache() {
+	QStringList filenames;
+	for(Sphere *sphere: spheres) {
+		QRect &inner = sphere->inner;
+		QString filename = QString("spherecache_%1x%2+%3+%4.jpg")
+				.arg(inner.width())
+				.arg(inner.height())
+				.arg(inner.left())
+				.arg(inner.top());
+		filenames.push_back(filename);
+	}
+
+	QDir dir("./");
+	if(!dir.exists("resources"))
+		dir.mkdir("resources");
+	dir.cd("resources");
+
+	QStringList filters;
+	filters << "spherecache_*";
+	QStringList files = dir.entryList(filters, QDir::Files);
+	for (const QString &file : files) {
+		if(!filenames.contains(file))
+			QFile::remove(dir.filePath(file));
+	}
+}
+
 Measure *Project::newMeasure() {
 	auto m = new Measure();
 	needs_saving = true;

@@ -12,15 +12,33 @@
 #include <QLabel>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QMessageBox>
 
 FindAlignment::FindAlignment(Align *_align, bool update) {
 	align = _align;
 	update_positions = update;
 	visible = false;
+	owned = true;
 }
 
 void FindAlignment::run() {
 	setStatus(RUNNING);
+
+	QRect inner = align->rect;
+	QString cache_filename = QString("resources/align_%1x%2+%3+%4.jpg")
+			.arg(inner.width())
+			.arg(inner.height())
+			.arg(inner.left())
+			.arg(inner.top());
+
+	QImage img(cache_filename);
+	if(!img.isNull()) {
+		align->readCacheThumbs(img);
+		progressed(QString("Done."), 100);
+		setStatus(DONE);
+		return;
+	}
+
 
 	Project &project = qRelightApp->project();
 	for(size_t i = 0; i < project.images.size(); i++) {
@@ -40,6 +58,7 @@ void FindAlignment::run() {
 		if(!progressed(QString("Collecting patches"), progress))
 			return;
 	}
+	align->saveCacheThumbs(cache_filename);
 	progressed(QString("Done"), 100);
 	setStatus(DONE);
 }
@@ -90,8 +109,8 @@ AlignRow::AlignRow(Align *_align, QWidget *parent): QWidget(parent) {
 
 	edit_layout->setRowStretch(3,1);
 
-	connect(edit_button, &QPushButton::clicked, [this]() { emit edit(this); });
-	connect(remove_button, &QPushButton::clicked, [this]() { emit removeme(this); });
+	connect(edit_button, &QPushButton::clicked, [this]() { emit editme(this); });
+	connect(remove_button, SIGNAL(clicked()), this, SLOT(remove()));
 	connect(verify_button, SIGNAL(clicked()), this, SLOT(verify()));
 }
 
@@ -101,24 +120,27 @@ AlignRow::~AlignRow() {
 	}
 	delete find_alignment;
 }
-/*
-void AlignRow::edit() {
-	MarkerDialog *marker_dialog = new MarkerDialog(MarkerDialog::ALIGN, this);
-	marker_dialog->setAlign(align);
-	int answer = marker_dialog->exec();
-	if(answer == QDialog::Accepted) {
-		position->rect = align->rect;
-		position->update();
-		updateRegion();
-		findAlignment();
-	}
-}*/
 
 void AlignRow::verify() {
 	VerifyDialog *verify_dialog = new VerifyDialog(align->thumbs, align->offsets, VerifyDialog::ALIGN, this);
 	verify_dialog->exec();
+
+	emit updated();
 }
 
+void AlignRow::remove() {
+	stopFinding();
+	auto &aligns = qRelightApp->project().aligns;
+	auto it = std::find(aligns.begin(), aligns.end(), align);
+	assert(it != aligns.end());
+
+	delete align;
+	aligns.erase(it);
+
+	qRelightApp->project().cleanAlignCache();
+
+	emit removeme(this);
+}
 
 void AlignRow::updateRegion() {
 	QRectF r = align->rect;
@@ -133,6 +155,12 @@ void AlignRow::setRect(QRectF rect) {
 }
 
 void AlignRow::updateStatus(QString msg, int percent) {
+	if(find_alignment->status == Task::FAILED) {
+		QMessageBox::critical(this, "Could not load patches!", msg);
+		progress->setValue(0);
+		return;
+	}
+
 	status->setText(msg);
 	progress->setValue(percent);
 	//reflections->update();
@@ -164,6 +192,7 @@ void AlignRow::stopFinding() {
 			find_alignment->stop();
 			find_alignment->wait();
 		}
+		verify_button->setEnabled(true);
 		ProcessQueue &queue = ProcessQueue::instance();
 		queue.removeTask(find_alignment);
 	}

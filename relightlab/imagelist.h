@@ -12,11 +12,11 @@ public:
 	void init();
 
 public slots:
-	void setSkipped(int image, bool skip);
+	void setSkipped(int image);
 	void verifyItem(QListWidgetItem *item);
 
 signals:
-	void skipChanged(int image, bool skip);
+	void skipChanged(int image);
 
 protected:
 	void mousePressEvent(QMouseEvent *event) override ;

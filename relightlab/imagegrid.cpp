@@ -79,13 +79,13 @@ void ImageGrid::init() {
 		ImageThumb *thumb = new ImageThumb(thumbnail, info.fileName(), image.skip, image.visible);
 		connect(thumb, &ImageThumb::skipChanged, [this, i, &image](int state){
 			image.skip = (state==0);
-			this->emit skipChanged(i, image.skip);
+			this->emit skipChanged(i);
 		});
 		flowlayout->addWidget(thumb);
 	}
 }
 
-void ImageGrid::setSkipped(int img_number, bool skip) {
+void ImageGrid::setSkipped(int img_number) {
 	auto &images = qRelightApp->project().images;
 	assert(img_number >= 0 && img_number < images.size());
 	Image &img = images[img_number];

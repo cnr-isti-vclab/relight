@@ -60,12 +60,12 @@ ImageFrame::ImageFrame(QWidget *parent): QFrame(parent) {
 
 	content->addWidget(image_view = new ImageView, 1);
 
-	connect(image_list, SIGNAL(skipChanged(int,bool)), image_grid, SLOT(setSkipped(int,bool)));
-	connect(image_list, SIGNAL(skipChanged(int,bool)), image_view, SLOT(setSkipped(int,bool)));
-	connect(image_grid, SIGNAL(skipChanged(int,bool)), image_list, SLOT(setSkipped(int,bool)));
-	connect(image_grid, SIGNAL(skipChanged(int,bool)), image_view, SLOT(setSkipped(int,bool)));
-	connect(image_view, SIGNAL(skipChanged(int,bool)), image_grid, SLOT(setSkipped(int,bool)));
-	connect(image_view, SIGNAL(skipChanged(int,bool)), image_list, SLOT(setSkipped(int,bool)));
+	connect(image_list, SIGNAL(skipChanged(int)), image_grid, SLOT(setSkipped(int)));
+	connect(image_list, SIGNAL(skipChanged(int)), image_view, SLOT(setSkipped(int)));
+	connect(image_grid, SIGNAL(skipChanged(int)), image_list, SLOT(setSkipped(int)));
+	connect(image_grid, SIGNAL(skipChanged(int)), image_view, SLOT(setSkipped(int)));
+	connect(image_view, SIGNAL(skipChanged(int)), image_grid, SLOT(setSkipped(int)));
+	connect(image_view, SIGNAL(skipChanged(int)), image_list, SLOT(setSkipped(int)));
 
 	connect(qRelightApp->action("rotate_left"),  SIGNAL(triggered(bool)), this, SLOT(rotateLeft()));
 	connect(qRelightApp->action("rotate_right"),  SIGNAL(triggered(bool)), this, SLOT(rotateRight()));

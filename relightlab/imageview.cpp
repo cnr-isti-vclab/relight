@@ -48,7 +48,7 @@ void ImageView::showImage(int id) {
 	current_image = id;
 }
 
-void ImageView::setSkipped(int image, bool skip) {
+void ImageView::setSkipped(int image) {
 	if(image != current_image)
 		return;
 }

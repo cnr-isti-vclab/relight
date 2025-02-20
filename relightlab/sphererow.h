@@ -20,7 +20,7 @@ public:
 
 	DetectHighlights(Sphere *sphere, bool update = true);
 	virtual void run() override;
-
+	void cleanCache();
 };
 
 class SphereRow: public QWidget {
@@ -40,14 +40,13 @@ public:
 	virtual ~SphereRow();
 	void detectHighlights(bool update = true);
 	void stopDetecting();
-	
+
 signals:
-	void edit(SphereRow *row);
+	void editme(SphereRow *row);
 	void removeme(SphereRow *row);
 	void updated(); //emit when status changes
 
 public slots:
-	void edit();
 	void remove();
 	void verify();
 	void updateStatus(QString msg, int percent);

@@ -50,10 +50,10 @@ void ImageList::verifyItem(QListWidgetItem *item) {
 
 	project.images[img_number].skip = skip;
 
-	emit skipChanged(img_number, skip);
+	emit skipChanged(img_number);
 }
 
-void ImageList::setSkipped(int img_number, bool skip) {
+void ImageList::setSkipped(int img_number) {
 	QListWidgetItem *item = this->item(img_number);
 	auto &images = qRelightApp->project().images;
 	assert(img_number >= 0 && img_number < images.size());
@@ -93,7 +93,7 @@ void ImageList::mousePressEvent(QMouseEvent *event) {
 				img.visible = !img.visible;
 
 				item->setIcon(QIcon::fromTheme(img.visible ? "eye" : "eye-off"));
-				emit skipChanged(img_number, img.skip);
+				emit skipChanged(img_number);
 			}
 		}
 		QListWidget::mousePressEvent(event);

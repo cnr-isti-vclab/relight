@@ -34,11 +34,11 @@ public:
 	void init();
 
 public slots:
-	void setSkipped(int image, bool skip);
+	void setSkipped(int image);
 	void updateThumbnail(int pos);
 
 signals:
-	void skipChanged(int image, bool skip);
+	void skipChanged(int image);
 
 private:
 	FlowLayout *flowlayout = nullptr;
