@@ -67,6 +67,7 @@ public:
 	void run();
 private:
 	void solveL2();
+	void solveL2Histogram();
 	void solveSBL();
 	void solveRPCA();
 private:

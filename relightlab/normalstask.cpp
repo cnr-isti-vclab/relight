@@ -1,4 +1,4 @@
-#include "normalstask.h"
+﻿#include "normalstask.h"
 #include "../src/jpeg_decoder.h"
 #include "../src/jpeg_encoder.h"
 #include "../src/imageset.h"
@@ -139,19 +139,19 @@ void NormalsTask::run() {
 	if(parameters.flatMethod != FLAT_NONE) {
 
 		switch(parameters.flatMethod) {
-			case FLAT_NONE: break;
-			case FLAT_RADIAL:
-				flattenRadialNormals(width, height, normals, 100);
-				break;
-			case FLAT_FOURIER:
-				//convert radius to frequencies
-				double sigma = width*parameters.flatPercentage/100;
-				try {
-					flattenFourierNormals(width, height, normals, 0.2, sigma);
-				} catch(std::length_error e) {
-					return;
-				}
-				break;
+		case FLAT_NONE: break;
+		case FLAT_RADIAL:
+			flattenRadialNormals(width, height, normals, 100);
+			break;
+		case FLAT_FOURIER:
+			//convert radius to frequencies
+			double sigma = width*parameters.flatPercentage/100;
+			try {
+			flattenFourierNormals(width, height, normals, 0.2, sigma);
+		} catch(std::length_error e) {
+				return;
+			}
+			break;
 		}
 	}
 
@@ -163,7 +163,7 @@ void NormalsTask::run() {
 			normalmap[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
 
 		QImage img(normalmap.data(), width, height, width*3, QImage::Format_RGB888);
-	
+
 
 		// Set spatial resolution if known. Need to convert as pixelSize stored in mm/pixel whereas QImage requires pixels/m
 		if( pixelSize > 0 ) {
@@ -171,7 +171,7 @@ void NormalsTask::run() {
 			img.setDotsPerMeterX(dotsPerMeter);
 			img.setDotsPerMeterY(dotsPerMeter);
 		}
-		img.save(parameters.path);
+		img.save(parameters.path, nullptr, 98);
 	}
 	
 
@@ -283,7 +283,7 @@ bool savePly(const char *filename, pmp::SurfaceMesh &mesh) {
 bool saveObj(const char *filename, pmp::SurfaceMesh &mesh) {
 	FILE *fp = fopen(filename, "wb");
 	if(!fp) {
-//		cerr << "Could not open file: " << filename << endl;
+		//		cerr << "Could not open file: " << filename << endl;
 		return false;
 	}
 	int nvertices = 0;
@@ -341,7 +341,8 @@ void NormalsWorker::run() {
 	switch (solver)
 	{
 	case NORMALS_L2:
-		solveL2();
+		//solveL2();
+		solveL2Histogram();
 		break;
 	case NORMALS_SBL:
 		solveSBL();
@@ -399,6 +400,64 @@ void NormalsWorker::solveL2()
 		normalIdx += 3;
 	}
 }
+
+void NormalsWorker::solveL2Histogram(){
+	//filter lights by elevation keep between 30 and 60.
+	vector<Vector3f> &m_Lights = m_Imageset.lights();
+
+	Eigen::MatrixXd mLights(m_Lights.size(), 3);
+	Eigen::MatrixXd mPixel(m_Lights.size(), 1);
+
+	unsigned int normalIdx = 0;
+
+	for (size_t p = 0; p < m_Row.size(); p++) {
+		std::vector<std::pair<float, Vector3f>> entries(m_Lights.size());
+
+		for(size_t i = 0; i < m_Lights.size(); i++) {
+			float c = m_Row[p][i].mean();
+			entries[i] = make_pair(c, m_Lights[i]);
+		}
+		sort(entries.begin(), entries.end(), [](const auto& a, const auto& b) {
+			return a.first < b.first;
+		});
+		int start = entries.size()/8;
+		int end = entries.size()*7/8;
+		for(int i = 0; i < start - end; i++)
+			entries[i] = entries[i + start];
+		entries.resize(end - start);
+
+		mLights.resize(entries.size(), 3);
+		mPixel.resize(entries.size(), 1);
+
+		for(size_t i = 0; i < entries.size(); i++) {
+			auto &entry = entries[i];
+
+			Vector3f light;
+			if(m_Imageset.light3d) {
+				light = m_Imageset.relativeLight(entry.second, p, m_Imageset.height - row);
+				light.normalize();
+			} else
+				light = entry.second;
+
+			for (int j = 0; j < 3; j++)
+				mLights(i, j) = light[j];
+
+			mPixel(i, 0) = entry.first;
+		}
+
+		Eigen::MatrixXd mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
+		mNormals.col(0).normalize();
+		assert(!isnan(mNormals.col(0)[0]));
+		assert(!isnan(mNormals.col(0)[1]));
+		assert(!isnan(mNormals.col(0)[2]));
+		m_Normals[normalIdx+0] = float(mNormals.col(0)[0]);
+		m_Normals[normalIdx+1] = float(mNormals.col(0)[1]);
+		m_Normals[normalIdx+2] = float(mNormals.col(0)[2]);
+
+		normalIdx += 3;
+	}
+}
+
 void NormalsWorker::solveSBL()
 {
 }
