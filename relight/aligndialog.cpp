@@ -29,7 +29,7 @@ AlignDialog::AlignDialog(AlignMarker *a, Project *p, QWidget *parent) :
 		if(img.size() != project->imgsize) {
 			close();
 		}
-		QRect rect = align->align->rect.toRect();
+		QRect rect = align->align->rect;
 		rect = rect.intersected(QRect(QPoint(0, 0), img.size()));
 		QImage cropped = img.copy(rect);
 		QPixmap pix;
@@ -59,7 +59,7 @@ void AlignDialog::resized() {
 	if(thumbs.size() == 0)
 		return;
 
-	QSize size = align->align->rect.toRect().size()*scale;
+	QSize size = align->align->rect.size()*scale;
 	int cx = size.width()/2;
 	int cy = size.height()/2;
 	int sx = size.width() + margin;
