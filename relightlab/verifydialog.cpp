@@ -53,7 +53,10 @@ VerifyDialog::VerifyDialog(std::vector<QImage> &_thumbs, std::vector<QPointF> &_
 	if(thumbs[0].width() > 2*view_size) {
 		view_size = std::min(max_size, thumbs[0].width()/2);
 	}
+	auto &images = qRelightApp->project().images;
 	for(size_t i = 0; i < thumbs.size(); i++) {
+		if(images[i].skip)
+			continue;
 		assert(!thumbs[i].isNull());
 		VerifyView *thumb = new VerifyView(thumbs[i], view_size, positions[i], marker == REFLECTION? VerifyMarker::REFLECTION : VerifyMarker::ALIGN);
 		thumb->setImageNumber(i+1);

@@ -20,7 +20,6 @@ public:
 		setFlag(QGraphicsItem::ItemIsMovable);
 		setFlag(QGraphicsItem::ItemIsSelectable);
 		setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
-
 	}
 	virtual ~BorderPoint() {}
 

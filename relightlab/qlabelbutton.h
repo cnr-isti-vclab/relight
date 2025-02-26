@@ -9,6 +9,7 @@ public:
 		setCheckable(true);
 		setIcon(QIcon());
 		setMinimumWidth(200);
+		setMinimumHeight(60);
 		setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 	}
 };

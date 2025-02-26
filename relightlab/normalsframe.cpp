@@ -5,6 +5,7 @@
 #include "helpbutton.h"
 #include "../src/project.h"
 #include "normalsplan.h"
+#include "reflectionview.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
@@ -46,6 +47,9 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 			{
 				QHBoxLayout *buttons_layout = new QHBoxLayout(buttons_frame);
 
+				zoom_view = new ZoomOverview(qRelightApp->project().crop, 200);
+				buttons_layout->addWidget(zoom_view);
+
 				buttons_layout->addStretch(1);
 				QPushButton *save = new QPushButton("Export", this);
 				save->setIcon(QIcon::fromTheme("save"));
@@ -71,6 +75,8 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 
 void NormalsFrame::init() {
 	export_row->suggestPath();
+	zoom_view->init();
+	zoom_view->setRect(qRelightApp->project().crop);
 }
 
 void NormalsFrame::save() {
@@ -117,4 +123,8 @@ void NormalsFrame::save() {
 	queue.addTask(task);
 
 	emit processStarted();
+}
+
+void NormalsFrame::updateCrop(QRect rect) {
+	zoom_view->setRect(rect);
 }

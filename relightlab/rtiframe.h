@@ -16,6 +16,7 @@ class RtiFormatRow;
 class RtiQualityRow;
 class RtiWebLayoutRow;
 class RtiExportRow;
+class ZoomOverview;
 
 class RtiFrame: public QFrame {
 	Q_OBJECT
@@ -36,6 +37,8 @@ public slots:
 	void qualityChanged();
 	void layoutChanged();
 
+	void updateCrop(QRect rect);
+
 signals:
 	void processStarted();
 
@@ -50,6 +53,8 @@ private:
 	RtiQualityRow *quality_row = nullptr;
 	RtiWebLayoutRow *layout_row = nullptr;
 	RtiExportRow *export_row = nullptr;
+
+	ZoomOverview *zoom_view =  nullptr;
 
 	void updateNPlanes();
 };

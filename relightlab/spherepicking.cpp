@@ -11,10 +11,6 @@
 #include <QStatusBar>
 
 SpherePicking::SpherePicking(QWidget *parent): ImageViewer(parent) {
-
-	//status->showMessage("Double click on the boundary of the sphere.");
-
-
 	//create shpere marking items.
 	QPen outlinePen(Qt::yellow);
 	outlinePen.setCosmetic(true);
@@ -51,31 +47,24 @@ SpherePicking::SpherePicking(QWidget *parent): ImageViewer(parent) {
 
 	connect(view, SIGNAL(clicked(QPoint)), this, SLOT(click(QPoint)));
 	view->setCursor(Qt::CrossCursor);
-
-	//QApplication::setOverrideCursor(Qt::CrossCursor);
-
 }
 
 void SpherePicking::showImage(int id) {
 	ImageViewer::showImage(id);
-
-	//status->showMessage("Double click on the boundary of the sphere.");
 }
-
-
-/*void SpherePicking::updatePoint(QGraphicsEllipseItem *point) {
-	updatePoint(point);
-	sphere->fit();
-		int sphere_id = project.indexOf(m->sphere);
-		assert(sphere_id != -1);
-		history.push(Action(Action::MOVE_BORDER, sphere_id, *(m->sphere)));
-	}
-}*/
-
 
 QVariant BorderPoint::itemChange(GraphicsItemChange change, const QVariant &value)	{
 	if ((change == ItemPositionChange  && scene()) || change == ItemScenePositionHasChanged) {
 		picker->updateBorderPoints();
+	}
+	if (change == ItemSelectedChange) {
+		if (value.toBool()) {
+			setBrush(QBrush(Qt::green));
+			setPen(QPen(Qt::green));
+		} else {
+			setBrush(QBrush(Qt::white));
+			setPen(QPen(Qt::white));
+		}
 	}
 	return QGraphicsItem::itemChange(change, value);
 }

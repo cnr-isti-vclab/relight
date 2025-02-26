@@ -13,6 +13,9 @@ class NormalsSourceRow;
 class NormalsFlattenRow;
 class NormalsSurfaceRow;
 class NormalsExportRow;
+class ZoomOverview;
+
+
 class NormalsFrame: public QFrame {
 	Q_OBJECT
 public:
@@ -22,6 +25,7 @@ public:
 public slots:
 	void save();
 	void init();
+	void updateCrop(QRect rect);
 
 signals:
 	void processStarted();
@@ -40,6 +44,8 @@ private:
 	QCheckBox *radial = nullptr;
 	QCheckBox *fourier = nullptr;
 	QSpinBox *fourier_radius = nullptr;
+
+	ZoomOverview *zoom_view =  nullptr;
 };
 
 #endif // NORMALSFRAME_H

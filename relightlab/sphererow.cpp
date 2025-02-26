@@ -84,7 +84,7 @@ SphereRow::SphereRow(Sphere *_sphere, QWidget *parent): QWidget(parent) {
 	progress->setValue(0);
 	columns->addWidget(progress, 2);
 
-	QPushButton *edit = new QPushButton(QIcon::fromTheme("edit"), "Edit...");
+	QPushButton *edit = new QPushButton(QIcon::fromTheme("edit"), "Edit sphere...");
 	columns->addWidget(edit, 1);
 	verify_button = new QPushButton(QIcon::fromTheme("check"), "Verify...");
 	verify_button->setEnabled(false);

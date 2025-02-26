@@ -119,14 +119,14 @@ RtiPlanesRow::RtiPlanesRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 	label->help->setId("rti/planes");
 
 
-	buttons->addWidget(new QLabel("Total number of images:"));
+	buttons->addWidget(new QLabel("Number of coefficients:"));
 	nplanesbox = new QComboBox;
 	nplanesbox->setFixedWidth(100);
 	for(int i = 0; i < 7; i++) {
-		nplanesbox->addItem(QString::number(nimages[i]), QVariant(nimages[i]));
+		nplanesbox->addItem(QString::number(nplanes[i]), QVariant(nplanes[i]));
 	}
 	connect(nplanesbox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int n) {
-		setNPlanes(nimages[n]*3, true);
+		setNPlanes(nplanes[n], true);
 	});
 	buttons->addWidget(nplanesbox);
 
@@ -145,12 +145,12 @@ RtiPlanesRow::RtiPlanesRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 	setNChroma(parameters.nchroma);
 }
 
-void RtiPlanesRow::forceNPlanes(int nplanes) {
+void RtiPlanesRow::forceNPlanes(int n_planes) {
 	QStandardItemModel *model =	  qobject_cast<QStandardItemModel *>(nplanesbox->model());
 	Q_ASSERT(model != nullptr);
 	for(int i = 0; i < 7; i++) {
 		QStandardItem *item = model->item(i);
-		bool disabled = nplanes >= 0 && nplanes != nimages[i]*3;
+		bool disabled = n_planes >= 0 && n_planes != nplanes[i];
 		item->setFlags(disabled ? item->flags() & ~Qt::ItemIsEnabled
 								: item->flags() | Qt::ItemIsEnabled);
 	}
@@ -165,7 +165,7 @@ void RtiPlanesRow::setNPlanes(int nplanes, bool emitting) {
 		return;
 	}
 	for(int i = 0; i < nplanesbox->count(); i++) {
-		if(nplanes/3 == nplanesbox->itemData(i).toInt())
+		if(nplanes == nplanesbox->itemData(i).toInt())
 			nplanesbox->setCurrentIndex(i);
 	}
 }
@@ -273,8 +273,8 @@ RtiWebLayoutRow::RtiWebLayoutRow(RtiParameters &parameters, QFrame *parent):
 
 	image    = new QLabelButton("Images", "");
 	deepzoom = new QLabelButton("Deepzoom", "Pyramidal, lot's of files.");
-	tarzoom  = new QLabelButton("Tarzoom", "Pyramidal, few files but 206");
-	itarzoom = new QLabelButton("ITarzoom", "Pyramidal, few files and requests but 206");
+	tarzoom  = new QLabelButton("Tarzoom",  "Pyramidal, few files.");
+	itarzoom = new QLabelButton("ITarzoom", "Pyramidal, one file.");
 
 	buttons->addWidget(image);
 	buttons->addWidget(deepzoom);
