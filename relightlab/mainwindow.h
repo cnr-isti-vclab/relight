@@ -36,6 +36,7 @@ public slots:
 	void showHelp();
 	void showAbout();
 
+
 protected:
 
 	TabWidget *tabs = nullptr;

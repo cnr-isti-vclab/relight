@@ -13,12 +13,14 @@ public:
 	CropFrame(QWidget *parent = nullptr);
 	void clear();
 	void init();
+	void setCrop(QRect rect);
 
 public slots:
 	void setAspectRatio();
-	void setArea(QRect rect);
-	void areaChanged(QRect rect);
+	void updateCrop(QRect rect);
 
+signals:
+	void cropChanged(QRect rect);
 private:
 	ImageCropper *cropper = nullptr;
 

@@ -14,7 +14,9 @@ class MarkerOverview: public QGraphicsView {
 	Q_OBJECT
 public:
 	MarkerOverview(int height, QWidget *parent = nullptr);
+	void init(); //load pixmaps and set size.
 	virtual void update() = 0;
+
 
 protected:
 	void resizeEvent(QResizeEvent *event);
@@ -44,7 +46,7 @@ public:
 	virtual void update();
 	QRectF rect;
 
-private:
+protected:
 	QGraphicsRectItem *item = nullptr;
 };
 
@@ -73,5 +75,15 @@ private:
 
 };
 
+class ZoomOverview: public AlignOverview {
+	Q_OBJECT
+public:
+	ZoomOverview(QRectF rect, int height, QWidget *parent = nullptr);
+public slots:
+	void setRect(QRect _rect) {
+		rect = _rect;
+		update();
+	}
+};
 
 #endif // REFLECTIONVIEW_H

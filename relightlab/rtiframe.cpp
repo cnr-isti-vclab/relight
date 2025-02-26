@@ -4,7 +4,7 @@
 #include "relightapp.h"
 #include "rtirecents.h"
 #include "qlabelbutton.h"
-
+#include "reflectionview.h"
 
 #include "processqueue.h"
 
@@ -75,6 +75,9 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 			{
 				QHBoxLayout *buttons_layout = new QHBoxLayout(buttons_frame);
 
+				zoom_view = new ZoomOverview(qRelightApp->project().crop, 200);
+				buttons_layout->addWidget(zoom_view);
+
 				buttons_layout->addStretch(1);
 				QPushButton *save = new QPushButton("Export", this);
 				save->setIcon(QIcon::fromTheme("save"));
@@ -100,6 +103,8 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 void RtiFrame::init() {
 	//fill in last RTI used or a common one.
 	export_row->suggestPath();
+	zoom_view->init();
+	zoom_view->setRect(qRelightApp->project().crop);
 }
 
 void RtiFrame::exportRti() {
@@ -127,8 +132,8 @@ void RtiFrame::exportRti() {
 
 	if(parameters.basis == Rti::RBF && project.dome.lightConfiguration == Dome::SPHERICAL) {
 		QMessageBox::warning(this, "RBF limitations",
-			"RBF basis do not support positional lights. (BLN does)\n"
-			"Using directiona lights instead.");
+							 "RBF basis do not support positional lights. (BLN does)\n"
+							 "Using directiona lights instead.");
 		project.dome.lightConfiguration = Dome::DIRECTIONAL;
 	}
 
@@ -242,4 +247,7 @@ void RtiFrame::layoutChanged() {
 
 }
 
+void RtiFrame::updateCrop(QRect rect) {
+	zoom_view->setRect(rect);
+}
 

@@ -13,9 +13,14 @@ MarkerOverview::MarkerOverview(int _height, QWidget *parent): QGraphicsView(pare
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-	QPixmap pix = QPixmap::fromImage(qRelightApp->thumbnails()[0]);
+	QPixmap pix;
 	img_item = scene.addPixmap(pix);
-
+	if(qRelightApp->thumbnails().size())
+		init();
+}
+void MarkerOverview::init() {
+	QPixmap pix = QPixmap::fromImage(qRelightApp->thumbnails()[0]);
+	img_item->setPixmap(pix);
 	setFixedSize(pix.width()*height/pix.height(), height);
 }
 
@@ -44,6 +49,7 @@ void SphereOverview::update() {
 
 AlignOverview::AlignOverview(QRectF _rect, int height, QWidget *parent):
 	MarkerOverview(height, parent), rect(_rect) {
+	item = scene.addRect(QRectF(), Qt::NoPen, Qt::green);
 	update();
 }
 
@@ -53,10 +59,7 @@ void AlignOverview::update() {
 
 	double scale = size.width()/(double)qRelightApp->project().imgsize.width();
 	QRectF r = QRectF(rect.x()*scale, rect.y()*scale, rect.width()*scale, rect.height()*scale);
-	if(item)
-		scene.removeItem(item);
-
-	item = scene.addRect(r, Qt::NoPen, Qt::green);
+	item->setRect(r);
 }
 
 
@@ -106,7 +109,6 @@ void ReflectionOverview::init() {
 	area->setRotation(sphere->eAngle);
 }
 
-#include <iostream>
 void ReflectionOverview::update() {
 	for(auto l: lights) {
 		scene.removeItem(l);
@@ -134,5 +136,9 @@ void ReflectionOverview::resizeEvent(QResizeEvent */*event*/) {
 	fitInView(img_item->boundingRect());
 }
 
+ZoomOverview::ZoomOverview(QRectF rect, int height, QWidget *parent): AlignOverview(rect, height, parent) {
+	item->setPen(QPen(Qt::green, 2));
+	item->setBrush(QBrush(Qt::transparent));
+}
 
 

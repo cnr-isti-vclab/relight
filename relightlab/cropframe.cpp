@@ -96,7 +96,6 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	connect(aspect_combo, SIGNAL(currentIndexChanged(int)), this, SLOT(setAspectRatio()));
 	connect(aspect_width, SIGNAL(valueChanged(int)), this, SLOT(setAspectRatio()));
 	connect(aspect_height, SIGNAL(valueChanged(int)), this, SLOT(setAspectRatio()));
-	connect(cropper, SIGNAL(areaChanged(QRect)), this, SLOT(setArea(QRect)));
 
 	connect(crop_width, SIGNAL(valueChanged(int)), cropper, SLOT(setWidth(int)));
 	connect(crop_height, SIGNAL(valueChanged(int)), cropper, SLOT(setHeight(int)));
@@ -106,13 +105,14 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	connect(maximize, SIGNAL(clicked()), cropper, SLOT(maximizeCrop()));	
 	connect(center, SIGNAL(clicked()), cropper, SLOT(centerCrop()));
 
-	connect(cropper, SIGNAL(areaChanged(QRect)), this, SLOT(areaChanged(QRect)));
+	connect(cropper, SIGNAL(areaChanged(QRect)), this, SLOT(updateCrop(QRect)));
 }
 
-void CropFrame::areaChanged(QRect rect) {
+void CropFrame::updateCrop(QRect rect) {
 	Project &project = qRelightApp->project();
 	project.crop = rect;
-
+	setCrop(rect);
+	emit cropChanged(rect);
 }
 void CropFrame::clear() {
 	cropper->setImage(QPixmap());
@@ -153,7 +153,7 @@ void CropFrame::setAspectRatio() {
 
 }
 
-void CropFrame::setArea(QRect rect) {
+void CropFrame::setCrop(QRect rect) {
 	crop_width->setValue(rect.width());
 	crop_height->setValue(rect.height());
 	crop_top->setValue(rect.top());

@@ -47,6 +47,8 @@ MainWindow::MainWindow() {
 
 	connect(scale_frame, SIGNAL(pixelSizeChanged()), lights_frame, SLOT(setPixelSize()));
 	connect(sphere_frame, SIGNAL(updated()), lights_frame, SLOT(updateSphere()));
+	connect(crop_frame, SIGNAL(cropChanged(QRect)), rti_frame, SLOT(updateCrop(QRect)));
+	connect(crop_frame, SIGNAL(cropChanged(QRect)), normals_frame, SLOT(updateCrop(QRect)));
 	connect(rti_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
 	connect(normals_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
 
