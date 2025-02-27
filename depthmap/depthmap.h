@@ -4,27 +4,8 @@
 #include <vector>
 #include <QString>
 #include <eigen3/Eigen/Core>
+#include "camera.h"
 /* */
-class Camera {
-public:
-	//intrinsic
-	uint32_t width = 0, height = 0;
-	float focal = 0;
-	float PPx = 0, PPy = 0; // principal point
-	float Cx = 0, Cy = 0; // center of distorsion
-	float R3 = 0, R5 = 0, R7 = 0; // radial distorsion
-	//extrinsic
-	Eigen::Matrix3f rotation;
-	Eigen::Vector3f center;
-	bool loadXml(const QString &path); //read the MicMac xml origin, origin resolution ecc.
-	bool loadInternParameters(const QString &internePath); // read the xml with the center, rotation, focal parameter, principal points parameters ecc.
-	Eigen::Vector3f projectionToImage(Eigen::Vector3f realPosition) const;
-	Eigen::Vector3f applyRadialDistortion(Eigen::Vector3f& u);
-	Eigen::Vector3f applyIntrinsicCalibration(Eigen::Vector3f& u) const;
-
-	Camera() {}
-};
-
 
 class Depthmap {
 public:
@@ -63,36 +44,9 @@ protected:
 	void saveTiff(const char *mask_path, const std::vector<float> &values, uint32_t w, uint32_t h, uint32_t bitsPerSample) const;
 
 };
-class GaussianGrid {
-public:
-	int width, height;
-	std::vector<float> values;
-	std::vector<float> weights;
-	float sideFactor = 0.5f;  // corrective factor over the 1/sqrt(n) formula.
-	int minSamples = 3;       // minimum number of samples needed in a pixel
-	float sigma;
-	float a, b;//coefficient of linear transform from source to point cloud space.
-
-	void init(std::vector<Eigen::Vector3f> &cloud, std::vector<float> &source);
-	void fitLinear(std::vector<float> &x, std::vector<float> &y, float &a, float &b); //ax + b
-	float bilinearInterpolation(float x, float y);
-	void computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &differences);
-	void fillLaplacian(float precision);
-	void imageGrid(const char* filename);
-	//interpola la griglia per spostare la depthmap, serve per creare la funzione
-	float value(float x, float y);
-	float target(float x, float y, float source); //given a point in the source depthmap compute the z in cloud coordinate space;
 
 
-
-	float depthmapToCloud(float h) {
-		return a*h + b;
-	}
-
-};
-
-class CameraDepthmap:
-					   public Depthmap {
+class CameraDepthmap: public Depthmap {
 public:
 	Camera camera;
 
@@ -101,6 +55,8 @@ public:
 */
 
 };
+#endif // DEPTHMAP_H
+/*
 class OrthoDepthmap:
 					   public Depthmap {
 public:
@@ -129,7 +85,7 @@ public:
 
 
 	/*1.
-*/
 
-};
-#endif // DEPTHMAP_H
+
+};*/
+

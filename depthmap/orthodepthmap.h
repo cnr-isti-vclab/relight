@@ -4,19 +4,21 @@
 #include <vector>
 #include <QString>
 #include <eigen3/Eigen/Core>
+#include "depthmap.h"
 
-class OrthoDepthmap
-{
+
+
+class OrthoDepthmap : public Depthmap {
 public:
-	OrthoDepthmap();
 
 	Eigen::Vector3f resolution;
 	Eigen::Vector3f origin;
 	std::vector<Eigen::Vector3f> point_cloud;
-	std::vector<float> x, y, z;
+	//std::vector<float> x, y, z;
 	std::vector<float> z_grid;
 	int grid_x, grid_y;
 	float sigma;
+
 
 	Eigen::Vector3f pixelToRealCoordinates(int pixelX, int pixelY, float pixelZ);
 	Eigen::Vector3f realToPixelCoord(float realX, float realY, float realZ);

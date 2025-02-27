@@ -1,12 +1,14 @@
 #ifndef GAUSSIANGRID_H
 #define GAUSSIANGRID_H
+#include <tiffio.h>
+#include <vector>
+#include <QString>
+#include <eigen3/Eigen/Core>
 
 class GaussianGrid
 {
 
 public:
-
-	GaussianGrid();
 	int width, height;
 	std::vector<float> values;
 	std::vector<float> weights;
@@ -30,6 +32,8 @@ public:
 	float depthmapToCloud(float h) {
 		return a*h + b;
 	}
+
+
 };
 
 #endif // GAUSSIANGRID_H

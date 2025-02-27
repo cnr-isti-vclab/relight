@@ -7,6 +7,9 @@
 #include <QDomDocument>
 #include <eigen3/Eigen/Dense>
 #include <math.h>
+#include "camera.h"
+#include "gaussiangrid.h"
+#include "orthodepthmap.h"
 
 using namespace std;
 // carica il tif, calcola e integra normali per vedere se la superficie è la stessa.
@@ -19,7 +22,7 @@ int main(int argc, char *argv[]) {
 	//input
 #define MACOS 1
 #ifdef MACOS
-	QString base = "/Users/erika/Desktop/testcenterRel_resize/";
+	QString base = "/Users/erika/Desktop/testcenterRel_copia/";
 #else
 	QString base = "";
 #endif
@@ -47,7 +50,7 @@ int main(int argc, char *argv[]) {
 
 	QFile::remove(depthmapPath);
 	if (!QFile::copy(depthmapPath + "_backup.tif", depthmapPath)) {
-		cout << "Error copying depthmap" << depthmapPath.toStdString() << endl;
+		cout << "Error copying depthmap " << depthmapPath.toStdString() << endl;
 		exit(0);
 	}
 	QFile::remove(maskPath);
@@ -97,7 +100,6 @@ int main(int argc, char *argv[]) {
 
 	ortho.verifyPointCloud();
 	ortho.beginIntegration();
-	QString orientationXmlPath;
 
 	for (const QFileInfo &tiffFile : tiffFiles) {
 
@@ -122,14 +124,13 @@ int main(int argc, char *argv[]) {
 
 		if (!depthCam.loadDepth(qPrintable(tiffFile.absoluteFilePath()))) {
 			cerr << "Failed to load depth map: " << tiffFile.fileName().toStdString() << endl;
-			exit(0);
+			return -1;
 		}
 		if(depthCam.width != depthCam.camera.width || depthCam.height != depthCam.camera.height){
 			cerr << "width is not the same" << endl;
 			return -1;
 		}
 		cout << "Processed: " << tiffFile.fileName().toStdString() << endl;
-
 		ortho.integratedCamera(depthCam, qPrintable(output_points));
 		//ortho.projectToCameraDepthMap(depthCam.camera, outputPath);
 
