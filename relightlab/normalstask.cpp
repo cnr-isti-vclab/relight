@@ -171,7 +171,7 @@ void NormalsTask::run() {
 			img.setDotsPerMeterX(dotsPerMeter);
 			img.setDotsPerMeterY(dotsPerMeter);
 		}
-		img.save(parameters.path);
+		img.save(parameters.path, nullptr, 100);
 	}
 	
 
