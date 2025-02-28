@@ -24,7 +24,7 @@ public:
 	QPainterPath shape() const override;
 	QRectF boundingRect() const override;
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*) override;
-	QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+	QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 };
 
 class VerifyView: public QGraphicsView {
