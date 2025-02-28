@@ -131,7 +131,7 @@ void RtiTask::run() {
 		if(parameters.web_layout != RtiParameters::PLAIN) {
 			deepZoom(output, output, parameters.quality, 0, 256, callback);
 		}
-		if(parameters.web_layout == RtiParameters::TARZOOM) {
+		if(parameters.web_layout == RtiParameters::TARZOOM || parameters.web_layout == RtiParameters::ITARZOOM) {
 			tarZoom(output, output, callback);
 		}
 		if(parameters.web_layout == RtiParameters::ITARZOOM) {

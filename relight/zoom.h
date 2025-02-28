@@ -7,6 +7,7 @@
 #include <QMessageBox>
 
 #include <QString>
+#include <QFile>
 #include <QStringList>
 #include <QDomDocument>
 #include <QDebug>
@@ -86,10 +87,10 @@ inline QString getItarzoomPlaneData(const QString& path, ZoomData& data, QJsonAr
 }
 
 inline QString deepZoom(QString inputFolder, QString output, uint32_t quality, uint32_t overlap,
-			  uint32_t tileSize, std::function<bool(QString s, int n)> progressed)
-{
+			  uint32_t tileSize, std::function<bool(QString s, int n)> progressed) {
     int nplanes = getNFiles(inputFolder, "jpg");
 
+	bool remove = true;
 
     // Deep zoom every plane
     for(int plane = 0; plane < nplanes; plane++)
@@ -100,6 +101,8 @@ inline QString deepZoom(QString inputFolder, QString output, uint32_t quality, u
 		dz.quality = quality;
         dz.build(fileName, output + "/" + QString("plane_%1").arg(plane), tileSize, overlap);
 
+		if(remove)
+			QFile::remove(fileName);
         // Update progress bar
         if(!progressed("Deepzoom:", 100*(plane+1)/nplanes))
             break;
@@ -108,8 +111,9 @@ inline QString deepZoom(QString inputFolder, QString output, uint32_t quality, u
     return "OK";
 }
 
-inline QString tarZoom(QString inputFolder, QString output, std::function<bool(QString s, int n)> progressed)
-{
+inline QString tarZoom(QString inputFolder, QString output, std::function<bool(QString s, int n)> progressed) {
+	bool remove = true;
+
     // Find number of planes
     int nPlanes = getNFiles(inputFolder, "dzi");
     if (nPlanes == 0)
@@ -213,6 +217,11 @@ inline QString tarZoom(QString inputFolder, QString output, std::function<bool(Q
         outIndexFile.write(QJsonDocument(index).toJson());
         outIndexFile.close();
 
+		if(remove) {
+			QFile::remove(dziPath);
+			planeFolder.removeRecursively();
+		}
+
         // Update progress bar
         if(!progressed("Tarzoom:", 100*(i+1)/nPlanes))
             break;
@@ -223,6 +232,8 @@ inline QString tarZoom(QString inputFolder, QString output, std::function<bool(Q
 
 inline QString itarZoom(const QString& inputFolder, const QString& output, std::function<bool(QString s, int n)> progressed)
 {
+	bool remove = true;
+
     // Find number of planes
     int nPlanes = getNFiles(inputFolder, "tzb");
     if (nPlanes == 0)
@@ -272,7 +283,8 @@ inline QString itarZoom(const QString& inputFolder, const QString& output, std::
         std::deque<uint32_t> sizes;
 
         // Get tzi data
-        QString err = getItarzoomPlaneData(QString("%1/plane_%2.tzi").arg(inputFolder).arg(i), data, offsets);
+		QString tzi_path = QString("%1/plane_%2.tzi").arg(inputFolder).arg(i);
+		QString err = getItarzoomPlaneData(tzi_path, data, offsets);
         if (err.compare("OK") != 0)
             return err;
 
@@ -295,10 +307,14 @@ inline QString itarZoom(const QString& inputFolder, const QString& output, std::
         }
 
         // Append file to final tzb
-        QString tzbPath = QString("%1/plane_%2.tzb").arg(inputFolder).arg(i);
-        files.push_back(new QFile(tzbPath));
+		QString tzb_path = QString("%1/plane_%2.tzb").arg(inputFolder).arg(i);
+		files.push_back(new QFile(tzb_path));
         if (!files[i]->open(QIODevice::ReadOnly))
             return QString("Error while opening .tzb file %1").arg(files[i]->fileName());
+
+		if(remove) {
+			QFile::remove(tzi_path);
+		}
 
         // Update progress bar
         if(!progressed("Itarzoom:", 50*(i+1)/nPlanes))
@@ -329,8 +345,11 @@ inline QString itarZoom(const QString& inputFolder, const QString& output, std::
     outIndexFile.close();
 
     // Clean file pointers
-	for(QFile *file: files)
+	for(QFile *file: files) {
+		file->remove();
 		delete file;
+	}
+
 
     return "OK";
 }

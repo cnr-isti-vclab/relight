@@ -64,7 +64,6 @@ set (RELIGHT_HEADERS
     markerdialog.h
     domepanel.h 
     directionsview.h 
-    rtiexportdialog.h
     sphereframe.h 
     spherepicking.h 
     spheredialog.h 
@@ -74,7 +73,6 @@ set (RELIGHT_HEADERS
     helpbutton.h 
     cropframe.h 
     rtiframe.h
-    rticard.h
     rtitask.h
     ../relight/imagecropper.h
     ../relight-cli/rtibuilder.h
@@ -144,8 +142,6 @@ set (RELIGHTLAB_SOURCES
     rtiframe.cpp
     rtirecents.cpp
     rtiplan.cpp
-    rticard.cpp
-    rtiexportdialog.cpp
     rtitask.cpp
     ../relight/imagecropper.cpp
     ../relight-cli/rtibuilder.cpp

@@ -75,7 +75,6 @@ SOURCES += main.cpp \
     recentprojects.cpp \
     reflectionview.cpp \
     relightapp.cpp \
-    rticard.cpp \
     rtiframe.cpp \
     rtiplan.cpp \
     rtirecents.cpp \
@@ -98,7 +97,6 @@ SOURCES += main.cpp \
     cropframe.cpp \
     ../relight/imagecropper.cpp \
     creatertidialog.cpp \
-    rtiexportdialog.cpp \
     rtitask.cpp \
     task.cpp \
     queueitem.cpp \
@@ -160,7 +158,6 @@ HEADERS += \
     recentprojects.h \
     reflectionview.h \
     relightapp.h \
-    rticard.h \
     rtiframe.h \
     rtiplan.h \
     rtirecents.h \
@@ -184,7 +181,6 @@ HEADERS += \
     cropframe.h \
     ../relight/imagecropper.h \
     creatertidialog.h \
-    rtiexportdialog.h \
     rtitask.h \
     task.h \
     queueitem.h \
