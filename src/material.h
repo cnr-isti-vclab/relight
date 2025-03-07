@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <vector>
 #include <algorithm>
+#include <Eigen/Dense>
 
 class Material {
 public:
@@ -47,6 +48,7 @@ class MaterialBuilder {
 public:
 	std::vector<float> proj;
 	std::vector<float> mean;
+	Eigen::JacobiSVD<Eigen::MatrixXf> svd;
 };
 
 

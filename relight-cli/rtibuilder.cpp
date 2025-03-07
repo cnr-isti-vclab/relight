@@ -175,6 +175,16 @@ bool RtiBuilder::init(std::function<bool(QString stage, int percent)> *_callback
 		error = "PTM and HSH do not support MRGB";
 		return false;
 	}
+	if(type == PTM) {
+		if(colorspace == LRGB && (nplanes != 6 && nplanes != 9)) {
+			error = "PTM with LRGB colorspace supports only 6 or 9 planes";
+			return false;
+		}
+		if(colorspace == RGB && (nplanes != 9 && nplanes != 18)) {
+			error = "PTM with RGB colorspace supports only 9 or 18 planes";
+			return false;
+		}
+	}
 
 	if((type == RBF || type == BILINEAR) &&  (colorspace != MRGB && colorspace != MYCC)) {
 		error = "RBF and BILINEAR support only MRGB and MYCC";
@@ -391,41 +401,64 @@ MaterialBuilder RtiBuilder::pickBasePTM(std::vector<Vector3f> &lights) {
 	uint32_t dim = ndimensions*3;
 	MaterialBuilder mat;
 	mat.mean.resize(dim, 0.0);
-	
-	Eigen::MatrixXd A(lights.size(), 6);
+
+	Eigen::MatrixXf A(lights.size(), 6);
 	for(uint32_t l = 0; l < lights.size(); l++) {
 		Vector3f &light = lights[l];
 		A(l, 0) = 1.0;
-		A(l, 1) = double(light[0]);
-		A(l, 2) = double(light[1]);
-		A(l, 3) = double(light[0]*light[0]);
-		A(l, 4) = double(light[0]*light[1]);
-		A(l, 5) = double(light[1]*light[1]);
+		A(l, 1) = light[0];
+		A(l, 2) = light[1];
+		A(l, 3) = light[0]*light[0];
+		A(l, 4) = light[0]*light[1];
+		A(l, 5) = light[1]*light[1];
 	}
 
-	Eigen::MatrixXd iA = (A.transpose()*A).inverse()*A.transpose();
-	
-	if(colorspace == LRGB) {
-		assert(nplanes == 9);
-		//we could generalize for different polynomials
-		
-		std::vector<float> &proj = mat.proj;
-		proj.resize((nplanes-3)*ndimensions, 0.0);
-		for(uint32_t p = 0; p < nplanes-3; p++) {
-			for(uint32_t k = 0; k < lights.size(); k++) {
-				uint32_t off = k + p*ndimensions;
-				proj[off] = float(iA(p, k));
+	if((colorspace == LRGB && nplanes == 6) || (colorspace == RGB && nplanes == 9)) {
+		A.conservativeResize(lights.size(), 3);
+	}
+
+	Eigen::MatrixXf iA = (A.transpose()*A).inverse()*A.transpose();
+	if(iA.hasNaN()) {
+		 Eigen::MatrixXf AN(lights.size(), nplanes);
+		 for(uint32_t l = 0; l < lights.size(); l++) {
+			Vector3f &light = lights[l];
+			if(colorspace == LRGB) {
+				A(l, 0) = 1.0;
+				A(l, 1) = light[0];
+				A(l, 2) = light[1];
+				check for number of planes
+				A(l, 3) = light[0]*light[0];
+				A(l, 4) = light[0]*light[1];
+				A(l, 5) = light[1]*light[1];
+			} else {
+				A(l, 0) = 1.0;
+				A(l, 1) = light[0];
+				A(l, 2) = light[1];
+				A(l, 3) = light[0]*light[0];
+				A(l, 4) = light[0]*light[1];
+				A(l, 5) = light[1]*light[1];
 			}
-		}
+		 }
+		 mat.svd.compute(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
 	} else {
-		assert(colorspace == RGB && nplanes == 18);
-		
-		//nplanes should be 18 here!
-		std::vector<float> &proj = mat.proj;
-		proj.resize(nplanes*dim, 0.0);
-		for(uint32_t p = 0; p < nplanes; p += 3) {
-			for(uint32_t k = 0; k < lights.size(); k ++) {
-				proj[k*3+0 + (p+0)*dim] = proj[k*3+1 + (p+1)*dim] = proj[k*3+2 + (p+2)*dim] = float(iA(p/3, k));
+		if(colorspace == LRGB) {
+			//we could generalize for different polynomials
+
+			std::vector<float> &proj = mat.proj;
+			proj.resize((nplanes-3)*ndimensions, 0.0);
+			for(uint32_t p = 0; p < nplanes-3; p++) {
+				for(uint32_t k = 0; k < lights.size(); k++) {
+					uint32_t off = k + p*ndimensions;
+					proj[off] = float(iA(p, k));
+				}
+			}
+		} else {
+			std::vector<float> &proj = mat.proj;
+			proj.resize(nplanes*dim, 0.0);
+			for(uint32_t p = 0; p < nplanes; p += 3) {
+				for(uint32_t k = 0; k < lights.size(); k ++) {
+					proj[k*3+0 + (p+0)*dim] = proj[k*3+1 + (p+1)*dim] = proj[k*3+2 + (p+2)*dim] = float(iA(p/3, k));
+				}
 			}
 		}
 	}
@@ -1924,15 +1957,22 @@ std::vector<float> RtiBuilder::toPrincipal(Pixel &pixel, MaterialBuilder &materi
 		
 
 	} else { //RGB, YCC
-		vector<float> col(dim);
+		if(!materialbuilder.svd.computeU()) { //not rank deficient.
+			vector<float> col(dim);
 
-		for(size_t k = 0; k < dim; k++)
-			col[k] = v[k] - materialbuilder.mean[k];
+			for(size_t k = 0; k < dim; k++)
+				col[k] = v[k] - materialbuilder.mean[k];
 
-		for(size_t p = 0; p < nplanes; p++) {
-			for(size_t k = 0; k < dim; k++) {
-				res[p] += col[k] * materialbuilder.proj[k + p*dim];
+			for(size_t p = 0; p < nplanes; p++) {
+				for(size_t k = 0; k < dim; k++) {
+					res[p] += col[k] * materialbuilder.proj[k + p*dim];
+				}
 			}
+		} else {
+			Eigen::Map<Eigen::VectorXf> ev(v, ndimensions*3);
+			Eigen::Map<Eigen::VectorXf> eres(&*res.begin(), nplanes);
+
+			eres = materialbuilder.svd.solve(ev);
 		}
 		if(colorspace == YCC) {
 			int count = 0;

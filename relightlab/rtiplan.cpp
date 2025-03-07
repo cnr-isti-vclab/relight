@@ -145,6 +145,20 @@ RtiPlanesRow::RtiPlanesRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 	setNChroma(parameters.nchroma);
 }
 
+void RtiPlanesRow::forceNPlanes(QList<int> n_planes) {
+	QStandardItemModel *model =	  qobject_cast<QStandardItemModel *>(nplanesbox->model());
+	Q_ASSERT(model != nullptr);
+	for(int i = 0; i < 7; i++) {
+		QStandardItem *item = model->item(i);
+		bool disabled = !n_planes.contains(nplanes[i]);
+		item->setFlags(disabled ? item->flags() & ~Qt::ItemIsEnabled
+								: item->flags() | Qt::ItemIsEnabled);
+		if(!disabled)
+			nplanesbox->setCurrentIndex(i);
+	}
+}
+
+
 void RtiPlanesRow::forceNPlanes(int n_planes) {
 	QStandardItemModel *model =	  qobject_cast<QStandardItemModel *>(nplanesbox->model());
 	Q_ASSERT(model != nullptr);
