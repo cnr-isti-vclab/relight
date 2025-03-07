@@ -56,10 +56,11 @@ public:
 	RtiPlanesRow(RtiParameters &parameters, QFrame *parent = nullptr);
 	void setNPlanes(int nplanes, bool emitting = false);
 	void setNChroma(int nchroma, bool emitting = false);
+	void forceNPlanes(QList<int> nplanes);
 	void forceNPlanes(int nplanes);
 private:
 	QComboBox *nplanesbox, *nchromabox;
-	int nplanes[7] = { 9, 12, 15, 18, 21, 24, 27 };
+	int nplanes[8] = { 6, 9, 12, 15, 18, 21, 24, 27 };
 	int nchromas[3] = { 1, 2, 3 };
 signals:
 	void nplanesChanged();

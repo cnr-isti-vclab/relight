@@ -105,6 +105,7 @@ void RtiFrame::init() {
 	export_row->suggestPath();
 	zoom_view->init();
 	zoom_view->setRect(qRelightApp->project().crop);
+	updateNPlanes();
 }
 
 void RtiFrame::exportRti() {
@@ -114,6 +115,11 @@ void RtiFrame::exportRti() {
 	if(project.dome.directions.size() == 0) {
 		QMessageBox::warning(this, "Missing light directions.", "You need light directions for this dataset to build an RTI.\n"
 																"You can either load a dome or .lp file or mark a reflective sphere in the 'Lights' tab.");
+		return;
+	}
+
+	if(project.dome.directions.size()*3 < parameters.nplanes) {
+		QMessageBox::warning(this, "Too few light directions.", "The number of coefficient planes is too high for the number of light directions available.");
 		return;
 	}
 
@@ -161,12 +167,25 @@ void RtiFrame::updateNPlanes() {
 
 	auto &nplanes = parameters.nplanes;
 	auto &nchroma = parameters.nchroma;
+	Project &project = qRelightApp->project();
 
 	switch(parameters.basis) {
-	case Rti::PTM:
-		nplanes = parameters.colorspace == Rti::RGB? 18: 9;
+	case Rti::PTM: {
+		QList<int> n_planes;
+		if(parameters.colorspace == Rti::RGB) {
+			n_planes.push_back(9);
+			if(project.dome.directions.size() > 6)
+				n_planes.push_back(18);
+		}
+		if(parameters.colorspace == Rti::LRGB) {
+			n_planes.push_back(6);
+			if(project.dome.directions.size() > 6)
+				n_planes.push_back(9);
+		}
+		nplanes = n_planes.back();
 		nchroma = 0;
-		planes_row->forceNPlanes(nplanes);
+		planes_row->forceNPlanes(n_planes);
+	}
 		break;
 	case Rti::HSH:
 		nplanes = parameters.colorspace == Rti::RGB? 27 : 12;
