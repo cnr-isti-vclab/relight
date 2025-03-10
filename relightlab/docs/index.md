@@ -12,4 +12,6 @@
     1. <a href="formats/relight.md"> Relight file format </a>
     2. <a href="formats/config.md"> Relight config file </a>
     3. <a href="formats/dome.md"> Dome file format </a>
+    
+3. <a href="about.md"> About and credits</a>
 
