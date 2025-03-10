@@ -398,48 +398,47 @@ MaterialBuilder RtiBuilder::pickBasePTM(std::vector<Vector3f> &lights) {
 	x = (At * A)^-1*At*b
 	*/
 
-	uint32_t dim = ndimensions*3;
+	uint32_t nlights = lights.size();
+	uint32_t dim = nlights*3; //number of lights *3
 	MaterialBuilder mat;
 	mat.mean.resize(dim, 0.0);
 
-	Eigen::MatrixXf A(lights.size(), 6);
-	for(uint32_t l = 0; l < lights.size(); l++) {
+	bool first_degree = (colorspace == LRGB && nplanes == 6) || (colorspace == RGB && nplanes == 9);
+
+	Eigen::MatrixXf A(lights.size(), first_degree ? 3 : 6);
+	for(uint32_t l = 0; l < nlights; l++) {
 		Vector3f &light = lights[l];
 		A(l, 0) = 1.0;
 		A(l, 1) = light[0];
 		A(l, 2) = light[1];
-		A(l, 3) = light[0]*light[0];
-		A(l, 4) = light[0]*light[1];
-		A(l, 5) = light[1]*light[1];
-	}
-
-	if((colorspace == LRGB && nplanes == 6) || (colorspace == RGB && nplanes == 9)) {
-		A.conservativeResize(lights.size(), 3);
+		if(!first_degree) {
+			A(l, 3) = light[0]*light[0];
+			A(l, 4) = light[0]*light[1];
+			A(l, 5) = light[1]*light[1];
+		}
 	}
 
 	Eigen::MatrixXf iA = (A.transpose()*A).inverse()*A.transpose();
 	if(iA.hasNaN()) {
-		 Eigen::MatrixXf AN(lights.size(), nplanes);
-		 for(uint32_t l = 0; l < lights.size(); l++) {
-			Vector3f &light = lights[l];
-			if(colorspace == LRGB) {
-				A(l, 0) = 1.0;
-				A(l, 1) = light[0];
-				A(l, 2) = light[1];
-				check for number of planes
-				A(l, 3) = light[0]*light[0];
-				A(l, 4) = light[0]*light[1];
-				A(l, 5) = light[1]*light[1];
-			} else {
-				A(l, 0) = 1.0;
-				A(l, 1) = light[0];
-				A(l, 2) = light[1];
-				A(l, 3) = light[0]*light[0];
-				A(l, 4) = light[0]*light[1];
-				A(l, 5) = light[1]*light[1];
+		if(colorspace != LRGB) {
+			A = Eigen::MatrixXf::Zero(nlights*3, nplanes);
+
+			for(uint32_t l = 0; l < lights.size(); l++) {
+				Vector3f &light = lights[l];
+				for(int k = 0; k < 3; k++) {
+					A(l*3+k, 0*3+k) = 1.0;
+					A(l*3+k, 1*3+k) = light[0];
+					A(l*3+k, 2*3+k) = light[1];
+					if(!first_degree) {
+						A(l*3+k, 3*3+k) = light[0]*light[0];
+						A(l*3+k, 4*3+k) = light[0]*light[1];
+						A(l*3+k, 5*3+k) = light[1]*light[1];
+					}
+				}
 			}
-		 }
-		 mat.svd.compute(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+		}
+		mat.svd.compute(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+		mat.useEigen = true;
 	} else {
 		if(colorspace == LRGB) {
 			//we could generalize for different polynomials
@@ -556,7 +555,7 @@ MaterialBuilder RtiBuilder::pickBase(PixelArray &sample, std::vector<Vector3f> &
 	case H:        builder = pickBaseHSH(directions, type); break;
 	default: cerr << "Unknown basis" << endl; exit(0);
 	}
-/*
+	/*
 	uint32_t dim = sample.components()*3;
 	for(uint32_t p = 0; p < nplanes; p += 3) {
 		for(uint32_t k = 0; k < lights.size(); k ++) {
@@ -653,8 +652,8 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 		if(callback && (i % 8000) == 0)
 			if(!(*callback)("Coefficients quantization:", 100*i/sample.npixels()))
 				throw std::string("Cancelled.");
-\
-		vector<float> principal = toPrincipal(sample[i]);
+		\
+			vector<float> principal = toPrincipal(sample[i]);
 
 		//find max and min of coefficients
 		for(uint32_t p = 0; p < nplanes; p++) {
@@ -930,8 +929,8 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 		Vector3f l2(sin(a)*cos(9*b), sin(a)*sin(9*b), cos(a));
 
 		T << l0[0], l0[1], l0[2],
-				l1[0], l1[1], l1[2],
-				l2[0], l2[1], l2[2];
+			l1[0], l1[1], l1[2],
+			l2[0], l2[1], l2[2];
 
 		T = T.inverse().eval();
 
@@ -1407,7 +1406,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 
 	// Set spatial resolution if known. Convert to pixels/m as RtiBuilder stores this in mm/pixel
 	if (imageset.pixel_size > 0) {
-			int dotsPerMeter = round(1000.0/imageset.pixel_size);
+		int dotsPerMeter = round(1000.0/imageset.pixel_size);
 		normals.setDotsPerMeterX(dotsPerMeter);
 		normals.setDotsPerMeterY(dotsPerMeter);
 		means.setDotsPerMeterX(dotsPerMeter);
@@ -1946,10 +1945,16 @@ std::vector<float> RtiBuilder::toPrincipal(Pixel &pixel, MaterialBuilder &materi
 		float luma = (mean[0] + mean[1] + mean[2])/255; //actually 3 times luma, but balances in the equation below.
 
 		//fit luminosity.
-		for(size_t p = 3; p < nplanes; p++)
-			for(size_t k = 0; k < ndimensions; k++)
-				res[p] += ((v[k*3] + v[k*3+1] + v[k*3+2])/luma)* materialbuilder.proj[k + (p-3)*ndimensions];
+		if(!materialbuilder.useEigen) {
+			for(size_t p = 3; p < nplanes; p++)
+				for(size_t k = 0; k < ndimensions; k++)
+					res[p] += ((v[k*3] + v[k*3+1] + v[k*3+2])/luma)* materialbuilder.proj[k + (p-3)*ndimensions];
+		} else {
+			Eigen::Map<Eigen::VectorXf> ev(v, ndimensions);
+			Eigen::Map<Eigen::VectorXf> eres(&*res.begin() + 3, nplanes);
 
+			eres = materialbuilder.svd.solve(ev);
+		}
 		res[0] = mean[0];
 		res[1] = mean[1];
 		res[2] = mean[2];
@@ -1957,7 +1962,7 @@ std::vector<float> RtiBuilder::toPrincipal(Pixel &pixel, MaterialBuilder &materi
 		
 
 	} else { //RGB, YCC
-		if(!materialbuilder.svd.computeU()) { //not rank deficient.
+		if(!materialbuilder.useEigen) { //not rank deficient.
 			vector<float> col(dim);
 
 			for(size_t k = 0; k < dim; k++)

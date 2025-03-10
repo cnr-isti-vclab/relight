@@ -48,6 +48,7 @@ class MaterialBuilder {
 public:
 	std::vector<float> proj;
 	std::vector<float> mean;
+	bool useEigen = false;
 	Eigen::JacobiSVD<Eigen::MatrixXf> svd;
 };
 
