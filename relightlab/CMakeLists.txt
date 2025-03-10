@@ -14,13 +14,14 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
+set(OPENCV_RELIGHT_LIBS opencv_core  opencv_imgcodecs opencv_imgproc opencv_video)
+	
 if (APPLE)
 	set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version" FORCE)
 	SET(CMAKE_INSTALL_RPATH $ORIGIN/../Frameworks)
 	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-else()
-	set(OPENCV_RELIGHT_LIBS opencv_core  opencv_imgcodecs opencv_imgproc opencv_video)
-	add_compile_definitions(WITH_OPENCV)
+#else()
+#	add_compile_definitions(WITH_OPENCV)
 endif()
 
 
