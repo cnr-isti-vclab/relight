@@ -1068,6 +1068,8 @@ size_t RtiBuilder::savePTM(const std::string &output) {
 	//second reading.
 	imageset.restart();
 
+	nworkers = QThread::idealThreadCount();
+
 	vector<Worker *> workers(height, nullptr);
 	for(size_t i = 0; i < nworkers; i++) {
 		workers[i] = new Worker(*this);

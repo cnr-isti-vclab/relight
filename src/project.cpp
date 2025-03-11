@@ -280,6 +280,12 @@ void Project::load(QString filename) {
 	if(!setDir(folder))
 		throw QString("The folder " + obj["folder"].toString() + " does not exists.");
 
+	//ensure resources folder has been created (for old project)
+	QDir resources = dir.filePath("resources");
+	if (!resources.exists() && !dir.mkpath("resources")) {
+		throw QString("Could not create the resources folder in %1").arg(dir.absolutePath());
+	}
+
 	lens.fromJson(obj["lens"].toObject());
 	lens.width = imgsize.width();
 	lens.height = imgsize.height();

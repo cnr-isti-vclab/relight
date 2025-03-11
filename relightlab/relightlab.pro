@@ -6,7 +6,7 @@ CONFIG += c++17
 #target_link_libraries( ${APP_NAME} Qt5::Svg )
 
 DEFINES += QT_DEPRECATED_WARNINGS
-DEFINES += _USE_MATH_DEFINES #WITH_OPENCV
+DEFINES += _USE_MATH_DEFINES WITH_OPENCV
 DEFINES += NOMINMAX
 
 INCLUDEPATH += ../external/
@@ -16,17 +16,17 @@ win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
     ../src/
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
+unix::QMAKE_CXXFLAGS = -fopenmp
 unix:INCLUDEPATH += ../external/eigen-3.3.9/ /usr/include/opencv4
-unix:LIBS += -ljpeg -ltiff -lgomp
-#unix:LIBS += -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_video
-
+unix:LIBS += -ljpeg -ltiff
+unix:LIBS += -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_video
+unix::LIBS += -fopenmp #-lgomp
 
 mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/3.1.0/include \
     /usr/local/include \
     /usr/local/include/eigen3
 mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/3.1.0/lib/ -ljpeg
 mac:LIBS += -framework Accelerate
-#mac:QMAKE_CXXFLAGS += -fopenmp
 mac:QMAKE_CXXFLAGS += -Xpreprocessor -I/usr/local/include #fopenmp -lomp
 # mac:QMAKE_LFLAGS += -lomp
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
