@@ -17,7 +17,6 @@ SOURCE_PATH=$SCRIPTS_PATH/../..
 BUILD_PATH=$SOURCE_PATH/build
 INSTALL_PATH=$SOURCE_PATH/install
 CORES="-j4"
-QT_DIR=""
 USE_BREW_LLVM=false
 CCACHE=""
 
@@ -35,10 +34,6 @@ case $i in
         ;;
     -j*)
         CORES=$i
-        shift # past argument=value
-        ;;
-    -qt=*|--qt_dir=*)
-        QT_DIR=${i#*=}
         shift # past argument=value
         ;;
     --ccache)
