@@ -28,7 +28,7 @@ if [ -n "$QT_DIR" ]; then
 fi
 
 # save in message the output of macdeployqt
-message=$(${QT_BASE_DIR}macdeployqt $INSTALL_PATH/$APPNAME -libpath=$QT_DIR/lib \
+message=$(${QT_BASE_DIR}macdeployqt $INSTALL_PATH/$APPNAME \
     $ARGUMENTS 2>&1)
 
 # if message contains "ERROR" then macdeployqt failed
