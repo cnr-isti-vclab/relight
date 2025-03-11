@@ -56,8 +56,11 @@ if(NOT TIFF_FOUND)
 	add_library(TIFF::TIFF ALIAS tiff)
 endif()
 
-find_package(OpenCV REQUIRED)
-#message(STATUS ${OpenCV_INCLUDE_DIRS})
+if(NOT APPLE)
+	find_package(OpenCV REQUIRED)
+	#message(STATUS ${OpenCV_INCLUDE_DIRS})
+endif()
+
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/RELIGHT_VERSION")
 	# version is read from RELIGHT_VERSION file
