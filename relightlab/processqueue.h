@@ -19,7 +19,6 @@ class ProcessQueue: public QThread {
 	Q_OBJECT
 public:
 	~ProcessQueue();
-	int nthreads = 4;
 
 	Task *task = nullptr; //task is removed from the queue when executing.
 	bool stopped = false;

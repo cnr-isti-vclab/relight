@@ -1,3 +1,7 @@
+
+#include "relightapp.h"
+#include "mainwindow.h"
+
 #include <QApplication>
 
 #include <QVBoxLayout>
@@ -5,12 +9,8 @@
 #include <QLabel>
 #include <QImageReader>
 
-#include "relightapp.h"
-#include "mainwindow.h"
-
-#include <locale.h>
-
 #include <iostream>
+#include <locale.h>
 using namespace std;
 
 #define RELIGHT_STRINGIFY0(v) #v

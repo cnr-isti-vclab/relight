@@ -69,6 +69,7 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 	case Dome::LIGHTS3D:
 		computeParallaxPositions(images, spheres, lens, positions3d);
 		directions = positions3d;
+		positionsSphere.resize(directions.size());
 		for(size_t i = 0; i < directions.size(); i++) {
 			float len = directions[i].norm();
 			directions[i] /= len;

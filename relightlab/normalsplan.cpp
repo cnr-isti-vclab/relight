@@ -164,7 +164,7 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 			QHBoxLayout *bni_parameter = new QHBoxLayout;
 			bni_parameter->addWidget(new QLabel("Discontinuity propensity."));
 			bni_parameter->addWidget(bni_k = new QDoubleSpinBox);
-			bni_k->setRange(0.01, 50);
+			bni_k->setRange(0.00, 50);
 			bni_k->setValue(parameters.bni_k);
 
 			bni_layout->addLayout(bni_parameter);

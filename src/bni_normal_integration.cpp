@@ -283,6 +283,92 @@ std::vector<float> bni_pyramid(std::function<bool(QString s, int n)> progressed,
 	h = result.h;
 	return result.heights;
 }
+#include <Eigen/SparseCholesky>
+
+
+Eigen::VectorXd bni_integrate_iterative(std::function<bool(QString s, int n)> progressed, Eigen::SparseMatrix<double> &A, Eigen::VectorXd &b, Eigen::SparseMatrix<double> W,
+							 double k,
+							 double tolerance, double solver_tolerance,
+							 int max_iterations, int max_solver_iterations) {
+
+	int n = b.size()/4;
+
+	Eigen::VectorXd z = Eigen::VectorXd::Zero(n);
+
+	Eigen::MatrixXd tmp = A*z - b;
+	double energy = (tmp.transpose() * W * tmp)(0);
+	double start_energy = energy;
+	if(isnan(energy)) {
+		throw "Computational problems.";
+	}
+
+	cout << "Energy : " << energy << endl;
+
+	vector<Triple> triples;
+	for(int i = 0; i < max_iterations; i++) {
+
+		Eigen::SparseMatrix<double> A_mat = A.transpose()*W*A;
+		Eigen::VectorXd b_vec = A.transpose()*W*b;
+
+		Eigen::ConjugateGradient<Eigen::SparseMatrix<double>> solver;
+
+		solver.compute(A_mat);
+		solver.setTolerance(solver_tolerance);
+		solver.setMaxIterations(max_solver_iterations);
+		z = solver.solveWithGuess(b_vec, z);
+		if (solver.info() != Eigen::Success) {
+			double finalResidual = solver.error();
+			cerr << "Max iter reached with error: " << finalResidual << endl;
+		}
+
+		// Get the number of iterations
+		int numIterations = solver.iterations();
+		std::cout << "Number of iterations: " << numIterations << " error: " << solver.error() << " tolerance: " << solver_tolerance << std::endl;
+
+
+		if(k == 0)
+			break;
+
+		Eigen::VectorXd wu = ((A.block(n, 0, n, n)*z).array().pow(2) -
+							  (A.block(0, 0, n, n)*z).array().pow(2)).unaryExpr([k](double x) { return sigmoid(x, k); });
+		Eigen::VectorXd wv = ((A.block(n*3, 0, n, n)*z).array().pow(2) -
+							  (A.block(n*2, 0, n, n)*z).array().pow(2)).unaryExpr([k](double x) { return sigmoid(x, k); });
+
+		triples.clear();
+		for(int i = 0; i < n; i++) {
+			triples.push_back(Triple(i, i, wu(i)));
+			triples.push_back(Triple(i+n, i+n, 1.0 - wu(i)));
+			triples.push_back(Triple(i+n*2, i+n*2, wv(i)));
+			triples.push_back(Triple(i+n*3, i+n*3, 1 - wv(i)));
+		}
+		W.setFromTriplets(triples.begin(), triples.end());
+
+		double energy_old = energy;
+		tmp = A*z - b;
+		energy = (tmp.transpose() * W * tmp)(0);
+		cout << "Energy: " << energy << endl;
+
+		double relative_energy = fabs(energy - energy_old) / energy_old;
+		double total_progress = fabs(energy - start_energy) / start_energy;
+		if(progressed) {
+			bool proceed = progressed("Integrating normals...", 100*(1 - (log(relative_energy) - log(tolerance))/(log(total_progress) - log(tolerance))));
+			if(!proceed) break;
+		}
+		if(relative_energy < tolerance)
+			break;
+	}
+	return z;
+}
+
+Eigen::VectorXd bni_integrate_direct(Eigen::SparseMatrix<double> &A, Eigen::VectorXd &b, Eigen::SparseMatrix<double> &W) {
+	Eigen::SparseMatrix<double> A_mat = A.transpose()*W*A;
+	Eigen::VectorXd b_vec = A.transpose()*W*b;
+
+	Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> > solver;
+	solver.compute(A_mat);
+	return solver.solve(b_vec);
+}
+
 
 void bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int h, std::vector<float> &normalmap, std::vector<float> &heights,
 				   double k,
@@ -361,77 +447,14 @@ void bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int 
 		triples.push_back(Triple(i, i, 0.5));
 	W.setFromTriplets(triples.begin(), triples.end());
 
-	Eigen::VectorXd z = Eigen::VectorXd::Zero(n);
-	//for(int i = 0; i < n; i++)
-	//	z(i) = heights[i];
+	Eigen::VectorXd z;
 
-	Eigen::MatrixXd tmp = A*z - b;
-	double energy = (tmp.transpose() * W * tmp)(0);
-	double start_energy = energy;
-	if(isnan(energy)) {
-		throw "Accidentaccio!";
-	}
+	if(k == 0.0)
+		z = bni_integrate_direct(A, b, W);
+	else
+		z = bni_integrate_iterative(progressed, A, b, W, k, tolerance, solver_tolerance, max_iterations, max_solver_iterations);
 
-	cout << "Energy : " << energy << endl;
-
-	for(int i = 0; i < max_iterations; i++) {
-
-		Eigen::SparseMatrix<double> A_mat = A.transpose()*W*A;
-		Eigen::VectorXd b_vec = A.transpose()*W*b;
-
-		Eigen::ConjugateGradient<Eigen::SparseMatrix<double>> solver;
-
-		//Eigen::LeastSquaresConjugateGradient<Eigen::SparseMatrix<double>> solver;
-		//Eigen::BiCGSTAB<Eigen::SparseMatrix<double> > solver;
-		solver.compute(A_mat);
-		solver.setTolerance(solver_tolerance);
-		solver.setMaxIterations(max_solver_iterations);
-
-		z = solver.solveWithGuess(b_vec, z);
-		if (solver.info() != Eigen::Success) {
-			double finalResidual = solver.error();
-			cerr << "Max iter reached with error: " << finalResidual << endl;
-			//			return std::vector<double>();
-		}
-
-		// Get the number of iterations
-		int numIterations = solver.iterations();
-		std::cout << "Number of iterations: " << numIterations << " error: " << solver.error() << " tolerance: " << solver_tolerance << std::endl;
-
-
-		if(k == 0)
-			break;
-
-		Eigen::VectorXd wu = ((A.block(n, 0, n, n)*z).array().pow(2) -
-							  (A.block(0, 0, n, n)*z).array().pow(2)).unaryExpr([k](double x) { return sigmoid(x, k); });
-		Eigen::VectorXd wv = ((A.block(n*3, 0, n, n)*z).array().pow(2) -
-							  (A.block(n*2, 0, n, n)*z).array().pow(2)).unaryExpr([k](double x) { return sigmoid(x, k); });
-
-		triples.clear();
-		for(int i = 0; i < n; i++) {
-			triples.push_back(Triple(i, i, wu(i)));
-			triples.push_back(Triple(i+n, i+n, 1.0 - wu(i)));
-			triples.push_back(Triple(i+n*2, i+n*2, wv(i)));
-			triples.push_back(Triple(i+n*3, i+n*3, 1 - wv(i)));
-		}
-		W.setFromTriplets(triples.begin(), triples.end());
-
-		double energy_old = energy;
-		tmp = A*z - b;
-		energy = (tmp.transpose() * W * tmp)(0);
-		cout << "Energy: " << energy << endl;
-
-		double relative_energy = fabs(energy - energy_old) / energy_old;
-		double total_progress = fabs(energy - start_energy) / start_energy;
-		if(progressed) {
-			bool proceed = progressed("Integrating normals...", 100*(1 - (log(relative_energy) - log(tolerance))/(log(total_progress) - log(tolerance))));
-			if(!proceed) break;
-		}
-		if(relative_energy < tolerance)
-			break;
-	}
 	heights.resize(w*h);
 	for(int i = 0; i < w*h; i++)
 		heights[i] = z(i);
-	//memcpy(&depthmap[0], z.data(), n*8);
 }
