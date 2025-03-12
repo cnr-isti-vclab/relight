@@ -46,7 +46,7 @@ fi
 
 ls $INSTALL_PATH/$APPNAME/Contents/Frameworks 
 # trying to install libgcc_s lib
-dylibbundler -b -x $INSTALL_PATH/$APPNAME/Contents/MacOS/${APPNAME%.app} -d $INSTALL_PATH/$APPNAME/Contents/Frameworks -p @executable_path/../Frameworks/
+#dylibbundler -b -x $INSTALL_PATH/$APPNAME/Contents/MacOS/${APPNAME%.app} -d $INSTALL_PATH/$APPNAME/Contents/Frameworks -p @executable_path/../Frameworks/
 
 # remove everything from install path, except the appbundle
 cd $INSTALL_PATH
