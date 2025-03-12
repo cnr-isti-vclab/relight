@@ -34,6 +34,8 @@ case $i in
 esac
 done
 
+echo "Notarizing..."
+
 xcrun notarytool store-credentials "notarytool-profile" --apple-id $NOTAR_USER --team-id $NOTAR_TEAM_ID --password $NOTAR_PASSWORD
 
 ditto -c -k --keepParent "$INSTALL_PATH/$APPNAME" "$INSTALL_PATH/notarization.zip"
