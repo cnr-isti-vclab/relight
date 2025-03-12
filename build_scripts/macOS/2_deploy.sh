@@ -44,10 +44,12 @@ case $i in
         ;;
     -np=*|--notarization_pssw=*)
         NOTAR_PASSWORD="${i#*=}"
+        echo $PASSWORD
         shift # past argument=value
         ;;
     -nt=*|--notarization_team=*)
         NOTAR_TEAM_ID="${i#*=}"
+        echo $NOTAR_TEAM_ID
         shift # past argument=value
         ;;
     *)
