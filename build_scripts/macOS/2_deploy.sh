@@ -41,15 +41,13 @@ case $i in
           NOTARIZE=true
         fi
         shift # past argument=value
-        ;;
+        ;;  
     -np=*|--notarization_pssw=*)
         NOTAR_PASSWORD="${i#*=}"
-        echo $NOTAR_PASSWORD
         shift # past argument=value
         ;;
     -nt=*|--notarization_team=*)
         NOTAR_TEAM_ID="${i#*=}"
-        echo $NOTAR_TEAM_ID
         shift # past argument=value
         ;;
     *)
@@ -69,7 +67,6 @@ if [ "$SIGN" = true ] ; then
 fi
 
 if [ "$NOTARIZE" = true ] ; then
-    echo "$SCRIPTS_PATH/internal/2c_notarize_appbundle.sh -i=$INSTALL_PATH -nu=$NOTAR_USER -nt=$NOTAR_TEAM_ID -np=$NOTAR_PASSWORD"
     bash $SCRIPTS_PATH/internal/2c_notarize_appbundle.sh -i=$INSTALL_PATH -nu=$NOTAR_USER -nt=$NOTAR_TEAM_ID -np=$NOTAR_PASSWORD
 
     echo "======= AppBundle Notarized ======="
