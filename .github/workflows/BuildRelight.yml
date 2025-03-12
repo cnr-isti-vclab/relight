@@ -21,6 +21,7 @@ jobs:
         submodules: true
     - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
+
     - name: Set CodeSign Certificate macOS
       if: runner.os == 'macOS' && env.MAC_CERT != null
       uses: apple-actions/import-codesign-certs@v2
@@ -79,9 +80,9 @@ jobs:
         bash build_scripts/${{ runner.os }}/2_deploy.sh
         --cert_pssw='${{ secrets.WIN_CERTIFICATE_PSSW }}'
         --cert_id='${{ secrets.MACOS_CERT_ID }}'
-        --notarization_user='${{ secrets.MACOS_NOTARIZATION_USER }}'
-        --notarization_passw='${{ secrets.MACOS_NOTARIZATION_PSSW }}'
-        --notarization_team='${{ secrets.MACOS_NOTARIZATION_TEAM_ID }}'
+        --notarization_user='prova'
+        --notarization_passw='contropropva'
+        --notarization_team='controcontroprova'
 
     - name: Upload RelightLab Portable
       uses: actions/upload-artifact@v4

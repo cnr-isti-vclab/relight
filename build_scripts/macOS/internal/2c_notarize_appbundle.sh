@@ -22,10 +22,12 @@ case $i in
         ;;
     -nt=*|--notarization_team=*)
         NOTAR_TEAM_ID="${i#*=}"
+        echo $NOTAR_TEAM_ID
         shift # past argument=value
         ;;
     -np=*|--notarization_pssw=*)
         NOTAR_PASSWORD="${i#*=}"
+        echo $NOTAR_PASSWORD
         shift # past argument=value
         ;;
     *)
@@ -33,6 +35,8 @@ case $i in
         ;;
 esac
 done
+
+echo "xcrun notarytool store-credentials 'notarytool-profile' --apple-id $NOTAR_USER --team-id $NOTAR_TEAM_ID --password $NOTAR_PASSWORD"
 
 xcrun notarytool store-credentials "notarytool-profile" --apple-id $NOTAR_USER --team-id $NOTAR_TEAM_ID --password $NOTAR_PASSWORD
 
