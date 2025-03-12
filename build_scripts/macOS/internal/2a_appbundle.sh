@@ -3,6 +3,7 @@
 SCRIPTS_PATH="$(dirname "$(realpath "$0")")"/..
 
 INSTALL_PATH=$SCRIPTS_PATH/../../install
+QT_DIR=""
 APPNAME="relightlab.app"
 
 #checking for parameters
@@ -11,6 +12,10 @@ do
 case $i in
     -i=*|--install_path=*)
         INSTALL_PATH="${i#*=}"
+        shift # past argument=value
+        ;;
+    -qt=*|--qt_dir=*)
+        QT_DIR=${i#*=}/bin/
         shift # past argument=value
         ;;
     *)
