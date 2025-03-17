@@ -120,7 +120,7 @@ HelpDialog::HelpDialog(QWidget *parent): QDialog(parent) {
 
 	content->addWidget(toolbar);
 
-	browser = new QTextBrowser;
+	browser = new HelpBrowser;
 	content->addWidget(browser);
 
 	QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
@@ -154,7 +154,7 @@ void HelpDialog::backward() {
 }
 
 void HelpDialog::showPage(QString id) {
-	QUrl url("qrc:/docs/" + id + ".md");
+	QUrl url(id + ".html");
 #if QT_VERSION > QT_VERSION_CHECK(5, 15, 0)
 	browser->setSource(url, QTextDocument::MarkdownResource);
 #else

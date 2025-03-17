@@ -3,6 +3,7 @@
 
 #include <QToolButton>
 #include <QDialog>
+#include "homeframe.h"
 
 class QPushButton;
 class QIcon;
@@ -76,7 +77,7 @@ public slots:
 	void forward();
 	void backward();
 private:
-	QTextBrowser *browser = nullptr;
+	HelpBrowser *browser = nullptr;
 
 	explicit HelpDialog(QWidget *parent = nullptr);
 	HelpDialog(const HelpDialog&) = delete; // Disable copy constructor

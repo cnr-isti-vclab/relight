@@ -10,6 +10,9 @@
 #include "recentprojects.h"
 #include "helpbutton.h"
 
+#include <iostream>
+using namespace std;
+
 void setDefaultAction(QPushButton *button, QAction *action) {
 	QObject::connect(button, SIGNAL(clicked(bool)), action, SLOT(trigger()));
 	button->setText(action->text());
@@ -62,16 +65,15 @@ HomeFrame::HomeFrame() {
 	contentLayout->addLayout(leftColumnLayout, 2);
 
 	// Right column
-	QTextBrowser *browser = new QTextBrowser(this);
-	browser->setStyleSheet("margin-left:40px; margin-top: 40px; background:transparent;");
+	HelpBrowser *browser = new HelpBrowser(this);
+	browser->setSearchPaths(QStringList() << "qrc:/docs/");
 	browser->setAlignment(Qt::AlignTop);
-#if QT_VERSION > QT_VERSION_CHECK(5, 15, 0)
-	browser->setSource(QUrl("qrc:/docs/home.md"), QTextDocument::MarkdownResource);
-#else
-	browser->setSource(QUrl("qrc:/docs/home.md"));
-#endif
-	browser->setMinimumWidth(400);
-	contentLayout->addWidget(browser, 2);
+
+	browser->setSource(QUrl("home.html"), QTextDocument::HtmlResource);
+
+	browser->setStyleSheet("margin-left:40px; margin-top: 40px; background:transparent;");
+	browser->setMinimumWidth(600);
+	contentLayout->addWidget(browser, 4);
 
 	contentLayout->addStretch(1);
 
@@ -79,4 +81,26 @@ HomeFrame::HomeFrame() {
 	contentLayout->setContentsMargins(20, 20, 20, 20);
 	contentLayout->setSpacing(20);
 
+}
+
+void HelpBrowser::doSetSource(const QUrl &url, QTextDocument::ResourceType type) {
+	QFile html_file(":/docs/" + url.url());
+	html_file.open(QFile::ReadOnly);
+	QString htmlContent = html_file.readAll();
+
+	QFile css_file(":/docs/style.css");
+	css_file.open(QFile::ReadOnly);
+	QString cssContent = css_file.readAll();
+	QString modifiedHtml = QString(R"(
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<style>%1</style>
+	</head>
+	<body>%2</body>
+</html>
+	)" ).arg(cssContent, htmlContent);
+
+	setHtml(modifiedHtml);
 }
