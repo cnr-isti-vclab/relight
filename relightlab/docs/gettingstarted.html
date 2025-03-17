@@ -1,0 +1,75 @@
+    <h1>Getting Started with RelightLab</h1>
+
+    <p>RelightLab is an application for creating relightable images and performing basic photostereo processing from a set of photos. This guide will help you get started with creating, saving, loading projects, and processing images.</p>
+
+    <h2 id="dataset">Capturing and Preparing the Dataset</h2>
+    <p>For guidance on how to properly capture and prepare your dataset, refer to the <a href="https://culturalheritageimaging.org/">Cultural Heritage Imaging Foundation<a> resources. They provide best practices for image acquisition, lighting setups, and data preparation to ensure optimal results when using RelightLab.</p>
+
+    <h2 id="new-project">Creating a New Project</h2>
+    <p>To create a new project, click the "New project..." button and simply select a folder containing the set of photos. The application will load the images and prepare them for processing.</p>
+
+    <h2 id="save-project">Saving a Project</h2>
+    <ul>
+        <li>Go to <strong>Menu → File → Save...</strong></li>
+        <li>A <code>.relight</code> JSON file will be saved.</li>
+        <li>It is recommended to save the file in the same folder as the dataset or in the folder above, so the dataset can be moved easily.</li>
+    </ul>
+
+    <h2 id="load-project">Loading an Existing Project</h2>
+    <p>To load a previously saved project, select the <code>.relight</code> file, and the application will restore the project state.</p>
+
+    <h2 id="image-alignment">Checking Image Alignment</h2>
+    <ul>
+        <li>Select a small region of the image.</li>
+        <li>Wait for the patches to load.</li>
+        <li>Click the <strong>Verify</strong> button to visually inspect the alignment.</li>
+        <li>If necessary, adjust alignment by dragging the marker.</li>
+    </ul>
+
+    <h2 id="scale">Establishing a Scale</h2>
+    <ul>
+        <li>Select a segment on the image.</li>
+        <li>Specify the real-world dimension in millimeters.</li>
+        <li>This enables accurate measurements in the viewers.</li>
+    </ul>
+
+    <h2 id="light-directions">Finding Light Directions</h2>
+    <p>Each image corresponds to a different lighting direction represented as a vector. There are two ways to determine these directions:</p>
+
+    <h3>Using a Light Position File</h3>
+    <p>If a dome was used, a <code>.lp</code> text file with the ordered light directions is usually available. (See <strong>.lp documentation</strong>.)</p>
+
+    <h3>Using Reflective Spheres</h3>
+    <ul>
+        <li>Create a new sphere.</li>
+        <li>Click on the sphere's border in the image (at least 3 points for a sphere, 5 for an ellipse, which may be needed for wide-angle lenses).</li>
+        <li>Confirm selection.</li>
+        <li>The application will auto-detect reflections.</li>
+        <li>Once completed, verify and adjust if necessary. (See <strong>reflective sphere documentation</strong>.)</li>
+    </ul>
+
+    <h2 id="crop-region">Selecting a Crop Region</h2>
+    <p>You can define a crop region in the <strong>Crop</strong> tab to process only a specific part of the image instead of the entire dataset.</p>
+
+    <h2 id="export-rti">Exporting RTI</h2>
+    <ul>
+        <li>Choose the RTI type (e.g., PTM, HSH, etc.).</li>
+        <li>Set quality and format parameters.</li>
+        <li>Export in a web-friendly image layout.</li>
+        <li>Specify the folder name where the RTI will be saved. (See <strong>RTI basis documentation</strong>.)</li>
+    </ul>
+
+    <h2 id="queue">Managing Processing in the Queue</h2>
+    <ul>
+        <li>The <strong>Queue</strong> tab shows processing progress.</li>
+        <li>Once finished, click the <strong>Cast</strong> icon to view the RTI in a browser.</li>
+        <li>You can open the folder to inspect images, useful for further processing.</li>
+        <li>If publishing the dataset on a web server, consider using pyramidal formats such as:</li>
+        <ul>
+            <li><strong>DeepZoom</strong></li>
+            <li><strong>TarZoom</strong></li>
+            <li><strong>ITarZoom</strong></li>
+        </ul>
+        <li>These formats optimize large images using a Google Maps-like approach for responsive interfaces and reduced data transfer. (See <strong>web format documentation</strong>.)</li>
+    </ul>
+

@@ -75,37 +75,38 @@
         <file>icons/light/scalable/loader.svg</file>
         <file>icons/light/scalable/minus.svg</file>
         <file>icons/light/scalable/plus.svg</file>
-        <file>docs/home.md</file>
-        <file>docs/index.md</file>
-        <file>docs/about.md</file>
-        <file>docs/gettingstarted.md</file>
-        <file>docs/interface/domes.md</file>
-        <file>docs/interface/general.md</file>
-        <file>docs/interface/geometry.md</file>
-        <file>docs/interface/image_list.md</file>
-        <file>docs/interface/measurements.md</file>
-        <file>docs/interface/new_project.md</file>
-        <file>docs/interface/open_project.md</file>
-        <file>docs/interface/queue.md</file>
-        <file>docs/interface/spheres.md</file>
-        <file>docs/normals/export.md</file>
-        <file>docs/normals/flattening.md</file>
-        <file>docs/normals/normalmap.md</file>
-        <file>docs/normals/surface.md</file>
-        <file>docs/rti/basis.md</file>
-        <file>docs/rti/coefficients.md</file>
-        <file>docs/rti/colorspace.md</file>
-        <file>docs/rti/export.md</file>
-        <file>docs/rti/format.md</file>
-        <file>docs/rti/general.md</file>
-        <file>docs/rti/quality.md</file>
-        <file>docs/rti/web.md</file>
-        <file>docs/formats/config.md</file>
-        <file>docs/formats/dome.md</file>
-        <file>docs/formats/project.md</file>
-        <file>docs/formats/iiif.md</file>
-        <file>docs/formats/legacy.md</file>
-        <file>docs/formats/web.md</file>
+        <file>docs/style.css</file>
+        <file>docs/home.html</file>
+        <file>docs/index.html</file>
+        <file>docs/about.html</file>
+        <file>docs/gettingstarted.html</file>
+        <file>docs/interface/domes.html</file>
+        <file>docs/interface/general.html</file>
+        <file>docs/interface/geometry.html</file>
+        <file>docs/interface/image_list.html</file>
+        <file>docs/interface/measurements.html</file>
+        <file>docs/interface/new_project.html</file>
+        <file>docs/interface/open_project.html</file>
+        <file>docs/interface/queue.html</file>
+        <file>docs/interface/spheres.html</file>
+        <file>docs/normals/export.html</file>
+        <file>docs/normals/flattening.html</file>
+        <file>docs/normals/normalmap.html</file>
+        <file>docs/normals/surface.html</file>
+        <file>docs/rti/basis.html</file>
+        <file>docs/rti/coefficients.html</file>
+        <file>docs/rti/colorspace.html</file>
+        <file>docs/rti/export.html</file>
+        <file>docs/rti/format.html</file>
+        <file>docs/rti/general.html</file>
+        <file>docs/rti/quality.html</file>
+        <file>docs/rti/web.html</file>
+        <file>docs/formats/config.html</file>
+        <file>docs/formats/dome.html</file>
+        <file>docs/formats/project.html</file>
+        <file>docs/formats/iiif.html</file>
+        <file>docs/formats/legacy.html</file>
+        <file>docs/formats/web.html</file>
         <file>icons/dark/scalable/chevrons-down.svg</file>
         <file>icons/dark/scalable/chevrons-up.svg</file>
         <file>icons/light/scalable/chevrons-down.svg</file>
