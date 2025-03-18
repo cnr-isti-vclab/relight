@@ -1,20 +1,21 @@
  body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
-            max-width: 800px;
-            margin: auto;
-            padding: 20px;
-        }
-        h1, h2, h3 {
-            color: #aaa;
-        }
-        a {
-            color: #0077cc;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
+            max-width: 1024px;
+            padding-top: 20px;
+}
+h1, h2, h3 {
+    color: #aaa;
+}
+h1 { font-size: x-large; }
+h2 { font-size: large; }
+a {
+    color: #0077cc;
+   text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
         ul {
             padding-left: 20px;
         }
