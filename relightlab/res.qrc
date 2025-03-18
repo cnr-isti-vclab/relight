@@ -80,15 +80,16 @@
         <file>docs/index.html</file>
         <file>docs/about.html</file>
         <file>docs/gettingstarted.html</file>
-        <file>docs/interface/domes.html</file>
-        <file>docs/interface/general.html</file>
-        <file>docs/interface/geometry.html</file>
+        <file>docs/interface/index.html</file>
+        <file>docs/interface/home.html</file>
         <file>docs/interface/image_list.html</file>
-        <file>docs/interface/measurements.html</file>
+        <file>docs/interface/align.html</file>
+        <file>docs/interface/scale.html</file>
+        <file>docs/interface/spheres.html</file>
+        <file>docs/interface/lights.html</file>
+        <file>docs/interface/queue.html</file>
         <file>docs/interface/new_project.html</file>
         <file>docs/interface/open_project.html</file>
-        <file>docs/interface/queue.html</file>
-        <file>docs/interface/spheres.html</file>
         <file>docs/normals/export.html</file>
         <file>docs/normals/flattening.html</file>
         <file>docs/normals/normalmap.html</file>

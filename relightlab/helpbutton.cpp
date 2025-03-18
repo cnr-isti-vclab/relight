@@ -111,6 +111,7 @@ HelpDialog::HelpDialog(QWidget *parent): QDialog(parent) {
 	setGeometry(region);
 
 	QVBoxLayout *content = new QVBoxLayout(this);
+	content->setSpacing(20);
 
 	QToolBar *toolbar = new QToolBar;
 	toolbar->addAction(QIcon::fromTheme("home"), "Home", this, SLOT(home()));
@@ -121,6 +122,7 @@ HelpDialog::HelpDialog(QWidget *parent): QDialog(parent) {
 	content->addWidget(toolbar);
 
 	browser = new HelpBrowser;
+	browser->setStyleSheet("background:transparent;");
 	content->addWidget(browser);
 
 	QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);

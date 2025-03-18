@@ -4,6 +4,7 @@
 #include <QTextBrowser>
 #include <QFile>
 #include <QAction>
+#include <QToolBar>
 
 #include "homeframe.h"
 #include "relightapp.h"
@@ -64,22 +65,37 @@ HomeFrame::HomeFrame() {
 	// Add columns to the content layout
 	contentLayout->addLayout(leftColumnLayout, 2);
 
-	// Right column
+	QVBoxLayout *rightColumnLayout = new QVBoxLayout();
+	rightColumnLayout->setSpacing(20);
+
+	QToolBar *toolbar = new QToolBar;
 	HelpBrowser *browser = new HelpBrowser(this);
-	browser->setSearchPaths(QStringList() << "qrc:/docs/");
+
+	toolbar->addAction(QIcon::fromTheme("home"), "Home", [browser]() { browser->setSource(QUrl("index.html")); });
+	toolbar->addSeparator();
+	toolbar->addAction(QIcon::fromTheme("chevron-left"), "Back", browser, SLOT(previous()));
+	toolbar->addAction(QIcon::fromTheme("chevron-right"), "Forward", browser, SLOT(next())	);
+
+	rightColumnLayout->addWidget(toolbar);
+
+	// Right column
+	//browser->setSearchPaths(QStringList() << "qrc:/docs/");
 	browser->setAlignment(Qt::AlignTop);
 
 	browser->setSource(QUrl("home.html"), QTextDocument::HtmlResource);
 
-	browser->setStyleSheet("margin-left:40px; margin-top: 40px; background:transparent;");
+	browser->setStyleSheet("background:transparent;");
 	browser->setMinimumWidth(600);
-	contentLayout->addWidget(browser, 4);
+
+	rightColumnLayout->addWidget(browser, 1);
+
+	contentLayout->addLayout(rightColumnLayout, 4);
 
 	contentLayout->addStretch(1);
 
 	// Set layout margins and spacing
 	contentLayout->setContentsMargins(20, 20, 20, 20);
-	contentLayout->setSpacing(20);
+	//contentLayout->setSpacing(20);
 
 }
 
@@ -102,5 +118,25 @@ void HelpBrowser::doSetSource(const QUrl &url, QTextDocument::ResourceType type)
 </html>
 	)" ).arg(cssContent, htmlContent);
 
+	if(current < 0 || url.url() != history[current]) {
+		current++;
+		history.resize(current+1);
+		history[current] = url.url();
+	}
+
 	setHtml(modifiedHtml);
+}
+
+void HelpBrowser::next() {
+	if(current >= history.size()-1)
+		return;
+	current++;
+	setSource(QUrl(history[current]));
+}
+
+void HelpBrowser::previous() {
+	if(current <= 0)
+		return;
+	current--;
+	setSource(QUrl(history[current]));
 }
