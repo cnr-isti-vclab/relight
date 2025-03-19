@@ -30,6 +30,7 @@ public:
 	QStringList steps = {"means", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc","rti", "malt_ortho", "tawny", "jpg", "updateJson"};
 	QDir base_dir;
 	QDir datasets_dir;
+	QDir photogrammetry_dir;
 	QString mm3d_path;
 	QString relight_cli_path;
 	QString relight_merge_path;

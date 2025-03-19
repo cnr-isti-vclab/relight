@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 	//QString cameraDepthmap = base + "datasets/L04C12.tif";
 	//QString orientationXmlPath = base + "photogrammetry/Ori-Relative/Orientation-L04C12.tif.xml";
 	QString maskPath = base + "photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
-	QString plyFile = base + "photogrammetry/AperiCloud_Relative__mini.ply";
+	QString plyFile = base + "photogrammetry/AperiCloud_Relative.ply";
 	//QString point_txt = base + "photogrammetry/points_h.txt";
 	Depthmap depth;
 
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
 	OrthoDepthmap ortho;
 
 
-	QFile::remove(depthmapPath);
+	/*QFile::remove(depthmapPath);
 	if (!QFile::copy(depthmapPath + "_backup.tif", depthmapPath)) {
 		cout << "Error copying depthmap " << depthmapPath.toStdString() << endl;
 		exit(0);
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 		cout << "Error copying mask" << endl;
 		exit(0);
 	}
-
+*/
 	if(!ortho.load(qPrintable(depthmapPath), qPrintable(maskPath))){
 		cout << "accidenti" << endl;
 		return -1;
@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
 	ortho.endIntegration();
 	ortho.saveDepth(qPrintable(depthmapPath));
 	ortho.saveMask(qPrintable(maskPath));
-	ortho.saveObj("weightsElev3.obj");
+	ortho.saveObj("weightsElev3_0125.obj");
 
 
 

@@ -11,12 +11,30 @@
 #define TESTING_PLANE_0
 using namespace std;
 
-PanoBuilder::PanoBuilder(QString dataset_path)
+
+
+//TODO: fix the mean directory. Ex. command line: /usr/your/testFace
+//tapioca: insert datasets folder absolute path to extract the images
+//other programs: photogrammetry
+//malt_ortho: needs cdUp because search the exportMeans in subdir of Homol in photogrammetry
+
+PanoBuilder::PanoBuilder(QString base_path)
 {
-	datasets_dir = QDir(QDir(dataset_path).absolutePath());
-	assert(datasets_dir.exists());
-	base_dir = datasets_dir;
-	base_dir.cdUp();
+	base_dir = QDir(QDir(base_path).absolutePath());
+	assert(base_dir.exists());
+	//base_dir.cdUp();
+
+	datasets_dir = QDir(base_dir.filePath("datasets"));
+	if (!datasets_dir.exists()) {
+		throw QString("Directory datasets non trovata in ") + base_dir.absolutePath();
+	}
+	photogrammetry_dir = QDir(base_dir.filePath("photogrammetry"));
+	if (!photogrammetry_dir.exists()) {
+		if (!base_dir.mkdir("photogrammetry")) {
+			throw QString("Could not create directory: photogrammetry");
+		}
+	}
+
 	QDir::setCurrent(base_dir.absolutePath());
 	DefCor = 0.1;
 	Regul = 0.1;
@@ -72,7 +90,15 @@ int PanoBuilder::findStep(QString step){
 
 void PanoBuilder::exportMeans(){
 
+
 	QStringList subDirNames = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+	QDir photogrammetryDir = QDir(base_dir.filePath("photogrammetry"));
+
+	if (!photogrammetryDir.exists()) {
+		if (!base_dir.mkdir("photogrammetry")) {
+			throw QString("Could not create directory: photogrammetry");
+		}
+	}
 
 	for (const QString &subDirName : subDirNames) {
 
@@ -101,6 +127,7 @@ void PanoBuilder::exportMeans(){
 			//se formato è jpg copia se è un tif devi fare una conversion
 			QString newTifFileName = QString("%1.tif").arg(subDirName);
 			QString newTifFilePath = datasets_dir.filePath(newTifFileName);
+			QString photogrammetryTifPath = photogrammetryDir.filePath(newTifFileName);
 
 
 			QString convertCommand = QString("magick -colorspace RGB %1 -colorspace RGB -compress none %2").arg(meanPath, newTifFilePath);
@@ -114,15 +141,19 @@ void PanoBuilder::exportMeans(){
 			if (result != 0)
 				throw QString("Error copying EXIF data from %1 to %2").arg(meanPath, newTifFilePath);
 
+			if (!QFile::copy(newTifFilePath, photogrammetryTifPath))
+				throw QString("Failed to move %1 to photogrammetry folder").arg(newTifFilePath);
+
 		}
 	}
 }
 void PanoBuilder::executeProcess(QString& program, QStringList& arguments) {
 
 	QString command = program + " " + arguments.join(" ");
-	if(verbose)
+	if(verbose){
+		cout << qPrintable(QDir::currentPath()) << endl;
 		cout << "Print command: " << qPrintable(command) << endl;
-
+	}
 	QProcess process;
 	process.start(program, arguments);
 
@@ -277,6 +308,7 @@ void PanoBuilder::rti(){
 
 		//executeProcess(relight_cli_path, arguments);
 	}
+
 	QStringList arguments_merge;
 	for (const QString &subDirName : subDirs) {
 		arguments_merge << rtiDir.filePath(subDirName);
@@ -302,7 +334,15 @@ void PanoBuilder::tapioca(){
 		throw QString("merge directory does not exist: ") + rtiDir.absolutePath();
 	}
 
+
 	exportMeans();
+	QStringList subDirNames = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+	for (const QString &subDirName : subDirNames) {
+		QString meanFile = datasets_dir.filePath(subDirName + ".jpg");
+		if (!QFile::exists(meanFile)) {
+			throw QString("Error: Expected file missing after exportMeans: ") + meanFile;
+		}
+	}
 
 	QString program = mm3d_path;
 	QStringList arguments;
@@ -517,7 +557,7 @@ void PanoBuilder::malt_ortho(){
 		throw QString("rti dir directory does not exist in base directory: ") + rtiDir.absolutePath();
 
 	}
-	exportMeans();
+	//exportMeans();
 
 	QStringList subDirs = mergeDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 	if (subDirs.isEmpty())

@@ -353,12 +353,12 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 	GaussianGrid gaussianGrid;
 	cout << "minSamples: " << gaussianGrid.minSamples << ", sideFactor: " << gaussianGrid.sideFactor << endl;
 
-	gaussianGrid.minSamples = 1; // 1, 3, 5
-	gaussianGrid.sideFactor = 0.25; // 0.25, 0.5, 1, 2, 0.125
+	gaussianGrid.minSamples = 3; // 1, 3, 5
+	gaussianGrid.sideFactor = 0.125; // 0.25, 0.5, 1, 2, 0.125
 	gaussianGrid.init(imageCloud, source);
 	cout << "Dopo init: minSamples: " << gaussianGrid.minSamples << ", sideFactor: " << gaussianGrid.sideFactor << endl;
 
-	gaussianGrid.imageGrid(("test.png"));
+	gaussianGrid.imageGrid(("test3_0125.png"));
 
 	float ortho_z = realToPixelCoord(0,0,z)[2];
 
