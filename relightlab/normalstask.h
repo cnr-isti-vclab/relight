@@ -12,7 +12,7 @@
 #include <QRunnable>
 
 enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA };
-enum FlatMethod { FLAT_NONE, FLAT_RADIAL, FLAT_FOURIER };
+enum FlatMethod { FLAT_NONE, FLAT_RADIAL, FLAT_FOURIER, FLAT_BLUR };
 enum SurfaceIntegration { SURFACE_NONE, SURFACE_BNI, SURFACE_ASSM, SURFACE_FFT };
 
 class NormalsParameters {
@@ -24,6 +24,8 @@ public:
 
 	FlatMethod flatMethod = FLAT_NONE;
 	double flatPercentage = 20;
+
+	double blurPercentage = 10;
 
 
 	SurfaceIntegration surface_integration = SURFACE_NONE;

@@ -5,10 +5,12 @@
 #include <QImage>
 #include <vector>
 
-void flattenRadialNormals(int w, int h, std::vector<float> &normals, double binSize = 20);
+
+void flattenBlurNormals(int w, int h, std::vector<float> &normals, double sigma = 10.0);
+void flattenRadialNormals(int w, int h, std::vector<float> &normals, double binSize = 20.0);
 void flattenFourierNormals(int w, int h, std::vector<float> &normals, float padding = 0.2, double sigma = 20, bool exponential = true);
 
-void flattenRadialHeights(int w, int h, std::vector<float> &heights, double binSize = 20);
+void flattenRadialHeights(int w, int h, std::vector<float> &heights, double binSize = 20.0);
 void flattenFourierHeights(int w, int h, std::vector<float> &heights, float padding = 0.2, double sigma = 20);
 
 class NormalsImage {

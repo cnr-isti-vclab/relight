@@ -204,6 +204,36 @@ void flattenRadialHeights(int w, int h, std::vector<float> &heights, double binS
 		}
 	}
 }
+#include "../../external/assm/Grid.h"
+
+void flattenBlurNormals(int w, int h, std::vector<float> &normals, double sigma) {
+	Grid<Eigen::Vector3f> img(w, h, Eigen::Vector3f(0, 0, 0));
+	for(size_t i = 0; i < normals.size()/3; i++) {
+		img[i] = Eigen::Vector3f(normals[i*3], normals[i*3+1], normals[i*3+2] - 1.0f);
+	}
+	//resize img properly.
+	Grid<Eigen::Vector3f> blurred;
+
+	int nw = round(2.0f * w / sigma);
+	int nh = round(2.0f * h / sigma);
+	if(nw >= w || nh >= h) {
+		blurred = img.gaussianBlur((int)(round(sigma)*6+1), sigma);
+	} else {
+		Grid small = img.downscale(nw, nh);
+		sigma = 2.0f;
+		Grid<Eigen::Vector3f> small_blurred = small.gaussianBlur((int)(round(sigma)*6+1), sigma);
+		blurred = small_blurred.upscale(w, h);
+	}
+	for(size_t i = 0; i < blurred.size(); i++) {
+		Eigen::Vector3f v = img[i] - blurred[i];
+		//v[2] += 1.0f;
+		v[2] = sqrt(1 - v[0]*v[0] + v[1]*v[1]);
+		//v.normalize();
+		normals[i*3] = v[0];
+		normals[i*3+1] = v[1];
+		normals[i*3+2] = v[2];
+	}
+}
 
 void flattenFourierNormals(int w, int h, std::vector<float> &normals, float padding, double sigma, bool exponential) {
 
