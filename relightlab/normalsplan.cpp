@@ -91,6 +91,7 @@ NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *par
 	none = new QLabelButton("None", "Do not flatten the surface");
 	radial = new QLabelButton("Radial", "Polynomial radial fitting.");
 	fourier = new QLabelButton("Fourier", "Remove low frequencies");
+	gaussian = new QLabelButton("Blur", "Subtract gaussian blur");
 
 	buttons->addWidget(none, 1, Qt::AlignCenter);
 	buttons->addWidget(radial, 1, Qt::AlignCenter);
@@ -104,20 +105,37 @@ NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *par
 	max_frequency->setRange(0, 100);
 	max_frequency->setDecimals(4);
 	max_frequency->setValue(parameters.flatPercentage);
-
 	button_layout->addLayout(loader_layout);
-
-
 	buttons->addLayout(button_layout, 1); //, Qt::AlignCenter);
+
+
+
+	QVBoxLayout *button2_layout =new QVBoxLayout;
+	button2_layout->addWidget(gaussian);
+	\
+	QHBoxLayout *gaussian_layout = new QHBoxLayout;
+	gaussian_layout->addWidget(new QLabel("Blur %"));
+	gaussian_layout->addWidget(blur_percentage = new QDoubleSpinBox);
+	blur_percentage->setRange(0, 100);
+	blur_percentage->setDecimals(4);
+	blur_percentage->setValue(parameters.blurPercentage);
+	button2_layout->addLayout(gaussian_layout);
+	buttons->addLayout(button2_layout, 1); //, Qt::AlignCenter);
+
+
 
 	connect(none, &QAbstractButton::clicked, this, [this](){ setFlattenMethod(FLAT_NONE); });
 	connect(radial, &QAbstractButton::clicked, this, [this](){ setFlattenMethod(FLAT_RADIAL); });
 	connect(fourier, &QAbstractButton::clicked, this, [this](){ setFlattenMethod(FLAT_FOURIER); });
+	connect(gaussian, &QAbstractButton::clicked, this, [this](){ setFlattenMethod(FLAT_BLUR); });
+
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	connect(max_frequency, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.flatPercentage = v; });
 #else
 	connect(max_frequency, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.flatPercentage = v; });
+	connect(blur_percentage, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.blurPercentage = v; });
+
 #endif
 
 
@@ -126,6 +144,7 @@ NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *par
 	group->addButton(none);
 	group->addButton(radial);
 	group->addButton(fourier);
+	group->addButton(gaussian);
 
 	setFlattenMethod(parameters.flatMethod);
 }
@@ -135,11 +154,17 @@ void NormalsFlattenRow::setFlattenMethod(FlatMethod method) {
 	none->setChecked(method == FLAT_NONE);
 	radial->setChecked(method == FLAT_RADIAL);
 	fourier->setChecked(method == FLAT_FOURIER);
+	gaussian->setChecked(method == FLAT_BLUR);
 }
 
 void NormalsFlattenRow::setFourierFrequency(double f) {
 	parameters.flatPercentage = f;
 	max_frequency->setValue(f);
+}
+
+void NormalsFlattenRow::setBlurFrequency(double f) {
+	parameters.blurPercentage = f;
+	blur_percentage->setValue(f);
 }
 
 

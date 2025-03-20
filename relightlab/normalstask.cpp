@@ -20,6 +20,7 @@
 #include <QImage>
 #include <QTextStream>
 #include <vector>
+#include <algorithm>
 #include <iostream>
 #include <time.h>
 
@@ -144,14 +145,19 @@ void NormalsTask::run() {
 				flattenRadialNormals(width, height, normals, 100);
 				break;
 			case FLAT_FOURIER:
-				//convert radius to frequencies
-				double sigma = width*parameters.flatPercentage/100;
 				try {
+					//convert radius to frequencies
+					double sigma = width*parameters.flatPercentage/100.0;
 					flattenFourierNormals(width, height, normals, 0.2, sigma);
 				} catch(std::length_error e) {
 					return;
 				}
 				break;
+			case FLAT_BLUR:
+				double sigma = width*parameters.blurPercentage/100.0;
+				flattenBlurNormals(width, height, normals, sigma);
+			break;
+
 		}
 	}
 
@@ -160,7 +166,7 @@ void NormalsTask::run() {
 
 		vector<uint8_t> normalmap(width * height * 3);
 		for(size_t i = 0; i < normals.size(); i++)
-			normalmap[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
+			normalmap[i] = std::clamp(round(((normals[i] + 1.0f) / 2.0f) * 255.0f), 0.0f, 255.0f);
 
 		QImage img(normalmap.data(), width, height, width*3, QImage::Format_RGB888);
 	

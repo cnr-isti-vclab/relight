@@ -41,12 +41,15 @@ public:
 	NormalsFlattenRow(NormalsParameters &_parameters, QFrame *parent = nullptr);
 	void setFlattenMethod(FlatMethod method);
 	void setFourierFrequency(double f);
+	void setBlurFrequency(double f);
 
 	QLabelButton *none = nullptr;
 	QLabelButton *radial = nullptr;
 	QLabelButton *fourier = nullptr;
+	QLabelButton *gaussian = nullptr;
 
 	QDoubleSpinBox *max_frequency = nullptr;
+	QDoubleSpinBox *blur_percentage = nullptr;
 };
 
 class NormalsSurfaceRow: public NormalsPlanRow {
