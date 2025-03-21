@@ -4,6 +4,7 @@
 #include <QFrame>
 
 class ImageCropper;
+class QDoubleSpinBox;
 class QSpinBox;
 class QComboBox;
 
@@ -18,16 +19,20 @@ public:
 public slots:
 	void setAspectRatio();
 	void updateCrop(QRect rect);
+	void scaleChanged(int index); //if units in mm are now available, update them.
 
 signals:
 	void cropChanged(QRect rect);
 private:
 	ImageCropper *cropper = nullptr;
 
-	QSpinBox *crop_width = nullptr;
-	QSpinBox *crop_height = nullptr;
-	QSpinBox *crop_top = nullptr;
-	QSpinBox *crop_left = nullptr;
+	QComboBox *units = nullptr;
+	float pixelSize = 1.0f;
+
+	QDoubleSpinBox *crop_width = nullptr;
+	QDoubleSpinBox *crop_height = nullptr;
+	QDoubleSpinBox *crop_top = nullptr;
+	QDoubleSpinBox *crop_left = nullptr;
 
 	QComboBox *aspect_combo = nullptr;
 	QSpinBox *aspect_width = nullptr;
