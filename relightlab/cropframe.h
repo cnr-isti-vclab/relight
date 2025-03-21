@@ -19,7 +19,7 @@ public:
 public slots:
 	void setAspectRatio();
 	void updateCrop(QRect rect);
-	void scaleChanged(int index); //if units in mm are now available, update them.
+	void scaleChanged(); //if units in mm are now available, update them.
 
 signals:
 	void cropChanged(QRect rect);
@@ -29,10 +29,10 @@ private:
 	QComboBox *units = nullptr;
 	float pixelSize = 1.0f;
 
-	QDoubleSpinBox *crop_width = nullptr;
+	QDoubleSpinBox *crop_top    = nullptr;
+	QDoubleSpinBox *crop_left   = nullptr;
+	QDoubleSpinBox *crop_width  = nullptr;
 	QDoubleSpinBox *crop_height = nullptr;
-	QDoubleSpinBox *crop_top = nullptr;
-	QDoubleSpinBox *crop_left = nullptr;
 
 	QComboBox *aspect_combo = nullptr;
 	QSpinBox *aspect_width = nullptr;
