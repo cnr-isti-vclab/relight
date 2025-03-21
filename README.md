@@ -49,15 +49,15 @@ Json contains the following fields:
 * height:
 * format: image extension: .jpg, .png etc.
 * type: one of lptm, hsh, rbf, bilinear ycc
-* nplanes: numer of coefficient planes
+* nplanes: number of coefficient planes
 * resolution: for bilinear types the side of the bilinear grid
 * colorspace: one of lrgb, rgb, ycc, mrgb, mycc
 * sigma: rbf interpolation parameter
 * lights: mandatory for rbf interpolation
 * materials: an array of materials, each material specify scale, bias and range
-* scale: an array of floats
-* bias: an array of floats
-* range: an array of floats
+* scale: an array of floating point values (float)
+* bias: an array of floating point values
+* range: an array of floating point values
 * basis: an array of unsigned chars containing the basis for rbf, bilinear and ycc basis.
 
 Each image contains 3 coefficient planes
@@ -81,7 +81,7 @@ Scale and bias will be applied to the texture coefficients (from [0, 1]) as:
 * [IIP](https://iipimage.sourceforge.io/)
 * [IIIF](http://iiif.io)
 
-[libvips](http://jcupitt.github.io/libvips/supported/current) can be used to [generate deepzoom, zoomify and google pyramidal formats](http://libvips.blogspot.com/2013/03/making-deepzoom-zoomify-and-google-maps.html), scripts can be found in the directory *test*.
+[libvips](https://github.com/libvips/libvips/) can be used to [generate deepzoom, zoomify and google pyramidal formats](http://libvips.blogspot.com/2013/03/making-deepzoom-zoomify-and-google-maps.html), scripts can be found in the directory *test*.
 
 # Web Viewer
 
@@ -138,17 +138,18 @@ SUPPORT_URL="https://www.debian.org/support"
 BUG_REPORT_URL="https://bugs.debian.org/"
 ```
 
-Install dependencies. (replace libjpeg62-turbo0dev with libturbojpeg-dev in Ubuntu 2020)
+Install dependencies. (replace libturbojpeg-dev with libjpeg62-turbo-devin for Ubuntu older than 2020)
 
 ```shell
 $ apt update && apt install \
     build-essential \
     cmake \
     git \
-    qtbase5-dev \
+    qt6-base-dev \
     libeigen3-dev \
-    libjpeg62-turbo-dev \
-    libomp-dev
+    libturbojpeg6-dev \
+    libomp-dev \
+    libopencv-dev
 ```
 
 Clone this repository and build.
