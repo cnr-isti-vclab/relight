@@ -114,9 +114,9 @@ void HelpBrowser::doSetSource(const QUrl &url, QTextDocument::ResourceType type)
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<style>%1</style>
 	</head>
-	<body>%2</body>
+	<body class="%3">%2</body>
 </html>
-	)" ).arg(cssContent, htmlContent);
+	)" ).arg(cssContent, htmlContent, qRelightApp->darkTheme ? "dark" : "");
 
 	if(current < 0 || url.url() != history[current]) {
 		current++;

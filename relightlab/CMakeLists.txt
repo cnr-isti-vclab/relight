@@ -174,7 +174,7 @@ file(GLOB ASSM_SOURCES ../external/assm/SurfaceMesh.cpp ../external/assm/algorit
 file(GLOB ASSM_HEADERS ../external/assm/*.h ../external/assm/algorithms/*.h)
 
 
-add_executable(relightlab ${MACOSX_EXE_TARGET_OPTION} ${RELIGHTLAB_HEADERS} ${RELIGHTLAB_SOURCES} ${ASSM_SOURCES} ${ASSM_HEADERS} ${RELIGHTLAB_RESOURCES})
+add_executable(relightlab WIN32 ${MACOSX_EXE_TARGET_OPTION} ${RELIGHTLAB_HEADERS} ${RELIGHTLAB_SOURCES} ${ASSM_SOURCES} ${ASSM_HEADERS} ${RELIGHTLAB_RESOURCES})
 
 
 target_include_directories(

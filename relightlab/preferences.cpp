@@ -5,6 +5,8 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QCheckBox>
+#include <QRadioButton>
+#include <QGroupBox>
 
 Preferences::Preferences(QWidget *parent): QDialog(parent) {
 	setWindowTitle("Preferences - RelightLab");
@@ -32,12 +34,39 @@ Preferences::Preferences(QWidget *parent): QDialog(parent) {
 
 QWidget *Preferences::buildAppearance() {
 	QWidget *widget = new QWidget;
-	QVBoxLayout *content = new QVBoxLayout;
-	QCheckBox *dark = new QCheckBox("Dark theme (requires restart)");
-	dark->setChecked(QSettings().value("dark", true).toBool());
-	content->addWidget(dark);
-	widget->setLayout(content);
+	QVBoxLayout *content = new QVBoxLayout(widget);
+	{
+		QGroupBox *box = new QGroupBox("Set theme (requires restart)");
 
-	connect(dark, SIGNAL(toggled(bool)), qRelightApp, SLOT(setDarkTheme(bool)));
+		{
+			QRadioButton *light = new QRadioButton("Light");
+			QRadioButton *dark = new QRadioButton("Dark");
+			QRadioButton *user = new QRadioButton("System");
+
+			if(QSettings().contains("dark")) {
+				bool dark = QSettings().value("dark").toBool();
+				QSettings().setValue("theme", dark ? "dark" : "user");
+				QSettings().remove("dark");
+			}
+
+			QString theme = QSettings().value("theme", "user").toString();
+
+			light->setChecked(theme == "light");
+			dark->setChecked(theme == "dark");
+			user->setChecked(theme == "user");
+
+			connect(dark, &QRadioButton::toggled, [](bool on) { if(on) QSettings().setValue("theme", "dark"); });
+			connect(light, &QRadioButton::toggled, [](bool on) { if(on) QSettings().setValue("theme", "light"); });
+			connect(user, &QRadioButton::toggled, [](bool on) { if(on) QSettings().setValue("theme", "user"); });
+
+			QVBoxLayout *buttons = new QVBoxLayout(box);
+			buttons->addWidget(light);
+			buttons->addWidget(dark);
+			buttons->addWidget(user);
+		}
+		content->addWidget(box);
+	}
+
+
 	return widget;
 }

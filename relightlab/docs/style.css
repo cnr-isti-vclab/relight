@@ -1,4 +1,4 @@
- body {
+body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
             max-width: 1024px;
@@ -6,6 +6,9 @@
 }
 h1, h2, h3 {
     color: #aaa;
+}
+.dark h1, .dark h2, .dark h3 {
+	color: #ddd;
 }
 h1 { font-size: x-large; }
 h2 { font-size: large; }
@@ -16,6 +19,6 @@ a {
 a:hover {
     text-decoration: underline;
 }
-        ul {
-            padding-left: 20px;
-        }
+ul {
+	padding-left: 20px;
+}

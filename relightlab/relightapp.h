@@ -60,6 +60,7 @@ public:
 	MainWindow *mainwindow = nullptr;
 	Preferences *preferences = nullptr;
 	QSystemTrayIcon *systemTray = nullptr;
+	bool darkTheme = false;
 
 	RelightApp(int &argc, char **argv);
 	virtual ~RelightApp() { delete m_project; }
@@ -75,7 +76,6 @@ public slots:
 	void rtiView();
 
 	void openPreferences();
-	void setDarkTheme(bool on);
 	void notify(const QString &title, const QString &msg, int ms = 4000);
 signals:
 	void updateThumbnail(int pos);
