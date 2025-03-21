@@ -15,6 +15,9 @@
 #include <QMessageBox>
 #include <QProxyStyle>
 #include <QSystemTrayIcon>
+#include <QGuiApplication>
+#include <QStyleHints>
+#include <QPalette>
 
 #include <iostream>
 using namespace std;
@@ -56,7 +59,7 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	dark_palette.setColor(QPalette::Button,QColor(53,53,53));
 	dark_palette.setColor(QPalette::ToolTipBase,QColor(53,53,53));
 	dark_palette.setColor(QPalette::ToolTipText,Qt::white);
-	dark_palette.setColor(QPalette::Text,Qt::white);
+	dark_palette.setColor(QPalette::Text,QColor(220, 220, 220));
 	dark_palette.setColor(QPalette::Dark,QColor(35,35,35));
 	dark_palette.setColor(QPalette::Shadow,QColor(20,20,20));
 
@@ -131,22 +134,35 @@ void RelightApp::notify(const QString &title, const QString &msg, int ms) {
 
 }
 
+inline bool isDarkMode() {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+  const auto scheme = QGuiApplication::styleHints()->colorScheme();
+  return scheme == Qt::ColorScheme::Dark;
+#else
+  const QPalette defaultPalette = qRelightApp->palette();
+  const auto text = defaultPalette.color(QPalette::WindowText);
+  const auto window = defaultPalette.color(QPalette::Window);
+  return text.lightness() > window.lightness();
+#endif // QT_VERSION
+}
+
 void RelightApp::run() {
-	bool dark = QSettings().value("dark", false).toBool();
-	if(dark) {
+	QString theme = QSettings().value("theme", "user").toString();
+
+	if(theme == "user") {
+		darkTheme = isDarkMode();
+	} else if(theme == "dark") {
+		darkTheme = true;
+	}
+	if(darkTheme) {
 		QIcon::setThemeName("dark");
 		setPalette(dark_palette);
-	} else {
+	} else if(theme == "light"){
 		QIcon::setThemeName("light");
 	}
 
-
 	mainwindow = new MainWindow;
 	mainwindow->showMaximized();
-}
-
-void RelightApp::setDarkTheme(bool dark) {
-	QSettings().setValue("dark", dark);
 }
 
 void RelightApp::setProject(Project *_project) {
