@@ -145,7 +145,7 @@ $ apt update && apt install \
     build-essential \
     cmake \
     git \
-    qtbase5-dev \
+    qt6-base-dev \
     libeigen3-dev \
     libturbojpeg6-dev \
     libomp-dev \
