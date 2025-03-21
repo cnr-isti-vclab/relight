@@ -102,6 +102,8 @@ void ImageFrame::init() {
 
 	if(qRelightApp->project().images.size()) {
 		showImage(0);
+		//resize scene rect, it does not get updated automatically
+		image_view->setSceneRect(image_view->scene.itemsBoundingRect());
 		image_list->setCurrentRow(0);
 		image_view->fit();
 	}
