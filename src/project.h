@@ -38,7 +38,7 @@ public:
 	std::vector<White *> whites;
 	QRect crop;
 	std::vector<QPointF> offsets;
-	float pixelSize = 0; //if computed from measures in mm
+	float pixelSize = 0.0f; //if computed from measures in mm
 
 	QString name;
 	std::vector<QString> authors;

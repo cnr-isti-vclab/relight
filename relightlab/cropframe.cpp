@@ -11,6 +11,7 @@
 #include <QGroupBox>
 #include <QComboBox>
 #include <QMessageBox>
+#include <QStandardItemModel>
 
 CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 
@@ -32,22 +33,34 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	QGridLayout * area_layout = new QGridLayout(bounds);
 	area_layout->setSpacing(10);
 
-	area_layout->addWidget(new QLabel("Width"), 0, 0);
-	area_layout->addWidget(crop_width = new QSpinBox, 0, 1);
+	area_layout->addWidget(new QLabel("Crop units:"), 0, 0);
+	units = new QComboBox;
+	units->addItem("px");
+	units->addItem("mm");
+	connect(units, SIGNAL(activated(int)), this, SLOT(scaleChanged(int)));
 
-	area_layout->addWidget(new QLabel("Height"), 1, 0);
-	area_layout->addWidget(crop_height = new QSpinBox, 1, 1);
+	area_layout->addWidget(units, 0, 1);
 
-	area_layout->addWidget(new QLabel("Top"), 2, 0);
-	area_layout->addWidget(crop_top = new QSpinBox, 2, 1);
+	area_layout->addWidget(new QLabel("Width"), 1, 0);
+	area_layout->addWidget(crop_width = new QDoubleSpinBox, 1, 1);
 
-	area_layout->addWidget(new QLabel("Left"), 3, 0);
-	area_layout->addWidget(crop_left = new QSpinBox, 3, 1);
+	area_layout->addWidget(new QLabel("Height"), 2, 0);
+	area_layout->addWidget(crop_height = new QDoubleSpinBox, 2, 1);
+
+	area_layout->addWidget(new QLabel("Top"), 3, 0);
+	area_layout->addWidget(crop_top = new QDoubleSpinBox, 3, 1);
+
+	area_layout->addWidget(new QLabel("Left"), 4, 0);
+	area_layout->addWidget(crop_left = new QDoubleSpinBox, 4, 1);
 
 	crop_width->setMaximum(65535);
 	crop_height->setMaximum(65535);
 	crop_top->setMaximum(65535);
 	crop_left->setMaximum(65535);
+	crop_width->setDecimals(0);
+	crop_height->setDecimals(0);
+	crop_top->setDecimals(0);
+	crop_left->setDecimals(0);
 
 	right_side->addSpacing(10);
 	QHBoxLayout *maximize_layout = new QHBoxLayout;
@@ -97,12 +110,12 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	connect(aspect_width, SIGNAL(valueChanged(int)), this, SLOT(setAspectRatio()));
 	connect(aspect_height, SIGNAL(valueChanged(int)), this, SLOT(setAspectRatio()));
 
-	connect(crop_width, SIGNAL(valueChanged(int)), cropper, SLOT(setWidth(int)));
-	connect(crop_height, SIGNAL(valueChanged(int)), cropper, SLOT(setHeight(int)));
-	connect(crop_top, SIGNAL(valueChanged(int)), cropper, SLOT(setTop(int)));
-	connect(crop_left, SIGNAL(valueChanged(int)), cropper, SLOT(setLeft(int)));
+	connect(crop_width,  &QDoubleSpinBox::editingFinished, [this]() { cropper->setWidth (round(crop_width ->value()/pixelSize)); });
+	connect(crop_height, &QDoubleSpinBox::editingFinished, [this]() { cropper->setHeight(round(crop_height->value()/pixelSize)); });
+	connect(crop_top,    &QDoubleSpinBox::editingFinished, [this]() { cropper->setTop   (round(crop_top   ->value()/pixelSize)); });
+	connect(crop_left,   &QDoubleSpinBox::editingFinished, [this]() { cropper->setLeft  (round(crop_left  ->value()/pixelSize)); });
 
-	connect(maximize, SIGNAL(clicked()), cropper, SLOT(maximizeCrop()));	
+	connect(maximize, SIGNAL(clicked()), cropper, SLOT(maximizeCrop()));
 	connect(center, SIGNAL(clicked()), cropper, SLOT(centerCrop()));
 
 	connect(cropper, SIGNAL(areaChanged(QRect)), this, SLOT(updateCrop(QRect)));
@@ -128,6 +141,9 @@ void CropFrame::init() {
 			break;
 		filename = project.images[count].filename;
 	}
+	auto *model = qobject_cast<QStandardItemModel*>(units->model());
+	auto *item = model->item(1);
+	item->setEnabled(project.pixelSize != 0.0f);
 
 	QImage img(project.dir.filePath(filename));
 	if(img.isNull()) {
@@ -136,6 +152,18 @@ void CropFrame::init() {
 	}
 	cropper->setImage(QPixmap::fromImage(img));
 	cropper->setCrop(project.crop);
+}
+
+void CropFrame::scaleChanged(int index) {
+	Project &project = qRelightApp->project();
+	auto *model = qobject_cast<QStandardItemModel*>(units->model());
+	auto *item = model->item(1);
+	item->setEnabled(project.pixelSize != 0.0f);
+
+	if(project.pixelSize == 0.0f &&  units->currentIndex() == 1) {
+		units->setCurrentIndex(0);
+	}
+	setCrop(project.crop);
 }
 
 void CropFrame::setAspectRatio() {
@@ -154,9 +182,20 @@ void CropFrame::setAspectRatio() {
 }
 
 void CropFrame::setCrop(QRect rect) {
-	crop_width->setValue(rect.width());
-	crop_height->setValue(rect.height());
-	crop_top->setValue(rect.top());
-	crop_left->setValue(rect.left());
+	pixelSize = 1.0f;
+	int d = 0;
+	if(units->currentIndex() == 1)  {
+		pixelSize = qRelightApp->project().pixelSize;
+		d = 2;
+	}
+	crop_width->setDecimals(d);
+	crop_height->setDecimals(d);
+	crop_top->setDecimals(d);
+	crop_left->setDecimals(d);
+
+	crop_width->setValue(rect.width()*pixelSize);
+	crop_height->setValue(rect.height()*pixelSize);
+	crop_top->setValue(rect.top()*pixelSize);
+	crop_left->setValue(rect.left()*pixelSize);
 }
 
