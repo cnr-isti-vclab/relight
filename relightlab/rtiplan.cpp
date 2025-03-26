@@ -283,7 +283,7 @@ RtiWebLayoutRow::RtiWebLayoutRow(RtiParameters &parameters, QFrame *parent):
 	content->addLayout(buttons);
 
 	label->label->setText("Web layout:");
-	label->help->setId("rti/web_layout");
+	label->help->setId("rti/web");
 
 	image    = new QLabelButton("Images", "");
 	deepzoom = new QLabelButton("Deepzoom", "Pyramidal, lot's of files.");

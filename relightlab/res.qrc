@@ -90,24 +90,26 @@
         <file>docs/interface/queue.html</file>
         <file>docs/interface/new_project.html</file>
         <file>docs/interface/open_project.html</file>
-        <file>docs/normals/export.html</file>
+        <file>docs/normals/index.html</file>
         <file>docs/normals/flattening.html</file>
         <file>docs/normals/normalmap.html</file>
         <file>docs/normals/surface.html</file>
+        <file>docs/rti/index.html</file>
         <file>docs/rti/basis.html</file>
         <file>docs/rti/coefficients.html</file>
         <file>docs/rti/colorspace.html</file>
         <file>docs/rti/export.html</file>
         <file>docs/rti/format.html</file>
-        <file>docs/rti/general.html</file>
         <file>docs/rti/quality.html</file>
         <file>docs/rti/web.html</file>
-        <file>docs/formats/config.html</file>
+        <file>docs/formats/index.html</file>
+        <file>docs/formats/lp.html</file>
         <file>docs/formats/dome.html</file>
-        <file>docs/formats/project.html</file>
-        <file>docs/formats/iiif.html</file>
         <file>docs/formats/legacy.html</file>
         <file>docs/formats/web.html</file>
+        <file>docs/formats/iiif.html</file>
+        <file>docs/formats/project.html</file>
+        <file>docs/formats/config.html</file>
         <file>icons/dark/scalable/chevrons-down.svg</file>
         <file>icons/dark/scalable/chevrons-up.svg</file>
         <file>icons/light/scalable/chevrons-down.svg</file>
