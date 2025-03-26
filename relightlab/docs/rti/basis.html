@@ -1,12 +1,24 @@
-#Basis
+<h2> RTI Basis </h2>
 
-<!-- difference between PTM, HSH RBF, BLN
+<p>Generic introduction to RTI: a linear combination of basis functions, be it polinomial
+spherical harmonics, or custom interpolated bases.</p>
 
-which criteria should be used to select one:
+<h3>Which basis?</h3>
 
-sampling: bad sampling -> PTM, HSH
-dull materials -> PTM
-per pixel light direction -> cannot use RBF
-shiny, good sampling -> RBF/BLN
+<p><b>Material:</b> (dull (lambertian)) vs. reflective, translucent etc, each basis 
+and number of <a href="rti/coefficients.html">coefficients</a> has a different capability
+of reproducing materials with complex light interaction<br/>
+PTM is really bad at reproducing reflective materials, RBF/BLN are the best.</p>
 
--->
+<p><b>Light sampling:</b> datasets captured with light manually placed might leave certain light
+directions underepresented. The basis functions will have to interpolate the light function and
+the type of interpolation yelds different results. PTM and HSH are very robust, while RBF and BLN
+will result in 'jerky' light changes when exploring the interpolated region.</p>
+
+<p><b>Format:</b> RTIViewer supports only PTM and HSH basis, while the <a href="rti/web.html">web formats</a> support all of the basis</p>
+
+<p><b>Per pixel light direction:</b> a common approximation assumes the light direction is the same for all the pixels.
+This results in a 'spotlight' reproduction and warped normals. If you allow RelightLab to reconstruct the <a href="interface/lights.html">geometry of the scene</a> (light positions
+in 3d, image size, etc), it will be able to compensate for light intensity and direction for each pixel.
+Unfortunately, RBF does not support this feature</p>
+
