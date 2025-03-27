@@ -69,7 +69,7 @@ bool Project::setDir(QDir folder) {
 bool Project::scanDir() {
 	QStringList img_ext;
 	//TODO add support for raw files (needs preprocessing?)
-	img_ext << "*.jpg" << "*.JPG"; // << "*.NEF" << "*.CR2";
+	img_ext << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG"; // << "*.NEF" << "*.CR2";
 
 	QVector<QSize> resolutions;
 	vector<int> count;
