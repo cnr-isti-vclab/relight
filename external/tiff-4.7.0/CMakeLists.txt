@@ -51,9 +51,9 @@ else()
 endif()
 
 option(tiff-tools "build TIFF tools" ON)
-option(tiff-tests "build TIFF tests" ON)
+option(tiff-tests "build TIFF tests" OFF)
 option(tiff-contrib "build TIFF contrib" ON)
-option(tiff-docs "build TIFF documentation" ON)
+option(tiff-docs "build TIFF documentation" OFF)
 option(tiff-deprecated "build TIFF deprecated features" OFF)
 option(tiff-install "install TIFF targets" ${TIFF_INSTALL_DEFAULT})
 
