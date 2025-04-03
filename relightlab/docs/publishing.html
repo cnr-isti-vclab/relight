@@ -1,0 +1,40 @@
+<h2>Publishing RTI on the Web</h2>
+
+<p>RelightLab provides the creation and web publishing of Reflectance Transformation Imaging (RTI) datasets: 
+a dataset consists of metadata stored in a JSON  file along with several large coefficient images that define the relighting model.</p>
+
+<h3>Image Format and Storage</h3>
+<p>RTI images are better stored in a <b>pyramidal tile format</b>, similar to DeepZoom, Zoomify, or Google Maps tiles. This approach provides:
+    <ul>
+    <li><b>Progressive loading</b>, enabling fast previews before full resolution is available.
+    <li><b>Efficient zooming and panning</b>, reducing bandwidth and memory usage.
+    <li><b>Better compatibility</b> with existing web visualization frameworks.
+</ul>
+</p>
+
+<h3>Hosting Challenges</h3>
+Hosting RTI datasets presents several difficulties:
+<ul>
+    <li><b>File Transfer Bottlenecks</b>: Large datasets consist of thousands of small tile files, leading to slow transfer speeds and inefficiencies.
+    <li><b>Filesystem Limitations</b>: The number of inodes (file system entries) required for thousands of tiles can become a limiting factor.
+    <li><b>Network Overhead</b>: Web servers may struggle with the large number of HTTP requests needed to load tile-based images.
+    <li><b>DDoS Protection Triggers</b>: A large number of requests from a single user might be interpreted as an attack, leading to unintentional 
+blocking by security filters.
+</ul>
+
+<h3>Tarzoom: Compacting Tiles</h3>
+<p>To address these issues, <b>Tarzoom</b> offers a more efficient way to store RTI dataset tiles. Instead of keeping thousands of individual files, 
+it packs all image tiles of a coefficient plane into a <b>single archive file</b> with an index. It reduces the number of files per plane to just two.
+Datasets become much more manageable and somewhat smaller.</p>
+
+
+<h3>Limitations of Tarzoom</h3>
+<ul>
+    <li><b>Partial Content Requests (HTTP 206)</b>: Some web servers and CDNs do not support partial downloads of large files, limiting compatibility with Tarzoom.
+    <li>DeepZoom Dependency</b>: Due to the lack of universal support for HTTP 206 partial requests, DeepZoom remains the primary tiling format.
+</ul>
+
+<h3>Itarzoom: Optimizing Tile Retrieval</h3>
+
+<p>To further improve performance, <b>Itarzoom</b> introduces a <b>single-request</b> mechanism that downloads all the tiles for a given region in one request.
+It reduces the number of server interactions, lowering the risk of triggering DDoS protections.</p>
