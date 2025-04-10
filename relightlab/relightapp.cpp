@@ -215,7 +215,7 @@ void RelightApp::newProject() {
 	}
 
 	project_filename = QString();
-	qRelightApp->setProject(project);
+
 
 	//Check for .lp files in the folder
 	QStringList img_ext;
@@ -225,12 +225,18 @@ void RelightApp::newProject() {
 		int answer = QMessageBox::question(mainwindow, "Found an .lp file: " + lps[0], "Do you wish to load " + lps[0] + "?", QMessageBox::Yes, QMessageBox::No);
 		if(answer != QMessageBox::No) {
 			try {
-				m_project->loadLP(lps[0]);
+				bool loaded = project->loadLP(lps[0]);
+				if(loaded) {
+					QFileInfo info(lps[0]);
+					addDome(info.filePath());
+				}
 			} catch(QString error) {
 				QMessageBox::critical(mainwindow, "Could not load the .lp file", error);
 			}
 		}
 	}
+
+	qRelightApp->setProject(project);
 }
 
 void RelightApp::openProject() {
@@ -427,9 +433,8 @@ QStringList RelightApp::domes() {
 
 void RelightApp::addDome(QString filename) {
 	QStringList d = domes();
-	if(d.contains(filename))
-		return;
-	d.append(filename);
+	d.removeAll(filename);
+	d.prepend(filename);
 	QSettings().setValue("domes", d);
 }
 

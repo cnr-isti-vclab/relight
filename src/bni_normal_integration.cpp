@@ -99,7 +99,7 @@ bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z)
 	return true;
 }
 
-bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &depthmap) {
+bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &depthmap, bool normalize) {
 	float min = 1e20;
 	float max = -1e20;
 	for(float h: depthmap) {
@@ -142,8 +142,13 @@ bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &d
 				for(uint32_t dx = 0; dx < tileWidth; dx++) {
 					size_t x = tx*tileWidth + dx;
 					size_t y = ty*tileLength + dy;
-					if(x < w && y < h)
-						data[dx + dy*tileWidth] = depthmap[x + y*w];
+					if(x < w && y < h) {
+						float d = depthmap[x + y*w];
+						if(normalize) {
+							d = (d - min)/(max - min);
+						}
+						data[dx + dy*tileWidth] = d;
+					}
 				}
 			}
 			if (TIFFWriteEncodedTile(outTiff, tileIndex, data.data(), data.size() * sizeof(float)) < 0) {
@@ -154,6 +159,7 @@ bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &d
 	}
 
 	TIFFClose(outTiff);
+	//if normalize: save range in mm and pixel size (in mm) in a text file.
 	return true;
 }
 

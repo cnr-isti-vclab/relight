@@ -223,6 +223,8 @@ void NormalsTask::run() {
 		savePly(filename, width, height, z);
 		filename = output.left(output.size() -4) + ".tiff";
 		saveTiff(filename, width, height, z);
+		filename = output.left(output.size() -4) + "_normalized.tiff";
+		saveTiff(filename, width, height, z, true);
 	}
 	progressed("Done", 100);
 	status = DONE;

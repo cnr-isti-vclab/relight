@@ -607,7 +607,7 @@ void Project::saveLP(QString filename, vector<Vector3f> &directions) {
 }
 
 
-void Project::loadLP(QString filename) {
+bool Project::loadLP(QString filename) {
 	vector<QString> filenames;
 	vector<Vector3f> directions;
 
@@ -626,7 +626,8 @@ void Project::loadLP(QString filename) {
 		}
 		ordered_dir[pos] = directions[i];
 	}
-
+	QFileInfo info(filename);
+	dome.label = info.filePath();
 	dome.directions.resize(directions.size());
 	if(success) {
 		for(size_t i = 0; i < size(); i++)
@@ -635,12 +636,13 @@ void Project::loadLP(QString filename) {
 		auto response = QMessageBox::question(nullptr, "Light directions and images",
 											  "Filenames in .lp do not match with images in the .lp directory. Do you want to just use the filename order?");
 		if(response == QMessageBox::Cancel || response == QMessageBox::No)
-			return;
+			return false;
 
 		for(size_t i = 0; i < size(); i++)
 			dome.directions[i] = directions[i];
 	}
 	dome.lightConfiguration = Dome::DIRECTIONAL;
+	return true;
 }
 
 float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, const Vector3f &center, float radius) {
