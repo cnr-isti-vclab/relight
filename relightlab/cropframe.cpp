@@ -54,15 +54,22 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	area_layout->addWidget(new QLabel("Left"), 4, 0);
 	area_layout->addWidget(crop_left = new QDoubleSpinBox, 4, 1);
 
+	area_layout->addWidget(new QLabel("Angle"), 5, 0);
+	area_layout->addWidget(crop_angle = new QDoubleSpinBox, 5, 1);
+
+
 	crop_top   ->setMaximum(65535);
 	crop_left  ->setMaximum(65535);
 	crop_width ->setMaximum(65535);
 	crop_height->setMaximum(65535);
+	crop_angle->setMaximum(360);
 
 	crop_top   ->setDecimals(0);
 	crop_left  ->setDecimals(0);
 	crop_width ->setDecimals(0);
 	crop_height->setDecimals(0);
+	crop_angle->setDecimals(1);
+
 
 	right_side->addSpacing(10);
 	QHBoxLayout *maximize_layout = new QHBoxLayout;
@@ -116,6 +123,7 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	connect(crop_left,   &QDoubleSpinBox::editingFinished, [this]() { cropper->setLeft  (round(crop_left  ->value()/pixelSize)); });
 	connect(crop_width,  &QDoubleSpinBox::editingFinished, [this]() { cropper->setWidth (round(crop_width ->value()/pixelSize)); });
 	connect(crop_height, &QDoubleSpinBox::editingFinished, [this]() { cropper->setHeight(round(crop_height->value()/pixelSize)); });
+	connect(crop_angle,  &QDoubleSpinBox::editingFinished, [this]() { cropper->setAngle(round(crop_angle->value())); });
 
 	connect(maximize, SIGNAL(clicked()), cropper, SLOT(maximizeCrop()));
 	connect(center, SIGNAL(clicked()), cropper, SLOT(centerCrop()));
@@ -126,8 +134,8 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 void CropFrame::updateCrop(QRect rect) {
 	Project &project = qRelightApp->project();
 	project.crop = rect;
-	setCrop(rect);
-	emit cropChanged(rect);
+	setCrop(rect, cropper->angle);
+	emit cropChanged(rect, cropper->angle);
 }
 void CropFrame::clear() {
 	cropper->setImage(QPixmap());
@@ -165,7 +173,7 @@ void CropFrame::scaleChanged() {
 	if(project.pixelSize == 0.0f &&  units->currentIndex() == 1) {
 		units->setCurrentIndex(0);
 	}
-	setCrop(project.crop);
+	setCrop(project.crop, project.crop_angle);
 }
 
 void CropFrame::setAspectRatio() {
@@ -183,7 +191,7 @@ void CropFrame::setAspectRatio() {
 
 }
 
-void CropFrame::setCrop(QRect rect) {
+void CropFrame::setCrop(QRect rect, float angle) {
 	pixelSize = 1.0f;
 	int d = 0;
 	if(units->currentIndex() == 1)  {
@@ -199,5 +207,6 @@ void CropFrame::setCrop(QRect rect) {
 	crop_left  ->setValue(rect.left()  *pixelSize);
 	crop_width ->setValue(rect.width() *pixelSize);
 	crop_height->setValue(rect.height()*pixelSize);
+	crop_angle->setValue(angle);
 }
 
