@@ -78,6 +78,7 @@ void ImageCropper::setCrop(QRect rect) {
 }
 
 void ImageCropper::resetCrop() {
+	angle = 0;
 	setCrop(image.rect());
 }
 
@@ -104,6 +105,12 @@ void ImageCropper::setLeft(int l) {
 	QRect target = realSizeRect;
 	if(target.left() == l) return;
 	target.moveLeft(l);
+	enforceBounds(target, CursorPositionMiddle);
+}
+
+void ImageCropper::setAngle(float a) {
+	angle = a;
+	QRect target = realSizeRect;
 	enforceBounds(target, CursorPositionMiddle);
 }
 
@@ -153,18 +160,28 @@ void ImageCropper::paintEvent(QPaintEvent* _event) {
 	QWidget::paintEvent( _event );
 
 	QRectF croppingRect = imageCroppedRect();
-	QPainter widgetPainter(this);
+	QPainter painter(this);
+	painter.setRenderHint(QPainter::SmoothPixmapTransform);
 
 	{
 		QPixmap scaledImage = image.scaled(this->size(), Qt::KeepAspectRatio, Qt::FastTransformation);
 
-		widgetPainter.fillRect( this->rect(), backgroundColor );
+		painter.fillRect( this->rect(), backgroundColor );
+		painter.save();
+		QPointF center = rect().center();
+		painter.translate(center);
+		painter.rotate(angle);  // angle is a float/double member
+		painter.translate(-center);
+
+			// Draw pixmap centered
+		QPoint topLeft = center.toPoint() - QPoint(scaledImage.width()/2, scaledImage.height()/2);
 		
 		if ( this->size().height() == scaledImage.height() ) {
-			widgetPainter.drawPixmap( ( this->width() - scaledImage.width() ) / 2, 0, scaledImage );
+			painter.drawPixmap( ( this->width() - scaledImage.width() ) / 2, 0, scaledImage );
 		} else {
-			widgetPainter.drawPixmap( 0, ( this->height() - scaledImage.height() ) / 2, scaledImage );
+			painter.drawPixmap( 0, ( this->height() - scaledImage.height() ) / 2, scaledImage );
 		}
+		painter.restore();
 	}
 
 	if(show_handle) {
@@ -181,17 +198,17 @@ void ImageCropper::paintEvent(QPaintEvent* _event) {
 		QPainterPath p;
 		p.addRect(croppingRect);
 		p.addRect(this->rect());
-		widgetPainter.setBrush(QBrush(QColor(0,0,0,120)));
-		widgetPainter.setPen(Qt::transparent);
-		widgetPainter.drawPath(p);
+		painter.setBrush(QBrush(QColor(0,0,0,120)));
+		painter.setPen(Qt::transparent);
+		painter.drawPath(p);
 
-		widgetPainter.setPen(croppingRectBorderColor);
-		widgetPainter.setBrush(QBrush(Qt::transparent));
-		widgetPainter.drawRect(croppingRect);
+		painter.setPen(croppingRectBorderColor);
+		painter.setBrush(QBrush(Qt::transparent));
+		painter.drawRect(croppingRect);
 
 
 		{
-			widgetPainter.setBrush(QBrush(croppingRectBorderColor));
+			painter.setBrush(QBrush(croppingRectBorderColor));
 
 			int leftXCoord   = croppingRect.left() - 2;
 			int centerXCoord = croppingRect.center().x() - 3;
@@ -218,25 +235,25 @@ void ImageCropper::paintEvent(QPaintEvent* _event) {
 					<< QRect( QPoint(rightXCoord, middleYCoord), pointSize )
 					<< QRect( QPoint(rightXCoord, bottomYCoord), pointSize );
 
-			widgetPainter.drawRects( points );
+			painter.drawRects( points );
 		}
 
 		{
 			QPen dashPen(croppingRectBorderColor);
 			dashPen.setStyle(Qt::DashLine);
-			widgetPainter.setPen(dashPen);
+			painter.setPen(dashPen);
 
-			widgetPainter.drawLine(
+			painter.drawLine(
 						QPoint(croppingRect.center().x(), croppingRect.top()),
 						QPoint(croppingRect.center().x(), croppingRect.bottom()) );
 
-			widgetPainter.drawLine(
+			painter.drawLine(
 						QPoint(croppingRect.left(), croppingRect.center().y()),
 						QPoint(croppingRect.right(), croppingRect.center().y()) );
 		}
 	}
 
-	widgetPainter.end();
+	painter.end();
 }
 
 void ImageCropper::mousePressEvent(QMouseEvent* event) {

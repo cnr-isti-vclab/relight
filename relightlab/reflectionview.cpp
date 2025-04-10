@@ -56,6 +56,8 @@ AlignOverview::AlignOverview(QRectF _rect, int height, QWidget *parent):
 void AlignOverview::update() {
 
 	QSizeF size = img_item->boundingRect().size();
+	img_item->setTransformOriginPoint(size.width() / 2, size.height() / 2);
+	img_item->setRotation(angle);
 
 	double scale = size.width()/(double)qRelightApp->project().imgsize.width();
 	QRectF r = QRectF(rect.x()*scale, rect.y()*scale, rect.width()*scale, rect.height()*scale);
