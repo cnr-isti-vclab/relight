@@ -14,7 +14,7 @@ public:
 	CropFrame(QWidget *parent = nullptr);
 	void clear();
 	void init();
-	void setCrop(QRect rect);
+	void setCrop(QRect rect, float angle);
 
 public slots:
 	void setAspectRatio();
@@ -22,7 +22,7 @@ public slots:
 	void scaleChanged(); //if units in mm are now available, update them.
 
 signals:
-	void cropChanged(QRect rect);
+	void cropChanged(QRect rect, float angle);
 private:
 	ImageCropper *cropper = nullptr;
 
@@ -33,6 +33,7 @@ private:
 	QDoubleSpinBox *crop_left   = nullptr;
 	QDoubleSpinBox *crop_width  = nullptr;
 	QDoubleSpinBox *crop_height = nullptr;
+	QDoubleSpinBox *crop_angle = nullptr;
 
 	QComboBox *aspect_combo = nullptr;
 	QSpinBox *aspect_width = nullptr;

@@ -37,6 +37,7 @@ public:
 	std::vector<Align *> aligns;
 	std::vector<White *> whites;
 	QRect crop;
+	float crop_angle; //in degrees, image is rotated around center
 	std::vector<QPointF> offsets;
 	float pixelSize = 0.0f; //if computed from measures in mm
 

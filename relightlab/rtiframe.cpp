@@ -266,7 +266,7 @@ void RtiFrame::layoutChanged() {
 
 }
 
-void RtiFrame::updateCrop(QRect rect) {
-	zoom_view->setRect(rect);
+void RtiFrame::updateCrop(QRect rect, float angle) {
+	zoom_view->setRect(rect, angle);
 }
 
