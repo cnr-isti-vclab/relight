@@ -37,7 +37,7 @@ public slots:
 	void qualityChanged();
 	void layoutChanged();
 
-	void updateCrop(QRect rect);
+	void updateCrop(QRect rect, float angle);
 
 signals:
 	void processStarted();
