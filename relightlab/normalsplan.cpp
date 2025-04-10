@@ -174,7 +174,7 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 	label->label->setText("Surface:");
 	label->help->setId("normals/flattening");
 
-	none = new QLabelButton("None", "Do generate a mesh.");
+	none = new QLabelButton("None", "Do not generate a mesh.");
 	fft = new QLabelButton("Fourier Normal Integration", "Dense, very fast");
 	bni = new QLabelButton("Bilateral Normal Integration", "Dense, allows discontinuity");
 	assm = new QLabelButton("Adaptive Surface Meshing.", "Adaptive, no discontinuities.");

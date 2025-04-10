@@ -70,7 +70,11 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	grid->addWidget(image_width = new QDoubleSpinBox, 2, 1);
 	image_width->setRange(0, 10000);
 	grid->addWidget(new QLabel("mm"), 2, 2);
-	connect(image_width, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) { qRelightApp->project().dome.imageWidth = v; });
+	connect(image_width, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) {
+		auto &project = qRelightApp->project();
+		project.dome.imageWidth = v;
+		project.pixelSize = project.dome.imageWidth/project.imgsize.width();
+	});
 
 	grid->addWidget(new QLabel("Dome radius:"), 3, 0);
 	grid->addWidget(diameter = new QDoubleSpinBox, 3, 1);
