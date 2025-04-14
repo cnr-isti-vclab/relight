@@ -6,6 +6,8 @@
 #include <QGraphicsScene>
 #include <vector>
 
+#include "../src/crop.h"
+
 class Sphere;
 class QGraphicsEllipseItem;
 class QGraphicsRectItem;
@@ -81,9 +83,9 @@ public:
 	ZoomOverview(QRectF rect, int height, QWidget *parent = nullptr);
 
 public slots:
-	void setRect(QRect _rect, float _angle = 0.0f) {
-		rect = _rect;
-		angle = _angle;
+	void setCrop(Crop crop) {
+		rect = crop;
+		angle = crop.angle;
 		update();
 	}
 };

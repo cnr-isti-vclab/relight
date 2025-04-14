@@ -25,7 +25,7 @@ public:
 public slots:
 	void save();
 	void init();
-	void updateCrop(QRect rect);
+	void updateCrop(Crop crop);
 
 signals:
 	void processStarted();

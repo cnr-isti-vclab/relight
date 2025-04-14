@@ -104,7 +104,7 @@ void RtiFrame::init() {
 	//fill in last RTI used or a common one.
 	export_row->suggestPath();
 	zoom_view->init();
-	zoom_view->setRect(qRelightApp->project().crop);
+	zoom_view->setCrop(qRelightApp->project().crop);
 	updateNPlanes();
 }
 
@@ -266,7 +266,7 @@ void RtiFrame::layoutChanged() {
 
 }
 
-void RtiFrame::updateCrop(QRect rect, float angle) {
-	zoom_view->setRect(rect, angle);
+void RtiFrame::updateCrop(Crop crop) {
+	zoom_view->setCrop(crop);
 }
 

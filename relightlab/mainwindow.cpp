@@ -48,8 +48,8 @@ MainWindow::MainWindow() {
 	connect(scale_frame, SIGNAL(pixelSizeChanged()), lights_frame, SLOT(setPixelSize()));
 	connect(scale_frame, SIGNAL(pixelSizeChanged()), crop_frame, SLOT(scaleChanged()));
 	connect(sphere_frame, SIGNAL(updated()), lights_frame, SLOT(updateSphere()));
-	connect(crop_frame, SIGNAL(cropChanged(QRect, float)), rti_frame, SLOT(updateCrop(QRect, float)));
-	connect(crop_frame, SIGNAL(cropChanged(QRect, float)), normals_frame, SLOT(updateCrop(QRect, float)));
+	connect(crop_frame, SIGNAL(cropChanged(Crop)), rti_frame, SLOT(updateCrop(Crop)));
+	connect(crop_frame, SIGNAL(cropChanged(Crop)), normals_frame, SLOT(updateCrop(Crop)));
 	connect(rti_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
 	connect(normals_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
 

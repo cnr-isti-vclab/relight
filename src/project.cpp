@@ -50,7 +50,7 @@ void Project::clear() {
 		delete m;
 	measures.clear();
 
-	crop = QRect();
+	crop = Crop();
 	needs_saving = false;
 }
 

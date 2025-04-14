@@ -10,13 +10,17 @@
 
 ImageView::ImageView(QWidget *parent): Canvas(parent) {
 	setScene(&scene);
-	
+	imagePixmap = new QGraphicsPixmapItem();
+	imagePixmap->setZValue(-1);
+	scene.addItem(imagePixmap);
+
 }
 
 void ImageView::clear() {
 	//remove all elements from scene.
-	scene.clear();
-	imagePixmap = nullptr;
+	//scene.clear();
+	QPixmap p;
+	imagePixmap->setPixmap(p);
 }
 
 void ImageView::showImage(int id) {
@@ -31,12 +35,7 @@ void ImageView::showImage(int id) {
 		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
 		return;
 	}
-	if(imagePixmap) {
-		delete imagePixmap;
-	}
-	imagePixmap = new QGraphicsPixmapItem(QPixmap::fromImage(img));
-	imagePixmap->setZValue(-1);
-	scene.addItem(imagePixmap);
+	imagePixmap->setPixmap(QPixmap::fromImage(img));
 
 	int w = project.imgsize.width();
 	int h = project.imgsize.height();
