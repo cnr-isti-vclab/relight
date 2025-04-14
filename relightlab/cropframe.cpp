@@ -1,5 +1,5 @@
-#include "cropframe.h"
-#include "../relight/imagecropper.h"
+﻿#include "cropframe.h"
+#include "imagecropper.h"
 #include "relightapp.h"
 
 #include <QLabel>
@@ -128,14 +128,14 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	connect(maximize, SIGNAL(clicked()), cropper, SLOT(maximizeCrop()));
 	connect(center, SIGNAL(clicked()), cropper, SLOT(centerCrop()));
 
-	connect(cropper, SIGNAL(areaChanged(QRect)), this, SLOT(updateCrop(QRect)));
+	connect(cropper, SIGNAL(areaChanged(Crop)), this, SLOT(updateCrop(Crop)));
 }
 
-void CropFrame::updateCrop(QRect rect) {
+void CropFrame::updateCrop(Crop crop) {
 	Project &project = qRelightApp->project();
-	project.crop = rect;
-	setCrop(rect, cropper->angle);
-	emit cropChanged(rect, cropper->angle);
+	project.crop = crop;
+	setCrop(crop);
+	emit cropChanged(cropper->crop); //crop might enforce boundaries.
 }
 void CropFrame::clear() {
 	cropper->setImage(QPixmap());
@@ -154,13 +154,14 @@ void CropFrame::init() {
 	auto *model = qobject_cast<QStandardItemModel*>(units->model());
 	auto *item = model->item(1);
 	item->setEnabled(project.pixelSize != 0.0f);
-
+/*
 	QImage img(project.dir.filePath(filename));
 	if(img.isNull()) {
 		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
 		return;
 	}
-	cropper->setImage(QPixmap::fromImage(img));
+	cropper->setImage(QPixmap::fromImage(img));*/
+	cropper->showImage(0);
 	cropper->setCrop(project.crop);
 }
 
@@ -173,7 +174,7 @@ void CropFrame::scaleChanged() {
 	if(project.pixelSize == 0.0f &&  units->currentIndex() == 1) {
 		units->setCurrentIndex(0);
 	}
-	setCrop(project.crop, project.crop_angle);
+	setCrop(project.crop);
 }
 
 void CropFrame::setAspectRatio() {
@@ -191,7 +192,7 @@ void CropFrame::setAspectRatio() {
 
 }
 
-void CropFrame::setCrop(QRect rect, float angle) {
+void CropFrame::setCrop(Crop crop) {
 	pixelSize = 1.0f;
 	int d = 0;
 	if(units->currentIndex() == 1)  {
@@ -203,10 +204,10 @@ void CropFrame::setCrop(QRect rect, float angle) {
 	crop_width ->setDecimals(d);
 	crop_height->setDecimals(d);
 
-	crop_top   ->setValue(rect.top()   *pixelSize);
-	crop_left  ->setValue(rect.left()  *pixelSize);
-	crop_width ->setValue(rect.width() *pixelSize);
-	crop_height->setValue(rect.height()*pixelSize);
-	crop_angle->setValue(angle);
+	crop_top   ->setValue(crop.top()   *pixelSize);
+	crop_left  ->setValue(crop.left()  *pixelSize);
+	crop_width ->setValue(crop.width() *pixelSize);
+	crop_height->setValue(crop.height()*pixelSize);
+	crop_angle->setValue(crop.angle);
 }
 
