@@ -2,6 +2,7 @@
 #define CROPFRAME_H
 
 #include <QFrame>
+#include "../src/crop.h"
 
 class ImageCropper;
 class QDoubleSpinBox;
@@ -14,15 +15,15 @@ public:
 	CropFrame(QWidget *parent = nullptr);
 	void clear();
 	void init();
-	void setCrop(QRect rect, float angle);
+	void setCrop(Crop crop);
 
 public slots:
 	void setAspectRatio();
-	void updateCrop(QRect rect);
+	void updateCrop(Crop crop);
 	void scaleChanged(); //if units in mm are now available, update them.
 
 signals:
-	void cropChanged(QRect rect, float angle);
+	void cropChanged(Crop);
 private:
 	ImageCropper *cropper = nullptr;
 
