@@ -76,7 +76,7 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 void NormalsFrame::init() {
 	export_row->suggestPath();
 	zoom_view->init();
-	zoom_view->setRect(qRelightApp->project().crop);
+	zoom_view->setCrop(qRelightApp->project().crop);
 }
 
 void NormalsFrame::save() {
@@ -125,6 +125,6 @@ void NormalsFrame::save() {
 	emit processStarted();
 }
 
-void NormalsFrame::updateCrop(QRect rect) {
-	zoom_view->setRect(rect);
+void NormalsFrame::updateCrop(Crop crop) {
+	zoom_view->setCrop(crop);
 }
