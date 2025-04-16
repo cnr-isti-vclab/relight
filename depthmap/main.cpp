@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 	//input
 #define MACOS 1
 #ifdef MACOS
-	QString base = "/Users/erika/Desktop/testcenterRel_copia/";
+	QString base = "/Users/erika/Desktop/testRelightMicMac_copia/";
 #else
 	QString base = "";
 #endif

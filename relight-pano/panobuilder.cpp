@@ -82,7 +82,6 @@ void PanoBuilder::rmdir(QString path){
 	if(Tmp.exists()){
 		Tmp.removeRecursively();
 	}
-
 }
 int PanoBuilder::findStep(QString step){
 	return (steps.indexOf(step));
@@ -90,16 +89,9 @@ int PanoBuilder::findStep(QString step){
 
 void PanoBuilder::exportMeans(){
 
-
 	QStringList subDirNames = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-	QDir photogrammetryDir = QDir(base_dir.filePath("photogrammetry"));
 
-	if (!photogrammetryDir.exists()) {
-		if (!base_dir.mkdir("photogrammetry")) {
-			throw QString("Could not create directory: photogrammetry");
-		}
-	}
-
+//TODO: se già create le img devono essere sovrascritte
 	for (const QString &subDirName : subDirNames) {
 
 		QDir currentSubDir(datasets_dir.filePath(subDirName));
@@ -112,22 +104,24 @@ void PanoBuilder::exportMeans(){
 		if (photos.size() == 0)
 			throw QString("Missing '*.jpg' not found in ") + dataset.path();
 		QString photo = photos[0];
-		if(format == "jpg"){
 
+		if(format == "jpg"){
 			if (!QFile::copy(meanPath, subDirName + ".jpg")) {
-				throw QString("Failed to copy %1  to ").arg(meanPath).arg(subDirName);
+				throw QString("Failed to copy %1 to %2").arg(meanPath).arg(subDirName);
 			}
+			cout << "Copying EXIF from " << qPrintable(dataset.absoluteFilePath(photo))
+				 << " to " << qPrintable(meanPath) << endl;
 			ExifTransplant exif;
 			bool success = exif.transplant(dataset.absoluteFilePath(photo).toStdString().c_str(),
 										   (subDirName + ".jpg").toStdString().c_str());
 			if(!success)
+
 				throw QString("Unable to load exif from: ") + QString(exif.error.c_str()) + dataset.absoluteFilePath(photo);
 		} else {
 
 			//se formato è jpg copia se è un tif devi fare una conversion
 			QString newTifFileName = QString("%1.tif").arg(subDirName);
 			QString newTifFilePath = datasets_dir.filePath(newTifFileName);
-			QString photogrammetryTifPath = photogrammetryDir.filePath(newTifFileName);
 
 
 			QString convertCommand = QString("magick -colorspace RGB %1 -colorspace RGB -compress none %2").arg(meanPath, newTifFilePath);
@@ -140,13 +134,10 @@ void PanoBuilder::exportMeans(){
 			int result = system(exifCommand.toStdString().c_str());
 			if (result != 0)
 				throw QString("Error copying EXIF data from %1 to %2").arg(meanPath, newTifFilePath);
-
-			if (!QFile::copy(newTifFilePath, photogrammetryTifPath))
-				throw QString("Failed to move %1 to photogrammetry folder").arg(newTifFilePath);
-
 		}
 	}
 }
+
 void PanoBuilder::executeProcess(QString& program, QStringList& arguments) {
 
 	QString command = program + " " + arguments.join(" ");
@@ -404,7 +395,7 @@ void PanoBuilder::tapas(){
 	}
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Tapas" << "RadialBasic" << ".*" + format <<"Out=Relative";
+	arguments << "Tapas" << "RadialBasic" << ".*" + format << "Out=Relative";
 
 	executeProcess(program, arguments);
 }
@@ -603,7 +594,7 @@ void PanoBuilder::malt_ortho(){
 
 		executeProcess(program, arguments);
 
-		QString depthmapPath = "../photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif";
+	/*	QString depthmapPath = base_dir.filePath("photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif");
 		if (!QFile::copy(depthmapPath + "_backup.tif", depthmapPath)) {
 			cout << "Error copying depthmap" << depthmapPath.toStdString() << endl;
 			exit(0);
@@ -615,7 +606,8 @@ void PanoBuilder::malt_ortho(){
 		}
 
 	}
-	exportMeans();
+	exportMeans();*/
+	}
 }
 //sistema di coordinate: capire dove sta il 3d del punto dell'ori rel. trasformazione del punto con formule
 // rti fa l img media non la deve fare l rti si crea in tif, sposta rti dopo il malt mec e si fa direttamente l'img media
@@ -679,7 +671,7 @@ void PanoBuilder::jpg() {
 		if (!orthoDir.exists()) {
 			throw QString("Directory %1 does not exist").arg(orthoDir.absolutePath());
 		}
-		QStringList tifFiles = orthoDir.entryList(QStringList() << "plane_*." + format, QDir::Files);
+		QStringList tifFiles = orthoDir.entryList(QStringList() << "plane_*.tif", QDir::Files);
 		if (tifFiles.isEmpty()) {
 			cout << "No plane_*.tif files in " << qPrintable(orthoDir.absolutePath()) << endl;
 			continue;

@@ -53,7 +53,8 @@ int main(int argc, char *argv[])
 	parser.addOption(regulOption);
 
 	QCommandLineOption stepOption(QStringList() << "s" << "step",
-										 "starting step (rti, tapioca, )", "rti");
+										 "starting step (rti, tapioca, schnaps, tapas, apericloud, orthoplane, tarama, malt_mec,"
+										 "c3dc, malt_ortho, jpg)", "rti");
 	parser.addOption(stepOption);
 
 
@@ -124,7 +125,7 @@ int main(int argc, char *argv[])
 			// builder.setMm3d("/home/ponchio/devel/micmac/bin/mm3d");
 			builder.setMm3d("/Users/erika/Desktop/micmac/bin/mm3d");
 			//builder.setRelightCli("/home/ponchio/devel/relight/relight-cli/relight-cli");
-			builder.setRelightCli("/Users/erika/Desktop/projects/relight/build/relight-cli/relight-cli");
+			builder.setRelightCli("/Users/erika/Desktop/projects/relight/relight-cli/relight-cli");
 			//builder.setRelightMerge("/home/ponchio/devel/relight/relight-merge/relight-merge");
 			builder.setRelightMerge("/Users/erika/Desktop/projects/relight/build/relight-merge/relight-merge");
 
