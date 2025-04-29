@@ -1532,16 +1532,16 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 
 		if(savemeans) {
 			Vector3f n = extractMean(sample[x]);
-			means[x*3+0] = n[0];
-			means[x*3+1] = n[1];
-			means[x*3+2] = n[2];
+			means[x*3+0] = std::min(255, std::max(0, (int)round(n[0])));
+			means[x*3+1] = std::min(255, std::max(0, (int)round(n[1])));
+			means[x*3+2] = std::min(255, std::max(0, (int)round(n[2])));
 		}
 
 		if(savemedians) {
 			Vector3f n = extractMedian(sample[x]);
-			medians[x*3+0] = n[0];
-			medians[x*3+1] = n[1];
-			medians[x*3+2] = n[2];
+			medians[x*3+0] = std::min(255, std::max(0, (int)round(n[0])));
+			medians[x*3+1] = std::min(255, std::max(0, (int)round(n[1])));
+			medians[x*3+2] = std::min(255, std::max(0, (int)round(n[2])));
 		}
 
 		if(colorspace == LRGB){
