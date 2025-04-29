@@ -166,7 +166,7 @@ void NormalsTask::run() {
 
 		vector<uint8_t> normalmap(width * height * 3);
 		for(size_t i = 0; i < normals.size(); i++)
-			normalmap[i] = std::clamp(round(((normals[i] + 1.0f) / 2.0f) * 255.0f), 0.0f, 255.0f);
+			normalmap[i] = std::min(std::max(round(((normals[i] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
 
 		QImage img(normalmap.data(), width, height, width*3, QImage::Format_RGB888);
 	

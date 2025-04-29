@@ -22,7 +22,7 @@ public slots:
 	void next();
 	void previous();
 	//unfortunately QTextBrowser offer no direct access to history and setHtml erases it.
-	void doSetSource(const QUrl &url, QTextDocument::ResourceType type = QTextDocument::UnknownResource);
+	void doSetSource(const QUrl &url, QTextDocument::ResourceType type = QTextDocument::HtmlResource);
 };
 
 #endif // HOMEWIDGET_H
