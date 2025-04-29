@@ -37,7 +37,8 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	units = new QComboBox;
 	units->addItem("px");
 	units->addItem("mm");
-	connect(units, &QComboBox::activated, [this]() { scaleChanged(); });
+
+	connect(units, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated), [this]() { scaleChanged(); });
 
 	area_layout->addWidget(units, 0, 1);
 

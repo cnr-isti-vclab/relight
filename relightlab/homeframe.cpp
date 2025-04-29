@@ -82,7 +82,11 @@ HomeFrame::HomeFrame() {
 	//browser->setSearchPaths(QStringList() << "qrc:/docs/");
 	browser->setAlignment(Qt::AlignTop);
 
+#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
 	browser->setSource(QUrl("home.html"), QTextDocument::HtmlResource);
+#else
+	browser->setSource(QUrl("home.html"));
+#endif
 
 	browser->setStyleSheet("background:transparent;");
 	browser->setMinimumWidth(600);
@@ -120,8 +124,15 @@ void HelpBrowser::doSetSource(const QUrl &url, QTextDocument::ResourceType type)
 
 	if(current < 0 || url.url() != history[current]) {
 		current++;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 		history.resize(current+1);
 		history[current] = url.url();
+#else
+		history = history.mid(0, current);
+		history.push_back(url.url());
+#endif
+
 	}
 
 	setHtml(modifiedHtml);
