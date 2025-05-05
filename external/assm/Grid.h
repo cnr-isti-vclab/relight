@@ -123,26 +123,30 @@ public:
 			for (int y = 0; y < int(_rows); ++y) {
 				for (int x = 0; x < int(_cols); ++x) {
 					T sum = _zero;
+					T w = _zero;
 					for (int k = -radius; k <= radius; ++k) {
 						int idx = x + k;
-						if (idx >= 0 && idx < _cols) {
+						if (idx >= 0 && idx < int(_cols)) {
 							sum += at(y, idx) * kernel[k + radius];
+							w += kernel[k + radius];
 						}
 					}
-					result.at(y, x) = sum;
+					result.at(y, x) = sum/w;
 				}
 			}
 		} else {
 			for (int x = 0; x < int(_cols); ++x) {
 				for (int y = 0; y < int(_rows); ++y) {
 					T sum = _zero;
+					T w = _zero;
 					for (int k = -radius; k <= radius; ++k) {
-						int idx = y + k;
-						if (idx >= 0 && idx < int(_rows)) {
-							sum += at(idx, x) * kernel[k + radius];
+						int idy = y + k;
+						if (idy >= 0 && idy < int(_rows)) {
+							sum += at(idy, x) * kernel[k + radius];
+							w += kernel[k + radius];
 						}
 					}
-					result.at(y, x) = sum;
+					result.at(y, x) = sum/w;
 				}
 			}
 		}
