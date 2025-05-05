@@ -160,6 +160,11 @@ bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &d
 
 	TIFFClose(outTiff);
 	//if normalize: save range in mm and pixel size (in mm) in a text file.
+	QFile file(filename.left(filename.size() -4) + ".txt");
+	file.open(QFile::WriteOnly);
+	QTextStream stream(&file);
+	stream << "min: " << min << "\n";
+	stream << "max: " << max << "\n";
 	return true;
 }
 

@@ -219,11 +219,12 @@ void NormalsTask::run() {
 		//TODO remove extension properly
 
 		progressed("Saving surface...", 99);
-		QString filename = output.left(output.size() -4) + ".ply";
+		QString basename = output.left(output.size() -4);
+		QString filename = basename + ".ply";
 		savePly(filename, width, height, z);
-		filename = output.left(output.size() -4) + ".tiff";
+		filename = basename + ".tiff";
 		saveTiff(filename, width, height, z);
-		filename = output.left(output.size() -4) + "_normalized.tiff";
+		filename = basename + "_normalized.tiff";
 		saveTiff(filename, width, height, z, true);
 	}
 	progressed("Done", 100);
