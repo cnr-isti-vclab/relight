@@ -123,7 +123,7 @@ public:
 			for (int y = 0; y < int(_rows); ++y) {
 				for (int x = 0; x < int(_cols); ++x) {
 					T sum = _zero;
-					T w = _zero;
+					float w = 0;
 					for (int k = -radius; k <= radius; ++k) {
 						int idx = x + k;
 						if (idx >= 0 && idx < int(_cols)) {
@@ -138,7 +138,7 @@ public:
 			for (int x = 0; x < int(_cols); ++x) {
 				for (int y = 0; y < int(_rows); ++y) {
 					T sum = _zero;
-					T w = _zero;
+					float w = 0;
 					for (int k = -radius; k <= radius; ++k) {
 						int idy = y + k;
 						if (idy >= 0 && idy < int(_rows)) {
