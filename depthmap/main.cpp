@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 	//input
 #define MACOS 1
 #ifdef MACOS
-	QString base = "/Users/erika/Desktop/testRelightMicMac_copia/";
+	QString base = "/Users/erika/Desktop/testProva/";
 #else
 	QString base = "";
 #endif
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 	//QString cameraDepthmap = base + "datasets/L04C12.tif";
 	//QString orientationXmlPath = base + "photogrammetry/Ori-Relative/Orientation-L04C12.tif.xml";
 	QString maskPath = base + "photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
-	QString plyFile = base + "photogrammetry/AperiCloud_Relative.ply";
+	QString plyFile = base + "photogrammetry/AperiCloud_Relative__mini.ply";
 	//QString point_txt = base + "photogrammetry/points_h.txt";
 	Depthmap depth;
 

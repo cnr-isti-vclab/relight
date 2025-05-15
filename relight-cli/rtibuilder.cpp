@@ -1475,6 +1475,7 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 
 		if(savemeans) {
 			Vector3f n = extractMean(sample[x], lights.size());
+			assert(n[0] >= 0.0f && n[0] <= 255.0f);
 			means[x*3+0] = n[0];
 			means[x*3+1] = n[1];
 			means[x*3+2] = n[2];

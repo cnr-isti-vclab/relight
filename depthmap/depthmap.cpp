@@ -10,7 +10,11 @@
 #include <QDebug>
 #include <QRegularExpression>
 #include <fstream>
+#include "../src/flatten.h"
+#include <assm/Grid.h>
 
+//carica la mask, applica il gaussian blur con il peso scalato da 0.5 a 1 fai la somma pesata tra la depth di Mic Mac e quella ricavata dal gaussian blur
+//gaussian, maschera 0.5 1, peso mediato
 using namespace std;
 
 
@@ -240,7 +244,7 @@ bool Depthmap::loadMask(const char *tifPath){
 
 //1. scrivere la depth map e la masq fai tif .save con i nomi.
 //2. prendi la superficie dell rti e trovi la media delle due superfici della depth e della rti. sottraiamo la media del rti per vedere se hanno la stessa media.
-//void Depthmap::
+
 
 bool Depthmap::loadNormals(const char *normals_path){
 

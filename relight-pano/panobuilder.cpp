@@ -252,7 +252,6 @@ void PanoBuilder::means(){
 		QString relightCliPath = relight_cli_path;
 		QStringList arguments;
 		arguments <<"-b" << "skip" << "-m" << inputPath << outputPath;
-
 		executeProcess(relightCliPath, arguments);
 
 		QString command = relightCliPath + " " + arguments.join(" ");
@@ -294,8 +293,8 @@ void PanoBuilder::rti(){
 		//arguments << subDir.absoluteFilePath(relightFile) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18" << "-m"
 		//<<"-3" << "2.5:0.21";
 
-		arguments << datasets_dir.filePath(subDirName) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18" << "-m"
-				  <<"-3" << "2.5:0.21";
+		arguments << datasets_dir.filePath(subDirName) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18" << "-m";
+				 // <<"-3" << "2.5:0.21";
 
 		//executeProcess(relight_cli_path, arguments);
 	}
@@ -399,6 +398,9 @@ void PanoBuilder::tapas(){
 
 	executeProcess(program, arguments);
 }
+//note: dataset papiro non usabile perchè troppo allineato, l'errore che dà tapas è che la
+//Distortion Inversion by finite difference do not converge (probably ill-conditioned canvas)
+//nell homol si trovano le convergenze dove la y è allineata tra un'img e l'altra.
 
 void PanoBuilder::apericloud(){
 	QDir currentDir = cd("photogrammetry");
@@ -512,7 +514,7 @@ void PanoBuilder::malt_mec(){
 	QString program = mm3d_path;
 	QStringList arguments;
 	arguments << "Malt" << "Ortho" << ".*" + format << "Relative" << "DoOrtho=1" << "ZoomF=4" << "DirMEC=Malt"
-			  << "DirTA=TA" << "ImOrtho=.*" + format << "DirOF=Ortho-Lights" << "NbVI=2" << "Purge=true"
+			  << "DirTA=TA" << "ImOrtho=.*" + format << "DirOF=Ortho-Lights" << "NbVI=3" << "Purge=true"
 			  << QString("DefCor=%1").arg(DefCor)
 			  << QString("Regul=%1").arg(Regul);
 	//DefCor 2 is to big
@@ -634,7 +636,7 @@ void PanoBuilder::tawny() {
 
 
 		QStringList arguments;
-		arguments << "Tawny" << planeDirName <<"DEq=0" << "DegRap=0" << QString("Out=plane_%1.tif").arg(plane);
+		arguments << "Tawny" << planeDirName << "DEq=0" << "DegRap=0" << QString("Out=plane_%1.tif").arg(plane);
 		executeProcess(program, arguments);
 	}
 }
