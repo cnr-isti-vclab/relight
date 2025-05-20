@@ -112,7 +112,8 @@ SOURCES += main.cpp \
     metadataframe.cpp \
     ../src/fft_normal_integration.cpp \
     ../src/deepzoom.cpp \
-    sphereframe.cpp
+    sphereframe.cpp \
+    brdftask.cpp
 
 RESOURCES += \
     res.qrc
@@ -199,7 +200,8 @@ HEADERS += \
     ../src/fft_normal_integration.h \
     ../src/pocketfft.h \
     ../src/deepzoom.h \
-    sphereframe.h
+    sphereframe.h \
+    brdftask.h
 
 FORMS +=
 

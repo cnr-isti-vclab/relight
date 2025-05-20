@@ -27,7 +27,7 @@
 RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);
 
-	content->addWidget(new QLabel("<h2>Build relightable images</h2>"));
+	content->addWidget(new QLabel("<h2>aBuild relightable images</h2>"));
 	content->addSpacing(20);
 
 	content->addWidget(recents = new RtiRecents);

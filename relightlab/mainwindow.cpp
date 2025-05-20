@@ -15,6 +15,7 @@
 #include "lightsframe.h"
 #include "cropframe.h"
 #include "rtiframe.h"
+#include "brdfframe.h"
 #include "normalsframe.h"
 #include "queueframe.h"
 #include "helpbutton.h"
@@ -41,6 +42,7 @@ MainWindow::MainWindow() {
 	tabs->addTab(lights_frame = new LightsFrame, "Lights");
 	tabs->addTab(crop_frame = new CropFrame, "Crop");
 	tabs->addTab(rti_frame = new RtiFrame, "RTI");
+	tabs->addTab(brdf_frame = new BrdfFrame, "BRDF");
 	tabs->addTab(normals_frame = new NormalsFrame, "Normals");
 	tabs->addTab(queue_frame = new QueueFrame, "Queue");
 
@@ -51,6 +53,7 @@ MainWindow::MainWindow() {
 	connect(crop_frame, SIGNAL(cropChanged(QRect)), rti_frame, SLOT(updateCrop(QRect)));
 	connect(crop_frame, SIGNAL(cropChanged(QRect)), normals_frame, SLOT(updateCrop(QRect)));
 	connect(rti_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
+	connect(brdf_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
 	connect(normals_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
 
 	setCentralWidget(tabs);

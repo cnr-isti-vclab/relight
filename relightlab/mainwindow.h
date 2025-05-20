@@ -14,6 +14,7 @@ class SphereFrame;
 class LightsFrame;
 class CropFrame;
 class RtiFrame;
+class BrdfFrame;
 class NormalsFrame;
 class QueueFrame;
 
@@ -48,6 +49,7 @@ protected:
 	LightsFrame *lights_frame = nullptr;
 	CropFrame *crop_frame = nullptr;
 	RtiFrame *rti_frame = nullptr;
+	BrdfFrame *brdf_frame = nullptr;
 	NormalsFrame *normals_frame = nullptr;
 	QueueFrame *queue_frame = nullptr;
 
