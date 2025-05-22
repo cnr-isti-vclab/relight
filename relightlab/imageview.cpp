@@ -36,7 +36,6 @@ void ImageView::showImage(int id) {
 		return;
 	}
 	imagePixmap->setPixmap(QPixmap::fromImage(img));
-
 	current_image = id;
 }
 
