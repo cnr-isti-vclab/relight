@@ -37,13 +37,6 @@ void ImageView::showImage(int id) {
 	}
 	imagePixmap->setPixmap(QPixmap::fromImage(img));
 
-	int w = project.imgsize.width();
-	int h = project.imgsize.height();
-	double sx =  double(width()) / w;
-	double sy = double(height()) / h;
-	double min_scale = std::min(1.0, std::min(sx, sy));
-	min_scale = min_scale;
-
 	current_image = id;
 }
 

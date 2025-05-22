@@ -125,6 +125,15 @@ void Canvas::resizeEvent(QResizeEvent *event) {
 	double sy = event->size().height()/(double)event->oldSize().height();
 	double s = std::min(sx, sy);
 	scale(s, s);
+
+	if(scene()->width() == 0.0f)
+		return;
+	// Compute the base scale for fit (image -> viewport)
+	double scaleX = double(viewport()->width()) / scene()->width();
+	double scaleY = double(viewport()->height()) / scene()->height();
+	double baseScale = std::min(scaleX, scaleY);
+
+	min_scale = baseScale * min_zoom_scale;
 }
 
 
