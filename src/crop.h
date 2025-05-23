@@ -3,13 +3,18 @@
 
 #include <QRect>
 
+/* Crop coordinates:
+ *
+ * The crop coordinates are relative to the rotated image bounding box.
+ *
+ */
+
 class Crop: public QRect {
 public:
 	void setRect(QRect r) {
 		static_cast<QRect&>(*this) = r;
 	}
 	float angle = 0.0f;
-
 };
 
 #endif // CROP_H
