@@ -3,6 +3,7 @@
 #include <QGraphicsPixmapItem>
 #include <QGraphicsRectItem>
 #include <QGraphicsLineItem>
+#include <QList>
 
 #include <math.h>
 #include <iostream>
@@ -44,12 +45,18 @@ ImageCropper::ImageCropper(QWidget* parent):	ImageView(parent) {
 
 	scene.addItem(boundary = new QGraphicsRectItem);
 	boundary->setPen(border);
+	boundary->setBrush(QColor(255, 255, 255, 50));
 
 	for(int i = 0; i < 9; i++) {
 		scene.addItem(corners[i] = new CornerMarker);
 		corners[i]->setPen(border);
+		corners[i]->setRect(-5, -5, 10, 10);
+		corners[i]->setBrush(QColor(255, 255, 255, 128));
 		connect(corners[i], &CornerMarker::itemChanged, [this, i]() { cornerMoved(i); });
 	}
+	QList<qreal> pattern;
+	pattern << 5 << 5;
+	border.setDashPattern(pattern);
 	scene.addItem(guide[0] = new QGraphicsLineItem);
 	guide[0]->setPen(border);
 	scene.addItem(guide[1] = new QGraphicsLineItem);
@@ -60,6 +67,7 @@ ImageCropper::~ImageCropper() {}
 
 void ImageCropper::setImage(const QPixmap& _image) {
 	imagePixmap->setPixmap(_image);
+	imagePixmap->setPos(imagePixmap->boundingRect().center());
 	crop.setRect(QRect(QPoint(0, 0), imagePixmap->pixmap().size()));
 	crop.angle = 0.0f;
 	update();
@@ -101,7 +109,7 @@ void ImageCropper::updateCrop() {
 	float mx = crop.left() + crop.width()/2.0f;
 	float my = crop.top() + crop.height()/2.0f;
 	guide[0]->setLine(QLineF(crop.left(), my, crop.right(), my));
-	guide[0]->setLine(QLineF(crop.top(), mx, crop.bottom(), mx));
+	guide[1]->setLine(QLineF(mx, crop.top(), mx, crop.bottom()));
 }
 
 
@@ -155,15 +163,14 @@ void ImageCropper::maximizeCrop() {
 }
 
 void ImageCropper::centerCrop() {
-
-	crop.moveCenter(imagePixmap->pixmap().rect().center());
+	crop.moveCenter(getRotatedSize().center());
 	setRect(crop);
 }
 
 QRect ImageCropper::getRotatedSize() {
 	QTransform transform;
 	transform.rotate(crop.angle);
-	QRect r(QPoint(0, 0), imagePixmap->pixmap().size());
+	QRect r(QPoint(0, 0), imagePixmap->pixmap().size() - QSize(1, 1));
 	QPolygon rotated = transform.map(QPolygon(r));
 	return rotated.boundingRect();
 }
@@ -424,6 +431,23 @@ void ImageCropper::mouseMoveEvent(QMouseEvent* event)
 		crop.setRect(target);
 		emit areaChanged(crop);
 		update();
+	}
+
+	void ImageCropper::update() {
+		QSize center = imagePixmap->pixmap().size()/2;
+
+		QRect rotatedSize = getRotatedSize();
+		QSize new_center = rotatedSize.size()/2;
+
+		QTransform t;
+		t.translate(new_center.width(), new_center.height());
+		t.rotate(crop.angle);
+
+		t.translate(-center.width(), -center.height());
+		imagePixmap->setTransform(t);
+		updateCrop();
+
+		ImageView::update();
 	}
 
 

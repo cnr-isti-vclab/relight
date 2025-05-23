@@ -556,7 +556,7 @@ void Sphere::readCacheThumbs(QImage img) {
 	assert(img.width() == w);
 	assert(img.height() == h);
 	sphereImg = img.copy(0, 0, inner.width(), inner.height());
-	for(int i = 0; i < thumbs.size(); i++) {
+	for(int i = 0; i < int(thumbs.size()); i++) {
 		int j = i+1;
 		int x = (j%20)*inner.width();
 		int y = (j/20)*inner.height();
@@ -575,7 +575,7 @@ void Sphere::saveCacheThumbs(QString filename) {
 	img.fill(0);
 	QPainter painter(&img);
 	painter.drawImage(0, 0, sphereImg);
-	for(int i = 0; i < thumbs.size(); i++) {
+	for(int i = 0; i < int(thumbs.size()); i++) {
 		if(thumbs[i].isNull())
 			continue;
 		int j = i+1;

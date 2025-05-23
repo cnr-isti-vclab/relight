@@ -78,6 +78,7 @@ public:
 	QRect ensureCropFits(QRect rect);
 
 protected:
+	virtual void update();
 	virtual void resizeEvent(QResizeEvent *event);
 	//virtual void paintEvent(QPaintEvent* _event);
 	//virtual void mousePressEvent(QMouseEvent* _event);
