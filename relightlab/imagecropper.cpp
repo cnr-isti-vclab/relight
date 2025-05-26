@@ -31,7 +31,7 @@ QVariant CornerMarker::itemChange(GraphicsItemChange change, const QVariant &val
 		return newPos;
 	}
 
-	if(change == ItemScenePositionHasChanged) {
+	if(!silent && change == ItemScenePositionHasChanged) {
 		emit itemChanged();
 	}
 	return QGraphicsItem::itemChange(change, value);
@@ -100,10 +100,13 @@ void ImageCropper::setProportionFixed(const bool _isFixed) {
 void ImageCropper::updateCrop() {
 	boundary->setRect(crop);
 	for(int y = 0; y < 3; y++) {
-		float Y = crop.left() + crop.width() * y/2.0f;
 		for(int x = 0; x < 3; x++) {
-			float X = crop.top() + crop.height() * x/2.0f;
+			float Y = crop.top() + crop.height() * x/2.0f;
+			float X = crop.left() + crop.width() * y/2.0f;
+
+			corners[x + y*3]->silent = true;
 			corners[x + y*3]->setPos(X, Y);
+			corners[x + y*3]->silent = false;
 		}
 	}
 	float mx = crop.left() + crop.width()/2.0f;
@@ -180,7 +183,7 @@ void ImageCropper::resizeEvent(QResizeEvent *event) {
 }
 
 void ImageCropper::cornerMoved(int i) {
-	QPointF pos = corners[i]->pos();
+	QPoint pos = corners[i]->pos().toPoint();
 
 	/*CursorPositionUndefined = 0,
 	CursorPositionMiddle = 1 | 2 | 4 | 8,
@@ -193,27 +196,38 @@ void ImageCropper::cornerMoved(int i) {
 	CursorPositionBottomLeft = 8 | 1,
 	CursorPositionBottomRight = 8 | 4 */
 
-	int positions[9] = {
+	/*int positions[9] = {
 		1|2, 2, 4|2,
 		1,   1|2|4|8, 4,
-		1|8, 8, 4|8	};
+		1|8, 8, 4|8	}; */
+	int positions[9] = {
+		1|2, 1, 1|8,
+		2,   1|2|4|8, 8,
+		4|2, 4, 4|8	};
+
 	CursorPosition _cursorPosition = (CursorPosition) positions[i];
 
-	if (_cursorPosition != CursorPositionMiddle) {
+	if (_cursorPosition == CursorPositionMiddle) {
+		crop.moveTopLeft(crop.topLeft() + pos - crop.center());
+		enforceBounds(crop, CursorPositionMiddle);
+	} else {
 		if(_cursorPosition & CursorPositionLeft) {
 			crop.setLeft(pos.x());
+			enforceBounds(crop, CursorPositionLeft);
 		}
 		if(_cursorPosition & CursorPositionRight) {
 			crop.setRight(pos.x());
+			enforceBounds(crop, CursorPositionRight);
 		}
 		if(	_cursorPosition & CursorPositionTop) {
 			crop.setTop(pos.y());
+			enforceBounds(crop, CursorPositionTop);
 		}
 		if(_cursorPosition & CursorPositionBottom) {
 			crop.setBottom(pos.y());
+			enforceBounds(crop, CursorPositionBottom);
 		}
 	}
-	enforceBounds(crop, CursorPositionBottom);
 }
 	/*
 void ImageCropper::paintEvent(QPaintEvent* _event) {

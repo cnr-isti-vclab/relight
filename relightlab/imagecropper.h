@@ -31,6 +31,13 @@ enum CursorPosition {
 class CornerMarker: public QObject, public QGraphicsRectItem {
 	Q_OBJECT
 public:
+	bool silent = false; //stop itemChange to avoid loops.
+	CornerMarker() {
+		setCursor(Qt::CrossCursor);
+		setFlag(QGraphicsItem::ItemIsMovable);
+		setFlag(QGraphicsItem::ItemIsSelectable);
+		setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
+	}
 	QRectF boundingRect() const override;
 	QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 signals:

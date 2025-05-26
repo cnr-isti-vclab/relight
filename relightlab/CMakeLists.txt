@@ -95,6 +95,7 @@ set (RELIGHT_HEADERS
     normalsplan.h
     planrow.h
     scaleframe.h
+    imagecropper.h
 )
 
 set (RELIGHTLAB_SOURCES
@@ -163,6 +164,7 @@ set (RELIGHTLAB_SOURCES
     normalsplan.cpp
     planrow.cpp
     scaleframe.cpp
+    imagecropper.cpp
 )
 
 

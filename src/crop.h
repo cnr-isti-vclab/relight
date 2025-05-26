@@ -15,6 +15,9 @@ public:
 		static_cast<QRect&>(*this) = r;
 	}
 	float angle = 0.0f;
+	bool operator==(const Crop &crop) {
+		return angle == crop.angle && QRect(*this) == QRect(crop);
+	}
 };
 
 #endif // CROP_H
