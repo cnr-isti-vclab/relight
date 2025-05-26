@@ -133,9 +133,11 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 
 void CropFrame::updateCrop(Crop crop) {
 	Project &project = qRelightApp->project();
-	project.crop = crop;
 	setCrop(crop);
-	emit cropChanged(cropper->crop); //crop might enforce boundaries.
+	if(project.crop != crop) {
+		project.crop = crop;
+		emit cropChanged(cropper->crop); //crop might enforce boundaries.
+	}
 }
 void CropFrame::clear() {
 	cropper->setImage(QPixmap());
@@ -189,7 +191,6 @@ void CropFrame::setAspectRatio() {
 	cropper->setProportionFixed(aspect > 0);
 	if(aspect != 0)
 		cropper->setProportion(QSizeF(s[0], s[1]));
-
 }
 
 void CropFrame::setCrop(Crop crop) {
