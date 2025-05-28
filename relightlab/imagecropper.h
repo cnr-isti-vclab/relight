@@ -35,13 +35,18 @@ public:
 	CornerMarker() {
 		setCursor(Qt::CrossCursor);
 		setFlag(QGraphicsItem::ItemIsMovable);
-		setFlag(QGraphicsItem::ItemIsSelectable);
 		setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
 	}
 	QRectF boundingRect() const override;
+protected:
 	QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 signals:
 	void itemChanged();
+};
+
+class BoundaryMarker: public CornerMarker {
+protected:
+	QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 };
 
 class ImageCropper : public ImageView {
@@ -74,54 +79,33 @@ public slots:
 	void centerCrop();
 
 	QRect getRotatedSize();
+	void updateScale();
 
 signals:
 	void areaChanged(Crop crop);
 
 public:
-	//QRectF imageCroppedRect(); //return cropped rect in image ccords
-	//QRect croppedRect();
 	void enforceBounds(QRect rect, CursorPosition position); //makes sure the rectangle is inside the image.
 	QRect ensureCropFits(QRect rect);
 
 protected:
 	virtual void update();
 	virtual void resizeEvent(QResizeEvent *event);
-	//virtual void paintEvent(QPaintEvent* _event);
-	//virtual void mousePressEvent(QMouseEvent* _event);
-	//virtual void mouseMoveEvent(QMouseEvent* _event);
-	//virtual void mouseReleaseEvent(QMouseEvent* _event);
 
 private:
-	//CursorPosition cursorPosition(const QRectF& _cropRect, const QPointF& _mousePosition);
+	void boundaryMoved();
 	void cornerMoved(int i);
 	void updateCursorIcon(const QPointF& _mousePosition);
 	void updateCrop();
-	//void updateDeltaAndScale();
 
-	//TODO invert logic: realSize rect is stored, cropping rect is computed instead.
-//	float leftDelta = 0.0f, topDelta = 0.0f;
-//	float xScale = 1.0f, yScale = 1.0f;
-
-	QGraphicsRectItem *boundary = nullptr;
+	BoundaryMarker *boundary = nullptr;
 	CornerMarker *corners[9];
 	QGraphicsLineItem *guide[2]; //horizontal, vertical
 
 	bool isProportionFixed = false;
 	QSizeF proportion = QSizeF(1.0, 1.0);
 
-	//QRectF croppingRect; //in image coords //j
-
-
-	//QRect realSizeRect;
-	//QRect lastStaticCroppingRect;
-
-	/*CursorPosition _cursorPosition = CursorPositionUndefined;
-	//bool isMousePressed = false;
-
-	QPointF startMousePos;
-
-	QSizeF deltas = QSizeF(1.0, 1.0); */
+	double scale = 1.0f; //scale interface to look decent.
 	QColor backgroundColor = Qt::black;
 	QColor borderColor = Qt::white;
 	float handleMargin = 20;
