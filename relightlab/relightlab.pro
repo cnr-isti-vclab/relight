@@ -112,7 +112,8 @@ SOURCES += main.cpp \
     metadataframe.cpp \
     ../src/fft_normal_integration.cpp \
     ../src/deepzoom.cpp \
-    sphereframe.cpp
+    sphereframe.cpp \
+    ../src/crop.cpp
 
 RESOURCES += \
     res.qrc

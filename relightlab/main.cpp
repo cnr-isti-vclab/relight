@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QImageReader>
 
+#include "../src/crop.h"
 #include <iostream>
 #include <locale.h>
 using namespace std;
@@ -19,7 +20,6 @@ using namespace std;
 Project project;
 
 int main(int argc, char *argv[]) {
-
 
 	RelightApp app(argc, argv);
 

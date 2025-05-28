@@ -307,6 +307,8 @@ void Project::load(QString filename) {
 		crop.setTop(c["top"].toInt());
 		crop.setWidth(c["width"].toInt());
 		crop.setHeight(c["height"].toInt());
+		if(c.contains("angle"))
+			crop.angle = c["angle"].toDouble();
 	}
 
 	if(obj.contains("spheres")) {
@@ -417,6 +419,7 @@ void Project::save(QString filename) {
 		jcrop.insert("top", crop.top());
 		jcrop.insert("width", crop.width());
 		jcrop.insert("height", crop.height());
+		jcrop.insert("angle", crop.angle);
 		project.insert("crop", jcrop);
 	}
 

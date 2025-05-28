@@ -47,16 +47,21 @@ ImageCropper::ImageCropper(QWidget* parent):	ImageView(parent) {
 	boundary->setPen(border);
 	boundary->setBrush(QColor(255, 255, 255, 50));
 
+	Qt::CursorShape cursor[9] = {
+		Qt::SizeFDiagCursor, Qt::SizeHorCursor, Qt::SizeBDiagCursor,
+		Qt::SizeVerCursor, Qt::OpenHandCursor, Qt::SizeVerCursor,
+		Qt::SizeBDiagCursor, Qt::SizeHorCursor, Qt::SizeFDiagCursor
+	};
+
 	for(int i = 0; i < 9; i++) {
 		scene.addItem(corners[i] = new CornerMarker);
 		corners[i]->setPen(border);
 		corners[i]->setRect(-5, -5, 10, 10);
 		corners[i]->setBrush(QColor(255, 255, 255, 128));
+		corners[i]->setCursor(cursor[i]);
 		connect(corners[i], &CornerMarker::itemChanged, [this, i]() { cornerMoved(i); });
 	}
-	QList<qreal> pattern;
-	pattern << 5 << 5;
-	border.setDashPattern(pattern);
+	border.setStyle(Qt::DashLine);
 	scene.addItem(guide[0] = new QGraphicsLineItem);
 	guide[0]->setPen(border);
 	scene.addItem(guide[1] = new QGraphicsLineItem);
@@ -229,328 +234,118 @@ void ImageCropper::cornerMoved(int i) {
 		}
 	}
 }
-	/*
-void ImageCropper::paintEvent(QPaintEvent* _event) {
-	QWidget::paintEvent( _event );
 
-	QRectF croppingRect = imageCroppedRect();
-	QPainter painter(this);
-	painter.setRenderHint(QPainter::SmoothPixmapTransform);
+void ImageCropper::enforceBounds(QRect target, CursorPosition position) {
+	if(!target.isValid())
+		return;
 
-	{
-		QPixmap scaledImage = image.scaled(this->size(), Qt::KeepAspectRatio, Qt::FastTransformation);
-
-		painter.fillRect( this->rect(), backgroundColor );
-		painter.save();
-		QPointF center = rect().center();
-		painter.translate(center);
-		painter.rotate(angle);  // angle is a float/double member
-		painter.translate(-center);
-
-			// Draw pixmap centered
-		QPoint topLeft = center.toPoint() - QPoint(scaledImage.width()/2, scaledImage.height()/2);
-
-		if ( this->size().height() == scaledImage.height() ) {
-			painter.drawPixmap( ( this->width() - scaledImage.width() ) / 2, 0, scaledImage );
-		} else {
-			painter.drawPixmap( 0, ( this->height() - scaledImage.height() ) / 2, scaledImage );
-		}
-		painter.restore();
-	}
-
-	if(show_handle) {
-		if (croppingRect.isNull()) {
-			const int width = WIDGET_MINIMUM_SIZE.width()/2;
-			const int height = WIDGET_MINIMUM_SIZE.height()/2;
-			croppingRect.setSize(QSize(width, height));
-			float x = (this->width() - croppingRect.width())/2;
-			float y = (this->height() - croppingRect.height())/2;
-			croppingRect.moveTo(x, y);
-			emit areaChanged(croppedRect());
-		}
-
-		QPainterPath p;
-		p.addRect(croppingRect);
-		p.addRect(this->rect());
-		painter.setBrush(QBrush(QColor(0,0,0,120)));
-		painter.setPen(Qt::transparent);
-		painter.drawPath(p);
-
-		painter.setPen(croppingRectBorderColor);
-		painter.setBrush(QBrush(Qt::transparent));
-		painter.drawRect(croppingRect);
-
-
-		{
-			painter.setBrush(QBrush(croppingRectBorderColor));
-
-			int leftXCoord   = croppingRect.left() - 2;
-			int centerXCoord = croppingRect.center().x() - 3;
-			int rightXCoord  = croppingRect.right() - 2;
-
-			int topYCoord    = croppingRect.top() - 2;
-			int middleYCoord = croppingRect.center().y() - 3;
-			int bottomYCoord = croppingRect.bottom() - 2;
-
-			const QSize pointSize(6, 6);
-
-			QVector<QRect> points;
-			points
-
-					<< QRect( QPoint(leftXCoord, topYCoord), pointSize )
-					<< QRect( QPoint(leftXCoord, middleYCoord), pointSize )
-					<< QRect( QPoint(leftXCoord, bottomYCoord), pointSize )
-
-					<< QRect( QPoint(centerXCoord, topYCoord), pointSize )
-					<< QRect( QPoint(centerXCoord, middleYCoord), pointSize )
-					<< QRect( QPoint(centerXCoord, bottomYCoord), pointSize )
-
-					<< QRect( QPoint(rightXCoord, topYCoord), pointSize )
-					<< QRect( QPoint(rightXCoord, middleYCoord), pointSize )
-					<< QRect( QPoint(rightXCoord, bottomYCoord), pointSize );
-
-			painter.drawRects( points );
-		}
-
-		{
-			QPen dashPen(croppingRectBorderColor);
-			dashPen.setStyle(Qt::DashLine);
-			painter.setPen(dashPen);
-
-			painter.drawLine(
-						QPoint(croppingRect.center().x(), croppingRect.top()),
-						QPoint(croppingRect.center().x(), croppingRect.bottom()) );
-
-			painter.drawLine(
-						QPoint(croppingRect.left(), croppingRect.center().y()),
-						QPoint(croppingRect.right(), croppingRect.center().y()) );
-		}
-	}
-
-	painter.end();
-}
-
-void ImageCropper::mousePressEvent(QMouseEvent* event) {
-	if (event->button() == Qt::LeftButton) {
-		isMousePressed = true;
-		startMousePos = event->pos();
-		lastStaticCroppingRect = realSizeRect;
-	}
-	//
-	updateCursorIcon(event->pos());
-}
-
-void ImageCropper::mouseMoveEvent(QMouseEvent* event)
-{
-	QPointF mousePos = event->pos();
-
-	if (!isMousePressed) {
-		QRectF croppingRect = imageCroppedRect();
-		_cursorPosition = cursorPosition(croppingRect, mousePos);
-		updateCursorIcon(mousePos);
-
-	} else if (_cursorPosition != CursorPositionUndefined) {
-		QPoint mouseDelta;
-		mouseDelta.setX( round((mousePos.x() - startMousePos.x())*xScale) );
-		mouseDelta.setY( round((mousePos.y() - startMousePos.y())*yScale) );
-
-		QRect target = lastStaticCroppingRect;
-
-		if (_cursorPosition != CursorPositionMiddle) {
-			if(_cursorPosition & CursorPositionLeft) {
-				target.setLeft(target.left() + mouseDelta.x());
-			}
-			if(_cursorPosition & CursorPositionRight) {
-				target.setRight(target.right() + mouseDelta.x());
-			}
-			if(	_cursorPosition & CursorPositionTop) {
-				target.setTop(target.top() + mouseDelta.y());
-			}
-			if(_cursorPosition & CursorPositionBottom) {
-				target.setBottom(target.bottom() + mouseDelta.y());
-			}
-		} else {
-			target.moveTo( lastStaticCroppingRect.topLeft() + mouseDelta );
-		}
-		enforceBounds(target, _cursorPosition);
-		emit areaChanged(croppedRect());
-		update();
-	}
-}*/
-
-	void ImageCropper::enforceBounds(QRect target, CursorPosition position) {
-		if(!target.isValid())
-			return;
-
-		if(position == CursorPositionUndefined) {
-			//make sure it is of the right shape
-			if(isProportionFixed) {
-				//keep area more or less the same
-				float area = target.width()*target.width();
-				QPoint center = target.center();
-				target.setWidth(round(sqrt(area*proportion.width()/proportion.height())));
-				target.setHeight(round(sqrt(area*proportion.height()/proportion.width())));
-				target.moveCenter(center);
-			}
-			target = ensureCropFits(target);
-		}
-
-		QSize size = getRotatedSize().size();
-		int w = size.width();
-		int h = size.height();
-		if(position == CursorPositionMiddle) {
-			if(target.left() < 0) target.moveLeft(0);
-			if(target.top() < 0) target.moveTop(0);
-			if(target.right() >= w) target.moveRight(w-1);
-			if(target.bottom() >= h) target.moveBottom(h-1);
-
-		} else {
-			if(position & CursorPositionLeft) {
-				if(target.left() < 0) target.setLeft(0);
-			}
-			if(position & CursorPositionRight) {
-				if(target.right() >= w) target.setRight(w-1);
-			}
-
-			if(position & CursorPositionTop) {
-				if(target.top() < 0) target.setTop(0);
-			}
-			if(position & CursorPositionBottom) {
-				if(target.bottom() >= h) target.setBottom(h-1);
-			}
-		}
-
-		target = ensureCropFits(target);
+	if(position == CursorPositionUndefined) {
+		//make sure it is of the right shape
 		if(isProportionFixed) {
-			float h_over_w = proportion.height() / proportion.width();
-			if(position & (CursorPositionLeft | CursorPositionRight)) {
-				int height = round(target.width() * h_over_w);
-				int delta = target.height() - height;
-				target.setHeight(height);
-				target.moveTop(target.top() + delta/2);
-				if(target.top() < 0) target.moveTop(0);
-				if(target.bottom() >= h)
-					target.moveBottom(h-1);
-			}
-			if(position & (CursorPositionTop | CursorPositionBottom)) {
-				int width = round(target.height() / h_over_w);
-				int delta = target.width() - width;
-				target.setWidth(width);
-				target.moveLeft(target.left() + delta/2);
-				if(target.left() < 0) target.moveLeft(0);
-				if(target.right() >= w)
-					target.moveRight(w-1);
-			}
+			//keep area more or less the same
+			float area = target.width()*target.width();
+			QPoint center = target.center();
+			target.setWidth(round(sqrt(area*proportion.width()/proportion.height())));
+			target.setHeight(round(sqrt(area*proportion.height()/proportion.width())));
+			target.moveCenter(center);
 		}
-		crop.setRect(target);
-		emit areaChanged(crop);
-		update();
+		target = ensureCropFits(target);
 	}
 
-	void ImageCropper::update() {
-		QSize center = imagePixmap->pixmap().size()/2;
-
-		QRect rotatedSize = getRotatedSize();
-		QSize new_center = rotatedSize.size()/2;
-
-		QTransform t;
-		t.translate(new_center.width(), new_center.height());
-		t.rotate(crop.angle);
-
-		t.translate(-center.width(), -center.height());
-		imagePixmap->setTransform(t);
-		updateCrop();
-
-		ImageView::update();
-	}
-
-
-	QRect ImageCropper::ensureCropFits(QRect target) {
-		QSizeF proportion = this->proportion;
-		if(!isProportionFixed) {
-			proportion.setWidth(target.width());
-			proportion.setHeight(target.height());
-		}
-		QSize size = getRotatedSize().size();
-		int w = size.width();
-		int h = size.height();
-
-		float h_over_w = proportion.height() / proportion.width();
-		int max_width = std::min(w, (int)round(h/h_over_w));
-		int max_height = std::min(h, (int)round(w*h_over_w));
-		if(target.width() > max_width) {
-			target.setWidth(max_width);
-			target.setHeight(h);
-		}
-		if(target.height() > max_height) {
-			target.setHeight(max_height);
-			target.setWidth(w);
-		}
+	QSize size = getRotatedSize().size();
+	int w = size.width();
+	int h = size.height();
+	if(position == CursorPositionMiddle) {
 		if(target.left() < 0) target.moveLeft(0);
 		if(target.top() < 0) target.moveTop(0);
+		if(target.right() >= w) target.moveRight(w-1);
+		if(target.bottom() >= h) target.moveBottom(h-1);
 
-		return target;
+	} else {
+		if(position & CursorPositionLeft) {
+			if(target.left() < 0) target.setLeft(0);
+		}
+		if(position & CursorPositionRight) {
+			if(target.right() >= w) target.setRight(w-1);
+		}
+
+		if(position & CursorPositionTop) {
+			if(target.top() < 0) target.setTop(0);
+		}
+		if(position & CursorPositionBottom) {
+			if(target.bottom() >= h) target.setBottom(h-1);
+		}
 	}
 
-	/*
-void ImageCropper::mouseReleaseEvent(QMouseEvent* _event) {
-	isMousePressed = false;
-	updateCursorIcon(_event->pos());
+	target = ensureCropFits(target);
+	if(isProportionFixed) {
+		float h_over_w = proportion.height() / proportion.width();
+		if(position & (CursorPositionLeft | CursorPositionRight)) {
+			int height = round(target.width() * h_over_w);
+			int delta = target.height() - height;
+			target.setHeight(height);
+			target.moveTop(target.top() + delta/2);
+			if(target.top() < 0) target.moveTop(0);
+			if(target.bottom() >= h)
+				target.moveBottom(h-1);
+		}
+		if(position & (CursorPositionTop | CursorPositionBottom)) {
+			int width = round(target.height() / h_over_w);
+			int delta = target.width() - width;
+			target.setWidth(width);
+			target.moveLeft(target.left() + delta/2);
+			if(target.left() < 0) target.moveLeft(0);
+			if(target.right() >= w)
+				target.moveRight(w-1);
+		}
+	}
+	crop.setRect(target);
+	emit areaChanged(crop);
+	update();
+}
+
+void ImageCropper::update() {
+	QSize center = imagePixmap->pixmap().size()/2;
+
+	QRect rotatedSize = getRotatedSize();
+	QSize new_center = rotatedSize.size()/2;
+
+	QTransform t;
+	t.translate(new_center.width(), new_center.height());
+	t.rotate(crop.angle);
+
+	t.translate(-center.width(), -center.height());
+	imagePixmap->setTransform(t);
+	updateCrop();
+
+	ImageView::update();
 }
 
 
-CursorPosition ImageCropper::cursorPosition(const QRectF& cropRect, const QPointF& mousePosition) {
-
-	float x = mousePosition.x();
-	float y = mousePosition.y();
-	QRectF outside = cropRect.adjusted(-handleMargin, -handleMargin, handleMargin, handleMargin);
-	if(!outside.contains(mousePosition))
-		return CursorPositionUndefined;
-
-	int top = 2*(fabs(cropRect.top() - y) < handleMargin);
-	int bottom = 8*(fabs(cropRect.bottom() - y) < handleMargin);
-	int left = 1*(fabs(cropRect.left() - x) < handleMargin);
-	int right = 4*(fabs(cropRect.right() - x) < handleMargin);
-
-	int position = top + bottom + left + right;
-	if(!position)
-		return CursorPositionMiddle;
-
-	return (CursorPosition(position));
-} */
-	/*
-void ImageCropper::updateCursorIcon(const QPointF& mousePosition)
-{
-	QCursor cursorIcon;
-	QRectF croppingRect = imageCroppedRect();
-
-	switch (cursorPosition(croppingRect, mousePosition))
-	{
-		case CursorPositionTopRight:
-		case CursorPositionBottomLeft:
-			cursorIcon = QCursor(Qt::SizeBDiagCursor);
-			break;
-		case CursorPositionTopLeft:
-		case CursorPositionBottomRight:
-			cursorIcon = QCursor(Qt::SizeFDiagCursor);
-			break;
-		case CursorPositionTop:
-		case CursorPositionBottom:
-			cursorIcon = QCursor(Qt::SizeVerCursor);
-			break;
-		case CursorPositionLeft:
-		case CursorPositionRight:
-			cursorIcon = QCursor(Qt::SizeHorCursor);
-			break;
-		case CursorPositionMiddle:
-			cursorIcon = isMousePressed ?
-						QCursor(Qt::ClosedHandCursor) :
-						QCursor(Qt::OpenHandCursor);
-			break;
-		case CursorPositionUndefined:
-		default:
-			cursorIcon = QCursor(Qt::ArrowCursor);
-			break;
+QRect ImageCropper::ensureCropFits(QRect target) {
+	QSizeF proportion = this->proportion;
+	if(!isProportionFixed) {
+		proportion.setWidth(target.width());
+		proportion.setHeight(target.height());
 	}
-	this->setCursor(cursorIcon);
-}*/
+	QSize size = getRotatedSize().size();
+	int w = size.width();
+	int h = size.height();
+
+	float h_over_w = proportion.height() / proportion.width();
+	int max_width = std::min(w, (int)round(h/h_over_w));
+	int max_height = std::min(h, (int)round(w*h_over_w));
+	if(target.width() > max_width) {
+		target.setWidth(max_width);
+		target.setHeight(h);
+	}
+	if(target.height() > max_height) {
+		target.setHeight(max_height);
+		target.setWidth(w);
+	}
+	if(target.left() < 0) target.moveLeft(0);
+	if(target.top() < 0) target.moveTop(0);
+
+	return target;
+}
+
