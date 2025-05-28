@@ -77,7 +77,6 @@ set (RELIGHT_HEADERS
     cropframe.h 
     rtiframe.h
     rtitask.h
-    ../relight/imagecropper.h
     ../relight-cli/rtibuilder.h
     ../relight/zoom.h  
     ../src/deepzoom.h
@@ -147,7 +146,6 @@ set (RELIGHTLAB_SOURCES
     rtirecents.cpp
     rtiplan.cpp
     rtitask.cpp
-    ../relight/imagecropper.cpp
     ../relight-cli/rtibuilder.cpp
     ../src/deepzoom.cpp
     ../src/rti.cpp
