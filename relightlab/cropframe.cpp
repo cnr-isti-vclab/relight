@@ -119,11 +119,11 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	connect(aspect_width, SIGNAL(valueChanged(int)), this, SLOT(setAspectRatio()));
 	connect(aspect_height, SIGNAL(valueChanged(int)), this, SLOT(setAspectRatio()));
 
-	connect(crop_top,    &QDoubleSpinBox::editingFinished, [this]() { cropper->setTop   (round(crop_top   ->value()/pixelSize)); });
-	connect(crop_left,   &QDoubleSpinBox::editingFinished, [this]() { cropper->setLeft  (round(crop_left  ->value()/pixelSize)); });
-	connect(crop_width,  &QDoubleSpinBox::editingFinished, [this]() { cropper->setWidth (round(crop_width ->value()/pixelSize)); });
-	connect(crop_height, &QDoubleSpinBox::editingFinished, [this]() { cropper->setHeight(round(crop_height->value()/pixelSize)); });
-	connect(crop_angle,  &QDoubleSpinBox::editingFinished, [this]() { cropper->setAngle(round(crop_angle->value())); });
+	connect(crop_top,    QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this](double v) { cropper->setTop   (round(v/pixelSize)); });
+	connect(crop_left,   QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this](double v) { cropper->setLeft  (round(v/pixelSize)); });
+	connect(crop_width,  QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this](double v) { cropper->setWidth (round(v/pixelSize)); });
+	connect(crop_height, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this](double v) { cropper->setHeight(round(v/pixelSize)); });
+	connect(crop_angle,  QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this](double v) { cropper->setAngle(round(v)); });
 
 	connect(maximize, SIGNAL(clicked()), cropper, SLOT(maximizeCrop()));
 	connect(center, SIGNAL(clicked()), cropper, SLOT(centerCrop()));

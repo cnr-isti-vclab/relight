@@ -58,6 +58,7 @@ void NormalsTask::initFromProject(Project &project) {
 
 	imageset.initFromProject(project);
 	imageset.setCrop(project.crop, project.offsets);
+	imageset.rotateLights(-project.crop.angle);
 
 	pixelSize = project.pixelSize;
 }
@@ -115,6 +116,10 @@ void NormalsTask::run() {
 
 		// Wait for the end of all the threads
 		pool.finish();
+		if(imageset.angle) {
+			//now rotate the normals
+
+		}
 	} else {
 		QImage normalmap(parameters.input_path);
 		if(normalmap.isNull()) {
