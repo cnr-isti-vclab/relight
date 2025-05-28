@@ -76,7 +76,7 @@ std::vector<Eigen::Vector3f> Crop::cropBoundingNormals(std::vector<Eigen::Vector
 
 	//QImage rotated = src.transformed(rotToAlignCrop, Qt::SmoothTransformation);
 	//rotated.save("/home/ponchio/rotated.jpg");
-	QRectF rotatedSize = rotToAlignCrop.mapRect(QRectF(QPointF(0, 0), w, h));
+	/*QRectF rotatedSize = rotToAlignCrop.mapRect(QRectF(QPointF(0, 0), w, h));
 
 
 	QSize targetSize = QRect(*this).size();
@@ -86,7 +86,7 @@ std::vector<Eigen::Vector3f> Crop::cropBoundingNormals(std::vector<Eigen::Vector
 					targetSize.width(), targetSize.height());
 
 	finalCrop = finalCrop.intersected(rotatedSize); // just in case
-	return rotatedAndCropImage(input, w, h, angle, finalCrop);
+	return rotatedAndCropImage(input, w, h, angle, finalCrop); */
 }
 
 std::vector<Vector3f> rotateAndCropImage(

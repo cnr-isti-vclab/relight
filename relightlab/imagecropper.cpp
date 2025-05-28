@@ -15,10 +15,33 @@ static const QSize WIDGET_MINIMUM_SIZE(300, 300);
 }
 
 QRectF CornerMarker::boundingRect() const {
-	return QRectF(-8, -8, 16, 16);
+	QRectF r = QGraphicsRectItem::boundingRect();
+	QPointF center = r.center();
+	r.setSize(r.size() * 2);
+	r.moveCenter(center);
+	return r;
 }
 
 QVariant CornerMarker::itemChange(GraphicsItemChange change, const QVariant &value) {
+	if ((change == ItemPositionChange  && scene()) ) {
+
+		QPointF newPos = value.toPointF();
+		QRectF rect = scene()->sceneRect();
+		if (!rect.contains(newPos)) {
+			// Keep the item inside the scene rect.
+			newPos.setX(qMin(rect.right(), qMax(newPos.x(), rect.left())));
+			newPos.setY(qMin(rect.bottom(), qMax(newPos.y(), rect.top())));
+		}
+		return newPos;
+	}
+
+	if(!silent && change == ItemScenePositionHasChanged) {
+		emit itemChanged();
+	}
+	return QGraphicsItem::itemChange(change, value);
+}
+
+QVariant BoundaryMarker::itemChange(GraphicsItemChange change, const QVariant &value) {
 	if ((change == ItemPositionChange  && scene()) ) {
 
 		QPointF newPos = value.toPointF();
@@ -43,20 +66,23 @@ ImageCropper::ImageCropper(QWidget* parent):	ImageView(parent) {
 
 	QPen border(borderColor);
 
-	scene.addItem(boundary = new QGraphicsRectItem);
+	scene.addItem(boundary = new BoundaryMarker);
 	boundary->setPen(border);
+	boundary->setCursor(Qt::SizeAllCursor);
 	boundary->setBrush(QColor(255, 255, 255, 50));
+	connect(boundary, &BoundaryMarker::itemChanged, [this]() { boundaryMoved(); });
+
 
 	Qt::CursorShape cursor[9] = {
 		Qt::SizeFDiagCursor, Qt::SizeHorCursor, Qt::SizeBDiagCursor,
-		Qt::SizeVerCursor, Qt::OpenHandCursor, Qt::SizeVerCursor,
+		Qt::SizeVerCursor, Qt::SizeAllCursor, Qt::SizeVerCursor,
 		Qt::SizeBDiagCursor, Qt::SizeHorCursor, Qt::SizeFDiagCursor
 	};
 
 	for(int i = 0; i < 9; i++) {
 		scene.addItem(corners[i] = new CornerMarker);
 		corners[i]->setPen(border);
-		corners[i]->setRect(-5, -5, 10, 10);
+		corners[i]->setRect(-8, -8, 16, 16);
 		corners[i]->setBrush(QColor(255, 255, 255, 128));
 		corners[i]->setCursor(cursor[i]);
 		connect(corners[i], &CornerMarker::itemChanged, [this, i]() { cornerMoved(i); });
@@ -66,6 +92,8 @@ ImageCropper::ImageCropper(QWidget* parent):	ImageView(parent) {
 	guide[0]->setPen(border);
 	scene.addItem(guide[1] = new QGraphicsLineItem);
 	guide[1]->setPen(border);
+
+	connect(this, SIGNAL(zoomed()), this, SLOT(updateScale()));
 }
 
 ImageCropper::~ImageCropper() {}
@@ -102,8 +130,23 @@ void ImageCropper::setProportionFixed(const bool _isFixed) {
 	isProportionFixed = _isFixed;
 }
 
+void ImageCropper::updateScale() {
+	double currentScale = transform().m11();
+	scale = 1.0/currentScale;
+	QPen border(borderColor, scale);
+	boundary->setPen(border);
+	for(int i = 0; i < 9; i++) {
+		corners[i]->setPen(border);
+		corners[i]->setRect(-5*scale, -5*scale, 10*scale, 10*scale);
+	}
+	guide[0]->setPen(border);
+	guide[1]->setPen(border);
+}
 void ImageCropper::updateCrop() {
-	boundary->setRect(crop);
+	QRectF r(QPointF(0, 0), crop.size());
+	r.moveCenter(QPointF(0, 0));
+	boundary->setRect(r);
+	boundary->setPos(crop.center());
 	for(int y = 0; y < 3; y++) {
 		for(int x = 0; x < 3; x++) {
 			float Y = crop.top() + crop.height() * x/2.0f;
@@ -185,26 +228,19 @@ QRect ImageCropper::getRotatedSize() {
 
 void ImageCropper::resizeEvent(QResizeEvent *event) {
 	//here we need to set the camera correctly
+
+
+}
+
+void ImageCropper::boundaryMoved() {
+	//QPoint pos = boundary->boundingRect().center().toPoint();
+	//crop.moveTopLeft(crop.topLeft() + pos - crop.center());
+	crop.moveCenter(boundary->pos().toPoint());
+	enforceBounds(crop, CursorPositionMiddle);
 }
 
 void ImageCropper::cornerMoved(int i) {
 	QPoint pos = corners[i]->pos().toPoint();
-
-	/*CursorPositionUndefined = 0,
-	CursorPositionMiddle = 1 | 2 | 4 | 8,
-	CursorPositionLeft = 1,
-	CursorPositionTop = 2,
-	CursorPositionRight = 4,
-	CursorPositionBottom = 8,
-	CursorPositionTopLeft = 1 | 2,
-	CursorPositionTopRight = 2 | 4,
-	CursorPositionBottomLeft = 8 | 1,
-	CursorPositionBottomRight = 8 | 4 */
-
-	/*int positions[9] = {
-		1|2, 2, 4|2,
-		1,   1|2|4|8, 4,
-		1|8, 8, 4|8	}; */
 	int positions[9] = {
 		1|2, 1, 1|8,
 		2,   1|2|4|8, 8,
@@ -240,7 +276,6 @@ void ImageCropper::enforceBounds(QRect target, CursorPosition position) {
 		return;
 
 	if(position == CursorPositionUndefined) {
-		//make sure it is of the right shape
 		if(isProportionFixed) {
 			//keep area more or less the same
 			float area = target.width()*target.width();
