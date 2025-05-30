@@ -48,7 +48,8 @@ void ImageView::setSkipped(int image) {
 
 void ImageView::fit() {
 	if(imagePixmap)
-		fitInView(imagePixmap->boundingRect());
+		fitInView(scene.itemsBoundingRect());
+				  //imagePixmap->boundingRect());
 }
 
 void ImageView::one() {

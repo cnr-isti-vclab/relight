@@ -52,12 +52,16 @@ QString NormalsParameters::summary() {
 }
 
 void NormalsTask::initFromProject(Project &project) {
+	crop = project.crop;
+	img_size = project.imgsize;
+	QRect unrotatedCrop = crop.boundingRect(project.imgsize);
+
 	lens = project.lens;
 	imageset.width = imageset.image_width = project.lens.width;
 	imageset.height = imageset.image_height = project.lens.height;
 
 	imageset.initFromProject(project);
-	imageset.setCrop(project.crop, project.offsets);
+	imageset.setCrop(unrotatedCrop, project.offsets);
 	imageset.rotateLights(-project.crop.angle);
 
 	pixelSize = project.pixelSize;
@@ -116,9 +120,9 @@ void NormalsTask::run() {
 
 		// Wait for the end of all the threads
 		pool.finish();
-		if(imageset.angle) {
-			//now rotate the normals
-
+		if(crop.angle != 0.0f) {
+			//rotate and crop the normals.
+			normals = crop.cropBoundingNormals(normals, width, height);
 		}
 	} else {
 		QImage normalmap(parameters.input_path);
