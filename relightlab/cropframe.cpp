@@ -63,6 +63,7 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	crop_width ->setMaximum(65535);
 	crop_height->setMaximum(65535);
 	crop_angle->setMaximum(360);
+	crop_angle->setMinimum(-360);
 
 	crop_top   ->setDecimals(0);
 	crop_left  ->setDecimals(0);
@@ -165,6 +166,7 @@ void CropFrame::init() {
 	cropper->setImage(QPixmap::fromImage(img));*/
 	cropper->showImage(0);
 	cropper->setCrop(project.crop);
+	cropper->fit();
 }
 
 void CropFrame::scaleChanged() {

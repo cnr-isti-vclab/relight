@@ -228,7 +228,7 @@ QRect ImageCropper::getRotatedSize() {
 
 void ImageCropper::resizeEvent(QResizeEvent *event) {
 	//here we need to set the camera correctly
-
+	ImageView::resizeEvent(event);
 
 }
 

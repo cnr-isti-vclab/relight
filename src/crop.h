@@ -4,8 +4,6 @@
 #include <QRect>
 #include <QPolygon>
 #include <QTransform>
-
-#include <Eigen/Core>
 #include <vector>
 
 /* Crop coordinates:
@@ -25,14 +23,9 @@ public:
 	}
 	//bounding box of the cropped region (including rotation)
 	QRect boundingRect(QSize img_size);
-	QImage cropBoundingImage(QImage src, QSize img_size);
-	std::vector<Eigen::Vector3f> cropBoundingNormals(std::vector<Eigen::Vector3f>, int w, int h, QSize img_size);
-	std::vector<Eigen::Vector3f> rotateAndCropImage(
-		const std::vector<Eigen::Vector3f>& input,
-		int width, int height,
-		float angleDeg,
-		QRect cropRect // crop rect in rotated image space
-	);
+	QImage cropBoundingImage(QImage src);
+
+	std::vector<float> cropBoundingNormals(const std::vector<float> &input, int &w, int &h);
 };
 
 #endif // CROP_H
