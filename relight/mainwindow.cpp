@@ -977,7 +977,7 @@ void MainWindow::exportRTI(bool normals) {
 	//this needs to be called AFTER show, to ensure proportions are computed properly
 	rtiexport->setCrop(project.crop);
 	rtiexport->exec(&project);
-	project.crop.setRect(rtiexport->crop);
+	project.crop.rect = rtiexport->crop;
 	if(ProcessQueue::instance().queue.size())
 		showQueue();
 }
