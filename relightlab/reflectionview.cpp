@@ -25,7 +25,7 @@ void MarkerOverview::init() {
 }
 
 void MarkerOverview::resizeEvent(QResizeEvent */*event*/) {
-	fitInView(scene.sceneRect()); //img_item);
+	fitInView(scene.sceneRect(), Qt::KeepAspectRatio); //img_item);
 }
 
 SphereOverview::SphereOverview(QPointF _center, double _radius, int height, QWidget *parent):
@@ -55,9 +55,10 @@ AlignOverview::AlignOverview(QRectF _rect, int height, QWidget *parent):
 
 void AlignOverview::update() {
 
+
 	QSizeF size = img_item->boundingRect().size();
-	img_item->setTransformOriginPoint(size.width() / 2, size.height() / 2);
-	img_item->setRotation(angle);
+	/*img_item->setTransformOriginPoint(size.width() / 2, size.height() / 2);
+	img_item->setRotation(angle); */
 
 	double scale = size.width()/(double)qRelightApp->project().imgsize.width();
 	QRectF r = QRectF(rect.x()*scale, rect.y()*scale, rect.width()*scale, rect.height()*scale);
@@ -135,12 +136,47 @@ void ReflectionOverview::update() {
 }
 
 void ReflectionOverview::resizeEvent(QResizeEvent */*event*/) {
-	fitInView(img_item->boundingRect());
+	fitInView(img_item->boundingRect(), Qt::KeepAspectRatio);
 }
 
-ZoomOverview::ZoomOverview(QRectF rect, int height, QWidget *parent): AlignOverview(rect, height, parent) {
+
+ZoomOverview::ZoomOverview(Crop _crop, int height, QWidget *parent):
+	MarkerOverview(height, parent), crop(_crop) {
+	QPolygonF p;
+	item = scene.addRect(0, 0, 0, 0, Qt::NoPen, Qt::green);
 	item->setPen(QPen(Qt::green, 2));
-	item->setBrush(QBrush(Qt::transparent));
+	item->setBrush(QBrush(Qt::green));
+}
+
+void ZoomOverview::update() {
+
+	QSize img_size = qRelightApp->project().imgsize;
+
+	QSize center = img_size/2;
+
+	QPixmap pix= img_item->pixmap();
+	QSize s = pix.size();
+	QTransform transform;
+	transform.rotate(crop.angle);
+	QRect r(QPoint(0, 0), img_size - QSize(1, 1));
+	QPolygon rotated = transform.map(QPolygon(r));
+	QRect rotatedSize = rotated.boundingRect();
+
+	QSize new_center = rotatedSize.size()/2;
+
+	double scale = img_item->pixmap().width()/(double)img_size.width();
+	QTransform t;
+	t.translate(new_center.width(), new_center.height());
+	t.rotate(crop.angle);
+	t.translate(-center.width(), -center.height());
+	t.scale(1/scale, 1/scale);
+	img_item->setTransform(t);
+
+	item->setRect(crop);
+
+	QRectF bound = img_item->mapToScene(img_item->boundingRect()).boundingRect();
+	fitInView(bound,  Qt::KeepAspectRatio);
+	QGraphicsView::update();
 }
 
 

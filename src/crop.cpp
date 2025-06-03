@@ -31,7 +31,7 @@ QImage Crop::cropBoundingImage(QImage src) {
 
 	QImage rotated = src.transformed(rotToAlignCrop, Qt::SmoothTransformation);
 
-	QSize targetSize = QRect(*this).size();
+	QSize targetSize = rect.size();
 	QPoint center = rotated.rect().center();
 	QRect finalCrop(center.x() - targetSize.width() / 2,
 					center.y() - targetSize.height() / 2,
@@ -101,7 +101,7 @@ std::vector<float> Crop::cropBoundingNormals(
 
 	QRect rotatedSize = rotToAlignCrop.mapRect(QRectF(QPointF(0, 0), QPointF(width, height))).toRect();
 
-	QSize targetSize = QRect(*this).size();
+	QSize targetSize = rect.size();
 	QPoint center = QRect(QPoint(0, 0), rotatedSize.size()).center();
 	QRect cropRect(center.x() - targetSize.width() / 2,
 				   center.y() - targetSize.height() / 2,

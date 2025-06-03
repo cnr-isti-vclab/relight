@@ -48,7 +48,7 @@ void ImageView::setSkipped(int image) {
 
 void ImageView::fit() {
 	if(imagePixmap)
-		fitInView(scene.itemsBoundingRect());
+		fitInView(scene.itemsBoundingRect(), Qt::KeepAspectRatio);
 				  //imagePixmap->boundingRect());
 }
 
