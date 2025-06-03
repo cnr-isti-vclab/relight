@@ -101,7 +101,7 @@ ImageCropper::~ImageCropper() {}
 void ImageCropper::setImage(const QPixmap& _image) {
 	imagePixmap->setPixmap(_image);
 	imagePixmap->setPos(imagePixmap->boundingRect().center());
-	crop.setRect(QRect(QPoint(0, 0), imagePixmap->pixmap().size()));
+	crop.rect = QRect(QPoint(0, 0), imagePixmap->pixmap().size());
 	crop.angle = 0.0f;
 	update();
 }
@@ -173,7 +173,7 @@ void ImageCropper::setCrop(Crop _crop) {
 }
 
 void ImageCropper::setRect(QRect rect) {
-	crop.setRect(rect);
+	crop.rect = rect;
 	enforceBounds(crop, CursorPositionMiddle);
 }
 
@@ -334,7 +334,7 @@ void ImageCropper::enforceBounds(QRect target, CursorPosition position) {
 				target.moveRight(w-1);
 		}
 	}
-	crop.setRect(target);
+	crop.rect = target;
 	emit areaChanged(crop);
 	update();
 }

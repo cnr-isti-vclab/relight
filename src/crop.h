@@ -8,23 +8,21 @@
 
 /* Crop coordinates:
  *
- * The crop coordinates are relative to the rotated image bounding box.
+ * The crop coordinates are relative to the rotated image bounding box?
  *
  */
 
 class Crop: public QRect {
 public:
-	void setRect(QRect r) {
-		static_cast<QRect&>(*this) = r;
-	}
+	QRect rect;
 	float angle = 0.0f;
 	bool operator==(const Crop &crop) {
-		return angle == crop.angle && QRect(*this) == QRect(crop);
+		return angle == crop.angle && rect == crop.rect;
 	}
+
 	//bounding box of the cropped region (including rotation)
 	QRect boundingRect(QSize img_size);
 	QImage cropBoundingImage(QImage src);
-
 	std::vector<float> cropBoundingNormals(const std::vector<float> &input, int &w, int &h);
 };
 

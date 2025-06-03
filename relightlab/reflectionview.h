@@ -77,15 +77,17 @@ private:
 
 };
 
-class ZoomOverview: public AlignOverview {
+class ZoomOverview: public MarkerOverview {
 	Q_OBJECT
 public:
-	ZoomOverview(QRectF rect, int height, QWidget *parent = nullptr);
+	ZoomOverview(Crop _crop, int height, QWidget *parent = nullptr);
+	Crop crop;
+	QGraphicsRectItem *item = nullptr;
+	virtual void update();
 
 public slots:
-	void setCrop(Crop crop) {
-		rect = crop;
-		angle = crop.angle;
+	void setCrop(Crop _crop) {
+		crop = _crop;
 		update();
 	}
 };
