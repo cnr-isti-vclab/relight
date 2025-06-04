@@ -45,6 +45,7 @@ SOURCES += main.cpp \
     ../external/assm/algorithms/Triangulation.cpp \
     ../relight-cli/convert_rti.cpp \
     ../relight-cli/rtibuilder.cpp \
+    ../src/crop.cpp \
     ../src/flatnormals.cpp \
     imagecropper.cpp \
     processqueue.cpp \

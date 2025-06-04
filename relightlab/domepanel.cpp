@@ -245,7 +245,9 @@ void DomePanel::loadLP(QString path) {
 	std::vector<Eigen::Vector3f> directions;
 
 	parseLP(path, directions, filenames);
-	qRelightApp->project().validateDome(directions.size());
+	if(qRelightApp->project().size() != directions.size())
+		QMessageBox::warning(this, "Wrong number of lights (or images)",
+			"The number of lights must be the same as the number of checked images.");
 
 	Dome &dome = qRelightApp->project().dome;
 	dome.lightConfiguration = Dome::DIRECTIONAL;
@@ -262,7 +264,10 @@ void DomePanel::loadDome(QString path) {
 	float imageWidth = dome.imageWidth;
 	Dome new_dome;
 	new_dome.load(path);
-	qRelightApp->project().validateDome(new_dome.directions.size());
+
+	if(qRelightApp->project().size() != new_dome.directions.size())
+		QMessageBox::warning(this, "Wrong number of lights (or images)",
+			"The number of lights must be the same as the number of checked images.");
 
 	Dome &dome = qRelightApp->project().dome;
 	dome = new_dome;
