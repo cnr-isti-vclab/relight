@@ -142,6 +142,7 @@ void ImageCropper::updateScale() {
 	guide[0]->setPen(border);
 	guide[1]->setPen(border);
 }
+
 void ImageCropper::updateCrop() {
 	QRectF r(QPointF(0, 0), crop.size());
 	r.moveCenter(QPointF(0, 0));
@@ -227,6 +228,7 @@ QRect ImageCropper::getRotatedSize() {
 }
 
 void ImageCropper::resizeEvent(QResizeEvent *event) {
+	updateScale();
 	//here we need to set the camera correctly
 	ImageView::resizeEvent(event);
 

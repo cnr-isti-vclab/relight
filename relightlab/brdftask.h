@@ -35,8 +35,8 @@ public:
 
 	virtual void run() override;
 
-	void setParameters(BrdfParameters &param);
-	void initFromProject(Project &project);
+	void setParameters(BrdfParameters &param) {}
+	void initFromProject(Project &project) {}
 };
 
 class MedianWorker
@@ -50,10 +50,7 @@ public:
 	}
 
 	void run();
-private:
-	void solveL2();
-	void solveSBL();
-	void solveRPCA();
+
 private:
 	BrdfParameters parameters;
 	int row;
@@ -64,10 +61,6 @@ private:
 	Lens &lens;
 	QMutex m_Mutex;
 };
-
-
-
-#endif // NORMALSTASK_H
 
 
 #endif // BRDFTASK_H

@@ -616,7 +616,10 @@ bool Project::loadLP(QString filename) {
 
 
 	parseLP(filename, directions, filenames); //might throw an error.
-	validateDome(filenames.size());
+	if(size() != directions.size())
+		QMessageBox::warning(nullptr, "Wrong number of lights (or images)",
+			"The number of lights must be the same as the number of checked images.");
+
 
 	vector<Vector3f> ordered_dir(directions.size());
 	bool success = true;
