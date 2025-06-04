@@ -37,13 +37,15 @@ class RtiTask: public Task {
 	Q_OBJECT
 public:
 	RtiParameters parameters;
-	QRect crop;
+	Crop crop;
+	QSize img_size;
 
 	RtiTask();
 	virtual ~RtiTask();
 
 	void setProject(Project &_project);
 	void setParameters(RtiParameters &p);
+	void rotatedCrop(QString output);
 	virtual void run() override;
 
 

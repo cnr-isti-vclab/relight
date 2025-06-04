@@ -64,7 +64,7 @@ ScaleFrame::ScaleFrame(QWidget *parent): QFrame(parent) {
 
 	connect(take, SIGNAL(clicked()), this, SLOT(startPicking()));
 	connect(viewer->view, SIGNAL(clicked(QPoint)), this, SLOT(click(QPoint)));
-	connect(scale, SIGNAL(valueChanged(double)), this, SLOT(setLength(double)));
+	connect(scale, &QDoubleSpinBox::editingFinished, [this]() {  setLength(scale->value()); });
 	connect(remove, SIGNAL(clicked()), this, SLOT(removeScale()));
 }
 

@@ -23,6 +23,7 @@ class ImageCropper : public QWidget {
 public:
 	ImageCropper(QWidget *parent = 0);
 	~ImageCropper();
+	float angle = 10.0f;
 
 public slots:
 	void setImage(const QPixmap& _image);
@@ -40,6 +41,8 @@ public slots:
 	void setHeight(int h);
 	void setTop(int t);
 	void setLeft(int l);
+	void setAngle(float a);
+
 	void resetCrop();
 	void maximizeCrop();
 	void centerCrop();
@@ -70,8 +73,9 @@ private:
 	bool show_handle = true;
 
 	//TODO invert logic: realSize rect is stored, cropping rect is computed instead.
-	float leftDelta = 0, topDelta = 0;
-	float xScale = 1, yScale = 1;
+	float leftDelta = 0.0f, topDelta = 0.0f;
+	float xScale = 1.0f, yScale = 1.0f;
+
 
 	QPixmap image;
 	//QRectF croppingRect; //in image coords //j

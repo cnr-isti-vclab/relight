@@ -46,6 +46,7 @@ SOURCES += main.cpp \
     ../relight-cli/convert_rti.cpp \
     ../relight-cli/rtibuilder.cpp \
     ../src/flatnormals.cpp \
+    imagecropper.cpp \
     processqueue.cpp \
     ../src/align.cpp \
     ../src/dome.cpp \
@@ -95,7 +96,6 @@ SOURCES += main.cpp \
     verifydialog.cpp \
     helpbutton.cpp \
     cropframe.cpp \
-    ../relight/imagecropper.cpp \
     creatertidialog.cpp \
     rtitask.cpp \
     task.cpp \
@@ -114,6 +114,7 @@ SOURCES += main.cpp \
     ../src/deepzoom.cpp \
     sphereframe.cpp \
     brdftask.cpp
+    ../src/crop.cpp
 
 RESOURCES += \
     res.qrc
@@ -129,7 +130,9 @@ HEADERS += \
     ../external/assm/algorithms/ScreenRemeshing.h \
     ../external/assm/algorithms/Triangulation.h \
     ../relight-cli/rtibuilder.h \
+    ../src/crop.h \
     ../src/flatnormals.h \
+    imagecropper.h \
     processqueue.h \
     ../src/align.h \
     ../src/dome.h \
@@ -180,7 +183,6 @@ HEADERS += \
     verifydialog.h \
     helpbutton.h \
     cropframe.h \
-    ../relight/imagecropper.h \
     creatertidialog.h \
     rtitask.h \
     task.h \

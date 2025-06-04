@@ -12,6 +12,7 @@ public:
 	void set_zoom_factor_base(double value);
 	void setCursor(Qt::CursorShape cursor);
 
+	double min_zoom_scale = 0.8f;
 	double min_scale = 0.0f;
 	double max_scale = 4.0f;
 	void fitInView(const QRectF &rect, Qt::AspectRatioMode aspectRadioMode = Qt::KeepAspectRatio);

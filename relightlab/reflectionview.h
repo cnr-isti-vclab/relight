@@ -6,6 +6,8 @@
 #include <QGraphicsScene>
 #include <vector>
 
+#include "../src/crop.h"
+
 class Sphere;
 class QGraphicsEllipseItem;
 class QGraphicsRectItem;
@@ -45,7 +47,7 @@ public:
 	AlignOverview(QRectF rect, int height, QWidget *parent = nullptr);
 	virtual void update();
 	QRectF rect;
-
+	float angle = 0.0f;
 protected:
 	QGraphicsRectItem *item = nullptr;
 };
@@ -75,13 +77,17 @@ private:
 
 };
 
-class ZoomOverview: public AlignOverview {
+class ZoomOverview: public MarkerOverview {
 	Q_OBJECT
 public:
-	ZoomOverview(QRectF rect, int height, QWidget *parent = nullptr);
+	ZoomOverview(Crop _crop, int height, QWidget *parent = nullptr);
+	Crop crop;
+	QGraphicsRectItem *item = nullptr;
+	virtual void update();
+
 public slots:
-	void setRect(QRect _rect) {
-		rect = _rect;
+	void setCrop(Crop _crop) {
+		crop = _crop;
 		update();
 	}
 };

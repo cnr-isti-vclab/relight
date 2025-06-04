@@ -10,13 +10,17 @@
 
 ImageView::ImageView(QWidget *parent): Canvas(parent) {
 	setScene(&scene);
-	
+	imagePixmap = new QGraphicsPixmapItem();
+	imagePixmap->setZValue(-1);
+	scene.addItem(imagePixmap);
+
 }
 
 void ImageView::clear() {
 	//remove all elements from scene.
-	scene.clear();
-	imagePixmap = nullptr;
+	//scene.clear();
+	QPixmap p;
+	imagePixmap->setPixmap(p);
 }
 
 void ImageView::showImage(int id) {
@@ -31,20 +35,7 @@ void ImageView::showImage(int id) {
 		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
 		return;
 	}
-	if(imagePixmap) {
-		delete imagePixmap;
-	}
-	imagePixmap = new QGraphicsPixmapItem(QPixmap::fromImage(img));
-	imagePixmap->setZValue(-1);
-	scene.addItem(imagePixmap);
-
-	int w = project.imgsize.width();
-	int h = project.imgsize.height();
-	double sx =  double(width()) / w;
-	double sy = double(height()) / h;
-	double min_scale = std::min(1.0, std::min(sx, sy));
-	min_scale = min_scale;
-
+	imagePixmap->setPixmap(QPixmap::fromImage(img));
 	current_image = id;
 }
 
@@ -57,7 +48,8 @@ void ImageView::setSkipped(int image) {
 
 void ImageView::fit() {
 	if(imagePixmap)
-		fitInView(imagePixmap->boundingRect());
+		fitInView(scene.itemsBoundingRect(), Qt::KeepAspectRatio);
+				  //imagePixmap->boundingRect());
 }
 
 void ImageView::one() {

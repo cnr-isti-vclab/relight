@@ -7,6 +7,7 @@
 #include "lens.h"
 #include "dome.h"
 #include "image.h"
+#include "crop.h"
 #include <QDir>
 #include <QString>
 #include <QRect>
@@ -18,7 +19,6 @@ class Sphere;
 class Measure;
 class Align;
 class White;
-
 
 class Project {
 public:
@@ -36,7 +36,7 @@ public:
 	std::vector<Measure *> measures;
 	std::vector<Align *> aligns;
 	std::vector<White *> whites;
-	QRect crop;
+	Crop crop;
 	std::vector<QPointF> offsets;
 	float pixelSize = 0.0f; //if computed from measures in mm
 
