@@ -52,12 +52,15 @@ void RtiTask::setProject(Project &project) {
 	builder->nworkers = QSettings().value("nworkers", 8).toInt();
 	builder->samplingram = QSettings().value("ram", 512).toInt();
 
-
+	crop = project.crop;
+	img_size = project.imgsize;
+	QRect unrotatedCrop = crop.boundingRect(project.imgsize);
 
 	ImageSet &imageset = builder->imageset;
 	imageset.initFromProject(project);
 
-	imageset.setCrop(project.crop, project.offsets);
+	imageset.setCrop(unrotatedCrop, project.offsets);
+	imageset.rotateLights(-crop.angle);
 	imageset.pixel_size = project.pixelSize;
 	builder->sigma = 0.125*100/imageset.images.size();
 
@@ -124,6 +127,9 @@ void RtiTask::run() {
 			mime = RELIGHT;
 			builder->save(output.toStdString(), parameters.quality);
 		}
+		if(crop.angle != 0.0f) {
+			rotatedCrop(output);
+		}
 
 		if(parameters.openlime && parameters.format == RtiParameters::WEB)
 			openlime();
@@ -147,6 +153,17 @@ void RtiTask::run() {
 
 	if(status != FAILED)
 		status = DONE;
+}
+
+void RtiTask::rotatedCrop(QString output) {
+	QDir destination(output);
+	QStringList planes = destination.entryList(QStringList(QString("plane_*.jpg")), QDir::Files);
+	for(QString plane: planes) {
+		QString path = destination.absoluteFilePath(plane);
+		QImage img(path);
+		img = crop.cropBoundingImage(img);
+		bool saved = img.save(path, "jpg", parameters.quality);
+	}
 }
 /*
 void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {

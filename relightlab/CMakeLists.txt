@@ -44,6 +44,7 @@ set (RELIGHT_HEADERS
     ../src/white.h
     ../src/bni_normal_integration.h
     ../src/fft_normal_integration.h
+    ../src/crop.h
     alignrow.h
     alignframe.h
     alignframe.h
@@ -77,7 +78,6 @@ set (RELIGHT_HEADERS
     cropframe.h 
     rtiframe.h
     rtitask.h
-    ../relight/imagecropper.h
     ../relight-cli/rtibuilder.h
     ../relight/zoom.h  
     ../src/deepzoom.h
@@ -95,6 +95,8 @@ set (RELIGHT_HEADERS
     normalsplan.h
     planrow.h
     scaleframe.h
+    imagecropper.h
+    brdfframe.h
 )
 
 set (RELIGHTLAB_SOURCES
@@ -112,6 +114,7 @@ set (RELIGHTLAB_SOURCES
     ../src/white.cpp 
     ../src/bni_normal_integration.cpp
     ../src/fft_normal_integration.cpp
+    ../src/crop.cpp
     alignframe.cpp
     alignpicking.cpp
     alignrow.cpp
@@ -146,7 +149,6 @@ set (RELIGHTLAB_SOURCES
     rtirecents.cpp
     rtiplan.cpp
     rtitask.cpp
-    ../relight/imagecropper.cpp
     ../relight-cli/rtibuilder.cpp
     ../src/deepzoom.cpp
     ../src/rti.cpp
@@ -163,6 +165,8 @@ set (RELIGHTLAB_SOURCES
     normalsplan.cpp
     planrow.cpp
     scaleframe.cpp
+    imagecropper.cpp
+    brdfframe.cpp
 )
 
 

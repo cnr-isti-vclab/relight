@@ -11,5 +11,5 @@ BrdfFrame::BrdfFrame(QWidget *parent): QFrame(parent) {
 	content->addWidget(new QLabel("<h2>BRDF creation</h2>"));
 	content->addSpacing(20);
 
-	median_row =
+//	median_row =
 }

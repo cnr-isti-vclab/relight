@@ -29,6 +29,9 @@ public:
 	//current crop: left, top is pixel [0, 0];
 	int width = 0, height = 0;
 	int left = 0, top = 0, right = 0, bottom = 0;
+	float angle = 0.0f; //
+	float cos_a = 1.0f;
+	float sin_a = 0.0f;
 
 	float pixel_size = 0;
 
@@ -61,7 +64,9 @@ public:
 
 	//remove not visible images and relative lights.
 	void cleanHidden(std::vector<Image> &images);
+	//use Crop instead of qrect
 	void setCrop(QRect &crop, const std::vector<QPointF> &offsets);
+	void rotateLights(float angle);
 
 
 	void setLights(const std::vector<Eigen::Vector3f> &lights, const Dome::LightConfiguration configuration);

@@ -285,6 +285,14 @@ Vector3f ImageSet::relativeLight(const Vector3f &light3d, int x, int y){
 	float dy = pixel_size*(y - image_height/2.0f);
 	l[0]  -= dx;
 	l[1]  -= dy;
+
+	if(angle != 0.0f) {
+		//rotate lights by angle
+		float x = l[0]*cos_a - l[1]*sin_a;
+		float y = l[0]*sin_a + l[1]*cos_a;
+		l[0] = x;
+		l[1] = y;
+	}
 	return l;
 }
 
@@ -439,6 +447,20 @@ void ImageSet::setCrop(QRect &_crop, const std::vector<QPointF> &_offsets) {
 	left =_crop.left();
 	crop(_crop.left(), _crop.top(), _crop.width(), _crop.height());
 	offsets = int_offsets;
+}
+
+void ImageSet::rotateLights(float a) {
+	angle = a;
+	cos_a = cos(a*M_PI/180.0f);
+	sin_a = sin(a*M_PI/180.0f);
+	if(!light3d) {
+		for(Vector3f &v: lights1) {
+			float x = v[0]*cos_a - v[1]*sin_a;
+			float y = v[0]*sin_a + v[1]*cos_a;
+			v[0] = x;
+			v[1] = y;
+		}
+	}
 }
 
 void ImageSet::skipToTop() {

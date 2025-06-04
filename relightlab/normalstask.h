@@ -44,6 +44,9 @@ public:
 	NormalsParameters parameters;
 
 	ImageSet imageset;
+	Crop crop;
+	QSize img_size;
+
 	Lens lens;
 	float pixelSize = 0.0f;
 
