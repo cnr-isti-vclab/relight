@@ -4,9 +4,12 @@
 #include <QFrame>
 #include "planrow.h"
 
+class ZoomOverview;
+
+
 class BrdfMedianRow: public PlanRow {
 public:
-	BrdfMedianRow(QWidget *parent = nullptr);
+	BrdfMedianRow(QWidget *parent = nullptr) {}
 };
 
 class BrdfFrame: public QFrame {
@@ -23,6 +26,8 @@ signals:
 
 private:
 	BrdfMedianRow *median_row = nullptr;
+	ZoomOverview *zoom_view =  nullptr;
+
 };
 
 #endif // BRDFFRAME_H

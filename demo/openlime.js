@@ -1,3 +1,11 @@
+// ##########################################
+// OpenLIME - Open Layered IMage Explorer
+// Author: CNR ISTI - Visual Computing Lab
+// Author: CRS4 Visual and Data-intensive Computing Group
+// openlime v1.2.1 - GPL-3.0 License
+// Documentation: https://cnr-isti-vclab.github.io/openlime/
+// Repository: https://github.com/cnr-isti-vclab/openlime.git
+// ##########################################
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -28,9 +36,7 @@
          * ```
          */
         static padZeros(num, size) {
-            num = num.toString();
-            while (num.length < size) num = "0" + num;
-            return num;
+            return num.toString().padStart(size, '0');
         }
 
         /**
@@ -40,15 +46,14 @@
          * @private
          */
         static printSrcCode(str) {
-            let i = 1;
             let result = '';
-            for (let l of str.split(/\r\n|\r|\n/)) {
-                const nline = Util.padZeros(i, 5);
-                result += nline + '   ' + l + '\n';
-                i++;
-            }
+            str.split(/\r\n|\r|\n/).forEach((line, i) => {
+                const nline = Util.padZeros(i + 1, 5);
+                result += `${nline}   ${line}\n`;
+            });
             console.log(result);
         }
+        
 
         /**
          * Creates an SVG element with optional attributes
@@ -66,7 +71,7 @@
          * ```
          */
         static createSVGElement(tag, attributes) {
-            let e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+            const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
             if (attributes)
                 for (const [key, value] of Object.entries(attributes))
                     e.setAttribute(key, value);
@@ -426,7 +431,7 @@
          * @returns {boolean} True if the box is empty, false otherwise
          */
         isEmpty() {
-            return this.xLow > this.xHigh || this.yLow > this.yHigh;
+            return this.xLow >= this.xHigh || this.yLow >= this.yHigh;
         }
 
         /**
@@ -505,7 +510,7 @@
          * @returns {number} The difference between xHigh and xLow
          */
         width() {
-            return this.xHigh - this.xLow;
+            return Math.max(0, this.xHigh - this.xLow);
         }
 
         /**
@@ -513,7 +518,15 @@
          * @returns {number} The difference between yHigh and yLow
          */
         height() {
-            return this.yHigh - this.yLow;
+            return Math.max(0, this.yHigh - this.yLow);
+        }
+
+        /**
+         * Calculates the area of the bounding box.
+         * @returns {number} The area (width × height)
+         */
+        area() {
+            return this.width() * this.height();
         }
 
         /**
@@ -541,8 +554,80 @@
          * @returns {boolean} True if the boxes intersect, false otherwise
          */
         intersects(box) {
-            return xLow <= box.xHigh && xHigh >= box.xLow && yLow <= box.yHigh && yHigh >= box.yLow;
+            if (!box || box.isEmpty() || this.isEmpty()) {
+                return false;
+            }
+            return (
+                this.xLow <= box.xHigh &&
+                this.xHigh >= box.xLow &&
+                this.yLow <= box.yHigh &&
+                this.yHigh >= box.yLow
+            );
         }
+
+        /**
+         * Calculates the intersection of this bounding box with another box.
+         * @param {BoundingBox} box - The other bounding box
+         * @returns {BoundingBox|null} A new bounding box representing the intersection, or null if there is no intersection
+         */
+        intersection(box) {
+            if (!this.intersects(box)) {
+                return null;
+            }
+
+            return new BoundingBox({
+                xLow: Math.max(this.xLow, box.xLow),
+                yLow: Math.max(this.yLow, box.yLow),
+                xHigh: Math.min(this.xHigh, box.xHigh),
+                yHigh: Math.min(this.yHigh, box.yHigh)
+            });
+        }
+
+        /**
+         * Creates a clone of this bounding box.
+         * @returns {BoundingBox} A new BoundingBox instance with the same coordinates
+         */
+        clone() {
+            return new BoundingBox({
+                xLow: this.xLow,
+                yLow: this.yLow,
+                xHigh: this.xHigh,
+                yHigh: this.yHigh
+            });
+        }
+
+        /**
+         * Checks if a point is contained within this bounding box.
+         * A point is considered inside if its coordinates are greater than or equal to 
+         * the low corner and less than or equal to the high corner.
+         * 
+         * @param {{x: number, y: number}} p - The point to check
+         * @param {number} [epsilon=0] - Optional tolerance value for boundary checks
+         * @returns {boolean} True if the point is inside the box, false otherwise
+         * 
+         * @example
+         * // Check if a point is inside a box
+         * const box = new BoundingBox({xLow: 0, yLow: 0, xHigh: 10, yHigh: 10});
+         * const point = {x: 5, y: 5};
+         * const isInside = box.containsPoint(point); // true
+         * 
+         * // Using epsilon tolerance for boundary cases
+         * const boundaryPoint = {x: 10.001, y: 10};
+         * const isInsideWithTolerance = box.containsPoint(boundaryPoint, 0.01); // true
+         */
+        containsPoint(p, epsilon = 0) {
+            if (this.isEmpty()) {
+                return false;
+            }
+
+            return (
+                p.x >= this.xLow - epsilon &&
+                p.x <= this.xHigh + epsilon &&
+                p.y >= this.yLow - epsilon &&
+                p.y <= this.yHigh + epsilon
+            );
+        };
+
 
         /**
          * Prints the bounding box coordinates to the console in a formatted string.
@@ -810,30 +895,38 @@
     	}
 
     	/**
-    	 * Interpolates between two transforms
-    	 * @param {Transform} source - Starting transform
-    	 * @param {Transform} target - Ending transform
-    	 * @param {number} time - Current time for interpolation
-    	 * @param {EasingFunction} easing - Easing function type
-    	 * @returns {Transform} Interpolated transform
-    	 * @static
-    	 * 
-    	 * @example
-    	 * ```javascript
-    	 * const start = new Transform({x: 0, y: 0});
-    	 * const end = new Transform({x: 100, y: 100});
-    	 * const mid = Transform.interpolate(start, end, 500, 'ease-out');
-    	 * ```
+    	 * Checks if the transform has reached its target state for animation
+    	 * @param {number} currentTime - Current time in milliseconds
+    	 * @returns {boolean} True if animation is complete (reached target)
     	 */
+    	isAtTarget(currentTime) {
+    		return currentTime >= this.t;
+    	}
+
+    	// Also, let's modify the static interpolate method to return a flag indicating completion
+    	/**
+    	* Interpolates between two transforms
+    	* @param {Transform} source - Starting transform
+    	* @param {Transform} target - Ending transform
+    	* @param {number} time - Current time for interpolation
+    	* @param {EasingFunction} easing - Easing function type
+    	* @returns {Transform} Interpolated transform with isComplete property
+    	* @static
+    	*/
     	static interpolate(source, target, time, easing) { //FIXME STATIC
     		console.assert(!isNaN(source.x));
     		console.assert(!isNaN(target.x));
     		const pos = new Transform();
     		let dt = (target.t - source.t);
+
+    		// Add a property to indicate if we've reached the target
+    		pos.isComplete = false;
+
     		if (time < source.t) {
     			Object.assign(pos, source);
     		} else if (time > target.t || dt < 0.001) {
     			Object.assign(pos, target);
+    			pos.isComplete = true; // Mark as complete
     		} else {
     			let tt = (time - source.t) / dt;
     			switch (easing) {
@@ -847,7 +940,7 @@
     		pos.t = time;
     		return pos;
     	}
-
+    	
     	/**
     	 * Generates WebGL projection matrix
     	 * Combines transform with viewport for rendering
@@ -990,8 +1083,7 @@
      * ```
      */
     function addSignals(proto, ...signals) {
-    	if (!proto.prototype.allSignals)
-    			proto.prototype.allSignals = [];
+    	proto.prototype.allSignals ??= [];
     	proto.prototype.allSignals = [...proto.prototype.allSignals, ...signals];
 
     	/**
@@ -1007,7 +1099,8 @@
     	 * @private
     	 */
     	proto.prototype.initSignals = function () {
-    			this.signals = Object.fromEntries(this.allSignals.map(s => [s, []]));
+    		// Use nullish coalescing for signal initialization
+    		this.signals ??= Object.fromEntries(this.allSignals.map(s => [s, []]));
     	};
 
     	/**
@@ -1027,9 +1120,9 @@
     	 * ```
     	 */
     	proto.prototype.addEvent = function (event, callback) {
-    			if (!this.signals)
-    					this.initSignals();
-    			this.signals[event].push(callback);
+    		// Use optional chaining for safer access
+    		this.signals?.hasOwnProperty(event) || this.initSignals();
+    		this.signals[event].push(callback);
     	};
 
     	/**
@@ -1051,19 +1144,19 @@
     	 * ```
     	 */
     	proto.prototype.once = function (event, callback) {
-    			if (!callback || typeof callback !== 'function') {
-    					console.error('Callback must be a function');
-    					return;
-    			}
+    		if (!callback || typeof callback !== 'function') {
+    			console.error('Callback must be a function');
+    			return;
+    		}
 
-    			const wrappedCallback = (...args) => {
-    					// Remove the listener before calling the callback
-    					// to prevent recursion if the callback emits the same event
-    					this.removeEvent(event, wrappedCallback);
-    					callback.apply(this, args);
-    			};
+    		const wrappedCallback = (...args) => {
+    			// Remove the listener before calling the callback
+    			// to prevent recursion if the callback emits the same event
+    			this.removeEvent(event, wrappedCallback);
+    			callback.apply(this, args);
+    		};
 
-    			this.addEvent(event, wrappedCallback);
+    		this.addEvent(event, wrappedCallback);
     	};
 
     	/**
@@ -1090,26 +1183,26 @@
     	 * ```
     	 */
     	proto.prototype.removeEvent = function (event, callback) {
-    			if (!this.signals) {
-    					this.initSignals();
-    					return false;
-    			}
+    		if (!this.signals) {
+    			this.initSignals();
+    			return false;
+    		}
 
-    			if (!this.signals[event]) {
-    					return false;
-    			}
+    		if (!this.signals[event]) {
+    			return false;
+    		}
 
-    			if (callback === undefined) {
-    					// Remove all callbacks for this event
-    					const hadCallbacks = this.signals[event].length > 0;
-    					this.signals[event] = [];
-    					return hadCallbacks;
-    			}
+    		if (callback === undefined) {
+    			// Remove all callbacks for this event
+    			const hadCallbacks = this.signals[event].length > 0;
+    			this.signals[event] = [];
+    			return hadCallbacks;
+    		}
 
-    			// Find and remove specific callback
-    			const initialLength = this.signals[event].length;
-    			this.signals[event] = this.signals[event].filter(cb => cb !== callback);
-    			return initialLength > this.signals[event].length;
+    		// Find and remove specific callback
+    		const initialLength = this.signals[event].length;
+    		this.signals[event] = this.signals[event].filter(cb => cb !== callback);
+    		return initialLength > this.signals[event].length;
     	};
 
     	/**
@@ -1129,344 +1222,15 @@
     	 * ```
     	 */
     	proto.prototype.emit = function (event, ...parameters) {
-    			if (!this.signals)
-    					this.initSignals();
-    			// Create a copy of the callbacks array to safely iterate even if
-    			// callbacks modify the listeners
-    			const callbacks = [...this.signals[event]];
-    			for (let r of callbacks)
-    					r(...parameters);
+    		if (!this.signals)
+    			this.initSignals();
+    		// Create a copy of the callbacks array to safely iterate even if
+    		// callbacks modify the listeners
+    		const callbacks = [...this.signals[event]];
+    		for (let r of callbacks)
+    			r(...parameters);
     	};
     }
-
-    /**
-     * Defines a rectangular viewing region inside a canvas area.
-     * @typedef {Object} Viewport
-     * @property {number} x - X-coordinate of the lower-left corner
-     * @property {number} y - Y-coordinate of the lower-left corner
-     * @property {number} dx - Width of the viewport
-     * @property {number} dy - Height of the viewport
-     * @property {number} w - Total canvas width
-     * @property {number} h - Total canvas height
-     */
-
-    /**
-     * Camera class that manages viewport parameters and camera transformations.
-     * Acts as a container for parameters needed to define the viewport and camera position,
-     * supporting smooth animations between positions using source and target transforms.
-     * 
-     * The camera maintains two Transform objects:
-     * - source: represents current position
-     * - target: represents destination position
-     * 
-     * Animation between positions is handled automatically by the OpenLIME system
-     * unless manually interrupted by user input.
-     */
-    class Camera {
-    	/**
-    	 * Creates a new Camera instance.
-    	 * @param {Object} [options] - Configuration options
-    	 * @param {boolean} [options.bounded=true] - Whether to limit camera translation to scene boundaries
-    	 * @param {number} [options.maxFixedZoom=2] - Maximum allowed pixel size
-    	 * @param {number} [options.minScreenFraction=1] - Minimum portion of screen to show when zoomed in
-    	 * @param {Transform} [options.target] - Initial target transform
-    	 * @fires Camera#update
-    	 */
-    	constructor(options) {
-    		Object.assign(this, {
-    			viewport: null,
-    			bounded: true,
-    			minScreenFraction: 1,
-    			maxFixedZoom: 2,
-    			maxZoom: 2,
-    			minZoom: 1,
-    			boundingBox: new BoundingBox,
-    		});
-    		Object.assign(this, options);
-    		this.target = new Transform(this.target);
-    		this.source = this.target.copy();
-    		this.easing = 'linear';
-    	}
-
-    	/**
-    	 * Creates a deep copy of the camera instance.
-    	 * @returns {Camera} A new Camera instance with copied properties
-    	 */
-    	copy() {
-    		let camera = new Camera();
-    		Object.assign(camera, this);
-    		return camera;
-    	}
-
-    	/**
-    	* Updates the viewport while maintaining the camera position as close as possible to the previous one.
-    	* @param {Viewport} view - The new viewport in CSS coordinates
-    	*/
-    	setViewport(view) {
-    		if (this.viewport) {
-    			let rz = Math.sqrt((view.w / this.viewport.w) * (view.h / this.viewport.h));
-    			this.viewport = view;
-    			const { x, y, z, a } = this.target;
-    			this.setPosition(0, x, y, z * rz, a);
-    		} else {
-    			this.viewport = view;
-    		}
-    	}
-
-    	/**
-    	 * Returns the current viewport in device coordinates (accounting for device pixel ratio).
-    	 * @returns {Viewport} The current viewport scaled for device pixels
-    	 */
-    	glViewport() {
-    		let d = window.devicePixelRatio;
-    		let viewport = {};
-    		for (let i in this.viewport)
-    			viewport[i] = this.viewport[i] * d;
-    		return viewport;
-    	}
-
-    	/**
-    	 * Converts canvas coordinates to scene coordinates using the specified transform.
-    	 * @param {number} x - X coordinate relative to canvas
-    	 * @param {number} y - Y coordinate relative to canvas
-    	 * @param {Transform} transform - Transform to use for conversion
-    	 * @returns {{x: number, y: number}} Coordinates in scene space relative to viewport center
-    	 */
-    	mapToScene(x, y, transform) {
-    		//compute coords relative to the center of the viewport.
-    		x -= this.viewport.w / 2;
-    		y -= this.viewport.h / 2;
-    		x -= transform.x;
-    		y -= transform.y;
-    		x /= transform.z;
-    		y /= transform.z;
-    		let r = Transform.rotate(x, y, -transform.a);
-    		return { x: r.x, y: r.y };
-    	}
-
-    	/**
-    	 * Converts scene coordinates to canvas coordinates using the specified transform.
-    	 * @param {number} x - X coordinate in scene space
-    	 * @param {number} y - Y coordinate in scene space
-    	 * @param {Transform} transform - Transform to use for conversion
-    	 * @returns {{x: number, y: number}} Coordinates in canvas space
-    	 */
-    	sceneToCanvas(x, y, transform) {
-    		let r = Transform.rotate(x, y, transform.a);
-    		x = r.x * transform.z + transform.x - this.viewport.x + this.viewport.w / 2;
-    		y = r.y * transform.z - transform.y + this.viewport.y + this.viewport.h / 2;
-    		return { x: x, y: y };
-    	}
-
-    	/**
-    	 * Sets the camera target parameters for a new position.
-    	 * @param {number} dt - Animation duration in milliseconds
-    	 * @param {number} x - X component of translation
-    	 * @param {number} y - Y component of translation
-    	 * @param {number} z - Zoom factor
-    	 * @param {number} a - Rotation angle in degrees
-    	 * @param {string} [easing] - Easing function name for animation
-    	 * @fires Camera#update
-    	 */
-    	setPosition(dt, x, y, z, a, easing) {
-    		/**
-    		* The event is fired when the camera target is changed.
-    		* @event Camera#update
-    		*/
-
-    		// Discard events due to cursor outside window
-    		//if (Math.abs(x) > 64000 || Math.abs(y) > 64000) return;
-    		this.easing = easing || this.easing;
-
-    		if (this.bounded) {
-    			const sw = this.viewport.dx;
-    			const sh = this.viewport.dy;
-
-    			//
-    			let xform = new Transform({ x: x, y: y, z: z, a: a, t: 0 });
-    			let tbox = xform.transformBox(this.boundingBox);
-    			const bw = tbox.width();
-    			const bh = tbox.height();
-
-    			// Screen space offset between image boundary and screen boundary
-    			// Do not let transform offet go beyond this limit.
-    			// if (scaled-image-size < screen) it remains fully contained
-    			// else the scaled-image boundary closest to the screen cannot enter the screen.
-    			const dx = Math.abs(bw - sw) / 2;// + this.boundingBox.center().x- tbox.center().x;
-    			x = Math.min(Math.max(-dx, x), dx);
-
-    			const dy = Math.abs(bh - sh) / 2;// + this.boundingBox.center().y - tbox.center().y;
-    			y = Math.min(Math.max(-dy, y), dy);
-    		}
-
-    		let now = performance.now();
-    		this.source = this.getCurrentTransform(now);
-    		//the angle needs to be interpolated in the shortest direction.
-    		//target it is kept between 0 and +360, source is kept relative.
-    		a = Transform.normalizeAngle(a);
-    		this.source.a = Transform.normalizeAngle(this.source.a);
-    		if (a - this.source.a > 180) this.source.a += 360;
-    		if (this.source.a - a > 180) this.source.a -= 360;
-    		Object.assign(this.target, { x: x, y: y, z: z, a: a, t: now + dt });
-    		console.assert(!isNaN(this.target.x));
-    		this.emit('update');
-    	}
-
-    	/**
-    	 * Pans the camera by a specified amount in canvas coordinates.
-    	 * @param {number} dt - Animation duration in milliseconds
-    	 * @param {number} dx - Horizontal displacement
-    	 * @param {number} dy - Vertical displacement
-    	 */
-    	pan(dt, dx, dy) {
-    		let now = performance.now();
-    		let m = this.getCurrentTransform(now);
-    		m.x += dx;
-    		m.y += dy;
-    		this.setPosition(dt, m.x, m.y, m.z, m.a);
-    	}
-
-    	/**
-    	 * Zooms the camera to a specific point in canvas coordinates.
-    	 * @param {number} dt - Animation duration in milliseconds
-    	 * @param {number} z - Target zoom level
-    	 * @param {number} [x=0] - X coordinate to zoom towards
-    	 * @param {number} [y=0] - Y coordinate to zoom towards
-    	 */
-    	zoom(dt, z, x, y) {
-    		if (!x) x = 0;
-    		if (!y) y = 0;
-
-    		let now = performance.now();
-    		let m = this.getCurrentTransform(now);
-
-    		if (this.bounded) {
-    			z = Math.min(Math.max(z, this.minZoom), this.maxZoom);
-    		}
-
-    		//x, an y should be the center of the zoom.
-    		m.x += (m.x + x) * (m.z - z) / m.z;
-    		m.y += (m.y + y) * (m.z - z) / m.z;
-
-    		this.setPosition(dt, m.x, m.y, z, m.a);
-    	}
-
-    	/**
-    	 * Rotates the camera around its z-axis.
-    	 * @param {number} dt - Animation duration in milliseconds
-    	 * @param {number} a - Rotation angle in degrees
-    	 */
-    	rotate(dt, a) {
-
-    		let now = performance.now();
-    		let m = this.getCurrentTransform(now);
-
-    		this.setPosition(dt, m.x, m.y, m.z, this.target.a + a);
-    	}
-
-    	/**
-    	 * Applies a relative zoom change at a specific point.
-    	 * @param {number} dt - Animation duration in milliseconds
-    	 * @param {number} dz - Relative zoom change factor
-    	 * @param {number} [x=0] - X coordinate to zoom around
-    	 * @param {number} [y=0] - Y coordinate to zoom around
-    	 */
-    	deltaZoom(dt, dz, x = 0, y = 0) {
-
-    		let now = performance.now();
-    		let m = this.getCurrentTransform(now);
-
-    		//rapid firing wheel event need to compound.
-    		//but the x, y in input are relative to the current transform.
-    		dz *= this.target.z / m.z;
-
-    		if (this.bounded) {
-    			if (m.z * dz < this.minZoom) dz = this.minZoom / m.z;
-    			if (m.z * dz > this.maxZoom) dz = this.maxZoom / m.z;
-    		}
-
-    		//transform is x*z + dx = X , there x is positrion in scene, X on screen
-    		//we want x*z*dz + dx1 = X (stay put, we need to find dx1.
-    		let r = Transform.rotate(x, y, m.a);
-    		m.x += r.x * m.z * (1 - dz);
-    		m.y += r.y * m.z * (1 - dz);
-
-    		this.setPosition(dt, m.x, m.y, m.z * dz, m.a);
-    	}
-
-    	/**
-    	 * Gets the camera transform at a specific time.
-    	 * @param {number} time - Current time in milliseconds (from performance.now())
-    	 * @returns {Transform} The interpolated transform at the specified time
-    	 */
-    	getCurrentTransform(time) {
-    		if (time > this.target.t) this.easing = 'linear';
-    		return Transform.interpolate(this.source, this.target, time, this.easing);
-    	}
-
-    	/**
-    	 * Gets the camera transform at a specific time in device coordinates.
-    	 * @param {number} time - Current time in milliseconds (from performance.now())
-    	 * @returns {Transform} The interpolated transform scaled for device pixels
-    	 */
-    	getGlCurrentTransform(time) {
-    		const pos = this.getCurrentTransform(time);
-    		pos.x *= window.devicePixelRatio;
-    		pos.y *= window.devicePixelRatio;
-    		pos.z *= window.devicePixelRatio;
-    		return pos;
-    	}
-
-    	/**
-    	 * Adjusts the camera to frame a specified bounding box.
-    	 * @param {BoundingBox} box - The box to frame in canvas coordinates
-    	 * @param {number} [dt=0] - Animation duration in milliseconds
-    	 */
-    	fit(box, dt) {
-    		if (box.isEmpty()) return;
-    		if (!dt) dt = 0;
-
-    		//find if we align the topbottom borders or the leftright border.
-    		let w = this.viewport.dx;
-    		let h = this.viewport.dy;
-
-    		let bw = box.width();
-    		let bh = box.height();
-    		let c = box.center();
-    		let z = Math.min(w / bw, h / bh);
-
-    		this.setPosition(dt, -c.x * z, -c.y * z, z, 0);
-    	}
-
-    	/**
-    	 * Resets the camera to show the entire scene.
-    	 * @param {number} dt - Animation duration in milliseconds
-    	 */
-    	fitCameraBox(dt) {
-    		this.fit(this.boundingBox, dt);
-    	}
-
-    	/**
-    	 * Updates the camera's boundary constraints and zoom limits.
-    	 * @private
-    	 * @param {BoundingBox} box - New bounding box for constraints
-    	 * @param {number} minScale - Minimum scale factor
-    	 */
-    	updateBounds(box, minScale) {
-    		this.boundingBox = box;
-    		const w = this.viewport.dx;
-    		const h = this.viewport.dy;
-
-    		let bw = this.boundingBox.width();
-    		let bh = this.boundingBox.height();
-
-    		this.minZoom = Math.min(w / bw, h / bh) * this.minScreenFraction;
-    		this.maxZoom = minScale > 0 ? this.maxFixedZoom / minScale : this.maxFixedZoom;
-    		this.maxZoom = Math.max(this.minZoom, this.maxZoom);
-    	}
-    }
-
-    addSignals(Camera, 'update');
 
     // Tile level x y  index ----- tex missing() start/end (tarzoom) ----- time, priority size(byte)
 
@@ -1638,7 +1402,7 @@
      * - Layout: 0,0 at left,top (y Down). Depends on layout
      */
     class CoordinateSystem {
-        
+
         /**
          * Transform point from Viewport to CanvasHTML
          * @param {*} p point in Viewport: 0,0 at left,bottom
@@ -1646,10 +1410,10 @@
          * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
          * @returns  point in CanvasHtml: 0,0 left,top
          */
-         static fromViewportToCanvasHtml(p, camera, useGL) {
+        static fromViewportToCanvasHtml(p, camera, useGL) {
             const viewport = this.getViewport(camera, useGL);
             let result = this.invertY(p, viewport);
-            return useGL ? this.scale(result, 1/window.devicePixelRatio) : result;
+            return useGL ? this.scale(result, 1 / window.devicePixelRatio) : result;
         }
 
         /**
@@ -1659,13 +1423,13 @@
          * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
          * @returns  point in GLViewport: 0,0 left,bottom, scaled by devicePixelRatio
          */
-         static fromCanvasHtmlToViewport(p, camera, useGL) {
+        static fromCanvasHtmlToViewport(p, camera, useGL) {
             let result = useGL ? this.scale(p, window.devicePixelRatio) : p;
             const viewport = this.getViewport(camera, useGL);
             return this.invertY(result, viewport);
         }
 
-        
+
         /**
          * Transform a point from Viewport to Layer coordinates
          * @param {*} p point {x,y} in Viewport (0,0 left,bottom, y Up)
@@ -1674,15 +1438,15 @@
          * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
          * @returns point in Layer coordinates (0, 0 at layer center, y Up)
          */
-         static fromViewportToLayer(p, camera, layerT, useGL) {
-           // M = InvLayerT * InvCameraT  * Tr(-Vw/2, -Vh/2)
-           const cameraT = this.getCurrentTransform(camera, useGL);
-           const invCameraT = cameraT.inverse();
-           const invLayerT = layerT.inverse();
-           const v2c = this.getFromViewportToCenterTransform(camera, useGL);
-           const M = v2c.compose(invCameraT.compose(invLayerT)); // First apply v2c, then invCamera, then invLayer
-            
-           return M.apply(p.x, p.y);
+        static fromViewportToLayer(p, camera, layerT, useGL) {
+            // M = InvLayerT * InvCameraT  * Tr(-Vw/2, -Vh/2)
+            const cameraT = this.getCurrentTransform(camera, useGL);
+            const invCameraT = cameraT.inverse();
+            const invLayerT = layerT.inverse();
+            const v2c = this.getFromViewportToCenterTransform(camera, useGL);
+            const M = v2c.compose(invCameraT.compose(invLayerT)); // First apply v2c, then invCamera, then invLayer
+
+            return M.apply(p.x, p.y);
         }
 
         /**
@@ -1693,10 +1457,10 @@
          * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
          * @returns point in viewport coordinates (0,0 at left,bottom y Up)
          */
-         static fromLayerToViewport(p, camera, layerT, useGL) {
+        static fromLayerToViewport(p, camera, layerT, useGL) {
             const M = this.getFromLayerToViewportTransform(camera, layerT, useGL);
             return M.apply(p.x, p.y);
-         }
+        }
 
         /**
          * Transform a point from Layer to Center 
@@ -1705,12 +1469,12 @@
          * @param {Transform} layerT layer transform
          * @returns point in Center (0, 0 at glViewport center) coordinates.
          */
-         static fromLayerToCenter(p, camera, layerT, useGL) {
+        static fromLayerToCenter(p, camera, layerT, useGL) {
             // M = cameraT * layerT
             const cameraT = this.getCurrentTransform(camera, useGL);
             const M = layerT.compose(cameraT);
 
-            return  M.apply(p.x, p.y);
+            return M.apply(p.x, p.y);
         }
 
         ////////////// CHECKED UP TO HERE ////////////////////
@@ -1721,12 +1485,12 @@
          * @param {*} layerSize {w, h} Size in pixel of the Layer
          * @returns  Point in Image coordinates (0,0 at left,top, y Down)
          */
-         static fromLayerToImage(p, layerSize) {
+        static fromLayerToImage(p, layerSize) {
             // InvertY * Tr(Lw/2, Lh/2)
-            let result  = {x: p.x + layerSize.w/2, y: p.y + layerSize.h/2};
+            let result = { x: p.x + layerSize.w / 2, y: p.y + layerSize.h / 2 };
             return this.invertY(result, layerSize);
         }
-        
+
         /**
          * Transform a point from CanvasHtml to Scene
          * @param {*} p point {x, y} in CanvasHtml (0,0 left,top, y Down)
@@ -1734,14 +1498,14 @@
          * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
          * @returns Point in Scene coordinates (0,0 at scene center, y Up)
          */
-         static fromCanvasHtmlToScene(p, camera, useGL) {
+        static fromCanvasHtmlToScene(p, camera, useGL) {
             // invCameraT * Tr(-Vw/2, -Vh/2) * InvertY  * [Scale(devPixRatio)]
             let result = this.fromCanvasHtmlToViewport(p, camera, useGL);
             const v2c = this.getFromViewportToCenterTransform(camera, useGL);
             const invCameraT = this.getCurrentTransform(camera, useGL).inverse();
             const M = v2c.compose(invCameraT);
 
-            return  M.apply(result.x, result.y);
+            return M.apply(result.x, result.y);
         }
 
         /**
@@ -1770,9 +1534,9 @@
             const CameraT = this.getCurrentTransform(camera, useGL);
             const M = CameraT.compose(c2v);
 
-            return  M.apply(p.x, p.y);
+            return M.apply(p.x, p.y);
         }
-        
+
         /**
          * Transform a point from Scene to Viewport, using given transform and viewport
          * @param {*} p point {x, y} Scene coordinates (0,0 at scene center, y Up)
@@ -1785,9 +1549,9 @@
             const c2v = this.getFromViewportToCenterTransformNoCamera(viewport).inverse();
             const M = cameraT.compose(c2v);
 
-            return  M.apply(p.x, p.y);
+            return M.apply(p.x, p.y);
         }
-            
+
         /**
          * Transform a point from Viewport to Scene.
          * @param {*} p point {x, y} Viewport coordinates (0,0 at left,bottom, y Up)
@@ -1795,13 +1559,13 @@
          * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
          * @returns Point in Viewport (0,0 at scene center, y Up)
          */
-         static fromViewportToScene(p, camera, useGL) {
+        static fromViewportToScene(p, camera, useGL) {
             // invCamT * FromViewportToCenter 
             const v2c = this.getFromViewportToCenterTransform(camera, useGL);
             const invCameraT = this.getCurrentTransform(camera, useGL).inverse();
             const M = v2c.compose(invCameraT);
 
-            return  M.apply(p.x, p.y);
+            return M.apply(p.x, p.y);
         }
 
         /**
@@ -1817,19 +1581,19 @@
             const invCameraT = cameraT.inverse();
             const M = v2c.compose(invCameraT);
 
-            return  M.apply(p.x, p.y);
+            return M.apply(p.x, p.y);
         }
-        
+
         /**
          * Transform a point from CanvasHtml to Image
          * @param {*} p  point {x, y} in CanvasHtml (0,0 left,top, y Down)
          * @param {Camera} camera camera 
          * @param {Transform} layerT layer transform 
          * @param {*} layerSize  {w, h} Size in pixel of the Layer
-         * @param {bool} applyGLScale if true apply devPixelRatio scale. Keep it false when working with SVG
+         * @param {bool} useGL if true apply devPixelRatio scale. Keep it false when working with SVG
          * @returns Point in Image space (0,0 left,top of the image, y Down)
          */
-         static fromCanvasHtmlToImage(p, camera, layerT, layerSize, useGL) {
+        static fromCanvasHtmlToImage(p, camera, layerT, layerSize, useGL) {
             // Translate(Lw/2, Lh/2) * InvLayerT * InvCameraT *  Translate(-Vw/2, -Vh/2) * invertY * [Scale(devicePixelRatio)]
             // in other words... fromLayerToImage * invLayerT * fromCanvasHtmlToScene
             let result = this.fromCanvasHtmlToScene(p, camera, useGL);
@@ -1849,20 +1613,20 @@
          * @param {*} layerSize {w,h} layer pixel size
          * @returns box in Image coordinates (0,0 left,top, y Dowm)
          */
-         static fromViewportBoxToImageBox(box, cameraT, viewport, layerT, layerSize) {
+        static fromViewportBoxToImageBox(box, cameraT, viewport, layerT, layerSize) {
             // InvertYonImage * T(Lw/2, Lh/2) * InvL * InvCam * T(-Vw/2,-Vh/2) 
-            let V2C = new Transform({x:-viewport.w/2, y:-viewport.h/2});
+            let V2C = new Transform({ x: -viewport.w / 2, y: -viewport.h / 2 });
             let C2S = cameraT.inverse();
             let S2L = layerT.inverse();
-            let L2I = new Transform({x:layerSize.w/2, y:layerSize.h/2});
+            let L2I = new Transform({ x: layerSize.w / 2, y: layerSize.h / 2 });
             let M = V2C.compose(C2S.compose(S2L.compose(L2I)));
             let resultBox = new BoundingBox();
-    		for(let i = 0; i < 4; ++i) {
+            for (let i = 0; i < 4; ++i) {
                 let p = box.corner(i);
                 p = M.apply(p.x, p.y);
                 p = CoordinateSystem.invertY(p, layerSize);
-    			resultBox.mergePoint(p);
-    		}
+                resultBox.mergePoint(p);
+            }
             return resultBox;
         }
 
@@ -1872,31 +1636,18 @@
          * @param {Transform} layerT layer transform
          * @returns box in Scene coordinates (0,0 at scene center)
          */
-         static fromLayerBoxToSceneBox(box, layerT) {
-             return layerT.transformBox(box); 
+        static fromLayerBoxToSceneBox(box, layerT) {
+            return layerT.transformBox(box);
         }
-      
+
         /**
          * Transform a box from Scene to Layer 
          * @param {BoundingBox} box  box in Layer coordinates (0,0 at layer center)
          * @param {Transform} layerT layer transform
          * @returns box in Scene coordinates (0,0 at scene center)
          */
-         static fromSceneBoxToLayerBox(box, layerT) {
-            return layerT.inverse().transformBox(box); 
-       }
-
-        /**
-         * Transform a box from Layer to Viewport coordinates
-         * @param {BoundingBox} box box in Layer coordinates (0,0 at Layer center y Up)
-         * @param {Camera} camera 
-         * @param {Transform} layerT layer transform
-         * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
-         * @returns Box in Viewport coordinates (0,0 at left, bottom y Up)
-         */
-         static fromLayerBoxToViewportBox(box, camera, layerT, useGL) {
-            const M = this.getFromLayerToViewportTransform(camera, layerT, useGL);
-            return M.transformBox(box);  
+        static fromSceneBoxToLayerBox(box, layerT) {
+            return layerT.inverse().transformBox(box);
         }
 
         /**
@@ -1907,9 +1658,22 @@
          * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
          * @returns Box in Viewport coordinates (0,0 at left, bottom y Up)
          */
-         static fromViewportBoxToLayerBox(box, camera, layerT, useGL) {
+        static fromLayerBoxToViewportBox(box, camera, layerT, useGL) {
+            const M = this.getFromLayerToViewportTransform(camera, layerT, useGL);
+            return M.transformBox(box);
+        }
+
+        /**
+         * Transform a box from Layer to Viewport coordinates
+         * @param {BoundingBox} box box in Layer coordinates (0,0 at Layer center y Up)
+         * @param {Camera} camera 
+         * @param {Transform} layerT layer transform
+         * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
+         * @returns Box in Viewport coordinates (0,0 at left, bottom y Up)
+         */
+        static fromViewportBoxToLayerBox(box, camera, layerT, useGL) {
             const M = this.getFromLayerToViewportTransform(camera, layerT, useGL).inverse();
-            return M.transformBox(box);  
+            return M.transformBox(box);
         }
 
         /**
@@ -1918,7 +1682,7 @@
          * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
          * @returns transform from Viewport to Center
          */
-         static getFromViewportToCenterTransform(camera, useGL) {
+        static getFromViewportToCenterTransform(camera, useGL) {
             const viewport = this.getViewport(camera, useGL);
             return this.getFromViewportToCenterTransformNoCamera(viewport);
         }
@@ -1930,7 +1694,7 @@
          * @returns transform from Viewport to Center
          */
         static getFromViewportToCenterTransformNoCamera(viewport) {
-            return new Transform({x:viewport.x-viewport.w/2, y:viewport.y-viewport.h/2, z:1, a:0, t:0});
+            return new Transform({ x: viewport.x - viewport.w / 2, y: viewport.y - viewport.h / 2, z: 1, a: 0, t: 0 });
         }
 
         /**
@@ -1939,7 +1703,7 @@
          * @returns {Transform} transform, with y reflected (around 0)
          */
         static reflectY(t) {
-            return new Transform({x:t.x, y:-t.y, z:t.z, a:t.a, t:t.t});
+            return new Transform({ x: t.x, y: -t.y, z: t.z, a: t.a, t: t.t });
         }
 
         /**
@@ -1949,7 +1713,7 @@
          * @param {bool} useGL True to work with WebGL, false for SVG. When true, it uses devPixelRatio scale
          * @returns transform from Layer to Viewport
          */
-         static getFromLayerToViewportTransform(camera, layerT, useGL) {
+        static getFromLayerToViewportTransform(camera, layerT, useGL) {
             // M =  Center2Viewport * CameraT  * LayerT
             const cameraT = this.getCurrentTransform(camera, useGL);
             const c2v = this.getFromViewportToCenterTransform(camera, useGL).inverse();
@@ -1966,11 +1730,11 @@
          */
         static getFromLayerToViewportTransformNoCamera(cameraT, viewport, layerT) {
             // M =  Center2Viewport * CameraT  * LayerT
-            const c2v =  this.getFromViewportToCenterTransformNoCamera(viewport).inverse();
+            const c2v = this.getFromViewportToCenterTransformNoCamera(viewport).inverse();
             const M = layerT.compose(cameraT.compose(c2v));
             return M;
         }
-        
+
 
         /**
          * Scale x applying f scale factor
@@ -1979,7 +1743,7 @@
          * @returns Point in CanvasContext (Scaled by devicePixelRation)
          */
         static scale(p, f) {
-            return { x:p.x * f, y:p.y * f};
+            return { x: p.x * f, y: p.y * f };
         }
 
         /**
@@ -1989,7 +1753,7 @@
          * @returns Point with y inverted with respect to viewport.h
          */
         static invertY(p, viewport) {
-            return {x:p.x, y:viewport.h - p.y};
+            return { x: p.x, y: viewport.h - p.y };
         }
 
         /**
@@ -2003,14 +1767,12 @@
 
         static getCurrentTransform(camera, useGL) {
             let cameraT = useGL ?
-                            camera.getGlCurrentTransform(performance.now()) :
-                            camera.getCurrentTransform(performance.now());
-           
+                camera.getGlCurrentTransform(performance.now()) :
+                camera.getCurrentTransform(performance.now());
+
             return cameraT;
         }
     }
-
-    // Tile level x y  index ----- tex missing() start/end (tarzoom) ----- time, priority size(byte)
 
     /**
      * @typedef {Object} TileObj
@@ -2049,6 +1811,16 @@
      */
 
     /**
+     * @event Layout#ready
+     * @description FIXME Fired when a layout is ready to be drawn (the single-resolution image is downloaded or the multi-resolution structure has been initialized)
+     */
+
+    /**
+     * @event Layout#updateSize
+     * @description Fired when layout dimensions change
+     */
+
+    /**
      * Layout manages image formats and tiling schemes in OpenLIME.
      * 
      * This class is responsible for:
@@ -2070,8 +1842,8 @@
      * - IIIF: Standard server interface
      * - TarZoom: OpenLIME's optimized format
      * 
-     * @fires Layout#ready - When layout is initialized and ready for use
-     * @fires Layout#updateSize - When layout dimensions change
+     * @fires Layout#ready
+     * @fires Layout#updateSize
      * 
      * @example
      * ```javascript
@@ -2097,8 +1869,6 @@
     	 * @throws {Error} If layout type is unknown or module not loaded
     	 */
     	constructor(url, type, options) {
-
-
     		if (type == 'image') {
     			this.setDefaults(type);
     			this.init(url, type, options);
@@ -2151,8 +1921,6 @@
 
     		if (typeof (url) == 'string')
     			this.setUrls([url]);
-    		if (this.width && this.height)
-    			this.status = 'ready';
     	}
 
     	/**
@@ -2162,10 +1930,6 @@
     	 * @private
     	 */
     	setUrls(urls) {
-    		/**
-    		* The event is fired when a layout is ready to be drawn(the single-resolution image is downloaded or the multi-resolution structure has been initialized).
-    		* @event Layout#ready
-    		*/
     		this.urls = urls;
     		this.getTileURL = (rasterid, tile) => { return this.urls[rasterid]; };
     		this.status = 'ready';
@@ -2205,7 +1969,7 @@
 
     	/**
     	 * Calculates tile coordinates
-    	 * @param Obj} tile - Tile to calculate coordinates for
+    	 * @param {TileObj} tile - Tile to calculate coordinates for
     	 * @returns {{coords: Float32Array, tcoords: Float32Array}} Image and texture coordinates
     	 */
     	tileCoords(tile) {
@@ -2235,11 +1999,11 @@
     	/**
     	 * Determines required tiles for rendering
     	 * @param {Object} viewport - Current viewport
-    	 * @param {Transform} transform - Current transform
-    	 * @param {Transform} layerTransform - Layer transform
+    	 * @param {Object} transform - Current transform
+    	 * @param {Object} layerTransform - Layer transform
     	 * @param {number} border - Border size
     	 * @param {number} bias - Mipmap bias
-    	 * @param {Map} tiles - Existing tiles
+    	 * @param {Map<number, TileObj>} tiles - Existing tiles
     	 * @param {number} [maxtiles=8] - Maximum tiles to return
     	 * @returns {TileObj[]} Array of needed tiles
     	 */
@@ -2257,12 +2021,12 @@
     	/**
     	 * Gets tiles available for rendering
     	 * @param {Object} viewport - Current viewport
-    	 * @param {Transform} transform - Current transform
-    	 * @param {Transform} layerTransform - Layer transform
+    	 * @param {Object} transform - Current transform
+    	 * @param {Object} layerTransform - Layer transform
     	 * @param {number} border - Border size
     	 * @param {number} bias - Mipmap bias
-    	 * @param {Map} tiles - Existing tiles
-    	 * @returns {Object.<number, Tile>} Map of available tiles
+    	 * @param {Map<number, TileObj>} tiles - Existing tiles
+    	 * @returns {Object.<number, TileObj>} Map of available tiles
     	 */
     	available(viewport, transform, layerTransform, border, bias, tiles) {
     		//FIXME should check if image is withing the viewport (+ border)
@@ -2276,8 +2040,8 @@
     	/**
     	 * Calculates viewport bounding box
     	 * @param {Object} viewport - Viewport parameters
-    	 * @param {Transform} transform - Current transform
-    	 * @param {Transform} layerT - Layer transform
+    	 * @param {Object} transform - Current transform
+    	 * @param {Object} layerT - Layer transform
     	 * @returns {BoundingBox} Viewport bounds in image space
     	 */
     	getViewportBox(viewport, transform, layerT) {
@@ -2286,40 +2050,138 @@
     	}
     }
 
+    /**
+     * Collection of layout type factories
+     * @type {Object}
+     */
     Layout.prototype.types = {};
+
 
     addSignals(Layout, 'ready', 'updateSize');
 
     /**
-     * Implements a singleton cache system for efficient tile management and retrieval in layers.
+     * Cache manager for efficient tile management and retrieval in layers.
+     * Implements a singleton pattern for centralized cache control across the application.
      * Handles tile loading, prefetching, and memory management with rate limiting capabilities.
-     * @private
+     * 
+     * @class
      */
-    class _Cache {
+    class Cache {
     	/**
-    	 * Creates a new Cache instance.
+    	 * Private static instance for singleton pattern
+    	 * @type {Cache}
+    	 */
+    	static #instance;
+
+    	/**
+    	 * List of layers being managed
+    	 * @type {Array}
+    	 */
+    	#layers = [];
+
+    	/**
+    	 * Total cache capacity in bytes
+    	 * @type {number}
+    	 */
+    	#capacity;
+
+    	/**
+    	 * Current amount of GPU RAM used
+    	 * @type {number}
+    	 */
+    	#size = 0;
+
+    	/**
+    	 * Current number of active HTTP requests
+    	 * @type {number}
+    	 */
+    	#requested = 0;
+
+    	/**
+    	 * Maximum concurrent HTTP requests
+    	 * @type {number}
+    	 */
+    	#maxRequest;
+
+    	/**
+    	 * Maximum requests per second (0 for unlimited)
+    	 * @type {number}
+    	 */
+    	#maxRequestsRate;
+
+    	/**
+    	 * Timeout for rate limiting
+    	 * @type {number|null}
+    	 */
+    	#requestRateTimeout = null;
+
+    	/**
+    	 * Timestamp of last request for rate limiting
+    	 * @type {number}
+    	 */
+    	#lastRequestTimestamp;
+
+    	/**
+    	 * Maximum size of prefetched tiles in bytes
+    	 * @type {number}
+    	 */
+    	#maxPrefetch;
+
+    	/**
+    	 * Current amount of prefetched GPU RAM
+    	 * @type {number}
+    	 */
+    	#prefetched = 0;
+
+    	/**
+    	 * Creates or returns the existing Cache instance.
     	 * @param {Object} [options] - Configuration options for the cache
     	 * @param {number} [options.capacity=536870912] - Total cache capacity in bytes (default: 512MB)
     	 * @param {number} [options.maxRequest=6] - Maximum concurrent HTTP requests
     	 * @param {number} [options.maxRequestsRate=0] - Maximum requests per second (0 for unlimited)
     	 * @param {number} [options.maxPrefetch=8388608] - Maximum prefetch size in bytes (default: 8MB)
+    	 * @returns {Cache} The singleton Cache instance
     	 */
-    	constructor(options) {
-    		Object.assign(this, {
-    			capacity: 512 * (1 << 20),  //256 MB total capacity available
-    			size: 0,                //amount of GPU ram used
+    	constructor(options = {}) {
+    		if (Cache.#instance) {
+    			return Cache.#instance;
+    		}
 
-    			maxRequest: 6,          //max number of concurrent HTTP requests
-    			requested: 0,
-    			maxRequestsRate: 0,     //max number of requests per second, 0 means no rate.
-    			requestRateTimeout: null, //calls update when a new slot is available due to request rate.
-    			lastRequestTimestamp: performance.now(),           //holdls last requests timestamps.
-    			maxPrefetch: 8 * (1 << 20), //max amount of prefetched tiles.
-    			prefetched: 0           //amount of currently prefetched GPU ram.
-    		});
+    		const defaults = {
+    			capacity: 512 * (1 << 20),
+    			maxRequest: 6,
+    			maxRequestsRate: 0,
+    			maxPrefetch: 8 * (1 << 20),
+    		};
 
-    		Object.assign(this, options);
-    		this.layers = [];   //map on layer.
+    		const config = { ...defaults, ...options };
+
+    		this.#capacity = config.capacity;
+    		this.#maxRequest = config.maxRequest;
+    		this.#maxRequestsRate = config.maxRequestsRate;
+    		this.#maxPrefetch = config.maxPrefetch;
+    		this.#lastRequestTimestamp = performance.now();
+
+    		Cache.#instance = this;
+    	}
+
+    	/**
+    	 * Gets the singleton instance with optional configuration update.
+    	 * @param {Object} [options] - Configuration options to update
+    	 * @returns {Cache} The singleton Cache instance
+    	 * @static
+    	 */
+    	static getInstance(options) {
+    		if (!Cache.#instance) {
+    			new Cache(options);
+    		} else if (options) {
+    			const instance = Cache.#instance;
+    			if (options.capacity !== undefined) instance.#capacity = options.capacity;
+    			if (options.maxRequest !== undefined) instance.#maxRequest = options.maxRequest;
+    			if (options.maxRequestsRate !== undefined) instance.#maxRequestsRate = options.maxRequestsRate;
+    			if (options.maxPrefetch !== undefined) instance.#maxPrefetch = options.maxPrefetch;
+    		}
+    		return Cache.#instance;
     	}
 
     	/**
@@ -2327,129 +2189,153 @@
     	 * @param {Layer} layer - The layer whose tiles should be considered for caching
     	 */
     	setCandidates(layer) {
-    		if (!this.layers.includes(layer))
-    			this.layers.push(layer);
-    		setTimeout(() => { this.update(); }, 0); //ensure all the queues are set before updating.
+    		if (!this.#layers.includes(layer)) {
+    			this.#layers.push(layer);
+    		}
+    		Promise.resolve().then(() => this.update());
     	}
 
     	/**
-    		 * Checks if the cache is currently rate limited based on request count and timing.
-    	 * @private
-    		 * @returns {boolean} True if rate limited, false otherwise
-    		 */
-    	rateLimited() {
-    		if (this.requested > this.maxRequest)
+    	 * Checks if the cache is currently rate limited based on request count and timing.
+    	 * @returns {boolean} True if rate limited, false otherwise
+    	 */
+    	#isRateLimited() {
+    		if (this.#requested >= this.#maxRequest) {
     			return true;
-
-    		if (this.maxRequestsRate == 0)
-    			return false;
-
-    		let now = performance.now();
-    		let period = 1000 / this.maxRequestsRate;
-    		let diff = now - this.lastRequestTimestamp;
-    		if (diff > period)
-    			return false;
-
-
-    		if (!this.requestRateTimeout) {
-    			this.requestRateTimeout = setTimeout(() => {
-    				this.requestRateTimeout = null;
-    				this.update();
-    			}, period - diff + 10);
     		}
+
+    		if (this.#maxRequestsRate === 0) {
+    			return false;
+    		}
+
+    		const now = performance.now();
+    		const period = 1000 / this.#maxRequestsRate;
+    		const timeSinceLastRequest = now - this.#lastRequestTimestamp;
+
+    		if (timeSinceLastRequest > period) {
+    			return false;
+    		}
+
+    		if (!this.#requestRateTimeout) {
+    			this.#requestRateTimeout = setTimeout(() => {
+    				this.#requestRateTimeout = null;
+    				this.update();
+    			}, period - timeSinceLastRequest + 10);
+    		}
+
     		return true;
     	}
 
     	/**
     	 * Updates the cache state by processing the download queue while respecting capacity and rate limits.
-    	 * @private
     	 */
     	update() {
-    		if (this.rateLimited())
+    		if (this.#isRateLimited()) {
     			return;
+    		}
 
+    		const best = this.#findBestCandidate();
+    		if (!best) {
+    			return;
+    		}
 
-    		let best = this.findBestCandidate();
-    		if (!best) return;
-    		while (this.size > this.capacity) { //we need to make room.
-    			let worst = this.findWorstTile();
+    		while (this.#size > this.#capacity) {
+    			const worst = this.#findWorstTile();
     			if (!worst) {
-    				console.log("BIG problem in the cache");
+    				console.warn("Cache management issue: No tiles available for removal");
     				break;
     			}
-    			if (worst.tile.time < best.tile.time)
-    				this.dropTile(worst.layer, worst.tile);
-    			else
+
+    			if (worst.tile.time < best.tile.time) {
+    				this.#dropTile(worst.layer, worst.tile);
+    			} else {
     				return;
+    			}
     		}
-    		console.assert(best != best.layer.queue[0]);
+
     		best.layer.queue.shift();
-    		this.lastRequestTimestamp = performance.now();
-    		this.loadTile(best.layer, best.tile);
+    		this.#lastRequestTimestamp = performance.now();
+    		this.#loadTile(best.layer, best.tile);
     	}
 
     	/**
     	 * Identifies the highest priority tile that should be downloaded next.
-    	 * @private
     	 * @returns {Object|null} Object containing the best candidate layer and tile, or null if none found
     	 */
-    	findBestCandidate() {
+    	#findBestCandidate() {
     		let best = null;
-    		for (let layer of this.layers) {
+
+    		for (const layer of this.#layers) {
     			while (layer.queue.length > 0 && layer.tiles.has(layer.queue[0].index)) {
     				layer.queue.shift();
     			}
-    			if (!layer.queue.length)
+
+    			if (!layer.queue.length) {
     				continue;
-    			let tile = layer.queue[0];
-    			if (!best ||
-    				tile.time > best.tile.time + 1.0 ||  //old requests ignored
-    				tile.priority > best.tile.priority)
+    			}
+
+    			const tile = layer.queue[0];
+
+    			if (!best || tile.time > best.tile.time + 1.0 || tile.priority > best.tile.priority) {
     				best = { layer, tile };
+    			}
     		}
+
     		return best;
     	}
 
     	/**
     	 * Identifies the lowest priority tile that should be removed from cache if space is needed.
-    	 * @private
     	 * @returns {Object|null} Object containing the worst candidate layer and tile, or null if none found
     	 */
-    	findWorstTile() {
+    	#findWorstTile() {
     		let worst = null;
-    		for (let layer of this.layers) {
-    			for (let tile of layer.tiles.values()) {
-    				//TODO might be some are present when switching shaders.
-    				if (tile.missing != 0) continue;
-    				if (!worst ||
-    					tile.time < worst.tile.time ||
-    					(tile.time == worst.tile.time && tile.priority < worst.tile.priority)) {
+
+    		for (const layer of this.#layers) {
+    			for (const tile of layer.tiles.values()) {
+    				if (tile.missing !== 0) {
+    					continue;
+    				}
+
+    				if (!worst || tile.time < worst.tile.time || (tile.time === worst.tile.time && tile.priority < worst.tile.priority)) {
     					worst = { layer, tile };
     				}
     			}
     		}
+
     		return worst;
     	}
 
     	/**
     	 * Initiates the loading of a tile for a specific layer.
-    	 * @private
     	 * @param {Layer} layer - The layer the tile belongs to
     	 * @param {Object} tile - The tile to be loaded
     	 */
-    	loadTile(layer, tile) {
-    		this.requested++;
-    		(async () => { layer.loadTile(tile, (size) => { this.size += size; this.requested--; this.update(); }); })();
+    	#loadTile(layer, tile) {
+    		this.#requested++;
+
+    		(async () => {
+    			try {
+    				await layer.loadTile(tile, (size) => {
+    					this.#size += size;
+    					this.#requested--;
+    					this.update();
+    				});
+    			} catch (error) {
+    				console.error("Error loading tile:", error);
+    				this.#requested--;
+    				this.update();
+    			}
+    		})();
     	}
 
     	/**
     	 * Removes a tile from the cache and updates the cache size.
-    	 * @private
     	 * @param {Layer} layer - The layer the tile belongs to
     	 * @param {Object} tile - The tile to be removed
     	 */
-    	dropTile(layer, tile) {
-    		this.size -= tile.size;
+    	#dropTile(layer, tile) {
+    		this.#size -= tile.size;
     		layer.dropTile(tile);
     	}
 
@@ -2458,29 +2344,29 @@
     	 * @param {Layer} layer - The layer whose tiles should be flushed
     	 */
     	flushLayer(layer) {
-    		if (!this.layers.includes(layer))
+    		if (!this.#layers.includes(layer)) {
     			return;
-    		for (let tile of layer.tiles.values())
-    			this.dropTile(layer, tile);
+    		}
+
+    		for (const tile of layer.tiles.values()) {
+    			this.#dropTile(layer, tile);
+    		}
+    	}
+
+    	/**
+    	 * Gets current cache statistics.
+    	 * @returns {Object} Current cache statistics
+    	 */
+    	getStats() {
+    		return {
+    			capacity: this.#capacity,
+    			used: this.#size,
+    			usedPercentage: (this.#size / this.#capacity) * 100,
+    			activeRequests: this.#requested,
+    			layers: this.#layers.length
+    		};
     	}
     }
-
-    /**
-     * Singleton cache instance for managing tile loading and caching across layers.
-     * Provides efficient tile retrieval and memory management with configurable capacity
-     * and request rate limiting.
-     * 
-     * @namespace
-     * @property {number} capacity - Total cache capacity in bytes (default: 512MB)
-     * @property {number} size - Current amount of GPU RAM used
-     * @property {number} maxRequest - Maximum concurrent HTTP requests (default: 6)
-     * @property {number} requested - Current number of active requests
-     * @property {number} maxRequestsRate - Maximum requests per second (0 for unlimited)
-     * @property {number} maxPrefetch - Maximum size of prefetched tiles in bytes
-     * @property {number} prefetched - Current amount of prefetched GPU RAM
-     * @property {Layer[]} layers - Array of layers being managed by the cache
-     */
-    const Cache = new _Cache;
 
     /**
      * @typedef {Object} LayerOptions
@@ -2562,9 +2448,16 @@
     	* @param {Object} options.shaders A map (shadersId, shader) of the shaders usable for the layer rendering. See @link {Shader}.
     	* @param {Controller[]} options.controllers An array of UI device controllers active on the layer.
     	* @param {Layer} options.sourceLayer The layer from which to take the tiles (in order to avoid tile duplication).
+    	* @param {boolean} [options.debug=false] - Enable debug output
     	*/
     	constructor(options) {
     		//create from derived class if type specified
+    		options = Object.assign({
+    			isLinear: false,
+    			isSrgbSimplified: true
+    		}, options);
+
+
     		if (options.type) {
     			let type = options.type;
     			delete options.type;
@@ -2576,6 +2469,76 @@
     		}
 
     		this.init(options);
+    	}
+
+    	/**
+    	 * Creates a new Layer that shares tiles with this layer but uses a different shader.
+    	 * This method allows efficient creation of derivative layers that share the same source textures,
+    	 * which is useful for applying different visual effects to the same image data without duplicating resources.
+    	 * 
+    	 * @param {Object} [options={}] - Options for the new layer
+    	 * @param {Object} [options.shaders] - Map of shaders for the new layer
+    	 * @param {string} [options.defaultShader] - ID of shader to set as active
+    	 * @param {string} [options.label] - Label for the new layer (defaults to original label)
+    	 * @param {number} [options.zindex] - Z-index for the new layer (defaults to original + 1)
+    	 * @param {boolean} [options.visible] - Layer visibility (defaults to same as original)
+    	 * @param {Transform} [options.transform] - Custom transform (defaults to copy of original)
+    	 * @param {number} [options.mipmapBias] - Custom mipmap bias (defaults to original value)
+    	 * @param {number} [options.pixelSize] - Custom pixel size (defaults to original value)
+    	 * @param {boolean} [options.debug] - Debug mode flag (defaults to original value)
+    	 * @returns {Layer} A new layer sharing textures with this one
+    	 * 
+    	 * @example
+    	 * ```javascript
+    	 * // Create a derived layer with edge detection shader
+    	 * const enhancedShader = new OpenLIME.ShaderEdgeDetection();
+    	 * const derivedLayer = originalLayer.derive({
+    	 *     label: 'Edge Detection',
+    	 *     shaders: { 'edge': enhancedShader },
+    	 *     defaultShader: 'edge',
+    	 *     zindex: 10
+    	 * });
+    	 * viewer.addLayer('edges', derivedLayer);
+    	 * ```
+    	 * or
+    	 * ```javascript
+    	 * const enhancedShader = new OpenLIME.ShaderEdgeDetection();
+    	 * const derivedLayer = layer.derive({
+    	 *     label: 'Enhanced Image'
+    	 * });
+    	 * derivedLayer.addShader('enhanced', enhancedShader);
+    	 * derivedLayer.setShader('enhanced');
+    	 * viewer.addLayer('Enhanced Image', derivedLayer);
+    	 * ```
+    	 */
+    	derive(options = {}) {
+    		// Create options for the new layer
+    		const derivedOptions = {
+    			// Keep the same layout
+    			layout: this.layout,
+    			// Reference the source layer for shared tiles
+    			sourceLayer: this,
+    			// Inherit other properties but allow overrides
+    			label: options.label || this.label,
+    			zindex: options.zindex !== undefined ? options.zindex : this.zindex + 1,
+    			visible: options.visible !== undefined ? options.visible : this.visible,
+    			transform: options.transform || this.transform.copy(),
+    			// Use provided shaders or inherit
+    			shaders: options.shaders || Object.assign({}, this.shaders),
+    			mipmapBias: options.mipmapBias || this.mipmapBias,
+    			pixelSize: options.pixelSize || this.pixelSize,
+    			debug: options.debug !== undefined ? options.debug : this.debug
+    		};
+
+    		// Create the new layer
+    		const derivedLayer = new Layer(derivedOptions);
+
+    		// Set initial shader if specified
+    		if (options.defaultShader && derivedOptions.shaders[options.defaultShader]) {
+    			derivedLayer.setShader(options.defaultShader);
+    		}
+
+    		return derivedLayer;
     	}
 
     	/** @ignore */
@@ -2637,6 +2600,76 @@
     	setViewport(view) {
     		this.viewport = view;
     		this.emit('update');
+    	}
+
+    	/**
+    	 * Adds a shader to the layer's available shaders
+    	 * @param {string} id - Unique identifier for the shader
+    	 * @param {Shader} shader - Shader instance to add
+    	 * @throws {Error} If shader with the same id already exists
+    	 * @returns {Layer} This layer instance for method chaining
+    	 * 
+    	 * @example
+    	 * ```javascript
+    	 * const customShader = new OpenLIME.Shader({...});
+    	 * layer.addShader('custom', customShader);
+    	 * layer.setShader('custom');
+    	 * ```
+    	 */
+    	addShader(id, shader) {
+    		if (id in this.shaders) {
+    			throw new Error(`Shader with id '${id}' already exists`);
+    		}
+    		shader.isLinear = this.isLinear;
+    		shader.isSrgbSimplified = this.isSrgbSimplified;
+    		this.shaders[id] = shader;
+
+    		// If this is the first shader, set it as active
+    		if (Object.keys(this.shaders).length === 1 && !this.shader) {
+    			this.setShader(id);
+    		}
+
+    		return this;
+    	}
+
+    	/**
+    	 * Removes a shader from the layer's available shaders
+    	 * @param {string} id - Identifier of the shader to remove
+    	 * @throws {Error} If shader with the specified id doesn't exist
+    	 * @returns {Layer} This layer instance for method chaining
+    	 * 
+    	 * @example
+    	 * ```javascript
+    	 * // Remove a shader that's no longer needed
+    	 * layer.removeShader('oldEffect');
+    	 * ```
+    	 */
+    	removeShader(id) {
+    		if (!(id in this.shaders)) {
+    			throw new Error(`Shader with id '${id}' does not exist`);
+    		}
+
+    		// Check if removing the active shader
+    		const isActive = this.shader === this.shaders[id];
+
+    		// Remove the shader
+    		delete this.shaders[id];
+
+    		// Reset current shader if it was the active one
+    		if (isActive) {
+    			this.shader = null;
+
+    			// Try to set another shader if any are available
+    			const remainingShaders = Object.keys(this.shaders);
+    			if (remainingShaders.length > 0) {
+    				this.setShader(remainingShaders[0]);
+    			}
+
+    			// Emit update since the rendering has changed
+    			this.emit('update');
+    		}
+
+    		return this;
     	}
 
     	/**
@@ -2755,6 +2788,8 @@
     		if (!id in this.shaders)
     			throw "Unknown shader: " + id;
     		this.shader = this.shaders[id];
+    		this.shader.isLinear = this.isLinear;
+    		this.shader.isSrgbSimplified = this.isSrgbSimplified;
     		this.setupTiles();
     		this.shader.addEvent('update', () => { this.emit('update'); });
     	}
@@ -2869,26 +2904,36 @@
     	}
 
     	/**
-    	 * Computes combined bounding box of multiple layers
-    	 * @param {Object.<string, Layer>} layers - Map of layers
-    	 * @param {boolean} discardHidden - Whether to ignore hidden layers
-    	 * @returns {BoundingBox} Combined bounding box
+    	 * Computes a bounding box encompassing all layers
+    	 * @param {Object} layers - Collection of layers
+    	 * @param {boolean} [discardHidden=false] - Whether to exclude hidden layers
+    	 * @returns {BoundingBox|null} Bounding box encompassing all layers, or null if no valid layers
     	 * @static
     	 */
-    	static computeLayersBBox(layers, discardHidden) {
-    		if (layers == undefined || layers == null) {
-    			console.log("ASKING BBOX INFO ON NO LAYERS");
-    			let emptyBox = new BoundingBox();
-    			return emptyBox;
-    		}
-    		let layersBbox = new BoundingBox();
-    		for (let layer of Object.values(layers)) {
-    			if ((!discardHidden || layer.visible) && layer.layout.width) {
-    				const bbox = layer.boundingBox();
-    				layersBbox.mergeBox(bbox);
+    	static computeLayersBBox(layers, discardHidden = false) {
+    		let sceneBBox = new BoundingBox();
+    		let validLayers = 0;
+
+    		for (const id in layers) {
+    			const layer = layers[id];
+    			if (!layer.visible && discardHidden) continue;
+
+    			const bbox = layer.boundingBox();
+    			if (bbox && !bbox.isEmpty()) {
+    				sceneBBox.mergeBox(bbox);
+    				validLayers++;
     			}
     		}
-    		return layersBbox;
+
+    		// If no valid layers contributed to the bounding box, return null
+    		if (validLayers === 0) return null;
+
+    		// Final validation check using the new isValid method
+    		if (sceneBBox.isEmpty()) {
+    			return null;
+    		}
+
+    		return sceneBBox;
     	}
 
     	/**
@@ -3243,7 +3288,7 @@
     		}
 
     		if (this.shader.needsUpdate) {
-    			this.shader.debug = this.debug;
+    			// this.shader.debug = this.debug;
     			this.shader.createProgram(gl);
     		}
 
@@ -3330,84 +3375,390 @@
     					tmp.sort(function (a, b) { return Math.abs(a.x - c[0]) + Math.abs(a.y - c[1]) - Math.abs(b.x - c[0]) - Math.abs(b.y - c[1]); });
     					this.queue = this.queue.concat(tmp);
     				}*/
-    		Cache.setCandidates(this);
+    		Cache.getInstance().setCandidates(this);
     	}
 
     	/**
-    	 * Loads a specific tile
-    	 * @param {Object} tile - Tile specification
-    	 * @param {Function} callback - Completion callback
+    	 * Loads and processes a single image tile with optimized resource management.
+    	 * Implements request batching, concurrent loading, and proper error handling.
+    	 * 
+    	 * @async
+    	 * @param {Object} tile - Tile specification object
+    	 * @param {string} tile.index - Unique tile identifier
+    	 * @param {string} tile.url - Base URL for tile resource 
+    	 * @param {number} [tile.start] - Start byte for partial content (for tarzoom)
+    	 * @param {number} [tile.end] - End byte for partial content (for tarzoom)
+    	 * @param {Object[]} [tile.offsets] - Byte offsets for interleaved formats
+    	 * @param {Function} callback - Completion callback(error, size)
     	 * @returns {Promise<void>}
-    	 * @private
+    	 * @throws {Error} If tile is already in processing queue
     	 */
     	async loadTile(tile, callback) {
-    		if (this.tiles.has(tile.index))
-    			throw "AAARRGGHHH double tile!";
-
-    		if (this.requested.has(tile.index)) {
-    			console.log("Warning: double request!");
-    			callback("Double tile request");
+    		// Validate tile isn't already loaded or in processing queue
+    		if (this.tiles.has(tile.index)) {
+    			const error = new Error(`Tile with index ${tile.index} already exists in cache`);
+    			callback(error);
     			return;
     		}
 
+    		if (this.requested.has(tile.index)) {
+    			// Log warning but continue - don't throw since this could be a race condition
+    			console.warn(`Duplicate tile request for index ${tile.index}`);
+    			callback(new Error("Duplicate tile request"));
+    			return;
+    		}
+
+    		// Track the tile in collections before loading starts
     		this.tiles.set(tile.index, tile);
     		this.requested.set(tile.index, true);
 
-    		if (this.layout.type == 'itarzoom') {
-    			tile.url = this.layout.getTileURL(null, tile);
-    			let options = {};
-    			if (tile.end)
-    				options.headers = { range: `bytes=${tile.start}-${tile.end}`, 'Accept-Encoding': 'indentity' };
-
-    			var response = await fetch(tile.url, options);
-    			if (!response.ok) {
-    				callback("Failed loading " + tile.url + ": " + response.statusText);
-    				return;
-    			}
-    			let blob = await response.blob();
-
-    			let i = 0;
-    			for (let sampler of this.shader.samplers) {
-    				let raster = this.rasters[sampler.id];
-    				let imgblob = blob.slice(tile.offsets[i], tile.offsets[i + 1]);
-    				const img = await raster.blobToImage(imgblob, this.gl);
-    				let tex = raster.loadTexture(this.gl, img);
-    				let size = img.width * img.height * 3;
-    				tile.size += size;
-    				tile.tex[sampler.id] = tex;
-    				tile.w = img.width;
-    				tile.h = img.height;
-    				i++;
-    			}
-    			tile.missing = 0;
-    			this.emit('update');
-    			this.requested.delete(tile.index);
-    			if (callback) callback(tile.size);
-    			return;
-    		}
+    		// Initialize progress tracking
+    		tile.size = 0;
     		tile.missing = this.shader.samplers.length;
-    		for (let sampler of this.shader.samplers) {
+    		tile.tex = [];
 
-    			let raster = this.rasters[sampler.id];
-    			tile.url = this.layout.getTileURL(sampler.id, tile);
-    			const [tex, size] = await raster.loadImage(tile, this.gl); // TODO Parallelize request and url must be a parameter (implement request ques per url)
-    			if (this.layout.type == "image") {
-    				this.layout.width = raster.width;
-    				this.layout.height = raster.height;
-    				this.layout.emit('updateSize');
+    		try {
+    			// Handle specialized tarzoom format differently from regular tiles
+    			if (this.layout.type === 'itarzoom') {
+    				await this._loadInterleaved(tile, callback);
+    			} else {
+    				await this._loadParallel(tile, callback);
     			}
-    			tile.size += size;
-    			tile.tex[sampler.id] = tex;
-    			tile.missing--;
-    			if (tile.missing <= 0) {
-    				this.emit('update');
-    				this.requested.delete(tile.index);
-    				if (this.requested.size == 0)
-    					this.emit('loaded');
-    				if (callback) callback(size);
-    			}
+    		} catch (error) {
+    			// Clean up after error
+    			this.requested.delete(tile.index);
+    			this.tiles.delete(tile.index);
+    			console.error(`Error loading tile ${tile.index}:`, error);
+    			callback(error);
     		}
     	}
+
+    	/**
+    	* Loads an interleaved tile format (itarzoom) where all textures are in one file
+    	* 
+    	* @private
+    	* @async
+    	* @param {Object} tile - Tile specification object
+    	* @param {Function} callback - Completion callback
+    	* @returns {Promise<void>}
+    	*/
+    	async _loadInterleaved(tile, callback) {
+    		// Configure URL and fetch options
+    		tile.url = this.layout.getTileURL(null, tile);
+    		const options = {};
+
+    		// Set range headers if we're using byte ranges
+    		if (tile.end) {
+    			options.headers = {
+    				range: `bytes=${tile.start}-${tile.end}`,
+    				'Accept-Encoding': 'identity'  // Prevent compression which breaks byte ranges
+    			};
+    		}
+
+    		// Use HTTP/2 if available through the fetch() API
+    		const response = await fetch(tile.url, options);
+
+    		if (!response.ok) {
+    			throw new Error(`Failed loading ${tile.url}: ${response.statusText} (${response.status})`);
+    		}
+
+    		// Get whole blob and then process parts of it for each texture
+    		const blob = await response.blob();
+
+    		// Process each sampler in the shader
+    		for (let i = 0; i < this.shader.samplers.length; i++) {
+    			const sampler = this.shader.samplers[i];
+    			const raster = this.rasters[sampler.id];
+
+    			// Extract the specific portion for this texture from the blob
+    			const imgblob = blob.slice(tile.offsets[i], tile.offsets[i + 1]);
+
+    			// Convert to image and create texture - use texture pool if available
+    			const img = await raster.blobToImage(imgblob, this.gl);
+    			const tex = raster.loadTexture(this.gl, img);
+
+    			// Store result and track size
+    			const size = img.width * img.height * this.getPixelSize(sampler.id);
+    			tile.size += size;
+    			tile.tex[sampler.id] = tex;
+    			tile.w = img.width;
+    			tile.h = img.height;
+    		}
+
+    		// Mark as complete
+    		tile.missing = 0;
+
+    		// Trigger updates and notify
+    		this.emit('update');
+    		this.requested.delete(tile.index);
+
+    		if (callback) callback(null, tile.size);
+    	}
+
+    	/**
+    	* Loads textures in parallel for regular tile formats
+    	* 
+    	* @private
+    	* @async
+    	* @param {Object} tile - Tile specification object
+    	* @param {Function} callback - Completion callback
+    	* @returns {Promise<void>}
+    	*/
+    	async _loadParallel(tile, callback) {
+    		// Track completion for clean callback handling
+    		let completed = 0;
+    		let errors = [];
+
+    		// Create promises for all texture loads but don't await yet
+    		const loadPromises = this.shader.samplers.map(async (sampler) => {
+    			try {
+    				const raster = this.rasters[sampler.id];
+    				tile.url = this.layout.getTileURL(sampler.id, tile);
+
+    				// Load the image using the raster loader
+    				const [tex, size] = await raster.loadImage(tile, this.gl);
+
+    				// For image layout, we might need to update layer dimensions
+    				if (this.layout.type === "image") {
+    					this.layout.width = raster.width;
+    					this.layout.height = raster.height;
+    					this.layout.emit('updateSize');
+    				}
+
+    				// Update tile information
+    				tile.size += size;
+    				tile.tex[sampler.id] = tex;
+
+    				// Track completion status
+    				tile.missing--;
+    				completed++;
+
+    				// If this tile is now complete, emit update
+    				if (tile.missing <= 0) {
+    					this.emit('update');
+
+    					if (this.requested.size === 0) {
+    						this.emit('loaded');
+    					}
+    				}
+
+    				return { success: true, size };
+    			} catch (error) {
+    				errors.push(error);
+    				return { success: false, error };
+    			}
+    		});
+
+    		// Use Promise.allSettled to wait for all texture loads, handling errors gracefully
+    		await Promise.allSettled(loadPromises);
+
+    		// Handle errors and clean up
+    		this.requested.delete(tile.index);
+
+    		if (errors.length > 0) {
+    			callback(errors[0]); // Return first error
+    		} else {
+    			callback(null, tile.size);
+    		}
+    	}
+
+    	/**
+    	* Determines the number of bytes per pixel for a given sampler
+    	* 
+    	* @private
+    	* @param {number} samplerId - Sampler identifier
+    	* @returns {number} Bytes per pixel
+    	*/
+    	getPixelSize(samplerId) {
+    		// Default to 3 bytes per pixel (RGB)
+    		let bytesPerPixel = 3;
+
+    		// Check format of the raster if available
+    		const raster = this.rasters[samplerId];
+    		if (raster && raster.format) {
+    			switch (raster.format) {
+    				case 'vec4':
+    					bytesPerPixel = 4; // RGBA
+    					break;
+    				case 'vec3':
+    					bytesPerPixel = 3; // RGB
+    					break;
+    				case 'float':
+    					bytesPerPixel = 1; // Single channel
+    					break;
+    			}
+    		}
+
+    		return bytesPerPixel;
+    	}
+
+    	/**
+    	 * Gets pixel values for a specific pixel location
+    	 * Works with both single images and tiled formats
+    	 *  
+    	 * @param {number} x - X coordinate in image space (0,0 at top-left)
+    	 * @param {number} y - Y coordinate in image space (0,0 at top-left)
+    	 * @returns {Array<Uint8Array>} Array containing RGBA values for each raster at the specified pixel
+    	 */
+    	getPixelValues(x, y) {
+    		// Check if shader and GL context are initialized
+    		if (!this.shader) {
+    			throw new Error("WebGL resources not initialized");
+    		}
+
+    		if (!this.gl) {
+    			console.log("Not a GL Layer");
+    			return null;
+    		}
+
+    		// Ensure coordinates are integers
+    		x = Math.floor(x);
+    		y = Math.floor(y);
+
+    		// Check if coordinates are within image bounds
+    		if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+    			console.warn(`Coordinates (${x}, ${y}) outside image bounds (${this.width}x${this.height})`);
+    			return [];
+    		}
+
+    		// Create array to hold pixel data for each raster
+    		const pixelData = Array(this.rasters.length).fill(null);
+
+    		try {
+    			// Create framebuffer for reading pixel data
+    			const framebuffer = this.gl.createFramebuffer();
+    			this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
+
+    			// Handle differently based on layout type
+    			if (this.layout.type === 'image' || this.layout.type === 'itarzoom') {
+    				// For image layout, all textures are in a single tile
+    				const tile = this.tiles.get(0);
+
+    				if (tile && tile.missing === 0) {
+    					// Read pixel data for each raster
+    					for (let i = 0; i < this.rasters.length; i++) {
+    						if (i < tile.tex.length && tile.tex[i]) {
+    							// Attach the texture to the framebuffer
+    							this.gl.framebufferTexture2D(
+    								this.gl.FRAMEBUFFER,
+    								this.gl.COLOR_ATTACHMENT0,
+    								this.gl.TEXTURE_2D,
+    								tile.tex[i],
+    								0  // mipmap level
+    							);
+
+    							if (this.gl.checkFramebufferStatus(this.gl.FRAMEBUFFER) === this.gl.FRAMEBUFFER_COMPLETE) {
+    								// Read the pixel data
+    								const pData = new Uint8Array(4); // RGBA
+    								this.gl.readPixels(x, y, 1, 1, this.gl.RGBA, this.gl.UNSIGNED_BYTE, pData);
+    								pixelData[i] = pData;
+    							}
+    						}
+    					}
+    				}
+    			} else {
+    				// For tiled layouts, find the appropriate tile
+    				let foundTile = false;
+
+    				// Look through all available levels starting from the highest resolution
+    				for (let level = this.layout.nlevels - 1; level >= 0; level--) {
+    					// Get tile size at this level
+    					const tileSize = this.layout.getTileSize();
+    					const scale = Math.pow(2, this.layout.nlevels - 1 - level);
+    					const scaledTileWidth = tileSize[0] * scale;
+    					const scaledTileHeight = tileSize[1] * scale;
+
+    					// Find which tile contains our coordinates
+    					const tileX = Math.floor(x / scaledTileWidth);
+    					const tileY = Math.floor(y / scaledTileHeight);
+
+    					// Get the tile index
+    					const tileIndex = this.layout.index(level, tileX, tileY);
+
+    					// Check if this tile exists in our cache
+    					if (this.tiles.has(tileIndex)) {
+    						const tile = this.tiles.get(tileIndex);
+
+    						// Only proceed if the tile is fully loaded
+    						if (tile.missing === 0) {
+    							// Calculate local coordinates within the tile
+    							const localX = x - (tileX * scaledTileWidth);
+    							const localY = y - (tileY * scaledTileHeight);
+
+    							// Scale local coordinates to match the actual texture dimensions
+    							const texWidth = tile.w || tileSize[0];
+    							const texHeight = tile.h || tileSize[1];
+
+    							const texX = Math.min(Math.floor(localX * texWidth / scaledTileWidth), texWidth - 1);
+    							const texY = Math.min(Math.floor(localY * texHeight / scaledTileHeight), texHeight - 1);
+
+    							let foundPixelInTile = false;
+
+    							// For each raster, read the corresponding texture data
+    							for (let i = 0; i < this.rasters.length; i++) {
+    								// If we already have data for this raster, skip
+    								if (pixelData[i] !== null) continue;
+
+    								// Get the texture for this raster
+    								if (i < tile.tex.length && tile.tex[i]) {
+    									// Attach the texture to the framebuffer
+    									this.gl.framebufferTexture2D(
+    										this.gl.FRAMEBUFFER,
+    										this.gl.COLOR_ATTACHMENT0,
+    										this.gl.TEXTURE_2D,
+    										tile.tex[i],
+    										0
+    									);
+
+    									if (this.gl.checkFramebufferStatus(this.gl.FRAMEBUFFER) === this.gl.FRAMEBUFFER_COMPLETE) {
+    										// Read the pixel data
+    										const pData = new Uint8Array(4); // RGBA
+    										this.gl.readPixels(
+    											texX, texY, 1, 1,
+    											this.gl.RGBA, this.gl.UNSIGNED_BYTE,
+    											pData
+    										);
+
+    										pixelData[i] = pData;
+    										foundPixelInTile = true;
+    									}
+    								}
+    							}
+
+    							if (foundPixelInTile) {
+    								foundTile = true;
+    								// If we've found a usable tile, we can stop searching further levels
+    								if (pixelData.every(p => p !== null)) {
+    									break;
+    								}
+    							}
+    						}
+    					}
+    				}
+
+    				// If we couldn't find any appropriate tile, log a warning
+    				if (!foundTile) {
+    					console.warn(`No suitable tile found for coordinates (${x}, ${y})`);
+    				}
+    			}
+
+    			// Clean up
+    			this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+    			this.gl.deleteFramebuffer(framebuffer);
+
+    			// Fill any missing pixel data with default values
+    			for (let i = 0; i < pixelData.length; i++) {
+    				if (pixelData[i] === null) {
+    					pixelData[i] = new Uint8Array([0, 0, 0, 255]);
+    				}
+    			}
+    		} catch (err) {
+    			console.error("Error reading pixel data:", err);
+    		}
+
+    		return pixelData;
+    	}
+
     }
 
     Layer.prototype.types = {};
@@ -3432,6 +3783,9 @@
     	 * @param {Object} [options.layers] - Layer configurations mapping layer IDs to Layer instances
     	 * @param {boolean} [options.preserveDrawingBuffer=false] - Whether to preserve WebGL buffers until manually cleared
     	 * @param {number} [options.targetfps=30] - Target frames per second for rendering
+    	 * @param {boolean} [options.srgb=true] - Whether to enable sRGB color space or display-P3 for the output framebuffer
+    	 * @param {boolean} [options.stencil=false] - Whether to enable stencil buffer support
+    	 * @param {boolean} [options.useOffscreenFramebuffer=true] - Whether to use offscreen framebuffer for rendering
     	 * @fires Canvas#update
     	 * @fires Canvas#updateSize
     	 * @fires Canvas#ready
@@ -3444,13 +3798,29 @@
     			overlayElement: null,
     			camera: camera,
     			layers: {},
+    			ready: false,
     			targetfps: 30,
     			fps: 0,
     			timing: [16], //records last 30 frames time from request to next draw, rolling, primed to avoid /0
     			timingLength: 5, //max number of timings.
     			overBudget: 0, //fraction of frames that took too long to render.
+    			srgb: true,     // Enable sRGB color space by default
+    			isSrgbSimplified: true,
+    			stencil: false, // Disable stencil buffer by default
+    			useOffscreenFramebuffer: true, // Use offscreen framebuffer by default
 
-    			signals: { 'update': [], 'updateSize': [], 'ready': [] }
+    			// Framebuffer objects
+    			offscreenFramebuffer: null,
+    			offscreenTexture: null,
+    			offscreenRenderbuffer: null,
+    			_renderingToOffscreen: false, // Traccia se stiamo renderizzando sul framebuffer off-screen
+
+    			signals: { 'update': [], 'updateSize': [], 'ready': [] },
+
+    			// Split viewport properties
+    			splitViewport: false,
+    			leftLayers: [],
+    			rightLayers: []
     		});
     		Object.assign(this, options);
 
@@ -3513,19 +3883,138 @@
     		/* canvas = WebGLDebugUtils.makeLostContextSimulatingCanvas(canvas);
     		canvas.loseContextInNCalls(1000); */
 
+    		const glopt = {
+    			antialias: false,
+    			depth: false,
+    			stencil: this.stencil,
+    			preserveDrawingBuffer: this.preserveDrawingBuffer,
+    			colorSpace: this.srgb ? 'srgb' : 'display-p3'
+    		};
 
-    		let glopt = { antialias: false, depth: false, preserveDrawingBuffer: this.preserveDrawingBuffer };
     		this.gl = this.gl ||
-    			canvas.getContext("webgl2", glopt) ||
-    			canvas.getContext("webgl", glopt) ||
-    			canvas.getContext("experimental-webgl", glopt);
+    			canvas.getContext("webgl2", glopt);
 
     		if (!this.gl)
-    			throw "Could not create a WebGL context";
+    			throw new Error("Could not create a WebGL 2.0 context");
+
+    		// Initialize offscreen framebuffer if enabled
+    		if (this.useOffscreenFramebuffer) {
+    			this.setupOffscreenFramebuffer();
+    		}
 
     		canvas.addEventListener("webglcontextlost", (event) => { console.log("Context lost."); event.preventDefault(); }, false);
     		canvas.addEventListener("webglcontextrestored", () => { this.restoreWebGL(); }, false);
     		document.addEventListener("visibilitychange", (event) => { if (this.gl.isContextLost()) { this.restoreWebGL(); } });
+
+    		this.hasFloatRender = !!this.gl.getExtension('EXT_color_buffer_float');
+    		this.hasLinearFloat = !!this.gl.getExtension('OES_texture_float_linear');
+
+    		console.log('Support for rendering to float textures:', this.hasFloatRender);
+    		console.log('Support for linear filtering on float textures:', this.hasLinearFloat);
+    	}
+
+    	/**
+    	 * Sets up the offscreen framebuffer for rendering
+    	 * @private
+    	 */
+    	setupOffscreenFramebuffer() {
+    		const gl = this.gl;
+
+    		// Create a framebuffer
+    		this.offscreenFramebuffer = gl.createFramebuffer();
+    		gl.bindFramebuffer(gl.FRAMEBUFFER, this.offscreenFramebuffer);
+
+    		// Create a texture to render to
+    		this.offscreenTexture = gl.createTexture();
+    		gl.bindTexture(gl.TEXTURE_2D, this.offscreenTexture);
+
+    		// Define size based on canvas size
+    		const width = this.canvasElement.width;
+    		const height = this.canvasElement.height;
+
+    		// Initialize texture with null (we'll resize it properly in resizeOffscreenFramebuffer)
+    		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+    		// Set texture parameters
+    		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    		// If stencil is enabled, create a renderbuffer for it
+    		if (this.stencil) {
+    			this.offscreenRenderbuffer = gl.createRenderbuffer();
+    			gl.bindRenderbuffer(gl.RENDERBUFFER, this.offscreenRenderbuffer);
+    			gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, width, height);
+    			gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, this.offscreenRenderbuffer);
+    		}
+
+    		// Attach the texture to the framebuffer
+    		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.offscreenTexture, 0);
+
+    		// Check framebuffer status
+    		const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+    		if (status !== gl.FRAMEBUFFER_COMPLETE) {
+    			console.error("Framebuffer not complete. Status:", status);
+    			// Fall back to direct rendering
+    			this.useOffscreenFramebuffer = false;
+    		}
+
+    		// Unbind framebuffer to restore default
+    		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    		gl.bindTexture(gl.TEXTURE_2D, null);
+    		if (this.stencil) {
+    			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+    		}
+    	}
+
+    	/**
+    	 * Resizes the offscreen framebuffer when canvas size changes
+    	 * @private
+    	 */
+    	resizeOffscreenFramebuffer() {
+    		if (!this.useOffscreenFramebuffer || !this.offscreenFramebuffer) return;
+
+    		const gl = this.gl;
+    		const width = this.canvasElement.width;
+    		const height = this.canvasElement.height;
+
+    		// Resize texture
+    		gl.bindTexture(gl.TEXTURE_2D, this.offscreenTexture);
+    		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+    		// Resize renderbuffer if stencil is enabled
+    		if (this.stencil && this.offscreenRenderbuffer) {
+    			gl.bindRenderbuffer(gl.RENDERBUFFER, this.offscreenRenderbuffer);
+    			gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, width, height);
+    		}
+
+    		gl.bindTexture(gl.TEXTURE_2D, null);
+    		if (this.stencil) {
+    			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+    		}
+    	}
+
+    	/**
+    	 * Gets the currently active framebuffer.
+    	 * Use this when you need to save the state before changing framebuffers.
+    	 * @returns {WebGLFramebuffer} The currently active framebuffer
+    	 */
+    	getActiveFramebuffer() {
+    		if (this.useOffscreenFramebuffer && this._renderingToOffscreen) {
+    			return this.offscreenFramebuffer;
+    		}
+    		return null; // Rappresenta il framebuffer di default (schermo)
+    	}
+
+    	/**
+    	 * Sets the active framebuffer.
+    	 * Use this to restore a previously saved state.
+    	 * @param {WebGLFramebuffer} framebuffer - The framebuffer to activate
+    	 */
+    	setActiveFramebuffer(framebuffer) {
+    		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
+    		this._renderingToOffscreen = (framebuffer === this.offscreenFramebuffer);
     	}
 
     	/**
@@ -3571,16 +4060,34 @@
     	}
 
     	/**
-     * Restores WebGL context after loss.
-     * Reinitializes shaders and textures for all layers.
-     * @private
-     */
+    	 * Restores WebGL context after loss.
+    	 * Reinitializes shaders and textures for all layers.
+    	 * @private
+    	 */
     	restoreWebGL() {
-    		let glopt = { antialias: false, depth: false, preserveDrawingBuffer: this.preserveDrawingBuffer };
-    		this.gl = this.gl ||
-    			this.canvasElement.getContext("webgl2", glopt) ||
-    			this.canvasElement.getContext("webgl", glopt) ||
-    			this.canvasElement.getContext("experimental-webgl", glopt);
+    		let glopt = {
+    			antialias: false,
+    			depth: false,
+    			stencil: this.stencil,
+    			preserveDrawingBuffer: this.preserveDrawingBuffer,
+    			colorSpace: this.srgb ? 'srgb' : 'display-p3'
+    		};
+
+    		this.gl = this.gl || this.canvasElement.getContext("webgl2", glopt);
+
+    		// Recreate offscreen framebuffer
+    		if (this.useOffscreenFramebuffer) {
+    			if (this.offscreenFramebuffer) {
+    				this.gl.deleteFramebuffer(this.offscreenFramebuffer);
+    			}
+    			if (this.offscreenTexture) {
+    				this.gl.deleteTexture(this.offscreenTexture);
+    			}
+    			if (this.offscreenRenderbuffer) {
+    				this.gl.deleteRenderbuffer(this.offscreenRenderbuffer);
+    			}
+    			this.setupOffscreenFramebuffer();
+    		}
 
     		for (let layer of Object.values(this.layers)) {
     			layer.gl = this.gl;
@@ -3606,8 +4113,10 @@
 
     		layer.id = id;
     		layer.addEvent('ready', () => {
-    			if (Object.values(this.layers).every(l => l.status == 'ready'))
+    			if (Object.values(this.layers).every(l => l.status == 'ready')) {
+    				this.ready = true;
     				this.emit('ready');
+    			}
     			this.prefetch();
     		});
     		layer.addEvent('update', () => { this.emit('update'); });
@@ -3615,19 +4124,20 @@
     		layer.gl = this.gl;
     		layer.canvas = this;
     		layer.overlayElement = this.overlayElement;
+    		layer.isSrgbSimplified = this.isSrgbSimplified;
     		this.layers[id] = layer;
     		this.prefetch();
     	}
 
     	/**
-     * Removes a layer from the canvas.
-     * @param {Layer} layer - Layer instance to remove
-     * @example
-     * const layer = new Layer(options);
-     * canvas.addLayer('map', layer);
-     * // ... later ...
-     * canvas.removeLayer(layer);
-     */
+    	 * Removes a layer from the canvas.
+    	 * @param {Layer} layer - Layer instance to remove
+    	 * @example
+    	 * const layer = new Layer(options);
+    	 * canvas.addLayer('map', layer);
+    	 * // ... later ...
+    	 * canvas.removeLayer(layer);
+    	 */
     	removeLayer(layer) {
     		layer.clear(); //order is important.
 
@@ -3636,30 +4146,57 @@
     		this.prefetch();
     	}
 
-    	/**
-    	 * Updates canvas size and camera bounds based on layers.
-    	 * @fires Canvas#updateSize
-    	 * @private
-    	 */
     	updateSize() {
     		const discardHidden = false;
     		let sceneBBox = Layer.computeLayersBBox(this.layers, discardHidden);
     		let minScale = Layer.computeLayersMinScale(this.layers, discardHidden);
 
-    		if (sceneBBox != null && this.camera.viewport)
+    		// Only update camera bounds if we have a valid bounding box and a viewport
+    		if (sceneBBox && this.camera.viewport && !sceneBBox.isEmpty()) {
     			this.camera.updateBounds(sceneBBox, minScale);
+    		}
+
+    		// Resize offscreen framebuffer when canvas size changes
+    		if (this.useOffscreenFramebuffer) {
+    			this.resizeOffscreenFramebuffer();
+    		}
+
     		this.emit('updateSize');
     	}
 
+
     	/**
-     * Renders a frame at the specified time.
-     * @param {number} time - Current time in milliseconds
-     * @returns {boolean} True if all animations are complete
-     * @private
-     */
+    	 * Enables or disables split viewport mode and sets which layers appear on each side
+    	 * @param {boolean} enabled - Whether split viewport mode is enabled
+    	 * @param {string[]} leftLayerIds - Array of layer IDs to show on left side
+    	 * @param {string[]} rightLayerIds - Array of layer IDs to show on right side
+    	 * @fires Canvas#update
+    	 */
+    	setSplitViewport(enabled, leftLayerIds = [], rightLayerIds = []) {
+    		this.splitViewport = enabled;
+    		this.leftLayers = leftLayerIds;
+    		this.rightLayers = rightLayerIds;
+    		this.emit('update');
+    	}
+
+    	/**
+    	 * Renders a frame at the specified time.
+    	 * @param {number} time - Current time in milliseconds
+    	 * @returns {boolean} True if all animations are complete
+    	 * @private
+    	 */
     	draw(time) {
     		let gl = this.gl;
     		let view = this.camera.glViewport();
+
+    		// Bind offscreen framebuffer if enabled
+    		if (this.useOffscreenFramebuffer) {
+    			gl.bindFramebuffer(gl.FRAMEBUFFER, this.offscreenFramebuffer);
+    			this._renderingToOffscreen = true;
+    		} else {
+    			this._renderingToOffscreen = false;
+    		}
+
     		gl.viewport(view.x, view.y, view.dx, view.dy);
 
     		var b = [0, 0, 0, 0];
@@ -3669,30 +4206,236 @@
     		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     		gl.enable(gl.BLEND);
 
-    		//TODO: getCurren shoudl redurn {position, done}
     		let pos = this.camera.getGlCurrentTransform(time);
-    		//todo we could actually prefetch toward the future a little bit
     		this.prefetch(pos);
 
     		//pos layers using zindex.
     		let ordered = Object.values(this.layers).sort((a, b) => a.zindex - b.zindex);
 
-    		//NOTICE: camera(pos) must be relative to the WHOLE canvas
     		let done = true;
-    		for (let layer of ordered) {
-    			if (layer.visible)
-    				done = layer.draw(pos, view) && done;
+
+    		if (this.splitViewport) {
+    			// For split viewport mode, we need to enable scissor test to split the rendering area
+    			gl.enable(gl.SCISSOR_TEST);
+
+    			const halfWidth = Math.floor(view.dx / 2);
+
+    			// Draw left side (apply scissor to left half)
+    			gl.scissor(view.x, view.y, halfWidth, view.dy);
+    			for (let layer of ordered) {
+    				if (this.leftLayers.includes(layer.id)) {
+    					// Pass the full viewport but scissor will restrict drawing
+    					done = layer.draw(pos, view) && done;
+    				}
+    			}
+
+    			// Draw right side (apply scissor to right half)
+    			gl.scissor(view.x + halfWidth, view.y, view.dx - halfWidth, view.dy);
+    			for (let layer of ordered) {
+    				if (this.rightLayers.includes(layer.id)) {
+    					// Pass the full viewport but scissor will restrict drawing
+    					done = layer.draw(pos, view) && done;
+    				}
+    			}
+
+    			// Disable scissor when done
+    			gl.disable(gl.SCISSOR_TEST);
+    		} else {
+    			// Standard rendering for normal mode
+    			for (let layer of ordered) {
+    				if (layer.visible)
+    					done = layer.draw(pos, view) && done;
+    			}
     		}
 
-    		//TODO not really an elegant solution to tell if we have reached the target, the check should be in getCurrentTransform.
-    		return done && pos.t >= this.camera.target.t;
+    		// Copy offscreen framebuffer to the screen if enabled
+    		if (this.useOffscreenFramebuffer) {
+    			// Switch to default framebuffer (the screen)
+    			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    			this._renderingToOffscreen = false;
+
+    			// Draw the offscreen texture to the screen
+    			this.drawOffscreenToCanvas();
+    		}
+
+    		// Use the isComplete flag from the transform instead of direct time comparison
+    		return done && pos.isComplete;
     	}
 
     	/**
-     * Schedules tile downloads based on current view.
-     * @param {Object} [transform] - Optional transform override, defaults to current camera transform
-     * @private
-     */
+    	 * Draws the offscreen framebuffer texture to the canvas
+    	 * @private
+    	 */
+    	drawOffscreenToCanvas() {
+    		const gl = this.gl;
+    		const view = this.camera.glViewport();
+
+    		// Set viewport for the final display
+    		gl.viewport(view.x, view.y, view.dx, view.dy);
+
+    		// If we don't already have a fullscreen quad program, create one
+    		if (!this._fullscreenQuadProgram) {
+    			// Vertex shader
+    			const vsSource = `#version 300 es
+				in vec4 aPosition;
+				in vec2 aTexCoord;
+				out vec2 vTexCoord;
+				
+				void main() {
+					gl_Position = aPosition;
+					vTexCoord = aTexCoord;
+				}
+			`;
+
+    			// Fragment shader
+    			let fsSource = `#version 300 es
+			precision highp float;
+			in vec2 vTexCoord;
+			uniform sampler2D uTexture;
+			out vec4 fragColor;`;
+
+    			if (this.isSrgbSimplified) {
+    				fsSource += `
+			vec4 linear2srgb(vec4 linear) {
+				return vec4(pow(linear.rgb, vec3(1.0/2.2)), linear.a);
+			}`;
+    			} else {
+    				fsSource += `
+			vec4 linear2srgb(vec4 linear) {
+				bvec3 cutoff = lessThan(linear.rgb, vec3(0.0031308));
+				vec3 higher = vec3(1.055) * pow(linear.rgb, vec3(1.0/2.4)) - vec3(0.055);
+				vec3 lower = linear.rgb * vec3(12.92);
+				return vec4(mix(higher, lower, cutoff), linear.a);
+			}`;
+    			}
+
+    			fsSource += `
+		void main() {
+			fragColor = texture(uTexture, vTexCoord);
+			fragColor = linear2srgb(fragColor);
+			fragColor = clamp(fragColor, 0.0, 1.0);
+		}`;
+
+    			// Create shader program
+    			const vertexShader = this._createShader(gl, gl.VERTEX_SHADER, vsSource);
+    			const fragmentShader = this._createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+    			this._fullscreenQuadProgram = this._createProgram(gl, vertexShader, fragmentShader);
+
+    			// Get attribute and uniform locations
+    			this._positionLocation = gl.getAttribLocation(this._fullscreenQuadProgram, 'aPosition');
+    			this._texCoordLocation = gl.getAttribLocation(this._fullscreenQuadProgram, 'aTexCoord');
+    			this._textureLocation = gl.getUniformLocation(this._fullscreenQuadProgram, 'uTexture');
+
+    			// Create buffers for fullscreen quad
+    			this._quadPositionBuffer = gl.createBuffer();
+    			gl.bindBuffer(gl.ARRAY_BUFFER, this._quadPositionBuffer);
+    			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    				-1.0, 1.0, 0.0,
+    				-1.0, -1.0, 0.0,
+    				1.0, 1.0, 0.0,
+    				1.0, -1.0, 0.0
+    			]), gl.STATIC_DRAW);
+
+    			this._quadTexCoordBuffer = gl.createBuffer();
+    			gl.bindBuffer(gl.ARRAY_BUFFER, this._quadTexCoordBuffer);
+    			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    				0.0, 1.0,
+    				0.0, 0.0,
+    				1.0, 1.0,
+    				1.0, 0.0
+    			]), gl.STATIC_DRAW);
+
+    			// Create vertex array object (VAO)
+    			this._quadVAO = gl.createVertexArray();
+    			gl.bindVertexArray(this._quadVAO);
+
+    			// Set up position attribute
+    			gl.bindBuffer(gl.ARRAY_BUFFER, this._quadPositionBuffer);
+    			gl.enableVertexAttribArray(this._positionLocation);
+    			gl.vertexAttribPointer(this._positionLocation, 3, gl.FLOAT, false, 0, 0);
+
+    			// Set up texcoord attribute
+    			gl.bindBuffer(gl.ARRAY_BUFFER, this._quadTexCoordBuffer);
+    			gl.enableVertexAttribArray(this._texCoordLocation);
+    			gl.vertexAttribPointer(this._texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+
+    			// Unbind VAO
+    			gl.bindVertexArray(null);
+    		}
+
+    		// Set clear color and clear the screen
+    		gl.clearColor(0, 0, 0, 0);
+    		gl.clear(gl.COLOR_BUFFER_BIT);
+
+    		// Use the fullscreen quad program
+    		gl.useProgram(this._fullscreenQuadProgram);
+
+    		// Bind the VAO
+    		gl.bindVertexArray(this._quadVAO);
+
+    		// Bind the offscreen texture
+    		gl.activeTexture(gl.TEXTURE0);
+    		gl.bindTexture(gl.TEXTURE_2D, this.offscreenTexture);
+    		gl.uniform1i(this._textureLocation, 0);
+
+    		// Draw the quad
+    		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+    		// Unbind VAO and texture
+    		gl.bindVertexArray(null);
+    		gl.bindTexture(gl.TEXTURE_2D, null);
+    	}
+
+    	/**
+    	 * Helper method to create a shader
+    	 * @param {WebGL2RenderingContext} gl - WebGL context
+    	 * @param {number} type - Shader type (gl.VERTEX_SHADER or gl.FRAGMENT_SHADER)
+    	 * @param {string} source - Shader source code
+    	 * @returns {WebGLShader} Compiled shader
+    	 * @private
+    	 */
+    	_createShader(gl, type, source) {
+    		const shader = gl.createShader(type);
+    		gl.shaderSource(shader, source);
+    		gl.compileShader(shader);
+
+    		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    			console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
+    			gl.deleteShader(shader);
+    			return null;
+    		}
+
+    		return shader;
+    	}
+
+    	/**
+    	 * Helper method to create a shader program
+    	 * @param {WebGL2RenderingContext} gl - WebGL context
+    	 * @param {WebGLShader} vertexShader - Vertex shader
+    	 * @param {WebGLShader} fragmentShader - Fragment shader
+    	 * @returns {WebGLProgram} Linked shader program
+    	 * @private
+    	 */
+    	_createProgram(gl, vertexShader, fragmentShader) {
+    		const program = gl.createProgram();
+    		gl.attachShader(program, vertexShader);
+    		gl.attachShader(program, fragmentShader);
+    		gl.linkProgram(program);
+
+    		if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    			console.error('Program linking error:', gl.getProgramInfoLog(program));
+    			gl.deleteProgram(program);
+    			return null;
+    		}
+
+    		return program;
+    	}
+
+    	/**
+    	 * Schedules tile downloads based on current view.
+    	 * @param {Object} [transform] - Optional transform override, defaults to current camera transform
+    	 * @private
+    	 */
     	prefetch(transform) {
     		if (!transform)
     			transform = this.camera.getGlCurrentTransform(performance.now());
@@ -3703,6 +4446,57 @@
     			if (layer.visible && layer.status == 'ready') {
     				layer.prefetch(transform, this.camera.glViewport());
     			}
+    		}
+    	}
+
+    	/**
+    	 * Cleanup resources when canvas is no longer needed
+    	 */
+    	dispose() {
+    		const gl = this.gl;
+
+    		// Clean up offscreen framebuffer resources
+    		if (this.useOffscreenFramebuffer) {
+    			if (this.offscreenFramebuffer) {
+    				gl.deleteFramebuffer(this.offscreenFramebuffer);
+    				this.offscreenFramebuffer = null;
+    			}
+
+    			if (this.offscreenTexture) {
+    				gl.deleteTexture(this.offscreenTexture);
+    				this.offscreenTexture = null;
+    			}
+
+    			if (this.offscreenRenderbuffer) {
+    				gl.deleteRenderbuffer(this.offscreenRenderbuffer);
+    				this.offscreenRenderbuffer = null;
+    			}
+    		}
+
+    		// Clean up fullscreen quad resources
+    		if (this._fullscreenQuadProgram) {
+    			gl.deleteProgram(this._fullscreenQuadProgram);
+    			this._fullscreenQuadProgram = null;
+    		}
+
+    		if (this._quadVAO) {
+    			gl.deleteVertexArray(this._quadVAO);
+    			this._quadVAO = null;
+    		}
+
+    		if (this._quadPositionBuffer) {
+    			gl.deleteBuffer(this._quadPositionBuffer);
+    			this._quadPositionBuffer = null;
+    		}
+
+    		if (this._quadTexCoordBuffer) {
+    			gl.deleteBuffer(this._quadTexCoordBuffer);
+    			this._quadTexCoordBuffer = null;
+    		}
+
+    		// Clean up layers
+    		for (const id in this.layers) {
+    			this.removeLayer(this.layers[id]);
     		}
     	}
     }
@@ -3723,6 +4517,347 @@
      */
 
     addSignals(Canvas, 'update', 'updateSize', 'ready');
+
+    /**
+     * Defines a rectangular viewing region inside a canvas area.
+     * @typedef {Object} Viewport
+     * @property {number} x - X-coordinate of the lower-left corner
+     * @property {number} y - Y-coordinate of the lower-left corner
+     * @property {number} dx - Width of the viewport
+     * @property {number} dy - Height of the viewport
+     * @property {number} w - Total canvas width
+     * @property {number} h - Total canvas height
+     */
+
+    /**
+     * Camera class that manages viewport parameters and camera transformations.
+     * Acts as a container for parameters needed to define the viewport and camera position,
+     * supporting smooth animations between positions using source and target transforms.
+     * 
+     * The camera maintains two Transform objects:
+     * - source: represents current position
+     * - target: represents destination position
+     * 
+     * Animation between positions is handled automatically by the OpenLIME system
+     * unless manually interrupted by user input.
+     */
+    class Camera {
+    	/**
+    	 * Creates a new Camera instance.
+    	 * @param {Object} [options] - Configuration options
+    	 * @param {boolean} [options.bounded=true] - Whether to limit camera translation to scene boundaries
+    	 * @param {number} [options.maxFixedZoom=2] - Maximum allowed pixel size
+    	 * @param {number} [options.minScreenFraction=1] - Minimum portion of screen to show when zoomed in
+    	 * @param {Transform} [options.target] - Initial target transform
+    	 * @fires Camera#update
+    	 */
+    	constructor(options) {
+    		Object.assign(this, {
+    			viewport: null,
+    			bounded: true,
+    			minScreenFraction: 1,
+    			maxFixedZoom: 2,
+    			maxZoom: 2,
+    			minZoom: 1,
+    			boundingBox: new BoundingBox,
+    		});
+    		Object.assign(this, options);
+    		this.target = new Transform(this.target);
+    		this.source = this.target.copy();
+    		this.easing = 'linear';
+    	}
+
+    	/**
+    	 * Creates a deep copy of the camera instance.
+    	 * @returns {Camera} A new Camera instance with copied properties
+    	 */
+    	copy() {
+    		let camera = new Camera();
+    		Object.assign(camera, this);
+    		return camera;
+    	}
+
+    	/**
+    	* Updates the viewport while maintaining the camera position as close as possible to the previous one.
+    	* @param {Viewport} view - The new viewport in CSS coordinates
+    	*/
+    	setViewport(view) {
+    		if (this.viewport) {
+    			let rz = Math.sqrt((view.w / this.viewport.w) * (view.h / this.viewport.h));
+    			this.viewport = view;
+    			const { x, y, z, a } = this.target;
+    			this.setPosition(0, x, y, z * rz, a);
+    		} else {
+    			this.viewport = view;
+    		}
+    	}
+
+    	/**
+    	 * Returns the current viewport in device coordinates (accounting for device pixel ratio).
+    	 * @returns {Viewport} The current viewport scaled for device pixels
+    	 */
+    	glViewport() {
+    		let d = window.devicePixelRatio;
+    		let viewport = {};
+    		for (let i in this.viewport)
+    			viewport[i] = this.viewport[i] * d;
+    		return viewport;
+    	}
+
+    	/*
+    	 * Converts canvas coordinates to scene coordinates using the specified transform.
+    	 * @param {number} x - X coordinate relative to canvas
+    	 * @param {number} y - Y coordinate relative to canvas
+    	 * @param {Transform} transform - Transform to use for conversion
+    	 * @returns {{x: number, y: number}} Coordinates in scene space relative to viewport center
+    	 */
+    	// mapToScene(x, y, transform) {
+    	// 	//compute coords relative to the center of the viewport.
+    	// 	x -= this.viewport.w / 2;
+    	// 	y -= this.viewport.h / 2;
+    	// 	x -= transform.x;
+    	// 	y -= transform.y;
+    	// 	x /= transform.z;
+    	// 	y /= transform.z;
+    	// 	let r = Transform.rotate(x, y, -transform.a);
+    	// 	return { x: r.x, y: r.y };
+    	// }
+
+    	/*
+    	 * Converts scene coordinates to canvas coordinates using the specified transform.
+    	 * @param {number} x - X coordinate in scene space
+    	 * @param {number} y - Y coordinate in scene space
+    	 * @param {Transform} transform - Transform to use for conversion
+    	 * @returns {{x: number, y: number}} Coordinates in canvas space
+    	 */
+    	// sceneToCanvas(x, y, transform) {
+    	// 	let r = Transform.rotate(x, y, transform.a);
+    	// 	x = r.x * transform.z + transform.x - this.viewport.x + this.viewport.w / 2;
+    	// 	y = r.y * transform.z - transform.y + this.viewport.y + this.viewport.h / 2;
+    	// 	return { x: x, y: y };
+    	// }
+
+    	/**
+    	 * Sets the camera target parameters for a new position.
+    	 * @param {number} dt - Animation duration in milliseconds
+    	 * @param {number} x - X component of translation
+    	 * @param {number} y - Y component of translation
+    	 * @param {number} z - Zoom factor
+    	 * @param {number} a - Rotation angle in degrees
+    	 * @param {string} [easing] - Easing function name for animation
+    	 * @fires Camera#update
+    	 */
+    	setPosition(dt, x, y, z, a, easing) {
+    		/**
+    		* The event is fired when the camera target is changed.
+    		* @event Camera#update
+    		*/
+
+    		// Discard events due to cursor outside window
+    		//if (Math.abs(x) > 64000 || Math.abs(y) > 64000) return;
+    		this.easing = easing || this.easing;
+
+    		if (this.bounded) {
+    			const sw = this.viewport.dx;
+    			const sh = this.viewport.dy;
+
+    			//
+    			let xform = new Transform({ x: x, y: y, z: z, a: a, t: 0 });
+    			let tbox = xform.transformBox(this.boundingBox);
+    			const bw = tbox.width();
+    			const bh = tbox.height();
+
+    			// Screen space offset between image boundary and screen boundary
+    			// Do not let transform offet go beyond this limit.
+    			// if (scaled-image-size < screen) it remains fully contained
+    			// else the scaled-image boundary closest to the screen cannot enter the screen.
+    			const dx = Math.abs(bw - sw) / 2;// + this.boundingBox.center().x- tbox.center().x;
+    			x = Math.min(Math.max(-dx, x), dx);
+
+    			const dy = Math.abs(bh - sh) / 2;// + this.boundingBox.center().y - tbox.center().y;
+    			y = Math.min(Math.max(-dy, y), dy);
+    		}
+
+    		let now = performance.now();
+    		this.source = this.getCurrentTransform(now);
+    		//the angle needs to be interpolated in the shortest direction.
+    		//target it is kept between 0 and +360, source is kept relative.
+    		a = Transform.normalizeAngle(a);
+    		this.source.a = Transform.normalizeAngle(this.source.a);
+    		if (a - this.source.a > 180) this.source.a += 360;
+    		if (this.source.a - a > 180) this.source.a -= 360;
+    		Object.assign(this.target, { x: x, y: y, z: z, a: a, t: now + dt });
+    		console.assert(!isNaN(this.target.x));
+    		this.emit('update');
+    	}
+
+    	/**
+    	 * Pans the camera by a specified amount in canvas coordinates.
+    	 * @param {number} dt - Animation duration in milliseconds
+    	 * @param {number} dx - Horizontal displacement
+    	 * @param {number} dy - Vertical displacement
+    	 */
+    	pan(dt, dx, dy) {
+    		let now = performance.now();
+    		let m = this.getCurrentTransform(now);
+    		m.x += dx;
+    		m.y += dy;
+    		this.setPosition(dt, m.x, m.y, m.z, m.a);
+    	}
+
+    	/**
+    	 * Zooms the camera to a specific point in canvas coordinates.
+    	 * @param {number} dt - Animation duration in milliseconds
+    	 * @param {number} z - Target zoom level
+    	 * @param {number} [x=0] - X coordinate to zoom towards
+    	 * @param {number} [y=0] - Y coordinate to zoom towards
+    	 */
+    	zoom(dt, z, x, y) {
+    		if (!x) x = 0;
+    		if (!y) y = 0;
+
+    		let now = performance.now();
+    		let m = this.getCurrentTransform(now);
+
+    		if (this.bounded) {
+    			z = Math.min(Math.max(z, this.minZoom), this.maxZoom);
+    		}
+
+    		//x, an y should be the center of the zoom.
+    		m.x += (m.x + x) * (m.z - z) / m.z;
+    		m.y += (m.y + y) * (m.z - z) / m.z;
+
+    		this.setPosition(dt, m.x, m.y, z, m.a);
+    	}
+
+    	/**
+    	 * Rotates the camera around its z-axis.
+    	 * @param {number} dt - Animation duration in milliseconds
+    	 * @param {number} a - Rotation angle in degrees
+    	 */
+    	rotate(dt, a) {
+
+    		let now = performance.now();
+    		let m = this.getCurrentTransform(now);
+
+    		this.setPosition(dt, m.x, m.y, m.z, this.target.a + a);
+    	}
+
+    	/**
+    	 * Applies a relative zoom change at a specific point.
+    	 * @param {number} dt - Animation duration in milliseconds
+    	 * @param {number} dz - Relative zoom change factor
+    	 * @param {number} [x=0] - X coordinate to zoom around
+    	 * @param {number} [y=0] - Y coordinate to zoom around
+    	 */
+    	deltaZoom(dt, dz, x = 0, y = 0) {
+
+    		let now = performance.now();
+    		let m = this.getCurrentTransform(now);
+
+    		//rapid firing wheel event need to compound.
+    		//but the x, y in input are relative to the current transform.
+    		dz *= this.target.z / m.z;
+
+    		if (this.bounded) {
+    			if (m.z * dz < this.minZoom) dz = this.minZoom / m.z;
+    			if (m.z * dz > this.maxZoom) dz = this.maxZoom / m.z;
+    		}
+
+    		//transform is x*z + dx = X , there x is positrion in scene, X on screen
+    		//we want x*z*dz + dx1 = X (stay put, we need to find dx1.
+    		let r = Transform.rotate(x, y, m.a);
+    		m.x += r.x * m.z * (1 - dz);
+    		m.y += r.y * m.z * (1 - dz);
+
+    		this.setPosition(dt, m.x, m.y, m.z * dz, m.a);
+    	}
+
+    	/**
+    	 * Gets the camera transform at a specific time.
+    	 * @param {number} time - Current time in milliseconds (from performance.now())
+    	 * @returns {Transform} The interpolated transform at the specified time with isComplete flag
+    	 */
+    	getCurrentTransform(time) {
+    		if (time > this.target.t) this.easing = 'linear';
+    		return Transform.interpolate(this.source, this.target, time, this.easing);
+    	}
+
+    	/**
+    	* Checks if the camera animation has completed.
+    	* @param {Transform} currentTransform - The current transform (optional, will be calculated if not provided)
+    	* @returns {boolean} True if the camera has reached its target position
+    	*/
+    	hasReachedTarget(currentTransform) {
+    		if (!currentTransform) {
+    			currentTransform = this.getCurrentTransform(performance.now());
+    		}
+    		return currentTransform.isComplete;
+    	}
+
+    	/**
+    	 * Gets the camera transform at a specific time in device coordinates.
+    	 * @param {number} time - Current time in milliseconds (from performance.now())
+    	 * @returns {Transform} The interpolated transform scaled for device pixels
+    	 */
+    	getGlCurrentTransform(time) {
+    		const pos = this.getCurrentTransform(time);
+    		pos.x *= window.devicePixelRatio;
+    		pos.y *= window.devicePixelRatio;
+    		pos.z *= window.devicePixelRatio;
+    		return pos;
+    	}
+
+    	/**
+    	 * Adjusts the camera to frame a specified bounding box.
+    	 * @param {BoundingBox} box - The box to frame in canvas coordinates
+    	 * @param {number} [dt=0] - Animation duration in milliseconds
+    	 */
+    	fit(box, dt) {
+    		if (box.isEmpty()) return;
+    		if (!dt) dt = 0;
+
+    		//find if we align the topbottom borders or the leftright border.
+    		let w = this.viewport.dx;
+    		let h = this.viewport.dy;
+
+    		let bw = box.width();
+    		let bh = box.height();
+    		let c = box.center();
+    		let z = Math.min(w / bw, h / bh);
+
+    		this.setPosition(dt, -c.x * z, -c.y * z, z, 0);
+    	}
+
+    	/**
+    	 * Resets the camera to show the entire scene.
+    	 * @param {number} dt - Animation duration in milliseconds
+    	 */
+    	fitCameraBox(dt) {
+    		this.fit(this.boundingBox, dt);
+    	}
+
+    	/**
+    	 * Updates the camera's boundary constraints and zoom limits.
+    	 * @private
+    	 * @param {BoundingBox} box - New bounding box for constraints
+    	 * @param {number} minScale - Minimum scale factor
+    	 */
+    	updateBounds(box, minScale) {
+    		this.boundingBox = box;
+    		const w = this.viewport.dx;
+    		const h = this.viewport.dy;
+
+    		let bw = this.boundingBox.width();
+    		let bh = this.boundingBox.height();
+
+    		this.minZoom = Math.min(w / bw, h / bh) * this.minScreenFraction;
+    		this.maxZoom = minScale > 0 ? this.maxFixedZoom / minScale : this.maxFixedZoom;
+    		this.maxZoom = Math.max(this.minZoom, this.maxZoom);
+    	}
+    }
+
+    addSignals(Camera, 'update');
 
     /**
      * Represents a cubic spline interpolation for smooth color transitions.
@@ -4304,8 +5439,10 @@
     	constructor(options) {
 
     		Object.assign(this, {
-    			format: 'vec3',
+    			format: 'vec3'
     		});
+
+    		this._texture = null;
 
     		Object.assign(this, options);
     	}
@@ -4332,12 +5469,12 @@
     			options.headers = { range: `bytes=${tile.start}-${tile.end}`, 'Accept-Encoding': 'indentity', mode: cors ? 'cors' : 'same-origin' };
     			let response = await fetch(tile.url, options);
     			if (!response.ok) {
-    				callback("Failed loading " + tile.url + ": " + response.statusText);
+    				console.error(`Failed to load ${tile.url}: ${response.status} ${response.statusText}`);
     				return;
     			}
 
     			if (response.status != 206)
-    				throw "The server doesn't support partial content requests (206).";
+    				throw new Error("The server doesn't support partial content requests (206).");
 
     			let blob = await response.blob();
     			img = await this.blobToImage(blob, gl);
@@ -4350,9 +5487,11 @@
     				img.onload = () => { resolve(); };
     			});
     		}
-    		let tex = this.loadTexture(gl, img);
+    		const tex = this.loadTexture(gl, img);
     		//TODO 3 is not accurate for type of image, when changing from rgb to grayscale, fix this value.
-    		let size = img.width * img.height * 3;
+    		let nchannels = 3; // Channel is important only for tarzoom data. Tarzoom data inside format is JPG = RGB = 3 channels
+    		const size = img.width * img.height * nchannels;
+    		this.emit('loaded');
     		return [tex, size];
     	}
 
@@ -4400,13 +5539,13 @@
     	 * @property {number} height - Height of the loaded image (set after loading)
     	 */
     	loadTexture(gl, img) {
-    		this.width = img.width;  //this will be useful for layout image.
+    		this.width = img.width;
     		this.height = img.height;
-
     		var tex = gl.createTexture();
     		gl.bindTexture(gl.TEXTURE_2D, tex);
-
     		let glFormat = gl.RGBA;
+    		let internalFormat = gl.RGBA;
+
     		switch (this.format) {
     			case 'vec3':
     				glFormat = gl.RGB;
@@ -4415,13 +5554,22 @@
     				glFormat = gl.RGBA;
     				break;
     			case 'float':
-    				glFormat = gl.LUMINANCE;
+    				// Use RED instead of LUMINANCE for WebGL2
+    				glFormat = gl instanceof WebGL2RenderingContext ? gl.RED : gl.LUMINANCE;
     				break;
     		}
 
-    		gl.texImage2D(gl.TEXTURE_2D, 0, glFormat, glFormat, gl.UNSIGNED_BYTE, img);
-    		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    		// For WebGL2, use proper internal format for linear textures
+    		if (this.format === 'float') {
+    			// For float textures in WebGL2, use R8 as internal format
+    			internalFormat = gl.R8;
+    		} else {
+    			internalFormat = glFormat === gl.RGB ? gl.RGB : gl.RGBA;
+    		}
+    		gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, glFormat, gl.UNSIGNED_BYTE, img);
 
+
+    		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     		//build mipmap for large images.
     		if (this.width > 1024 || this.height > 1024) {
     			gl.generateMipmap(gl.TEXTURE_2D);
@@ -4429,12 +5577,36 @@
     		} else {
     			gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     		}
-
     		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    		this._texture = tex;
     		return tex;
     	}
     }
+
+    /**
+     * Example usage of Raster:
+     * ```javascript
+     * // Create a Raster for RGBA images
+     * const raster = new Raster({ format: 'vec4' });
+     * 
+     * // Load an image tile
+     * const tile = {
+     *     url: 'https://example.com/image.jpg',
+     *     start: 0,
+     *     end: 1024  // Optional: for partial loading
+     * };
+     * 
+     * // Get WebGL context and load the image
+     * const gl = canvas.getContext('webgl');
+     * const [texture, size] = await raster.loadImage(tile, gl);
+     * 
+     * // Texture is now ready for use in WebGL
+     * gl.bindTexture(gl.TEXTURE_2D, texture);
+     * ```
+     */
+
+    addSignals(Raster, 'loaded');
 
     /**
     * @typedef {Object} Shader~Sampler
@@ -4455,15 +5627,14 @@
 
     /**
      * Shader module provides WebGL shader program management for OpenLIME.
-     * Supports both WebGL 1.0 and 2.0/3.0 GLSL specifications with automatic version detection.
+     * Supports WebGL 2.0/3.0 GLSL specifications.
      * 
      * Shader class manages WebGL shader programs.
      * Features:
-     * - GLSL/ES 2.0 and 3.0 support
+     * - GLSL/ES 3.0 support
      * - Automatic uniform management
      * - Multiple shader modes
      * - Filter pipeline
-     * - Automatic version selection
      */
     class Shader {
     	/**
@@ -4473,13 +5644,17 @@
     	 * @param {Object.<string,Object>} [options.uniforms={}] - Shader uniform variables
     	 * @param {string} [options.label=null] - Display label for the shader
     	 * @param {Array<string>} [options.modes=[]] - Available shader modes
-    	 * @param {number} [options.version=100] - GLSL version (100 for WebGL1, 300 for WebGL2)
     	 * @param {boolean} [options.debug=false] - Enable debug output
+    	 * @param {boolean} [options.isLinear=false] - Whether the shader works in linear color space
+    	 * @param {boolean} [options.isSrgbSimplified=true] - Use simplified gamma 2.2 conversion instead of IEC standard
     	 * @fires Shader#update
     	 */
     	constructor(options) {
+    		options = Object.assign({
+    			isLinear: false,
+    			isSrgbSimplified: true
+    		}, options);
     		Object.assign(this, {
-    			version: 100,   //check for webglversion. 
     			debug: false,
     			samplers: [],
     			uniforms: {},
@@ -4488,6 +5663,7 @@
     			modes: [],
     			mode: null, // The current mode
     			needsUpdate: true,
+    			autoSamplerDeclaration: true,
     			tileSize: [0, 0]
     		});
     		addSignals(Shader, 'update');
@@ -4545,7 +5721,7 @@
 
     	/**
     	 * Restores WebGL state after context loss.
-    	 * @param {WebGLRenderingContext} gl - WebGL context
+    	 * @param {WebGL2RenderingContext} gl - WebGL2 context
     	 * @private
     	 */
     	restoreWebGL(gl) {
@@ -4554,7 +5730,8 @@
 
     	/**
     	 * Sets tile dimensions for shader calculations.
-    	 * @param {number[]} size - [width, height] of tile
+    	 * @param {number[]} size - [width, height] of tile in pixels
+    	 * @fires Shader#update
     	 */
     	setTileSize(sz) {
     		this.tileSize = sz;
@@ -4594,14 +5771,109 @@
     		this.emit('update');
     	}
 
-    	/** @ignore */
+    	/**
+    	 * Builds complete fragment shader source with all necessary components.
+    	 * Includes GLSL version, precision statements, conversion functions,
+    	 * and incorporates filters.
+    	 * @param {WebGL2RenderingContext} gl - WebGL2 context
+    	 * @returns {string} Complete fragment shader source code
+    	 * @private
+    	 */
     	completeFragShaderSrc(gl) {
-    		let gl2 = !(gl instanceof WebGLRenderingContext);
-
-    		let src = `${gl2 ? '#version 300 es' : ''}\n`;
+    		let src = '#version 300 es\n';
     		src += `precision highp float;\n`;
     		src += `precision highp int;\n`;
     		src += `const vec2 tileSize = vec2(${this.tileSize[0]}.0, ${this.tileSize[1]}.0);\n`;
+
+    		// Choose between simplified (gamma 2.2) or standard IEC 61966-2-1 conversion
+    		if (this.isSrgbSimplified) {
+    			src += `
+// Simplified sRGB to linear conversion using gamma 2.2
+// Convert from sRGB to linear RGB
+vec3 srgb2linear(vec3 srgb) {
+    return pow(srgb, vec3(2.2));
+}
+
+// Convert from sRGB to linear RGB (vec4 version - preserves alpha)
+vec4 srgb2linear(vec4 srgb) {
+    return vec4(srgb2linear(srgb.rgb), srgb.a);
+}
+
+// Convert a single sRGB channel to linear
+float srgb2linear(float c) {
+    return pow(c, 2.2);
+}
+
+// Simplified linear to sRGB conversion using gamma 1/2.2
+// Convert from linear RGB to sRGB
+vec3 linear2srgb(vec3 linear) {
+    return pow(linear, vec3(1.0/2.2));
+}
+
+// Convert from linear RGB to sRGB (vec4 version - preserves alpha)
+vec4 linear2srgb(vec4 linear) {
+    return vec4(linear2srgb(linear.rgb), linear.a);
+}
+
+// Convert a single linear channel to sRGB
+float linear2srgb(float c) {
+    return pow(c, 1.0/2.2);
+}
+`;
+    		} else {
+    			src += `
+// IEC 61966-2-1 specification		
+// Convert from sRGB to linear RGB
+vec3 srgb2linear(vec3 srgb) {
+    bvec3 cutoff = lessThan(srgb, vec3(0.04045));
+    vec3 higher = pow((srgb + vec3(0.055))/vec3(1.055), vec3(2.4));
+    vec3 lower = srgb/vec3(12.92);
+    
+    return mix(higher, lower, cutoff);
+}
+
+// Convert from sRGB to linear RGB (vec4 version - preserves alpha)
+vec4 srgb2linear(vec4 srgb) {
+    return vec4(srgb2linear(srgb.rgb), srgb.a);
+}
+
+// Convert a single sRGB channel to linear
+float srgb2linear(float c) {
+    return c <= 0.04045 ? c/12.92 : pow((c + 0.055)/1.055, 2.4);
+}
+
+// IEC 61966-2-1 specification
+// Convert from linear RGB to sRGB
+vec3 linear2srgb(vec3 linear) {
+    bvec3 cutoff = lessThan(linear, vec3(0.0031308));
+    vec3 higher = vec3(1.055) * pow(linear, vec3(1.0/2.4)) - vec3(0.055);
+    vec3 lower = linear * vec3(12.92);
+    
+    return mix(higher, lower, cutoff);
+}
+
+// Convert from linear RGB to sRGB (vec4 version - preserves alpha)
+vec4 linear2srgb(vec4 linear) {
+    return vec4(linear2srgb(linear.rgb), linear.a);
+}
+
+// Convert a single linear channel to sRGB
+float linear2srgb(float c) {
+    return c <= 0.0031308 ? c * 12.92 : 1.055 * pow(c, 1.0/2.4) - 0.055;
+}
+`;
+    		}
+
+    		if (this.autoSamplerDeclaration) {
+    			for (let sampler of this.samplers) {
+    				src += `uniform sampler2D ${sampler.name};\n`;
+    			}
+
+    			for (let sampler of this.samplers) {
+    				src += `uniform bool ${sampler.name}_isLinear;\n`;
+    			}
+    		}
+
     		src += this.fragShaderSrc() + '\n';
 
     		for (let f of this.filters) {
@@ -4613,26 +5885,24 @@
     		}
 
     		src += `
-		${gl2 ? 'out' : ''} vec4 color;
-		void main() { 
-			color = data();
-			`;
+	out vec4 color;
+	void main() { 
+		color = data();
+		`;
     		for (let f of this.filters) {
     			src += `color=${f.functionName()}(color);\n`;
     		}
-    		src += `${gl2 ? '' : 'gl_FragColor = color;'}
-		}`;
+    		src += `}`;
     		return src;
     	}
 
     	/**
     	 * Creates the WebGL shader program.
-    	 * @param {WebGLRenderingContext} gl - WebGL context
+    	 * @param {WebGL2RenderingContext} gl - WebGL2 context
     	 * @private
     	 * @throws {Error} If shader compilation or linking fails
     	 */
     	createProgram(gl) {
-
     		let vert = gl.createShader(gl.VERTEX_SHADER);
     		gl.shaderSource(vert, this.vertShaderSrc(gl));
 
@@ -4643,6 +5913,7 @@
     			console.log(gl.getShaderInfoLog(vert));
     			throw Error("Failed vertex shader compilation: see console log and ask for support.");
     		} else if (this.debug) {
+    			console.log("here");
     			Util.printSrcCode(this.vertShaderSrc(gl));
     		}
 
@@ -4736,7 +6007,7 @@
 
     	/**
     	 * Updates all uniform values in the GPU.
-    	 * @param {WebGLRenderingContext} gl - WebGL context
+    	 * @param {WebGL2RenderingContext} gl - WebGL2 context
     	 * @private
     	 */
     	updateUniforms(gl) {
@@ -4768,21 +6039,20 @@
     	/**
     	 * Gets vertex shader source code.
     	 * Default implementation provides basic vertex transformation and texture coordinate passing.
-    	 * @param {WebGLRenderingContext} gl - WebGL context
+    	 * @param {WebGL2RenderingContext} gl - WebGL2 context
     	 * @returns {string} Vertex shader source code
     	 */
     	vertShaderSrc(gl) {
-    		let gl2 = !(gl instanceof WebGLRenderingContext);
-    		return `${gl2 ? '#version 300 es' : ''}
+    		return `#version 300 es
 
 precision highp float; 
 precision highp int; 
 
 uniform mat4 u_matrix;
-${gl2 ? 'in' : 'attribute'} vec4 a_position;
-${gl2 ? 'in' : 'attribute'} vec2 a_texcoord;
+in vec4 a_position;
+in vec2 a_texcoord;
 
-${gl2 ? 'out' : 'varying'} vec2 v_texcoord;
+out vec2 v_texcoord;
 
 			void main() {
 				gl_Position = u_matrix * a_position;
@@ -4793,20 +6063,18 @@ ${gl2 ? 'out' : 'varying'} vec2 v_texcoord;
     	/**
     	 * Gets fragment shader source code.
     	 * Must be overridden in derived classes for custom shading.
-    	 * @param {WebGLRenderingContext} gl - WebGL context
     	 * @returns {string} Fragment shader source code
     	 * @virtual
     	 */
-    	fragShaderSrc(gl) {
-    		let gl2 = !(gl instanceof WebGLRenderingContext);
+    	fragShaderSrc() {
     		let str = `
 
-uniform sampler2D kd;
-
-${gl2 ? 'in' : 'varying'} vec2 v_texcoord;
+in vec2 v_texcoord;
 
 vec4 data() {
-	return texture${gl2 ? '' : '2D'}(kd, v_texcoord);
+	vec4 color = texture(source, v_texcoord);
+	${this.isLinear ? "" : "color = srgb2linear(color);"}
+	return color;
 }
 `;
     		return str;
@@ -4888,7 +6156,7 @@ vec4 data() {
 
     		let shader = new Shader({
     			'label': 'Rgb',
-    			'samplers': [{ id: 0, name: 'kd', type: rasterFormat }]
+    			'samplers': [{ id: 0, name: 'source', type: rasterFormat }]
     		});
 
     		this.shaders = { 'standard': shader };
@@ -4908,7 +6176,7 @@ vec4 data() {
      * @property {Layer[]} layers - Array of layers to be combined (required)
      * @property {Object.<string, Shader>} [shaders] - Map of available shaders
      * @property {string} [type='combiner'] - Must be 'combiner' when using Layer factory
-     * @property {boolean} [visible=true] - Whether combined output is visible
+     * @property {boolean} [visible=true] - Whether the combined output is visible
      * @extends LayerOptions
      */
 
@@ -4972,171 +6240,196 @@ vec4 data() {
      * ```
      */
     class LayerCombiner extends Layer {
-    	/**
-    	 * Creates a new LayerCombiner instance
-    	 * @param {LayerCombinerOptions} options - Configuration options
-    	 * @throws {Error} If rasters option is not empty (rasters should be defined in source layers)
-    	 */
-    	constructor(options) {
-    		super(options);
+        /**
+         * Creates a new LayerCombiner instance.
+         * 
+         * @param {LayerCombinerOptions} options - Configuration options
+         * @throws {Error} If rasters option is not empty (rasters should be defined in source layers)
+         */
+        constructor(options) {
+            options = Object.assign({
+                isLinear: true,
+            }, options);
 
-    		if (Object.keys(this.rasters).length != 0)
-    			throw "Rasters options should be empty!";
+            super(options);
 
-    		/*		let shader = new ShaderCombiner({
-    					'label': 'Combiner',
-    					'samplers': [{ id:0, name:'source1', type:'vec3' }, { id:1, name:'source2', type:'vec3' }],
-    				});
-    		
-    				this.shaders = {'standard': shader };
-    				this.setShader('standard'); */
+            if (Object.keys(this.rasters).length != 0)
+                throw "Rasters options should be empty!";
 
-    		//todo if layers check for importjson
+            this.textures = [];
+            this.framebuffers = [];
+            this.status = 'ready';
+        }
 
-    		this.textures = [];
-    		this.framebuffers = [];
-    		this.status = 'ready';
-    	}
+        /**
+         * Cleans up WebGL resources by deleting framebuffers and textures.
+         * Should be called before recreating buffers or when the layer is destroyed.
+         * Prevents memory leaks by properly releasing GPU resources.
+         * @private
+         */
+        deleteFramebuffers() {
+            if (!this.gl) return;
 
-    	/**
-    	 * Renders the combined layers using framebuffer operations
-    	 * Handles framebuffer creation, layer rendering, and final composition
-    	 * @param {Transform} transform - Current view transform
-    	 * @param {Object} viewport - Current viewport parameters
-    	 * @param {number} viewport.x - Viewport X position
-    	 * @param {number} viewport.y - Viewport Y position
-    	 * @param {number} viewport.dx - Viewport width
-    	 * @param {number} viewport.dy - Viewport height
-    	 * @param {number} viewport.w - Total width
-    	 * @param {number} viewport.h - Total height
-    	 * @throws {Error} If shader is not specified
-    	 * @private
-    	 */
-    	draw(transform, viewport) {
-    		for (let layer of this.layers)
-    			if (layer.status != 'ready')
-    				return;
+            // Clean up textures
+            for (let i = 0; i < this.textures.length; i++) {
+                if (this.textures[i]) {
+                    this.gl.deleteTexture(this.textures[i]);
+                }
+            }
 
-    		if (!this.shader)
-    			throw "Shader not specified!";
+            // Clean up framebuffers
+            for (let i = 0; i < this.framebuffers.length; i++) {
+                if (this.framebuffers[i]) {
+                    this.gl.deleteFramebuffer(this.framebuffers[i]);
+                }
+            }
 
-    		let w = viewport.dx;
-    		let h = viewport.dy;
+            this.textures = [];
+            this.framebuffers = [];
+        }
 
-    		if (!this.framebuffers.length || this.layout.width != w || this.layout.height != h) {
-    			this.deleteFramebuffers();
-    			this.layout.width = w;
-    			this.layout.height = h;
-    			this.createFramebuffers();
-    		}
+        /**
+         * Renders the combined layers using framebuffer operations.
+         * Handles framebuffer creation, layer rendering, and final composition.
+         * 
+         * @param {Transform} transform - Current view transform
+         * @param {Object} viewport - Current viewport parameters
+         * @param {number} viewport.x - Viewport X position
+         * @param {number} viewport.y - Viewport Y position
+         * @param {number} viewport.dx - Viewport width
+         * @param {number} viewport.dy - Viewport height
+         * @param {number} viewport.w - Total width
+         * @param {number} viewport.h - Total height
+         * @throws {Error} If shader is not specified
+         * @private
+         */
+        draw(transform, viewport) {
+            for (let layer of this.layers)
+                if (layer.status != 'ready')
+                    return;
 
-    		let gl = this.gl;
-    		var b = [0, 0, 0, 0];
-    		gl.clearColor(b[0], b[1], b[2], b[3]);
+            if (!this.shader)
+                throw "Shader not specified!";
 
-    		//TODO optimize: render to texture ONLY if some parameters change!
-    		//provider di textures... max memory and reference counting.
+            let w = viewport.dx;
+            let h = viewport.dy;
 
-    		for (let i = 0; i < this.layers.length; i++) {
-    			gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffers[i]);
-    			gl.clear(gl.COLOR_BUFFER_BIT);
-    			this.layers[i].draw(transform, { x: 0, y: 0, dx: w, dy: h, w: w, h: h });
-    			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    		}
+            // Recreate framebuffers if viewport size changes
+            if (!this.framebuffers.length || this.layout.width != w || this.layout.height != h) {
+                this.deleteFramebuffers();
+                this.layout.width = w;
+                this.layout.height = h;
+                this.createFramebuffers();
+            }
 
-    		this.prepareWebGL();
+            let gl = this.gl;
+            var b = [0, 0, 0, 0];
+            gl.clearColor(b[0], b[1], b[2], b[3]);
 
-    		for (let i = 0; i < this.layers.length; i++) {
-    			gl.uniform1i(this.shader.samplers[i].location, i);
-    			gl.activeTexture(gl.TEXTURE0 + i);
-    			gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
-    		}
+            // Save the active framebuffer before starting operations
+            const activeFramebuffer = this.canvas.getActiveFramebuffer();
 
-    		this.updateTileBuffers(
-    			new Float32Array([-1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0]),
-    			new Float32Array([0, 0, 0, 1, 1, 1, 1, 0]));
-    		gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-    	}
+            // Render each layer to its corresponding framebuffer
+            for (let i = 0; i < this.layers.length; i++) {
+                gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffers[i]);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                this.layers[i].draw(transform, { x: 0, y: 0, dx: w, dy: h, w: w, h: h });
+            }
 
-    	/**
-    	 * Creates framebuffers and textures for layer composition
-    	 * Initializes WebGL resources for each input layer
-    	 * @private
-    	 */
-    	createFramebuffers() {
-    		let gl = this.gl;
-    		for (let i = 0; i < this.layers.length; i++) {
-    			//TODO for thing like lens, we might want to create SMALLER textures for some layers.
-    			const texture = gl.createTexture();
+            // Restore the active framebuffer for final rendering
+            this.canvas.setActiveFramebuffer(activeFramebuffer);
 
-    			gl.bindTexture(gl.TEXTURE_2D, texture);
+            this.prepareWebGL();
 
-    			const level = 0;
-    			const internalFormat = gl.RGBA;
-    			const border = 0;
-    			const format = gl.RGBA;
-    			const type = gl.UNSIGNED_BYTE;
-    			gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-    				this.layout.width, this.layout.height, border, format, type, null);
+            // Bind textures and set shader uniforms
+            for (let i = 0; i < this.layers.length; i++) {
+                gl.uniform1i(this.shader.samplers[i].location, i);
+                gl.activeTexture(gl.TEXTURE0 + i);
+                gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
+            }
 
-    			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            // Update tile buffers and draw the final composition
+            this.updateTileBuffers(
+                new Float32Array([-1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0]),
+                new Float32Array([0, 0, 0, 1, 1, 1, 1, 0]));
+            gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+        }
 
-    			const framebuffer = gl.createFramebuffer();
-    			gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-    			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-    			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        /**
+         * Creates framebuffers and textures for layer composition.
+         * Initializes WebGL resources for each input layer.
+         * @private
+         */
+        createFramebuffers() {
+            let gl = this.gl;
+            for (let i = 0; i < this.layers.length; i++) {
+                const texture = gl.createTexture();
 
-    			this.textures[i] = texture;
-    			this.framebuffers[i] = framebuffer;
-    		}
-    	}
+                gl.bindTexture(gl.TEXTURE_2D, texture);
 
-    	//TODO release textures and framebuffers
-    	/**
-    	 * Cleans up framebuffer and texture resources
-    	 * Should be called when resizing or destroying the layer
-    	 * @private
-    	 */
-    	deleteFramebuffers() {
-    	}
+                const level = 0;
+                const internalFormat = gl.RGBA;
+                const border = 0;
+                const format = gl.RGBA;
+                const type = gl.UNSIGNED_BYTE;
+                gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+                    this.layout.width, this.layout.height, border, format, type, null);
 
-    	/**
-    	 * Computes combined bounding box of all input layers
-    	 * @returns {BoundingBox} Combined bounding box
-    	 * @override
-    	 * @private
-    	 */
-    	boundingBox() {
-    		// Combiner ask the combination of all its children boxes
-    		// keeping the hidden, because they could be hidden, but revealed by the combiner
-    		const discardHidden = false;
-    		let result = Layer.computeLayersBBox(this.layers, discardHidden);
-    		if (this.transform != null && this.transform != undefined) {
-    			result = this.transform.transformBox(result);
-    		}
-    		return result;
-    	}
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-    	/**
-    	 * Computes minimum scale across all input layers
-    	 * @returns {number} Combined scale factor
-    	 * @override
-    	 * @private
-    	 */
-    	scale() {
-    		//Combiner ask the scale of all its children
-    		//keeping the hidden, because they could be hidden, but revealed by the combiner
-    		const discardHidden = false;
-    		let scale = Layer.computeLayersMinScale(this.layers, discardHidden);
-    		scale *= this.transform.z;
-    		return scale;
-    	}
+                const framebuffer = gl.createFramebuffer();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+
+                // Verify that the framebuffer is complete
+                const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+                if (status !== gl.FRAMEBUFFER_COMPLETE) {
+                    console.error("LayerCombiner framebuffer not complete. Status:", status);
+                }
+
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+                this.textures[i] = texture;
+                this.framebuffers[i] = framebuffer;
+            }
+        }
+
+        /**
+         * Computes the combined bounding box of all input layers.
+         * 
+         * @returns {BoundingBox} Combined bounding box
+         * @override
+         * @private
+         */
+        boundingBox() {
+            const discardHidden = false;
+            let result = Layer.computeLayersBBox(this.layers, discardHidden);
+            if (result && this.transform != null && this.transform != undefined) {
+                result = this.transform.transformBox(result);
+            }
+            return result;
+        }
+
+        /**
+         * Computes the minimum scale across all input layers.
+         * 
+         * @returns {number} Combined scale factor
+         * @override
+         * @private
+         */
+        scale() {
+            const discardHidden = false;
+            let scale = Layer.computeLayersMinScale(this.layers, discardHidden);
+            scale *= this.transform.z;
+            return scale;
+        }
     }
 
     /**
-     * Register this layer type with the Layer factory
+     * Registers this layer type with the Layer factory.
+     * 
      * @type {Function}
      * @private
      */
@@ -5144,168 +6437,235 @@ vec4 data() {
 
     /**
      * Represents an annotation that can be drawn as an overlay on a canvas.
-     * An annotation is a decoration (text, graphics element, glyph) that provides
-     * additional information for interpreting underlying drawings.
-     * Each annotation has a unique identifier and can contain various properties
-     * such as description, category, drawing style, labels, etc.
+     * An annotation is a decorative element (text, graphics, glyph) that provides
+     * additional context or information for interpreting underlying drawings.
      * 
+     * Each annotation includes:
+     * - A unique identifier
+     * - Optional metadata (description, category, code, label)
+     * - Visual representation (SVG, image, or element collection)
+     * - Spatial information (region or bounding box)
+     * - Style and state properties
+     * 
+     * Annotations can be serialized to/from JSON-LD format for interoperability
+     * with Web Annotation standards.
      */
     class Annotation {
-    	/**
-    		* Creates a new Annotation instance.
-    		* @param {Object} [options] - Configuration options for the annotation.
-    		* @param {string} [options.id] - Unique identifier for the annotation. If not provided, a UUID will be generated.
-    		* @param {string} [options.code] - A code identifier for the annotation.
-    		* @param {string} [options.label=''] - Display label for the annotation.
-    		* @param {string} [options.description] - HTML text containing a comprehensive description.
-    		* @param {string} [options.class] - Category or classification of the annotation.
-    		* @param {string} [options.target] - Target element or area this annotation refers to.
-    		* @param {string} [options.svg] - SVG content for the annotation.
-    		* @param {Object} [options.image] - Image data associated with the annotation.
-    		* @param {Object} [options.region] - Region coordinates {x, y, w, h} for the annotation.
-    		* @param {Object} [options.data={}] - Additional custom data for the annotation.
-    		* @param {Object} [options.style] - Style configuration for rendering.
-    		* @param {BoundingBox} [options.bbox] - Bounding box of the annotation.
-    		* @param {boolean} [options.visible=true] - Visibility state of the annotation.
-    		* @param {Object} [options.state] - State variables for the annotation.
-    		* @param {boolean} [options.ready=false] - Indicates if SVG conversion is complete.
-    		* @param {boolean} [options.needsUpdate=true] - Indicates if annotation needs updating.
-    		* @param {boolean} [options.editing=false] - Indicates if annotation is being edited.
-    		* @class
-    		*/
-    	constructor(options) {
-    		Object.assign(
-    			this,
-    			{
-    				id: Annotation.UUID(),
-    				code: null,
-    				label: null,
-    				description: null,
-    				class: null,
-    				target: null,
-    				svg: null,
-    				image: null,
-    				region: null,
-    				data: {},
-    				style: null,
-    				bbox: null,
-    				visible: true,
-    				state: null,
-    				ready: false, //already: converted to svg
-    				needsUpdate: true,
-    				editing: false,
-    			},
-    			options);
-    		//TODO label as null is problematic, sort this issue.
-    		if (!this.label) this.label = '';
-    		this.elements = []; //assign options is not recursive!!!
-    	}
+      /**
+       * Creates a new Annotation instance.
+       * @param {Object} [options] - Configuration options for the annotation.
+       * @param {string} [options.id] - Unique identifier for the annotation. Auto-generated if not provided.
+       * @param {string} [options.code] - A code identifier for the annotation.
+       * @param {string} [options.label=''] - Display label for the annotation.
+       * @param {string} [options.description] - HTML text containing a comprehensive description.
+       * @param {string} [options.class] - Category or classification of the annotation.
+       * @param {string} [options.target] - Target element or area this annotation refers to.
+       * @param {string} [options.svg] - SVG content for the annotation.
+       * @param {Object} [options.image] - Image data associated with the annotation.
+       * @param {Object} [options.region] - Region coordinates {x, y, w, h} for the annotation.
+       * @param {Object} [options.data={}] - Additional custom data for the annotation.
+       * @param {Object} [options.style] - Style configuration for rendering.
+       * @param {BoundingBox} [options.bbox] - Bounding box of the annotation.
+       * @param {boolean} [options.visible=true] - Visibility state of the annotation.
+       * @param {Object} [options.state] - State variables for the annotation.
+       * @param {boolean} [options.ready=false] - Indicates if SVG conversion is complete.
+       * @param {boolean} [options.needsUpdate=true] - Indicates if annotation needs updating.
+       * @param {boolean} [options.editing=false] - Indicates if annotation is being edited.
+       */
+      constructor(options = {}) {
+        // Set default properties
+        this.id = options.id ?? Annotation.generateUUID();
+        this.code = options.code ?? null;
+        this.label = options.label ?? '';
+        this.description = options.description ?? null;
+        this.class = options.class ?? null;
+        this.target = options.target ?? null;
+        this.svg = options.svg ?? null;
+        this.image = options.image ?? null;
+        this.region = options.region ?? null;
+        this.data = options.data ?? {};
+        this.style = options.style ?? null;
+        this.bbox = options.bbox ?? null;
+        this.visible = options.visible ?? true;
+        this.state = options.state ?? null;
+        this.ready = options.ready ?? false;
+        this.needsUpdate = options.needsUpdate ?? true;
+        this.editing = options.editing ?? false;
+        
+        // Initialize elements array
+        this.elements = Array.isArray(options.elements) ? options.elements : [];
+      }
 
-    	/**
-    		* Generates a UUID (Universally Unique Identifier) for annotation instances.
-    		* @returns {string} A newly generated UUID.
-    		* @private
-    		*/
-    	static UUID() {
-    		return 'axxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    			var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-    			return v.toString(16);
-    		});
-    	}
+      /**
+       * Generates a UUID (Universally Unique Identifier) for annotation instances.
+       * @returns {string} A newly generated UUID.
+       * @private
+       */
+      static generateUUID() {
+        // Use modern approach for UUID generation
+        return 'a' + ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+          (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+      }
 
-    	/**
-    	 * Calculates and returns the bounding box of the annotation based on its elements or region.
-    	 * The coordinates are always relative to the top-left corner of the canvas.
-    	 * @returns {BoundingBox} The calculated bounding box of the annotation.
-    	 * If the annotation has no elements and no region, returns an empty bounding box.
-    	 * If the annotation has a region but no elements, returns a bounding box based on the region.
-    	 * If the annotation has elements, calculates the bounding box that encompasses all elements.
-    	 */
-    	getBBoxFromElements() {
-    		let box = null;
-    		if (!this.elements.length) {
-    			if (this.region == null) {
-    				box = new BoundingBox();
-    			} else {
-    				const r = this.region;
-    				box = new BoundingBox({ xLow: r.x, yLow: r.y, xHigh: r.x + r.w, yHigh: r.y + r.h });
-    			}
-    		} else {
-    			let { x, y, width, height } = this.elements[0].getBBox();
-    			for (let shape of this.elements) {
-    				const { sx, sy, swidth, sheight } = shape.getBBox();
-    				x = Math.min(x, sx);
-    				y = Math.min(x, sy);
-    				width = Math.max(width + x, sx + swidth) - x;
-    				height = Math.max(height + y, sy + sheight) - y;
-    			}
-    			box = new BoundingBox({ xLow: x, yLow: y, xHigh: x + width, yHigh: y + width });
-    		}
-    		return box;
-    	}
+      /**
+       * Calculates and returns the bounding box of the annotation based on its elements or region.
+       * The coordinates are always relative to the top-left corner of the canvas.
+       * @returns {BoundingBox} The calculated bounding box of the annotation.
+       */
+      getBBoxFromElements() {
+        // If no elements exist, use region or return empty bounding box
+        if (!this.elements.length) {
+          if (this.region == null) {
+            return new BoundingBox();
+          }
+          
+          const r = this.region;
+          return new BoundingBox({ 
+            xLow: r.x, 
+            yLow: r.y, 
+            xHigh: r.x + r.w, 
+            yHigh: r.y + r.h 
+          });
+        }
+        
+        // Calculate bounding box from elements
+        const firstBBox = this.elements[0].getBBox();
+        let x = firstBBox.x;
+        let y = firstBBox.y;
+        let width = firstBBox.width;
+        let height = firstBBox.height;
+        
+        // Expand bounding box to encompass all elements
+        for (let i = 1; i < this.elements.length; i++) {
+          const { x: sx, y: sy, width: swidth, height: sheight } = this.elements[i].getBBox();
+          
+          x = Math.min(x, sx);
+          y = Math.min(y, sy); // Fixed: comparing y with sy instead of x with sy
+          
+          const xMax = Math.max(x + width, sx + swidth);
+          const yMax = Math.max(y + height, sy + sheight);
+          
+          width = xMax - x;
+          height = yMax - y;
+        }
+        
+        return new BoundingBox({ 
+          xLow: x, 
+          yLow: y, 
+          xHigh: x + width, 
+          yHigh: y + height // Fixed: using height instead of width 
+        });
+      }
 
-    	/////////////////////////////////
-    	/**
-    	 * Creates an Annotation instance from a JSON-LD format string.
-    	 * @param {Object} entry - The JSON-LD object representing an annotation.
-    	 * @returns {Annotation} A new Annotation instance.
-    	 * @throws {Error} If the entry is not a valid JSON-LD annotation or contains unsupported selectors.
-    	 */
-    	static fromJsonLd(entry) {
-    		if (entry.type != 'Annotation')
-    			throw "Not a jsonld annotation.";
-    		let options = { id: entry.id };
+      /**
+       * Creates an Annotation instance from a JSON-LD format object.
+       * @param {Object} entry - The JSON-LD object representing an annotation.
+       * @returns {Annotation} A new Annotation instance.
+       * @throws {Error} If the entry is not a valid JSON-LD annotation or contains unsupported selectors.
+       */
+      static fromJsonLd(entry) {
+        if (entry.type !== 'Annotation') {
+          throw new Error("Not a valid JSON-LD annotation");
+        }
+        
+        const options = { id: entry.id };
 
-    		let rename = { 'identifying': 'code', 'identifying': 'label', 'describing': 'description', 'classifying': 'class' };
-    		for (let item of entry.body) {
-    			let field = rename[item.purpose];
-    			if (field)
-    				options[field] = item.value;
-    		}
-    		let selector = entry.target && entry.target.selector;
-    		if (selector) {
-    			switch (selector.type) {
-    				case 'SvgSelector':
-    					options.svg = selector.value;
-    					options.elements = [];
-    					break;
-    				default:
-    					throw "Unsupported selector: " + selector.type;
-    			}
-    		}
-    		return new Annotation(options);
-    	}
+        // Map JSON-LD properties to annotation properties
+        const propertyMap = { 
+          'identifying': 'code', 
+          'classifying': 'class', 
+          'describing': 'description' 
+        };
+        
+        if (Array.isArray(entry.body)) {
+          for (const item of entry.body) {
+            const field = propertyMap[item.purpose];
+            if (field) {
+              options[field] = item.value;
+            }
+          }
+        }
+        
+        // Process target selector if present
+        const selector = entry.target?.selector;
+        if (selector) {
+          switch (selector.type) {
+            case 'SvgSelector':
+              options.svg = selector.value;
+              options.elements = [];
+              break;
+            default:
+              throw new Error(`Unsupported selector: ${selector.type}`);
+          }
+        }
+        
+        return new Annotation(options);
+      }
 
-    	/**
-    	* Converts the annotation to a JSON-LD format object.
-     	* @returns {Object} A JSON-LD representation of the annotation including context, 
-    	* id, type, body (with code, class, and description), and target selector information.
-     	*/
-    	toJsonLd() {
-    		let body = [];
-    		if (this.code !== null)
-    			body.push({ type: 'TextualBody', value: this.code, purpose: 'indentifying' });
-    		if (this.class !== null)
-    			body.push({ type: 'TextualBody', value: this.class, purpose: 'classifying' });
-    		if (this.description !== null)
-    			body.push({ type: 'TextualBody', value: this.description, purpose: 'describing' });
+      /**
+       * Converts the annotation to a JSON-LD format object.
+       * @returns {Object} A JSON-LD representation of the annotation.
+       */
+      toJsonLd() {
+        const body = [];
+        
+        // Add properties to body if they exist
+        if (this.code !== null) {
+          body.push({ 
+            type: 'TextualBody', 
+            value: this.code, 
+            purpose: 'identifying' // Fixed: correct spelling
+          });
+        }
+        
+        if (this.class !== null) {
+          body.push({ 
+            type: 'TextualBody', 
+            value: this.class, 
+            purpose: 'classifying' 
+          });
+        }
+        
+        if (this.description !== null) {
+          body.push({ 
+            type: 'TextualBody', 
+            value: this.description, 
+            purpose: 'describing' 
+          });
+        }
 
-    		({
-    			"@context": "http://www.w3.org/ns/anno.jsonld",
-    			id: this.id,
-    			type: "Annotation",
-    			body: body,
-    			target: { selector: {} }
-    		});
-    		if (this.target)
-    			target.selector.source = this.target;
+        // Create the base JSON-LD object
+        const jsonLd = {
+          "@context": "http://www.w3.org/ns/anno.jsonld",
+          id: this.id,
+          type: "Annotation",
+          body: body,
+          target: { selector: {} }
+        };
+        
+        // Add target information if available
+        if (this.target) {
+          jsonLd.target.selector.source = this.target;
+        }
 
-
-    		if (this.element) {
-    			var s = new XMLSerializer();
-    			s.serializeToString(this.element);
-    		}
-    	}
+        // Add SVG representation if elements exist
+        if (this.elements.length > 0) {
+          // Get the first element or combine them if needed
+          const element = this.elements[0]; // Simplified for now
+          if (element) {
+            const serializer = new XMLSerializer();
+            jsonLd.target.selector.type = 'SvgSelector';
+            jsonLd.target.selector.value = serializer.serializeToString(element);
+          }
+        } else if (this.svg) {
+          // Use existing SVG if available
+          jsonLd.target.selector.type = 'SvgSelector';
+          jsonLd.target.selector.value = this.svg;
+        }
+        
+        return jsonLd;
+      }
     }
 
     /**
@@ -5886,7 +7246,7 @@ vec4 data() {
     }
     /**
      * @event Layout#ready
-     * Fired when the layout is ready for rendering.
+     * @description Fired when the layout is ready for rendering.
      * This occurs when:
      * - Tile descriptors are loaded from annotation file
      * - Tile descriptors are set programmatically
@@ -5894,7 +7254,7 @@ vec4 data() {
 
     /**
      * @event Layout#updateSize
-     * Fired when the layout size changes and scene extension needs updating.
+     * @description Fired when the layout size changes and scene extension needs updating.
      * This occurs when:
      * - Tile descriptors are loaded and bounding box is computed
      */
@@ -6049,11 +7409,11 @@ vec4 data() {
             let samplers = [];
             let N = this.rasters.length;
             for (let i = 0; i < N; ++i) {
-                samplers.push({ id: i, name: 'kd', type: rasterFormat });
+                samplers.push({ id: i, name: 'source', type: rasterFormat });
             }
             let shader = new Shader({
                 'label': 'Rgb',
-                'samplers': samplers //[{ id:0, name:'kd', type: rasterFormat }]
+                'samplers': samplers //[{ id:0, name:'source', type: rasterFormat }]
             });
 
             shader.fragShaderSrc = function (gl) {
@@ -6061,12 +7421,10 @@ vec4 data() {
                 let gl2 = !(gl instanceof WebGLRenderingContext);
                 let str = `
 
-uniform sampler2D kd;
-
 ${gl2 ? 'in' : 'varying'} vec2 v_texcoord;
 
 vec4 data() {
-	return texture${gl2 ? '' : '2D'}(kd, v_texcoord);
+	return texture${gl2 ? '' : '2D'}(source, v_texcoord);
 }
 `;
                 return str;
@@ -6162,8 +7520,6 @@ vec4 data() {
 
     			let gl2 = !(gl instanceof WebGLRenderingContext);
     			let str = `
-		
-		uniform sampler2D kd;
 
 		${gl2 ? 'in' : 'varying'} vec2 v_texcoord;
 
@@ -6231,19 +7587,29 @@ vec4 data() {
     	 * @returns {WebGLTexture} Created texture
     	 * @private
     	 */
+    	/**
+     * Loads a texture supporting WebGL 2.0+
+     * @param {WebGLRenderingContext|WebGL2RenderingContext} gl - The WebGL context
+     * @param {HTMLImageElement} img - The image to load as a texture
+     * @returns {WebGLTexture} - The created texture
+     */
     	loadTexture(gl, img) {
+    		// Update image dimensions
     		this.rasters[0].width = img.width;
     		this.rasters[0].height = img.height;
 
-    		var tex = gl.createTexture();
+    		// Create the texture
+    		const tex = gl.createTexture();
     		gl.bindTexture(gl.TEXTURE_2D, tex);
-    		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); //_MIPMAP_LINEAR);
+
+    		// Set texture parameters (compatible with both versions)
+    		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-    		// gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16UI, gl.R16UI, gl.UNSIGNED_SHORT, img);
-    		gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, gl.LUMINANCE, gl.UNSIGNED_BYTE, img);
+    		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, img);
+
     		return tex;
     	}
     }
@@ -6368,13 +7734,13 @@ vec4 data() {
     	 * @fires Layout#ready
     	 * @fires Layout#updateSize
     	 */
-    	setUrls(urls) {
+    	async setUrls(urls) {
     		/**
     		* The event is fired when a layout is ready to be drawn(the single-resolution image is downloaded or the multi-resolution structure has been initialized).
     		* @event Layout#ready
     		*/
     		this.urls = urls;
-    		(async () => {
+    		try {
     			switch (this.type) {
     				case 'google': await this.initGoogle(); break;        // No Url needed
     				case 'deepzoom1px': await this.initDeepzoom(true); break;  // urls[0] only needed
@@ -6388,7 +7754,10 @@ vec4 data() {
     			this.initBoxes();
     			this.status = 'ready';
     			this.emit('ready');
-    		})().catch(e => { console.log(e); this.status = e; });
+    		} catch (e) {
+    			console.log(e);
+    			this.status = e;
+    		}
     	}
 
     	/**
@@ -6703,17 +8072,6 @@ vec4 data() {
     	}
 
     	/**
-    	 * Initializes single-image layout.
-    	 * @private
-    	 * @async
-    	 */
-    	async initImage() {
-    		this.getTileURL = (rasterid, tile) => { return this.urls[rasterid]; };
-    		this.nlevels = 1;
-    		this.tilesize = 0;
-    	}
-
-    	/**
     	 * Initializes Google Maps layout.
     	 * @private
     	 * @async
@@ -6770,7 +8128,7 @@ vec4 data() {
     		let max = Math.max(this.width, this.height) / this.tilesize;
     		this.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
 
-    		this.urls = this.urls.map(url => url ? url.substr(0, url.lastIndexOf(".")) + '_files/' : null);
+    		this.urls = this.urls.map(url => url ? url.slice(0, url.lastIndexOf(".")) + '_files/' : null);
     		this.skiplevels = 0;
     		if (onepixel)
     			this.skiplevels = Math.ceil(Math.log(this.tilesize) / Math.LN2);
@@ -6797,7 +8155,7 @@ vec4 data() {
     				throw new Error(this.status);
     			}
     			let json = await response.json();
-    			json.url = url.substr(0, url.lastIndexOf(".")) + '.tzb';
+    			json.url = url.slice(0, url.lastIndexOf(".")) + '.tzb';
     			Object.assign(this, json);
     			this.tarzoom.push(json);
     		}
@@ -6825,7 +8183,7 @@ vec4 data() {
     		}
     		let json = await response.json();
     		Object.assign(this, json); //suffix, tilesize, overlap, width, height, levels
-    		this.url = url.substr(0, url.lastIndexOf(".")) + '.tzb';
+    		this.url = url.slice(0, url.lastIndexOf(".")) + '.tzb';
 
     		this.getTileURL = (rasterid, tile) => {
     			let index = tile.index * this.stride;
@@ -6865,7 +8223,7 @@ vec4 data() {
     		this.nlevels = Math.ceil(Math.log(max) / Math.LN2) + 1;
 
     		this.getTileURL = (rasterid, tile) => {
-    			const tileUrl = this.urls[rasterid].substr(0, url.lastIndexOf("/"));
+    			const tileUrl = this.urls[rasterid].slice(0, url.lastIndexOf("/"));
     			let group = tile.index >> 8;
     			return tileUrl + "/TileGroup" + group + "/" + tile.level + "-" + tile.x + "-" + tile.y + "." + this.suffix;
     		};
@@ -6893,7 +8251,7 @@ vec4 data() {
     		this.tilesize = info.tiles[0].width;
 
     		this.getTileURL = (rasterid, tile) => {
-    			const tileUrl = this.urls[rasterid].substr(0, url.lastIndexOf("/"));
+    			const tileUrl = this.urls[rasterid].slice(0, url.lastIndexOf("/"));
     			let tw = this.tilesize;
     			parseInt(this.nlevels - 1 - tile.level);
     			let s = Math.pow(2, tile.level);
@@ -6962,7 +8320,7 @@ vec4 data() {
 
     /**
      * @event Layout#ready
-     * Fired when the layout is ready for rendering.
+     * @description Fired when the layout is ready for rendering.
      * This occurs when:
      * - Single-resolution image is fully downloaded
      * - Multi-resolution structure is initialized and validated
@@ -6971,7 +8329,7 @@ vec4 data() {
 
     /**
      * @event Layout#updateSize
-     * Fired when the layout size changes and scene extension needs updating.
+     * @description Fired when the layout size changes and scene extension needs updating.
      * This occurs when:
      * - Image dimensions are determined
      * - Pyramid levels are initialized
@@ -7234,7 +8592,7 @@ vec4 data() {
          * Creates an opacity filter
          * @param {number} opacity - Initial opacity value [0-1]
          * @param {Object} [options] - Additional filter options
-         */    
+         */
         constructor(opacity, options) {
             super(options);
             this.uniforms[this.uniformName('opacity')] = { type: 'float', needsUpdate: true, size: 1, value: opacity };
@@ -7258,7 +8616,7 @@ vec4 data() {
          * Creates a gamma correction filter
          * @param {Object} [options] - Filter options
          * @param {number} [options.gamma=2.2] - Gamma correction value
-         */    
+         */
         constructor(options) {
             super(options);
             this.uniforms[this.uniformName('gamma')] = { type: 'float', needsUpdate: true, size: 1, value: 2.2 };
@@ -7270,6 +8628,199 @@ vec4 data() {
                 float igamma = 1.0/${this.uniformName('gamma')};
                 return vec4(pow(col.r, igamma), pow(col.g, igamma), pow(col.b, igamma), col.a);
             }`;
+        }
+    }
+
+    /**
+     * 
+     * @extends ShaderFilter
+     * Filter that converts colors to grayscale with adjustable weights
+     */
+    class ShaderFilterGrayscale extends ShaderFilter {
+        /**
+         * Creates a grayscale filter
+         * @param {Object} [options] - Filter options
+         * @param {number[]} [options.weights=[0.2126, 0.7152, 0.0722]] - RGB channel weights for luminance calculation
+         */
+        constructor(options) {
+            super(options);
+
+            // Default weights based on human perception of colors (ITU-R BT.709)
+            this.uniforms[this.uniformName('weights')] = {
+                type: 'vec3',
+                needsUpdate: true,
+                size: 3,
+                value: [0.2126, 0.7152, 0.0722]
+            };
+
+            this.uniforms[this.uniformName('enable')] = {
+                type: 'bool',
+                needsUpdate: true,
+                size: 1,
+                value: true
+            };
+
+            // Add modes for different grayscale calculations
+            this.modes['grayscale'] = [
+                {
+                    id: 'luminance',
+                    enable: true,
+                    src: `
+                // Luminance-based grayscale (perceptual)
+                float grayscaleLuminance(vec3 color, vec3 weights) {
+                    return dot(color, weights);
+                }
+                `
+                },
+                {
+                    id: 'average',
+                    enable: false,
+                    src: `
+                // Simple average grayscale
+                float grayscaleAverage(vec3 color) {
+                    return (color.r + color.g + color.b) / 3.0;
+                }
+                `
+                }
+            ];
+        }
+
+        fragDataSrc(gl) {
+            return `
+            vec4 ${this.functionName()}(vec4 col) {
+                if(!${this.uniformName('enable')}) return col;
+                // Skip processing if fully transparent
+                if (col.a <= 0.0) return col;
+                float gray;
+                
+                // Use the active grayscale mode
+                ${this.modes['grayscale'].find(m => m.id === 'luminance' && m.enable) ?
+                `gray = grayscaleLuminance(col.rgb, ${this.uniformName('weights')});` :
+                `gray = grayscaleAverage(col.rgb);`}
+                
+                // Apply grayscale conversion
+                vec3 grayRGB = vec3(gray);
+                
+                return vec4(grayRGB, col.a);
+            }`;
+        }
+
+        /**
+         * Switches between grayscale calculation methods
+         * @param {string} method - Either 'luminance' or 'average'
+         */
+        setGrayscaleMethod(method) {
+            this.setMode('grayscale', method);
+        }
+    }
+
+    /**
+     * 
+     * @extends ShaderFilter
+     * Filter that adjusts the brightness of rendered content
+     */
+    class ShaderFilterBrightness extends ShaderFilter {
+        /**
+         * Creates a brightness filter
+         * @param {Object} [options] - Filter options
+         * @param {number} [options.brightness=1.0] - Brightness value (0.0-2.0, where 1.0 is normal brightness)
+         */
+        constructor(options) {
+            super(options);
+            this.uniforms[this.uniformName('brightness')] = {
+                type: 'float',
+                needsUpdate: true,
+                size: 1,
+                value: options?.brightness || 1.0
+            };
+
+            this.uniforms[this.uniformName('enable')] = {
+                type: 'bool',
+                needsUpdate: true,
+                size: 1,
+                value: true
+            };
+
+            // Add modes for different brightness adjustments
+            this.modes['brightness'] = [
+                {
+                    id: 'linear',
+                    enable: true,
+                    src: `
+                // Linear brightness adjustment
+                vec3 adjustBrightnessLinear(vec3 color, float brightness) {
+                    return color * brightness;
+                }
+                `
+                },
+                {
+                    id: 'preserve_saturation',
+                    enable: false,
+                    src: `
+                // Brightness adjustment that preserves saturation by adjusting in HSL space
+                vec3 adjustBrightnessPreserveSaturation(vec3 color, float brightness) {
+                    // Convert RGB to HSL-like space
+                    float maxChannel = max(max(color.r, color.g), color.b);
+                    float minChannel = min(min(color.r, color.g), color.b);
+                    float luminance = (maxChannel + minChannel) / 2.0;
+                    
+                    // Skip complex HSL conversion and just scale while preserving relative color relationships
+                    if (maxChannel > 0.0) {
+                        float scaleFactor = brightness;
+                        // Adjust scale to prevent oversaturation
+                        if (brightness > 1.0) {
+                            float headroom = (1.0 - luminance) / luminance;
+                            scaleFactor = min(brightness, 1.0 + headroom);
+                        }
+                        return color * scaleFactor;
+                    }
+                    
+                    return color;
+                }
+                `
+                }
+            ];
+        }
+
+        fragDataSrc(gl) {
+            return `
+            vec4 ${this.functionName()}(vec4 col) {
+                if(!${this.uniformName('enable')}) return col;
+                // Skip processing if fully transparent
+                if (col.a <= 0.0) return col;
+                
+                // Convert to linear space for proper brightness adjustment
+                vec3 adjustedColor;
+                
+                // Use the active brightness mode
+                ${this.modes['brightness'].find(m => m.id === 'linear' && m.enable) ?
+                `adjustedColor = adjustBrightnessLinear(col.rgb, ${this.uniformName('brightness')});` :
+                `adjustedColor = adjustBrightnessPreserveSaturation(col.rgb, ${this.uniformName('brightness')});`}
+                
+                // Clamp to prevent overflow
+                adjustedColor = clamp(adjustedColor, 0.0, 1.0);
+                
+                // Convert back to sRGB space
+                return vec4(adjustedColor, col.a);
+            }`;
+        }
+
+        /**
+         * Sets the brightness level
+         * @param {number} value - Brightness value (0.0-2.0)
+         */
+        setBrightness(value) {
+            // Clamp value to valid range
+            const brightness = Math.max(0.0, Math.min(2.0, value));
+            this.setUniform('brightness', brightness);
+        }
+
+        /**
+         * Switches between brightness adjustment methods
+         * @param {string} method - Either 'linear' or 'preserve_saturation'
+         */
+        setBrightnessMethod(method) {
+            this.setMode('brightness', method);
         }
     }
 
@@ -7303,7 +8854,7 @@ vec4 data() {
      * - Supports linear and nearest-neighbor interpolation
      * - Handles domain scaling and bias
      * - Configurable channel weight mixing
-     * - WebGL 1.0 and 2.0 compatibility
+     * - WebGL 2.0+
      */
     class ShaderFilterColormap extends ShaderFilter {
         /**
@@ -7449,7 +9000,7 @@ vec4 data() {
      * - Signed distance field for arrow shapes
      * - Dynamic magnitude scaling
      * - Colormap-based magnitude visualization
-     * - WebGL 1.0 and 2.0 compatibility
+     * - WebGL 2.0+
      *
      * Example usage:
      * ```javascript
@@ -7694,7 +9245,7 @@ vec4 data() {
 
             vec2 p = v_texcoord*tileSize; // point in pixel
             vec2 pc_coord = arrowTileCenterCoord(p)/tileSize; // center coordinate
-            vec4 pc_val = texture(kd, pc_coord); // [0..1] - lookup color in center
+            vec4 pc_val = texture(source, pc_coord); // [0..1] - lookup color in center
             float s = 2.0;
             float b = -1.0;
             vec2 uvc = vec2(pc_val.x*s+b, pc_val.y*s+b); // [-1..1]
@@ -7991,7 +9542,7 @@ vec4 data() {
 
             vec2 p = v_texcoord*tileSize; // point in pixel
             vec2 pc_coord = glyphTileCenterCoord(p)/tileSize; // center coordinate
-            vec4 pc_val = texture(kd, pc_coord); // [0..1] - lookup color in center
+            vec4 pc_val = texture(source, pc_coord); // [0..1] - lookup color in center
             float s = 2.0;
             float b = -1.0;
             vec2 uvc = vec2(pc_val.x*s+b, pc_val.y*s+b); // [-1..1]
@@ -8054,13 +9605,13 @@ vec4 data() {
 
     /**
      * ShaderCombiner module provides texture combination operations for OpenLIME.
-     * Supports both WebGL 1.0 and 2.0/3.0 GLSL specifications with automatic version detection.
+     * Supports WebGL 2.0+ GLSL specifications with automatic version detection.
      * 
      * ShaderCombiner class manages the combination of two input textures using various operations.
      * Features:
      * - Multiple combination modes (first, second, mean, diff)
      * - Automatic texture sampling
-     * - WebGL 1.0 and 2.0 compatibility
+     * - WebGL 2.0+
      * - Alpha channel preservation
      * 
      * @extends Shader
@@ -8102,14 +9653,10 @@ vec4 data() {
     	 * @private
     	 */
     	fragShaderSrc(gl) {
-    		let gl2 = !(gl instanceof WebGLRenderingContext);
     		let operation = this.operations[this.mode];
     		return `
 
-${gl2 ? 'in' : 'varying'} vec2 v_texcoord;
-
-uniform sampler2D source1;
-uniform sampler2D source2;
+in vec2 v_texcoord;
 
 vec4 data() {
 	vec4 c1 = texture(source1, v_texcoord);
@@ -8129,20 +9676,380 @@ vec4 data() {
     	 * @private
     	 */
     	vertShaderSrc(gl) {
-    		let gl2 = !(gl instanceof WebGLRenderingContext);
-    		return `${gl2 ? '#version 300 es' : ''}
+    		return `#version 300 es
 
 
-${gl2 ? 'in' : 'attribute'} vec4 a_position;
-${gl2 ? 'in' : 'attribute'} vec2 a_texcoord;
+in vec4 a_position;
+in vec2 a_texcoord;
 
-${gl2 ? 'out' : 'varying'} vec2 v_texcoord;
+out vec2 v_texcoord;
 
 void main() {
 	gl_Position = a_position;
 	v_texcoord = a_texcoord;
 }`;
     	}
+    }
+
+    /**
+     * ShaderEdgeDetection extends the base Shader class to implement
+     * a Sobel edge detection filter on input textures.
+     * 
+     * The shader detects edges by calculating gradients in both 
+     * horizontal and vertical directions using Sobel operators.
+     */
+    class ShaderEdgeDetection extends Shader {
+      /**
+       * Creates a new EdgeDetectionShader instance.
+       * @param {Object} [options] - Configuration options passed to parent Shader
+       * @param {number} [options.threshold=0.1] - Edge detection threshold (0.0-1.0)
+       * @param {boolean} [options.colorEdges=false] - Whether to preserve edge colors
+       */
+      constructor(options = {}) {
+        // Set default options for edge detection
+        const edgeOptions = Object.assign({
+          threshold: 0.1,
+          colorEdges: false,
+          uniforms: {
+            threshold: { type: 'float', value: 0.1, needsUpdate: true },
+            colorEdges: { type: 'bool', value: false, needsUpdate: true }
+          },
+          samplers: [
+            { id: 0, name: 'source', label: 'Color', samplers: [{ id: 0, type: 'color' }] }
+          ],
+          label: 'Edge Detection',
+          modes: ['sobel', 'prewitt'],
+          mode: 'sobel'
+        }, options);
+
+        super(edgeOptions);
+
+        // Set threshold from options
+        if (options.threshold !== undefined) {
+          this.setUniform('threshold', options.threshold);
+        }
+
+        // Set color mode from options
+        if (options.colorEdges !== undefined) {
+          this.setUniform('colorEdges', options.colorEdges);
+        }
+      }
+
+      /**
+       * Override fragment shader source to implement edge detection.
+       * This version is compatible with WebGL 2.0+.
+       * @param {WebGLRenderingContext} gl - WebGL context
+       * @returns {string} Fragment shader source code
+       */
+      fragShaderSrc(gl) {
+        // Check if we're using WebGL2
+
+        return `
+
+uniform float threshold;
+uniform bool colorEdges;
+
+in vec2 v_texcoord;
+
+// Calculate texture offset based on tile size
+vec2 texelSize = vec2(1.0) / tileSize;
+
+vec4 data() {
+  // Sample the 3x3 neighborhood around the current pixel
+  vec4 tl = texture(source, v_texcoord + texelSize * vec2(-1, -1));
+  vec4 t  = texture(source, v_texcoord + texelSize * vec2( 0, -1));
+  vec4 tr = texture(source, v_texcoord + texelSize * vec2( 1, -1));
+  vec4 l  = texture(source, v_texcoord + texelSize * vec2(-1,  0));
+  vec4 c  = texture(source, v_texcoord);
+  vec4 r  = texture(source, v_texcoord + texelSize * vec2( 1,  0));
+  vec4 bl = texture(source, v_texcoord + texelSize * vec2(-1,  1));
+  vec4 b  = texture(source, v_texcoord + texelSize * vec2( 0,  1));
+  vec4 br = texture(source, v_texcoord + texelSize * vec2( 1,  1));
+  
+  // Convert to grayscale for edge detection
+  float tlGray = dot(tl.rgb, vec3(0.299, 0.587, 0.114));
+  float tGray  = dot(t.rgb, vec3(0.299, 0.587, 0.114));
+  float trGray = dot(tr.rgb, vec3(0.299, 0.587, 0.114));
+  float lGray  = dot(l.rgb, vec3(0.299, 0.587, 0.114));
+  float cGray  = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+  float rGray  = dot(r.rgb, vec3(0.299, 0.587, 0.114));
+  float blGray = dot(bl.rgb, vec3(0.299, 0.587, 0.114));
+  float bGray  = dot(b.rgb, vec3(0.299, 0.587, 0.114));
+  float brGray = dot(br.rgb, vec3(0.299, 0.587, 0.114));
+  
+  float gx, gy;
+  
+  // Different convolution kernels based on mode
+  if (${this.mode === 'sobel' ? 'true' : 'false'}) {
+      // Sobel operator
+      gx = -1.0 * tlGray + 1.0 * trGray +
+           -2.0 * lGray  + 2.0 * rGray  +
+           -1.0 * blGray + 1.0 * brGray;
+           
+      gy = -1.0 * tlGray + -2.0 * tGray + -1.0 * trGray +
+            1.0 * blGray +  2.0 * bGray +  1.0 * brGray;
+  } else {
+      // Prewitt operator
+      gx = -1.0 * tlGray + 1.0 * trGray +
+           -1.0 * lGray  + 1.0 * rGray  +
+           -1.0 * blGray + 1.0 * brGray;
+           
+      gy = -1.0 * tlGray + -1.0 * tGray + -1.0 * trGray +
+            1.0 * blGray +  1.0 * bGray +  1.0 * brGray;
+  }
+  
+  // Calculate edge magnitude
+  float g = sqrt(gx * gx + gy * gy);
+  
+  // Apply threshold
+  float edge = step(threshold, g);
+  
+  // Output either edge intensity or colored edges
+  if (colorEdges) {
+      return vec4(c.rgb * edge, c.a);
+  } else {
+      return vec4(vec3(edge), c.a);
+  }
+}`;
+      }
+
+      /**
+       * Sets the edge detection threshold.
+       * @param {number} value - Threshold value (0.0-1.0)
+       */
+      setThreshold(value) {
+        this.setUniform('threshold', value);
+      }
+
+      /**
+       * Toggles colored edges mode.
+       * @param {boolean} enabled - Whether to preserve edge colors
+       */
+      setColorEdges(enabled) {
+        this.setUniform('colorEdges', enabled);
+      }
+    }
+
+    /**
+     * ShaderAnisotropicDiffusion extends the base Shader class to implement
+     * a Perona-Malik anisotropic diffusion filter to enhance inscriptions
+     * on metal surfaces based on normal maps.
+     * 
+     * This filter preserves and enhances edges while smoothing other areas,
+     * making it ideal for revealing inscriptions on uneven surfaces.
+     */
+    class ShaderAnisotropicDiffusion extends Shader {
+      /**
+       * Creates a new Anisotropic Diffusion Shader instance.
+       * @param {Object} [options] - Configuration options passed to parent Shader
+       * @param {number} [options.kappa=15.0] - Diffusion conductance parameter
+       * @param {number} [options.iterations=3] - Number of diffusion iterations
+       * @param {number} [options.lambda=0.25] - Diffusion rate (0.0-0.25 for stability)
+       * @param {number} [options.normalStrength=1.0] - Normal contribution strength
+       */
+      constructor(options = {}) {
+        // Set default options for anisotropic diffusion
+        const diffusionOptions = Object.assign({
+          kappa: 0.03,          // Very low value to strongly preserve edges
+          iterations: 3,        // Fewer iterations to avoid over-smoothing
+          lambda: 0.1,          // Gentler diffusion
+          normalStrength: 1.2,  // Increased strength for better visibility
+          uniforms: {
+            kappa: { type: 'float', value: 0.03, needsUpdate: true },
+            iterations: { type: 'int', value: 3, needsUpdate: true },
+            lambda: { type: 'float', value: 0.1, needsUpdate: true },
+            normalStrength: { type: 'float', value: 1.2, needsUpdate: true }
+          },
+          samplers: [
+            { id: 0, name: 'source', label: 'Normal Map', samplers: [{ id: 0, type: 'color' }] }
+          ],
+          label: 'Anisotropic Diffusion',
+          modes: ['perona-malik', 'weickert'],
+          mode: 'perona-malik'
+        }, options);
+
+        super(diffusionOptions);
+
+        // Set parameters from options
+        if (options.kappa !== undefined) {
+          this.setUniform('kappa', options.kappa);
+        }
+
+        if (options.iterations !== undefined) {
+          this.setUniform('iterations', options.iterations);
+        }
+
+        if (options.lambda !== undefined) {
+          this.setUniform('lambda', options.lambda);
+        }
+
+        if (options.normalStrength !== undefined) {
+          this.setUniform('normalStrength', options.normalStrength);
+        }
+      }
+
+      /**
+       * Override fragment shader source to implement anisotropic diffusion.
+       * This version is compatible with WebGL 2.0+.
+       * @param {WebGLRenderingContext} gl - WebGL context
+       * @returns {string} Fragment shader source code
+       */
+      fragShaderSrc(gl) {
+        return `
+uniform float kappa;
+uniform int iterations;
+uniform float lambda;
+uniform float normalStrength;
+
+in vec2 v_texcoord;
+
+// Calculate texture offset based on tile size
+vec2 texelSize = vec2(1.0) / tileSize;
+
+// Edge-stopping functions from Perona-Malik algorithm
+float g1(float gradient, float k) {
+  return exp(-pow(gradient/k, 2.0));
+}
+
+float g2(float gradient, float k) {
+  return 1.0 / (1.0 + pow(gradient/k, 2.0));
+}
+
+  // Extract grayscale value from normal map, giving more weight to z component
+float normalToGray(vec3 normal) {
+  // Heavily favor the blue channel (z component) since it contains the depth information
+  return dot(normal, vec3(0.15, 0.15, 0.7));
+}
+
+vec4 data() {
+  // Sample the center pixel color (normal map)
+  vec4 centerColor = texture(source, v_texcoord);
+  ${this.isLinear ? "" : "centerColor = srgb2linear(centerColor);"}
+  // Convert normal to working grayscale image
+  // Adjust normal vector to be in [-1,1] range
+  vec3 normal = centerColor.rgb * 2.0 - 1.0;
+  normal = normalize(normal);
+  
+  // Extract grayscale value with emphasis on z component
+  // Map to 0-1 range for better visualization
+  float intensity = (normalToGray(normal) + 1.0) * 0.5;
+  
+  // Store the original intensity before diffusion for later use
+  float originalIntensity = intensity;
+  
+  // Initial image for diffusion
+  float currentIntensity = intensity;
+  
+  // Perform multiple iterations of anisotropic diffusion
+  for (int i = 0; i < 20; i++) {
+    if (i >= iterations) break; // Handle dynamic loop limit
+    
+    // Sample the 4-connected neighborhood
+    vec4 vN = texture(source, v_texcoord + texelSize * vec2(0.0, -1.0));
+     ${this.isLinear ? "" : "vN = srgb2linear(vN);"}
+    vec4 vS = texture(source, v_texcoord + texelSize * vec2(0.0, 1.0));
+     ${this.isLinear ? "" : "vS = srgb2linear(vS);"}
+    vec4 vE = texture(source, v_texcoord + texelSize * vec2(1.0, 0.0));
+     ${this.isLinear ? "" : "vE = srgb2linear(vE);"}
+    vec4 vW = texture(source, v_texcoord + texelSize * vec2(-1.0, 0.0));
+     ${this.isLinear ? "" : "vW = srgb2linear(vW);"}
+
+    vec3 normalN = vN.rgb * 2.0 - 1.0;
+    vec3 normalS = vS.rgb * 2.0 - 1.0;
+    vec3 normalE = vE.rgb * 2.0 - 1.0;
+    vec3 normalW = vW.rgb * 2.0 - 1.0;
+    
+    // Convert to grayscale with normalization to 0-1 range
+    float n = (normalToGray(normalN) + 1.0) * 0.5;
+    float s = (normalToGray(normalS) + 1.0) * 0.5;
+    float e = (normalToGray(normalE) + 1.0) * 0.5;
+    float w = (normalToGray(normalW) + 1.0) * 0.5;
+    
+    // Calculate gradients (using normalized intensity values)
+    float gradN = abs(n - currentIntensity);
+    float gradS = abs(s - currentIntensity);
+    float gradE = abs(e - currentIntensity);
+    float gradW = abs(w - currentIntensity);
+    
+    // Apply edge-stopping function
+    float mode = ${this.mode === 'perona-malik' ? '1.0' : '0.0'};
+    float cN = mix(g2(gradN, kappa), g1(gradN, kappa), mode);
+    float cS = mix(g2(gradS, kappa), g1(gradS, kappa), mode);
+    float cE = mix(g2(gradE, kappa), g1(gradE, kappa), mode);
+    float cW = mix(g2(gradW, kappa), g1(gradW, kappa), mode);
+    
+    // Update intensity with weighted contributions
+    float laplacian = cN * (n - currentIntensity) +
+                     cS * (s - currentIntensity) +
+                     cE * (e - currentIntensity) +
+                     cW * (w - currentIntensity);
+                     
+    currentIntensity += lambda * laplacian;
+  }
+  
+  // Enhance contrast in the final result
+  float enhancedIntensity = currentIntensity * normalStrength;
+  
+  // Combine with original intensity to preserve details
+  float mixFactor = 0.6; // 60% diffused result, 40% original
+  enhancedIntensity = mix(originalIntensity, enhancedIntensity, mixFactor);
+  
+  // Custom contrast enhancement to bring out inscriptions
+  // Apply contrast and brightness adjustment
+  float adjustedIntensity = enhancedIntensity;
+  
+  // Invert the image for better visibility of inscriptions
+  adjustedIntensity = 1.0 - adjustedIntensity;
+  
+  // Significantly enhance brightness and contrast
+  adjustedIntensity = pow(adjustedIntensity, 0.5); // Increase brightness (gamma correction)
+  adjustedIntensity = smoothstep(0.1, 0.6, adjustedIntensity); // Enhance contrast with bigger bright areas
+  
+  // Boost brightness again
+  adjustedIntensity = adjustedIntensity * 1.3;
+  adjustedIntensity = clamp(adjustedIntensity, 0.0, 1.0);
+  
+  // Return grayscale result with good visibility
+  return vec4(vec3(adjustedIntensity), centerColor.a);
+}`;
+      }
+
+      /**
+       * Sets the kappa parameter which controls edge sensitivity.
+       * Higher values preserve fewer edges.
+       * @param {number} value - Kappa value (typically 5-50)
+       */
+      setKappa(value) {
+        this.setUniform('kappa', value);
+      }
+
+      /**
+       * Sets the number of diffusion iterations.
+       * More iterations produce smoother results but take longer to compute.
+       * @param {number} value - Number of iterations (typically 1-10)
+       */
+      setIterations(value) {
+        this.setUniform('iterations', value);
+      }
+
+      /**
+       * Sets the lambda parameter which controls diffusion rate.
+       * Should be between 0.0 and 0.25 for numerical stability.
+       * @param {number} value - Lambda value (0.0-0.25)
+       */
+      setLambda(value) {
+        value = Math.min(0.25, Math.max(0.0, value)); // Clamp for stability
+        this.setUniform('lambda', value);
+      }
+
+      /**
+       * Sets the normal strength parameter which controls how much
+       * the normal map information influences the final result.
+       * @param {number} value - Normal strength multiplier
+       */
+      setNormalStrength(value) {
+        this.setUniform('normalStrength', value);
+      }
     }
 
     /**
@@ -8648,6 +10555,7 @@ void main() {
     	 * @fires ControllerPanZoom#nowheel
     	 */
     	mouseWheel(e) {
+    		if(!this.active) return;
     		if (this.controlZoom && !e.ctrlKey) {
     			this.emit('nowheel');
     			return;
@@ -8768,7 +10676,7 @@ void main() {
          * Creates a new PointerManager instance.
          * @param {HTMLElement} target - DOM element to attach event listeners to
          * @param {Object} [options] - Configuration options
-         * @param {number} [options.pinchMaxInterval=250] - Maximum time (ms) between touches to trigger pinch
+         * @param {number} [options.pinchMaxInterval=100] - Maximum time (ms) between touches to trigger pinch
          * @param {number} [options.idleTime=60] - Seconds of inactivity before idle event
          */
         constructor(target, options) {
@@ -8776,7 +10684,7 @@ void main() {
             this.target = target;
 
             Object.assign(this, {
-                pinchMaxInterval: 250,        // in ms, fingerDown event max distance in time to trigger a pinch.
+                pinchMaxInterval: 100,        // in ms, fingerDown event max distance in time to trigger a pinch.
                 idleTime: 60, //in seconds,
             });
 
@@ -9304,15 +11212,16 @@ void main() {
                         this.originSrc = e.composedPath()[0];
                         this.timeout = setTimeout(() => {
                             this.emit(this.createOutputEvent(e, 'fingerHold'));
+                            this.status = this.stateEnum.HOLD;
                             if (e.defaultPrevented) this.status = this.stateEnum.IDLE;
                         }, this.holdTimeoutThreshold);
                     }
                     break;
                 case this.stateEnum.DETECT:
-                    if (e.type == 'pointercancel') { /// For Firefox
+                    if (e.type == 'pointercancel') {
                         clearTimeout(this.timeout);
                         this.status = this.stateEnum.IDLE;
-                        this.emit(this.createOutputEvent(e, 'fingerHold'));
+                        this.emit(this.createOutputEvent(e, 'fingerMovingEnd'));
                     } else if (e.type == 'pointermove' && distance > this.movingThreshold) {
                         clearTimeout(this.timeout);
                         this.status = this.stateEnum.MOVING;
@@ -9326,14 +11235,23 @@ void main() {
                         }, this.tapTimeoutThreshold);
                     }
                     break;
+                case this.stateEnum.HOLD:
+                    if (e.type == 'pointerup' || e.type == 'pointercancel') {
+                        this.status = this.stateEnum.IDLE;
+                    } else if (e.type == 'pointermove' && distance > this.movingThreshold) {
+                        this.status = this.stateEnum.MOVING;
+                        this.emit(this.createOutputEvent(e, 'fingerMovingStart'));
+                    }
+                    break;
                 case this.stateEnum.TAPS_DETECT:
                     if (e.type == 'pointerdown') {
                         clearTimeout(this.timeout);
                         this.status = this.stateEnum.DOUBLE_TAP_DETECT;
                         this.timeout = setTimeout(() => {
+                            this.status = this.stateEnum.HOLD;
                             this.emit(this.createOutputEvent(e, 'fingerHold'));
                             if (e.defaultPrevented) this.status = this.stateEnum.IDLE;
-                        }, this.tapTimeoutThreshold);
+                        }, this.holdTimeoutThreshold);
                     } else if (e.type == 'pointermove' && distance > this.movingThreshold) {
                         clearTimeout(this.timeout);
                         this.status = this.stateEnum.IDLE;
@@ -9345,10 +11263,8 @@ void main() {
                         clearTimeout(this.timeout);
                         this.status = this.stateEnum.IDLE;
                         this.emit(this.createOutputEvent(e, 'fingerDoubleTap'));
-                    }
-                    break;
-                case this.stateEnum.DOUBLE_TAP_DETECT:
-                    if (e.type == 'pointermove' && distance > this.movingThreshold) {
+                    } else if (e.type == 'pointermove' && distance > this.movingThreshold) {
+                        clearTimeout(this.timeout);
                         this.status = this.stateEnum.MOVING;
                         this.emit(this.createOutputEvent(e, 'fingerMovingStart'));
                     }
@@ -9371,6 +11287,7 @@ void main() {
             this.addToHistory(e);
         }
 
+
         handleEvent(e) {
             let result = false;
             if (this.isLikelySamePointer(e)) {
@@ -9388,7 +11305,8 @@ void main() {
     }
 
     /**
-     * Circular buffer for event history.
+     * A fixed-size circular buffer for efficient event history management.
+     * Provides FIFO operations with automatic overwriting of oldest entries.
      * @private
      */
     class CircularBuffer {
@@ -9398,100 +11316,164 @@ void main() {
          * @throws {TypeError} If capacity is not a positive integer
          */
         constructor(capacity) {
-            if (typeof capacity != "number" || !Number.isInteger(capacity) || capacity < 1)
+            if (typeof capacity !== "number" || !Number.isInteger(capacity) || capacity < 1) {
                 throw new TypeError("Invalid capacity");
+            }
+
             this.buffer = new Array(capacity);
             this.capacity = capacity;
-            this.first = 0;
-            this.size = 0;
+            this.first = 0;    // Index of first element
+            this.size = 0;     // Current number of elements
         }
 
+        /**
+         * Removes all elements from the buffer.
+         */
         clear() {
             this.first = 0;
             this.size = 0;
         }
 
+        /**
+         * Checks if the buffer is empty.
+         * @returns {boolean} True if empty
+         */
         empty() {
-            return this.size == 0;
+            return this.size === 0;
         }
 
-        size() {
-            return this.size;
-        }
-
-        capacity() {
-            return this.capacity;
-        }
-
+        /**
+         * Gets the first (oldest) element.
+         * @returns {*} First element or null if empty
+         */
         first() {
-            let result = null;
-            if (this.size > 0) result = this.buffer[this.first];
-            return result;
+            return this.size > 0 ? this.buffer[this.first] : null;
         }
 
+        /**
+         * Gets the last (newest) element.
+         * @returns {*} Last element or null if empty
+         */
         last() {
-            let result = null;
-            if (this.size > 0) result = this.buffer[(this.first + this.size - 1) % this.capacity];
-            return result;
+            return this.size > 0 ? this.buffer[(this.first + this.size - 1) % this.capacity] : null;
         }
 
-        enqueue(v) {
-            this.first = (this.first > 0) ? this.first - 1 : this.first = this.capacity - 1;
-            this.buffer[this.first] = v;
-            if (this.size < this.capacity) this.size++;
-        }
+        /**
+         * Adds an element to the front, replacing the last if full.
+         * @param {*} value - Value to add
+         */
+        enqueue(value) {
+            this.first = (this.first > 0) ? this.first - 1 : this.capacity - 1;
+            this.buffer[this.first] = value;
 
-        push(v) {
-            if (this.size === this.capacity) {
-                this.buffer[this.first] = v;
-                this.first = (this.first + 1) % this.capacity;
-            } else {
-                this.buffer[(this.first + this.size) % this.capacity] = v;
+            if (this.size < this.capacity) {
                 this.size++;
             }
         }
 
-        dequeue() {
-            if (this.size == 0) throw new RangeError("Dequeue on empty buffer");
-            const v = this.buffer[(this.first + this.size - 1) % this.capacity];
-            this.size--;
-            return v;
+        /**
+         * Adds an element to the end, replacing the first if full.
+         * @param {*} value - Value to add
+         */
+        push(value) {
+            const index = (this.first + this.size) % this.capacity;
+            this.buffer[index] = value;
+
+            if (this.size === this.capacity) {
+                // Buffer is full, advance first position
+                this.first = (this.first + 1) % this.capacity;
+            } else {
+                this.size++;
+            }
         }
 
+        /**
+         * Removes and returns the last element.
+         * @returns {*} Removed element
+         * @throws {RangeError} If buffer is empty
+         */
         pop() {
-            return this.dequeue();
-        }
+            if (this.size === 0) {
+                throw new RangeError("Dequeue on empty buffer");
+            }
 
-        shift() {
-            if (this.size == 0) throw new RangeError("Shift on empty buffer");
-            const v = this.buffer[this.first];
-            if (this.first == this.capacity - 1) this.first = 0; else this.first++;
+            const index = (this.first + this.size - 1) % this.capacity;
+            const value = this.buffer[index];
             this.size--;
-            return v;
+
+            return value;
         }
 
+        /**
+         * Removes and returns the first element.
+         * @returns {*} Removed element
+         * @throws {RangeError} If buffer is empty
+         */
+        shift() {
+            if (this.size === 0) {
+                throw new RangeError("Shift on empty buffer");
+            }
+
+            const value = this.buffer[this.first];
+            this.first = (this.first + 1) % this.capacity;
+            this.size--;
+
+            return value;
+        }
+
+        /**
+         * Gets elements by index or range.
+         * @param {number} start - Start index
+         * @param {number} [end] - End index (inclusive)
+         * @returns {*|Array} Single element or array of elements
+         * @throws {TypeError|RangeError} If indices are invalid
+         */
         get(start, end) {
-            if (this.size === 0 && start === 0 && (end === undefined || end === 0)) return [];
-            if (typeof start !== "number" || !Number.isInteger(start) || start < 0) throw new TypeError("Invalid start value");
-            if (start >= this.size) throw new RangeError("Start index past end of buffer: " + start);
+            // Special case for empty buffer with valid indices
+            if (this.size === 0 && start === 0 && (end === undefined || end === 0)) {
+                return [];
+            }
 
-            if (end === undefined) return this.buffer[(this.first + start) % this.capacity];
+            // Validate start index
+            if (typeof start !== "number" || !Number.isInteger(start) || start < 0) {
+                throw new TypeError("Invalid start value");
+            }
 
-            if (typeof end !== "number" || !Number.isInteger(end) || end < 0) throw new TypeError("Invalid end value");
-            if (end >= this.size) throw new RangeError("End index past end of buffer: " + end);
+            if (start >= this.size) {
+                throw new RangeError("Start index past end of buffer: " + start);
+            }
 
+            // Return single element if no end index
+            if (end === undefined) {
+                return this.buffer[(this.first + start) % this.capacity];
+            }
+
+            // Validate end index
+            if (typeof end !== "number" || !Number.isInteger(end) || end < 0) {
+                throw new TypeError("Invalid end value");
+            }
+
+            if (end >= this.size) {
+                throw new RangeError("End index past end of buffer: " + end);
+            }
+
+            // Return range of elements
             const result = [];
             for (let i = start; i <= end; i++) {
                 result.push(this.buffer[(this.first + i) % this.capacity]);
             }
+
             return result;
         }
 
+        /**
+         * Converts the buffer to an array.
+         * @returns {Array} Array containing all elements in order
+         */
         toArray() {
-            if (this.size == 0) return [];
+            if (this.size === 0) return [];
             return this.get(0, this.size - 1);
         }
-
     }
 
     /**
@@ -9608,21 +11590,9 @@ void main() {
     	 * 3. Initializes camera
     	 * 4. Creates pointer manager
     	 * 5. Sets up resize observer
-    	 * 
-    	 * @example
-    	 * ```javascript
-    	 * // Create with options
-    	 * const viewer = new OpenLIME.Viewer('.container', {
-    	 *     background: '#000000',
-    	 *     autofit: true,
-    	 *     canvas: {
-    	 *         preserveDrawingBuffer: true
-    	 *     }
-    	 * });
-    	 * ```
     	 */
     	constructor(div, options) {
-
+    		// Set default properties
     		Object.assign(this, {
     			background: null,
     			autofit: true,
@@ -9630,16 +11600,20 @@ void main() {
     			camera: new Camera(),
     			idleTime: 60 // in seconds
     		});
+
+    		// Get container element
     		if (typeof (div) == 'string')
     			div = document.querySelector(div);
 
     		if (!div)
     			throw "Missing element parameter";
 
+    		// Apply options
     		Object.assign(this, options);
     		if (this.background)
     			div.style.background = this.background;
 
+    		// Set up DOM elements
     		this.containerElement = div;
     		this.canvasElement = div.querySelector('canvas');
     		if (!this.canvasElement) {
@@ -9651,28 +11625,50 @@ void main() {
     		this.overlayElement.classList.add('openlime-overlay');
     		this.containerElement.appendChild(this.overlayElement);
 
+    		// Initialize Canvas
     		this.canvas = new Canvas(this.canvasElement, this.overlayElement, this.camera, this.canvas);
+
+    		// Event handling for rendering
     		this.canvas.addEvent('update', () => { this.redraw(); });
 
-    		if (this.autofit)
-    			this.canvas.addEvent('updateSize', () => this.camera.fitCameraBox(0));
+    		// Better handling of auto-fit functionality
+    		if (this.autofit) {
+    			// Only auto-fit when ALL layers are ready (this ensures we have valid bounding boxes)
+    			this.canvas.addEvent('ready', () => {
+    				this.camera.fitCameraBox(0);
+    			});
 
+    			// For updateSize events, only fit if we have at least one ready layer
+    			this.canvas.addEvent('updateSize', () => {
+    				const hasReadyLayers = Object.values(this.canvas.layers).some(layer => layer.status === 'ready');
+    				if (hasReadyLayers) {
+    					this.camera.fitCameraBox(0);
+    				}
+    			});
+    		}
+
+    		// Initialize pointer manager
     		this.pointerManager = new PointerManager(this.overlayElement, { idleTime: this.idleTime });
 
+    		// Prevent context menu
     		this.canvasElement.addEventListener('contextmenu', (e) => {
     			e.preventDefault();
     			return false;
     		});
 
-    		let resizeobserver = new ResizeObserver(entries => {
+    		// Set up resize observer
+    		this.resizeObserver = new ResizeObserver(entries => {
     			for (let entry of entries) {
     				this.resize(entry.contentRect.width, entry.contentRect.height);
     			}
     		});
-    		resizeobserver.observe(this.canvasElement);
+    		this.resizeObserver.observe(this.canvasElement);
 
-    		this.resize(this.canvasElement.clientWidth, this.canvasElement.clientHeight);
+    		// Initial resize
+    		//this.resize(this.canvasElement.clientWidth, this.canvasElement.clientHeight);
 
+    		// Initialize controllers array
+    		this.controllers = [];
     	}
 
     	/**
@@ -9680,6 +11676,7 @@ void main() {
     	 * @param {Controller} controller An OpenLIME controller.
     	 */
     	addController(controller) {
+    		this.controllers.push(controller);
     		this.pointerManager.onEvent(controller);
     	}
 
@@ -9771,10 +11768,2464 @@ void main() {
     			this.redraw();
     		this.emit('draw');
     	}
-    }
 
+    	/**
+    	 * Enables or disables split viewport mode and sets which layers appear on each side
+    	 * @param {boolean} enabled - Whether split viewport mode is enabled
+    	 * @param {string[]} leftLayerIds - Array of layer IDs to show on left side
+    	 * @param {string[]} rightLayerIds - Array of layer IDs to show on right side
+    	 * @fires Canvas#update
+    	 */
+    	setSplitViewport(enabled, leftLayerIds = [], rightLayerIds = []) {
+    		this.canvas.setSplitViewport(enabled, leftLayerIds, rightLayerIds);
+    	}
+
+    }
     addSignals(Viewer, 'draw');
     addSignals(Viewer, 'resize'); //args: viewport
+
+    /**
+     * GeoreferenceManager for working with geographic coordinates in OpenLIME
+     * Handles conversions between geographic coordinates (EPSG:4326/WGS84) and 
+     * Web Mercator (EPSG:3857) and managing map navigation.
+     */
+    class GeoreferenceManager {
+      /**
+       * Creates a new GeoreferenceManager
+       * @param {Object} viewer - OpenLIME Viewer instance
+       * @param {Object} layer - Layer containing the geographic image
+       */
+      constructor(viewer, layer) {
+        if (!viewer || !layer) {
+          throw new Error('Viewer and layer are required');
+        }
+
+        this.viewer = viewer;
+        this.camera = viewer.camera;
+        this.layer = layer;
+        this.earthRadius = 6378137; // Earth radius in meters (WGS84)
+        this.imageSize = Math.max(this.layer.width, this.layer.height);
+        
+        // Define zoom constraints
+        this.minZoom = 0;  // Minimum zoom level
+        this.maxZoom = 19; // Maximum zoom level (from OSM)
+
+        // Set up camera position methods
+        this.setupViewer();
+      }
+
+      /**
+       * Configures the viewer with geographic navigation methods
+       * @private
+       */
+      setupViewer() {
+        // Add method to navigate to geographic coordinates
+        this.camera.setGeoPosition = (lat, lon, zoom) => {
+          const sceneCoord = this.geoToScene(lat, lon);
+          
+          // Constrain zoom to valid range
+          const constrainedZoom = Math.min(this.maxZoom, Math.max(this.minZoom, zoom));
+          const z = constrainedZoom !== undefined ? 1 / Math.pow(2, constrainedZoom) : this.camera.getCurrentTransform(performance.now()).z;
+
+          // Notice we need to negate the coordinates and scale by z
+          this.camera.setPosition(250, -sceneCoord.x * z, -sceneCoord.y * z, z, 0);
+        };
+
+        // Add method to get current geographic position
+        this.camera.getGeoPosition = () => {
+          const transform = this.camera.getCurrentTransform(performance.now());
+
+          // Need to negate and unscale coordinates before converting to geo
+          const geo = this.sceneToGeo(-transform.x / transform.z, -transform.y / transform.z);
+          
+          // Calculate zoom level and ensure it's within valid range
+          const rawZoom = Math.log2(1 / transform.z);
+          const constrainedZoom = Math.min(this.maxZoom, Math.max(this.minZoom, rawZoom));
+
+          return {
+            lat: geo.lat,
+            lon: geo.lon,
+            zoom: constrainedZoom
+          };
+        };
+      }
+
+      /**
+       * Converts WGS84 (EPSG:4326) coordinates to Web Mercator (EPSG:3857)
+       * @param {number} lat - Latitude in degrees
+       * @param {number} lon - Longitude in degrees
+       * @returns {Object} Point in Web Mercator coordinates {x, y}
+       */
+      geoToWebMercator(lat, lon) {
+        // Clamp latitude to avoid singularity at poles
+        lat = Math.max(Math.min(lat, 85.051129), -85.051129);
+
+        // Convert latitude and longitude to radians
+        const latRad = lat * Math.PI / 180;
+        const lonRad = lon * Math.PI / 180;
+
+        // Calculate Web Mercator coordinates
+        const x = this.earthRadius * lonRad;
+        const y = this.earthRadius * Math.log(Math.tan(Math.PI / 4 + latRad / 2));
+
+        return { x, y };
+      }
+
+      /**
+       * Converts Web Mercator (EPSG:3857) coordinates to WGS84 (EPSG:4326)
+       * @param {number} x - X coordinate in Web Mercator
+       * @param {number} y - Y coordinate in Web Mercator
+       * @returns {Object} Geographic coordinates {lat, lon} in degrees
+       */
+      webMercatorToGeo(x, y) {
+        // Convert Web Mercator coordinates to latitude and longitude
+        const lonRad = x / this.earthRadius;
+        const latRad = 2 * Math.atan(Math.exp(y / this.earthRadius)) - Math.PI / 2;
+
+        // Convert radians to degrees
+        const lon = lonRad * 180 / Math.PI;
+        const lat = latRad * 180 / Math.PI;
+
+        return { lat, lon };
+      }
+
+      /**
+       * Converts Web Mercator coordinates to Scene coordinates
+       * @param {number} x - X coordinate in Web Mercator
+       * @param {number} y - Y coordinate in Web Mercator
+       * @returns {Object} Scene coordinates {x, y}
+       */
+      webMercatorToScene(x, y) {
+        // Scale from Web Mercator to the scene coordinate system
+        // Map is centered at 0,0 in scene coordinates
+        const maxMercator = Math.PI * this.earthRadius;
+        const scaleFactor = this.layer.width / (2 * maxMercator);
+
+        return {
+          x: x * scaleFactor,
+          y: y * scaleFactor
+        };
+      }
+
+      /**
+       * Converts scene coordinates to Web Mercator
+       * @param {number} x - X coordinate in scene space
+       * @param {number} y - Y coordinate in scene space
+       * @returns {Object} Web Mercator coordinates {x, y}
+       */
+      sceneToWebMercator(x, y) {
+        // Scale from scene coordinate system to Web Mercator
+        const maxMercator = Math.PI * this.earthRadius;
+        const scaleFactor = (2 * maxMercator) / this.layer.width;
+
+        return {
+          x: x * scaleFactor,
+          y: y * scaleFactor
+        };
+      }
+
+      /**
+       * Converts WGS84 coordinates to scene coordinates
+       * @param {number} lat - Latitude in degrees
+       * @param {number} lon - Longitude in degrees
+       * @returns {Object} Scene coordinates {x, y}
+       */
+      geoToScene(lat, lon) {
+        // Convert from WGS84 to Web Mercator
+        const mercator = this.geoToWebMercator(lat, lon);
+        // Convert from Web Mercator to scene coordinates
+        return this.webMercatorToScene(mercator.x, mercator.y);
+      }
+
+      /**
+       * Converts scene coordinates to WGS84 (EPSG:4326) coordinates
+       * @param {number} x - X coordinate in scene space
+       * @param {number} y - Y coordinate in scene space
+       * @returns {Object} Geographic coordinates {lat, lon} in degrees
+       */
+      sceneToGeo(x, y) {
+        // Convert from scene coordinates to Web Mercator
+        const mercator = this.sceneToWebMercator(x, y);
+        // Convert from Web Mercator to WGS84
+        return this.webMercatorToGeo(mercator.x, mercator.y);
+      }
+
+      /**
+       * Converts canvas HTML coordinates to WGS84 coordinates
+       * @param {number} x - X coordinate in canvas
+       * @param {number} y - Y coordinate in canvas
+       * @returns {Object} Geographic coordinates {lat, lon} in degrees
+       */
+      canvasToGeo(x, y) {
+        // Convert canvas coordinates to scene coordinates
+        const sceneCoord = CoordinateSystem.fromCanvasHtmlToScene(
+          { x, y },
+          this.camera,
+          true
+        );
+        // Convert scene coordinates to geographic coordinates
+        return this.sceneToGeo(sceneCoord.x, sceneCoord.y);
+      }
+
+      /**
+       * Navigate to a geographic position with animation
+       * @param {number} lat - Latitude in degrees
+       * @param {number} lon - Longitude in degrees
+       * @param {number} [zoom] - Zoom level (optional)
+       * @param {number} [duration=250] - Animation duration in ms
+       * @param {string} [easing='linear'] - Easing function
+       */
+      flyTo(lat, lon, zoom, duration = 500, easing = 'linear') {
+        if (!this.viewer || !this.camera) {
+          throw new Error('Viewer not initialized');
+        }
+        const sceneCoord = this.geoToScene(lat, lon);
+        
+        // Constrain zoom to valid range
+        const constrainedZoom = Math.min(this.maxZoom, Math.max(this.minZoom, zoom));
+        const z = 1.0 / Math.pow(2, constrainedZoom);
+
+        // Note that we use negative coordinates because the camera transform works that way
+        this.camera.setPosition(duration, -sceneCoord.x * z, -sceneCoord.y * z, z, 0, easing);
+      }
+
+      /**
+       * Gets the current geographic position and zoom
+       * @returns {Object} Current position {lat, lon, zoom}
+       */
+      getCurrentPosition() {
+        const transform = this.camera.getCurrentTransform(performance.now());
+        const geo = this.sceneToGeo(-transform.x / transform.z, -transform.y / transform.z);
+        
+        // Calculate zoom level and ensure it's within valid range
+        const rawZoom = Math.log2(1 / transform.z);
+        const constrainedZoom = Math.min(this.maxZoom, Math.max(this.minZoom, rawZoom));
+
+        return {
+          lat: geo.lat,
+          lon: geo.lon,
+          zoom: constrainedZoom
+        };
+      }
+    }
+
+    /**
+     * @typedef {Object} ShaderMultispectralOptions
+     * @property {string} [mode='rgb'] - Initial rendering mode ('rgb' or 'single_band')
+     * @property {boolean} [debug=false] - Enable debug output in console
+     * @property {number[]} [wavelength] - Array of wavelengths in nanometers
+     */
+
+    /**
+     * ShaderMultispectral - WebGL2 shader implementation for multispectral visualization
+     * 
+     * This shader handles the real-time rendering of multispectral imagery with 
+     * various visualization modes and Color Twist Weight (CTW) transformations.
+     * It leverages WebGL2 features such as Uniform Buffer Objects (UBO) for
+     * efficient handling of CTW coefficients and texture() for consistent texture sampling.
+     * 
+     * Features:
+     * - Multiple rendering modes (RGB, single band)
+     * - UBO-based Color Twist Weights for spectral transformations
+     * - Optimized memory access by skipping zero-weight bands
+     * - Support for up to 33 spectral bands (11 RGB textures)
+     * - Compatible with both single images and tile-based formats (DeepZoom, etc.)
+     * 
+     * Technical implementation:
+     * - Efficient std140 UBO layout for CTW coefficients
+     * - Loop unrolling for faster rendering
+     * - Optimized band access with constant indices
+     * 
+     * @extends Shader
+     */
+    class ShaderMultispectral extends Shader {
+      /**
+       * Creates a new multispectral shader
+       * 
+       * @param {ShaderMultispectralOptions} [options] - Configuration options
+       */
+      constructor(options) {
+        super({
+          autoSamplerDeclaration: false // We'll handle sampler declarations manually
+        });
+
+        // Set default properties
+        Object.assign(this, {
+          debug: true,
+          modes: ['rgb', 'single_band'],
+          mode: 'rgb',
+          wavelength: [],
+          nplanes: 0,        // Number of spectral planes (bands)
+          nimg: 0,           // Number of images (textures)
+          blockIndex: null,  // UBO block index
+          uboBuffer: null,   // UBO buffer object
+          MAX_SUPPORTED_PLANES: 33, // Maximum number of planes supported (33 bands = 11 RGB textures)
+          MAX_TEXTURES: 11         // Maximum number of textures we can use
+        });
+
+        // Apply user options
+        Object.assign(this, options);
+
+        // Set default uniforms
+        this.uniforms = {
+          selectedBand: { type: 'int', needsUpdate: true, value: 0 },
+          bandOutputChannel: { type: 'int', needsUpdate: true, value: 0 }, // 0=all/gray, 1=R, 2=G, 3=B
+        };
+
+        // Set default mode
+        this.setMode(this.mode);
+      }
+
+      /**
+       * Sets the rendering mode
+       * 
+       * Changes how multispectral data is visualized:
+       * - 'rgb': Uses CTW coefficients to create RGB visualization
+       * - 'single_band': Shows a single spectral band
+       * 
+       * @param {string} mode - Visualization mode ('rgb', 'single_band')
+       * @throws {Error} If mode is not recognized
+       */
+      setMode(mode) {
+        if (!this.modes.includes(mode))
+          throw new Error("Unknown mode: " + mode);
+
+        const prevMode = this.mode;
+        this.mode = mode;
+        this.needsUpdate = true;
+
+        // Emit update event with mode information
+        this.emit('update', { mode: mode, previousMode: prevMode });
+      }
+
+      /**
+       * Initializes shader with multispectral configuration
+       * 
+       * Sets up wavelength information, calculates the number of required textures,
+       * and configures samplers for each texture.
+       * 
+       * @param {Object} info - Multispectral configuration object from info.json
+       */
+      init(info) {
+        if (info.wavelength) {
+          this.wavelength = info.wavelength;
+          this.nplanes = this.wavelength.length;
+
+          if (this.nplanes > this.MAX_SUPPORTED_PLANES) {
+            console.warn(`Warning: ${this.nplanes} planes detected, but only ${this.MAX_SUPPORTED_PLANES} are supported. Some bands will be ignored.`);
+            this.nplanes = this.MAX_SUPPORTED_PLANES;
+          }
+
+          // Calculate how many textures we need (3 bands per texture)
+          this.nimg = Math.ceil(this.nplanes / 3);
+
+          // Clear existing samplers
+          this.samplers = [];
+
+          // Create samplers for each jpeg texture (up to MAX_TEXTURES)
+          const maxTextures = Math.min(this.nimg, this.MAX_TEXTURES);
+          for (let i = 0; i < maxTextures; i++) {
+            this.samplers.push({ id: i, name: `plane${i}`, type: 'vec3' });
+          }
+        }
+
+        this.needsUpdate = true;
+      }
+
+      /**
+       * Sets up Uniform Buffer Object for Color Twist Weights
+       * 
+       * Creates and configures a UBO for efficient handling of CTW coefficients.
+       * Uses WebGL2's std140 layout for optimal performance.
+       * 
+       * @param {WebGL2RenderingContext} gl - WebGL2 context
+       * @param {Float32Array} redCTW - Red channel CTW coefficients
+       * @param {Float32Array} greenCTW - Green channel CTW coefficients
+       * @param {Float32Array} blueCTW - Blue channel CTW coefficients
+       */
+      setupCTW(gl, redCTW, greenCTW, blueCTW) {
+        if (!gl) return;
+
+        // Ensure we have a valid block index
+        if (this.blockIndex === null && this.program) {
+          this.blockIndex = gl.getUniformBlockIndex(this.program, "CTWBlock");
+          if (this.blockIndex === gl.INVALID_INDEX) {
+            console.error("Failed to get UBO block index for CTWBlock");
+            return;
+          }
+        }
+
+        // Create UBO if it doesn't exist
+        if (!this.uboBuffer) {
+          this.uboBuffer = gl.createBuffer();
+        }
+
+        // Calculate buffer size for std140 layout
+        // Each array in std140 needs to be aligned to 16 bytes boundaries
+        // and each element may need vec4 (16 byte) alignment
+        const elementsPerArray = this.nplanes;
+
+        // Calculate std140 aligned size for a single array
+        // For an array of floats in std140, each element takes up 16 bytes (vec4 alignment)
+        const arrayStride = 16; // vec4 alignment in std140
+        const alignedArraySize = arrayStride * elementsPerArray;
+
+        // Total buffer size for 3 arrays (R, G, B)
+        const uboSize = alignedArraySize * 3;
+
+        // Bind and initialize the buffer
+        gl.bindBuffer(gl.UNIFORM_BUFFER, this.uboBuffer);
+        gl.bufferData(gl.UNIFORM_BUFFER, uboSize, gl.DYNAMIC_DRAW);
+
+        // Create temporary buffers with proper std140 alignment
+        const tempBuffer = new ArrayBuffer(uboSize);
+        const float32View = new Float32Array(tempBuffer);
+
+        // Fill temp buffer with std140 layout - R values
+        for (let i = 0; i < elementsPerArray; i++) {
+          // Each float is at index i*4 (because we're skipping 3 padding floats per element)
+          float32View[i * 4] = redCTW[i];
+        }
+
+        // Fill temp buffer with std140 layout - G values
+        const gOffset = alignedArraySize / 4; // offset in float32 elements
+        for (let i = 0; i < elementsPerArray; i++) {
+          float32View[gOffset + i * 4] = greenCTW[i];
+        }
+
+        // Fill temp buffer with std140 layout - B values
+        const bOffset = (alignedArraySize * 2) / 4; // offset in float32 elements
+        for (let i = 0; i < elementsPerArray; i++) {
+          float32View[bOffset + i * 4] = blueCTW[i];
+        }
+
+        // Upload the entire aligned buffer
+        gl.bufferSubData(gl.UNIFORM_BUFFER, 0, float32View);
+
+        // Bind the buffer to binding point 0
+        gl.bindBufferBase(gl.UNIFORM_BUFFER, 0, this.uboBuffer);
+
+        // Link the uniform block to the binding point
+        if (this.program && this.blockIndex !== gl.INVALID_INDEX) {
+          gl.uniformBlockBinding(this.program, this.blockIndex, 0);
+        }
+
+        // Store current CTW values
+        this._currentCTW = {
+          red: redCTW,
+          green: greenCTW,
+          blue: blueCTW
+        };
+      }
+
+      /**
+       * Sets single band visualization
+       * 
+       * Configures the shader to display a specific spectral band
+       * on a chosen output channel.
+       * 
+       * @param {number} bandIndex - Index of band to view
+       * @param {number} outputChannel - Output channel (0=all/gray, 1=R, 2=G, 3=B)
+       * @throws {Error} If band index is out of range
+       */
+      setSingleBand(bandIndex, outputChannel = 0) {
+        if (bandIndex < 0 || bandIndex >= this.nplanes) {
+          throw new Error(`Band index ${bandIndex} out of range [0-${this.nplanes - 1}]`);
+        }
+
+        this.setUniform('selectedBand', bandIndex);
+        this.setUniform('bandOutputChannel', outputChannel);
+        this.setMode('single_band');
+      }
+
+      /**
+       * Sets texture dimensions for calculations
+       * 
+       * No longer needed since we're using normalized coordinates
+       * @deprecated Use normalized texture coordinates instead
+       */
+      setTextureSize(size) {
+        // No longer needed - we use normalized coordinates
+      }
+
+      /**
+       * Generate fragment shader source code
+       * 
+       * Creates optimized GLSL code for multispectral visualization.
+       * Uses texture() with normalized coordinates instead of texelFetch.
+       * 
+       * @override
+       * @returns {string} GLSL fragment shader source code
+       */
+      fragShaderSrc() {
+        // Individual texture samplers declaration
+        let src = '';
+
+        // Declare each texture sampler individually
+        for (let i = 0; i < this.nimg && i < this.MAX_TEXTURES; i++) {
+          src += `uniform sampler2D plane${i};\n`;
+        }
+
+        src += `
+// UBO for Color Twist Weights (CTW)
+// std140 layout requires special alignment
+layout(std140) uniform CTWBlock {
+  // Each element in std140 array is aligned to vec4 (16 bytes)
+  // We use a vec4 instead of float to make alignment explicit
+  vec4 ctwRedVec4[${this.nplanes}];
+  vec4 ctwGreenVec4[${this.nplanes}];
+  vec4 ctwBlueVec4[${this.nplanes}];
+};
+
+// Uniforms for single band mode
+uniform int selectedBand;
+uniform int bandOutputChannel;
+
+in vec2 v_texcoord;
+
+// Utility function to get a specific band from the multispectral data
+// Using texture() with normalized coordinates for better compatibility
+float getBand(int bandIndex) {
+  float result = 0.0;
+  
+  // Handling each possible band with constant indices
+`;
+
+        // Generate band access logic with constant indices
+        for (let i = 0; i < this.nplanes; i++) {
+          const planeIndex = Math.floor(i / 3);
+          const channelIndex = i % 3;
+
+          if (planeIndex >= this.MAX_TEXTURES) continue; // Skip if we exceed maximum texture units
+
+          const channelComponent = channelIndex === 0 ? 'r' : (channelIndex === 1 ? 'g' : 'b');
+
+          src += `    if (bandIndex == ${i}) result = texture(plane${planeIndex}, v_texcoord).${channelComponent};\n`;
+        }
+
+        src += `
+   ${this.isLinear ? "" : "result = srgb2linear(result);"}      
+  return result; // Default return for out-of-range bands
+}
+
+// Check if a band has any non-zero CTW values to optimize memory access
+bool hasNonZeroCTW(int bandIndex) {
+  // Access the x component of each vec4 (where we store the actual value)
+  float r = ctwRedVec4[bandIndex].x;
+  float g = ctwGreenVec4[bandIndex].x;
+  float b = ctwBlueVec4[bandIndex].x;
+  return r != 0.0 || g != 0.0 || b != 0.0;
+}
+
+// Normalize CTW for a single channel
+float normalizeCTWChannel(vec4 ctwChannel[${this.nplanes}]) {
+  float totalWeight = 0.0;
+  
+  // Compute total absolute weight for the channel
+  for (int i = 0; i < ${this.nplanes}; i++) {
+      totalWeight += abs(ctwChannel[i].x);
+  }
+  
+  // Return normalization factor (avoid division by zero)
+  return totalWeight > 0.0 ? totalWeight : 1.0;
+}
+
+vec4 data() {
+`;
+
+        // RGB mode implementation with advanced normalization
+        if (this.mode === 'rgb') {
+          src += `
+  // RGB mode - Linear combination with channel-specific normalization
+  vec3 rgb = vec3(0.0);
+  // Normalize weights for each channel
+  //float redNorm = normalizeCTWChannel(ctwRedVec4);
+  //float greenNorm = normalizeCTWChannel(ctwGreenVec4);
+  //float blueNorm = normalizeCTWChannel(ctwBlueVec4);
+  
+  // Calculate linear combination for all channels with optimization
+`;
+
+          // Unroll the loop for better performance and to use constant indices
+          for (let i = 0; i < this.nplanes; i++) {
+            src += `
+  // Band ${i} processing
+  if (hasNonZeroCTW(${i})) {
+      float value${i} = getBand(${i});
+      rgb.r += value${i} * ctwRedVec4[${i}].x;
+      rgb.g += value${i} * ctwGreenVec4[${i}].x;
+      rgb.b += value${i} * ctwBlueVec4[${i}].x;
+  }`;
+          }
+
+          src += `
+  // Additional normalization to ensure output is in [0,1]
+  //vec3 absRgb = abs(rgb);
+  //float maxVal = max(max(absRgb.r, absRgb.g), absRgb.b);
+  
+  // Normalize to preserve relative magnitudes and sign
+  //if (maxVal > 1.0) {
+  //    rgb /= maxVal;
+  //}
+
+  return vec4(rgb, 1.0);
+`;
+        } else if (this.mode === 'single_band') {
+          src += `
+  // Single band mode - Show one band in a specific channel
+  float value = getBand(selectedBand);
+  
+  // Output to specified channel
+  vec3 rgb = vec3(value, value, value);
+  if (bandOutputChannel == 1) rgb = vec3(value, 0.0, 0.0);
+  else if (bandOutputChannel == 2) rgb = vec3(0.0, value, 0.0);
+  else if (bandOutputChannel == 3) rgb = vec3(0.0, 0.0, value);
+  return vec4(rgb, 1.0);
+`;
+        } else {
+          // Default fallback
+          src += `
+  // Default mode fallback
+  return vec4(0.5, 0.5, 0.5, 1.0);
+`;
+        }
+
+        src += `
+}`;
+
+        return src;
+      }
+
+      /**
+       * Creates WebGL shader program with UBO support
+       * 
+       * Extends the base shader program creation to setup UBO bindings.
+       * 
+       * @param {WebGL2RenderingContext} gl - WebGL2 context
+       * @override
+       */
+      createProgram(gl) {
+        super.createProgram(gl);
+
+        // Get uniform block index for CTW
+        if (this.program) {
+          this.blockIndex = gl.getUniformBlockIndex(this.program, "CTWBlock");
+
+          // Check if UBO is supported
+          if (this.blockIndex === gl.INVALID_INDEX) {
+            console.error("Uniform block CTWBlock not found");
+          } else {
+            // Bind the block to binding point 0
+            gl.uniformBlockBinding(this.program, this.blockIndex, 0);
+          }
+        }
+      }
+    }
+
+    /**
+     * @typedef {Object} LayerMultispectralOptions
+     * @property {string} url - URL to multispectral info.json file (required)
+     * @property {string} layout - Layout type: 'image', 'deepzoom', 'google', 'iiif', 'zoomify', 'tarzoom', 'itarzoom'
+     * @property {string} [defaultMode='single_band'] - Initial visualization mode ('rgb' or 'single_band')
+     * @property {string} [server] - IIP server URL (for IIP layout)
+     * @property {boolean} [linearRaster=true] - Whether to use linear color space for rasters (recommended for scientific accuracy)
+     * @property {string|Object} presets - Path to presets JSON file or presets object containing CTW configurations
+     * @extends LayerOptions
+     */
+
+    /**
+     * LayerMultispectral - Advanced multispectral imagery visualization layer
+     * 
+     * This layer provides specialized handling of multispectral image data with configurable 
+     * visualization modes and interactive spectral analysis capabilities through Color Twist 
+     * Weights (CTW). It supports scientific visualization workflows for remote sensing, art analysis,
+     * medical imaging, and other multispectral applications.
+     * 
+     * Features:
+     * - Multiple visualization modes (RGB, single band)
+     * - UBO-optimized Color Twist Weights implementation for real-time spectral transformations
+     * - Preset system for common visualization configurations (false color, etc.)
+     * - Support for multiple image layouts and tiling schemes 
+     * - Compatible with both single images and tile-based formats (DeepZoom, etc.)
+     * 
+     * Technical implementation:
+     * - Uses WebGL2 features for efficient processing
+     * - Implements shader-based visualization pipeline
+     * - Supports multiple image layouts and tiling schemes
+     * 
+     * @extends Layer
+     * 
+     * @example
+     * // Create multispectral layer with deepzoom layout
+     * const msLayer = new OpenLIME.Layer({
+     *   type: 'multispectral',
+     *   url: 'path/to/info.json',
+     *   layout: 'deepzoom',
+     *   defaultMode: 'rgb',
+     *   presets: 'path/to/presets.json'
+     * });
+     * 
+     * // Add to viewer
+     * viewer.addLayer('ms', msLayer);
+     * 
+     * // Apply a preset CTW
+     * msLayer.applyPreset('falseColor');
+     */
+    class LayerMultispectral extends Layer {
+      /**
+       * Creates a new LayerMultispectral instance
+       * @param {LayerMultispectralOptions} options - Configuration options
+       * @throws {Error} If rasters options is not empty (rasters are created automatically)
+       * @throws {Error} If url to info.json is not provided
+       * @throws {Error} If presets option is not provided
+       */
+      constructor(options) {
+        super(options);
+
+        if (Object.keys(this.rasters).length != 0)
+          throw new Error("Rasters options should be empty!");
+
+        if (!this.url)
+          throw new Error("Url option is required");
+
+        if (!this.presets) {
+          throw new Error("Presets option is required");
+        }
+        this.loadPresets();
+
+        // Set default options
+        this.linearRaster = true;
+        this.defaultMode = this.defaultMode || 'single_band';
+
+        // Create shader
+        this.shaders['multispectral'] = new ShaderMultispectral();
+        this.setShader('multispectral');
+
+        // Set current CTW arrays
+        this._currentCTW = {
+          red: null,
+          green: null,
+          blue: null
+        };
+
+        // Load configuration
+        this.info = null;
+        this.loadInfo(this.url);
+      }
+
+      /**
+       * Constructs URL for image resources based on layout type
+       * 
+       * Handles different image layout conventions including deepzoom, google maps tiles,
+       * zoomify, and specialized formats like tarzoom.
+       * 
+       * @param {string} url - Base URL
+       * @param {string} filename - Base filename without extension
+       * @returns {string} Complete URL for the resource
+       * @private
+       */
+      imageUrl(url, filename) {
+        let path = this.url.substring(0, this.url.lastIndexOf('/') + 1);
+        switch (this.layout.type) {
+          case 'image': return path + filename + '.jpg';
+          case 'google': return path + filename;
+          case 'deepzoom':
+            // Special handling for multispectral deepzoom
+            return path + filename + '.dzi';
+          case 'tarzoom': return path + filename + '.tzi';
+          case 'itarzoom': return path + filename + '.tzi';
+          case 'zoomify': return path + filename + '/ImageProperties.xml';
+          case 'iip': return url;
+          case 'iiif': throw new Error("Unimplemented");
+          default: throw new Error("Unknown layout: " + this.layout.type);
+        }
+      }
+
+      /**
+       * Loads and processes multispectral configuration
+       * 
+       * Fetches the info.json file containing wavelength, basename, and other
+       * configuration parameters, then sets up the rasters and shader accordingly.
+       * 
+       * @param {string} url - URL to info.json
+       * @private
+       * @async
+       */
+      async loadInfo(url) {
+        try {
+          let infoUrl = url;
+          // Need to handle embedded info.json when using IIP and TIFF image stacks
+          if (this.layout.type == "iip") infoUrl = (this.server ? this.server + '?FIF=' : '') + url + "&obj=description";
+
+          this.info = await Util.loadJSON(infoUrl);
+          console.log("Multispectral info loaded:", this.info);
+
+          // Check if basename is present
+          if (!this.info.basename) {
+            this.status = "Error: 'basename' is required in the multispectral configuration file";
+            console.error(this.status);
+            return;
+          }
+
+          // Update layout image format and pixelSize if provided in info.json
+          if (this.info.format) this.layout.suffix = this.info.format;
+          if (this.info.pixelSizeInMM) this.pixelSize = this.info.pixelSizeInMM;
+
+          // Initialize shader with info
+          this.shader.init(this.info);
+
+          // Set texture size if available
+          if (this.info.width && this.info.height) {
+            this.width = this.info.width;
+            this.height = this.info.height;
+          }
+
+          // Get basename from info
+          const baseName = this.info.basename;
+          console.log("Using basename:", baseName);
+
+          // Create rasters and URLs array for each image
+          const urls = [];
+
+          // Handle special case for itarzoom (all planes in one file)
+          if (this.layout.type === 'itarzoom') {
+            // Create a single raster for all planes
+            let raster = new Raster({ format: 'vec3', isLinear: this.linearRaster });
+            this.rasters.push(raster);
+
+            // Add a single URL for all planes
+            urls.push(this.imageUrl(url, baseName));
+          } else {
+            // Standard case: one file per image
+            for (let p = 0; p < this.shader.nimg; p++) {
+              // Create raster with linear color space
+              let raster = new Raster({ format: 'vec3', isLinear: this.linearRaster });
+              this.rasters.push(raster);
+
+              // Format index with leading zeros (e.g., 00, 01, 02)
+              const indexStr = p.toString().padStart(2, '0');
+
+              // Generate URL for this image
+              const imgUrl = this.imageUrl(url, `${baseName}_${indexStr}`);
+              urls.push(imgUrl);
+              console.log(`Plane ${p} URL: ${imgUrl}`);
+            }
+          }
+
+          // Set URLs for layout
+          if (urls.length > 0) {
+            this.layout.setUrls(urls);
+          }
+
+          // Set up the shader
+          this.setMode(this.defaultMode);
+          this.initDefault();
+
+        } catch (e) {
+          console.error("Error loading multispectral info:", e);
+          this.status = e;
+        }
+      }
+
+      /**
+       * Loads preset definitions for Color Twist Weights
+       * 
+       * Can load presets from a URL or use directly provided preset object.
+       * Presets define predefined CTW configurations for common visualization needs.
+       * 
+       * @private
+       * @async
+       */
+      async loadPresets() {
+        if (typeof this.presets === 'string' && this.presets.trim() !== '') {
+          this.presets = await Util.loadJSON(this.presets);
+        }
+        if (typeof this.presets !== 'object') {
+          throw new Error("presets not well formed");
+        }
+      }
+
+      /**
+       * Gets info
+       * 
+       * @returns {Object|null} Object with info on multispectral dataset or null if not found
+       */
+      info() {
+        return this.info;
+      }
+
+      /**
+       * Initializes default CTW based on default mode
+       * 
+       * Creates initial CTW arrays with zeros and applies default
+       * visualization settings.
+       * 
+       * @private
+       */
+      initDefault() {
+        // Create default CTW arrays
+        const nplanes = this.shader.nplanes;
+        if (!nplanes) return; // Not yet initialized
+
+        let redCTW = new Float32Array(nplanes).fill(0);
+        let greenCTW = new Float32Array(nplanes).fill(0);
+        let blueCTW = new Float32Array(nplanes).fill(0);
+
+        // Update current CTW and shader
+        this._currentCTW.red = redCTW;
+        this._currentCTW.green = greenCTW;
+        this._currentCTW.blue = blueCTW;
+
+        if (this.defaultMode === 'single-band') {
+          this.setSingleBand(0, 0);
+        }
+      }
+
+      /**
+       * Sets the visualization mode
+       * 
+       * Changes how multispectral data is visualized:
+       * - 'rgb': Uses CTW coefficients to create RGB visualization
+       * - 'single_band': Shows a single spectral band
+       * 
+       * @param {string} mode - Mode name ('rgb', 'single_band')
+       */
+      setMode(mode) {
+        if (this.shader) {
+          this.shader.setMode(mode);
+          this.emit('update');
+        }
+      }
+
+      /**
+       * Sets single band visualization
+       * 
+       * Displays a single spectral band on a specific output channel.
+       * 
+       * @param {number} bandIndex - Index of band to visualize
+       * @param {number} [channel=0] - Output channel (0=all/gray, 1=R, 2=G, 3=B)
+       */
+      setSingleBand(bandIndex, channel = 0) {
+        if (this.shader) {
+          this.shader.setSingleBand(bandIndex, channel);
+          this.emit('update');
+        }
+      }
+
+      /**
+       * Sets Color Twist Weights coefficients manually
+       * 
+       * CTW coefficients define how spectral bands are combined to create
+       * RGB visualization. Each array contains weights for each spectral band.
+       * 
+       * @param {Float32Array} redCTW - Red channel coefficients
+       * @param {Float32Array} greenCTW - Green channel coefficients
+       * @param {Float32Array} blueCTW - Blue channel coefficients
+       * @throws {Error} If arrays have incorrect length
+       */
+      setCTW(redCTW, greenCTW, blueCTW) {
+        if (!this.shader || !this.gl) return;
+
+        // Validate array lengths
+        const nplanes = this.shader.nplanes;
+        if (redCTW.length !== nplanes || greenCTW.length !== nplanes || blueCTW.length !== nplanes) {
+          throw new Error(`CTW arrays must be of length ${nplanes}`);
+        }
+
+        // Update current CTW
+        this._currentCTW.red = redCTW;
+        this._currentCTW.green = greenCTW;
+        this._currentCTW.blue = blueCTW;
+
+        // Update shader CTW
+        this.shader.setupCTW(this.gl, redCTW, greenCTW, blueCTW);
+
+        // Set to rgb mode
+        this.setMode('rgb');
+      }
+
+      /**
+       * Gets a preset CTW configuration by name
+       * 
+       * Retrieves the preset's red, green, and blue CTW arrays from
+       * the presets collection.
+       * 
+       * @param {string} presetName - Name of the preset
+       * @returns {Object|null} Object with red, green, blue arrays or null if not found
+       */
+      getPreset(presetName) {
+        if (presetName in this.presets) {
+          const { red, green, blue } = this.presets[presetName];
+          return { red, green, blue };
+        } else {
+          console.warn(`Preset "${presetName}" not found.`);
+          return null;
+        }
+      }
+
+      /**
+       * Applies a preset CTW from the presets library
+       * 
+       * Loads and applies a predefined set of CTW coefficients for
+       * specialized visualization (e.g., false color, vegetation analysis).
+       * 
+       * @param {string} presetName - Name of the preset
+       * @throws {Error} If preset doesn't exist
+       */
+      applyPreset(presetName) {
+        if (!this.shader) return;
+
+        // Get preset from the preset manager
+        const preset = this.getPreset(presetName);
+
+        if (!preset) {
+          throw new Error(`Preset '${presetName}' not found`);
+        }
+
+        // Apply the preset
+        this.setCTW(preset.red, preset.green, preset.blue);
+      }
+
+      /**
+       * Gets the wavelength array for spectral bands
+       * 
+       * Returns the wavelength values (in nm) for each spectral band.
+       * 
+       * @returns {number[]} Array of wavelengths
+       */
+      getWavelengths() {
+        return this.shader ? this.shader.wavelength : [];
+      }
+
+      /**
+       * Gets the number of spectral bands
+       * 
+       * Returns the count of spectral planes in the multispectral dataset.
+       * 
+       * @returns {number} Number of bands
+       */
+      getBandCount() {
+        return this.shader ? this.shader.nplanes : 0;
+      }
+
+      /**
+       * Gets available presets
+       * 
+       * Returns the names of all available preset CTW configurations.
+       * 
+       * @returns {string[]} Array of preset names
+       */
+      getAvailablePresets() {
+        return this.presets ? Object.keys(this.presets) : [];
+      }
+
+      /**
+       * Prepares WebGL resources including UBO for CTW
+       * 
+       * Sets up WebGL context and ensures CTW arrays are uploaded to GPU.
+       * 
+       * @override
+       * @private
+       */
+      prepareWebGL() {
+        // Call parent implementation
+        super.prepareWebGL();
+
+        // Setup CTW if needed
+        if (this._currentCTW.red && this.shader && this.gl) {
+          this.shader.setupCTW(
+            this.gl,
+            this._currentCTW.red,
+            this._currentCTW.green,
+            this._currentCTW.blue
+          );
+        }
+      }
+
+      /**
+       * Gets spectrum data for a specific pixel
+       * 
+       * For tiled formats, this method finds the appropriate tiles
+       * and reads the spectral values.
+       * 
+       * @param {number} x - X coordinate in image space
+       * @param {number} y - Y coordinate in image space  
+       * @returns {number[]} Array of spectral values (0-100)
+       */
+      getSpectrum(x, y) {
+        // For tiled formats, we need a special approach
+        if (this.isTiledFormat()) {
+          return this.getTiledSpectrum(x, y);
+        }
+
+        // For standard formats, use the original approach
+        const pixelData = this.getPixelValues(x, y);
+        const spectrum = [];
+
+        if (!pixelData || pixelData.length === 0) {
+          return new Array(this.shader.nplanes).fill(0);
+        }
+
+        for (let i = 0; i < this.info.nplanes; i++) {
+          const idx = Math.floor(i / 3);
+          if (idx < pixelData.length) {
+            const px = pixelData[idx];
+            const pxIdx = i % 3;
+            if (px && pxIdx < 3) {
+              spectrum.push(px[pxIdx] / 255.0 * 100);
+            } else {
+              spectrum.push(0);
+            }
+          } else {
+            spectrum.push(0);
+          }
+        }
+        return spectrum;
+      }
+
+      /**
+       * Checks if current layout is a tiled format
+       * @private
+       * @returns {boolean} True if using a tiled format
+       */
+      isTiledFormat() {
+        const tiledFormats = ['deepzoom', 'deepzoom1px', 'google', 'zoomify', 'iiif', 'tarzoom'];
+        return tiledFormats.includes(this.layout.type);
+      }
+
+      /**
+       * Gets spectrum data for a specific pixel
+       * 
+       * Uses the improved getPixelValues method from the base Layer class
+       * to obtain spectral values across all bands.
+       * 
+       * @param {number} x - X coordinate in image space
+       * @param {number} y - Y coordinate in image space  
+       * @returns {number[]} Array of spectral values (0-100)
+       */
+      getSpectrum(x, y) {
+        // Get pixel data from base Layer class method
+        const pixelData = this.getPixelValues(x, y);
+
+        // Create spectrum array for all planes
+        const spectrum = new Array(this.shader.nplanes).fill(0);
+
+        // If no data was returned, return empty spectrum
+        if (!pixelData || pixelData.length === 0) {
+          return spectrum;
+        }
+
+        // Convert pixel data to spectrum values
+        for (let i = 0; i < this.shader.nplanes; i++) {
+          const idx = Math.floor(i / 3); // Which texture contains this band
+          const pxIdx = i % 3;           // Which channel (R, G, B) in the texture
+
+          if (idx < pixelData.length) {
+            const px = pixelData[idx];
+            if (px && pxIdx < 3) {
+              // Convert to percentage (0-100)
+              spectrum[i] = px[pxIdx] / 255.0 * 100;
+            }
+          }
+        }
+
+        return spectrum;
+      }
+
+    }
+
+    /**
+     * Register this layer type with the Layer factory
+     * @type {Function}
+     * @private
+     */
+    Layer.prototype.types['multispectral'] = (options) => { return new LayerMultispectral(options); };
+
+    /**
+     * MultispectralUI - User interface components for multispectral visualization
+     * 
+     * Provides interactive controls for manipulating visualization parameters in
+     * the LayerMultispectral class. Features include preset selection, single band
+     * visualization controls, and adaptive UI positioning.
+     * 
+     * The UI can be configured as a floating panel or embedded within an existing
+     * container element, adapting automatically to the available space.
+     */
+    class MultispectralUI {
+      /**
+       * Creates a new MultispectralUI instance
+       * 
+       * @param {LayerMultispectral} layer - Multispectral layer to control
+       * @param {Object} [options] - UI configuration options
+       * @param {string} [options.containerId] - ID of container element for UI (optional)
+       * @param {boolean} [options.showPresets=true] - Whether to show preset selection controls
+       * @param {boolean} [options.showSingleBand=true] - Whether to show single band control panel
+       * @param {boolean} [options.floatingPanel=true] - Whether to create a floating panel UI
+       */
+      constructor(layer, options = {}) {
+        this.layer = layer;
+
+        // Default options
+        this.options = {
+          containerId: null,
+          showPresets: true,
+          showSingleBand: true,
+          floatingPanel: true,
+          ...options
+        };
+
+        // UI state
+        this.uiElements = {};
+
+        // Initialize when layer is ready
+        if (layer.status === 'ready') {
+          this.initialize();
+        } else {
+          layer.addEvent('ready', () => this.initialize());
+        }
+      }
+
+      /**
+       * Initializes the UI components
+       * 
+       * Sets up the container element, creates UI controls, and configures
+       * event handling based on the provided options.
+       * 
+       * @private
+       */
+      initialize() {
+        // Get container element
+        let container;
+        let targetContainer;
+
+        if (this.options.containerId) {
+          // Use existing container if ID provided
+          container = document.getElementById(this.options.containerId);
+          targetContainer = container;
+          if (!container) {
+            console.error(`Container element with ID '${this.options.containerId}' not found`);
+            return;
+          }
+        } else if (this.options.floatingPanel) {
+          // Create floating panel if no container specified
+          // Find OpenLIME container to use as a relative parent
+          let openlimeContainer;
+
+          // Try to get viewer's container from the layer
+          if (this.layer.viewer && this.layer.viewer.containerElement) {
+            openlimeContainer = this.layer.viewer.containerElement;
+          } else {
+            // Fallback to looking for .openlime class
+            openlimeContainer = document.querySelector('.openlime');
+
+            if (!openlimeContainer) {
+              console.warn('OpenLIME container not found, using body as fallback');
+              openlimeContainer = document.body;
+            }
+          }
+
+          // Make the parent container positioned if it's not already
+          if (getComputedStyle(openlimeContainer).position === 'static') {
+            openlimeContainer.style.position = 'relative';
+          }
+
+          // Create floating container
+          container = document.createElement('div');
+          container.className = 'ms-controls';
+          container.style.position = 'absolute';
+          container.style.top = '10px';
+          container.style.right = '10px';
+          container.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+          container.style.padding = '10px';
+          container.style.borderRadius = '5px';
+          container.style.color = 'white';
+          container.style.zIndex = '1000';
+          container.style.width = '250px';
+          container.style.maxHeight = '80vh';
+          container.style.overflowY = 'auto';
+          container.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.3)';
+          container.style.fontFamily = 'Arial, sans-serif';
+
+          // Append to OpenLIME container instead of document.body
+          openlimeContainer.appendChild(container);
+          targetContainer = openlimeContainer;
+        } else {
+          console.error('No container specified and floating panel disabled');
+          return;
+        }
+
+        this.container = container;
+        this.targetContainer = targetContainer;
+
+        // Create UI components
+        this.createHeader();
+
+        if (this.options.showPresets) {
+          this.createPresetSelector();
+        }
+
+        if (this.options.showSingleBand) {
+          this.createSingleBandControls();
+        }
+
+        // Update positioning on window resize
+        this.setupResizeHandler();
+      }
+
+      /**
+       * Sets up window resize event handler to update panel positioning
+       * 
+       * Ensures the UI panel remains properly positioned and sized when
+       * the window or container is resized.
+       * 
+       * @private
+       */
+      setupResizeHandler() {
+        // Only needed for floating panel
+        if (!this.options.floatingPanel || !this.container) return;
+
+        // Store initial container dimensions
+        this.initialContainerRect = this.targetContainer.getBoundingClientRect();
+
+        // Define resize handler
+        this.resizeHandler = () => {
+          // Handle potential edge case where container/targetContainer is removed from DOM
+          if (!document.contains(this.container) || !document.contains(this.targetContainer)) {
+            window.removeEventListener('resize', this.resizeHandler);
+            return;
+          }
+
+          // Ensure the panel stays visible on resize
+          const containerRect = this.targetContainer.getBoundingClientRect();
+          const panelRect = this.container.getBoundingClientRect();
+
+          // If the container width gets too small, adjust the panel width
+          if (containerRect.width < 300) {
+            this.container.style.width = Math.max(containerRect.width * 0.8, 150) + 'px';
+          } else {
+            // Reset to default width
+            this.container.style.width = '250px';
+          }
+
+          // Ensure the panel is fully visible
+          const rightEdgeOffset = panelRect.right - containerRect.right;
+          if (rightEdgeOffset > 0) {
+            // Panel extends beyond right edge, adjust position
+            const currentRight = parseInt(this.container.style.right) || 10;
+            this.container.style.right = (currentRight + rightEdgeOffset + 10) + 'px';
+          }
+        };
+
+        // Add resize listener
+        window.addEventListener('resize', this.resizeHandler);
+
+        // Initial call to handle any existing size issues
+        this.resizeHandler();
+      }
+
+      /**
+       * Creates header UI element with title and band information
+       * 
+       * Displays the title and key information about the multispectral
+       * dataset including band count and wavelength range.
+       * 
+       * @private
+       */
+      createHeader() {
+        const headerDiv = document.createElement('div');
+        headerDiv.style.marginBottom = '10px';
+
+        const title = document.createElement('h3');
+        title.textContent = 'Multispectral Controls';
+        title.style.margin = '0 0 5px 0';
+        title.style.fontSize = '16px';
+        title.style.fontWeight = 'bold';
+
+        headerDiv.appendChild(title);
+
+        const bandInfo = document.createElement('div');
+        bandInfo.textContent = `${this.layer.getBandCount()} bands: ${Math.min(...this.layer.getWavelengths())}nm - ${Math.max(...this.layer.getWavelengths())}nm`;
+        bandInfo.style.fontSize = '12px';
+        bandInfo.style.color = '#ccc';
+
+        headerDiv.appendChild(bandInfo);
+        this.container.appendChild(headerDiv);
+      }
+
+      /**
+       * Creates preset selector UI element
+       * 
+       * Provides a dropdown menu for selecting predefined Color Twist Weight
+       * configurations from the available presets.
+       * 
+       * @private
+       */
+      createPresetSelector() {
+        const presetDiv = document.createElement('div');
+        presetDiv.style.marginBottom = '15px';
+
+        const label = document.createElement('label');
+        label.textContent = 'Analysis Presets';
+        label.style.display = 'block';
+        label.style.marginBottom = '5px';
+        label.style.fontSize = '14px';
+        label.style.fontWeight = 'bold';
+
+        presetDiv.appendChild(label);
+
+        const presetSelector = document.createElement('select');
+        presetSelector.style.width = '100%';
+        presetSelector.style.padding = '5px';
+        presetSelector.style.backgroundColor = '#333';
+        presetSelector.style.color = 'white';
+        presetSelector.style.border = '1px solid #555';
+        presetSelector.style.borderRadius = '3px';
+
+        // Add default option
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- Select Preset --';
+        presetSelector.appendChild(defaultOption);
+
+        // Add presets from layer
+        const presets = this.layer.getAvailablePresets();
+        presets.forEach(preset => {
+          const option = document.createElement('option');
+          option.value = preset;
+
+          // Format preset name for display (camelCase to Title Case)
+          const formattedName = preset
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/^./, str => str.toUpperCase());
+
+          option.textContent = formattedName;
+          presetSelector.appendChild(option);
+        });
+
+        // Add apply button for preset selection
+        const applyButton = document.createElement('button');
+        applyButton.textContent = 'Apply';
+        applyButton.style.width = '100%';
+        applyButton.style.marginTop = '5px';
+        applyButton.style.padding = '5px';
+        applyButton.style.backgroundColor = '#555';
+        applyButton.style.color = 'white';
+        applyButton.style.border = 'none';
+        applyButton.style.borderRadius = '3px';
+        applyButton.style.cursor = 'pointer';
+
+        // Function to apply the selected preset
+        const applySelectedPreset = () => {
+          const selectedPreset = presetSelector.value;
+          if (selectedPreset) {
+            this.layer.applyPreset(selectedPreset);
+
+            // Set the layer mode to 'rgb' for preset visualization
+            if (this.layer.getMode() !== 'rgb') {
+              this.layer.setMode('rgb');
+            }
+          }
+        };
+
+        // // Still keep the change event for convenience
+        // presetSelector.addEventListener('change', () => {
+        //   applySelectedPreset();
+        // });
+
+        // Add click handler for the apply button
+        applyButton.addEventListener('click', () => {
+          applySelectedPreset();
+        });
+
+        presetDiv.appendChild(presetSelector);
+        presetDiv.appendChild(applyButton);
+        this.container.appendChild(presetDiv);
+
+        this.uiElements.presetSelector = presetSelector;
+      }
+
+      /**
+       * Creates single band visualization controls
+       * 
+       * Provides controls for selecting a specific spectral band and
+       * output channel for single-band visualization.
+       * 
+       * @private
+       */
+      createSingleBandControls() {
+        const singleBandDiv = document.createElement('div');
+        singleBandDiv.style.marginBottom = '15px';
+
+        const label = document.createElement('label');
+        label.textContent = 'Single Band View';
+        label.style.display = 'block';
+        label.style.marginBottom = '5px';
+        label.style.fontSize = '14px';
+        label.style.fontWeight = 'bold';
+
+        singleBandDiv.appendChild(label);
+
+        // Create wavelength selector
+        const wavelengthDiv = document.createElement('div');
+        wavelengthDiv.style.display = 'flex';
+        wavelengthDiv.style.alignItems = 'center';
+        wavelengthDiv.style.marginBottom = '5px';
+
+        const wavelengthLabel = document.createElement('span');
+        wavelengthLabel.textContent = 'Wavelength:';
+        wavelengthLabel.style.width = '80px';
+        wavelengthLabel.style.fontSize = '12px';
+
+        const wavelengthSelector = document.createElement('select');
+        wavelengthSelector.style.flex = '1';
+        wavelengthSelector.style.padding = '3px';
+        wavelengthSelector.style.backgroundColor = '#333';
+        wavelengthSelector.style.color = 'white';
+        wavelengthSelector.style.border = '1px solid #555';
+        wavelengthSelector.style.borderRadius = '3px';
+
+        // Populate wavelength options
+        const wavelengths = this.layer.getWavelengths();
+        wavelengths.forEach((wavelength, index) => {
+          const option = document.createElement('option');
+          option.value = index;
+          option.textContent = `${wavelength}nm`;
+          wavelengthSelector.appendChild(option);
+        });
+
+        wavelengthDiv.appendChild(wavelengthLabel);
+        wavelengthDiv.appendChild(wavelengthSelector);
+        singleBandDiv.appendChild(wavelengthDiv);
+
+        // Create output channel selector
+        const channelDiv = document.createElement('div');
+        channelDiv.style.display = 'flex';
+        channelDiv.style.alignItems = 'center';
+
+        const channelLabel = document.createElement('span');
+        channelLabel.textContent = 'Output Channel:';
+        channelLabel.style.width = '80px';
+        channelLabel.style.fontSize = '12px';
+
+        const channelSelector = document.createElement('select');
+        channelSelector.style.flex = '1';
+        channelSelector.style.padding = '3px';
+        channelSelector.style.backgroundColor = '#333';
+        channelSelector.style.color = 'white';
+        channelSelector.style.border = '1px solid #555';
+        channelSelector.style.borderRadius = '3px';
+
+        // Add channel options
+        const channels = [
+          { value: 0, label: 'Gray' },
+          { value: 1, label: 'Red' },
+          { value: 2, label: 'Green' },
+          { value: 3, label: 'Blue' }
+        ];
+
+        channels.forEach(channel => {
+          const option = document.createElement('option');
+          option.value = channel.value;
+          option.textContent = channel.label;
+          channelSelector.appendChild(option);
+        });
+
+        channelDiv.appendChild(channelLabel);
+        channelDiv.appendChild(channelSelector);
+        singleBandDiv.appendChild(channelDiv);
+
+        // Apply button
+        const applyButton = document.createElement('button');
+        applyButton.textContent = 'Apply';
+        applyButton.style.width = '100%';
+        applyButton.style.marginTop = '5px';
+        applyButton.style.padding = '5px';
+        applyButton.style.backgroundColor = '#555';
+        applyButton.style.color = 'white';
+        applyButton.style.border = 'none';
+        applyButton.style.borderRadius = '3px';
+        applyButton.style.cursor = 'pointer';
+
+        applyButton.addEventListener('click', () => {
+          const bandIndex = parseInt(wavelengthSelector.value);
+          const channelIndex = parseInt(channelSelector.value);
+          this.layer.setSingleBand(bandIndex, channelIndex);
+
+          // Update mode selector if it exists
+          if (this.uiElements.modeSelector) {
+            this.uiElements.modeSelector.value = 'single_band';
+          }
+        });
+
+        singleBandDiv.appendChild(applyButton);
+        this.container.appendChild(singleBandDiv);
+
+        this.uiElements.wavelengthSelector = wavelengthSelector;
+        this.uiElements.channelSelector = channelSelector;
+      }
+
+      /**
+       * Destroys UI and removes elements from DOM
+       * 
+       * Cleans up all created UI elements and event listeners.
+       * Call this method before removing the layer to prevent memory leaks.
+       */
+      destroy() {
+        // Remove resize event listener
+        if (this.resizeHandler) {
+          window.removeEventListener('resize', this.resizeHandler);
+          this.resizeHandler = null;
+        }
+
+        // Remove container from DOM if it's a floating panel
+        if (this.container && this.options.floatingPanel && this.targetContainer) {
+          this.targetContainer.removeChild(this.container);
+        }
+
+        this.uiElements = {};
+        this.container = null;
+        this.targetContainer = null;
+      }
+    }
+
+    /**
+    * @typedef {('r16f'|'rg16f'|'rgb16f'|'rgba16f'|'r16ui'|'rg16ui'|'rgb16ui'|'rgba16ui'|'r16i'|'rg16i'|'rgb16i'|'rgba16i'|'depth16')} Raster16Bit#Format
+    * Defines the 16-bit format for image data storage in textures.
+    * @property {'r16f'} r16f - Single-channel 16-bit floating point format
+    * @property {'rg16f'} rg16f - Two-channel 16-bit floating point format
+    * @property {'rgb16f'} rgb16f - Three-channel 16-bit floating point format
+    * @property {'rgba16f'} rgba16f - Four-channel 16-bit floating point format
+    * @property {'r16ui'} r16ui - Single-channel 16-bit unsigned integer format
+    * @property {'rg16ui'} rg16ui - Two-channel 16-bit unsigned integer format
+    * @property {'rgb16ui'} rgb16ui - Three-channel 16-bit unsigned integer format
+    * @property {'rgba16ui'} rgba16ui - Four-channel 16-bit unsigned integer format
+    * @property {'r16i'} r16i - Single-channel 16-bit signed integer format
+    * @property {'rg16i'} rg16i - Two-channel 16-bit signed integer format
+    * @property {'rgb16i'} rgb16i - Three-channel 16-bit signed integer format
+    * @property {'rgba16i'} rgba16i - Four-channel 16-bit signed integer format
+    * @property {'depth16'} depth16 - 16-bit depth texture format
+    */
+
+    /**
+    * @typedef {Function} DataLoaderCallback
+    * @param {Object} tile - The tile information object
+    * @param {WebGL2RenderingContext} gl - The WebGL2 rendering context
+    * @param {Object} options - Additional options for the data loader
+    * @returns {Promise<Object>} The loaded data object with properties:
+    *   - data: TypedArray or Image data
+    *   - width: Width of the image
+    *   - height: Height of the image
+    *   - channels: Number of channels in the data
+    */
+
+    /**
+    * Raster16Bit class extends Raster to handle 16-bit textures with WebGL 2.0.
+    * Provides functionality for:
+    * - Loading 16-bit images from URLs or blobs via custom data loaders
+    * - Converting data to appropriate WebGL 2.0 texture formats
+    * - Supporting various 16-bit formats (float, int, uint)
+    * - Creating appropriate texture parameters for 16-bit data
+    * - Support for custom data loaders for specialized formats
+    */
+    class Raster16Bit extends Raster {
+      /**
+       * Creates a new Raster16Bit instance.
+       * @param {Object} [options] - Configuration options
+       * @param {Raster16Bit#Format} [options.format='rgb16ui'] - 16-bit data format
+       * @param {boolean} [options.useHalfFloat=false] - Use HALF_FLOAT type instead of FLOAT for better performance when applicable
+       * @param {boolean} [options.flipY=false] - Whether to flip the image vertically during loading
+       * @param {boolean} [options.premultiplyAlpha=false] - Whether to premultiply alpha during loading
+       * @param {DataLoaderCallback} [options.dataLoader=null] - Custom data loader callback
+       * @param {Object} [options.dataLoaderOptions={}] - Options to pass to the data loader
+       * @param {boolean} [options.debug=false] - Enable debug output
+       */
+      constructor(options) {
+        // Initialize with parent constructor but override defaults
+        super(Object.assign({
+            format: 'rgb16ui',
+            debug: false,
+            useHalfFloat: false,
+            flipY: false,
+            premultiplyAlpha: false,
+        }, options));
+
+        // Additional options specific to 16-bit handling
+        Object.assign(this, {
+            dataLoader: null,
+            dataLoaderOptions: {},
+            statInfo: {}
+        });
+
+        // Override with provided options
+        if (options) {
+            Object.assign(this, options);
+        }
+
+        // Check if the format is supported
+        if (!this._isFormatSupported(this.format)) {
+            throw new Error(`The format "${this.format}" is not supported by the browser.`);
+        }
+
+        if (this.debug) {
+            console.log(`Raster16Bit created with format: ${this.format}`);
+        }
+      }
+
+      /**
+       * Gets the number of components for the current format
+       * @private
+       * @returns {number} Number of components (1, 2, 3, or 4)
+       */
+      _getComponentCount() {
+        if (this.format.startsWith('r16') && !this.format.startsWith('rg16') && !this.format.startsWith('rgb16') && !this.format.startsWith('rgba16')) {
+          return 1; // Single channel (r16f, r16ui, r16i)
+        } else if (this.format.startsWith('rg16')) {
+          return 2; // Two channels (rg16f, rg16ui, rg16i)
+        } else if (this.format.startsWith('rgb16')) {
+          return 3; // Three channels (rgb16f, rgb16ui, rgb16i)
+        } else if (this.format.startsWith('rgba16')) {
+          return 4; // Four channels (rgba16f, rgba16ui, rgba16i)
+        } else if (this.format === 'depth16') {
+          return 1; // Depth is single channel
+        }
+        return 1; // Default to 1 if unknown
+      }
+
+      /**
+       * Loads a 16-bit image tile and converts it to a WebGL texture.
+       * Overrides parent method to handle 16-bit specific formats.
+       * @async
+       * @param {Object} tile - The tile to load
+       * @param {string} tile.url - URL of the image
+       * @param {number} [tile.start] - Start byte for partial requests
+       * @param {number} [tile.end] - End byte for partial requests
+       * @param {WebGL2RenderingContext} gl - The WebGL2 rendering context
+       * @returns {Promise<Array>} Promise resolving to [texture, size]:
+       *   - texture: WebGLTexture object
+       *   - size: Size of the image in bytes (width * height * components * bytesPerComponent)
+       * @throws {Error} If context is not WebGL2
+       */
+      async loadImage(tile, gl) {
+        // Ensure we have a WebGL2 context
+        if (!(gl instanceof WebGL2RenderingContext)) {
+          throw new Error("WebGL2 context is required for 16-bit textures");
+        }
+
+        if (this.debug) {
+          console.log(`Raster16Bit.loadImage called for URL: ${tile.url}`);
+        }
+
+        let imageData;
+
+        // Use the appropriate data loader
+        if (this.dataLoader) {
+          // Use custom data loader if provided
+          if (this.debug) {
+            console.log("Using custom data loader");
+          }
+
+          try {
+            imageData = await this.dataLoader(tile, gl, this.dataLoaderOptions);
+            this.statInfo.maxValue = imageData.statistics.maxValue;
+            this.statInfo.avgLuminance = imageData.statistics.avgLuminance;
+            this.statInfo.percentileLuminance = imageData.statistics.percentileLuminance;
+            this.emit('loaded');
+            if (this.debug) {
+              console.log(`Data loader returned: ${imageData.width}x${imageData.height}, ${imageData.channels} channels`);
+            }
+          } catch (error) {
+            console.error("Error in data loader:", error);
+            throw error;
+          }
+        } else {
+          // Use default parent class loading mechanism if no dataLoader provided
+          if (this.debug) {
+            console.log("Using default loader mechanism");
+          }
+
+          try {
+            let [tex, size] = await super.loadImage(tile, gl);
+
+            // Adjust size calculation for 16-bit (2 bytes per component)
+            size = this.width * this.height * this._getComponentCount() * 2;
+
+            return [tex, size];
+          } catch (error) {
+            console.error("Error in default loader:", error);
+            throw error;
+          }
+        }
+
+        // Store dimensions
+        this.width = imageData.width;
+        this.height = imageData.height;
+
+        if (this.debug) {
+          console.log(`Creating texture: ${this.width}x${this.height}`);
+        }
+
+        // Create texture from the loaded data
+        const tex = this._createTextureFromData(gl, imageData.data, imageData.width, imageData.height, imageData.channels);
+
+        // Calculate size in bytes
+        const bytesPerComponent = 2; // 16 bits = 2 bytes
+        const size = imageData.width * imageData.height * imageData.channels * bytesPerComponent;
+
+        return [tex, size];
+      }
+
+      getStatInfo() {
+        return this.statInfo;
+      }
+
+      /**
+       * Creates a WebGL2 texture from raw data.
+       * @private
+       * @param {WebGL2RenderingContext} gl - The WebGL2 rendering context
+       * @param {TypedArray} data - The raw pixel data
+       * @param {number} width - Width of the image
+       * @param {number} height - Height of the image
+       * @param {number} channels - Number of channels in the data
+       * @returns {WebGLTexture} The created texture
+       */
+      _createTextureFromData(gl, data, width, height, channels) {
+        if (this.debug) {
+          console.log(`Creating texture from data: ${width}x${height}, ${channels} channels, data type: ${data.constructor.name}`);
+        }
+
+        const tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+
+        // Set texture parameters
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, this.flipY);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.premultiplyAlpha);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+
+        // Determine format parameters based on format
+        const formatParams = this._getFormatParameters(gl, channels);
+
+        if (this.debug) {
+          console.log("Format parameters:", formatParams);
+        }
+
+        try {
+          // Upload data to texture
+          gl.texImage2D(
+            gl.TEXTURE_2D,                // target
+            0,                            // level
+            formatParams.internalFormat,  // internalformat
+            width,                        // width
+            height,                       // height
+            0,                            // border
+            formatParams.format,          // format
+            formatParams.type,            // type
+            data                          // pixels
+          );
+        } catch (error) {
+          console.error("Error creating texture:", error);
+          throw error;
+        }
+
+        // Set filtering and wrapping parameters
+        if (width > 1024 || height > 1024) {
+          gl.generateMipmap(gl.TEXTURE_2D);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        } else {
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        }
+
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+        // Store color space information on the texture
+        this._texture = tex;
+
+        return tex;
+      }
+
+      /**
+       * Get format parameters for WebGL texture creation based on format and channels.
+       * @private
+       * @param {WebGL2RenderingContext} gl - The WebGL2 rendering context
+       * @param {number} channels - Number of channels in the data
+       * @returns {Object} Object with internalFormat, format, and type properties
+       */
+      _getFormatParameters(gl, channels) {
+        let internalFormat, format, type;
+
+        // Determine format parameters based on the specified format
+        if (this.format.includes('16f')) {
+          // Floating point formats
+          type = this.useHalfFloat ? gl.HALF_FLOAT : gl.FLOAT;
+
+          switch (channels) {
+            case 1:
+              internalFormat = gl.R16F;
+              format = gl.RED;
+              break;
+            case 2:
+              internalFormat = gl.RG16F;
+              format = gl.RG;
+              break;
+            case 3:
+              internalFormat = gl.RGB16F;
+              format = gl.RGB;
+              break;
+            case 4:
+              internalFormat = gl.RGBA16F;
+              format = gl.RGBA;
+              break;
+            default:
+              throw new Error(`Unsupported channel count: ${channels}`);
+          }
+        } else if (this.format.includes('16ui')) {
+          // Unsigned integer formats
+          type = gl.UNSIGNED_SHORT;
+
+          switch (channels) {
+            case 1:
+              internalFormat = gl.R16UI;
+              format = gl.RED_INTEGER;
+              break;
+            case 2:
+              internalFormat = gl.RG16UI;
+              format = gl.RG_INTEGER;
+              break;
+            case 3:
+              internalFormat = gl.RGB16UI;
+              format = gl.RGB_INTEGER;
+              break;
+            case 4:
+              internalFormat = gl.RGBA16UI;
+              format = gl.RGBA_INTEGER;
+              break;
+            default:
+              throw new Error(`Unsupported channel count: ${channels}`);
+          }
+        } else if (this.format.includes('16i')) {
+          // Signed integer formats
+          type = gl.SHORT;
+
+          switch (channels) {
+            case 1:
+              internalFormat = gl.R16I;
+              format = gl.RED_INTEGER;
+              break;
+            case 2:
+              internalFormat = gl.RG16I;
+              format = gl.RG_INTEGER;
+              break;
+            case 3:
+              internalFormat = gl.RGB16I;
+              format = gl.RGB_INTEGER;
+              break;
+            case 4:
+              internalFormat = gl.RGBA16I;
+              format = gl.RGBA_INTEGER;
+              break;
+            default:
+              throw new Error(`Unsupported channel count: ${channels}`);
+          }
+        } else if (this.format === 'depth16') {
+          // Depth texture
+          internalFormat = gl.DEPTH_COMPONENT16;
+          format = gl.DEPTH_COMPONENT;
+          type = gl.UNSIGNED_SHORT;
+        } else {
+          throw new Error(`Unsupported format: ${this.format}`);
+        }
+
+        return { internalFormat, format, type };
+      }
+
+      /**
+     * Checks if the specified format is supported by the browser.
+     * Also verifies that required WebGL extensions are available.
+     * @private
+     * @param {string} format - The format to check
+     * @returns {boolean} True if the format is supported, false otherwise
+     */
+    _isFormatSupported(format) {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl2');
+
+        if (!gl) {
+            console.error('WebGL2 is not supported by this browser.');
+            return false;
+        }
+
+        const formatMap = {
+            'r16f': { internalFormat: gl.R16F, requiredExtensions: ['EXT_color_buffer_float'] },
+            'rg16f': { internalFormat: gl.RG16F, requiredExtensions: ['EXT_color_buffer_float'] },
+            'rgb16f': { internalFormat: gl.RGB16F, requiredExtensions: ['EXT_color_buffer_float'] },
+            'rgba16f': { internalFormat: gl.RGBA16F, requiredExtensions: ['EXT_color_buffer_float'] },
+            'r16ui': { internalFormat: gl.R16UI, requiredExtensions: [] },
+            'rg16ui': { internalFormat: gl.RG16UI, requiredExtensions: [] },
+            'rgb16ui': { internalFormat: gl.RGB16UI, requiredExtensions: [] },
+            'rgba16ui': { internalFormat: gl.RGBA16UI, requiredExtensions: [] },
+            'r16i': { internalFormat: gl.R16I, requiredExtensions: [] },
+            'rg16i': { internalFormat: gl.RG16I, requiredExtensions: [] },
+            'rgb16i': { internalFormat: gl.RGB16I, requiredExtensions: [] },
+            'rgba16i': { internalFormat: gl.RGBA16I, requiredExtensions: [] },
+            'depth16': { internalFormat: gl.DEPTH_COMPONENT16, requiredExtensions: [] }
+        };
+
+        const formatInfo = formatMap[format];
+        if (!formatInfo) {
+            console.error(`Unknown format: ${format}`);
+            return false;
+        }
+
+        // Check for required extensions
+        for (const extension of formatInfo.requiredExtensions) {
+            if (!gl.getExtension(extension)) {
+                console.error(`Required WebGL extension "${extension}" is not supported for format "${format}".`);
+                return false;
+            }
+        }
+
+        // Check if the internal format is supported
+        const isSupported = gl.getInternalformatParameter(gl.RENDERBUFFER, formatInfo.internalFormat, gl.SAMPLES);
+        return isSupported && isSupported.length > 0;
+    }
+    }
+
+    /**
+     * ShaderHDR provides enhanced HDR tone mapping capabilities.
+     * It extends the base Shader class to include tone mapping operations
+     * and additional uniforms for HDR rendering.
+     * 
+     * Features:
+     * - Multiple tone mapping operators: Reinhard, ACES, and Exposure
+     * - Configurable parameters for each operator
+     * - Linear space processing
+     * 
+     * @extends Shader
+     */
+    class ShaderHDR extends Shader {
+        /**
+         * Creates a new enhanced ShaderHDR instance.
+         * 
+         * @param {Object} options - Shader configuration options
+         * @param {boolean} [options.isLinear=true] - Whether the shader operates in linear space
+         * @param {string[]} [options.modes=['reinhard', 'aces', 'exposure']] - Available tone mapping modes
+         * @param {string} [options.mode='reinhard'] - Default tone mapping mode
+         * @param {Object[]} [options.samplers] - Texture samplers for the shader
+         */
+        constructor(options) {
+            // Set default options
+            options = Object.assign({
+                isLinear: true,  // Important: we work in linear space!
+                format: 'rgba16f',
+            }, options);
+
+            super(options);
+
+            this.modes = ['reinhard', 'aces', 'exposure', 'balanced'];
+            this.mode = options.mode || 'reinhard';
+            this.uniforms = {
+                'whitePoint': { type: 'float', needsUpdate: true, value: 1.0 },
+                'shadowLift': { type: 'float', needsUpdate: true, value: 0.0 },
+                'acesContrast': { type: 'float', needsUpdate: true, value: 1.6 },
+                'exposure': { type: 'float', needsUpdate: true, value: 1.0 },
+                'highlightCompression': { type: 'float', needsUpdate: true, value: 1.0 },
+            };
+            this.samplers.push({ id: 0, name: 'source', type: this.format });
+
+            /**
+             * Tone mapping operations available in the shader.
+             * @type {Object.<string, string>}
+             */
+            this.toneMapOperations = {
+                // Enhanced Reinhard operator with highlight preservation
+                'reinhard': `
+                // Enhanced Reinhard with both whitePoint and shadowLift parameters
+                // Apply shadowLift pre-tone mapping to brighten shadows
+                color.rgb = mix(color.rgb, pow(color.rgb, vec3(0.4)), shadowLift);
+
+                // Reinhard tone mapping with more sensitive whitePoint
+                float wp = max(0.1, whitePoint);
+                color.rgb = (color.rgb * (1.0 + color.rgb/(wp))) / (1.0 + color.rgb);
+
+                // Apply shadowLift post-tone mapping for more pronounced effect
+                color.rgb = mix(color.rgb, pow(color.rgb, vec3(0.6)), shadowLift * 0.5);
+                `,
+                // ACES filmic tone mapping operator
+                'aces': `
+                // ACES filmic tone mapping approximation
+                // Based on formula from Krzysztof Narkowicz
+                // https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
+                // Allows for contrast adjustment with acesContrast parameter
+                
+                // Apply contrast parameter
+                color.rgb *= acesContrast;
+                
+                // ACES tone mapping formula
+                const vec3 a = vec3(2.51);
+                const vec3 b = vec3(0.03);
+                const vec3 c = vec3(2.43);
+                const vec3 d = vec3(0.59);
+                const vec3 e = vec3(0.14);
+                
+                color.rgb = (color.rgb * (a * color.rgb + b)) / (color.rgb * (c * color.rgb + d) + e);
+                
+                // Clamp to prevent artifacts
+                color.rgb = clamp(color.rgb, 0.0, 1.0);
+            `,
+                // Simple exposure-based tone mapping
+                'exposure': `
+                // Apply exposure adjustment
+                // exposure = 1.0 means no change, > 1.0 brightens, < 1.0 darkens
+                color.rgb = vec3(1.0) - exp(-color.rgb * exposure);
+            `,
+                // New balanced operator
+                'balanced': `
+                // Lift shadows slightly to enhance details in dark areas
+                color.rgb = mix(color.rgb, pow(color.rgb, vec3(0.5)), 0.05);
+
+                // Adaptive scaling for highlights based on highlightCompression
+                float hc = max(0.1, highlightCompression); // Avoid division by zero
+                color.rgb = color.rgb / (color.rgb + vec3(hc));
+
+                // Apply logarithmic compression for highlights
+                color.rgb = log(1.0 + color.rgb) / log(1.0 + hc);
+
+                // Clamp to prevent overexposure
+                color.rgb = clamp(color.rgb, 0.0, 1.0);
+            `
+            };
+
+            // Set default samplers if not provided
+            if (!this.samplers || this.samplers.length === 0) {
+                this.samplers = [
+                    { id: 0, name: 'source', type: 'rgba16f' }
+                ];
+            }
+        }
+
+        /**
+         * Generates the fragment shader source code with enhanced HDR tone mapping.
+         * 
+         * @returns {string} GLSL source code for the fragment shader
+         * @override
+         */
+        fragShaderSrc() {
+            // Get the selected tone mapping operation
+            const toneMapOperation = this.toneMapOperations[this.mode] || this.toneMapOperations['reinhard'];
+            console.log(this.mode);
+            console.log(toneMapOperation);
+
+            return `
+in vec2 v_texcoord;
+
+// Uniforms for tone mapping and enhancements
+uniform float whitePoint;
+uniform float shadowLift;
+uniform float acesContrast;
+uniform float exposure;
+uniform float highlightCompression;
+
+vec4 data() {
+    // Sample the HDR texture (already in linear space)
+    vec4 color = texture(source, v_texcoord);
+    
+    // Apply selected tone mapping operation to compress HDR values
+    ${toneMapOperation}
+    
+    // Return the tone-mapped color in linear space
+    // The final gamma correction will be applied by Canvas.js
+
+    return vec4(color.rgb, color.a);
+}
+`;
+        }
+
+        /**
+         * Sets the white point uniform for the shader.
+         * 
+         * @param {number} whitePoint - The new value for the white point
+         */
+        setWhitePoint(whitePoint) {
+            this.setUniform('whitePoint', whitePoint);
+        }
+
+        /**
+         * Sets the shadow lift parameter for the shader.
+         * 
+         * @param {number} shadowLift - The new value for shadow lift
+         */
+        setShadowLift(shadowLift) {
+            this.setUniform('shadowLift', shadowLift);
+        }
+
+        /**
+         * Sets the ACES contrast parameter for the shader.
+         * 
+         * @param {number} acesContrast - The new value for ACES contrast
+         */
+        setAcesContrast(acesContrast) {
+            this.setUniform('acesContrast', acesContrast);
+        }
+
+        /**
+         * Sets the exposure parameter for the shader.
+         * 
+         * @param {number} exposure - The new value for the exposure
+         */
+        setExposure(exposure) {
+            this.setUniform('exposure', exposure);
+        }
+
+        /**
+         * Sets the highlight compression parameter for the shader.
+         * 
+         * @param {number} highlightCompression - The new value for highlight compression
+         */
+        setHighlightCompression(highlightCompression) {
+            this.setUniform('highlightCompression', highlightCompression);
+        }
+    }
+
+    /**
+     * @typedef {Object} LayerHDROptions
+     * @property {string} url - URL of the image to display (required)
+     * @property {string|Layout} [layout='image'] - Layout format for image display
+     * @property {string} [format='rgba16f'] - Image data format for WebGL processing
+     * @property {boolean} [debug=false] - Enable debug output
+     * @extends LayerOptions
+     */
+
+    /**
+     * LayerHDR provides advanced HDR image rendering capabilities in OpenLIME.
+     * It is designed for high dynamic range (HDR) image processing and rendering,
+     * leveraging WebGL shaders and tone mapping techniques.
+     * 
+     * Features:
+     * - HDR tone mapping with configurable white point
+     * - WebGL-based rendering with 16-bit precision
+     * - Automatic raster data management
+     * - Shader-based processing for HDR compression
+     * 
+     * Technical Details:
+     * - Uses WebGL textures for HDR image data
+     * - Supports 16-bit float formats (e.g., rgba16f)
+     * - Integrates with OpenLIME layout system
+     * - Provides multiple tone mapping options: Reinhard, ACES, and Exposure
+     * 
+     * @extends Layer
+     * 
+     * @example
+     * ```javascript
+     * const hdrLayer = new OpenLIME.LayerHDR({
+     *   url: 'hdr-image.hdr',
+     *   format: 'rgba16f'
+     * });
+     * viewer.addLayer('hdr', hdrLayer);
+     * ```
+     */
+    class LayerHDR extends Layer {
+      /**
+       * Creates a new LayerHDR instance.
+       * 
+       * @param {LayerHDROptions} options - Configuration options for the HDR layer
+       */
+      constructor(options) {
+        options = Object.assign({
+          format: 'rgba16f',
+          autoWhitePoint: true,
+          debug: false,
+          mode: 'reinhard',
+        }, options);
+        super(options);
+
+        if (Object.keys(this.rasters).length != 0)
+          throw "Rasters options should be empty!";
+
+        if (this.url)
+          this.layout.setUrls([this.url]);
+        else if (this.layout.urls.length == 0)
+          throw "Missing options.url parameter";
+
+        const rasterOptions = {
+          format: this.format,
+          isLinear: true,  // HDR data is always in linear space
+          debug: this.debug
+        };
+        // Add custom data loader if provided
+        if (this.dataLoader) {
+          rasterOptions.dataLoader = this.dataLoader;
+          rasterOptions.dataLoaderOptions = this.dataLoaderOptions || {};
+        }
+
+        let raster = new Raster16Bit(rasterOptions);
+        raster.addEvent('loaded', () => {
+          if (this.autoWhitePoint) {
+            const maxValue = raster.getStatInfo().maxValue ? raster.getStatInfo().maxValue : 1.0;
+            this.setWhitePoint(maxValue);
+          }
+          this.emit('loaded');
+        });
+        this.rasters.push(raster);
+
+        // Create the HDR shader with all tone mapping parameters
+        let shader = new ShaderHDR({
+          label: 'HDR',
+          format: this.format,
+          mode: this.mode || 'reinhard',
+        });
+
+        this.shaders = { 'hdr': shader };
+        this.setShader('hdr');
+
+        // Reinhard params
+        this.addControl('whitePoint', [1.0]);
+        this.addControl('shadowLift', [0.0]);
+        // ACES params
+        this.addControl('acesContrast', [1.2]);
+        // Exposure params
+        this.addControl('exposure', [1.0]);
+        // Balanced params
+        this.addControl('highlightCompression', [1.0]);
+      }
+
+      /**
+       * Sets the white point for HDR tone mapping.
+       * 
+       * @param {number} v - The new white point value
+       * @param {number} [delayms=1] - Delay in milliseconds for the transition
+       * @param {string} [easing='linear'] - Easing function for the transition
+       */
+      setWhitePoint(v, delayms = 1, easing = 'linear') {
+        this.setControl('whitePoint', [v], delayms, easing);
+      }
+
+      /**
+       * Gets the current white point value.
+       * 
+       * @returns {number} The current white point value
+       */
+      getWhitePoint() {
+        return this.controls['whitePoint'].current.value[0];
+      }
+
+      /**
+       * Sets the shadow lift value for HDR tone mapping.
+       *
+       * @param {number} v - The new shadow lift value
+       * @param {number} [delayms=1] - Delay in milliseconds for the transition
+       * @param {string} [easing='linear'] - Easing function for the transition
+       */
+      setShadowLift(v, delayms = 1, easing = 'linear') {
+        this.setControl('shadowLift', [v], delayms, easing);
+      }
+
+      /**
+       * Gets the current shadow lift value.
+       * 
+       * @returns {number} The current shadow lift value
+       */
+      getShadowLift() {
+        return this.controls['shadowLift'].current.value[0];
+      }
+
+      /**
+       * Sets the ACES contrast parameter for ACES tone mapping.
+       * 
+       * @param {number} v - The new ACES contrast value
+       * @param {number} [delayms=1] - Delay in milliseconds for the transition
+       * @param {string} [easing='linear'] - Easing function for the transition
+       */
+      setAcesContrast(v, delayms = 1, easing = 'linear') {
+        this.setControl('acesContrast', [v], delayms, easing);
+      }
+
+      /**
+       * Gets the current ACES contrast value.
+       * 
+       * @returns {number} The current ACES contrast value
+       */
+      getAcesContrast() {
+        return this.controls['acesContrast'].current.value[0];
+      }
+
+      /**
+       * Sets the exposure value for exposure-based tone mapping.
+       * 
+       * @param {number} v - The new exposure value
+       * @param {number} [delayms=1] - Delay in milliseconds for the transition
+       * @param {string} [easing='linear'] - Easing function for the transition
+       */
+      setExposure(v, delayms = 1, easing = 'linear') {
+        this.setControl('exposure', [v], delayms, easing);
+      }
+
+      /**
+       * Gets the current exposure value.
+       * 
+       * @returns {number} The current exposure value
+       */
+      getExposure() {
+        return this.controls['exposure'].current.value[0];
+      }
+      /**
+       * Sets the highlight compression value for HDR tone mapping.
+       * 
+       * @param {number} v - The new highlight compression value
+       * @param {number} [delayms=1] - Delay in milliseconds for the transition
+       * @param {string} [easing='linear'] - Easing function for the transition
+       */
+      setHighlightCompression(v, delayms = 1, easing = 'linear') {
+        this.setControl('highlightCompression', [v], delayms, easing);
+      }
+      /**
+       * Gets the current highlight compression value.
+       * 
+       * @returns {number} The current highlight compression value
+       */
+      getHighlightCompression() {
+        return this.controls['highlightCompression'].current.value[0];
+      }
+
+      /**
+       * Retrieves statistical information about the raster data.
+       * 
+       * @returns {Object} An object containing statistical information (e.g., maxValue, avgLuminance)
+       */
+      getStatInfo() {
+        return this.rasters[0].getStatInfo();
+      }
+
+      /**
+       * Interpolates control values and updates the shader with the current parameters.
+       * 
+       * @returns {boolean} Whether the interpolation is complete
+       */
+      interpolateControls() {
+        const done = super.interpolateControls();
+        const whitePoint = this.getWhitePoint();
+        const shadowLift = this.getShadowLift();
+        const acesContrast = this.getAcesContrast();
+        const exposure = this.getExposure();
+        const highlightCompression = this.getHighlightCompression();
+
+        this.shader.setWhitePoint(whitePoint);
+        this.shader.setShadowLift(shadowLift);
+        this.shader.setAcesContrast(acesContrast);
+        this.shader.setExposure(exposure);
+        this.shader.setHighlightCompression(highlightCompression);
+
+        return done;
+      }
+    }
+
+    /**
+     * Registers this layer type with the Layer factory.
+     * 
+     * @type {Function}
+     * @private
+     */
+    Layer.prototype.types['hdr'] = (options) => { return new LayerHDR(options); };
 
     /**
      *  @default
@@ -10004,6 +14455,9 @@ void main() {
     	format(d, unit) {
     		if (d == 0)
     			return '';
+    		if(unit === "px") {
+    			return Math.floor(d) + unit;
+    		}
     		if (unit)
     			return (d / this.allUnits[unit]).toFixed(this.precision) + unit;
 
@@ -10305,7 +14759,13 @@ void main() {
     		}
     		measure.text.setAttribute('x', mx);
     		measure.text.setAttribute('y', my);
-    		measure.text.textContent = this.format(length * this.pixelSize);
+    		let pixelSize = this.pixelSize;
+    		let units = null;
+    		if (!pixelSize) {
+    			pixelSize = 1.0;
+    			units = 'px';
+    		}
+    		measure.text.textContent = this.format(length * pixelSize, units);
     	}
 
     	/**
@@ -10364,8 +14824,9 @@ void main() {
     		if (!this.enabled)
     			return false;
 
-    		let transform = this.camera.getCurrentTransform(performance.now());
-    		let { x, y } = this.camera.mapToScene(e.layerX, e.layerY, transform);
+    		//let transform = this.camera.getCurrentTransform(performance.now())
+    		//let { x, y } = this.camera.mapToScene(e.layerX, e.layerY, transform);
+    		const { x, y } = CoordinateSystem.fromViewportToScene({ x: e.layerX, y: e.layerY }, this.camera, false);
 
 
     		if (!this.measure) {
@@ -10391,8 +14852,10 @@ void main() {
     		if (!this.enabled || !this.measure)
     			return false;
 
-    		let transform = this.camera.getCurrentTransform(performance.now());
-    		let { x, y } = this.camera.mapToScene(e.layerX, e.layerY, transform);
+    		//let transform = this.camera.getCurrentTransform(performance.now())
+    		//let { x, y } = this.camera.mapToScene(e.layerX, e.layerY, transform);
+    		const { x, y } = CoordinateSystem.fromViewportToScene({ x: e.layerX, y: e.layerY }, this.camera, false);
+
     		this.measure.x2 = x;
     		this.measure.y2 = y;
     		this.update();
@@ -10543,8 +15006,9 @@ void main() {
     				snapshot: { title: 'Snapshot', display: false, task: (event) => { this.snapshot(); } }, //FIXME not work!
     			},
     			postInit: () => { },
+    			showScale: true,
     			pixelSize: null,
-    			unit: null, //FIXME to be used with ruler
+    			unit: null,
     			attribution: null,     //image attribution
     			lightcontroller: null,
     			showLightDirections: false,
@@ -10564,7 +15028,8 @@ void main() {
     		});
     		if (this.controlZoomMessage)
     			this.panzoom.addEvent('nowheel', () => { this.showOverlayMessage(this.controlZoomMessage); });
-    		this.viewer.pointerManager.onEvent(this.panzoom); //register wheel, doubleclick, pan and pinch
+    		this.viewer.addController(this.panzoom);
+    		//this.viewer.pointerManager.onEvent(this.panzoom); //register wheel, doubleclick, pan and pinch
     		// this.viewer.pointerManager.on("fingerSingleTap", { "fingerSingleTap": (e) => { this.showInfo(e); }, priority: 10000 });
 
     		/*let element = entry.element;
@@ -10783,12 +15248,25 @@ void main() {
 
     			/* Get pixel size from options if provided or from layer metadata
     			 */
-    			if (this.pixelSize) {
-    				this.scalebar = new ScaleBar(this.pixelSize, this.viewer);
-    			}
-    			else if (this.viewer.canvas.layers[Object.keys(this.viewer.canvas.layers)[0]].pixelSize) {
-    				let pixelSize = this.viewer.canvas.layers[Object.keys(this.viewer.canvas.layers)[0]].pixelSizePerMM();
-    				this.scalebar = new ScaleBar(pixelSize, this.viewer);
+    			if (this.showScale) {
+    				if (this.pixelSize) {
+    					this.scalebar = new ScaleBar(this.pixelSize, this.viewer);
+    				}
+    				else {
+    					let createScaleBar = () => {
+    						for(const [id, layer] of Object.entries(this.viewer.canvas.layers)) {
+    							this.pixelSize = layer.pixelSizePerMM();
+    							if (this.pixelSize) {
+    								this.scalebar = new ScaleBar(this.pixelSize, this.viewer);
+    								break;
+    							}
+    						}
+    					};
+    					if(this.viewer.canvas.ready) 
+    						createScaleBar();
+    					else	
+    						this.viewer.canvas.addEvent('ready', createScaleBar);
+    				}
     			}
 
     			if (this.attribution) {
@@ -10910,6 +15388,17 @@ void main() {
     	}
 
     	/**
+    	 * Enables/disables viewer controllers
+    	 * @param {boolean} [on] = Enable/disable all the viewer controllers
+    	 * @private
+    	 */
+    	setActiveControllers(on) {
+    		for (let c of this.viewer.controllers) {
+    			c.active = on;
+    		}
+    	}
+
+    	/**
     	 * Toggles light direction control mode
     	 * @param {boolean} [on] - Force specific state
     	 * @private
@@ -10918,7 +15407,7 @@ void main() {
     		let div = this.viewer.containerElement;
     		let active = div.classList.toggle('openlime-light-active', on);
     		this.lightActive = active;
-
+    		this.setActiveControllers(!active);
     		for (let layer of Object.values(this.viewer.canvas.layers))
     			for (let c of layer.controllers)
     				if (c.control == 'light') {
@@ -10956,6 +15445,10 @@ void main() {
     	 * @private
     	 */
     	toggleRuler() {
+    		const div = this.viewer.containerElement;
+    		const rl = div.querySelector('.openlime-button.openlime-ruler');
+    		const active = rl.classList.toggle('openlime-ruler-active');
+    		this.setActiveControllers(!active);
     		if (!this.ruler) {
     			this.ruler = new Ruler(this.viewer, this.pixelSize);
     			this.viewer.pointerManager.onEvent(this.ruler);
@@ -11024,10 +15517,32 @@ void main() {
     			let group = 'group' in entry ? `data-group="${entry.group}"` : '';
     			let layer = 'layer' in entry ? `data-layer="${entry.layer}"` : '';
     			let mode = 'mode' in entry ? `data-mode="${entry.mode}"` : '';
-    			html += `<a href="#" ${id} ${group} ${layer} ${mode} ${tooltip} class="openlime-entry ${classes}">${entry.button}</a>`;
+
+    			// Add icons for layers and modes
+    			if (layer && !mode) {
+    				// This is a layer button
+    				html += `<a href="#" ${id} ${group} ${layer} ${mode} ${tooltip} class="openlime-entry openlime-layer-entry ${classes}">
+							<span class="openlime-layer-icon"></span>
+							<span class="openlime-layer-name">${entry.button}</span>
+							<span class="openlime-layer-status"></span>
+					</a>`;
+    			} else if (mode) {
+    				// This is a mode button
+    				html += `<a href="#" ${id} ${group} ${layer} ${mode} ${tooltip} class="openlime-entry openlime-mode-entry ${classes}">
+							<span class="openlime-mode-icon"></span>
+							<span class="openlime-mode-name">${entry.button}</span>
+					</a>`;
+    			} else {
+    				// Regular button
+    				html += `<a href="#" ${id} ${group} ${layer} ${mode} ${tooltip} class="openlime-entry ${classes}">${entry.button}</a>`;
+    			}
     		} else if ('slider' in entry) {
     			let value = ('value' in entry) ? entry['value'] : 50;
-    			html += `<input type="range" min="1" max="100" value="${value}" class="openlime-slider ${classes}" ${id}>`;
+    			html += `
+			<div class="openlime-slider-container" data-slider-id="${entry.id}">
+					<input type="range" min="1" max="100" value="${value}" class="openlime-slider ${classes}" ${id}>
+					<span class="openlime-slider-value">${value}</span>
+			</div>`;
     		}
 
     		if ('list' in entry) {
@@ -11041,19 +15556,47 @@ void main() {
     	}
 
     	/**
-    	 * Attaches event handlers to menu entry elements
-    	 * @param {UIBasic~MenuEntry} entry - Menu entry to process
-    	 * @private
-    	 */
+    	* Attaches event handlers to menu entry elements
+    	* @param {UIBasic~MenuEntry} entry - Menu entry to process
+    	* @private
+    	*/
     	addEntryCallbacks(entry) {
     		entry.element = this.layerMenu.querySelector('#' + entry.id);
     		if (entry.onclick)
     			entry.element.addEventListener('click', (e) => {
     				entry.onclick();
-    				//this.updateMenu();
+    				// Update the slider value if it exists
+    				const sliderValue = entry.element.querySelector('.openlime-slider-value');
+    				if (sliderValue) {
+    					const slider = entry.element.querySelector('.openlime-slider');
+    					if (slider) {
+    						sliderValue.textContent = slider.value;
+    					}
+    				}
     			});
-    		if (entry.oninput)
-    			entry.element.addEventListener('input', entry.oninput);
+
+    		// For sliders, we need special handling
+    		if (entry.element.classList.contains('openlime-slider')) {
+    			const sliderContainer = entry.element.closest('.openlime-slider-container');
+    			if (sliderContainer) {
+    				const sliderValue = sliderContainer.querySelector('.openlime-slider-value');
+    				if (sliderValue) {
+    					// Set initial value
+    					sliderValue.textContent = entry.element.value;
+
+    					// Update value on input
+    					entry.element.addEventListener('input', (e) => {
+    						sliderValue.textContent = e.target.value;
+    						if (entry.oninput) entry.oninput(e);
+    					});
+    				}
+    			}
+    		} else if (entry.oninput) {
+    			entry.element.addEventListener('input', (e) => {
+    				entry.oninput(e);
+    			});
+    		}
+
     		if (entry.oncreate)
     			entry.oncreate();
 
@@ -11063,13 +15606,23 @@ void main() {
     	}
 
     	/**
-    	 * Updates menu entry state
-    	 * @param {UIBasic~MenuEntry} entry - Menu entry to update
-    	 * @private
-    	 */
+    	* Updates menu entry state
+    	* @param {UIBasic~MenuEntry} entry - Menu entry to update
+    	* @private
+    	*/
     	updateEntry(entry) {
     		let status = entry.status ? entry.status() : '';
+
+    		// Update classes
     		entry.element.classList.toggle('active', status == 'active');
+
+    		// Update status indicator for layer entries
+    		if (entry.layer) {
+    			const statusIcon = entry.element.querySelector('.openlime-layer-status');
+    			if (statusIcon) {
+    				statusIcon.textContent = status == 'active' ? '✓' : '';
+    			}
+    		}
 
     		if ('list' in entry)
     			for (let e of entry.list)
@@ -11077,49 +15630,65 @@ void main() {
     	}
 
     	/**
-    	 * Updates all menu entries
-    	 * @private
-    	 */
-    	updateMenu() {
-    		for (let entry of this.menu)
-    			this.updateEntry(entry);
-    	}
-
-    	/**
-    	 * Creates main menu structure
-    	 * @private
-    	 */
+    	* Creates main menu structure
+    	* @private
+    	*/
     	createMenu() {
     		this.entry_count = 0;
-    		let html = `<div class="openlime-layers-menu">`;
+    		let html = `<div class="openlime-layers-menu">
+									<div class="openlime-layers-header">
+											<h2>Layer Controls</h2>
+											<button class="openlime-layers-close-btn">×</button>
+									</div>
+									<div class="openlime-layers-content">`;
     		for (let entry of this.menu) {
     			html += this.createEntry(entry);
     		}
-    		html += '</div>';
-
+    		html += `</div></div>`;
 
     		let template = document.createElement('template');
     		template.innerHTML = html.trim();
     		this.layerMenu = template.content.firstChild;
     		this.viewer.containerElement.appendChild(this.layerMenu);
 
+    		// Add close button functionality
+    		const closeBtn = this.layerMenu.querySelector('.openlime-layers-close-btn');
+    		if (closeBtn) {
+    			closeBtn.addEventListener('click', () => this.toggleLayers());
+    		}
+
     		for (let entry of this.menu) {
     			this.addEntryCallbacks(entry);
     		}
-
-
-    		/*		for(let li of document.querySelectorAll('[data-layer]'))
-    					li.addEventListener('click', (e) => {
-    						this.setLayer(this.viewer.canvas.layers[li.getAttribute('data-layer')]);
-    					}); */
     	}
 
     	/**
-    	 * Toggles layer menu visibility
-    	 * @private
-    	 */
+    	* Toggles layer menu visibility with animation
+    	* @private
+    	*/
     	toggleLayers() {
-    		this.layerMenu.classList.toggle('open');
+    		// Add more sophisticated toggle with animation
+    		if (this.layerMenu.classList.contains('open')) {
+    			// Closing the menu
+    			this.layerMenu.classList.add('closing');
+    			setTimeout(() => {
+    				this.layerMenu.classList.remove('open');
+    				this.layerMenu.classList.remove('closing');
+    			}, 300); // Match transition duration
+    		} else {
+    			// Opening the menu
+    			this.layerMenu.classList.add('open');
+    			this.updateMenu(); // Ensure menu is up to date when opening
+    		}
+    	}
+
+    	/**
+    		 * Updates all menu entries
+    		 * @private
+    		 */
+    	updateMenu() {
+    		for (let entry of this.menu)
+    			this.updateEntry(entry);
     	}
 
     	/**
@@ -11147,6 +15716,322 @@ void main() {
     		}
     		this.updateMenu();
     		this.viewer.redraw();
+    	}
+
+    	/**
+    	 * Adds a UI control for a shader uniform
+    	 * @param {Layer} layer - Layer containing the shader
+    	 * @param {string} originalUniformName - Original name of the uniform in shader or filter
+    	 * @param {string} uiName - Display name for the UI
+    	 * @param {string} uiType - Control type ('checkbox'|'line-edit'|'slider')
+    	 * @param {number} uiMinDisplayed - Minimum displayed value (for slider/line-edit)
+    	 * @param {number} uiMaxDisplayed - Maximum displayed value (for slider/line-edit)
+    	 * @param {number} uiMin - Minimum actual uniform value
+    	 * @param {number} uiMax - Maximum actual uniform value
+    	 * @param {number} uiNStepDisplayed - Number of steps for slider (granularity control)
+    	 * @returns {boolean} Whether the uniform was found and UI created
+    	 */
+    	addUniformUI(layer, originalUniformName, uiName, uiType, uiMinDisplayed = 0, uiMaxDisplayed = 100, uiMin = 0.0, uiMax = 1.0, uiNStepDisplayed = 100) {
+    		// Find the uniform in shader or filter
+    		let uniform = null;
+    		let filter = null;
+
+    		// Check main shader uniforms
+    		if (layer.shader && layer.shader.uniforms && layer.shader.uniforms[originalUniformName]) {
+    			uniform = layer.shader.uniforms[originalUniformName];
+    		}
+    		// Check filter uniforms
+    		else if (layer.shader && layer.shader.filters) {
+    			for (const f of layer.shader.filters) {
+    				for (const [name, u] of Object.entries(f.uniforms)) {
+    					if (name === originalUniformName || name === f.uniformName(originalUniformName)) {
+    						uniform = u;
+    						filter = f;
+    						break;
+    					}
+    				}
+    				if (uniform) break;
+    			}
+    		}
+
+    		// If uniform not found, return false
+    		if (!uniform) {
+    			console.warn(`Uniform '${originalUniformName}' not found in layer ${layer.id || 'unknown'}`);
+    			return false;
+    		}
+
+    		// Create menu entry
+    		const layerEntry = this.getMenuLayerEntry(layer.id);
+    		if (!layerEntry) {
+    			console.warn(`Layer menu entry for '${layer.id || 'unknown'}' not found`);
+    			return false;
+    		}
+
+    		// Ensure layer entry has a list
+    		if (!layerEntry.list) {
+    			layerEntry.list = [];
+    		}
+
+    		// Check if we need to add a uniforms section
+    		if (!layerEntry.uniformsSection) {
+    			// First add a separator if needed (if there are mode entries)
+    			const hasModes = layerEntry.list.some(entry => entry.mode);
+    			if (hasModes || layerEntry.list.length > 0) {
+    				layerEntry.list.push({
+    					html: '<div class="openlime-uniform-separator"></div>'
+    				});
+    			}
+
+    			// Add uniforms section header
+    			layerEntry.list.push({
+    				html: '<div class="openlime-uniform-section">Parameters</div>'
+    			});
+
+    			layerEntry.uniformsSection = true;
+    		}
+
+    		// Generate a unique ID for this control
+    		const controlId = `uniform_${layer.id}_${originalUniformName.replace(/[^a-zA-Z0-9]/g, '_')}_${uiType}`;
+
+    		// Create entry based on uiType
+    		const uniformEntry = {
+    			id: controlId,
+    			uniformName: originalUniformName,
+    			uniformFilter: filter,
+    			html: `<div class="openlime-uniform-container">
+							<div class="openlime-uniform-name">${uiName}</div>
+							<div class="openlime-uniform-control-wrapper" data-uniform="${originalUniformName}" data-control-type="${uiType}"></div>
+						 </div>`
+    		};
+
+    		// Add this entry to the layer's list of uniform controls if it doesn't exist yet
+    		if (!layerEntry.uniformControls) {
+    			layerEntry.uniformControls = {};
+    		}
+
+    		// Get current value from uniform
+    		const currentValue = uniform.value;
+
+    		// Map function to convert between UI and actual values
+    		const mapToUniform = (displayedValue) => {
+    			if (uiType === 'checkbox') {
+    				return displayedValue;
+    			} else {
+    				// Convert from displayed range to actual range
+    				return uiMin + (displayedValue - uiMinDisplayed) * (uiMax - uiMin) / (uiMaxDisplayed - uiMinDisplayed);
+    			}
+    		};
+
+    		const mapToDisplay = (uniformValue) => {
+    			if (uiType === 'checkbox') {
+    				return uniformValue;
+    			} else {
+    				// Convert from actual range to displayed range
+    				return uiMinDisplayed + (uniformValue - uiMin) * (uiMaxDisplayed - uiMinDisplayed) / (uiMax - uiMin);
+    			}
+    		};
+
+    		// Store the mapping functions and parameters for later use
+    		uniformEntry.mapToUniform = mapToUniform;
+    		uniformEntry.mapToDisplay = mapToDisplay;
+    		uniformEntry.uiMin = uiMin;
+    		uniformEntry.uiMax = uiMax;
+    		uniformEntry.uiMinDisplayed = uiMinDisplayed;
+    		uniformEntry.uiMaxDisplayed = uiMaxDisplayed;
+    		uniformEntry.uiType = uiType;
+
+    		// Add displayed value to start
+    		const displayValue = mapToDisplay(currentValue);
+
+    		// Add type-specific control creation and event handling
+    		uniformEntry.oncreate = () => {
+    			const container = uniformEntry.element;
+    			const controlWrapper = container.querySelector('.openlime-uniform-control-wrapper');
+
+    			// Store reference to this control for updating from other controls
+    			if (!layerEntry.uniformControls[originalUniformName]) {
+    				layerEntry.uniformControls[originalUniformName] = [];
+    			}
+    			layerEntry.uniformControls[originalUniformName].push({
+    				id: controlId,
+    				element: controlWrapper,
+    				entry: uniformEntry
+    			});
+
+    			if (uiType === 'checkbox') {
+    				// Create checkbox
+    				controlWrapper.innerHTML = `
+							<label class="openlime-uniform-checkbox-wrapper">
+									<input type="checkbox" class="openlime-uniform-checkbox" ${currentValue ? 'checked' : ''}>
+									<span class="openlime-uniform-checkbox-custom"></span>
+							</label>
+					`;
+
+    				// Add event listener
+    				const checkbox = controlWrapper.querySelector('.openlime-uniform-checkbox');
+    				checkbox.addEventListener('change', (e) => {
+    					const value = e.target.checked;
+    					this.updateUniformValue(layer, originalUniformName, value, filter);
+
+    					// Update other controls for the same uniform
+    					this.updateRelatedControls(layerEntry, originalUniformName, value, controlId);
+    				});
+    			}
+    			else if (uiType === 'line-edit') {
+    				// Create text input
+    				controlWrapper.innerHTML = `
+							<input type="text" class="openlime-uniform-line-edit" value="${displayValue.toFixed(2)}">
+					`;
+
+    				// Add event listener
+    				const input = controlWrapper.querySelector('.openlime-uniform-line-edit');
+    				input.addEventListener('change', (e) => {
+    					// Parse the input value as a number
+    					const displayedValue = parseFloat(e.target.value);
+
+    					// Validate if it's a number
+    					if (isNaN(displayedValue)) {
+    						// Reset to current value if not a number
+    						e.target.value = displayValue.toFixed(2);
+    						return;
+    					}
+
+    					// Ensure value is in displayed range
+    					const clampedDisplay = Math.max(uiMinDisplayed, Math.min(uiMaxDisplayed, displayedValue));
+
+    					// Map to uniform range
+    					const uniformValue = mapToUniform(clampedDisplay);
+
+    					// Update UI if value was clamped
+    					if (clampedDisplay !== displayedValue) {
+    						e.target.value = clampedDisplay.toFixed(2);
+    					}
+
+    					this.updateUniformValue(layer, originalUniformName, uniformValue, filter);
+
+    					// Update other controls for the same uniform
+    					this.updateRelatedControls(layerEntry, originalUniformName, uniformValue, controlId);
+    				});
+    			}
+    			else if (uiType === 'slider') {
+    				// Calculate step size based on uiNStepDisplayed
+    				const stepSize = uiNStepDisplayed > 0 ?
+    					((uiMaxDisplayed - uiMinDisplayed) / uiNStepDisplayed).toFixed(6) :
+    					'any';
+
+    				// Create slider with value display
+    				controlWrapper.innerHTML = `
+							<div class="openlime-uniform-slider-container">
+									<input type="range" class="openlime-uniform-slider" 
+												 min="${uiMinDisplayed}" max="${uiMaxDisplayed}" 
+												 step="${stepSize}" value="${displayValue}">
+									<span class="openlime-uniform-slider-value">${displayValue.toFixed(2)}</span>
+							</div>
+					`;
+
+    				// Add event listener
+    				const slider = controlWrapper.querySelector('.openlime-uniform-slider');
+    				const valueDisplay = controlWrapper.querySelector('.openlime-uniform-slider-value');
+
+    				slider.addEventListener('input', (e) => {
+    					const displayedValue = parseFloat(e.target.value);
+
+    					// Update value display
+    					valueDisplay.textContent = displayedValue.toFixed(2);
+
+    					// Map to uniform range
+    					const uniformValue = mapToUniform(displayedValue);
+
+    					this.updateUniformValue(layer, originalUniformName, uniformValue, filter);
+
+    					// Update other controls for the same uniform
+    					this.updateRelatedControls(layerEntry, originalUniformName, uniformValue, controlId);
+    				});
+    			}
+    		};
+
+    		// Add entry to the layer's list
+    		layerEntry.list.push(uniformEntry);
+
+    		// If the menu was already created, update it
+    		if (this.layerMenu) {
+    			this.updateMenu();
+    		}
+
+    		return true;
+    	}
+
+    	/**
+    	* Updates all related controls for a uniform when one is changed
+    	* @param {Object} layerEntry - Layer menu entry
+    	* @param {string} uniformName - Name of the uniform
+    	* @param {*} value - New uniform value
+    	* @param {string} sourceControlId - ID of the control that triggered the update
+    	* @private
+    	*/
+    	updateRelatedControls(layerEntry, uniformName, value, sourceControlId) {
+    		if (!layerEntry.uniformControls || !layerEntry.uniformControls[uniformName]) {
+    			return;
+    		}
+
+    		// Update all controls for this uniform except the source
+    		for (const control of layerEntry.uniformControls[uniformName]) {
+    			if (control.id === sourceControlId) {
+    				continue; // Skip the source control
+    			}
+
+    			const entry = control.entry;
+    			const element = control.element;
+
+    			// Convert the actual uniform value to the displayed value for this control
+    			const displayValue = entry.mapToDisplay(value);
+
+    			// Update control based on its type
+    			if (entry.uiType === 'checkbox') {
+    				const checkbox = element.querySelector('.openlime-uniform-checkbox');
+    				if (checkbox) {
+    					checkbox.checked = value;
+    				}
+    			}
+    			else if (entry.uiType === 'line-edit') {
+    				const input = element.querySelector('.openlime-uniform-line-edit');
+    				if (input) {
+    					input.value = displayValue.toFixed(2);
+    				}
+    			}
+    			else if (entry.uiType === 'slider') {
+    				const slider = element.querySelector('.openlime-uniform-slider');
+    				const valueDisplay = element.querySelector('.openlime-uniform-slider-value');
+    				if (slider) {
+    					slider.value = displayValue;
+    				}
+    				if (valueDisplay) {
+    					valueDisplay.textContent = displayValue.toFixed(2);
+    				}
+    			}
+    		}
+    	}
+
+    	/**
+    	* Updates a uniform value in shader or filter
+    	* @param {Layer} layer - The layer containing the shader
+    	* @param {string} name - Uniform name
+    	* @param {*} value - New value
+    	* @param {ShaderFilter} [filter] - Optional filter if uniform belongs to a filter
+    	* @private
+    	*/
+    	updateUniformValue(layer, name, value, filter = null) {
+    		if (filter) {
+    			// Check if the name already includes the filter prefix
+    			if (name.startsWith(`u_${filter.name}_`)) {
+    				layer.shader.setUniform(name, value);
+    			} else {
+    				filter.setUniform(name, value);
+    			}
+    		} else {
+    			layer.shader.setUniform(name, value);
+    		}
+    		layer.emit('update');
     	}
 
     	/**
@@ -11269,11 +16154,12 @@ void main() {
 
     	/**
     	 * Toggles dialog visibility
-    	 * @param {boolean} [force] - Force specific state
+    	 * @param {boolean} [force] - Force specific state (true = show, false = hide)
     	 */
-    	toggle(force) { //FIXME Why not remove force?
-    		this.element.classList.toggle('hidden', force);
-    		this.visible = !this.visible; //FIXME not in sync with 'force'
+    	toggle(force) {
+    		const newVisibility = force === undefined ? !this.visible : force;
+    		this.element.classList.toggle('hidden', !newVisibility);
+    		this.visible = newVisibility;
     	}
     }
 
@@ -11287,30 +16173,36 @@ void main() {
      * 
      * Dialog Close Event:
      * @event UIDialog#closed
-     * Emitted when dialog is closed through any means
+     * @description Emitted when dialog is closed through any means
      */
 
     addSignals(UIDialog, 'closed');
     addSignals(UIBasic, 'lightdirection');
 
     /**
-     * The Draggable class enables an element to be dragged and moved around within its parent element.
-     * It creates a draggable container with a handle that can be used to initiate the dragging action.
-     * The draggable element is positioned absolutely within its parent container and can be customized
-     * through various options.
+     * Draggable class that enables HTML elements to be moved within a parent container.
      * 
-     * The class requires either a top or bottom position and either a left or right position to be 
-     * specified through the options parameter. These determine the initial position of the draggable
-     * element within its parent container. The default positioning is bottom=20 and right=20.
+     * This class creates a draggable container with a handle and attaches the specified
+     * element to it. The element can then be dragged around its parent container using
+     * the handle, providing an interactive UI element for repositioning content.
      * 
      * Features:
      * - Flexible positioning using top/bottom and left/right coordinates
-     * - Customizable handle size and appearance
-     * - Automatic position updates on window resize
-     * - Touch-enabled dragging support
-     * - Configurable spacing between handle and content
+     * - Customizable handle size, color, and appearance
+     * - Maintains position relative to parent container edges on window resize
+     * - Touch-enabled with pointer events support for multi-device compatibility
+     * - Smooth drag animations with visual feedback during movement
+     * - Boundary constraints within the parent container
      * 
-     * 
+     * @example
+     * // Create a draggable element at the bottom-right corner
+     * const element = document.getElementById('my-element');
+     * const parent = document.querySelector('.parent-container');
+     * const draggable = new Draggable(element, parent, {
+     *   bottom: 20,
+     *   right: 20,
+     *   handleColor: 'rgba(100, 150, 200, 0.7)'
+     * });
      */
     class Draggable {
         /**
@@ -11319,18 +16211,20 @@ void main() {
          * @param {HTMLElement} element - The element to be made draggable
          * @param {HTMLElement|string} parent - The parent element where the draggable container will be appended.
          *                                     Can be either an HTMLElement or a CSS selector string
-         * @param {Object} [options] - Configuration options for the draggable element
-         * @param {number} [options.top] - The initial top position in pixels. Mutually exclusive with bottom
-         * @param {number} [options.bottom=20] - The initial bottom position in pixels. Mutually exclusive with top
-         * @param {number} [options.left] - The initial left position in pixels. Mutually exclusive with right
-         * @param {number} [options.right=20] - The initial right position in pixels. Mutually exclusive with left
+         * @param {Object} [options={}] - Configuration options for the draggable element
+         * @param {number|null} [options.top=null] - The initial top position in pixels. Mutually exclusive with bottom
+         * @param {number|null} [options.bottom=20] - The initial bottom position in pixels. Mutually exclusive with top
+         * @param {number|null} [options.left=null] - The initial left position in pixels. Mutually exclusive with right
+         * @param {number|null} [options.right=20] - The initial right position in pixels. Mutually exclusive with left
          * @param {number} [options.handleSize=10] - The size of the drag handle in pixels
          * @param {number} [options.handleGap=5] - The gap between the handle and the draggable content in pixels
          * @param {number} [options.zindex=200] - The z-index of the draggable container
          * @param {string} [options.handleColor='#f0f0f0b3'] - The background color of the handle (supports rgba)
+         * @param {number} [options.dragOpacity=0.6] - Opacity of the element while being dragged (between 0 and 1)
          */
-        constructor(element, parent, options) {
-            options = Object.assign({
+        constructor(element, parent, options = {}) {
+            // Set default options
+            this.options = {
                 top: null,
                 bottom: 20,
                 left: null,
@@ -11338,100 +16232,251 @@ void main() {
                 handleSize: 10,
                 handleGap: 5,
                 zindex: 200,
-                handleColor: '#f0f0f0b3' // rgba(240, 240, 240, 0.7)
-            }, options);
-            Object.assign(this, options);
+                handleColor: '#f0f0f0b3', // rgba(240, 240, 240, 0.7)
+                dragOpacity: 0.6
+            };
+            
+            // Merge user options with defaults
+            Object.assign(this.options, options);
+            
+            // Store element and parent references
             this.element = element;
-            this.parent = parent;
-            if (typeof (this.parent) == 'string')
-                this.parent = document.querySelector(this.parent);
-
-            if (this.left) this.right = null;
-            if (this.top) this.bottom = null;
-
-            // Disable context menu
-            if (!('setCtxMenu' in window)) {
+            this.parent = typeof parent === 'string' ? document.querySelector(parent) : parent;
+            
+            if (!this.element || !this.parent) {
+                throw new Error('Draggable requires valid element and parent');
+            }
+            
+            // Handle positioning priority
+            if (this.options.left !== null) this.options.right = null;
+            if (this.options.top !== null) this.options.bottom = null;
+            
+            // Disable context menu globally if not already disabled
+            this.setupContextMenu();
+            
+            // Create container and handle
+            this.createElements();
+            
+            // Setup event listeners for dragging
+            this.setupDragEvents();
+            
+            // Append element to container
+            this.appendChild(this.element);
+            
+            // Setup resize handling
+            this.setupResizeHandler();
+        }
+        
+        /**
+         * Disables the context menu globally if not already disabled.
+         * @private
+         */
+        setupContextMenu() {
+            if (!window.setCtxMenu) {
                 window.addEventListener("contextmenu", e => e.preventDefault());
                 window.setCtxMenu = true;
             }
-
+        }
+        
+        /**
+         * Creates the draggable container and handle elements.
+         * @private
+         */
+        createElements() {
+            const { handleGap, zindex, handleColor, handleSize } = this.options;
+            
+            // Create container element
             this.container = document.createElement('div');
             this.container.classList.add('openlime-draggable');
-            this.container.style = `display: flex; gap:${this.handleGap}px; position: absolute; z-index: ${this.zindex}; touch-action: none; visibility: visible;`;
+            this.container.style.display = 'flex';
+            this.container.style.gap = `${handleGap}px`;
+            this.container.style.position = 'absolute';
+            this.container.style.zIndex = zindex;
+            this.container.style.touchAction = 'none';
+            this.container.style.visibility = 'visible';
+            
+            // Create handle element
             this.handle = document.createElement('div');
-            this.handle.style = `border-radius: 4px; background-color: ${this.handleColor}; padding: 0; width: ${this.handleSize}px; height: ${this.handleSize}px; z-index: 205;`;
+            this.handle.style.borderRadius = '4px';
+            this.handle.style.backgroundColor = handleColor;
+            this.handle.style.padding = '0';
+            this.handle.style.width = `${handleSize}px`;
+            this.handle.style.height = `${handleSize}px`;
+            this.handle.style.zIndex = zindex + 5;
+            this.handle.style.cursor = 'grab';
+            
+            // Assemble elements
             this.container.appendChild(this.handle);
             this.parent.appendChild(this.container);
-
-            this.dragEvents();
-            this.element.style.position = 'unset';
-
-            this.appendChild(this.element);
-
-            addEventListener("resize", (event) => {
-                this.updatePos();
+        }
+        
+        /**
+         * Sets up event listeners for window resize.
+         * @private
+         */
+        setupResizeHandler() {
+            // Use debounced resize handler to improve performance
+            let resizeTimeout;
+            window.addEventListener("resize", () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => this.updatePosition(), 100);
             });
         }
-
+        
+        /**
+         * Sets up the drag event listeners for the handle.
+         * Manages pointer events for drag operations.
+         * @private
+         */
+        setupDragEvents() {
+            let offsetX, offsetY;
+            let isDragging = false;
+            
+            // Use bound methods to maintain this context
+            const dragStart = (e) => {
+                e.preventDefault();
+                
+                // Set dragging state
+                isDragging = true;
+                this.container.style.opacity = this.options.dragOpacity;
+                this.handle.style.cursor = 'grabbing';
+                
+                // Calculate offsets based on pointer position
+                offsetX = e.clientX - this.container.offsetLeft;
+                offsetY = e.clientY - this.container.offsetTop;
+                
+                // Add move event listener
+                document.addEventListener("pointermove", drag);
+            };
+            
+            const drag = (e) => {
+                if (!isDragging) return;
+                
+                e.preventDefault();
+                
+                // Calculate new position
+                const newLeft = Math.max(0, Math.min(
+                    e.clientX - offsetX,
+                    this.parent.offsetWidth - this.container.offsetWidth
+                ));
+                
+                const newTop = Math.max(0, Math.min(
+                    e.clientY - offsetY,
+                    this.parent.offsetHeight - this.container.offsetHeight
+                ));
+                
+                // Update position
+                this.container.style.left = `${newLeft}px`;
+                this.container.style.top = `${newTop}px`;
+                
+                // Update the option values based on new position
+                this.options.left = newLeft;
+                this.options.right = null;
+                this.options.top = newTop;
+                this.options.bottom = null;
+            };
+            
+            const dragEnd = () => {
+                if (!isDragging) return;
+                
+                // Reset visual state
+                this.container.style.opacity = '1.0';
+                this.handle.style.cursor = 'grab';
+                
+                // Clear dragging state
+                isDragging = false;
+                
+                // Remove move event listener
+                document.removeEventListener("pointermove", drag);
+            };
+            
+            // Attach event listeners
+            this.handle.addEventListener("pointerdown", dragStart);
+            document.addEventListener("pointerup", dragEnd);
+            document.addEventListener("pointercancel", dragEnd);
+        }
+        
         /**
          * Appends an HTML element to the draggable container and updates its position.
          * @param {HTMLElement} element - The element to append to the draggable container
+         * @returns {Draggable} This instance for method chaining
          */
-        appendChild(e) {
-            this.container.appendChild(e);
-            this.updatePos();
+        appendChild(element) {
+            if (element) {
+                // Ensure the element has proper positioning
+                element.style.position = 'unset';
+                this.container.appendChild(element);
+                this.updatePosition();
+            }
+            return this;
         }
-
+        
         /**
          * Updates the position of the draggable container based on its current options and parent dimensions.
          * This method is called automatically on window resize and when elements are appended.
-         * @private
+         * @returns {Draggable} This instance for method chaining
          */
-        updatePos() {
-            const w = this.container.offsetWidth;
-            const h = this.container.offsetHeight;
-            let t = 0;
-            let l = 0;
-            if (this.top) t = this.top;
-            if (this.bottom) t = this.parent.offsetHeight - this.bottom - h;
-            if (this.left) l = this.left;
-            if (this.right) l = this.parent.offsetWidth - this.right - w;
-            this.container.style.top = `${t}px`;
-            this.container.style.left = `${l}px`;
+        updatePosition() {
+            const containerWidth = this.container.offsetWidth;
+            const containerHeight = this.container.offsetHeight;
+            const parentWidth = this.parent.offsetWidth;
+            const parentHeight = this.parent.offsetHeight;
+            
+            let top = 0;
+            let left = 0;
+            
+            // Calculate top/bottom position
+            if (this.options.top !== null) {
+                top = this.options.top;
+            } else if (this.options.bottom !== null) {
+                top = parentHeight - this.options.bottom - containerHeight;
+            }
+            
+            // Calculate left/right position
+            if (this.options.left !== null) {
+                left = this.options.left;
+            } else if (this.options.right !== null) {
+                left = parentWidth - this.options.right - containerWidth;
+            }
+            
+            // Ensure the element stays within parent bounds
+            top = Math.max(0, Math.min(top, parentHeight - containerHeight));
+            left = Math.max(0, Math.min(left, parentWidth - containerWidth));
+            
+            // Apply position
+            this.container.style.top = `${top}px`;
+            this.container.style.left = `${left}px`;
+            
+            return this;
         }
-
+        
         /**
-         * Sets up the drag event listeners for the handle.
-         * Manages pointer events for drag start, drag, and drag end operations.
-         * @private
+         * Shows the draggable element if it's hidden.
+         * @returns {Draggable} This instance for method chaining
          */
-        dragEvents() {
-
-            let offsetX, offsetY;
-            const self = this;
-
-            this.handle.addEventListener("pointerdown", dragStart);
-            document.addEventListener("pointerup", dragEnd);
-
-            function dragStart(e) {
-                e.preventDefault();
-                self.container.style.opacity = 0.6;
-                offsetX = e.clientX - self.container.offsetLeft;
-                offsetY = e.clientY - self.container.offsetTop;
-                document.addEventListener("pointermove", drag);
-            }
-
-            function drag(e) {
-                e.preventDefault();
-                self.container.style.opacity = 0.6;
-                self.container.style.left = e.clientX - offsetX + "px";
-                self.container.style.top = e.clientY - offsetY + "px";
-            }
-
-            function dragEnd() {
-                self.container.style.opacity = 1.0;
-                document.removeEventListener("pointermove", drag);
-            }
+        show() {
+            this.container.style.visibility = 'visible';
+            return this;
+        }
+        
+        /**
+         * Hides the draggable element.
+         * @returns {Draggable} This instance for method chaining
+         */
+        hide() {
+            this.container.style.visibility = 'hidden';
+            return this;
+        }
+        
+        /**
+         * Changes the handle color.
+         * @param {string} color - New color for the handle (hex, rgb, rgba)
+         * @returns {Draggable} This instance for method chaining
+         */
+        setHandleColor(color) {
+            this.options.handleColor = color;
+            this.handle.style.backgroundColor = color;
+            return this;
         }
     }
 
@@ -11708,7 +16753,7 @@ void main() {
     		super({});
 
     		Object.assign(this, {
-    			modes: ['light', 'normals', 'diffuse', 'specular'],
+    			modes: ['light', 'normals', 'diffuse', 'gray_diffuse', 'specular'],
     			mode: 'normal',
     			type: ['ptm', 'hsh', 'sh', 'rbf', 'bln'],
     			colorspaces: ['lrgb', 'rgb', 'mrgb', 'mycc'],
@@ -11737,20 +16782,23 @@ void main() {
 
     	/**
     	 * Sets the rendering mode
-    	 * @param {string} mode - One of: 'light', 'normals', 'diffuse', 'specular'
+    	 * @param {string} mode - One of: 'light', 'normals', 'diffuse', 'gray_diffuse', 'specular'
     	 * @throws {Error} If mode is not recognized
     	 */
     	setMode(mode) {
     		if (!(this.modes.includes(mode)))
     			throw Error("Unknown mode: " + mode);
     		this.mode = mode;
+    		this.needsUpdate = true;
+    	}
 
-    		if (mode != 'light') {
+    	updateUniforms(gl) {
+    		if (this.mode != 'light' && !this.uniforms.base1.value) {
     			this.lightWeights([0.612, 0.354, 0.707], 'base');
     			this.lightWeights([-0.612, 0.354, 0.707], 'base1');
     			this.lightWeights([0, -0.707, 0.707], 'base2');
     		}
-    		this.needsUpdate = true;
+    		super.updateUniforms(gl);
     	}
 
     	/**
@@ -11896,13 +16944,12 @@ void main() {
     	fragShaderSrc(gl) {
 
     		let basetype = 'vec3'; //(this.colorspace == 'mrgb' || this.colorspace == 'mycc')?'vec3':'float';
-    		let gl2 = !(gl instanceof WebGLRenderingContext);
     		let str = `
 
 
 #define np1 ${this.nplanes + 1}
 
-${gl2 ? 'in' : 'varying'} vec2 v_texcoord;
+in vec2 v_texcoord;
 
 const mat3 T = mat3(8.1650e-01, 4.7140e-01, 4.7140e-01,
 	-8.1650e-01, 4.7140e-01,  4.7140e-01,
@@ -11918,16 +16965,6 @@ uniform ${basetype} base1[np1];
 uniform ${basetype} base2[np1];
 `;
 
-    		for (let n = 0; n < this.njpegs; n++)
-    			str += `
-uniform sampler2D plane${n};
-`;
-
-    		if (this.normals)
-    			str += `
-uniform sampler2D normals;
-`;
-
     		if (this.colorspace == 'mycc')
     			str +=
     				`
@@ -11937,10 +16974,10 @@ const int ny1 = ${this.yccplanes[1]};
 `;
 
     		switch (this.colorspace) {
-    			case 'lrgb': str += LRGB.render(this.njpegs, gl2); break;
-    			case 'rgb': str += RGB.render(this.njpegs, gl2); break;
-    			case 'mrgb': str += MRGB.render(this.njpegs, gl2); break;
-    			case 'mycc': str += MYCC.render(this.njpegs, this.yccplanes[0], gl2); break;
+    			case 'lrgb': str += LRGB.render(this.njpegs); break;
+    			case 'rgb': str += RGB.render(this.njpegs); break;
+    			case 'mrgb': str += MRGB.render(this.njpegs); break;
+    			case 'mycc': str += MYCC.render(this.njpegs, this.yccplanes[0]); break;
     		}
 
     		str += `
@@ -11951,6 +16988,7 @@ vec4 data() {
     		if (this.mode == 'light') {
     			str += `
 	vec4 color = render(base);
+	color = srgb2linear(color);
 `;
     		} else {
     			str += `
@@ -11958,8 +16996,10 @@ vec4 data() {
 `;
     			if (this.normals)
     				str += `
-	vec3 normal = (texture${gl2 ? '' : '2D'}(normals, v_texcoord).zyx *2.0) - 1.0;
-	normal.z = sqrt(1.0 - normal.x*normal.x - normal.y*normal.y);
+	vec3 normal = texture(normals, v_texcoord).xyz * 2.0 - 1.0;
+	normal = normalize(normal);		
+	//vec3 normal = (texture(normals, v_texcoord).zyx *2.0) - 1.0;
+	//normal.z = sqrt(1.0 - normal.x*normal.x - normal.y*normal.y);
 `;
     			else
     				str += `
@@ -11971,24 +17011,29 @@ vec4 data() {
 `;
     			switch (this.mode) {
     				case 'normals': str += `
-	normal = (normal + 1.0)/2.0;
-	color = vec4(0.0, normal.xy, 1);
+	normal = (normal + 1.0)*0.5;
+	color = vec4(normal.xyz, 1.0);
 `;
     					break;
 
     				case 'diffuse':
     					if (this.colorspace == 'lrgb' || this.colorspace == 'rgb')
     						str += `
-vec4 diffuse = texture${gl2 ? '' : '2D'}(plane0, v_texcoord);
+vec4 diffuse = texture(plane0, v_texcoord);
 float s = dot(light, normal);
 color = vec4(s * diffuse.xyz, 1);
+color = srgb2linear(color);
 `;
     					else
     						str += `
 color = vec4(vec3(dot(light, normal)), 1);
 `;
     					break;
-
+    				case 'gray_diffuse':
+    					str += `
+color = vec4(vec3(dot(light, normal)), 1);
+`;
+    					break;
     				case 'specular':
     				default: str += `
 	float s = pow(dot(light, normal), specular_exp);
@@ -11999,7 +17044,8 @@ color = vec4(vec3(dot(light, normal)), 1);
     			}
     		}
 
-    		str += `return color;
+    		str += `
+		return color;
 }`;
     		return str;
     	}
@@ -12007,7 +17053,7 @@ color = vec4(vec3(dot(light, normal)), 1);
 
 
     class LRGB {
-    	static render(njpegs, gl2) {
+    	static render(njpegs) {
     		let str = `
 vec4 render(vec3 base[np1]) {
 	float l = 0.0;
@@ -12015,7 +17061,7 @@ vec4 render(vec3 base[np1]) {
     		for (let j = 1, k = 0; j < njpegs; j++, k += 3) {
     			str += `
 	{
-		vec4 c = texture${gl2 ? '' : '2D'}(plane${j}, v_texcoord);
+		vec4 c = texture(plane${j}, v_texcoord);
 		l += base[${k}].x*(c.x - bias[${j}].x)*scale[${j}].x;
 		l += base[${k + 1}].x*(c.y - bias[${j}].y)*scale[${j}].y;
 		l += base[${k + 2}].x*(c.z - bias[${j}].z)*scale[${j}].z;
@@ -12023,7 +17069,7 @@ vec4 render(vec3 base[np1]) {
 `;
     		}
     		str += `
-	vec3 basecolor = (texture${gl2 ? '' : '2D'}(plane0, v_texcoord).xyz - bias[0])*scale[0];
+	vec3 basecolor = (texture(plane0, v_texcoord).xyz - bias[0])*scale[0];
 
 	return l*vec4(basecolor, 1);
 }
@@ -12034,7 +17080,7 @@ vec4 render(vec3 base[np1]) {
 
 
     class RGB {
-    	static render(njpegs, gl2) {
+    	static render(njpegs) {
     		let str = `
 vec4 render(vec3 base[np1]) {
 	vec4 rgb = vec4(0, 0, 0, 1);`;
@@ -12042,7 +17088,7 @@ vec4 render(vec3 base[np1]) {
     		for (let j = 0; j < njpegs; j++) {
     			str += `
 	{
-		vec4 c = texture${gl2 ? '' : '2D'}(plane${j}, v_texcoord);
+		vec4 c = texture(plane${j}, v_texcoord);
 		rgb.x += base[${j}].x*(c.x - bias[${j}].x)*scale[${j}].x;
 		rgb.y += base[${j}].y*(c.y - bias[${j}].y)*scale[${j}].y;
 		rgb.z += base[${j}].z*(c.z - bias[${j}].z)*scale[${j}].z;
@@ -12058,7 +17104,7 @@ vec4 render(vec3 base[np1]) {
     }
 
     class MRGB {
-    	static render(njpegs, gl2) {
+    	static render(njpegs) {
     		let str = `
 vec4 render(vec3 base[np1]) {
 	vec3 rgb = base[0];
@@ -12067,7 +17113,7 @@ vec4 render(vec3 base[np1]) {
 `;
     		for (let j = 0; j < njpegs; j++) {
     			str +=
-    				`	c = texture${gl2 ? '' : '2D'}(plane${j}, v_texcoord);
+    				`	c = texture(plane${j}, v_texcoord);
 	r = (c.xyz - bias[${j}])* scale[${j}];
 
 	rgb += base[${j}*3+1]*r.x;
@@ -12085,7 +17131,7 @@ vec4 render(vec3 base[np1]) {
 
     class MYCC {
 
-    	static render(njpegs, ny1, gl2) {
+    	static render(njpegs, ny1) {
     		let str = `
 vec3 toRgb(vec3 ycc) {
  	vec3 rgb;
@@ -12103,7 +17149,7 @@ vec4 render(vec3 base[np1]) {
     		for (let j = 0; j < njpegs; j++) {
     			str += `
 
-	c = texture${gl2 ? '' : '2D'}(plane${j}, v_texcoord);
+	c = texture(plane${j}, v_texcoord);
 
 	r = (c.xyz - bias[${j}])* scale[${j}];
 `;
@@ -12244,7 +17290,7 @@ vec4 render(vec3 base[np1]) {
     	weights(x, y, z) {
     		const neighbors = this.findNeighbors(x, y, z);
 
-    		const meanDist =  this.smoothMinDist(neighbors);
+    		const meanDist = this.smoothMinDist(neighbors);
     		const epsilon = this.alpha / meanDist;
 
     		let denom = 0;
@@ -12255,7 +17301,7 @@ vec4 render(vec3 base[np1]) {
     			denom += w;
     		}
 
-    		for(let w of weights)
+    		for (let w of weights)
     			w[1] /= denom;
     		return weights;
     	}
@@ -12298,7 +17344,7 @@ vec4 render(vec3 base[np1]) {
 
     		const rbf = new AdaptiveRBF(samples, 8, 24);
     		return rbf.weights(lpos[0], lpos[1], lpos[2]);
-    		
+
     	}
     }
 
@@ -12491,13 +17537,13 @@ vec4 render(vec3 base[np1]) {
     			for (let p = 0; p < this.shader.njpegs; p++) {
     				let imageUrl = this.layout.imageUrl(url, 'plane_' + p);
     				urls.push(imageUrl);
-    				let raster = new Raster({ format: 'vec3' });
+    				let raster = new Raster({ format: 'vec3', isLinear: true });
     				this.rasters.push(raster);
     			}
     			if (this.normals) { // ITARZOOM must include normals and currently has a limitation: loads the entire tile
     				let imageUrl = this.layout.imageUrl(url, 'normals');
     				urls.push(imageUrl);
-    				let raster = new Raster({ format: 'vec3' });
+    				let raster = new Raster({ format: 'vec3', isLinear: true });
     				this.rasters.push(raster);
     			}
     			this.layout.setUrls(urls);
@@ -12766,9 +17812,6 @@ vec4 output2[${this.n / 4}];  // 52/4
 vec3 output3;
 
 in vec2 v_texcoord;
-uniform sampler2D u_texture_1;
-uniform sampler2D u_texture_2;
-uniform sampler2D u_texture_3;
 uniform vec2 lights;
 
 uniform vec4 layer1_weights[${this.c * this.n / 4}]; // 12*52/4
@@ -12961,7 +18004,8 @@ vec4 data1() {
     		this.convergenceSpeed = 1.2;
     		this.addControl('light', [0, 0]);
     		this.worldRotation = 0; //if the canvas or ethe layer rotate, light direction neeeds to be rotated too.
-
+    		this.activeFramebuffer = null;
+    		
     		let textureUrls = [
     			null,
     			this.layout.imageUrl(this.url, 'plane_1'),
@@ -12978,7 +18022,7 @@ vec4 data1() {
 
     		this.imageShader = new Shader({
     			'label': 'Rgb',
-    			'samplers': [{ id: 0, name: 'kd', type: 'vec3', load: false }]
+    			'samplers': [{ id: 0, name: 'source', type: 'vec3', load: false }]
     		});
 
     		this.neuralShader = new ShaderNeural();
@@ -13204,8 +18248,11 @@ vec4 data1() {
 
     		if (!this.framebuffer)
     			this.framebuffer = gl.createFramebuffer();
+    			
+    		// Save the active framebuffer before starting operations
+    		this.activeFramebuffer = this.canvas.getActiveFramebuffer();
+    			
     		gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-
 
     		//save previous viewport
     		this.backupViewport = viewport;
@@ -13230,8 +18277,10 @@ vec4 data1() {
      * @see relightTile - Called for each tile during relighting
      */
     	postRelight() {
-    		let gl = this.gl;
-    		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    		this.gl;
+    		
+    		// Restore the active framebuffer for final rendering
+    		this.canvas.setActiveFramebuffer(this.activeFramebuffer);
 
     		//restore previous viewport
     		let v = this.backupViewport;
@@ -13312,6 +18361,6148 @@ vec4 data1() {
      */
     Layer.prototype.types['neural'] = (options) => { return new LayerNeuralRTI(options); };
 
+    /**
+     * A shader class implementing various BRDF (Bidirectional Reflectance Distribution Function) rendering modes.
+     * Extends the base Shader class to provide specialized material rendering capabilities.
+     * 
+     * Shader Features:
+     * - Implements the Ward BRDF model for physically-based rendering
+     * - Supports both directional and spot lights
+     * - Handles normal mapping for more detailed surface rendering
+     * - Supports different color spaces (linear and sRGB) for input textures
+     * - Multiple visualization modes for material analysis (diffuse, specular, normals, monochrome, etc.)
+     * - Configurable surface roughness range for varying material appearance
+     * - Ambient light contribution to simulate indirect light
+     * 
+     * Required Textures:
+     * - uTexKd: Diffuse color texture (optional)
+     * - uTexKs: Specular color texture (optional)
+     * - uTexNormals: Normal map for surface detail
+     * - uTexGloss: Glossiness map (optional)
+     * 
+     * @example
+     * // Create a basic BRDF shader with default settings
+     * const shader = new ShaderBRDF({});
+     * 
+     * @example
+     * // Create a BRDF shader with custom settings
+     * const shader = new ShaderBRDF({
+     *   mode: 'color',
+     *   colorspaces: { kd: 'sRGB', ks: 'linear' },
+     *   brightness: 1.2,
+     *   gamma: 2.2,
+     *   alphaLimits: [0.05, 0.4],
+     *   kAmbient: 0.03
+     * });
+     * 
+     * @extends Shader
+     */
+    class ShaderBRDF extends Shader {
+    	/**
+    	 * Creates a new ShaderBRDF instance.
+    	 * @param {Object} [options={}] - Configuration options for the shader.
+    	 * @param {string} [options.mode='color'] - Rendering mode to use:
+    	 *   - 'color': Full BRDF rendering using Ward model with ambient light
+    	 *   - 'diffuse': Shows only diffuse component (kd)
+    	 *   - 'specular': Shows only specular component (ks * spec * NdotL)
+    	 *   - 'normals': Visualizes surface normals
+    	 *   - 'monochrome': Renders using a single material color with diffuse lighting
+    	 * @param {Object} [options.colorspaces] - Color space configurations.
+    	 * @param {string} [options.colorspaces.kd='sRGB'] - Color space for diffuse texture ('linear' or 'sRGB').
+    	 * @param {string} [options.colorspaces.ks='linear'] - Color space for specular texture ('linear' or 'sRGB').
+    	 * @param {number} [options.brightness=1.0] - Overall brightness multiplier.
+    	 * @param {number} [options.gamma=2.2] - Gamma correction value.
+    	 * @param {number[]} [options.alphaLimits=[0.01, 0.5]] - Range for surface roughness [min, max].
+    	 * @param {number[]} [options.monochromeMaterial=[0.80, 0.79, 0.75]] - RGB color for monochrome mode.
+    	 * @param {number} [options.kAmbient=0.02] - Ambient light coefficient.
+    	 * 
+    	 */
+    	constructor(options) {
+    		super(options);
+    		this.modes = ['color', 'diffuse', 'specular', 'normals', 'monochrome'];
+    		this.mode = 'color';
+
+    		Object.assign(this, options);
+
+    		const kdCS = this.colorspaces['kd'] == 'linear' ? 0 : 1;
+    		const ksCS = this.colorspaces['ks'] == 'linear' ? 0 : 1;
+
+    		const brightness = options.brightness ? options.brightness : 1.0;
+    		const gamma = options.gamma ? options.gamma : 2.2;
+    		const alphaLimits = options.alphaLimits ? options.alphaLimits : [0.01, 0.5];
+    		const monochromeMaterial = options.monochromeMaterial ? options.monochromeMaterial : [0.80, 0.79, 0.75];
+    		const kAmbient = options.kAmbient ? options.kAmbient : 0.02;
+
+    		this.uniforms = {
+    			uLightInfo: { type: 'vec4', needsUpdate: true, size: 4, value: [0.1, 0.1, 0.9, 0] },
+    			uAlphaLimits: { type: 'vec2', needsUpdate: true, size: 2, value: alphaLimits },
+    			uBrightnessGamma: { type: 'vec2', needsUpdate: true, size: 2, value: [brightness, gamma] },
+    			uInputColorSpaceKd: { type: 'int', needsUpdate: true, size: 1, value: kdCS },
+    			uInputColorSpaceKs: { type: 'int', needsUpdate: true, size: 1, value: ksCS },
+    			uMonochromeMaterial: { type: 'vec3', needsUpdate: true, size: 3, value: monochromeMaterial },
+    			uKAmbient: { type: 'float', needsUpdate: true, size: 1, value: kAmbient },
+
+    		};
+
+    		this.innerCode = '';
+    		this.setMode(this.mode);
+    	}
+
+    	/**
+    	 * Sets the light properties for the shader.
+    	 * 
+    	 * @param {number[]} light - 4D vector containing light information
+    	 * @param {number} light[0] - X coordinate of light position/direction
+    	 * @param {number} light[1] - Y coordinate of light position/direction
+    	 * @param {number} light[2] - Z coordinate of light position/direction
+    	 * @param {number} light[3] - Light type flag (0 for directional, 1 for spot)
+    	 */
+    	setLight(light) {
+    		// Light with 4 components (Spot: 4th==1, Dir: 4th==0)
+    		this.setUniform('uLightInfo', light);
+    	}
+
+
+    	/**
+    	 * Sets the rendering mode for the shader.
+    	 * 
+    	 * @param {string} mode - The rendering mode to use
+    	 * @throws {Error} If an invalid mode is specified
+    	 */
+    	setMode(mode) {
+    		this.mode = mode;
+    		switch (mode) {
+    			case 'color':
+    				this.innerCode =
+    					`vec3 linearColor = (kd + ks * spec) * NdotL;
+				linearColor += kd * uKAmbient; // HACK! adding just a bit of ambient`;
+    				break;
+    			case 'diffuse':
+    				this.innerCode =
+    					`vec3 linearColor = kd;`;
+    				break;
+    			case 'specular':
+    				this.innerCode =
+    					`vec3 linearColor = clamp((ks * spec) * NdotL, 0.0, 1.0);`;
+    				break;
+    			case 'normals':
+    				this.innerCode =
+    					`vec3 linearColor = (N+vec3(1.))/2.;
+				applyGamma = false;`;
+    				break;
+    			case 'monochrome':
+    				this.innerCode = 'vec3 linearColor = kd * NdotL + kd * uKAmbient;';
+    				break;
+    			default:
+    				console.log("ShaderBRDF: Unknown mode: " + mode);
+    				throw Error("ShaderBRDF: Unknown mode: " + mode);
+    		}
+    		this.needsUpdate = true;
+    	}
+
+    	/**
+    	 * Generates the fragment shader source code based on current configuration.
+    	 * 
+    	 * @param {WebGLRenderingContext|WebGL2RenderingContext} gl - The WebGL context
+    	 * @returns {string} The complete fragment shader source code
+    	 * @private
+    	 */
+    	fragShaderSrc(gl) {
+    		let hasKd = this.samplers.findIndex(s => s.name == 'uTexKd') != -1 && this.mode != 'monochrome';
+    		let hasGloss = this.samplers.findIndex(s => s.name == 'uTexGloss') != -1 && this.mode != 'monochrome';
+    		let hasKs = this.samplers.findIndex(s => s.name == 'uTexKs') != -1;
+    		let str = `
+
+#define NULL_NORMAL vec3(0,0,0)
+#define SQR(x) ((x)*(x))
+#define PI (3.14159265359)
+#define ISO_WARD_EXPONENT (4.0)
+
+in vec2 v_texcoord;
+
+uniform vec4 uLightInfo; // [x,y,z,w] (if .w==0 => Directional, if w==1 => Spot)
+uniform vec2 uAlphaLimits;
+uniform vec2 uBrightnessGamma;
+uniform vec3 uMonochromeMaterial;
+uniform float uKAmbient;
+
+uniform int uInputColorSpaceKd; // 0: Linear; 1: sRGB
+uniform int uInputColorSpaceKs; // 0: Linear; 1: sRGB
+
+vec3 getNormal(const in vec2 texCoord) {
+	vec3 n = texture(uTexNormals, texCoord).xyz;
+	n = 2. * n - vec3(1.);
+	float norm = length(n);
+	if(norm < 0.5) return NULL_NORMAL;
+	else return n/norm;
+}
+
+vec3 linear2sRGB(vec3 linearRGB) {
+    bvec3 cutoff = lessThan(linearRGB, vec3(0.0031308));
+    vec3 higher = vec3(1.055)*pow(linearRGB, vec3(1.0/2.4)) - vec3(0.055);
+    vec3 lower = linearRGB * vec3(12.92);
+    return mix(higher, lower, cutoff);
+}
+
+vec3 sRGB2Linear(vec3 sRGB) {
+    bvec3 cutoff = lessThan(sRGB, vec3(0.04045));
+    vec3 higher = pow((sRGB + vec3(0.055))/vec3(1.055), vec3(2.4));
+    vec3 lower = sRGB/vec3(12.92);
+    return mix(higher, lower, cutoff);
+}
+
+float ward(in vec3 V, in vec3 L, in vec3 N, in vec3 X, in vec3 Y, in float alpha) {
+
+	vec3 H = normalize(V + L);
+
+	float H_dot_N = dot(H, N);
+	float sqr_alpha_H_dot_N = SQR(alpha * H_dot_N);
+
+	if(sqr_alpha_H_dot_N < 0.00001) return 0.0;
+
+	float L_dot_N_mult_N_dot_V = dot(L,N) * dot(N,V);
+	if(L_dot_N_mult_N_dot_V <= 0.0) return 0.0;
+
+	float spec = 1.0 / (4.0 * PI * alpha * alpha * sqrt(L_dot_N_mult_N_dot_V));
+	
+	//float exponent = -(SQR(dot(H,X)) + SQR(dot(H,Y))) / sqr_alpha_H_dot_N; // Anisotropic
+	float exponent = -SQR(tan(acos(H_dot_N))) / SQR(alpha); // Isotropic
+	
+	spec *= exp( exponent );
+
+	return spec;
+}
+
+
+vec4 data() {
+	vec3 N = getNormal(v_texcoord);
+	if(N == NULL_NORMAL) {
+		return vec4(0.0);
+	}
+
+	vec3 L = (uLightInfo.w == 0.0) ? normalize(uLightInfo.xyz) : normalize(uLightInfo.xyz - gl_FragCoord.xyz);
+	vec3 V = vec3(0.0,0.0,1.0);
+    vec3 H = normalize(L + V);
+	float NdotL = max(dot(N,L),0.0);
+
+	vec3 kd = ${hasKd ? 'texture(uTexKd, v_texcoord).xyz' : 'uMonochromeMaterial'};
+	vec3 ks = ${hasKs ? 'texture(uTexKs, v_texcoord).xyz' : 'vec3(0.0, 0.0, 0.0)'};
+	if(uInputColorSpaceKd == 1) {
+		kd = sRGB2Linear(kd);
+	}
+	if(uInputColorSpaceKs == 1) {
+		ks = sRGB2Linear(ks);
+	}
+	kd /= PI;
+
+	float gloss = ${hasGloss ? 'texture(uTexGloss, v_texcoord).x' : '0.0'};
+	float minGloss = 1.0 - pow(uAlphaLimits[1], 1.0 / ISO_WARD_EXPONENT);
+	float maxGloss = 1.0 - pow(uAlphaLimits[0], 1.0 / ISO_WARD_EXPONENT);
+
+	float alpha = pow(1.0 - gloss * (maxGloss - minGloss) - minGloss, ISO_WARD_EXPONENT);
+	
+	
+	vec3 e = vec3(0.0,0.0,1.0);
+	vec3 T = normalize(cross(N,e));
+	vec3 B = normalize(cross(N,T));
+	float spec = ward(V, L, N, T, B, alpha);
+	
+	bool applyGamma = false;
+
+	${this.innerCode}
+
+	vec3 finalColor = applyGamma ? pow(linearColor * uBrightnessGamma[0], vec3(1.0/uBrightnessGamma[1])) : linearColor;
+
+	return vec4(finalColor, 1.0);
+}
+`;
+    		return str;
+    	}
+
+    }
+
+    /**
+     * @typedef {Object} LayerBRDFOptions
+     * @property {Object} channels - Required channels for BRDF rendering
+     * @property {string} channels.kd - URL to diffuse color map (required)
+     * @property {string} channels.ks - URL to specular color map (optional)
+     * @property {string} channels.normals - URL to normal map (required)
+     * @property {string} channels.gloss - URL to glossiness/roughness map (optional)
+     * @property {Object} [colorspaces] - Color space definitions for material properties
+     * @property {('linear'|'srgb')} [colorspaces.kd='linear'] - Color space for diffuse map
+     * @property {('linear'|'srgb')} [colorspaces.ks='linear'] - Color space for specular map
+     * @property {number} [brightness=1.0] - Overall brightness adjustment
+     * @property {number} [gamma=2.2] - Gamma correction value
+     * @property {number[]} [alphaLimits=[0.01, 0.5]] - Range for glossiness/roughness
+     * @property {number[]} [monochromeMaterial=[0.80, 0.79, 0.75]] - RGB color for monochrome rendering
+     * @property {number} [kAmbient=0.1] - Ambient light coefficient
+     * @extends LayerOptions
+     */
+
+    /**
+     * LayerBRDF implements real-time BRDF (Bidirectional Reflectance Distribution Function) rendering.
+     * 
+     * The BRDF model describes how light reflects off a surface, taking into account:
+     * - Diffuse reflection (rough, matte surfaces)
+     * - Specular reflection (mirror-like reflections)
+     * - Surface normals (microscopic surface orientation)
+     * - Glossiness/roughness (surface micro-structure)
+     * 
+     * Features:
+     * - Real-time light direction control
+     * - Multiple material channels support
+     * - Customizable material properties
+     * - Interactive lighting model
+     * - Gamma correction
+     * - Ambient light component
+     * 
+     * Technical implementation:
+     * - Uses normal mapping for surface detail
+     * - Supports both linear and sRGB color spaces
+     * - Implements spherical light projection
+     * - Handles multi-channel textures
+     * - GPU-accelerated rendering
+     * 
+     * @extends Layer
+     * 
+     * @example
+     * ```javascript
+     * // Create BRDF layer with all channels
+     * const brdfLayer = new OpenLIME.LayerBRDF({
+     *   channels: {
+     *     kd: 'diffuse.jpg',
+     *     ks: 'specular.jpg',
+     *     normals: 'normals.jpg',
+     *     gloss: 'gloss.jpg'
+     *   },
+     *   colorspaces: {
+     *     kd: 'srgb',
+     *     ks: 'linear'
+     *   },
+     *   brightness: 1.2,
+     *   gamma: 2.2
+     * });
+     * 
+     * // Update light direction
+     * brdfLayer.setLight([0.5, 0.5], 500, 'ease-out');
+     * ```
+     */
+    class LayerBRDF extends Layer {
+    	/**
+    	 * Creates a new LayerBRDF instance
+    	 * @param {LayerBRDFOptions} options - Configuration options
+    	 * @throws {Error} If required channels (kd, normals) are not provided
+    	 * @throws {Error} If rasters option is not empty
+    	 */
+    	constructor(options) {
+    		options = Object.assign({
+    			brightness: 1.0,
+    			gamma: 2.2,
+    			alphaLimits: [0.01, 0.5],
+    			monochromeMaterial: [0.80, 0.79, 0.75],
+    			kAmbient: 0.1
+    		}, options);
+    		super(options);
+
+    		if (Object.keys(this.rasters).length != 0)
+    			throw "Rasters options should be empty!";
+
+    		if (!this.channels)
+    			throw "channels option is required";
+
+    		if (!this.channels.kd || !this.channels.normals)
+    			throw "kd and normals channels are required";
+
+    		if (!this.colorspaces) {
+    			console.log("LayerBRDF: missing colorspaces: force both to linear");
+    			this.colorspaces['kd'] = 'linear';
+    			this.colorspaces['ks'] = 'linear';
+    		}
+
+    		let id = 0;
+    		let urls = [];
+    		let samplers = [];
+    		let brdfSamplersMap = {
+    			kd: { format: 'vec3', name: 'uTexKd' },
+    			ks: { format: 'vec3', name: 'uTexKs' },
+    			normals: { format: 'vec3', name: 'uTexNormals' },
+    			gloss: { format: 'float', name: 'uTexGloss' }
+    		};
+    		for (let c in this.channels) {
+    			this.rasters.push(new Raster({ format: brdfSamplersMap[c].format, isLinear: true }));
+    			samplers.push({ 'id': id, 'name': brdfSamplersMap[c].name });
+    			urls[id] = this.channels[c];
+    			id++;
+    		}
+
+    		this.layout.setUrls(urls);
+    		this.addControl('light', [0, 0]); // This is a projection to the z=0 plane.
+
+    		let shader = new ShaderBRDF({
+    			'label': 'Rgb',
+    			'samplers': samplers,
+    			'colorspaces': this.colorspaces,
+    			'brightness': this.brightness,
+    			'gamma': this.gamma,
+    			'alphaLimits': this.alphaLimits,
+    			'monochromeMaterial': this.monochromeMaterial,
+    			'kAmbient': this.kAmbient
+    		});
+
+    		this.shaders['brdf'] = shader;
+    		this.setShader('brdf');
+    	}
+
+    	/**
+    	 * Projects a 2D point onto a sphere surface
+    	 * Used for converting 2D mouse/touch input to 3D light direction
+    	 * @param {number[]} p - 2D point [x, y] in range [-1, 1]
+    	 * @returns {number[]} 3D normalized vector [x, y, z] on sphere surface
+    	 * @static
+    	 */
+    	static projectToSphere(p) {
+    		let px = p[0];
+    		let py = p[1];
+
+    		let r2 = px * px + py * py;
+    		if (r2 > 1.0) {
+    			let r = Math.sqrt(r2);
+    			px /= r;
+    			py /= r;
+    			r2 = 1.0;
+    		}
+    		let z = Math.sqrt(1 - r2);
+    		return [px, py, z];
+    	}
+
+    	/**
+    	 * Projects a 2D point onto a flattened sphere using SGI trackball algorithm.
+    	 * This provides more intuitive light control by avoiding acceleration near edges.
+    	 * Based on SIGGRAPH 1988 paper on SGI trackball implementation.
+    	 * 
+    	 * @param {number[]} p - 2D point [x, y] in range [-1, 1]
+    	 * @returns {number[]} 3D normalized vector [x, y, z] on flattened sphere
+    	 * @static
+    	 */
+    	static projectToFlattenedSphere(p) {
+    		const R = 0.8; const R2 = R * R;
+    		const RR = R * Math.SQRT1_2; const RR2 = RR * RR;
+
+    		let px = Math.min(Math.max(p[0], -1.0), 1.0);
+    		let py = Math.min(Math.max(p[1], -1.0), 1.0);
+    		let z = 0.0;
+    		let d2 = px * px + py * py;
+    		if (d2 < RR2) {
+    			// Inside sphere
+    			z = Math.sqrt(R2 - d2);
+    		} else {
+    			// On hyperbola
+    			z = RR2 / Math.sqrt(d2);
+    		}
+    		let r = Math.sqrt(d2 + z * z);
+    		return [px / r, py / r, z / r];
+    	}
+
+    	/**
+    	 * Sets the light direction with optional animation
+    	 * @param {number[]} light - 2D vector [x, y] representing light direction
+    	 * @param {number} [dt] - Animation duration in milliseconds
+    	 * @param {string} [easing='linear'] - Animation easing function
+    	 */
+    	setLight(light, dt, easing = 'linear') {
+    		this.setControl('light', light, dt, easing);
+    	}
+
+    	/**
+    	 * Updates light control interpolation and shader uniforms
+    	 * @returns {boolean} Whether all interpolations are complete
+    	 * @override
+    	 * @private
+    	 */
+    	interpolateControls() { // FIXME Wrong normalization
+    		let done = super.interpolateControls();
+    		//		let light = LayerBRDF.projectToSphere(this.controls['light'].current.value);
+    		let light = LayerBRDF.projectToFlattenedSphere(this.controls['light'].current.value);
+    		this.shader.setLight([light[0], light[1], light[2], 0]);
+    		return done;
+    	}
+    }
+
+
+    /**
+     * Register this layer type with the Layer factory
+     * @type {Function}
+     * @private
+     */
+    Layer.prototype.types['brdf'] = (options) => { return new LayerBRDF(options); };
+
+    /**
+     * @typedef {Object} ShaderLens~Uniforms
+     * Uniform definitions for lens shader
+     * @property {number[]} u_lens - Lens parameters [centerX, centerY, radius, borderWidth]
+     * @property {number[]} u_width_height - Viewport dimensions [width, height]
+     * @property {number[]} u_border_color - RGBA border color [r, g, b, a]
+     * @property {boolean} u_border_enable - Whether to show lens border
+     */
+
+    /**
+     * @typedef {Object} ShaderLens~Options
+     * Configuration options for lens shader
+     * @property {string} [label='ShaderLens'] - Display label
+     * @property {boolean} [overlayLayerEnabled=false] - Enable overlay layer
+     * @property {Object} [uniforms] - Custom uniform values
+     * @extends Shader~Options
+     */
+
+    /**
+     * ShaderLens implements a circular magnification lens effect with optional overlay.
+     * 
+     * Features:
+     * - Circular lens with smooth borders
+     * - Configurable lens size and position
+     * - Optional border with customizable color
+     * - Optional overlay layer with grayscale outside lens
+     * - Smooth transition between lens and background
+     * - Real-time lens movement
+     * 
+     * Technical Implementation:
+     * - Pixel-based distance calculations
+     * - Smooth border transitions
+     * - Alpha blending for overlays
+     * - WebGL 2.0+
+     * - Viewport coordinate mapping
+     * 
+     *
+     * Example usage:
+     * ```javascript
+     * // Create lens shader
+     * const lens = new ShaderLens();
+     * 
+     * // Configure lens
+     * lens.setLensUniforms(
+     *     [400, 300, 100, 10],  // center at (400,300), radius 100, border 10
+     *     [800, 600],           // viewport size
+     *     [0.8, 0.8, 0.8, 1],   // gray border
+     *     true                  // show border
+     * );
+     * 
+     * // Enable overlay
+     * lens.setOverlayLayerEnabled(true);
+     * ```
+     * 
+     * Advanced usage with custom configuration:
+     * ```javascript
+     * const lens = new ShaderLens({
+     *     uniforms: {
+     *         u_lens: { value: [0, 0, 150, 15] },
+     *         u_border_color: { value: [1, 0, 0, 1] }  // red border
+     *     },
+     *     overlayLayerEnabled: true
+     * });
+     * ```
+     *
+     * GLSL Implementation Details
+     * 
+     * Key Components:
+     * 1. Lens Function:
+     *    - Distance-based circle calculation
+     *    - Smooth border transitions
+     *    - Color mixing and blending
+     * 
+     * 2. Overlay Processing:
+     *    - Grayscale conversion
+     *    - Alpha blending
+     *    - Border preservation
+     * 
+     * Functions:
+     * - lensColor(): Handles color transitions between lens regions
+     * - data(): Main processing function
+     * 
+     * Uniforms:
+     * - {vec4} u_lens - Lens parameters [cx, cy, radius, border]
+     * - {vec2} u_width_height - Viewport dimensions
+     * - {vec4} u_border_color - Border color and alpha
+     * - {bool} u_border_enable - Border visibility flag
+     * - {sampler2D} source0 - Main texture
+     * - {sampler2D} source1 - Optional overlay texture
+     *
+     * @extends Shader
+     */
+    class ShaderLens extends Shader {
+        /**
+         * Creates a new lens shader
+         * @param {ShaderLens~Options} [options] - Configuration options
+         * 
+         * @example
+         * ```javascript
+         * // Create basic lens shader
+         * const lens = new ShaderLens({
+         *     label: 'MyLens',
+         *     overlayLayerEnabled: false
+         * });
+         * ```
+         */
+        constructor(options) {
+            super(options);
+
+            this.samplers = [
+                { id: 0, name: 'source0' }, { id: 1, name: 'source1' }
+            ];
+
+            this.uniforms = {
+                u_lens: { type: 'vec4', needsUpdate: true, size: 4, value: [0, 0, 100, 10] },
+                u_width_height: { type: 'vec2', needsUpdate: true, size: 2, value: [1, 1] },
+                u_border_color: { type: 'vec4', needsUpdate: true, size: 4, value: [0.8, 0.8, 0.8, 1] },
+                u_border_enable: { type: 'bool', needsUpdate: true, size: 1, value: false }
+            };
+            this.label = "ShaderLens";
+            this.needsUpdate = true;
+            this.overlayLayerEnabled = false;
+        }
+
+        /**
+         * Enables or disables the overlay layer
+         * When enabled, adds a second texture layer with grayscale outside lens
+         * @param {boolean} enabled - Whether to enable overlay
+         */
+        setOverlayLayerEnabled(x) {
+            this.overlayLayerEnabled = x;
+            this.needsUpdate = true;
+        }
+
+        /**
+         * Updates lens parameters and appearance
+         * @param {number[]} lensViewportCoords - Lens parameters [centerX, centerY, radius, borderWidth]
+         * @param {number[]} windowWH - Viewport dimensions [width, height]
+         * @param {number[]} borderColor - RGBA border color
+         * @param {boolean} borderEnable - Whether to show border
+         */
+        setLensUniforms(lensViewportCoords, windowWH, borderColor, borderEnable) {
+            this.setUniform('u_lens', lensViewportCoords);
+            this.setUniform('u_width_height', windowWH);
+            this.setUniform('u_border_color', borderColor);
+            this.setUniform('u_border_enable', borderEnable);
+        }
+
+        /**
+         * Generates fragment shader source code.
+         * 
+         * Shader Features:
+         * - Circular lens implementation
+         * - Smooth border transitions
+         * - Optional overlay support
+         * - Grayscale conversion outside lens
+         * 
+         * @param {WebGLRenderingContext} gl - WebGL context
+         * @returns {string} Fragment shader source code
+         * @private
+         */
+        fragShaderSrc(gl) {
+
+            let overlaySamplerCode = "";
+
+            if (this.overlayLayerEnabled) { //FIXME two cases with transparence or not.
+
+                overlaySamplerCode =
+                    `vec4 c1 = texture(source1, v_texcoord);
+            if (r > u_lens.z) {
+                float k = (c1.r + c1.g + c1.b) / 3.0;
+                c1 = vec4(k, k, k, c1.a);
+            } else if (u_border_enable && r > innerBorderRadius) {
+                // Preserve border keeping c1 alpha at zero
+                c1.a = 0.0; 
+            }
+            color = color * (1.0 - c1.a) + c1 * c1.a;
+            `;
+            }
+            return `
+
+        uniform vec4 u_lens; // [cx, cy, radius, border]
+        uniform vec2 u_width_height; // Keep wh to map to pixels. TexCoords cannot be integer unless using texture_rectangle
+        uniform vec4 u_border_color;
+        uniform bool u_border_enable;
+        in vec2 v_texcoord;
+
+        vec4 lensColor(in vec4 c_in, in vec4 c_border, in vec4 c_out,
+            float r, float R, float B) {
+            vec4 result;
+            if (u_border_enable) {
+                float B_SMOOTH = B < 8.0 ? B/8.0 : 1.0;
+                if (r<R-B+B_SMOOTH) {
+                    float t=smoothstep(R-B, R-B+B_SMOOTH, r);
+                    result = mix(c_in, c_border, t);
+                } else if (r<R-B_SMOOTH) {
+                    result = c_border;  
+                } else {
+                    float t=smoothstep(R-B_SMOOTH, R, r);
+                    result = mix(c_border, c_out, t);
+                }
+            } else {
+                result = (r<R) ? c_in : c_out;
+            }
+            return result;
+        }
+
+        vec4 data() {
+            vec4 color;
+            float innerBorderRadius = (u_lens.z - u_lens.w);
+            float dx = v_texcoord.x * u_width_height.x - u_lens.x;
+            float dy = v_texcoord.y * u_width_height.y - u_lens.y;
+            float r = sqrt(dx*dx + dy*dy);
+
+            vec4 c_in = texture(source0, v_texcoord);
+            vec4 c_out = u_border_color; c_out.a=0.0;
+            
+            color = lensColor(c_in, u_border_color, c_out, r, u_lens.z, u_lens.w);
+
+            ${overlaySamplerCode}
+            return color;
+        }
+        `
+        }
+
+        /**
+         * Generates vertex shader source code.
+         * 
+         * @param {WebGLRenderingContext} gl - WebGL context
+         * @returns {string} Vertex shader source code
+         * @private
+         */
+        vertShaderSrc(gl) {
+            return `#version 300 es
+ 
+
+in vec4 a_position;
+in vec2 a_texcoord;
+
+out vec2 v_texcoord;
+void main() {
+	gl_Position = a_position;
+    v_texcoord = a_texcoord;
+}`;
+        }
+    }
+
+    /**
+     * @typedef {Object} LayerLensOptions
+     * @property {boolean} [overlay=true] - Whether the lens renders as an overlay
+     * @property {number} [radius=100] - Initial lens radius in pixels
+     * @property {number[]} [borderColor=[0.078, 0.078, 0.078, 1]] - RGBA border color
+     * @property {number} [borderWidth=12] - Border width in pixels
+     * @property {boolean} [borderEnable=false] - Whether to show lens border
+     * @property {Object} [dashboard=null] - Dashboard UI component for lens control
+     * @property {Camera} camera - Camera instance (required)
+     * @extends LayerCombinerOptions
+     */
+
+    /**
+     * LayerLens implements a magnifying lens effect that can display content from one or two layers.
+     * It provides an interactive lens that can be moved and resized, showing different layer content
+     * inside and outside the lens area.
+     * 
+     * Features:
+     * - Interactive lens positioning and sizing
+     * - Support for base and overlay layers
+     * - Animated transitions
+     * - Customizable border appearance
+     * - Dashboard UI integration
+     * - Optimized viewport rendering
+     * 
+     * Technical Details:
+     * - Uses framebuffer composition for layer blending
+     * - Implements viewport optimization for performance
+     * - Handles coordinate transformations between systems
+     * - Supports animated parameter changes
+     * - Manages WebGL resources efficiently
+     * 
+     * @extends LayerCombiner
+     * 
+     * @example
+     * ```javascript
+     * // Create lens with base layer
+     * const lens = new OpenLIME.LayerLens({
+     *   camera: viewer.camera,
+     *   radius: 150,
+     *   borderEnable: true,
+     *   borderColor: [0, 0, 0, 1]
+     * });
+     * 
+     * // Set layers
+     * lens.setBaseLayer(baseLayer);
+     * lens.setOverlayLayer(overlayLayer);
+     * 
+     * // Animate lens position
+     * lens.setCenter(500, 500, 1000, 'ease-out');
+     * 
+     * // Add to viewer
+     * viewer.addLayer('lens', lens);
+     * ```
+     */
+    class LayerLens extends LayerCombiner {
+    	/**
+    	 * Creates a new LayerLens instance
+    	 * @param {LayerLensOptions} options - Configuration options
+    	 * @throws {Error} If camera is not provided
+    	 */
+    	constructor(options) {
+    		options = Object.assign({
+    			overlay: true,
+    			radius: 100,
+    			borderColor: [0.078, 0.078, 0.078, 1],
+    			borderWidth: 12,
+    			borderEnable: false,
+    			dashboard: null,
+    			isLinear: true,
+    		}, options);
+    		super(options);
+
+    		if (!this.camera) {
+    			console.log("Missing camera");
+    			throw "Missing Camera"
+    		}
+
+    		// Shader lens currently handles up to 2 layers
+    		let shader = new ShaderLens();
+    		if (this.layers.length == 2) shader.setOverlayLayerEnabled(true); //FIXME Is it a mode? Control?
+    		this.shaders['lens'] = shader;
+    		this.setShader('lens');
+
+    		this.addControl('center', [0, 0]);
+    		this.addControl('radius', [this.radius, 0]);
+    		this.addControl('borderColor', this.borderColor);
+    		this.addControl('borderWidth', [this.borderWidth]);
+
+    		this.oldRadius = -9999;
+    		this.oldCenter = [-9999, -9999];
+
+    		this.useGL = true;
+
+    		if (this.dashboard) this.dashboard.lensLayer = this;
+    	}
+
+    	/**
+    	 * Sets layer visibility and updates dashboard if present
+    	 * @param {boolean} visible - Whether layer should be visible
+    	 * @override
+    	 */
+    	setVisible(visible) {
+    		if (this.dashboard) {
+    			if (visible) {
+    				this.dashboard.container.style.display = 'block';
+    			} else {
+    				this.dashboard.container.style.display = 'none';
+    			}
+    		}
+    		super.setVisible(visible);
+    	}
+
+    	/**
+    	 * Removes the overlay layer, returning to single layer mode
+    	 */
+    	removeOverlayLayer() {
+    		this.layers.length = 1;
+    		this.shader.setOverlayLayerEnabled(false);
+    	}
+
+    	/**
+    	 * Sets the base layer (shown inside lens)
+    	 * @param {Layer} layer - Base layer instance
+    	 * @fires Layer#update
+    	 */
+    	setBaseLayer(l) {
+    		if (!l) {
+    			console.warn("Attempting to set null base layer");
+    			return;
+    		}
+    		this.layers[0] = l;
+    		this.emit('update');
+    	}
+
+    	/**
+    	 * Sets the overlay layer (shown outside lens)
+    	 * @param {Layer} layer - Overlay layer instance
+    	 */
+    	setOverlayLayer(l) {
+    		if (!l) {
+    			console.warn("Attempting to set null overlay layer");
+    			return;
+    		}
+    		this.layers[1] = l;
+    		this.layers[1].setVisible(true);
+    		this.shader.setOverlayLayerEnabled(true);
+
+    		this.regenerateFrameBuffers();
+    	}
+
+    	/**
+    	 * Sets the overlay layer (shown inside lens)
+    	 * @param {Layer} layer - Overlay layer instance
+    	 */
+    	regenerateFrameBuffers() {
+    		// Regenerate frame buffers
+    		const w = this.layout.width;
+    		const h = this.layout.height;
+    		this.deleteFramebuffers();
+    		this.layout.width = w;
+    		this.layout.height = h;
+    		this.createFramebuffers();
+    	}
+
+    	/**
+    	 * Sets lens radius with optional animation
+    	 * @param {number} radius - New radius in pixels
+    	 * @param {number} [delayms=100] - Animation duration
+    	 * @param {string} [easing='linear'] - Animation easing function
+    	 */
+    	setRadius(r, delayms = 100, easing = 'linear') {
+    		this.setControl('radius', [r, 0], delayms, easing);
+    	}
+
+    	/**
+    	 * Gets current lens radius
+    	 * @returns {number} Current radius in pixels
+    	 */
+    	getRadius() {
+    		return this.controls['radius'].current.value[0];
+    	}
+
+    	/**
+    	 * Sets lens center position with optional animation
+    	 * @param {number} x - X coordinate in scene space
+    	 * @param {number} y - Y coordinate in scene space
+    	 * @param {number} [delayms=100] - Animation duration
+    	 * @param {string} [easing='linear'] - Animation easing function
+    	 */
+    	setCenter(x, y, delayms = 100, easing = 'linear') {
+    		this.setControl('center', [x, y], delayms, easing);
+    	}
+
+    	/**
+    	 * Gets current lens center position
+    	 * @returns {{x: number, y: number}} Center position in scene coordinates
+    	 */
+    	getCurrentCenter() {
+    		const p = this.controls['center'].current.value;
+    		return { x: p[0], y: p[1] };
+    	}
+
+    	/**
+    	 * Gets target lens position for ongoing animation
+    	 * @returns {{x: number, y: number}} Target position in scene coordinates
+    	 */
+    	getTargetCenter() {
+    		const p = this.controls['center'].target.value;
+    		return { x: p[0], y: p[1] };
+    	}
+
+    	/**
+    	 * Gets current border color
+    	 * @returns {number[]} RGBA color array
+    	 */
+    	getBorderColor() {
+    		return this.controls['borderColor'].current.value;
+    	}
+
+    	/**
+    	 * Gets current border width
+    	 * @returns {number} Border width in pixels
+    	 */
+    	getBorderWidth() {
+    		return this.controls['borderWidth'].current.value[0];
+    	}
+
+    	/**
+    	 * Renders the lens effect
+    	 * @param {Transform} transform - Current view transform
+    	 * @param {Object} viewport - Current viewport
+    	 * @returns {boolean} Whether all animations are complete
+    	 * @override
+    	 * @private
+    	 */
+    	draw(transform, viewport) {
+    		let done = this.interpolateControls();
+
+    		// Cache frequently accessed values
+    		const currentCenter = this.getCurrentCenter();
+    		const currentRadius = this.getRadius();
+    		const borderColor = this.getBorderColor();
+
+    		// Update dashboard size & pos
+    		if (this.dashboard) {
+    			this.dashboard.update(currentCenter.x, currentCenter.y, currentRadius);
+    			this.oldCenter = currentCenter;
+    			this.oldRadius = currentRadius;
+    		}
+
+    		for (let layer of this.layers)
+    			if (layer.status != 'ready')
+    				return false;
+
+    		if (!this.shader)
+    			throw "Shader not specified!";
+
+    		let gl = this.gl;
+
+    		// Draw on a restricted viewport around the lens, to lower down the number of required tiles
+    		let lensViewport = this.getLensViewport(transform, viewport);
+
+    		// If an overlay is present, merge its viewport with the lens one
+    		let overlayViewport = this.getOverlayLayerViewport(transform, viewport);
+    		if (overlayViewport != null) {
+    			lensViewport = this.joinViewports(lensViewport, overlayViewport);
+    		}
+
+    		gl.viewport(lensViewport.x, lensViewport.y, lensViewport.dx, lensViewport.dy);
+
+    		// Keep the framwbuffer to the window size in order to avoid changing at each scale event
+    		if (!this.framebuffers.length || this.layout.width != viewport.w || this.layout.height != viewport.h) {
+    			this.deleteFramebuffers();
+    			this.layout.width = viewport.w;
+    			this.layout.height = viewport.h;
+    			this.createFramebuffers();
+    		}
+
+    		var b = [0, 0, 0, 0];
+    		gl.clearColor(b[0], b[1], b[2], b[3]);
+
+    		// Save the active framebuffer from Canvas before drawing
+    		const activeFramebuffer = this.canvas.getActiveFramebuffer();
+
+    		// Draw the layers only within the viewport enclosing the lens
+    		for (let i = 0; i < this.layers.length; i++) {
+    			gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffers[i]);
+    			gl.clear(gl.COLOR_BUFFER_BIT);
+    			this.layers[i].draw(transform, lensViewport);
+    		}
+
+    		// Restore the active framebuffer from Canvas
+    		this.canvas.setActiveFramebuffer(activeFramebuffer);
+
+    		// Set in the lensShader the proper lens position wrt the window viewport
+    		const vl = this.getLensInViewportCoords(transform, viewport);
+    		this.shader.setLensUniforms(vl, [viewport.w, viewport.h], borderColor, this.borderEnable);
+
+    		this.prepareWebGL();
+
+    		// Bind all textures and combine them with the shaderLens
+    		for (let i = 0; i < this.layers.length; i++) {
+    			gl.uniform1i(this.shader.samplers[i].location, i);
+    			gl.activeTexture(gl.TEXTURE0 + i);
+    			gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
+    		}
+
+    		// Get texture coords of the lensViewport with respect to the framebuffer sz
+    		const lx = lensViewport.x / lensViewport.w;
+    		const ly = lensViewport.y / lensViewport.h;
+    		const hx = (lensViewport.x + lensViewport.dx) / lensViewport.w;
+    		const hy = (lensViewport.y + lensViewport.dy) / lensViewport.h;
+
+    		this.updateTileBuffers(
+    			new Float32Array([-1, -1, 0, -1, 1, 0, 1, 1, 0, 1, -1, 0]),
+    			new Float32Array([lx, ly, lx, hy, hx, hy, hx, ly]));
+    		gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+
+    		// Restore old viewport
+    		gl.viewport(viewport.x, viewport.y, viewport.dx, viewport.dy);
+
+    		return done;
+    	}
+
+    	/**
+    	 * Calculates viewport region affected by lens
+    	 * @param {Transform} transform - Current view transform
+    	 * @param {Object} viewport - Current viewport
+    	 * @returns {Object} Viewport specification for lens region
+    	 * @private
+    	 */
+    	getLensViewport(transform, viewport) {
+    		const lensC = this.getCurrentCenter();
+    		const l = CoordinateSystem.fromSceneToViewport(lensC, this.camera, this.useGL);
+    		const r = this.getRadius() * transform.z;
+    		return { x: Math.floor(l.x - r) - 1, y: Math.floor(l.y - r) - 1, dx: Math.ceil(2 * r) + 2, dy: Math.ceil(2 * r) + 2, w: viewport.w, h: viewport.h };
+    	}
+
+    	/**
+    	 * Calculates viewport region for overlay layer
+    	 * @param {Transform} transform - Current view transform
+    	 * @param {Object} viewport - Current viewport
+    	 * @returns {Object|null} Viewport specification for overlay or null
+    	 * @private
+    	 */
+    	getOverlayLayerViewport(transform, viewport) {
+    		let result = null;
+    		if (this.layers.length == 2) {
+    			// Get overlay projected viewport
+    			let bbox = this.layers[1].boundingBox();
+    			const p0v = CoordinateSystem.fromSceneToViewport({ x: bbox.xLow, y: bbox.yLow }, this.camera, this.useGL);
+    			const p1v = CoordinateSystem.fromSceneToViewport({ x: bbox.xHigh, y: bbox.yHigh }, this.camera, this.useGL);
+
+    			// Intersect with window viewport
+    			const x0 = Math.min(Math.max(0, Math.floor(p0v.x)), viewport.w);
+    			const y0 = Math.min(Math.max(0, Math.floor(p0v.y)), viewport.h);
+    			const x1 = Math.min(Math.max(0, Math.ceil(p1v.x)), viewport.w);
+    			const y1 = Math.min(Math.max(0, Math.ceil(p1v.y)), viewport.h);
+
+    			const width = x1 - x0;
+    			const height = y1 - y0;
+    			result = { x: x0, y: y0, dx: width, dy: height, w: viewport.w, h: viewport.h };
+    		}
+    		return result;
+    	}
+
+    	/**
+    	 * Combines two viewport regions
+    	 * @param {Object} v0 - First viewport
+    	 * @param {Object} v1 - Second viewport
+    	 * @returns {Object} Combined viewport encompassing both regions
+    	 * @private
+    	 */
+    	joinViewports(v0, v1) {
+    		const xm = Math.min(v0.x, v1.x);
+    		const xM = Math.max(v0.x + v0.dx, v1.x + v1.dx);
+    		const ym = Math.min(v0.y, v1.y);
+    		const yM = Math.max(v0.y + v0.dy, v1.y + v1.dy);
+    		const width = xM - xm;
+    		const height = yM - ym;
+
+    		return { x: xm, y: ym, dx: width, dy: height, w: v0.w, h: v0.h };
+    	}
+
+    	/**
+    	 * Converts lens parameters to viewport coordinates
+    	 * @param {Transform} transform - Current view transform
+    	 * @param {Object} viewport - Current viewport
+    	 * @returns {number[]} [centerX, centerY, radius, borderWidth] in viewport coordinates
+    	 * @private
+    	 */
+    	getLensInViewportCoords(transform, viewport) {
+    		const lensC = this.getCurrentCenter();
+    		const c = CoordinateSystem.fromSceneToViewport(lensC, this.camera, this.useGL);
+    		const r = this.getRadius();
+    		return [c.x, c.y, r * transform.z, this.getBorderWidth()];
+    	}
+
+    }
+
+    /**
+     * Register this layer type with the Layer factory
+     * @type {Function}
+     * @private
+     */
+    Layer.prototype.types['lens'] = (options) => { return new LayerLens(options); };
+
+    /**
+     * @typedef {Object} Viewport
+     * @property {number} x - Viewport x position
+     * @property {number} y - Viewport y position
+     * @property {number} dx - Viewport horizontal offset
+     * @property {number} dy - Viewport vertical offset
+     * @property {number} w - Viewport width
+     * @property {number} h - Viewport height
+     */
+
+    /**
+     * @typedef {Object} Focus
+     * @property {Object} position - Lens center position in dataset coordinates
+     * @property {number} position.x - X coordinate
+     * @property {number} position.y - Y coordinate
+     * @property {number} radius - Lens radius in dataset units
+     */
+
+    /**
+     * FocusContext manages the focus+context visualization technique for lens-based interaction.
+     * It handles the distribution of user interactions between lens movement (focus) and camera
+     * movement (context) to maintain optimal viewing conditions.
+     * 
+     * Key responsibilities:
+     * - Maintains proper spacing between lens and viewport boundaries
+     * - Distributes pan and zoom operations between lens and camera
+     * - Ensures lens stays within valid viewport bounds
+     * - Adapts camera transform to accommodate lens position
+     * - Manages lens radius constraints
+     */
+    class FocusContext {
+        /**
+         * Distributes a pan operation between lens movement and camera transform to maintain focus+context
+         * @param {Viewport} viewport - The current viewport
+         * @param {Focus} focus - The lens object to be updated
+         * @param {Transform} context - The camera transform to be updated
+         * @param {Object} delta - Pan amount in dataset pixels
+         * @param {number} delta.x - Horizontal pan amount
+         * @param {number} delta.y - Vertical pan amount
+         * @param {Object} imageSize - Dataset dimensions
+         * @param {number} imageSize.w - Dataset width
+         * @param {number} imageSize.h - Dataset height
+         */
+
+        static pan(viewport, focus, context, delta, imageSize) {
+            let txy = this.getAmountOfFocusContext(viewport, focus, context, delta);
+
+            // When t is 1: already in focus&context, move only the lens.
+            // When t is 0.5: border situation, move both focus & context to keep the lens steady on screen.
+            // In this case the context should be moved of deltaFocus*scale to achieve steadyness.
+            // Thus interpolate deltaContext between 0 and deltaFocus*s (with t ranging from 1 to 0.5)
+            const deltaFocus = { x: delta.x * txy.x, y: delta.y * txy.y };
+            const deltaContext = {
+                x: -deltaFocus.x * context.z * 2 * (1 - txy.x),
+                y: -deltaFocus.y * context.z * 2 * (1 - txy.y)
+            };
+            context.x += deltaContext.x;
+            context.y += deltaContext.y;
+
+            focus.position.x += deltaFocus.x;
+            focus.position.y += deltaFocus.y;
+
+            // Clamp lens position on dataset boundaries
+            if (Math.abs(focus.position.x) > imageSize.w / 2) {
+                focus.position.x = imageSize.w / 2 * Math.sign(focus.position.x);
+            }
+
+            if (Math.abs(focus.position.y) > imageSize.h / 2) {
+                focus.position.y = imageSize.h / 2 * Math.sign(focus.position.y);
+            }
+        }
+
+        /**
+         * Distributes a scale operation between lens radius and camera zoom to maintain focus+context
+         * @param {Camera} camera - The camera object containing viewport and zoom constraints
+         * @param {Focus} focus - The lens object to be updated
+         * @param {Transform} context - The camera transform to be updated
+         * @param {number} dz - Scale factor to be applied (multiplier)
+         */
+        static scale(camera, focus, context, dz) {
+            const viewport = camera.viewport;
+            const radiusRange = this.getRadiusRangeCanvas(viewport);
+
+            const r = focus.radius * context.z;
+
+            // Distribute lens scale between radius scale and context scale
+            // When radius is going outside radius boundary, scale of the inverse amounts radius and zoom scale | screen size constant
+            // When radius is changing from boundary condition to a valid one change only radius  and no change to zoom scale.
+            // From 0.5 to boundary condition, zoomScale vary is interpolated between 1 and 1/dz.
+
+            const t = Math.max(0, Math.min(1, (r - radiusRange.min) / (radiusRange.max - radiusRange.min)));
+            let zoomScaleAmount = 1;
+            if (dz > 1 && t > 0.5) {
+                const t1 = (t - 0.5) * 2;
+                zoomScaleAmount = 1 * (1 - t1) + t1 / dz;
+            } else if (dz < 1 && t < 0.5) {
+                const t1 = 2 * t;
+                zoomScaleAmount = (1 - t1) / dz + t1 * 1;
+            }
+            let radiusScaleAmount = dz;
+            const newR = r * radiusScaleAmount;
+
+            // Clamp radius
+            if (newR < radiusRange.min) {
+                radiusScaleAmount = radiusRange.min / r;
+            } else if (newR > radiusRange.max) {
+                radiusScaleAmount = radiusRange.max / r;
+            }
+            // Clamp scale
+            if (context.z * zoomScaleAmount < camera.minZoom) {
+                zoomScaleAmount = camera.minZoom / context.z;
+            } else if (context.z * zoomScaleAmount > camera.maxZoom) {
+                zoomScaleAmount = camera.maxZoom / context.z;
+            }
+
+            // Scale around lens center
+            context.x += focus.position.x * context.z * (1 - zoomScaleAmount);
+            context.y += focus.position.y * context.z * (1 - zoomScaleAmount);
+            context.z = context.z * zoomScaleAmount;
+            focus.radius *= radiusScaleAmount;
+        }
+
+        /**
+         * Adjusts the camera transform to ensure focus+context conditions are met for a given lens
+         * @param {Viewport} viewport - The current viewport
+         * @param {Focus} focus - The lens object
+         * @param {Transform} context - The camera transform to be updated
+         * @param {number} desiredScale - Target scale for the camera transform
+         */
+        static adaptContext(viewport, focus, context, desiredScale) {
+            // Get current projected annotation center position
+            //const pOld = context.sceneToViewportCoords(viewport, focus.position);
+            const useGL = true;
+            const pOld = CoordinateSystem.fromSceneToViewportNoCamera(focus.position, context, viewport, useGL);
+            context.z = desiredScale;
+
+            FocusContext.adaptContextScale(viewport, focus, context);
+
+            // After scale, restore projected annotation position, in order to avoid
+            // moving the annotation center outside the boundaries
+            //const pNew = context.sceneToViewportCoords(viewport, focus.position);
+            const pNew = CoordinateSystem.fromSceneToViewportNoCamera(focus.position, context, viewport, useGL);
+
+            const delta = [pNew.x - pOld.x, pNew.y - pOld.y];
+            context.x -= delta.x;
+            context.y += delta.y;
+
+            // Force annotation inside the viewport
+            FocusContext.adaptContextPosition(viewport, focus, context);
+        }
+
+        /**
+         * Adjusts camera scale to ensure projected lens fits within viewport bounds
+         * @param {Viewport} viewport - The current viewport
+         * @param {Focus} focus - The lens object
+         * @param {Transform} context - The camera transform to be updated
+         * @private
+         */
+        static adaptContextScale(viewport, focus, context) {
+            context.z;
+            const radiusRange = this.getRadiusRangeCanvas(viewport);
+            const focusRadiusCanvas = focus.radius * context.z;
+            if (focusRadiusCanvas < radiusRange.min) {
+                context.z = radiusRange.min / focus.radius;
+                // zoomScaleAmount = (radiusRange.min / focus.radius) / context.z;
+            } else if (focusRadiusCanvas > radiusRange.max) {
+                context.z = radiusRange.max / focus.radius;
+                // zoomScaleAmount = (radiusRange.max / focus.radius) / context.z;
+            }
+        }
+
+        /**
+         * Adjusts camera position to maintain proper focus+context conditions
+         * @param {Viewport} viewport - The current viewport
+         * @param {Focus} focus - The lens object
+         * @param {Transform} context - The camera transform to be updated
+         * @private
+         */
+        static adaptContextPosition(viewport, focus, context) {
+            const delta = this.getCanvasBorder(focus, context);
+            let box = this.getShrinkedBox(viewport, delta);
+            const useGL = true;
+            const screenP = CoordinateSystem.fromSceneToViewportNoCamera(focus.position, context, viewport, useGL);
+
+            const deltaMinX = Math.max(0, (box.xLow - screenP.x));
+            const deltaMaxX = Math.min(0, (box.xHigh - screenP.x));
+            context.x += deltaMinX != 0 ? deltaMinX : deltaMaxX;
+
+            const deltaMinY = Math.max(0, (box.yLow - screenP.y));
+            const deltaMaxY = Math.min(0, (box.yHigh - screenP.y));
+            context.y += deltaMinY != 0 ? deltaMinY : deltaMaxY;
+        }
+
+        /**
+         * Calculates focus+context distribution factors for pan operations
+         * @param {Viewport} viewport - The current viewport
+         * @param {Focus} focus - The lens object
+         * @param {Transform} context - The current camera transform
+         * @param {Object} panDir - Pan direction vector
+         * @param {number} panDir.x - Horizontal direction (-1 to 1)
+         * @param {number} panDir.y - Vertical direction (-1 to 1)
+         * @returns {Object} Distribution factors for x and y directions (0.5 to 1)
+         * @private
+         */
+        static getAmountOfFocusContext(viewport, focus, context, panDir) {
+            // Returns a value t which is used to distribute pan between focus and context. 
+            // Return a value among 0.5 and 1. 1 is full focus and context,
+            // 0.5 is borderline focus and context. 
+            const delta = this.getCanvasBorder(focus, context);
+            const box = this.getShrinkedBox(viewport, delta);
+            //  const p = context.sceneToViewportCoords(viewport, focus.position); 
+            const useGL = true;
+            const p = CoordinateSystem.fromSceneToViewportNoCamera(focus.position, context, viewport, useGL);
+
+
+            const halfCanvasW = viewport.w / 2 - delta;
+            const halfCanvasH = viewport.h / 2 - delta;
+
+            let xDistance = (panDir.x > 0 ?
+                Math.max(0, Math.min(halfCanvasW, box.xHigh - p.x)) / (halfCanvasW) :
+                Math.max(0, Math.min(halfCanvasW, p.x - box.xLow)) / (    /**
+                    * Distributes a pan operation between lens movement and camera transform to maintain focus+context
+                    * @param {Viewport} viewport - The current viewport
+                    * @param {Focus} focus - The lens object to be updated
+                    * @param {Transform} context - The camera transform to be updated
+                    * @param {Object} delta - Pan amount in dataset pixels
+                    * @param {number} delta.x - Horizontal pan amount
+                    * @param {number} delta.y - Vertical pan amount
+                    * @param {Object} imageSize - Dataset dimensions
+                    * @param {number} imageSize.w - Dataset width
+                    * @param {number} imageSize.h - Dataset height
+                    */halfCanvasW));
+            xDistance = this.smoothstep(xDistance, 0, 0.75);
+
+            let yDistance = (panDir.y > 0 ?
+                Math.max(0, Math.min(halfCanvasH, box.yHigh - p.y)) / (halfCanvasH) :
+                Math.max(0, Math.min(halfCanvasH, p.y - box.yLow)) / (halfCanvasH));
+            yDistance = this.smoothstep(yDistance, 0, 0.75);
+
+            // Use d/2+05, because when d = 0.5 camera movement = lens movement 
+            // with the effect of the lens not moving from its canvas position.
+            const txy = { x: xDistance / 2 + 0.5, y: yDistance / 2 + 0.5 };
+            return txy;
+        }
+
+        /**
+         * Calculates minimum required distance between lens center and viewport boundary
+         * @param {Focus} focus - The lens object
+         * @param {Transform} context - The camera transform
+         * @returns {number} Minimum distance in canvas pixels
+         * @private
+         */
+        static getCanvasBorder(focus, context) {
+            // Return the min distance in canvas pixel of the lens center from the boundary.
+            const radiusFactorFromBoundary = 1.5;
+            return context.z * focus.radius * radiusFactorFromBoundary; // Distance Lens Center Canvas Border
+        }
+
+        /**
+         * Creates a viewport box shrunk by specified padding
+         * @param {Viewport} viewport - The current viewport
+         * @param {number} delta - Padding amount in pixels
+         * @returns {Object} Box with xLow, yLow, xHigh, yHigh coordinates
+         * @private
+         */
+        static getShrinkedBox(viewport, delta) {
+            // Return the viewport box in canvas pixels, shrinked of delta pixels on the min,max corners
+            const box = {
+                xLow: delta,
+                yLow: delta,
+                xHigh: viewport.w - delta,
+                yHigh: viewport.h - delta
+            };
+            return box;
+        }
+
+        /**
+         * Calculates acceptable lens radius range for current viewport
+         * @param {Viewport} viewport - The current viewport
+         * @returns {Object} Range object with min and max radius values in pixels
+         * @private
+         */
+        static getRadiusRangeCanvas(viewport) {
+            //  Returns the acceptable lens radius range in pixel for a certain viewport
+            const maxMinRadiusRatio = 3;
+            const minRadius = Math.min(viewport.w, viewport.h) * 0.1;
+            const maxRadius = minRadius * maxMinRadiusRatio;
+            return { min: minRadius, max: maxRadius };
+        }
+
+        /**
+         * Implements smoothstep interpolation between two values
+         * @param {number} x - Input value
+         * @param {number} x0 - Lower bound
+         * @param {number} x1 - Upper bound
+         * @returns {number} Smoothly interpolated value between 0 and 1
+         * @private
+         */
+        static smoothstep(x, x0, x1) {
+            // Return the smoothstep interpolation at x, between x0 and x1. 
+            if (x < x0) {
+                return 0;
+            } else if (x > x1) {
+                return 1;
+            } else {
+                const t = (x - x0) / (x1 - x0);
+                return t * t * (-2 * t + 3);
+            }
+        }
+
+    }
+
+    /**
+     * Controller for handling lens-based interactions.
+     * Manages user interactions with a lens overlay including panning, zooming,
+     * and lens radius adjustments through mouse/touch events.
+     * @extends Controller
+     */
+    class ControllerLens extends Controller {
+        /**
+         * Creates a new ControllerLens instance.
+         * @param {Object} options - Configuration options
+         * @param {Object} options.lensLayer - Layer used for lens visualization
+         * @param {Camera} options.camera - Camera instance to control
+         * @param {boolean} [options.useGL=false] - Whether to use WebGL coordinates
+         * @param {boolean} [options.active=true] - Whether the controller is initially active
+         * @throws {Error} If required options (lensLayer, camera) are missing
+         */
+        constructor(options) {
+
+            super(options);
+
+            if (!options.lensLayer) {
+                console.log("ControllerLens lensLayer option required");
+                throw "ControllerLens lensLayer option required";
+            }
+
+            if (!options.camera) {
+                console.log("ControllerLens camera option required");
+                throw "ControllerLens camera option required";
+            }
+
+            this.panning = false;
+            this.zooming = false;
+            this.initialDistance = 0;
+            this.startPos = { x: 0, y: 0 };
+            this.oldCursorPos = { x: 0, y: 0 };
+            this.useGL = false;
+        }
+
+        /**
+         * Handles start of pan operation.
+         * @param {PointerEvent} e - Pan start event
+         * @override
+         */
+        panStart(e) {
+            if (!this.active)
+                return;
+
+            const p = this.getScenePosition(e);
+            this.panning = false;
+
+            const hit = this.isInsideLens(p);
+            if (this.lensLayer.visible && hit.inside) {
+                // if (hit.border) {
+                //     this.zooming = true;
+                //     const p = this.getPixelPosition(e);
+                //     this.zoomStart(p);
+                // } else {
+                //     this.panning = true;
+                // }
+                this.panning = true;
+                this.startPos = p;
+
+                e.preventDefault();
+            }
+        }
+
+        /**
+         * Handles pan movement.
+         * @param {PointerEvent} e - Pan move event
+         * @override
+         */
+        panMove(e) {
+            // Discard events due to cursor outside window
+            this.getPixelPosition(e);
+            if (Math.abs(e.offsetX) > 64000 || Math.abs(e.offsetY) > 64000) return;
+            if (this.panning) {
+                const p = this.getScenePosition(e);
+                const dx = p.x - this.startPos.x;
+                const dy = p.y - this.startPos.y;
+                const c = this.lensLayer.getTargetCenter();
+
+                this.lensLayer.setCenter(c.x + dx, c.y + dy);
+                this.startPos = p;
+                e.preventDefault();
+            }
+        }
+
+        /**
+         * Handles end of pan operation.
+         * @param {PointerEvent} e - Pan end event
+         * @override
+         */
+        panEnd(e) {
+            this.panning = false;
+            this.zooming = false;
+        }
+
+        /**
+         * Handles start of pinch operation.
+         * @param {PointerEvent} e1 - First finger event
+         * @param {PointerEvent} e2 - Second finger event
+         * @override
+         */
+        pinchStart(e1, e2) {
+            if (!this.active)
+                return;
+
+            const p0 = this.getScenePosition(e1);
+            const p1 = this.getScenePosition(e2);
+            const pc = { x: (p0.x + p1.x) * 0.5, y: (p0.y + p1.y) * 0.5 };
+
+            if (this.lensLayer.visible && this.isInsideLens(pc).inside) {
+                this.zooming = true;
+                this.initialDistance = this.distance(e1, e2);
+                this.initialRadius = this.lensLayer.getRadius();
+                this.startPos = pc;
+
+                e1.preventDefault();
+            }
+        }
+
+        /**
+         * Handles pinch movement.
+         * @param {PointerEvent} e1 - First finger event
+         * @param {PointerEvent} e2 - Second finger event
+         * @override
+         */
+        pinchMove(e1, e2) {
+            if (!this.zooming)
+                return;
+            const d = this.distance(e1, e2);
+            const scale = d / (this.initialDistance + 0.00001);
+            const newRadius = scale * this.initialRadius;
+            this.lensLayer.setRadius(newRadius);
+        }
+
+        /**
+         * Handles end of pinch operation.
+         * @param {PointerEvent} e - End event
+         * @param {number} x - X coordinate
+         * @param {number} y - Y coordinate
+         * @param {number} scale - Final scale value
+         * @override
+         */
+        pinchEnd(e, x, y, scale) {
+            this.zooming = false;
+        }
+
+        /**
+         * Handles mouse wheel events.
+         * @param {WheelEvent} e - Wheel event
+         * @returns {boolean} True if event was handled
+         * @override
+         */
+        mouseWheel(e) {
+            if(!this.active) return;
+            const p = this.getScenePosition(e);
+            let result = false;
+            if (this.lensLayer.visible && this.isInsideLens(p).inside) {
+                const delta = e.deltaY > 0 ? 1 : -1;
+                const factor = delta > 0 ? 1.2 : 1 / 1.2;
+                const r = this.lensLayer.getRadius();
+                this.lensLayer.setRadius(r * factor);
+                this.startPos = p;
+
+                result = true;
+                e.preventDefault();
+            }
+
+            return result;
+        }
+
+        /**
+         * Initiates zoom operation when clicking on lens border.
+         * @param {Object} pe - Pixel position in canvas coordinates
+         * @param {number} pe.offsetX - X offset from canvas left
+         * @param {number} pe.offsetY - Y offset from canvas top
+         */
+        zoomStart(pe) {
+            if (!this.lensLayer.visible) return;
+
+            this.zooming = true;
+            this.oldCursorPos = pe; // Used by derived class
+            const p = this.getScenePosition(pe);
+            const lens = this.getFocus();
+            const r = lens.radius;
+            const c = lens.position;
+            let v = { x: p.x - c.x, y: p.y - c.y };
+            let d = Math.sqrt(v.x * v.x + v.y * v.y);
+
+            // Difference between radius and |Click-LensCenter| will be used by zoomMove
+            this.deltaR = d - r;
+        }
+
+        /**
+         * Updates zoom when dragging lens border.
+         * @param {Object} pe - Pixel position in canvas coordinates
+         * @param {number} pe.offsetX - X offset from canvas left
+         * @param {number} pe.offsetY - Y offset from canvas top
+         */
+        zoomMove(pe) {
+            if (this.zooming) {
+                const p = this.getScenePosition(pe);
+
+                const lens = this.getFocus();
+                const c = lens.position;
+                let v = { x: p.x - c.x, y: p.y - c.y };
+                let d = Math.sqrt(v.x * v.x + v.y * v.y);
+
+                //  Set as new radius |Click-LensCenter|(now) - |Click-LensCenter|(start)
+                const scale = this.camera.getCurrentTransform(performance.now()).z;
+                const radiusRange = FocusContext.getRadiusRangeCanvas(this.camera.viewport);
+                const newRadius = Math.max(radiusRange.min / scale, d - this.deltaR);
+
+                this.lensLayer.setRadius(newRadius, this.zoomDelay);
+            }
+        }
+
+        /**
+         * Ends zoom operation.
+         */
+        zoomEnd() {
+            this.zooming = false;
+        }
+
+        /**
+         * Gets current focus state.
+         * @returns {{position: {x: number, y: number}, radius: number}} Focus state object
+         */
+        getFocus() {
+            const p = this.lensLayer.getCurrentCenter();
+            const r = this.lensLayer.getRadius();
+            return { position: p, radius: r }
+        }
+
+        /**
+         * Checks if a point is inside the lens.
+         * @param {Object} p - Point to check in scene coordinates
+         * @param {number} p.x - X coordinate
+         * @param {number} p.y - Y coordinate
+         * @returns {{inside: boolean, border: boolean}} Whether point is inside lens and/or on border
+         */
+        isInsideLens(p) {
+            const c = this.lensLayer.getCurrentCenter();
+            const dx = p.x - c.x;
+            const dy = p.y - c.y;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            const r = this.lensLayer.getRadius();
+            const inside = d < r;
+
+            const t = this.camera.getCurrentTransform(performance.now());
+            const b = this.lensLayer.getBorderWidth() / t.z;
+            const border = inside && d > r - b;
+            //console.log("IsInside " + d.toFixed(0) + " r " + r.toFixed(0) + ", b " + b.toFixed(0) + " IN " + inside + " B " + border);
+            return { inside: inside, border: border };
+        }
+
+        /**
+         * Converts position from canvas HTML coordinates to viewport coordinates.
+         * @param {PointerEvent} e - event
+         * @returns {{x: number, y: number}} Position in viewport coordinates (origin at bottom-left, y up)
+         */
+        getPixelPosition(e) {
+            const p = { x: e.offsetX, y: e.offsetY };
+            return CoordinateSystem.fromCanvasHtmlToViewport(p, this.camera, this.useGL);
+        }
+
+        /**
+         * Converts position from canvas HTML coordinates to scene coordinates.
+         * @param {PointerEvent} e - event
+         * @returns {{x: number, y: number}} Position in scene coordinates (origin at center, y up)
+         */
+        getScenePosition(e) {
+            const p = { x: e.offsetX, y: e.offsetY };
+            return CoordinateSystem.fromCanvasHtmlToScene(p, this.camera, this.useGL);
+        }
+
+        /**
+         * Calculates distance between two points.
+         * @param {PointerEvent} e1 - event
+         * @param {PointerEvent} e2 - event
+         * @returns {number} Distance between points
+         * @private
+         */
+        distance(e1, e2) {
+            return Math.sqrt(Math.pow(e1.x - e2.x, 2) + Math.pow(e1.y - e2.y, 2));
+        }
+    }
+
+    /**
+     * Controller for handling Focus+Context visualization interactions.
+     * Manages lens-based focus region and context region interactions including
+     * panning, zooming, and lens radius adjustments.
+     * @fires ControllerFocusContext#panStart - Emitted when a pan operation begins, with timestamp
+     * @fires ControllerFocusContext#panEnd - Emitted when a pan operation ends, with timestamp
+     * @fires ControllerFocusContext#pinchStart - Emitted when a pinch operation begins, with timestamp
+     * @fires ControllerFocusContext#pinchEnd - Emitted when a pinch operation ends, with timestamp
+     * @extends ControllerLens
+     */
+    class ControllerFocusContext extends ControllerLens {
+        /**
+         * Helper method to trigger updates.
+         * @param {Object} param - Object containing update method
+         * @private
+         */
+        static callUpdate(param) {
+            param.update();
+        }
+
+        /**
+         * Creates a new ControllerFocusContext instance.
+         * @param {Object} options - Configuration options
+         * @param {number} [options.updateTimeInterval=50] - Time interval for position updates in ms
+         * @param {number} [options.updateDelay=100] - Delay for position updates in ms
+         * @param {number} [options.zoomDelay=150] - Delay for zoom animations in ms
+         * @param {number} [options.zoomAmount=1.5] - Scale factor for zoom operations
+         * @param {number} [options.priority=-100] - Controller priority
+         * @param {boolean} [options.enableDirectContextControl=true] - Enable direct manipulation of context region
+         * @param {Layer} options.lensLayer - Layer to use for lens visualization
+         * @param {Camera} options.camera - Camera instance to control
+         * @param {Canvas} options.canvas - Canvas instance to monitor
+         * @throws {Error} If required options (lensLayer, camera, canvas) are missing
+         */
+        constructor(options) {
+            super(options);
+            Object.assign(this, {
+                updateTimeInterval: 50,
+                updateDelay: 100,
+                zoomDelay: 150,
+                zoomAmount: 1.5,
+                priority: -100,
+                enableDirectContextControl: true
+            }, options);
+
+            if (!options.lensLayer) {
+                console.log("ControllerFocusContext lensLayer option required");
+                throw "ControllerFocusContext lensLayer option required";
+            }
+
+            if (!options.camera) {
+                console.log("ControllerFocusContext camera option required");
+                throw "ControllerFocusContext camera option required";
+            }
+
+            if (!options.canvas) {
+                console.log("ControllerFocusContext canvas option required");
+                throw "ControllerFocusContext canvas option required";
+            }
+
+            let callback = () => {
+                const bbox = this.camera.boundingBox;
+                this.maxDatasetSize = Math.max(bbox.width(), bbox.height());
+                this.minDatasetSize = Math.min(bbox.width(), bbox.height());
+                this.setDatasetDimensions(bbox.width(), bbox.height());
+            };
+            this.canvas.addEvent('updateSize', callback);
+
+            this.imageSize = { w: 1, h: 1 };
+            this.FocusContextEnabled = true;
+
+            this.centerToClickOffset = { x: 0, y: 0 };
+            this.previousClickPos = { x: 0, y: 0 };
+            this.currentClickPos = { x: 0, y: 0 };
+
+            this.insideLens = { inside: false, border: false };
+            this.panning = false;
+            this.zooming = false;
+            this.panningCamera = false;
+
+            // Handle only camera panning
+            this.startPos = { x: 0, y: 0 };
+            this.initialTransform = this.camera.getCurrentTransform(performance.now());
+
+            // Handle pinchZoom
+            this.initialPinchDistance = 1;
+            this.initialPinchRadius = 1;
+            this.initialPinchPos = { x: 0, y: 0 };
+            addSignals(ControllerFocusContext, 'panStart', 'panEnd', 'pinchStart', 'pinchEnd');
+        }
+
+        /**
+         * Handles start of pan operation.
+         * @param {PointerEvent} e - Pan start event
+         * @override
+         */
+        panStart(e) {
+            if (!this.active)
+                return;
+            const p = this.getScenePosition(e);
+            this.panning = false;
+            this.insideLens = this.isInsideLens(p);
+            const startPos = this.getPixelPosition(e);
+
+            if (this.lensLayer.visible && this.insideLens.inside) {
+                const lc = CoordinateSystem.fromSceneToViewport(this.getFocus().position, this.camera, this.useGL);
+
+                this.centerToClickOffset = { x: startPos.x - lc.x, y: startPos.y - lc.y };
+                this.currentClickPos = { x: startPos.x, y: startPos.y };
+                this.panning = true;
+            } else {
+                if (this.enableDirectContextControl) {
+                    this.startPos = startPos;
+                    this.initialTransform = this.camera.getCurrentTransform(performance.now());
+                    this.camera.target = this.initialTransform.copy(); //stop animation.
+                    this.panningCamera = true;
+                }
+            }
+            e.preventDefault();
+            this.emit('panStart', Date.now());
+            // Activate a timeout to call update() in order to update position also when mouse is clicked but steady
+            // Stop the time out on panEnd
+            this.timeOut = setInterval(this.update.bind(this), 50);
+        }
+
+        /**
+         * Handles pan movement.
+         * @param {PointerEvent} e - Pan move event
+         * @override
+         */
+        panMove(e) {
+            if (Math.abs(e.offsetX) > 64000 || Math.abs(e.offsetY) > 64000) return;
+            this.currentClickPos = this.getPixelPosition(e);
+            if (this.panning) ; else if (this.panningCamera) {
+                let m = this.initialTransform;
+                let dx = (this.currentClickPos.x - this.startPos.x);
+                let dy = (this.currentClickPos.y - this.startPos.y);
+
+                this.camera.setPosition(this.updateDelay, m.x + dx, m.y + dy, m.z, m.a);
+            }
+        }
+
+        /**
+         * Handles start of pinch operation.
+         * @param {PointerEvent} e1 - First finger event
+         * @param {PointerEvent} e2 - Second finger event
+         * @override
+         */
+        pinchStart(e1, e2) {
+            if (!this.active)
+                return;
+
+            const p0 = this.getScenePosition(e1);
+            const p1 = this.getScenePosition(e2);
+            const p = { x: (p0.x + p1.x) * 0.5, y: (p0.y + p1.y) * 0.5 };
+            this.initialPinchPos = { x: (e1.offsetX + e2.offsetX) * 0.5, y: (e1.offsetY + e2.offsetY) * 0.5 };
+            this.insideLens = this.isInsideLens(p);
+            this.zooming = true;
+            this.initialPinchDistance = this.distance(e1, e2);
+            this.initialPinchRadius = this.lensLayer.getRadius();
+
+            e1.preventDefault();
+            this.emit('pinchStart', Date.now());
+        }
+
+        /**
+         * Handles pinch movement.
+         * @param {PointerEvent} e1 - First finger event
+         * @param {PointerEvent} e2 - Second finger event
+         * @override
+         */
+        pinchMove(e1, e2) {
+            if (this.zooming) {
+                const d = this.distance(e1, e2);
+                const scale = d / (this.initialPinchDistance + 0.00001);
+                if (this.lensLayer.visible && this.insideLens.inside) {
+                    const newRadius = scale * this.initialPinchRadius;
+                    const currentRadius = this.lensLayer.getRadius();
+                    const dz = newRadius / currentRadius;
+                    // Zoom around initial pinch pos, and not current center to avoid unwanted drifts
+                    this.updateRadiusAndScale(dz);
+                    //this.initialPinchDistance = d;
+                } else {
+                    if (this.enableDirectContextControl) {
+                        this.updateScale(this.initialPinchPos.x, this.initialPinchPos.y, scale);
+                        this.initialPinchDistance = d;
+                    }
+                }
+            }
+        }
+
+        /**
+         * Handles end of pinch operation.
+         * @param {PointerEvent} e - End event
+         * @param {number} x - X coordinate
+         * @param {number} y - Y coordinate
+         * @param {number} scale - Final scale value
+         * @override
+         */
+        pinchEnd(e, x, y, scale) {
+            this.zooming = false;
+            this.emit('pinchEnd', Date.now());
+        }
+
+        /**
+         * Starts zoom operation when clicking on lens border.
+         * @param {PointerEvent} pe - Pointer event
+         */
+        zoomStart(pe) {
+            if (this.lensLayer.visible) {
+                super.zoomStart(pe);
+
+                // Ask to call zoomUpdate at regular interval during zoommovement
+                this.timeOut = setInterval(this.zoomUpdate.bind(this), 50);
+            }
+        }
+
+        /**
+         * Handles zoom movement when dragging lens border.
+         * @param {PointerEvent} pe - Pointer event
+         */
+        zoomMove(pe) {
+            if (this.zooming) {
+                this.oldCursorPos = pe;
+                let t = this.camera.getCurrentTransform(performance.now());
+                // let p = t.viewportToSceneCoords(this.camera.viewport, pe); 
+                const p = this.getScenePosition(pe);
+
+                const lens = this.getFocus();
+                const c = lens.position;
+                let v = { x: p.x - c.x, y: p.y - c.y };
+                let d = Math.sqrt(v.x * v.x + v.y * v.y);
+
+                //Set as new radius |Click-LensCenter|(now) - |Click-LensCenter|(start)
+                const radiusRange = FocusContext.getRadiusRangeCanvas(this.camera.viewport);
+                const newRadius = Math.max(radiusRange.min / t.z, d - this.deltaR);
+                const dz = newRadius / lens.radius;
+                this.updateRadiusAndScale(dz);
+            }
+        }
+
+        /**
+         * Updates zoom during continuous operation.
+         * @private
+         */
+        zoomUpdate() {
+            // Give continuity to zoom  scale also when user is steady.
+            // If lens border is able to reach user pointer zoom stops.
+            // If this is not possible due to camera scale update, 
+            // zoom will continue with a speed proportional to the radius/cursor distance
+
+            if (this.zooming) {
+                const p = this.getScenePosition(this.oldCursorPos);
+
+                const lens = this.getFocus();
+                const c = lens.position;
+                let v = { x: p.x - c.x, y: p.y - c.y };
+                let d = Math.sqrt(v.x * v.x + v.y * v.y);
+
+                //Set as new radius |Click-LensCenter|(now) - |Click-LensCenter|(start)
+                const radiusRange = FocusContext.getRadiusRangeCanvas(this.camera.viewport);
+                let t = this.camera.getCurrentTransform(performance.now());
+                const newRadius = Math.max(radiusRange.min / t.z, d - this.deltaR);
+                const dz = newRadius / lens.radius;
+                this.updateRadiusAndScale(dz);
+            }
+        }
+
+        /**
+         * Handles end of zoom operation.
+         */
+        zoomEnd() {
+            if (this.lensLayer.visible) {
+                super.zoomEnd();
+                // Stop calling zoomUpdate
+                clearTimeout(this.timeOut);
+            }
+        }
+
+        /**
+         * Handles mouse wheel events to simulate a pinch event.
+         * @param {WheelEvent} e - Wheel event
+         * @override
+         */
+        mouseWheel(e) {
+            if(!this.active) return;
+            const p = this.getScenePosition(e);
+            this.insideLens = this.isInsideLens(p);
+            const dz = e.deltaY > 0 ? this.zoomAmount : 1 / this.zoomAmount;
+            if (this.lensLayer.visible && this.insideLens.inside) {
+                this.updateRadiusAndScale(dz);
+            } else {
+                if (this.enableDirectContextControl) {
+                    // Invert scale when updating scale instead of lens radius, to obtain the same zoom direction
+                    const p = this.getPixelPosition(e);
+                    this.updateScale(p.x, p.y, 1 / dz);
+                }
+            }
+            e.preventDefault();
+        }
+
+        /**
+         * Updates lens radius and adjusts camera to maintain Focus+Context condition.
+         * @param {number} dz - Scale factor for radius adjustment
+         */
+        updateRadiusAndScale(dz) {
+            let focus = this.getFocus();
+            const now = performance.now();
+            let context = this.camera.getCurrentTransform(now);
+
+            // Subdivide zoom between focus and context
+            FocusContext.scale(this.camera, focus, context, dz);
+
+            // Bring focus within context constraints
+            FocusContext.adaptContextPosition(this.camera.viewport, focus, context);
+
+            // Set new focus and context in camera and lens
+            this.camera.setPosition(this.zoomDelay, context.x, context.y, context.z, context.a);
+            this.lensLayer.setRadius(focus.radius, this.zoomDelay);
+        }
+
+        /**
+         * Updates camera scale around a specific point.
+         * @param {number} x - X coordinate of zoom center
+         * @param {number} y - Y coordinate of zoom center
+         * @param {number} dz - Scale factor
+         * @private
+         */
+        updateScale(x, y, dz) {
+            const now = performance.now();
+            let context = this.camera.getCurrentTransform(now);
+            const pos = CoordinateSystem.fromCanvasHtmlToScene({x,y}, this.camera, this.useGL);
+            //const pos = this.camera.mapToScene(x, y, context);
+
+            const maxDeltaZoom = this.camera.maxZoom / context.z;
+            const minDeltaZoom = this.camera.minZoom / context.z;
+            dz = Math.min(maxDeltaZoom, Math.max(minDeltaZoom, dz));
+
+            // Zoom around cursor position
+            this.camera.deltaZoom(this.updateDelay, dz, pos.x, pos.y);
+        }
+
+        /**
+         * Handles end of pan operation.
+         * @override
+         */
+        panEnd() {
+            if (this.panning) { clearTimeout(this.timeOut); }
+
+            this.panning = false;
+            this.panningCamera = false;
+            this.zooming = false;
+            this.emit('panEnd', Date.now());
+        }
+
+        /**
+         * Updates lens and camera positions based on current interaction.
+         * @private
+         */
+        update() {
+            if (this.panning) {
+                let context = this.camera.getCurrentTransform(performance.now());
+                let lensDeltaPosition = this.lastInteractionDelta();
+                lensDeltaPosition.x /= context.z;
+                lensDeltaPosition.y /= context.z;
+
+                let focus = this.getFocus();
+                if (this.FocusContextEnabled) {
+                    FocusContext.pan(this.camera.viewport, focus, context, lensDeltaPosition, this.imageSize);
+                    this.camera.setPosition(this.updateDelay, context.x, context.y, context.z, context.a);
+                } else {
+                    focus.position.x += lensDeltaPosition.x;
+                    focus.position.y += lensDeltaPosition.y;
+                }
+
+                this.lensLayer.setCenter(focus.position.x, focus.position.y, this.updateDelay);
+                this.previousClickPos = [this.currentClickPos.x, this.currentClickPos.y];
+            }
+        }
+
+        /**
+         * Calculates movement delta since last interaction.
+         * @returns {{x: number, y: number}} Position delta
+         * @private
+         */
+        lastInteractionDelta() {
+            let result = { x: 0, y: 0 };
+            // Compute delta with respect to previous position
+            if (this.panning && this.insideLens.inside) {
+                // For lens pan Compute delta wrt previous lens position
+                const lc = CoordinateSystem.fromSceneToViewport(this.getFocus().position, this.camera, this.useGL);
+                result =
+                {
+                    x: this.currentClickPos.x - lc.x - this.centerToClickOffset.x,
+                    y: this.currentClickPos.y - lc.y - this.centerToClickOffset.y
+                };
+            } else {
+                // For camera pan Compute delta wrt previous click position
+                result =
+                {
+                    x: this.currentClickPos.x - this.previousClickPos.x,
+                    y: this.currentClickPos.y - this.previousClickPos.y
+                };
+            }
+
+            return result;
+        }
+
+        /**
+         * Sets the dimensions of the dataset (image) being visualized.
+         * @param {number} width - Dataset width
+         * @param {number} height - Dataset height
+         * @private
+         */
+        setDatasetDimensions(width, height) {
+            this.imageSize = { w: width, h: height };
+        }
+
+        /**
+         * Initializes lens position and size.
+         */
+        initLens() {
+            const t = this.camera.getCurrentTransform(performance.now());
+            const imageRadius = 100 / t.z;
+            this.lensLayer.setRadius(imageRadius);
+            this.lensLayer.setCenter(this.imageSize.w * 0.5, this.imageSize.h * 0.5);
+        }
+
+    }
+
+    /*
+     * @fileoverview
+     * LensDashboard module provides functionality for creating and managing an interactive lens interface
+     * in OpenLIME. It handles the lens border, SVG masking, and positioning of UI elements around the lens.
+     */
+
+    /**
+     * @enum {string}
+     * Defines rendering modes for lens and background areas.
+     * @property {string} draw - "fill:white;" Shows content in the specified area
+     * @property {string} hide - "fill:black;" Hides content in the specified area
+     */
+    const RenderingMode = {
+    	draw: "fill:white;",
+    	hide: "fill:black;"
+    };
+
+    /**
+     * Callback function fired by a 'click' event on a lens dashboard element.
+     * @function taskCallback
+     * @param {Event} e The DOM event.
+     */
+
+    /**
+     * LensDashboard class creates an interactive container for a lens interface.
+     * It provides:
+     * - A square HTML container that moves with the lens
+     * - SVG-based circular lens border with drag interaction for resizing
+     * - Masking capabilities for controlling content visibility inside/outside the lens
+     * - Ability to add HTML elements positioned relative to the lens
+     */
+    class LensDashboard {
+    	/**
+    	 * Creates a new LensDashboard instance.
+    	 * @param {Viewer} viewer - The OpenLIME viewer instance
+    	 * @param {Object} [options] - Configuration options
+    	 * @param {number} [options.containerSpace=80] - Extra space around the lens for dashboard elements (in pixels)
+    	 * @param {number[]} [options.borderColor=[0.078, 0.078, 0.078, 1]] - RGBA color for lens border
+    	 * @param {number} [options.borderWidth=12] - Width of the lens border (in pixels)
+    	 * @param {LayerSvgAnnotation} [options.layerSvgAnnotation=null] - Associated SVG annotation layer
+    	 */
+    	constructor(viewer, options) {
+    		options = Object.assign({
+    			containerSpace: 80,
+    			borderColor: [0.078, 0.078, 0.078, 1],
+    			borderWidth: 12,
+    			layerSvgAnnotation: null
+    		}, options);
+    		Object.assign(this, options);
+
+    		this.lensLayer = null;
+    		this.viewer = viewer;
+    		this.elements = [];
+    		this.container = document.createElement('div');
+    		this.container.style = `position: absolute; width: 50px; height: 50px; background-color: rgb(200, 0, 0, 0.0); pointer-events: none`;
+    		this.container.classList.add('openlime-lens-dashboard');
+    		this.viewer.containerElement.appendChild(this.container);
+
+    		const col = [255.0 * this.borderColor[0], 255.0 * this.borderColor[1], 255.0 * this.borderColor[2], 255.0 * this.borderColor[3]];
+    		this.lensElm = Util.createSVGElement('svg', { viewBox: `0 0 100 100` });
+    		const circle = Util.createSVGElement('circle', { cx: 10, cy: 10, r: 50 });
+    		circle.setAttributeNS(null, 'style', `position:absolute; visibility: visible; fill: none; stroke: rgb(${col[0]},${col[1]},${col[2]},${col[3]}); stroke-width: ${this.borderWidth}px;`);
+    		circle.setAttributeNS(null, 'shape-rendering', 'geometricPrecision');
+    		this.lensElm.appendChild(circle);
+    		this.container.appendChild(this.lensElm);
+    		this.setupCircleInteraction(circle);
+    		this.lensBox = { x: 0, y: 0, r: 0, w: 0, h: 0 };
+
+    		this.svgElement = null;
+    		this.svgMaskId = 'openlime-image-mask';
+    		this.svgMaskUrl = `url(#${this.svgMaskId})`;
+
+    		this.noupdate = false;
+    	}
+
+    	/**
+    	 * Sets up interactive lens border resizing.
+    	 * Creates event listeners for pointer events to allow users to drag the lens border to resize.
+    	 * @private
+    	 * @param {SVGElement} circle - The SVG circle element representing the lens border
+    	 */
+    	setupCircleInteraction(circle) {
+    		circle.style.pointerEvents = 'auto';
+    		this.isCircleSelected = false;
+
+    		// OffsetXY are unstable from this point (I don't know why)
+    		// Thus get coordinates from clientXY
+    		function getXYFromEvent(e, container) {
+    			const x = e.clientX - container.offsetLeft - container.clientLeft;
+    			const y = e.clientY - container.offsetTop - container.clientTop;
+    			return { offsetX: x, offsetY: y };
+    		}
+
+    		this.viewer.containerElement.addEventListener('pointerdown', (e) => {
+    			if (circle == e.target) {
+    				this.isCircleSelected = true;
+    				if (this.lensLayer.controllers[0]) {
+    					const p = getXYFromEvent(e, this.viewer.containerElement);
+    					this.lensLayer.controllers[0].zoomStart(p);
+    				}
+    				e.preventDefault();
+    				e.stopPropagation();
+    			}
+    		});
+
+    		this.viewer.containerElement.addEventListener('pointermove', (e) => {
+    			if (this.isCircleSelected) {
+    				if (this.lensLayer.controllers[0]) {
+    					const p = getXYFromEvent(e, this.viewer.containerElement);
+    					this.lensLayer.controllers[0].zoomMove(p);
+    				}
+    				e.preventDefault();
+    				e.stopPropagation();
+    			}
+    		});
+
+    		this.viewer.containerElement.addEventListener('pointerup', (e) => {
+    			if (this.isCircleSelected) {
+    				if (this.lensLayer.controllers[0]) {
+    					this.lensLayer.controllers[0].zoomEnd();
+    				}
+    				this.isCircleSelected = false;
+    				e.preventDefault();
+    				e.stopPropagation();
+    			}
+    		});
+    	}
+
+    	/**
+    	 * Toggles the visibility of the dashboard UI elements.
+    	 * Uses CSS classes to show/hide the interface.
+    	 */
+    	toggle() {
+    		this.container.classList.toggle('closed');
+    	}
+
+
+    	/**
+    	 * Associates a LayerSvgAnnotation with the dashboard.
+    	 * This enables proper masking of SVG annotations within the lens area.
+    	 * @param {LayerSvgAnnotation} layer - The SVG annotation layer to associate
+    	 */
+    	setLayerSvgAnnotation(layer) {
+    		this.layerSvgAnnotation = l;
+    		this.svgElement = this.layerSvgAnnotation.svgElement;
+    	}
+
+    	/**
+    	 * Creates SVG masking elements for the lens.
+    	 * Sets up a composite mask consisting of:
+    	 * - A full-viewport rectangle for the background
+    	 * - A circle for the lens area
+    	 * The mask controls visibility of content inside vs outside the lens.
+    	 * @private
+    	 */
+    	createSvgLensMask() {
+    		if (this.svgElement == null) this.setupSvgElement();
+    		if (this.svgElement == null) return;
+
+    		// Create a mask made of a rectangle (it will be set to the full viewport) for the background
+    		// And a circle, corresponding to the lens. 
+    		const w = 100; // The real size will be set at each frame by the update function
+    		this.svgMask = Util.createSVGElement("mask", { id: this.svgMaskId });
+    		this.svgGroup = Util.createSVGElement("g");
+    		this.outMask = Util.createSVGElement("rect", { id: 'outside-lens-mask', x: -w / 2, y: -w / 2, width: w, height: w, style: "fill:black;" });
+    		this.inMask = Util.createSVGElement("circle", { id: 'inside-lens-mask', cx: 0, cy: 0, r: w / 2, style: "fill:white;" });
+    		this.svgGroup.appendChild(this.outMask);
+    		this.svgGroup.appendChild(this.inMask);
+    		this.svgMask.appendChild(this.svgGroup);
+    		this.svgElement.appendChild(this.svgMask);
+
+    		// FIXME Remove svgCheck. It's a Check, just to have an SVG element to mask
+    		// this.svgCheck = Util.createSVGElement('rect', {x:-w/2, y:-w/2, width:w/2, height:w/2, style:'fill:orange; stroke:blue; stroke-width:5px;'}); //  
+    		// this.svgCheck.setAttribute('mask', this.svgMaskUrl);
+    		// this.svgElement.appendChild(this.svgCheck);
+    		// console.log(this.svgCheck);
+    	}
+
+    	/**
+    	 * Sets up the SVG container element for the lens.
+    	 * Will either:
+    	 * - Use the SVG element from an associated annotation layer
+    	 * - Find an existing SVG element in the shadow DOM
+    	 * - Create a new SVG element if needed
+    	 * @private
+    	 */
+    	setupSvgElement() {
+    		if (this.layerSvgAnnotation) {
+    			// AnnotationLayer available, get its root svgElement
+    			if (this.svgElement == null) {
+    				//console.log("NULL SVG ELEMENT, take it from layerSvgAnnotation");
+    				this.svgElement = this.layerSvgAnnotation.svgElement;
+    			}
+    		} else {
+    			// No annotationLayer, search for an svgElement
+
+    			// First: get shadowRoot to attach the svgElement
+    			let shadowRoot = this.viewer.canvas.overlayElement.shadowRoot;
+    			if (shadowRoot == null) {
+    				//console.log("WARNING: null ShadowRoot, create a new one");
+    				shadowRoot = this.viewer.canvas.overlayElement.attachShadow({ mode: "open" });
+    			}
+
+    			//console.log("WARNING: no svg element, create a new one");
+    			this.svgElement = shadowRoot.querySelector('svg');
+    			if (this.svgElement == null) {
+    				// Not availale svg element: build a new one and attach to the tree
+    				this.svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    				this.svgElement.classList.add('openlime-svgoverlay-mask');
+    				this.svgElement.setAttributeNS(null, 'style', 'pointer-events: none;');
+    				shadowRoot.appendChild(this.svgElement);
+    			}
+    		}
+    	}
+
+    	/**
+    	 * Applies the lens mask to an SVG element.
+    	 * Elements with the mask will only be visible within the lens area
+    	 * (or outside, depending on mask configuration).
+    	 * @param {SVGElement} svg - The SVG element to mask
+    	 */
+    	setMaskOnSvgLayer(svg) {
+    		svg.setAttributeNS(null, 'mask', this.svgMaskUrl);
+    	}
+
+    	/**
+    	 * Removes the lens mask from an SVG element.
+    	 * Returns the element to its normal, unmasked rendering.
+    	 * @param {SVGElement} svg - The SVG element to unmask
+    	 */
+    	removeMaskFromSvgLayer(svg) {
+    		svg.removeAttribute('mask');
+    	}
+
+    	/**
+    	 * Adds an HTML element to the dashboard container.
+    	 * The element should use absolute positioning relative to the container.
+    	 * Example:
+    	 * ```javascript
+    	 * const button = document.createElement('button');
+    	 * button.style = 'position: absolute; left: 10px; top: 10px;';
+    	 * lensDashboard.append(button);
+    	 * ```
+    	 * @param {HTMLElement} elm - The HTML element to add
+    	 */
+    	append(elm) {
+    		this.container.appendChild(elm);
+    	}
+
+    	/**
+    	 * Sets the rendering mode for the lens area.
+    	 * Controls whether content inside the lens is shown or hidden.
+    	 * @param {RenderingMode} mode - The rendering mode to use
+    	 */
+    	setLensRenderingMode(mode) {
+    		this.inMask.setAttributeNS(null, 'style', mode);
+    	}
+
+    	/**
+    	 * Sets the rendering mode for the background (area outside the lens).
+    	 * Controls whether content outside the lens is shown or hidden.
+    	 * @param {RenderingMode} mode - The rendering mode to use
+    	 */
+    	setBackgroundRenderingMode(mode) {
+    		this.outMask.setAttributeNS(null, 'style', mode);
+    	}
+
+    	/**
+    	 * Updates the dashboard position and size.
+    	 * Called internally when the lens moves or resizes.
+    	 * @private
+    	 * @param {number} x - Center X coordinate in scene space
+    	 * @param {number} y - Center Y coordinate in scene space
+    	 * @param {number} r - Lens radius in scene space
+    	 */
+    	update(x, y, r) {
+    		const useGL = false;
+    		const center = CoordinateSystem.fromSceneToCanvasHtml({ x: x, y: y }, this.viewer.camera, useGL);
+
+    		const now = performance.now();
+    		let cameraT = this.viewer.camera.getCurrentTransform(now);
+    		const radius = r * cameraT.z;
+    		const sizew = 2 * radius + 2 * this.containerSpace;
+    		const sizeh = 2 * radius + 2 * this.containerSpace;
+    		const p = { x: 0, y: 0 };
+    		p.x = center.x - radius - this.containerSpace;
+    		p.y = center.y - radius - this.containerSpace;
+    		this.container.style.left = `${p.x}px`;
+    		this.container.style.top = `${p.y}px`;
+    		this.container.style.width = `${sizew}px`;
+    		this.container.style.height = `${sizeh}px`;
+
+    		// Lens circle
+    		if (sizew != this.lensBox.w || sizeh != this.lensBox.h) {
+    			const cx = Math.ceil(sizew * 0.5);
+    			const cy = Math.ceil(sizeh * 0.5);
+    			this.lensElm.setAttributeNS(null, 'viewBox', `0 0 ${sizew} ${sizeh}`);
+    			const circle = this.lensElm.querySelector('circle');
+    			circle.setAttributeNS(null, 'cx', cx);
+    			circle.setAttributeNS(null, 'cy', cy);
+    			circle.setAttributeNS(null, 'r', radius - 0.5 * this.borderWidth);
+    		}
+
+    		this.updateMask(cameraT, center, radius);
+
+    		this.lensBox = {
+    			x: center.x,
+    			y: center.y,
+    			r: radius,
+    			w: sizew,
+    			h: sizeh
+    		};
+
+    	}
+
+    	/**
+    	 * Updates the SVG mask position and size.
+    	 * Called internally by update() to keep the mask aligned with the lens.
+    	 * @private
+    	 * @param {Transform} cameraT - Current camera transform
+    	 * @param {Object} center - Lens center in canvas coordinates
+    	 * @param {number} center.x - Center X coordinate
+    	 * @param {number} center.y - Center Y coordinate
+    	 * @param {number} radius - Lens radius in canvas coordinates
+    	 */
+    	updateMask(cameraT, center, radius) {
+    		if (this.svgElement == null) { this.createSvgLensMask(); }
+    		if (this.svgElement == null) return;
+
+    		// Lens Mask
+    		const viewport = this.viewer.camera.viewport;
+    		if (this.layerSvgAnnotation != null) {
+    			// Compensate the mask transform with the inverse of the annotation svgGroup transform
+    			const inverse = true;
+    			const invTransfStr = this.layerSvgAnnotation.getSvgGroupTransform(cameraT, inverse);
+    			this.svgGroup.setAttribute("transform", invTransfStr);
+    		} else {
+    			// Set the viewbox.  (in the other branch it is set by the layerSvgAnnotation)
+    			this.svgElement.setAttribute('viewBox', `${-viewport.w / 2} ${-viewport.h / 2} ${viewport.w} ${viewport.h}`);
+    		}
+
+    		// Set the full viewport for outer mask rectangle
+    		this.outMask.setAttribute('x', -viewport.w / 2);
+    		this.outMask.setAttribute('y', -viewport.h / 2);
+    		this.outMask.setAttribute('width', viewport.w);
+    		this.outMask.setAttribute('height', viewport.h);
+
+    		// Set lens parameter for inner lens
+    		this.inMask.setAttributeNS(null, 'cx', center.x - viewport.w / 2);
+    		this.inMask.setAttributeNS(null, 'cy', center.y - viewport.h / 2);
+    		this.inMask.setAttributeNS(null, 'r', radius - this.borderWidth - 2);
+    	}
+
+    }
+
+    /*
+     * @fileoverview
+     * LensDashboardNavigator module provides an enhanced lens dashboard with navigation controls and tools.
+     * Extends the base LensDashboard with additional UI elements for camera control, lighting, and annotation navigation.
+     */
+
+    /**
+     * LensDashboardNavigator class creates an interactive lens dashboard with navigation controls.
+     * Provides:
+     * - Camera movement control
+     * - Light direction control
+     * - Annotation switching and navigation
+     * - Toolbar UI elements positioned around the lens
+     * @extends LensDashboard
+     */
+    class LensDashboardNavigator extends LensDashboard {
+       /**
+        * Creates a new LensDashboardNavigator instance.
+        * @param {Viewer} viewer - The OpenLIME viewer instance
+        * @param {Object} [options] - Configuration options
+        * @param {number} [options.toolboxHeight=22] - Height of the toolbox UI elements in pixels
+        * @param {number} [options.toolboxGap=5] - Gap (in px) between left and roght toolboxes
+        * @param {number} [options.angleToolbar=30] - Angle of toolbar position in degrees
+        * @param {Object} [options.actions] - Configuration for toolbar actions
+        * @param {Object} [options.actions.camera] - Camera control action
+        * @param {string} options.actions.camera.label - Action identifier
+        * @param {Function} options.actions.camera.task - Callback for camera action
+        * @param {Object} [options.actions.light] - Light control action
+        * @param {string} options.actions.light.label - Action identifier
+        * @param {Function} options.actions.light.task - Callback for light action
+        * @param {Object} [options.actions.annoswitch] - Annotation toggle action
+        * @param {string} options.actions.annoswitch.label - Action identifier
+        * @param {string} options.actions.annoswitch.type - Action type ('toggle')
+        * @param {string} options.actions.annoswitch.toggleClass - CSS class for toggle element
+        * @param {Function} options.actions.annoswitch.task - Callback for annotation toggle
+        * @param {Object} [options.actions.prev] - Previous annotation action
+        * @param {string} options.actions.prev.label - Action identifier
+        * @param {Function} options.actions.prev.task - Callback for previous action
+        * @param {Object} [options.actions.down] - Download annotation action
+        * @param {string} options.actions.down.label - Action identifier
+        * @param {Function} options.actions.down.task - Callback for download action
+        * @param {Object} [options.actions.next] - Next annotation action
+        * @param {string} options.actions.next.label - Action identifier
+        * @param {Function} options.actions.next.task - Callback for next action
+        * @param {Function} [options.updateCb] - Callback fired during lens updates
+        * @param {Function} [options.updateEndCb] - Callback fired when lens movement ends
+        */
+       constructor(viewer, options) {
+          super(viewer, options);
+          options = Object.assign({
+             toolboxHeight: 22,
+             toolboxGap: 5,
+             actions: {
+                camera: { label: 'camera', cb_task: (() => { }), task: (event) => { if (!this.actions.camera.active) this.toggleLightController(); this.actions.camera.cb_task(); } },
+                light: { label: 'light', cb_task: (() => { }), task: (event) => { if (!this.actions.light.active) this.toggleLightController(); this.actions.light.cb_task(); } },
+                annoswitch: { label: 'annoswitch', type: 'toggle', toggleClass: '.openlime-lens-dashboard-annoswitch-bar', task: (event) => { } },
+                prev: { label: 'prev', task: (event) => { } },
+                down: { label: 'down', task: (event) => { } },
+                next: { label: 'next', task: (event) => { } },
+             },
+             updateCb: null,
+             updateEndCb: null
+          }, options);
+          Object.assign(this, options);
+
+          this.moving = false;
+          this.delay = 400;
+          this.timeout = null; // Timeout for moving
+          this.noupdate = false;
+
+          this.angleToolbar = 30.0 * (Math.PI / 180.0);
+
+          this.container.style.display = 'block';
+          this.container.style.margin = '0';
+
+          const h1 = document.createElement('div');
+          h1.style = `text-align: center; color: #fff`;
+          h1.classList.add('openlime-lens-dashboard-toolbox-header');
+          h1.innerHTML = 'MOVE';
+
+          const h2 = document.createElement('div');
+          h2.style = `text-align: center; color: #fff`;
+          h2.classList.add('openlime-lens-dashboard-toolbox-header');
+          h2.innerHTML = 'INFO';
+
+          this.toolbox1 = document.createElement('div');
+          this.toolbox1.style = `z-index: 10; position: absolute; padding: 4px; left: 0px; width: fit-content; background-color: rgb(20, 20, 20, 1.0); border-radius: 10px; gap: 8px`;
+          this.toolbox1.classList.add('openlime-lens-dashboard-toolbox');
+          this.container.appendChild(this.toolbox1);
+          this.toolbox1.appendChild(h1);
+
+          this.toolbox2 = document.createElement('div');
+          this.toolbox2.style = `z-index: 10; position: absolute; padding: 4px; right: 0px; width: fit-content; background-color: rgb(20, 20, 20, 1.0); border-radius: 10px; gap: 8px`;
+          this.toolbox2.classList.add('openlime-lens-dashboard-toolbox');
+          this.container.appendChild(this.toolbox2);
+          this.toolbox2.appendChild(h2);
+
+          this.tools1 = document.createElement('div');
+          this.tools1.style = `display: flex; justify-content: center; height: ${this.toolboxHeight}px`;
+          this.tools1.classList.add('openlime-lens-dashboard-toolbox-tools');
+          this.toolbox1.appendChild(this.tools1);
+
+          this.tools2 = document.createElement('div');
+          this.tools2.style = `display: flex; justify-content: center; height: ${this.toolboxHeight}px`;
+          this.tools2.classList.add('openlime-lens-dashboard-toolbox-tools');
+          this.toolbox2.appendChild(this.tools2);
+
+          // TOOLBOX ITEMS
+
+          this.actions.camera.svg = `<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   viewBox="0 0 83.319054 83.319054"
+   version="1.1"
+   id="svg2495"
+   xml:space="preserve"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+     id="defs2492" /><path
+     d="m 83.319059,41.66005 c 0,23.007824 -18.651718,41.659533 -41.659532,41.659533 C 18.651716,83.319583 -4.9557762e-6,64.667874 -4.9557762e-6,41.66005 -4.9557762e-6,18.651185 18.651716,-5.2882463e-4 41.659527,-5.2882463e-4 64.667341,-5.2882463e-4 83.319059,18.651185 83.319059,41.66005 Z"
+     style="fill:#fbfbfb;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+     id="path74"
+     class="openlime-lens-dashboard-button-bkg" /><g
+     id="g1"
+     class="openlime-lens-dashboard-camera"><path
+       stroke="#000000"
+       stroke-width="9.03222"
+       d="M 41.659527,5.5306402 V 32.627305 m 0,18.064443 v 27.096665"
+       id="path1"
+       style="fill:none" /><path
+       stroke="#000000"
+       stroke-linecap="round"
+       stroke-linejoin="round"
+       stroke-width="9.03222"
+       d="M 30.36925,16.820917 41.659527,5.5306402 52.949804,16.820917 M 30.36925,66.498136 41.659527,77.788413 52.949804,66.498136 M 16.820917,30.36925 5.5306402,41.659527 16.820917,52.949804 M 66.498136,30.36925 77.788413,41.659527 66.498136,52.949804 M 12.304806,41.659527 h 58.709441"
+       id="path2"
+       style="fill:none" /></g></svg>`;
+
+          this.actions.light.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   viewBox="0 0 83.319054 83.320114"
+   version="1.1"
+   id="svg5698"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs5695" />
+  <path
+     d="m 83.319055,41.660582 c 0,23.00782 -18.651715,41.659529 -41.659525,41.659529 C 18.65172,83.320111 -8.5009768e-7,64.668402 -8.5009768e-7,41.660582 -8.5009768e-7,18.651717 18.65172,3.1357422e-6 41.65953,3.1357422e-6 64.66734,3.1357422e-6 83.319055,18.651717 83.319055,41.660582 Z"
+     style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+     id="path74"
+     class="openlime-lens-dashboard-button-bkg" />
+  <g
+     id="g1"
+     transform="matrix(1.4106801,0,0,1.4106801,-164.24813,-100.38311)"
+     class="openlime-lens-dashboard-light">
+    <path
+       d="m 137.44618,117.65204 c 0.139,1.31022 5.28885,5.23911 7.37659,5.43772 2.08632,0.19826 1.80798,0.31679 3.29353,-0.15981 1.48413,-0.47554 6.21488,-3.25367 6.44772,-3.72921 0.59266,-1.21814 0.97296,-2.46098 0.46319,-3.21487 -0.51117,-0.7567 -1.39206,-0.19861 -2.31916,0.0801 -0.92745,0.27693 -4.87009,2.02282 -6.16973,2.4197 -1.01952,0.3115 -3.24661,-0.19862 -3.24661,-0.19862 0,0 11.29312,-3.73168 11.7355,-4.56247 0.46426,-0.87383 0.0924,-2.46133 -0.97437,-2.65959 -0.67945,-0.127 -15.44637,4.72228 -15.81714,5.31777 -0.37218,0.59549 -0.78952,1.26929 -0.78952,1.26929 z"
+       style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.352778"
+       id="path90"/>
+    <path
+       d="m 138.37505,106.50074 c 0,0 -0.76236,-0.18874 -1.29964,0.0801 -0.53728,0.26882 -0.27834,3.09492 -0.27834,3.09492 l 5.75204,-0.0783 c 0,0 -4.96393,1.26894 -5.42678,2.22109 -0.46461,0.9525 0.58985,2.39395 1.53106,2.61973 0.75353,0.18203 16.15475,-4.7364 16.51282,-5.15938 0.3115,-0.36653 0.51012,-2.38125 0.18627,-2.69804 -0.32527,-0.31715 -1.62349,-0.27834 -1.62349,-0.27834 0,0 -0.51117,0.0399 -0.0469,-1.38783 0.46461,-1.4291 5.38128,-7.103886 6.58707,-10.675761 1.1617,-3.440642 0.4893,-7.948436 -0.83503,-10.118725 -1.39876,-2.294466 -3.38596,-3.770489 -6.12281,-4.841169 -2.74778,-1.076325 -7.82849,-1.683808 -11.87591,-0.556683 -4.03048,1.124655 -7.16844,3.170766 -8.9983,5.873397 -1.64289,2.426405 -1.57797,7.302147 -1.02129,9.206441 0.55668,1.906058 6.2163,8.96973 6.77298,10.39742 0.55668,1.4291 0.18627,2.30117 0.18627,2.30117 z"
+       style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.352778"
+       id="path96"/>
+  </g>
+</svg>`;
+
+          this.actions.annoswitch.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+      <!-- Created with Inkscape (http://www.inkscape.org/) -->
+      
+      <svg
+         viewBox="0 0 83.319054 83.320114"
+         version="1.1"
+         id="svg11415"
+         xml:space="preserve"
+         xmlns="http://www.w3.org/2000/svg"
+         xmlns:svg="http://www.w3.org/2000/svg"><defs
+           id="defs11412"><marker
+             style="overflow:visible"
+             id="TriangleStart"
+             refX="0"
+             refY="0"
+             orient="auto-start-reverse"
+             markerWidth="5.3244081"
+             markerHeight="6.155385"
+             viewBox="0 0 5.3244081 6.1553851"
+             preserveAspectRatio="xMidYMid"><path
+               transform="scale(0.5)"
+               style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+               d="M 5.77,0 -2.88,5 V -5 Z"
+               id="path135" /></marker><marker
+             style="overflow:visible"
+             id="TriangleStart-5"
+             refX="0"
+             refY="0"
+             orient="auto-start-reverse"
+             markerWidth="5.3244081"
+             markerHeight="6.155385"
+             viewBox="0 0 5.3244081 6.1553851"
+             preserveAspectRatio="xMidYMid"><path
+               transform="scale(0.5)"
+               style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+               d="M 5.77,0 -2.88,5 V -5 Z"
+               id="path135-3" /></marker></defs><g
+           id="g327"
+           transform="translate(129.83427,13.264356)"><g
+             id="g346"><path
+               d="m -46.51522,28.396234 c 0,23.007813 -18.65172,41.659526 -41.65953,41.659526 -23.00782,0 -41.65952,-18.651713 -41.65952,-41.659526 0,-23.00887 18.6517,-41.66059 41.65952,-41.66059 23.00781,0 41.65953,18.65172 41.65953,41.66059 z"
+               style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+               id="path68"
+               class="openlime-lens-dashboard-button-bkg" /><g
+               aria-label="i"
+               id="text430"
+               style="font-size:50.8px;line-height:1.25;font-family:'Palace Script MT';-inkscape-font-specification:'Palace Script MT';font-variant-ligatures:none;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+               transform="matrix(1.9896002,0,0,1.9896002,-378.32178,-41.782121)"><path
+                 d="m 149.74343,19.295724 c -1.4224,1.1176 -2.5908,2.032 -3.5052,2.6416 0.3556,1.0668 0.8128,1.9304 1.9304,3.556 1.4224,-1.27 1.5748,-1.4224 3.302,-2.7432 -0.1524,-0.3048 -0.254,-0.508 -0.6604,-1.1684 -0.3048,-0.6096 -0.3556,-0.6096 -0.762,-1.6256 z m 1.9304,25.4 -0.8636,0.4572 c -3.5052,1.9304 -4.1148,2.1844 -4.7244,2.1844 -0.5588,0 -0.9144,-0.5588 -0.9144,-1.4224 0,-0.8636 0,-0.8636 1.6764,-7.5692 1.8796,-7.7216 1.8796,-7.7216 1.8796,-8.128 0,-0.3048 -0.254,-0.508 -0.6096,-0.508 -0.8636,0 -3.8608,1.6764 -8.0264,4.4704 l -0.1016,1.4224 c 3.0988,-1.6764 3.2512,-1.7272 3.7084,-1.7272 0.4064,0 0.6096,0.3048 0.6096,0.8636 0,0.7112 -0.1524,1.4224 -0.9144,4.318 -2.3876,8.8392 -2.3876,8.8392 -2.3876,10.16 0,1.2192 0.4572,2.032 1.2192,2.032 0.8636,0 2.2352,-0.6604 4.9276,-2.3876 0.9652,-0.6096 1.9304,-1.2192 2.8956,-1.8796 0.4572,-0.254 0.8128,-0.508 1.4224,-0.8636 z"
+                 style="font-weight:bold;font-family:Z003;-inkscape-font-specification:'Z003 Bold'"
+                 id="path495" /></g><path
+               style="fill:none;stroke:#000000;stroke-width:17.09477;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="M -66.121922,49.608737 -110.22757,7.1826674"
+               id="path465"
+               class="openlime-lens-dashboard-annoswitch-bar" /></g></g></svg>`;
+
+          this.actions.prev.svg = `<svg
+               viewBox="0 0 83.319054 83.320114"
+               version="1.1"
+               id="svg11415"
+               xml:space="preserve"
+               xmlns="http://www.w3.org/2000/svg"
+               xmlns:svg="http://www.w3.org/2000/svg"><defs
+                 id="defs11412"><marker
+                   style="overflow:visible"
+                   id="TriangleStart"
+                   refX="0"
+                   refY="0"
+                   orient="auto-start-reverse"
+                   markerWidth="5.3244081"
+                   markerHeight="6.155385"
+                   viewBox="0 0 5.3244081 6.1553851"
+                   preserveAspectRatio="xMidYMid"><path
+                     transform="scale(0.5)"
+                     style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+                     d="M 5.77,0 -2.88,5 V -5 Z"
+                     id="path135" /></marker><marker
+                   style="overflow:visible"
+                   id="TriangleStart-5"
+                   refX="0"
+                   refY="0"
+                   orient="auto-start-reverse"
+                   markerWidth="5.3244081"
+                   markerHeight="6.155385"
+                   viewBox="0 0 5.3244081 6.1553851"
+                   preserveAspectRatio="xMidYMid"><path
+                     transform="scale(0.5)"
+                     style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+                     d="M 5.77,0 -2.88,5 V -5 Z"
+                     id="path135-3" /></marker></defs><g
+                 id="g417"
+                 transform="matrix(3.3565779,0,0,3.3565779,129.92814,-51.220758)"><g
+                   id="g335"><path
+                     d="m -172.71351,100.60243 c 0,23.00781 -18.65172,41.65952 -41.65953,41.65952 -23.00782,0 -41.65952,-18.65171 -41.65952,-41.65952 0,-23.00887 18.6517,-41.66059 41.65952,-41.66059 23.00781,0 41.65953,18.65172 41.65953,41.66059 z"
+                     style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+                     id="path68"
+                     class="openlime-lens-dashboard-button-bkg"
+                     transform="matrix(0.29792248,0,0,0.29792248,37.569341,-2.3002842)" /><path
+                     style="fill:#030104"
+                     d="m -35.494703,28.624414 c 0,-0.264 0.213,-0.474 0.475,-0.474 h 2.421 c 0.262,0 0.475,0.21 0.475,0.474 0,3.211 2.615,5.826 5.827,5.826 3.212,0 5.827,-2.615 5.827,-5.826 0,-3.214 -2.614,-5.826 -5.827,-5.826 -0.34,0 -0.68,0.028 -1.016,0.089 v 1.647 c 0,0.193 -0.116,0.367 -0.291,0.439 -0.181,0.073 -0.383,0.031 -0.521,-0.104 l -4.832,-3.273 c -0.184,-0.185 -0.184,-0.482 0,-0.667 l 4.833,-3.268 c 0.136,-0.136 0.338,-0.176 0.519,-0.104 0.175,0.074 0.291,0.246 0.291,0.438 v 1.487 c 0.34,-0.038 0.68,-0.057 1.016,-0.057 5.071,0 9.198,4.127 9.198,9.198 0,5.07 -4.127,9.197 -9.198,9.197 -5.07,10e-4 -9.197,-4.126 -9.197,-9.196 z"
+                     id="path415" /></g></g></svg>`;
+
+          this.actions.down.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <!-- Created with Inkscape (http://www.inkscape.org/) -->
+        
+        <svg
+           viewBox="0 0 83.319054 83.320114"
+           version="1.1"
+           id="svg11415"
+           xml:space="preserve"
+           xmlns="http://www.w3.org/2000/svg"
+           xmlns:svg="http://www.w3.org/2000/svg"><defs
+             id="defs11412"><marker
+               style="overflow:visible"
+               id="TriangleStart"
+               refX="0"
+               refY="0"
+               orient="auto-start-reverse"
+               markerWidth="5.3244081"
+               markerHeight="6.155385"
+               viewBox="0 0 5.3244081 6.1553851"
+               preserveAspectRatio="xMidYMid"><path
+                 transform="scale(0.5)"
+                 style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+                 d="M 5.77,0 -2.88,5 V -5 Z"
+                 id="path135" /></marker><marker
+               style="overflow:visible"
+               id="TriangleStart-5"
+               refX="0"
+               refY="0"
+               orient="auto-start-reverse"
+               markerWidth="5.3244081"
+               markerHeight="6.155385"
+               viewBox="0 0 5.3244081 6.1553851"
+               preserveAspectRatio="xMidYMid"><path
+                 transform="scale(0.5)"
+                 style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+                 d="M 5.77,0 -2.88,5 V -5 Z"
+                 id="path135-3" /></marker></defs><g
+             id="g4652"
+             transform="translate(145.46385,95.197966)"><g
+               id="g4846"
+               transform="translate(-126.60931,52.756264)"><path
+                 d="m 64.464511,-106.29364 c 0,23.007813 -18.65172,41.659526 -41.65953,41.659526 -23.0078196,0 -41.659526,-18.651713 -41.659526,-41.659526 0,-23.00887 18.6517064,-41.66059 41.659526,-41.66059 23.00781,0 41.65953,18.65172 41.65953,41.66059 z"
+                 style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+                 id="path68"
+                 class="openlime-lens-dashboard-button-bkg" /><g
+                 id="g2392-5"
+                 transform="matrix(0.26458333,0,0,0.26458333,-283.58108,-263.57207)"><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:40;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1072.4033,509.27736 h 171.1826"
+                   id="path351-6" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1185.0215,568.3701 h 59.6026"
+                   id="path351-3-2" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1184.2167,621.15576 h 59.6026"
+                   id="path351-3-2-0" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:40;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1072.4033,679.59496 h 171.1826"
+                   id="path351-3-6-7-1" /><path
+                   style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:11.4448;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#TriangleStart-5)"
+                   d="m 1074.9115,570.87447 54.1203,-0.0275"
+                   id="path1366-2" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:14;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1080.0425,521.28147 v 54.87857"
+                   id="path1402-7" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+                   d="m 1150.8866,623.00688 0.3956,-5.02729"
+                   id="path2545" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1185.0215,567.71656 h 59.6026"
+                   id="path2720" /></g></g></g></svg>`;
+
+          this.actions.next.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+      <!-- Created with Inkscape (http://www.inkscape.org/) -->
+      
+      <svg
+         viewBox="0 0 83.319054 83.320114"
+         version="1.1"
+         id="svg11415"
+         xml:space="preserve"
+         xmlns="http://www.w3.org/2000/svg"
+         xmlns:svg="http://www.w3.org/2000/svg"><defs
+           id="defs11412"><marker
+             style="overflow:visible"
+             id="TriangleStart"
+             refX="0"
+             refY="0"
+             orient="auto-start-reverse"
+             markerWidth="5.3244081"
+             markerHeight="6.155385"
+             viewBox="0 0 5.3244081 6.1553851"
+             preserveAspectRatio="xMidYMid"><path
+               transform="scale(0.5)"
+               style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+               d="M 5.77,0 -2.88,5 V -5 Z"
+               id="path135" /></marker></defs><g
+           id="g4652"
+           transform="translate(-12.647874,74.762541)"><path
+             d="m 95.96693,-33.101955 c 0,23.007813 -18.65172,41.6595258 -41.65953,41.6595258 -23.00782,0 -41.659526,-18.6517128 -41.659526,-41.6595258 0,-23.008872 18.651706,-41.660586 41.659526,-41.660586 23.00781,0 41.65953,18.651714 41.65953,41.660586 z"
+             style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+             id="path68"
+             class="openlime-lens-dashboard-button-bkg" /><g
+             id="g4636"
+             transform="translate(173.74831,-50.897484)"><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:10.5833;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -142.08694,-4.7366002 h 45.292059"
+               id="path351" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:10.5833;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -142.08694,40.326598 h 45.292059"
+               id="path351-3-6-7" /><path
+               style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.20746;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#TriangleStart)"
+               d="m -136.09942,8.7192481 0.008,14.9721889"
+               id="path1366" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.70417;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="M -136.07283,-1.5605128 V 24.204958"
+               id="path1402" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:7.9375;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -111.69142,24.864565 h 15.76985"
+               id="path351-3-2-0-3" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:7.9375;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -111.37623,10.725444 h 15.76986"
+               id="path2720-9" /></g></g></svg>`;
+
+          for (let [name, action] of Object.entries(this.actions)) {
+             action.element = Util.SVGFromString(action.svg);
+             action.element.style = `height: 100%; margin: 0 5px`;
+             action.element.classList.add('openlime-lens-dashboard-button');
+             if (action.type == 'toggle') {
+                const toggleElm = action.element.querySelector(action.toggleClass);
+                toggleElm.style.visibility = `hidden`;
+                action.active = false;
+             }
+             action.element.addEventListener('pointerdown', (e) => {
+                if (action.type == 'toggle') {
+                   action.active = !action.active;
+                   const toggleElm = action.element.querySelector(action.toggleClass);
+                   if (action.active) {
+                      toggleElm.style.visibility = `visible`;
+                   } else {
+                      toggleElm.style.visibility = `hidden`;
+                   }
+                   this.noupdate = true;
+                }
+                action.task(e);
+                e.preventDefault();
+             });
+          }
+
+          this.tools1.appendChild(this.actions.camera.element);
+          this.tools1.appendChild(this.actions.light.element);
+          this.tools2.appendChild(this.actions.annoswitch.element);
+          this.tools2.appendChild(this.actions.prev.element);
+          this.tools2.appendChild(this.actions.down.element);
+          this.tools2.appendChild(this.actions.next.element);
+
+          // Set Camera movement active
+          this.actions.camera.active = this.actions.camera.element.classList.toggle('openlime-lens-dashboard-camera-active');
+          this.actions.light.active = false;
+
+          // Enable camera, light, next buttons
+          this.setActionEnabled('camera');
+          this.setActionEnabled('light');
+          this.setActionEnabled('annoswitch');
+          this.setActionEnabled('next');
+       }
+
+       /**
+        * Retrieves an action configuration by its label.
+        * @param {string} label - The action label to find
+        * @returns {Object|null} The action configuration object or null if not found
+        * @private
+        */
+       getAction(label) {
+          let result = null;
+          for (let [name, action] of Object.entries(this.actions)) {
+             if (action.label === label) {
+                result = action;
+                break;
+             }
+          }
+          return result;
+       }
+
+       /**
+        * Enables or disables a specific action button.
+        * @param {string} label - The action label to modify
+        * @param {boolean} [enable=true] - Whether to enable or disable the action
+        */
+       setActionEnabled(label, enable = true) {
+          const action = this.getAction(label);
+          if (action) {
+             action.element.classList.toggle('enabled', enable);
+          }
+       }
+
+       /**
+        * Toggles between camera and light control modes.
+        * When light control is active, modifies controller behavior for light direction adjustment.
+        * @private
+        */
+       toggleLightController() {
+          let active = this.actions.light.element.classList.toggle('openlime-lens-dashboard-light-active');
+          this.actions.light.active = active;
+          this.actions.camera.active = this.actions.camera.element.classList.toggle('openlime-lens-dashboard-camera-active');
+
+          for (let layer of Object.values(this.viewer.canvas.layers))
+             for (let c of layer.controllers)
+                if (c.control == 'light') {
+                   c.active = true;
+                   c.activeModifiers = active ? [0, 2, 4] : [2, 4];  //nothing, shift and alt
+                }
+       }
+
+       /**
+        * Updates the dashboard position and UI elements.
+        * @private
+        * @param {number} x - Center X coordinate in scene space
+        * @param {number} y - Center Y coordinate in scene space
+        * @param {number} r - Lens radius in scene space
+        */
+       update(x, y, r) {
+          if (this.noupdate) {
+             this.noupdate = false;
+             return;
+          }
+          super.update(x, y, r);
+          const center = {
+             x: this.lensBox.x,
+             y: this.lensBox.y
+          };
+          const radius = this.lensBox.r;
+          const sizew = this.lensBox.w;
+          const sizeh = this.lensBox.h;
+
+          // Set toolbox position
+          const tbw1 = this.toolbox1.clientWidth;
+          const tbh1 = this.toolbox1.clientHeight;
+          const tbw2 = this.toolbox2.clientWidth;
+          const tbh2 = this.toolbox2.clientHeight;
+          let cbx = radius * Math.sin(this.angleToolbar);
+          let cby = radius * Math.cos(this.angleToolbar);
+
+          let bx1 = this.containerSpace + radius - cbx - tbw1 / 2 - this.toolboxGap;
+          let by1 = this.containerSpace + radius + cby - tbh1 / 2;
+          this.toolbox1.style.left = `${bx1}px`;
+          this.toolbox1.style.top = `${by1}px`;
+
+          let bx2 = this.containerSpace + radius + cbx - tbw2 / 2 + this.toolboxGap;
+          let by2 = this.containerSpace + radius + cby - tbh2 / 2;
+          this.toolbox2.style.left = `${bx2}px`;
+          this.toolbox2.style.top = `${by2}px`;
+
+          if (this.updateCb) {
+             // updateCb(c.x, c.y, r, dashboard.w, dashboard.h, canvas.w, canvas.h) all params in canvas coordinates
+             this.updateCb(center.x, center.y, radius, sizew, sizeh, this.viewer.camera.viewport.w, this.viewer.camera.viewport.h);
+          }
+
+          if (!this.moving) {
+             this.toggle();
+             this.moving = true;
+          }
+          if (this.timeout) clearTimeout(this.timeout);
+          this.timeout = setTimeout(() => {
+             this.toggle();
+             this.moving = false;
+             if (this.updateEndCb) this.updateEndCb(center.x, center.y, radius, sizew, sizeh, this.viewer.camera.viewport.w, this.viewer.camera.viewport.h);
+          }, this.delay);
+       }
+    }
+
+    /*
+     * @fileoverview
+     * LensDashboardNavigatorRadial module provides a radial menu interface for lens controls.
+     * Extends the base LensDashboard with a circular arrangement of navigation controls and tools.
+     */
+
+    /**
+     * LensDashboardNavigatorRadial class creates a circular lens dashboard with radially arranged controls.
+     * Provides:
+     * - Circular arrangement of controls around the lens
+     * - Grouped tool positioning
+     * - Animated visibility transitions
+     * - Background arc for visual grouping
+     * @extends LensDashboard
+     */
+    class LensDashboardNavigatorRadial extends LensDashboard {
+       /**
+        * Creates a new LensDashboardNavigatorRadial instance.
+        * @param {Viewer} viewer - The OpenLIME viewer instance
+        * @param {Object} [options] - Configuration options
+        * @param {number} [options.toolSize=34] - Size of tool buttons in pixels
+        * @param {number} [options.toolPadding=0] - Padding between tool buttons
+        * @param {number[]} [options.group=[-65, 0]] - Angle positions for tool groups in degrees
+        * @param {Object} [options.actions] - Configuration for toolbar actions
+        * @param {Object} [options.actions.camera] - Camera control action
+        * @param {string} options.actions.camera.label - Action identifier
+        * @param {number} options.actions.camera.group - Group index for positioning
+        * @param {number} options.actions.camera.angle - Angle offset within group
+        * @param {Function} options.actions.camera.task - Callback for camera action
+        * @param {Object} [options.actions.light] - Light control action (same properties as camera)
+        * @param {Object} [options.actions.annoswitch] - Annotation toggle action
+        * @param {string} options.actions.annoswitch.type - Action type ('toggle')
+        * @param {string} options.actions.annoswitch.toggleClass - CSS class for toggle element
+        * @param {Object} [options.actions.prev] - Previous annotation action (same properties as camera)
+        * @param {Object} [options.actions.down] - Download annotation action (same properties as camera)
+        * @param {Object} [options.actions.next] - Next annotation action (same properties as camera)
+        * @param {Function} [options.updateCb] - Callback fired during lens updates
+        * @param {Function} [options.updateEndCb] - Callback fired when lens movement ends
+        */
+       constructor(viewer, options) {
+          super(viewer, options);
+          options = Object.assign({
+             toolSize: 34,
+             toolPadding: 0,
+             group: [-65, 0],
+             actions: {
+                camera: { label: 'camera', group: 0, angle: -25, task: (event) => { if (!this.actions.camera.active) this.toggleLightController(); } },
+                light: { label: 'light', group: 0, angle: 0, task: (event) => { if (!this.actions.light.active) this.toggleLightController(); } },
+                annoswitch: { label: 'annoswitch', group: 1, angle: 0, type: 'toggle', toggleClass: '.openlime-lens-dashboard-annoswitch-bar', task: (event) => { } },
+                prev: { label: 'prev', group: 1, angle: 25, task: (event) => { } },
+                down: { label: 'down', group: 1, angle: 50, task: (event) => { } },
+                next: { label: 'next', group: 1, angle: 75, task: (event) => { } },
+             },
+             updateCb: null,
+             updateEndCb: null
+          }, options);
+          Object.assign(this, options);
+
+          this.moving = false;
+          this.delay = 400;
+          this.timeout = null; // Timeout for moving
+          this.noupdate = false;
+
+          // TOOLBOX BKG
+          const col = [255.0 * this.borderColor[0], 255.0 * this.borderColor[1], 255.0 * this.borderColor[2], 255.0 * this.borderColor[3]];
+          col[3] = 0.4;
+          this.toolboxBkgSize = 56;
+          this.toolboxBkgPadding = 4;
+          this.toolboxBkg = new Object();
+          this.toolboxBkg.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+         <svg
+            viewBox="0 0 200 200"
+            fill="none"
+            version="1.1"
+            id="svg11"
+            xmlns="http://www.w3.org/2000/svg"
+            xmlns:svg="http://www.w3.org/2000/svg">
+           <path id="shape-dashboard-bkg" d="" stroke="none" fill="rgb(${col[0]},${col[1]},${col[2]},${col[3]})"/>
+         </svg>`;
+          this.toolboxBkg.element = Util.SVGFromString(this.toolboxBkg.svg);
+          this.toolboxBkg.element.setAttributeNS(null, 'style', 'position: absolute; top: 0px; left:0px;');
+          this.container.appendChild(this.toolboxBkg.element);
+
+          // TOOLBOX ITEMS
+          this.actions.camera.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <!-- Created with Inkscape (http://www.inkscape.org/) -->
+        
+        <svg
+           viewBox="0 0 83.319054 83.319054"
+           version="1.1"
+           id="svg2495"
+           xmlns="http://www.w3.org/2000/svg"
+           xmlns:svg="http://www.w3.org/2000/svg">
+          <defs
+             id="defs2492" />
+          <g
+             id="layer1"
+             transform="translate(-69.000668,-98.39946)">
+            <g
+               id="g2458"
+               transform="matrix(0.35277777,0,0,0.35277777,46.261671,-65.803422)"
+               class="openlime-lens-dashboard-camera">
+              <path class="openlime-lens-dashboard-button-bkg"
+                 d="m 300.637,583.547 c 0,65.219 -52.871,118.09 -118.09,118.09 -65.219,0 -118.09,-52.871 -118.09,-118.09 0,-65.219 52.871,-118.09 118.09,-118.09 65.219,0 118.09,52.871 118.09,118.09 z"
+                 style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+                 id="path50" />
+              <g
+                 id="g52">
+                <path
+                   d="M 123.445,524.445 H 241.652 V 642.648 H 123.445 Z"
+                   style="fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:#000000;stroke-width:16.7936;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+                   id="path54" />
+              </g>
+              <g
+                 id="g56"
+                 transform="scale(1,0.946694)">
+                <path
+                   d="m 190.449,581.031 h -15.793 c -0.011,7.563 0,27.472 0,27.472 0,0 -17.133,0 -25.609,0.025 v 15.779 c 8.476,-0.009 25.609,-0.009 25.609,-0.009 0,0 0,19.881 -0.011,27.485 h 15.793 c 0.011,-7.604 0.011,-27.485 0.011,-27.485 0,0 17.125,0 25.598,0 v -15.795 c -8.473,0 -25.598,0 -25.598,0 0,0 -0.023,-19.904 0,-27.472"
+                   style="fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.52673;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+                   id="path58" />
+              </g>
+              <path
+                 d="m 269.254,557.93 22.332,21.437 c 2.098,2.071 2.195,5.344 0,7.504 l -22.332,21.008 c -1.25,1.25 -5.004,1.25 -6.254,-2.504 v -46.273 c 1.25,-3.672 5.004,-2.422 6.254,-1.172 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path60" />
+              <path
+                 d="M 95.844,607.395 73.508,585.957 c -2.094,-2.07 -2.192,-5.34 0,-7.504 l 22.336,-21.008 c 1.25,-1.25 5,-1.25 6.254,2.504 v 46.274 c -1.254,3.672 -5.004,2.422 -6.254,1.172 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path62" />
+              <path
+                 d="m 157.59,494.32 21.437,-22.332 c 2.071,-2.097 5.344,-2.191 7.504,0 l 21.008,22.332 c 1.25,1.254 1.25,5.004 -2.504,6.254 h -46.273 c -3.672,-1.25 -2.422,-5 -1.172,-6.254 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path64" />
+              <path
+                 d="m 207.055,671.785 -21.438,22.336 c -2.07,2.094 -5.344,2.191 -7.504,0 l -21.008,-22.336 c -1.25,-1.25 -1.25,-5 2.504,-6.25 h 46.274 c 3.672,1.25 2.422,5 1.172,6.25 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path66" />
+            </g>
+          </g>
+        </svg>`;
+
+          this.actions.light.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <!-- Created with Inkscape (http://www.inkscape.org/) -->
+        
+        <svg
+           viewBox="0 0 83.319054 83.320114"
+           version="1.1"
+           id="svg5698"
+           xmlns="http://www.w3.org/2000/svg"
+           xmlns:svg="http://www.w3.org/2000/svg">
+          <defs
+             id="defs5695" />
+          <g
+             id="layer1"
+             transform="translate(-104.32352,-59.017909)">
+            <g
+               id="g2477"
+               transform="matrix(0.35277777,0,0,0.35277777,-16.220287,-105.16169)"
+               class="openlime-lens-dashboard-light">
+              <path class="openlime-lens-dashboard-button-bkg"
+                 d="m 577.879,583.484 c 0,65.219 -52.871,118.09 -118.09,118.09 -65.219,0 -118.09,-52.871 -118.09,-118.09 0,-65.222 52.871,-118.093 118.09,-118.093 65.219,0 118.09,52.871 118.09,118.093 z"
+                 style="fill:#fbfbfb;fill-opacity:1;fill-rule:nonzero;stroke:none"
+                 id="path74" />
+              <path
+                 d="m 546.496,558.359 22.332,21.438 c 2.098,2.066 2.192,5.34 0,7.504 l -22.332,21.004 c -1.25,1.254 -5.004,1.254 -6.254,-2.5 v -46.274 c 1.25,-3.672 5.004,-2.422 6.254,-1.172 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path76" />
+              <path
+                 d="M 373.082,607.82 350.75,586.383 c -2.094,-2.067 -2.191,-5.34 0,-7.504 l 22.332,-21.004 c 1.254,-1.25 5.004,-1.25 6.254,2.5 v 46.277 c -1.25,3.672 -5,2.422 -6.254,1.168 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path78" />
+              <path
+                 d="m 434.832,494.75 21.438,-22.332 c 2.07,-2.098 5.339,-2.195 7.503,0 l 21.008,22.332 c 1.25,1.25 1.25,5.004 -2.504,6.254 h -46.273 c -3.672,-1.25 -2.422,-5.004 -1.172,-6.254 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path80" />
+              <path
+                 d="m 484.297,672.215 -21.438,22.332 c -2.07,2.098 -5.343,2.195 -7.507,0 l -21.004,-22.332 c -1.25,-1.25 -1.25,-5.004 2.504,-6.254 h 46.273 c 3.672,1.25 2.422,5.004 1.172,6.254 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path82" />
+              <path
+                 d="m 438.223,599.988 c 0,0 -2.161,-0.535 -3.684,0.227 -1.523,0.762 -0.789,8.773 -0.789,8.773 l 16.305,-0.222 c 0,0 -14.071,3.597 -15.383,6.296 -1.317,2.7 1.672,6.786 4.34,7.426 2.136,0.516 45.793,-13.426 46.808,-14.625 0.883,-1.039 1.446,-6.75 0.528,-7.648 -0.922,-0.899 -4.602,-0.789 -4.602,-0.789 0,0 -1.449,0.113 -0.133,-3.934 1.317,-4.051 15.254,-20.137 18.672,-30.262 3.293,-9.753 1.387,-22.531 -2.367,-28.683 -3.965,-6.504 -9.598,-10.688 -17.356,-13.723 -7.789,-3.051 -22.191,-4.773 -33.664,-1.578 -11.425,3.188 -20.32,8.988 -25.507,16.649 -4.657,6.878 -4.473,20.699 -2.895,26.097 1.578,5.403 17.621,25.426 19.199,29.473 1.578,4.051 0.528,6.523 0.528,6.523 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path84" />
+              <g
+                 id="g86"
+                 transform="scale(1,0.855493)">
+                <path
+                   d="m 438.223,701.337 c 0,0 -2.161,-0.626 -3.684,0.265 -1.523,0.89 -0.789,10.255 -0.789,10.255 l 16.305,-0.26 c 0,0 -14.071,4.205 -15.383,7.36 -1.317,3.155 1.672,7.931 4.34,8.68 2.136,0.603 45.793,-15.693 46.808,-17.095 0.883,-1.215 1.446,-7.89 0.528,-8.94 -0.922,-1.051 -4.602,-0.923 -4.602,-0.923 0,0 -1.449,0.133 -0.133,-4.598 1.317,-4.735 15.254,-23.538 18.672,-35.373 3.293,-11.402 1.387,-26.337 -2.367,-33.529 -3.965,-7.603 -9.598,-12.493 -17.356,-16.041 -7.789,-3.566 -22.191,-5.579 -33.664,-1.844 -11.425,3.725 -20.32,10.506 -25.507,19.46 -4.657,8.041 -4.473,24.196 -2.895,30.506 1.578,6.315 17.621,29.721 19.199,34.451 1.578,4.735 0.528,7.626 0.528,7.626 z"
+                   style="fill:none;stroke:#f8f8f8;stroke-width:8.1576;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.00677317"
+                   id="path88" />
+              </g>
+              <path
+                 d="m 435.59,631.598 c 0.394,3.714 14.992,14.851 20.91,15.414 5.914,0.562 5.125,0.898 9.336,-0.453 4.207,-1.348 17.617,-9.223 18.277,-10.571 1.68,-3.453 2.758,-6.976 1.313,-9.113 -1.449,-2.145 -3.946,-0.563 -6.574,0.227 -2.629,0.785 -13.805,5.734 -17.489,6.859 -2.89,0.883 -9.203,-0.563 -9.203,-0.563 0,0 32.012,-10.578 33.266,-12.933 1.316,-2.477 0.262,-6.977 -2.762,-7.539 -1.926,-0.36 -43.785,13.386 -44.836,15.074 -1.055,1.688 -2.238,3.598 -2.238,3.598 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path90" />
+              <g
+                 id="g92"
+                 transform="scale(1,0.855493)">
+                <path
+                   d="m 435.59,738.285 c 0.394,4.343 14.992,17.361 20.91,18.018 5.914,0.658 5.125,1.05 9.336,-0.529 4.207,-1.576 17.617,-10.781 18.277,-12.356 1.68,-4.037 2.758,-8.155 1.313,-10.653 -1.449,-2.507 -3.946,-0.657 -6.574,0.265 -2.629,0.918 -13.805,6.703 -17.489,8.018 -2.89,1.032 -9.203,-0.658 -9.203,-0.658 0,0 32.012,-12.365 33.266,-15.118 1.316,-2.895 0.262,-8.155 -2.762,-8.812 -1.926,-0.421 -43.785,15.648 -44.836,17.62 -1.055,1.973 -2.238,4.205 -2.238,4.205 z"
+                   style="fill:none;stroke:#f8f8f8;stroke-width:8.1576;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.00677317"
+                   id="path94" />
+              </g>
+              <path
+                 d="m 438.223,599.988 c 0,0 -2.161,-0.535 -3.684,0.227 -1.523,0.762 -0.789,8.773 -0.789,8.773 l 16.305,-0.222 c 0,0 -14.071,3.597 -15.383,6.296 -1.317,2.7 1.672,6.786 4.34,7.426 2.136,0.516 45.793,-13.426 46.808,-14.625 0.883,-1.039 1.446,-6.75 0.528,-7.648 -0.922,-0.899 -4.602,-0.789 -4.602,-0.789 0,0 -1.449,0.113 -0.133,-3.934 1.317,-4.051 15.254,-20.137 18.672,-30.262 3.293,-9.753 1.387,-22.531 -2.367,-28.683 -3.965,-6.504 -9.598,-10.688 -17.356,-13.723 -7.789,-3.051 -22.191,-4.773 -33.664,-1.578 -11.425,3.188 -20.32,8.988 -25.507,16.649 -4.657,6.878 -4.473,20.699 -2.895,26.097 1.578,5.403 17.621,25.426 19.199,29.473 1.578,4.051 0.528,6.523 0.528,6.523 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path96" />
+              <g
+                 id="g98"
+                 transform="scale(1,0.855493)">
+                <path
+                   d="m 438.223,701.337 c 0,0 -2.161,-0.626 -3.684,0.265 -1.523,0.89 -0.789,10.255 -0.789,10.255 l 16.305,-0.26 c 0,0 -14.071,4.205 -15.383,7.36 -1.317,3.155 1.672,7.931 4.34,8.68 2.136,0.603 45.793,-15.693 46.808,-17.095 0.883,-1.215 1.446,-7.89 0.528,-8.94 -0.922,-1.051 -4.602,-0.923 -4.602,-0.923 0,0 -1.449,0.133 -0.133,-4.598 1.317,-4.735 15.254,-23.538 18.672,-35.373 3.293,-11.402 1.387,-26.337 -2.367,-33.529 -3.965,-7.603 -9.598,-12.493 -17.356,-16.041 -7.789,-3.566 -22.191,-5.579 -33.664,-1.844 -11.425,3.725 -20.32,10.506 -25.507,19.46 -4.657,8.041 -4.473,24.196 -2.895,30.506 1.578,6.315 17.621,29.721 19.199,34.451 1.578,4.735 0.528,7.626 0.528,7.626 z"
+                   style="fill:none;stroke:#f8f8f8;stroke-width:8.1576;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.00677317"
+                   id="path100" />
+              </g>
+              <path
+                 d="m 435.59,631.598 c 0.394,3.714 14.992,14.851 20.91,15.414 5.914,0.562 5.125,0.898 9.336,-0.453 4.207,-1.348 17.617,-9.223 18.277,-10.571 1.68,-3.453 2.758,-6.976 1.313,-9.113 -1.449,-2.145 -3.946,-0.563 -6.574,0.227 -2.629,0.785 -13.805,5.734 -17.489,6.859 -2.89,0.883 -9.203,-0.563 -9.203,-0.563 0,0 32.012,-10.578 33.266,-12.933 1.316,-2.477 0.262,-6.977 -2.762,-7.539 -1.926,-0.36 -43.785,13.386 -44.836,15.074 -1.055,1.688 -2.238,3.598 -2.238,3.598 z"
+                 style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none"
+                 id="path102" />
+              <g
+                 id="g104"
+                 transform="scale(1,0.855493)">
+                <path
+                   d="m 435.59,738.285 c 0.394,4.343 14.992,17.361 20.91,18.018 5.914,0.658 5.125,1.05 9.336,-0.529 4.207,-1.576 17.617,-10.781 18.277,-12.356 1.68,-4.037 2.758,-8.155 1.313,-10.653 -1.449,-2.507 -3.946,-0.657 -6.574,0.265 -2.629,0.918 -13.805,6.703 -17.489,8.018 -2.89,1.032 -9.203,-0.658 -9.203,-0.658 0,0 32.012,-12.365 33.266,-15.118 1.316,-2.895 0.262,-8.155 -2.762,-8.812 -1.926,-0.421 -43.785,15.648 -44.836,17.62 -1.055,1.973 -2.238,4.205 -2.238,4.205 z"
+                   style="fill:none;stroke:#f8f8f8;stroke-width:8.1576;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.00677317"
+                   id="path106" />
+              </g>
+            </g>
+          </g>
+        </svg>`;
+
+          this.actions.annoswitch.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+      <!-- Created with Inkscape (http://www.inkscape.org/) -->
+      
+      <svg
+         viewBox="0 0 83.319054 83.320114"
+         version="1.1"
+         id="svg11415"
+         xml:space="preserve"
+         xmlns="http://www.w3.org/2000/svg"
+         xmlns:svg="http://www.w3.org/2000/svg"><defs
+           id="defs11412"><marker
+             style="overflow:visible"
+             id="TriangleStart"
+             refX="0"
+             refY="0"
+             orient="auto-start-reverse"
+             markerWidth="5.3244081"
+             markerHeight="6.155385"
+             viewBox="0 0 5.3244081 6.1553851"
+             preserveAspectRatio="xMidYMid"><path
+               transform="scale(0.5)"
+               style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+               d="M 5.77,0 -2.88,5 V -5 Z"
+               id="path135" /></marker><marker
+             style="overflow:visible"
+             id="TriangleStart-5"
+             refX="0"
+             refY="0"
+             orient="auto-start-reverse"
+             markerWidth="5.3244081"
+             markerHeight="6.155385"
+             viewBox="0 0 5.3244081 6.1553851"
+             preserveAspectRatio="xMidYMid"><path
+               transform="scale(0.5)"
+               style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+               d="M 5.77,0 -2.88,5 V -5 Z"
+               id="path135-3" /></marker></defs><g
+           id="g327"
+           transform="translate(129.83427,13.264356)"><g
+             id="g346"><path
+               d="m -46.51522,28.396234 c 0,23.007813 -18.65172,41.659526 -41.65953,41.659526 -23.00782,0 -41.65952,-18.651713 -41.65952,-41.659526 0,-23.00887 18.6517,-41.66059 41.65952,-41.66059 23.00781,0 41.65953,18.65172 41.65953,41.66059 z"
+               style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+               id="path68"
+               class="openlime-lens-dashboard-button-bkg" /><g
+               aria-label="i"
+               id="text430"
+               style="font-size:50.8px;line-height:1.25;font-family:'Palace Script MT';-inkscape-font-specification:'Palace Script MT';font-variant-ligatures:none;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+               transform="matrix(1.9896002,0,0,1.9896002,-378.32178,-41.782121)"><path
+                 d="m 149.74343,19.295724 c -1.4224,1.1176 -2.5908,2.032 -3.5052,2.6416 0.3556,1.0668 0.8128,1.9304 1.9304,3.556 1.4224,-1.27 1.5748,-1.4224 3.302,-2.7432 -0.1524,-0.3048 -0.254,-0.508 -0.6604,-1.1684 -0.3048,-0.6096 -0.3556,-0.6096 -0.762,-1.6256 z m 1.9304,25.4 -0.8636,0.4572 c -3.5052,1.9304 -4.1148,2.1844 -4.7244,2.1844 -0.5588,0 -0.9144,-0.5588 -0.9144,-1.4224 0,-0.8636 0,-0.8636 1.6764,-7.5692 1.8796,-7.7216 1.8796,-7.7216 1.8796,-8.128 0,-0.3048 -0.254,-0.508 -0.6096,-0.508 -0.8636,0 -3.8608,1.6764 -8.0264,4.4704 l -0.1016,1.4224 c 3.0988,-1.6764 3.2512,-1.7272 3.7084,-1.7272 0.4064,0 0.6096,0.3048 0.6096,0.8636 0,0.7112 -0.1524,1.4224 -0.9144,4.318 -2.3876,8.8392 -2.3876,8.8392 -2.3876,10.16 0,1.2192 0.4572,2.032 1.2192,2.032 0.8636,0 2.2352,-0.6604 4.9276,-2.3876 0.9652,-0.6096 1.9304,-1.2192 2.8956,-1.8796 0.4572,-0.254 0.8128,-0.508 1.4224,-0.8636 z"
+                 style="font-weight:bold;font-family:Z003;-inkscape-font-specification:'Z003 Bold'"
+                 id="path495" /></g><path
+               style="fill:none;stroke:#000000;stroke-width:17.09477;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="M -66.121922,49.608737 -110.22757,7.1826674"
+               id="path465"
+               class="openlime-lens-dashboard-annoswitch-bar" /></g></g></svg>`;
+
+          this.actions.prev.svg = `<svg
+      viewBox="0 0 83.319054 83.320114"
+      version="1.1"
+      id="svg11415"
+      xml:space="preserve"
+      xmlns="http://www.w3.org/2000/svg"
+      xmlns:svg="http://www.w3.org/2000/svg"><defs
+        id="defs11412"><marker
+          style="overflow:visible"
+          id="TriangleStart"
+          refX="0"
+          refY="0"
+          orient="auto-start-reverse"
+          markerWidth="5.3244081"
+          markerHeight="6.155385"
+          viewBox="0 0 5.3244081 6.1553851"
+          preserveAspectRatio="xMidYMid"><path
+            transform="scale(0.5)"
+            style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+            d="M 5.77,0 -2.88,5 V -5 Z"
+            id="path135" /></marker><marker
+          style="overflow:visible"
+          id="TriangleStart-5"
+          refX="0"
+          refY="0"
+          orient="auto-start-reverse"
+          markerWidth="5.3244081"
+          markerHeight="6.155385"
+          viewBox="0 0 5.3244081 6.1553851"
+          preserveAspectRatio="xMidYMid"><path
+            transform="scale(0.5)"
+            style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+            d="M 5.77,0 -2.88,5 V -5 Z"
+            id="path135-3" /></marker></defs><g
+        id="g417"
+        transform="matrix(3.3565779,0,0,3.3565779,129.92814,-51.220758)"><g
+          id="g335"><path
+            d="m -172.71351,100.60243 c 0,23.00781 -18.65172,41.65952 -41.65953,41.65952 -23.00782,0 -41.65952,-18.65171 -41.65952,-41.65952 0,-23.00887 18.6517,-41.66059 41.65952,-41.66059 23.00781,0 41.65953,18.65172 41.65953,41.66059 z"
+            style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+            id="path68"
+            class="openlime-lens-dashboard-button-bkg"
+            transform="matrix(0.29792248,0,0,0.29792248,37.569341,-2.3002842)" /><path
+            style="fill:#030104"
+            d="m -35.494703,28.624414 c 0,-0.264 0.213,-0.474 0.475,-0.474 h 2.421 c 0.262,0 0.475,0.21 0.475,0.474 0,3.211 2.615,5.826 5.827,5.826 3.212,0 5.827,-2.615 5.827,-5.826 0,-3.214 -2.614,-5.826 -5.827,-5.826 -0.34,0 -0.68,0.028 -1.016,0.089 v 1.647 c 0,0.193 -0.116,0.367 -0.291,0.439 -0.181,0.073 -0.383,0.031 -0.521,-0.104 l -4.832,-3.273 c -0.184,-0.185 -0.184,-0.482 0,-0.667 l 4.833,-3.268 c 0.136,-0.136 0.338,-0.176 0.519,-0.104 0.175,0.074 0.291,0.246 0.291,0.438 v 1.487 c 0.34,-0.038 0.68,-0.057 1.016,-0.057 5.071,0 9.198,4.127 9.198,9.198 0,5.07 -4.127,9.197 -9.198,9.197 -5.07,10e-4 -9.197,-4.126 -9.197,-9.196 z"
+            id="path415" /></g></g></svg>`;
+
+          this.actions.down.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <!-- Created with Inkscape (http://www.inkscape.org/) -->
+        
+        <svg
+           viewBox="0 0 83.319054 83.320114"
+           version="1.1"
+           id="svg11415"
+           xml:space="preserve"
+           xmlns="http://www.w3.org/2000/svg"
+           xmlns:svg="http://www.w3.org/2000/svg"><defs
+             id="defs11412"><marker
+               style="overflow:visible"
+               id="TriangleStart"
+               refX="0"
+               refY="0"
+               orient="auto-start-reverse"
+               markerWidth="5.3244081"
+               markerHeight="6.155385"
+               viewBox="0 0 5.3244081 6.1553851"
+               preserveAspectRatio="xMidYMid"><path
+                 transform="scale(0.5)"
+                 style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+                 d="M 5.77,0 -2.88,5 V -5 Z"
+                 id="path135" /></marker><marker
+               style="overflow:visible"
+               id="TriangleStart-5"
+               refX="0"
+               refY="0"
+               orient="auto-start-reverse"
+               markerWidth="5.3244081"
+               markerHeight="6.155385"
+               viewBox="0 0 5.3244081 6.1553851"
+               preserveAspectRatio="xMidYMid"><path
+                 transform="scale(0.5)"
+                 style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+                 d="M 5.77,0 -2.88,5 V -5 Z"
+                 id="path135-3" /></marker></defs><g
+             id="g4652"
+             transform="translate(145.46385,95.197966)"><g
+               id="g4846"
+               transform="translate(-126.60931,52.756264)"><path
+                 d="m 64.464511,-106.29364 c 0,23.007813 -18.65172,41.659526 -41.65953,41.659526 -23.0078196,0 -41.659526,-18.651713 -41.659526,-41.659526 0,-23.00887 18.6517064,-41.66059 41.659526,-41.66059 23.00781,0 41.65953,18.65172 41.65953,41.66059 z"
+                 style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+                 id="path68"
+                 class="openlime-lens-dashboard-button-bkg" /><g
+                 id="g2392-5"
+                 transform="matrix(0.26458333,0,0,0.26458333,-283.58108,-263.57207)"><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:40;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1072.4033,509.27736 h 171.1826"
+                   id="path351-6" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1185.0215,568.3701 h 59.6026"
+                   id="path351-3-2" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1184.2167,621.15576 h 59.6026"
+                   id="path351-3-2-0" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:40;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1072.4033,679.59496 h 171.1826"
+                   id="path351-3-6-7-1" /><path
+                   style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:11.4448;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#TriangleStart-5)"
+                   d="m 1074.9115,570.87447 54.1203,-0.0275"
+                   id="path1366-2" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:14;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1080.0425,521.28147 v 54.87857"
+                   id="path1402-7" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+                   d="m 1150.8866,623.00688 0.3956,-5.02729"
+                   id="path2545" /><path
+                   style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+                   d="m 1185.0215,567.71656 h 59.6026"
+                   id="path2720" /></g></g></g></svg>`;
+
+          this.actions.next.svg = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+      <!-- Created with Inkscape (http://www.inkscape.org/) -->
+      
+      <svg
+         viewBox="0 0 83.319054 83.320114"
+         version="1.1"
+         id="svg11415"
+         xml:space="preserve"
+         xmlns="http://www.w3.org/2000/svg"
+         xmlns:svg="http://www.w3.org/2000/svg"><defs
+           id="defs11412"><marker
+             style="overflow:visible"
+             id="TriangleStart"
+             refX="0"
+             refY="0"
+             orient="auto-start-reverse"
+             markerWidth="5.3244081"
+             markerHeight="6.155385"
+             viewBox="0 0 5.3244081 6.1553851"
+             preserveAspectRatio="xMidYMid"><path
+               transform="scale(0.5)"
+               style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+               d="M 5.77,0 -2.88,5 V -5 Z"
+               id="path135" /></marker></defs><g
+           id="g4652"
+           transform="translate(-12.647874,74.762541)"><path
+             d="m 95.96693,-33.101955 c 0,23.007813 -18.65172,41.6595258 -41.65953,41.6595258 -23.00782,0 -41.659526,-18.6517128 -41.659526,-41.6595258 0,-23.008872 18.651706,-41.660586 41.659526,-41.660586 23.00781,0 41.65953,18.651714 41.65953,41.660586 z"
+             style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
+             id="path68"
+             class="openlime-lens-dashboard-button-bkg" /><g
+             id="g4636"
+             transform="translate(173.74831,-50.897484)"><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:10.5833;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -142.08694,-4.7366002 h 45.292059"
+               id="path351" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:10.5833;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -142.08694,40.326598 h 45.292059"
+               id="path351-3-6-7" /><path
+               style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.20746;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#TriangleStart)"
+               d="m -136.09942,8.7192481 0.008,14.9721889"
+               id="path1366" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.70417;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="M -136.07283,-1.5605128 V 24.204958"
+               id="path1402" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:7.9375;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -111.69142,24.864565 h 15.76985"
+               id="path351-3-2-0-3" /><path
+               style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:7.9375;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+               d="m -111.37623,10.725444 h 15.76986"
+               id="path2720-9" /></g></g></svg>`;
+
+          if (queueMicrotask) queueMicrotask(() => { this.init(); }); //allows modification of actions and layers before init.
+          else setTimeout(() => { this.init(); }, 0);
+
+       }
+
+       /**
+        * Initializes the dashboard after construction.
+        * Allows modification of actions and layers before initialization.
+        * @private
+        */
+       init() {
+          this.container.style.display = 'block';
+          this.container.style.margin = '0';
+
+          for (let [name, action] of Object.entries(this.actions)) {
+             this.addAction(action);
+          }
+
+          // Set Camera movement active
+          this.actions.camera.active = this.actions.camera.element.classList.toggle('openlime-lens-dashboard-camera-active');
+          this.actions.light.active = false;
+
+          // Enable camera, light, next buttons
+          this.setActionEnabled('camera');
+          this.setActionEnabled('light');
+          this.setActionEnabled('annoswitch');
+          this.setActionEnabled('next');
+       }
+
+       /**
+        * Converts degrees to radians.
+        * @private
+        * @param {number} angle - Angle in degrees
+        * @returns {number} Angle in radians
+        */
+       static degToRadians(angle) {
+          return angle * (Math.PI / 180.0);
+       }
+
+       /**
+        * Converts polar coordinates to cartesian coordinates.
+        * @private
+        * @param {number} centerX - Center X coordinate
+        * @param {number} centerY - Center Y coordinate
+        * @param {number} radius - Radius
+        * @param {number} angleInDegrees - Angle in degrees
+        * @returns {Object} Cartesian coordinates {x, y}
+        */
+       static polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+          const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+
+          return {
+             x: centerX + (radius * Math.cos(angleInRadians)),
+             y: centerY + (radius * Math.sin(angleInRadians))
+          };
+       }
+
+       /**
+        * Generates SVG arc path description.
+        * @private
+        * @param {number} x - Center X coordinate
+        * @param {number} y - Center Y coordinate
+        * @param {number} radius - Inner radius
+        * @param {number} border - Border width
+        * @param {number} startAngle - Start angle in degrees
+        * @param {number} endAngle - End angle in degrees
+        * @returns {string} SVG path description
+        */
+       static describeArc(x, y, radius, border, startAngle, endAngle) {
+
+          const start = LensDashboardNavigatorRadial.polarToCartesian(x, y, radius + border, endAngle);
+          const end = LensDashboardNavigatorRadial.polarToCartesian(x, y, radius + border, startAngle);
+          const startIn = LensDashboardNavigatorRadial.polarToCartesian(x, y, radius, endAngle);
+          const endIn = LensDashboardNavigatorRadial.polarToCartesian(x, y, radius, startAngle);
+
+          const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+          const d = [
+             "M", start.x, start.y,
+             "A", radius + border, radius + border, 0, largeArcFlag, 0, end.x, end.y,
+             "L", endIn.x, endIn.y,
+             "A", radius, radius, 1, largeArcFlag, 1, startIn.x, startIn.y,
+          ].join(" ");
+
+          return d;
+       }
+
+       /**
+        * Updates the background arc element.
+        * @private
+        * @param {number} r - Radius
+        * @param {number} sizew - Width
+        * @param {number} sizeh - Height
+        */
+       setToolboxBkg(r, sizew, sizeh) {
+          const e = this.toolboxBkg.element;
+          e.setAttributeNS(null, 'viewBox', `0 0 ${sizew} ${sizeh}`);
+          const shape = e.querySelector('#shape-dashboard-bkg');
+          this.containerSpace;
+          const b = this.toolboxBkgSize;
+          const cx = sizew * 0.5;
+          const cy = sizeh * 0.5;
+          shape.setAttributeNS(null, 'd', LensDashboardNavigatorRadial.describeArc(cx, cy, r, b, -110, 110));
+          // shape.setAttributeNS(null, 'd', `M ${sizew*0.5-r-b},${sizeh*0.5} a1,1 0 0,1 ${2*(r+b)},0 h ${-b} a1,1 0 1,0 ${-2*r},0 Z`);
+       }
+
+       /**
+        * Adds an action button to the dashboard.
+        * @private
+        * @param {Object} action - Action configuration
+        */
+       addAction(action) {
+          action.element = Util.SVGFromString(action.svg);
+          action.element.style = `position:absolute; height: ${this.toolSize}px; margin: 0`;
+          action.element.classList.add('openlime-lens-dashboard-button');
+          if (action.type == 'toggle') {
+             const toggleElm = action.element.querySelector(action.toggleClass);
+             toggleElm.style.visibility = `hidden`;
+             action.active = false;
+          }
+          action.element.addEventListener('click', (e) => {
+             if (action.type == 'toggle') {
+                action.active = !action.active;
+                const toggleElm = action.element.querySelector(action.toggleClass);
+                if (action.active) {
+                   toggleElm.style.visibility = `visible`;
+                } else {
+                   toggleElm.style.visibility = `hidden`;
+                }
+                this.noupdate = true;
+             }
+             action.task(e);
+             e.preventDefault();
+          });
+          this.container.appendChild(action.element);
+       }
+
+       /**
+        * Retrieves an action configuration by its label.
+        * @param {string} label - The action label to find
+        * @returns {Object|null} The action configuration object or null if not found
+        */
+       getAction(label) {
+          let result = null;
+          for (let [name, action] of Object.entries(this.actions)) {
+             if (action.label === label) {
+                result = action;
+                break;
+             }
+          }
+          return result;
+       }
+
+       /**
+        * Enables or disables a specific action button.
+        * @param {string} label - The action label to modify
+        * @param {boolean} [enable=true] - Whether to enable or disable the action
+        */
+       setActionEnabled(label, enable = true) {
+          const action = this.getAction(label);
+          if (action) {
+             action.element.classList.toggle('enabled', enable);
+          }
+       }
+
+       /**
+        * Toggles between camera and light control modes.
+        * @private
+        */
+       toggleLightController() {
+          let active = this.actions.light.element.classList.toggle('openlime-lens-dashboard-light-active');
+          this.actions.light.active = active;
+          this.actions.camera.active = this.actions.camera.element.classList.toggle('openlime-lens-dashboard-camera-active');
+
+          for (let layer of Object.values(this.viewer.canvas.layers))
+             for (let c of layer.controllers)
+                if (c.control == 'light') {
+                   c.active = true;
+                   c.activeModifiers = active ? [0, 2, 4] : [2, 4];  //nothing, shift and alt
+                }
+       }
+
+       /**
+        * Sets visibility of toggle elements.
+        * @private
+        * @param {boolean} visible - Whether toggle elements should be visible
+        */
+       setToggleClassVisibility(t) {
+          for (let [name, action] of Object.entries(this.actions)) {
+             if (action.type == 'toggle' && action.active) {
+                const toggleElm = action.element.querySelector(action.toggleClass);
+                if (t) {
+                   toggleElm.style.visibility = `visible`;
+                } else {
+                   toggleElm.style.visibility = `hidden`;
+                }
+             }
+          }
+       }
+
+       /**
+        * Updates tool element positions in the radial layout.
+        * @private
+        * @param {number} radius - Current lens radius
+        * @param {number} sizew - Container width
+        * @param {number} sizeh - Container height
+        */
+       setToolboxElm(radius, sizew, sizeh) {
+
+          // Toolbox Background
+          this.setToolboxBkg(radius - this.borderWidth - 2, sizew, sizeh);
+          this.first = false;
+
+          // Set tool position
+          const alphaDelta = 2.0 * Math.asin((this.toolSize * 0.5 + this.toolPadding) / (radius));
+          for (let i = 0; i < this.group.length; i++) {
+             const gArr = Object.entries(this.actions).filter(([key, value]) => value.group == i);
+             if (Math.abs(this.group[i]) > 90) gArr.reverse();
+             let idx = 0;
+             for (let [name, action] of gArr) {
+                // const tw = action.element.clientWidth;
+                // const th = action.element.clientHeight;
+                const th = this.toolSize;
+                const tw = this.toolSize;
+                const rad = LensDashboardNavigatorRadial.degToRadians(this.group[i]) + idx * alphaDelta;
+                let cbx = (radius + this.toolSize * 0.5 + this.toolboxBkgPadding) * Math.sin(rad);
+                let cby = (radius + this.toolSize * 0.5 + this.toolboxBkgPadding) * Math.cos(rad);
+                let bx = sizew * 0.5 + cbx - tw / 2;
+                let by = sizeh * 0.5 - cby - th / 2;
+                action.element.style.left = `${bx}px`;
+                action.element.style.top = `${by}px`;
+                idx++;
+             }
+          }
+       }
+
+       /**
+        * Updates the dashboard position and UI elements.
+        * @private
+        * @param {number} x - Center X coordinate in scene space
+        * @param {number} y - Center Y coordinate in scene space
+        * @param {number} r - Lens radius in scene space
+        */
+       update(x, y, r) {
+          if (this.noupdate) {
+             this.noupdate = false;
+             return;
+          }
+          super.update(x, y, r);
+          const center = {
+             x: this.lensBox.x,
+             y: this.lensBox.y
+          };
+          const radius = this.lensBox.r;
+          const sizew = this.lensBox.w;
+          const sizeh = this.lensBox.h;
+
+          //this.setToolboxElm(radius, sizew, sizeh);
+
+          if (this.updateCb) {
+             // updateCb(c.x, c.y, r, dashboard.w, dashboard.h, canvas.w, canvas.h) all params in canvas coordinates
+             this.updateCb(center.x, center.y, radius, sizew, sizeh, this.viewer.camera.viewport.w, this.viewer.camera.viewport.h);
+          }
+
+          if (!this.moving) {
+             this.toggle();
+             this.moving = true;
+          }
+          if (this.timeout) clearTimeout(this.timeout);
+          this.timeout = setTimeout(() => {
+             this.toggle();
+             this.moving = false;
+             this.setToolboxElm(radius, sizew, sizeh);
+             if (this.updateEndCb) this.updateEndCb(center.x, center.y, radius, sizew, sizeh, this.viewer.camera.viewport.w, this.viewer.camera.viewport.h);
+          }, this.delay);
+       }
+    }
+
+    /**
+     * Class representing an audio player with playback control capabilities.
+     * Supports playing, pausing, resuming, and stopping audio files with volume control
+     * and playback speed adjustment.
+     */
+    class AudioPlayer {
+      /**
+       * Creates an instance of AudioPlayer.
+       * Initializes the player with default settings and sets up signal handling for events.
+       */
+      constructor() {
+        this.audio = null;
+        this.isPlaying = false;
+        this.isPaused = false;
+        this.isMuted = false;
+        this.previousVolume = 1.0;
+        this.playStartTime = null;
+        this.playDuration = 0;
+        addSignals(AudioPlayer, 'started', 'ended');
+      }
+
+      /**
+       * Plays an audio file with optional playback speed adjustment.
+       * If audio is paused, it will resume playback instead of starting a new file.
+       * 
+       * @param {string} audioFile - The path or URL to the audio file.
+       * @param {number} [speed=1.0] - Playback speed multiplier (1.0 is normal speed).
+       * @returns {Promise<void>} Resolves when the audio playback completes.
+       */
+      async play(audioFile, speed = 1.0) {
+        if (!this.isPlaying && !this.isPaused) {
+          this.audio = new Audio(audioFile);
+          this.audio.playbackRate = speed;
+          this.audio.volume = this.previousVolume;
+          this.isPlaying = true;
+          this.isPaused = false;
+          this.playStartTime = Date.now();
+          this.playDuration = 0;
+
+          // Setup play handler
+          this.audio.onplay = () => {
+            this.setMute(this.isMuted);
+            this.emit('started');
+          };
+
+          // Setup ended handler
+          this.audio.onended = () => {
+            this.isPlaying = false;
+            this.updatePlayDuration();
+            this.emit('ended');
+          };
+
+          try {
+            await this.audio.play();
+            return new Promise((resolve) => {
+              const originalOnEnded = this.audio.onended;
+              this.audio.onended = () => {
+                originalOnEnded.call(this);  // Call the original handler
+                resolve();
+              };
+            });
+          } catch (error) {
+            console.error("Error playing audio:", error);
+            this.isPlaying = false;
+            throw error;
+          }
+        } else if (this.isPaused) {
+          await this.continue();
+        }
+      }
+
+      /**
+       * Pauses the currently playing audio.
+       * Updates play duration when pausing.
+       */
+      pause() {
+        if (!this.isPaused && this.audio) {
+          this.audio.pause();
+          this.isPaused = true;
+          this.updatePlayDuration();
+        }
+      }
+
+      /**
+       * Resumes playback of a paused audio file.
+       * 
+       * @returns {Promise<void>} Resolves when the resumed audio playback completes.
+       */
+      async continue() {
+        if (this.isPaused && this.audio) {
+          this.isPaused = false;
+          this.playStartTime = Date.now();
+
+          // Setup play handler
+          this.audio.onplay = () => {
+            this.setMute(this.isMuted);
+            this.emit('started');
+          };
+
+          try {
+            await this.audio.play();
+            return new Promise((resolve) => {
+              const originalOnEnded = this.audio.onended;
+              this.audio.onended = () => {
+                originalOnEnded.call(this);  // Call the original handler
+                resolve();
+              };
+            });
+          } catch (error) {
+            console.error("Error continuing audio:", error);
+            this.isPaused = true;
+            throw error;
+          }
+        } else {
+          console.log("No paused audio to continue.");
+        }
+      }
+
+      /**
+       * Stops the current audio playback and resets all player states.
+       * Removes event listeners and updates final play duration.
+       */
+      stop() {
+        if (this.audio) {
+          this.audio.pause();
+          this.audio.currentTime = 0;
+          this.audio.onplay = null;   // Clean up play handler
+          this.audio.onended = null;  // Clean up ended handler
+          this.isPlaying = false;
+          this.isPaused = false;
+          this.updatePlayDuration();
+        }
+      }
+
+      /**
+       * Updates the total play duration based on the current session.
+       * Called internally when playback is paused, stopped, or ends.
+       * @private
+       */
+      updatePlayDuration() {
+        if (this.playStartTime) {
+          const now = Date.now();
+          this.playDuration += now - this.playStartTime;
+          this.playStartTime = null;
+        }
+      }
+
+      /**
+       * Returns the total play duration in milliseconds.
+       * 
+       * @returns {number} Total play duration in milliseconds.
+       */
+      getPlayDuration() {
+        return this.playDuration;
+      }
+
+      /**
+       * Sets the audio volume level.
+       * 
+       * @param {number} volume - Volume level between 0.0 and 1.0.
+       */
+      setVolume(volume) {
+        if (this.audio) {
+          if (volume >= 0 && volume <= 1) {
+            this.audio.volume = volume;
+            this.previousVolume = volume;
+          } else {
+            console.log("Volume must be between 0.0 and 1.0");
+          }
+        } else {
+          console.log("No audio loaded.");
+        }
+      }
+
+      /**
+       * Creates a delay in the execution flow.
+       * 
+       * @param {number} ms - Number of milliseconds to wait.
+       * @returns {Promise<void>} Resolves after the specified delay.
+       */
+      async silence(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      /**
+       * Set the mute state of the audio player.
+       * Stores the previous volume level when muting and restores it when unmuting.
+       * @param {boolean} b Whether to mute the audio playback
+       */
+      setMute(b) {
+        this.isMuted = b;
+        if (this.audio) {
+          if (!this.isMuted) {
+            this.audio.volume = this.previousVolume;
+          } else {
+            this.previousVolume = this.audio.volume;
+            this.audio.volume = 0;
+          }
+        }
+      }
+
+      /**
+       * Emits an event of the specified type
+       * @param {string} type - The event type to emit
+       */
+      emit(type) {
+        if (this[`${type}Signal`]) {
+          this[`${type}Signal`].emit();
+        }
+      }
+    }
+
+    /**
+     * @typedef {Object} TextToSpeechOptions
+     * @property {string} [language='it-IT'] - Language code for speech synthesis (e.g., 'en-US', 'it-IT')
+     * @property {number} [rate=1.0] - Speech rate (0.1 to 10)
+     * @property {number} [volume=1.0] - Speech volume (0 to 1)
+     * @property {boolean} [cleanText=true] - Whether to remove HTML tags and format text
+     * @property {number} [voiceSelected=-1] - Index of preferred voice (-1 for auto-selection)
+     */
+
+    /**
+     * 
+     * TextToSpeechPlayer provides text-to-speech functionality with extensive control options.
+     * Handles voice selection, speech synthesis, text cleaning, and playback control.
+     * 
+     * Features:
+     * - Multiple language support
+     * - Automatic voice selection
+     * - Text cleaning and formatting
+     * - Playback controls (pause, resume, stop)
+     * - Volume control with mute option
+     * - Offline capability detection
+     * - Chrome speech bug workarounds
+     * - Page visibility handling
+     * 
+     * Browser Compatibility:
+     * - Uses Web Speech API
+     * - Implements Chrome-specific fixes
+     * - Handles browser tab switching
+     * - Manages page unload events
+     * 
+     *
+     * Implementation Details
+     * 
+     * Chrome Bug Workarounds:
+     * - Implements periodic pause/resume to prevent Chrome from stopping
+     * - Uses timeout to prevent indefinite speech
+     * - Handles voice loading race conditions
+     * 
+     * State Management:
+     * ```javascript
+     * {
+     *     isSpeaking: boolean,    // Current speech state
+     *     isPaused: boolean,      // Pause state
+     *     voice: SpeechSynthesisVoice, // Selected voice
+     *     isOfflineCapable: boolean,   // Offline support
+     *     volume: number,         // Current volume
+     *     previousVolume: number  // Pre-mute volume
+     * }
+     * ```
+     * 
+     * Event Handling:
+     * - beforeunload: Stops speech on page close
+     * - visibilitychange: Handles tab switching
+     * - voiceschanged: Manages voice loading
+     * - utterance events: Tracks speech progress
+     */
+    class TextToSpeechPlayer {
+      /**
+       * Creates a new TextToSpeechPlayer instance
+       * @param {TextToSpeechOptions} [options] - Configuration options
+       * 
+       * @example
+       * ```javascript
+       * const tts = new TextToSpeechPlayer({
+       *     language: 'en-US',
+       *     rate: 1.2,
+       *     volume: 0.8,
+       *     cleanText: true
+       * });
+       * ```
+       */
+      constructor(options) {
+        // Default configuration
+        this.config = {
+          language: 'it-IT',
+          rate: 1.0,
+          volume: 1.0,
+          cleanText: true,
+          voiceSelected: -1
+        };
+        
+        // Apply user options
+        if (options) {
+          Object.assign(this.config, options);
+        }
+
+        // State properties
+        this.voice = null;
+        this.isSpeaking = false;
+        this.currentUtterance = null;
+        this.isOfflineCapable = false;
+        this.resumeTimer = null;
+        this.timeoutTimer = null;
+        this.isPaused = false;
+        this.previousVolume = this.config.volume;
+        this.intentionalStop = false;
+        this._resolveCurrentSpeech = null;
+        
+        // Check if Speech Synthesis API is supported
+        if (!window.speechSynthesis) {
+          console.error("Speech Synthesis API is not supported in this browser");
+        }
+      }
+
+      /**
+       * Initializes the player by loading voices and checking capabilities
+       * @returns {Promise<void>}
+       * @throws {Error} If voice loading fails or no suitable voices found
+       * 
+       * Initialization steps:
+       * 1. Loads available voices
+       * 2. Selects appropriate voice
+       * 3. Checks offline capability
+       * 4. Sets up page listeners
+       */
+      async initialize() {
+        try {
+          // Ensure Speech Synthesis API is available
+          if (!window.speechSynthesis) {
+            throw new Error("Speech Synthesis API is not supported in this browser");
+          }
+          
+          // Pre-warm the speech synthesis engine with a silent utterance
+          // This solves the "first click does nothing" issue in some browsers
+          await this.warmUpSpeechSynthesis();
+          
+          await this.loadVoice();
+          this.checkOfflineCapability();
+          this.setupPageListeners();
+          console.log("TextToSpeechPlayer initialized successfully");
+          console.log(`Offline capable: ${this.isOfflineCapable}`);
+          return true;
+        } catch (error) {
+          console.error("Failed to initialize TextToSpeechPlayer:", error);
+          throw error;
+        }
+      }
+      
+      /**
+       * Warms up the speech synthesis engine with a silent utterance.
+       * This helps with the first-time initialization in some browsers.
+       * @private
+       */
+      async warmUpSpeechSynthesis() {
+        return new Promise((resolve) => {
+          try {
+            // Create a silent utterance (space character with zero volume)
+            const emptyUtterance = new SpeechSynthesisUtterance(" ");
+            emptyUtterance.volume = 0;
+            
+            // Ensure it completes quickly
+            emptyUtterance.rate = 2;
+            
+            emptyUtterance.onend = () => {
+              resolve();
+            };
+            
+            emptyUtterance.onerror = () => {
+              // Even if there's an error, we should continue
+              resolve();
+            };
+            
+            // Set a timeout in case the event doesn't fire
+            setTimeout(resolve, 500);
+            
+            // Speak the empty utterance
+            window.speechSynthesis.speak(emptyUtterance);
+          } catch (e) {
+            console.warn("Failed to warm up speech synthesis", e);
+            resolve();
+          }
+        });
+      }
+
+      /**
+       * Sets up event listeners for page visibility changes and unload events.
+       * @private
+       */
+      setupPageListeners() {
+        // For page close/refresh
+        window.addEventListener('beforeunload', () => {
+          this.stopSpeaking();
+        });
+
+        // For page visibility change (e.g., switching tabs)
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) {
+            this.stopSpeaking();
+          }
+        });
+      }
+
+      /**
+       * Activates the TextToSpeechPlayer.
+       */
+      activate() {
+        this.isSpeaking = true;
+      }
+
+      /**
+       * Loads and selects appropriate voice for synthesis.
+       * 
+       * @returns {Promise<SpeechSynthesisVoice>}
+       * @throws {Error} If no suitable voice is found
+       * @private
+       */
+      async loadVoice() {
+        console.log(`Loading voice for language: ${this.config.language}`);
+        return new Promise((resolve, reject) => {
+          const synth = window.speechSynthesis;
+          
+          // Function to set voice based on available voices
+          const setVoice = () => {
+            let voices = synth.getVoices();
+            
+            if (voices.length === 0) {
+              console.warn("No voices available for this browser");
+              reject(new Error("No voices available for this browser"));
+              return;
+            }
+            
+            // Select voice based on index if provided
+            if (this.config.voiceSelected >= 0 && this.config.voiceSelected < voices.length) {
+              this.voice = voices[this.config.voiceSelected];
+            } else {
+              // Otherwise select by language
+              const firstTwo = this.config.language.substring(0, 2);
+              this.voice = voices.find(v => v.lang.startsWith(firstTwo));
+            }
+            
+            if (this.voice) {
+              console.log(`Voice loaded: ${this.voice.name}`);
+              resolve(this.voice);
+            } else {
+              console.warn(`No suitable voice found for language: ${this.config.language}`);
+              reject(new Error(`No voice available for ${this.config.language}`));
+            }
+          };
+
+          // Try to set voice immediately if already available
+          if (synth.getVoices().length > 0) {
+            setVoice();
+          } else {
+            // Otherwise wait for voices to load
+            synth.onvoiceschanged = () => {
+              setVoice();
+              synth.onvoiceschanged = null;
+            };
+            
+            // Set a timeout in case onvoiceschanged doesn't fire
+            setTimeout(() => {
+              if (!this.voice) {
+                console.warn("Timeout while waiting for voices to load");
+                setVoice();
+              }
+            }, 1000);
+          }
+        });
+      }
+
+      /**
+       * Checks if the selected voice is capable of offline speech synthesis.
+       * 
+       * @private
+       */
+      checkOfflineCapability() {
+        if (this.voice) {
+          // A voice is offline capable if localService is true (not false as in original code)
+          this.isOfflineCapable = this.voice.localService;
+        } else {
+          this.isOfflineCapable = false;
+        }
+      }
+
+      /**
+       * Cleans text by removing HTML tags and formatting.
+       * 
+       * Cleaning steps:
+       * 1. Removes 'omissis' class content
+       * 2. Converts <br> to spaces
+       * 3. Strips HTML tags
+       * 4. Removes escape characters
+       * 5. Trims whitespace
+       * 
+       * @param {string} text - Text to clean
+       * @returns {string} Cleaned text
+       * @private
+       */
+      cleanTextForSpeech(text) {
+        if (!text) return "";
+        
+        // Remove content of any HTML tag with class "omissis" (with or without escaped quotes)
+        let cleanedText = text.replace(/<[^>]+class=(\"omissis\"|"omissis")[^>]*>[\s\S]*?<\/[^>]+>/g, "");
+        // Substitute <br> tag with whitespace " "
+        cleanedText = cleanedText.replace(/<br\s*\/?>/gi, " ");
+        // Remove HTML tags
+        cleanedText = cleanedText.replace(/<\/?[^>]+(>|$)/g, "");
+        // Remove escape characters like \n, \t, etc.
+        cleanedText = cleanedText.replace(/\\[nrt]/g, " ");
+        // Trim leading and trailing whitespace
+        return cleanedText.trim();
+      }
+
+      /**
+       * Speaks the provided text
+       * @param {string} text - Text to be spoken
+       * @returns {Promise<void>}
+       * @throws {Error} If speech synthesis fails or times out
+       * 
+       * Processing steps:
+       * 1. Cancels any ongoing speech
+       * 2. Cleans input text if enabled
+       * 3. Creates utterance with current settings
+       * 4. Handles speech synthesis
+       * 5. Manages timeouts and Chrome workarounds
+       * 
+       * @example
+       * ```javascript
+       * await tts.speakText("Hello, world!");
+       * ```
+       */
+      async speakText(text) {
+        // First stop any current speech
+        this.stopSpeaking();
+        
+        if (!text) {
+          console.warn("No text provided to speak");
+          return;
+        }
+
+        if (!this.voice) {
+          console.error("Voice not loaded. Please initialize TextToSpeechPlayer first.");
+          return;
+        }
+
+        if (!this.isOfflineCapable && !navigator.onLine) {
+          console.error("No internet connection and offline speech is not available.");
+          return;
+        }
+
+        // Set speaking state
+        this.isSpeaking = true;
+        this.isPaused = false;
+        
+        // Process text if needed
+        let cleanedText = text;
+        if (this.config.cleanText) {
+          cleanedText = this.cleanTextForSpeech(text);
+        }
+        
+        if (!cleanedText) {
+          console.warn("Text is empty after cleaning");
+          this.isSpeaking = false;
+          return;
+        }
+        
+        console.log("Attempting to speak:", cleanedText);
+
+        const synth = window.speechSynthesis;
+        
+        // Ensure the synthesis system is active (fixes Chrome/Firefox first-time issues)
+        synth.cancel();
+        
+        // Store whether we intentionally cancelled speech
+        this.intentionalStop = false;
+        
+        try {
+          // Create new utterance
+          this.currentUtterance = new SpeechSynthesisUtterance(cleanedText);
+          this.currentUtterance.lang = this.config.language;
+          this.currentUtterance.voice = this.voice;
+          this.currentUtterance.rate = this.config.rate;
+          this.currentUtterance.volume = this.config.volume;
+
+          // Handle speaking process
+          await new Promise((resolve, reject) => {
+            // Store the resolve function so we can call it from stopSpeaking
+            this._resolveCurrentSpeech = resolve;
+            
+            this.currentUtterance.onend = () => {
+              resolve('completed');
+            };
+            
+            this.currentUtterance.onerror = (event) => {
+              // Don't treat intentional stops as errors
+              if (this.intentionalStop && event.error === 'interrupted') {
+                console.log("Speech intentionally interrupted");
+                resolve('interrupted');
+              } else {
+                console.error("Speech error:", event);
+                reject(event);
+              }
+            };
+
+            // Start speaking
+            synth.speak(this.currentUtterance);
+            
+            // Force Chrome to start speaking immediately (fixes first-play issues)
+            if (!this.isPaused && synth.speaking) {
+              synth.pause();
+              synth.resume();
+            }
+            
+            // Timeout to prevent speech from running indefinitely
+            const maxSpeechTime = Math.max(5000, cleanedText.length * 100); // At least 5 seconds
+            this.timeoutTimer = setTimeout(() => {
+              if (synth.speaking && this.isSpeaking) {
+                console.warn("Speech synthesis taking too long. Resetting...");
+                this.intentionalStop = true;
+                this.stopSpeaking();
+                resolve('timeout');
+              }
+            }, maxSpeechTime);
+            
+            // Workaround for Chrome bug - resume speech every 10 seconds
+            this.resumeTimer = setInterval(() => {
+              if (!synth.speaking) {
+                clearInterval(this.resumeTimer);
+                this.resumeTimer = null;
+              } else if (!this.isPaused) {
+                // Only pause and resume if not manually paused
+                synth.pause();
+                synth.resume();
+              }
+            }, 10000);
+          });
+        } catch (error) {
+          // Only log errors that aren't related to intentional stopping
+          if (!(this.intentionalStop && error.error === 'interrupted')) {
+            console.error("Error during speech:", error);
+          }
+        } finally {
+          // Clean up regardless of outcome
+          if (this.isSpeaking) {
+            this.stopSpeaking();
+          }
+        }
+      }
+
+      /**
+       * Pauses or resumes speech synthesis
+       * @param {boolean} enable - True to pause, false to resume
+       * 
+       * @example
+       * ```javascript
+       * // Pause speech
+       * tts.pauseSpeaking(true);
+       * 
+       * // Resume speech
+       * tts.pauseSpeaking(false);
+       * ```
+       */
+      pauseSpeaking(enable) {
+        if (!window.speechSynthesis || !this.isSpeaking) {
+          console.log("No speech in progress to pause/resume");
+          return;
+        }
+        
+        const synth = window.speechSynthesis;
+        
+        if (enable && !this.isPaused) {
+          // Pause speech
+          synth.pause();
+          this.isPaused = true;
+          
+          // Clear the resume timer when pausing
+          if (this.resumeTimer) {
+            clearInterval(this.resumeTimer);
+            this.resumeTimer = null;
+          }
+        } else if (!enable && this.isPaused) {
+          // Resume speech
+          synth.resume();
+          this.isPaused = false;
+          
+          // Restart the resume timer for Chrome bug workaround
+          this.resumeTimer = setInterval(() => {
+            if (!synth.speaking) {
+              clearInterval(this.resumeTimer);
+              this.resumeTimer = null;
+            } else {
+              synth.pause();
+              synth.resume();
+            }
+          }, 10000);
+        }
+      }
+
+      /**
+       * Mutes or unmutes audio output
+       * @param {boolean} enable - True to mute, false to unmute
+       * 
+       * @example
+       * ```javascript
+       * // Mute audio
+       * tts.mute(true);
+       * 
+       * // Restore previous volume
+       * tts.mute(false);
+       * ```
+       */
+      mute(enable) {
+        if (enable) {
+          this.previousVolume = this.config.volume;
+          this.config.volume = 0;
+        } else {
+          this.config.volume = this.previousVolume;
+        }
+        
+        // Update current utterance if speaking
+        if (this.currentUtterance) {
+          this.currentUtterance.volume = this.config.volume;
+        }
+      }
+
+      /**
+       * Stops current speech synthesis
+       * Cleans up resources and resets state
+       */
+      stopSpeaking() {
+        const synth = window.speechSynthesis;
+        
+        // Mark that we're intentionally stopping speech to handle the error properly
+        this.intentionalStop = true;
+        
+        // Cancel speech if speaking
+        if (synth && synth.speaking) {
+          try {
+            synth.cancel();
+          } catch (e) {
+            console.error("Error cancelling speech:", e);
+          }
+        }
+        
+        // Clear timers
+        if (this.resumeTimer) {
+          clearInterval(this.resumeTimer);
+          this.resumeTimer = null;
+        }
+        
+        if (this.timeoutTimer) {
+          clearTimeout(this.timeoutTimer);
+          this.timeoutTimer = null;
+        }
+        
+        // Resolve any pending promise to prevent unhandled rejections
+        if (this._resolveCurrentSpeech) {
+          this._resolveCurrentSpeech('stopped');
+          this._resolveCurrentSpeech = null;
+        }
+        
+        // Reset state
+        this.currentUtterance = null;
+        this.isSpeaking = false;
+        this.isPaused = false;
+      }
+    }
+
+    /**
+    * @typedef {Object} AnnoClass
+    * @property {string} stroke - CSS color for SVG elements (lines, text, outlines)
+    * @property {string} label - Display name for the class
+    */
+
+    /**
+    * @typedef {Object.<string, AnnoClass>} AnnoClasses
+    * @description Map of class names to their visual properties
+    */
+
+    /**
+    * @typedef {Object} LayerSvgAnnotationOptions
+    * @property {AnnoClasses} classes - Annotation class definitions with styles
+    * @property {Function} [onClick] - Callback for annotation click events (param: selected annotation)
+    * @property {boolean} [shadow=true] - Whether to use Shadow DOM for SVG elements
+    * @property {HTMLElement} [overlayElement] - Container for SVG overlay
+    * @property {string} [style] - Additional CSS styles for annotations
+    * @property {Function} [annotationUpdate] - Custom update function for annotations
+    * @extends LayerAnnotationOptions
+    */
+
+    /**
+    * LayerSvgAnnotation provides SVG-based annotation capabilities in OpenLIME.
+    * It renders SVG elements directly on the canvas overlay, outside the WebGL context,
+    * enabling rich vector graphics annotations with interactive features.
+    * 
+    * Features:
+    * - SVG-based vector annotations
+    * - Custom styling per annotation class
+    * - Interactive selection
+    * - Shadow DOM isolation
+    * - Dynamic SVG transformation
+    * - Event handling
+    * - Custom update callbacks
+    * 
+    * Technical Details:
+    * - Uses SVG overlay for rendering
+    * - Handles coordinate system transformations
+    * - Manages DOM element lifecycle
+    * - Supports custom class styling
+    * - Implements visibility management
+    * - Provides selection mechanisms
+    * 
+    * @extends LayerAnnotation
+    * 
+    * @example
+    * ```javascript
+    * // Create SVG annotation layer with custom classes
+    * const annotationLayer = new OpenLIME.Layer({
+    *   type: 'svg_annotations',
+    *   classes: {
+    *     'highlight': { stroke: '#ff0', label: 'Highlight' },
+    *     'comment': { stroke: '#0f0', label: 'Comment' }
+    *   },
+    *   onClick: (annotation) => {
+    *     console.log('Clicked:', annotation.label);
+    *   },
+    *   shadow: true
+    * });
+    * 
+    * // Add to viewer
+    * viewer.addLayer('annotations', annotationLayer);
+    * ```
+    */
+    class LayerSvgAnnotation extends LayerAnnotation {
+    	/**
+    	 * Creates a new LayerSvgAnnotation instance
+    	 * @param {LayerSvgAnnotationOptions} [options] - Configuration options
+    	 */
+    	constructor(options) {
+    		options = Object.assign({
+    			overlayElement: null,   //reference to canvas overlayElement. TODO: check if really needed.
+    			shadow: true,           //svg attached as shadow node (so style apply only the svg layer)
+    			svgElement: null, 		//the svg layer
+    			svgGroup: null,
+    			onClick: null,			//callback function
+    			classes: {
+    				'': { stroke: '#000', label: '' },
+    			},
+    			annotationUpdate: null
+    		}, options);
+    		super(options);
+    		for (const [key, value] of Object.entries(this.classes)) {
+    			this.style += `[data-class=${key}] { ` + Object.entries(value).map(g => `${g[0]}: ${g[1]};`).join('\n') + '}';
+    		}
+
+    		this.style += `.openlime-svgoverlay { position:absolute; top:0px; left:0px;}`;
+
+    		//this.createOverlaySVGElement();
+    		//this.setLayout(this.layout);
+    	}
+
+    	/**
+    	 * Creates the SVG overlay element and initializes the shadow DOM if enabled
+    	 * @private
+    	 */
+    	createOverlaySVGElement() {
+    		this.svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    		this.svgElement.classList.add('openlime-svgoverlay');
+    		this.svgGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    		this.svgElement.append(this.svgGroup);
+
+    		// Check if the shadow root already exists before attaching
+    		let root = this.overlayElement;
+    		if (this.shadow) {
+    			if (!this.overlayElement.shadowRoot) {
+    				root = this.overlayElement.attachShadow({ mode: "open" });
+    			} else {
+    				root = this.overlayElement.shadowRoot; // Use existing shadow root
+    			}
+    		}
+
+    		if (this.style) {
+    			const style = document.createElement('style');
+    			style.textContent = this.style;
+    			root.append(style);
+    		}
+    		root.appendChild(this.svgElement);
+    	}
+    	/*  unused for the moment!!! 
+    		async loadSVG(url) {
+    			var response = await fetch(url);
+    			if (!response.ok) {
+    				this.status = "Failed loading " + this.url + ": " + response.statusText;
+    				return;
+    			}
+    			let text = await response.text();
+    			let parser = new DOMParser();
+    			this.svgXML = parser.parseFromString(text, "image/svg+xml").documentElement;
+    			throw "if viewbox is set in svgURL should it overwrite options.viewbox or viceversa?"
+    		}
+    	*/
+
+    	/**
+    	 * Sets visibility of the annotation layer
+    	 * Updates both SVG display and underlying layer visibility
+    	 * @param {boolean} visible - Whether layer should be visible
+    	 * @override
+    	 */
+    	setVisible(visible) {
+    		if (this.svgElement)
+    			this.svgElement.style.display = visible ? 'block' : 'none';
+    		super.setVisible(visible);
+    	}
+
+    	/**
+    	 * Clears all annotation selections
+    	 */
+    	clearSelected() {
+    		if (!this.svgElement) this.createOverlaySVGElement();
+    		//		return;
+    		this.svgGroup.querySelectorAll('[data-annotation]').forEach((e) => e.classList.remove('selected'));
+    		super.clearSelected();
+    	}
+
+    	/**
+    	 * Sets selection state of an annotation
+    	 * @param {Annotation} anno - The annotation to select/deselect
+    	 * @param {boolean} [on=true] - Whether to select (true) or deselect (false)
+    	 */
+    	setSelected(anno, on = true) {
+    		for (let a of this.svgElement.querySelectorAll(`[data-annotation="${anno.id}"]`))
+    			a.classList.toggle('selected', on);
+
+    		super.setSelected(anno, on);
+    	}
+
+    	/**
+    	 * Creates a new SVG annotation
+    	 * @param {Annotation} [annotation] - Optional existing annotation to use
+    	 * @returns {Annotation} The created annotation
+    	 * @private
+    	 */
+    	newAnnotation(annotation) {
+    		let svg = Util.createSVGElement('svg');
+    		if (!annotation)
+    			annotation = new Annotation({ element: svg, selector_type: 'SvgSelector' });
+    		return super.newAnnotation(annotation)
+    	}
+
+    	/**
+    	 * Renders the SVG annotations
+    	 * Updates SVG viewBox and transformation to match current view
+    	 * @param {Transform} transform - Current view transform
+    	 * @param {Object} viewport - Current viewport
+    	 * @returns {boolean} Whether render completed successfully
+    	 * @override
+    	 */
+    	draw(transform, viewport) {
+    		if (!this.svgElement)
+    			return true;
+    		this.svgElement.setAttribute('viewBox', `${-viewport.w / 2} ${-viewport.h / 2} ${viewport.w} ${viewport.h}`);
+
+    		const svgTransform = this.getSvgGroupTransform(transform);
+    		this.svgGroup.setAttribute("transform", svgTransform);
+    		return true;
+    	}
+
+    	/**
+    	 * Calculates SVG group transform string
+    	 * @param {Transform} transform - Current view transform
+    	 * @param {boolean} [inverse=false] - Whether to return inverse transform
+    	 * @returns {string} SVG transform attribute value
+    	 */
+    	getSvgGroupTransform(transform, inverse = false) {
+    		let t = this.transform.compose(transform);
+    		let c = this.boundingBox().corner(0);
+    		// FIXME CHECK IT: Convert from GL to SVG, but without any scaling. It just needs to reflect around 0,
+    		t = CoordinateSystem.reflectY(t);
+    		return inverse ?
+    			`translate(${-c.x} ${-c.y})  scale(${1 / t.z} ${1 / t.z}) rotate(${t.a} 0 0) translate(${-t.x} ${-t.y})` :
+    			`translate(${t.x} ${t.y}) rotate(${-t.a} 0 0) scale(${t.z} ${t.z}) translate(${c.x} ${c.y})`;
+    	}
+
+    	/**
+    	 * Prepares annotations for rendering
+    	 * Handles SVG element creation and updates
+    	 * @param {Transform} transform - Current view transform
+    	 * @private
+    	 */
+    	prefetch(transform) {
+    		if (!this.svgElement)
+    			this.createOverlaySVGElement();
+
+    		if (!this.visible) return;
+    		if (this.status != 'ready')
+    			return;
+
+    		if (typeof (this.annotations) == "string") return; //FIXME Is it right? Should we use this.status?
+
+    		this.boundingBox();
+    		//this.svgElement.setAttribute('viewBox', `${bBox.xLow} ${bBox.yLow} ${bBox.xHigh - bBox.xLow} ${bBox.yHigh - bBox.yLow}`);
+
+    		//find which annotations needs to be added to the ccanvas, some 
+    		//indexing whould be used, for the moment we just iterate all of them.
+
+    		for (let anno of this.annotations) {
+
+    			//TODO check for class visibility and bbox culling (or maybe should go to prefetch?)
+    			if (!anno.ready && typeof anno.svg == 'string') {
+    				let parser = new DOMParser();
+    				let element = parser.parseFromString(anno.svg, "image/svg+xml").documentElement;
+    				anno.elements = [...element.children];
+    				anno.ready = true;
+
+    				/*				} else if(this.svgXML) {
+    									a.svgElement = this.svgXML.querySelector(`#${a.id}`);
+    									if(!a.svgElement)
+    										throw Error(`Could not find element with id: ${id} in svg`);
+    								} */
+    			}
+
+    			if (this.annotationUpdate)
+    				this.annotationUpdate(anno, transform);
+
+    			if (!anno.needsUpdate)
+    				continue;
+
+    			anno.needsUpdate = false;
+
+    			for (let e of this.svgGroup.querySelectorAll(`[data-annotation="${anno.id}"]`))
+    				e.remove();
+
+    			if (!anno.visible)
+    				continue;
+
+    			//second time will be 0 elements, but we need to 
+    			//store somewhere knowledge of which items in the scene and which still not.
+    			for (let child of anno.elements) {
+    				let c = child; //.cloneNode(true);
+    				c.setAttribute('data-annotation', anno.id);
+    				c.setAttribute('data-class', anno.class);
+
+    				//c.setAttribute('data-layer', this.id);
+    				c.classList.add('openlime-annotation');
+    				if (this.selected.has(anno.id))
+    					c.classList.add('selected');
+    				this.svgGroup.appendChild(c);
+    				c.onpointerdown = (e) => {
+    					if (e.button == 0) {
+    						e.preventDefault();
+    						e.stopPropagation();
+    						if (this.onClick && this.onClick(anno))
+    							return;
+    						if (this.selected.has(anno.id))
+    							return;
+    						this.clearSelected();
+    						this.setSelected(anno, true);
+    					}
+    				};
+    			}
+    		}
+    	}
+    }
+
+    /**
+     * Register this layer type with the Layer factory
+     * @type {Function}
+     * @private
+     */
+    Layer.prototype.types['svg_annotations'] = (options) => { return new LayerSvgAnnotation(options); };
+
+    /* FROM: https://stackoverflow.com/questions/40650306/how-to-draw-a-smooth-continuous-line-with-mouse-using-html-canvas-and-javascript */
+
+    /**
+     * A [x, y, xc, yc] point.
+     * @typedef BezierPoint
+     * @property {number} p.0 The x-coordinate.
+     * @property {number} p.1 The y-coordinate.
+     * @property {number} p.2 The x-coordinate of the control point.
+     * @property {number} p.3 The y-coordinate of the control point.
+     */
+
+    /**
+     * Simplifies a polyline via the Douglas-Peucker algorithm.
+     * @param {Array<Point>} points A polyline.
+     * @param {*} tolerance The tolerance is the maximum distance between the original polyline and the simplified polyline.
+     * It has the same metric as the point coordinates.  
+     * @returns {Array<Point>} The simplified polyline.
+     */
+    function simplify(points, tolerance) {
+    	let tolerance2 = Math.pow(tolerance, 2);
+
+        var simplify1 = function(start, end) { // recursize simplifies points from start to end
+            var index, i, xx , yy, dx, dy, ddx, ddy,  t, dist, dist1;
+            let p1 = points[start];
+            let p2 = points[end];   
+            xx = p1.x;
+            yy = p1.y;
+            ddx = p2.x - xx;
+            ddy = p2.y - yy;
+            dist1 = ddx * ddx + ddy * ddy;
+            let maxDist = tolerance2;
+            for (var i = start + 1; i < end; i++) {
+                let p = points[i];
+                if (ddx !== 0 || ddy !== 0) {
+                    t = ((p.x - xx) * ddx + (p.y - yy) * ddy) / dist1;
+                    if (t > 1) {
+                        dx = p.x - p2.x;
+                        dy = p.y - p2.y;
+                    } else 
+                    if (t > 0) {
+                        dx = p.x - (xx + ddx * t);
+                        dy = p.y - (yy + ddy * t);
+                    } else {
+                        dx = p.x - xx;
+                        dy = p.y - yy;
+                    }
+                } else {
+                    dx = p.x - xx;
+                    dy = p.y - yy;
+                }
+                dist = dx * dx + dy * dy; 
+                if (dist > maxDist) {
+                    index = i;
+                    maxDist = dist;
+                }
+            }
+
+            if (maxDist > tolerance2) { 
+                if (index - start > 1){
+                    simplify1(start, index);
+                }
+                newLine.push(points[index]);
+                if (end - index > 1){
+                    simplify1(index, end);
+                }
+            }
+        };    
+        var end = points.length - 1;
+        var newLine = [points[0]];
+        simplify1(0, end);
+        newLine.push(points[end]);
+        return newLine;
+    }
+
+    /**
+     *  Uses Bezier Curve to smooth a polyline
+     * @param {Array<Point>} points A polyline.
+     * @param {number} cornerThres The angular threshold (in degrees). Two segments are smoothed if their angle is less then the threshold.
+     * @param {bool} match Whether the smoothed curve should traverse the original points or approximate them.
+     * @returns {Array<BezierPoint>} The smoothed polyline.
+     */
+    function smooth(points, cornerThres, match) {
+    	cornerThres *= 3.1415/180;
+    	let newPoints = []; // array for new points
+
+    	if(points.length <= 2)
+    		return points.map((p) => [p.x, p.y]);
+
+    	let nx1, ny1, nx2, ny2, dist1, dist2;
+
+    	function dot(x, y, xx, yy) {  // get do product
+    		// dist1,dist2,nx1,nx2,ny1,ny2 are the length and  normals and used outside function
+    		// normalise both vectors
+    		
+    		dist1 = Math.sqrt(x * x + y * y); // get length
+    		if (dist1  > 0) {  // normalise
+    			nx1 = x / dist1 ;
+    			ny1 = y / dist1 ;
+    		} else {
+    			nx1 = 1;  // need to have something so this will do as good as anything
+    			ny1 = 0;
+    		}
+    		dist2  = Math.sqrt(xx * xx + yy * yy);
+    		if (dist2  > 0) {
+    			nx2 = xx / dist2;
+    			ny2 = yy / dist2;
+    		} else {
+    			nx2 = 1;
+    			ny2 = 0;
+    		}
+    		return Math.acos(nx1 * nx2 + ny1 * ny2 ); // dot product
+    	}
+
+    	let p1 = points[0];
+    	let endP = points[points.length-1];
+    	let i = 0;  // start from second poitn if line not closed
+    	let closed = false;
+    	let len = Math.hypot(p1.x- endP.x, p1.y-endP.y);
+    	
+    	if(len < Math.SQRT2){  // end points are the same. Join them in coordinate space
+    		endP =  p1;
+    		i = 0;			 // start from first point if line closed
+    		p1 = points[points.length-2];
+    		closed = true;
+    	}	   
+    	newPoints.push([points[i].x,points[i].y]);
+    	for(; i < points.length-1; i++){
+    		let p2 = points[i];
+    		let p3 = points[i + 1];
+    		let angle = Math.abs(dot(p2.x - p1.x, p2.y - p1.y, p3.x - p2.x, p3.y - p2.y));
+    		if(dist1 !== 0){  // dist1 and dist2 come from dot function
+    			if( angle < cornerThres){ // bend it if angle between lines is small
+    				  if(match){
+    					  dist1 = Math.min(dist1,dist2);
+    					  dist2 = dist1;
+    				  }
+    				  // use the two normalized vectors along the lines to create the tangent vector
+    				  let x = (nx1 + nx2) / 2;  
+    				  let y = (ny1 + ny2) / 2;
+    				  len = Math.sqrt(x * x + y * y);  // normalise the tangent
+    				  if(len === 0){
+    					  newPoints.push([p2.x,p2.y]);								  
+    				  } else {
+    					  x /= len;
+    					  y /= len;
+    					  if(newPoints.length > 0){
+    						  var np = newPoints[newPoints.length-1];
+    						  np.push(p2.x-x*dist1*0.25);
+    						  np.push(p2.y-y*dist1*0.25);
+    					  }
+    					  newPoints.push([  // create the new point with the new bezier control points.
+    							p2.x,
+    							p2.y,
+    							p2.x+x*dist2*0.25,
+    							p2.y+y*dist2*0.25
+    					  ]);
+    				  }
+    			} else {
+    				newPoints.push([p2.x,p2.y]);			
+    			}
+    		}
+    		p1 = p2;
+    	}  
+    	if(closed){ // if closed then copy first point to last.
+    		p1 = [];
+    		for(i = 0; i < newPoints[0].length; i++){
+    			p1.push(newPoints[0][i]);
+    		}
+    		newPoints.push(p1);
+    	}else {
+    		newPoints.push([points[points.length-1].x,points[points.length-1].y]);	  
+    	}
+    	return newPoints;	
+    }
+
+    /**
+     * Converts a smoothed polyline into an SVG path.
+     * @param {Array<BezierPoint>} smoothed The smoothed polyline.
+     * @returns {Array<String>} The SVG path.
+     */
+    function smoothToPath(smoothed) {
+    	let p = smoothed[0];
+    	let d = [`M${p[0].toFixed(1)} ${p[1].toFixed(1)}`];
+    	let p1;
+    	for(let i = 0; i < smoothed.length-1; i++) {
+    		p = smoothed[i];
+    		p1 = smoothed[i+1];	
+    		if(p.length == 2)
+    			d.push(`l${(p1[0]-p[0]).toFixed(1)} ${(p1[1]-p[1]).toFixed(1)}`);
+    		else if(p.length == 4) 
+    			d.push(`q${(p[2]-p[0]).toFixed(1)} ${(p[3]-p[1]).toFixed(1)} ${(p1[0]-p[0]).toFixed(1)} ${(p1[1]-p[1]).toFixed(1)}`);
+    		else
+    			d.push(`c${(p[2]-p[0]).toFixed(1)} ${(p[3]-p[1]).toFixed(1)} ${(p[4]-p[0]).toFixed(1)} ${(p[5]-p[1]).toFixed(1)} ${(p1[0]-p[0]).toFixed(1)} ${(p1[1]-p[1]).toFixed(1)}`);
+    	}
+    	return d.join(' ');
+    }
+
+    /**
+     * @typedef {Object} AnnotationObj
+     * @property {string} id - Unique identifier
+     * @property {string} label - Annotation title
+     * @property {string} description - Detailed description
+     * @property {string} class - Class name for styling/categorization
+     * @property {number} publish - Publication status (0 or 1)
+     * @property {Object} data - Custom data object
+     * @property {Array<SVGElement>} elements - SVG elements composing the annotation
+     * @property {Object} [state] - Camera and viewer state
+     */
+
+    /**
+     * @callback crudCallback
+     * @param {AnnotationObj} annotation - The annotation being operated on
+     * @returns {boolean} Success status of the operation
+     * @description Callback for create/update/delete operations on annotations
+     */
+
+    /**
+     * @callback customStateCallback
+     * @param {AnnotationObj} annotation - The annotation being modified
+     * @description Callback to customize state information saved with annotations
+     */
+
+    /**
+     * @callback customDataCallback
+     * @param {AnnotationObj} annotation - The annotation being modified
+     * @description Callback to customize the annotation data object
+     */
+
+    /**
+     * @callback selectedCallback
+     * @param {AnnotationObj} annotation - The selected annotation
+     * @description Callback executed when an annotation is selected in the UI
+     */
+
+    /**
+     * EditorSvgAnnotation enables creation and editing of SVG annotations in OpenLIME.
+     * It provides tools for drawing various shapes and managing annotations through a user interface.
+     * 
+     * Features:
+     * - Drawing tools: point, pin, line, box, circle
+     * - Annotation editing and management
+     * - Custom state and data storage
+     * - Integration with annotation databases through callbacks
+     * - Undo/redo functionality
+     * - SVG export capabilities
+     * 
+     * @example
+     * ```javascript
+     * // Create annotation layer
+     * const anno = new OpenLIME.Layer(options);
+     * viewer.addLayer('annotations', anno);
+     * 
+     * // Initialize editor
+     * const editor = new OpenLIME.EditorSvgAnnotation(viewer, anno, {
+     *   classes: {
+     *     'default': { stroke: '#000', label: 'Default' },
+     *     'highlight': { stroke: '#ff0', label: 'Highlight' }
+     *   }
+     * });
+     * 
+     * // Setup callbacks
+     * editor.createCallback = (anno) => { 
+     *   console.log("Created:", anno);
+     *   return saveToDatabase(anno);
+     * };
+     * ```
+     */
+    class EditorSvgAnnotation {
+    	/**
+    	 * Creates an EditorSvgAnnotation instance
+    	 * @param {Viewer} viewer - The OpenLIME viewer instance
+    	 * @param {LayerSvgAnnotation} layer - The annotation layer to edit
+    	 * @param {Object} [options] - Configuration options
+    	 * @param {Object.<string, {stroke: string, label: string}>} options.classes - Annotation classes with colors and labels
+    	 * @param {crudCallback} [options.createCallback] - Called when creating annotations
+    	 * @param {crudCallback} [options.updateCallback] - Called when updating annotations
+    	 * @param {crudCallback} [options.deleteCallback] - Called when deleting annotations
+    	 * @param {boolean} [options.enableState=false] - Whether to save viewer state with annotations
+    	 * @param {customStateCallback} [options.customState] - Customize saved state data
+    	 * @param {customDataCallback} [options.customData] - Customize annotation data
+    	 * @param {selectedCallback} [options.selectedCallback] - Called when annotation is selected
+    	 * @param {Object} [options.tools] - Custom tool configurations
+    	 * @param {number} [options.priority=20000] - Event handling priority
+    	 */
+    	constructor(viewer, layer, options) {
+    		this.layer = layer;
+    		Object.assign(this, {
+    			viewer: viewer,
+    			panning: false,
+    			tool: null, //doing nothing, could: ['line', 'polygon', 'point', 'box', 'circle']
+    			startPoint: null, //starting point for box and  circle
+    			currentLine: [],
+    			annotation: null,
+    			priority: 20000,
+    			classes: {
+    				'': { stroke: '#000', label: '' },
+    				'class1': { stroke: '#770', label: '' },
+    				'class2': { stroke: '#707', label: '' },
+    				'class3': { stroke: '#777', label: '' },
+    				'class4': { stroke: '#070', label: '' },
+    				'class5': { stroke: '#007', label: '' },
+    				'class6': { stroke: '#077', label: '' },
+    			},
+    			tools: {
+    				point: {
+    					img: '<svg width=24 height=24><circle cx=12 cy=12 r=3 fill="red" stroke="gray"/></svg>',
+    					tooltip: 'New point',
+    					tool: Point,
+    				},
+    				pin: {
+    					template: (x, y) => {
+    						return `<svg xmlns='http://www.w3.org/2000/svg' x='${x}' y='${y}' width='4%' height='4%' class='pin'
+						viewBox='0 0 18 18'><path d='M 0,0 C 0,0 4,0 8,0 12,0 16,4 16,8 16,12 12,16 8,16 4,16 0,12 0,8 0,4 0,0 0,0 Z'/><text class='pin-text' x='7' y='8'>${this.annotation.idx}</text></svg>`;
+    					}, //pin di alcazar  1. url a svg 2. txt (stringa con svg) 3. funzione(x,y) ritorna svg 4. dom (da skin).
+    					tooltip: 'New pin',
+    					tool: Pin
+    				},
+    				pen: {
+    					img: '<svg width=24 height=24><circle cx=12 cy=12 r=3 fill="red" stroke="gray"/></svg>',
+    					tooltip: 'New polyline',
+    					tool: Pen,
+    				},
+    				line: {
+    					img: `<svg width=24 height=24>
+						<path d="m 4.7,4.5 c 0.5,4.8 0.8,8.5 3.1,11 2.4,2.6 4.2,-4.8 6.3,-5 2.7,-0.3 5.1,9.3 5.1,9.3" stroke-width="3" fill="none" stroke="grey"/>
+						<path d="m 4.7,4.5 c 0.5,4.8 0.8,8.5 3.1,11 2.4,2.6 4.2,-4.8 6.3,-5 2.7,-0.3 5.1,9.3 5.1,9.3" stroke-width="1" fill="none" stroke="red"/></svg>`,
+    					tooltip: 'New line',
+    					tool: Line,
+    				},
+    				erase: {
+    					img: '',
+    					tooltip: 'Erase lines',
+    					tool: Erase,
+    				},
+    				box: {
+    					img: '<svg width=24 height=24><rect x=5 y=5 width=14 height=14 fill="red" stroke="gray"/></svg>',
+    					tooltip: 'New box',
+    					tool: Box,
+    				},
+    				circle: {
+    					img: '<svg width=24 height=24><circle cx=12 cy=12 r=7 fill="red" stroke="gray"/></svg>',
+    					tooltip: 'New circle',
+    					tool: Circle,
+    				},
+    				/*				colorpick: {
+    									img: '',
+    									tooltip: 'Pick a color',
+    									tool: Colorpick,
+    								} */
+    			},
+    			annotation: null, //not null only when editWidget is shown.
+    			enableState: false,
+    			customState: null,
+    			customData: null,
+    			editWidget: null,
+    			selectedCallback: null,
+    			createCallback: null, //callbacks for backend
+    			updateCallback: null,
+    			deleteCallback: null
+    		}, options);
+
+    		layer.style += Object.entries(this.classes).map((g) => {
+    			console.assert(g[1].hasOwnProperty('stroke'), "Classes needs a stroke property");
+    			return `[data-class=${g[0]}] { stroke:${g[1].stroke}; }`;
+    		}).join('\n');
+    		//at the moment is not really possible to unregister the events registered here.
+    		viewer.pointerManager.onEvent(this);
+    		document.addEventListener('keyup', (e) => this.keyUp(e), false);
+    		layer.addEvent('selected', (anno) => {
+    			if (!anno || anno == this.annotation)
+    				return;
+    			if (this.selectedCallback) this.selectedCallback(anno);
+    			this.showEditWidget(anno);
+    		});
+
+    		layer.annotationsEntry = () => {
+
+    			let entry = {
+    				html: `<div class="openlime-tools"></div>`,
+    				list: [], //will be filled later.
+    				classes: 'openlime-annotations',
+    				status: () => 'active',
+    				oncreate: () => {
+    					if (Array.isArray(layer.annotations))
+    						layer.createAnnotationsList();
+
+    					let tools = {
+    						'add': { action: () => { this.createAnnotation(); }, title: "New annotation" },
+    						'edit': { action: () => { this.toggleEditWidget(); }, title: "Edit annotations" },
+    						'export': { action: () => { this.exportAnnotations(); }, title: "Export annotations" },
+    						'trash': { action: () => { this.deleteSelected(); }, title: "Delete selected annotations" },
+    					};
+    					(async () => {
+
+    						for (const [label, tool] of Object.entries(tools)) {
+    							let icon = await Skin.appendIcon(entry.element.firstChild, '.openlime-' + label); // TODO pass entry.element.firstChild as parameter in onCreate
+    							icon.setAttribute('title', tool.title);
+    							icon.addEventListener('click', tool.action);
+    						}
+    					})();
+    				}
+    			};
+    			layer.annotationsListEntry = entry;
+    			return entry;
+    		};
+    	}
+
+    	/**
+    	 * Creates a new annotation
+    	 * @returns {void}
+    	 */
+    	createAnnotation() {
+    		let anno = this.layer.newAnnotation();
+    		if (this.customData) this.customData(anno);
+    		if (this.enableState) this.setAnnotationCurrentState(anno);
+    		anno.idx = this.layer.annotations.length;
+    		anno.publish = 1;
+    		anno.label = anno.description = anno.class = '';
+    		let post = {
+    			id: anno.id, idx: anno.idx, label: anno.label, description: anno.description, 'class': anno.class, svg: null,
+    			publish: anno.publish, data: anno.data
+    		};
+    		if (this.enableState) post = { ...post, state: anno.state };
+    		if (this.createCallback) {
+    			let result = this.createCallback(post);
+    			if (!result)
+    				alert("Failed to create annotation!");
+    		}
+    		this.layer.setSelected(anno);
+    	}
+
+    	/** @ignore */
+    	toggleEditWidget() {
+    		if (this.annotation)
+    			return this.hideEditWidget();
+
+    		let id = this.layer.selected.values().next().value;
+    		if (!id)
+    			return;
+
+    		let anno = this.layer.getAnnotationById(id);
+    		this.showEditWidget(anno);
+    	}
+
+    	/** @ignore */
+    	updateEditWidget() {
+    		let anno = this.annotation;
+    		let edit = this.editWidget;
+    		if (!anno.class)
+    			anno.class = '';
+    		edit.querySelector('[name=label]').value = anno.label || '';
+    		edit.querySelector('[name=description]').value = anno.description || '';
+    		edit.querySelector('[name=idx]').value = anno.idx || '';
+    		Object.entries(anno.data).map(k => {
+    			edit.querySelector(`[name=data-data-${k[0]}]`).value = k[1] || '';
+    		});
+
+    		edit.querySelector('[name=classes]').value = anno.class;
+    		edit.querySelector('[name=publish]').checked = anno.publish == 1;
+    		edit.classList.remove('hidden');
+    		let button = edit.querySelector('.openlime-select-button');
+    		button.textContent = this.classes[anno.class].label;
+    		button.style.background = this.classes[anno.class].stroke;
+    	}
+
+    	/**
+     * Shows the annotation editor widget
+     * @param {AnnotationObj} annotation - Annotation to edit
+     * @private
+     */
+    	showEditWidget(anno) {
+    		this.annotation = anno;
+    		this.setTool(null);
+    		this.setActiveTool();
+    		this.layer.annotationsListEntry.element.querySelector('.openlime-edit').classList.add('active');
+    		(async () => {
+    			await this.createEditWidget();
+    			this.updateEditWidget();
+    		})();
+    	}
+
+    	/** @ignore */
+    	hideEditWidget() {
+    		this.annotation = null;
+    		this.setTool(null);
+    		this.editWidget.classList.add('hidden');
+    		this.layer.annotationsListEntry.element.querySelector('.openlime-edit').classList.remove('active');
+    	}
+
+    	//TODO this should actually be in the html.
+    	/** @ignore */
+    	async createEditWidget() {
+    		if (this.editWidget)
+    			return;
+    		let html = `
+				<div class="openlime-annotation-edit">
+					<label for="label">Title:</label> <input name="label" type="text"><br>
+					<label for="description">Description:</label><br>
+					<textarea name="description" cols="30" rows="5"></textarea><br>
+					<span>Class:</span> 
+					<div class="openlime-select">
+						<input type="hidden" name="classes" value=""/>
+						<div class="openlime-select-button"></div>
+						<ul class="openlime-select-menu">
+						${Object.entries(this.classes).map((c) =>
+			`<li data-class="${c[0]}" style="background:${c[1].stroke};">${c[1].label}</li>`).join('\n')}
+						</ul>
+					</div>
+					<label for="idx">Index:</label> <input name="idx" type="text"><br>	
+					${Object.entries(this.annotation.data).map(k => {
+				let label = k[0];
+				let str = `<label for="data-data-${k[0]}">${label}:</label> <input name="data-data-${k[0]}" type="text"><br>`;
+				return str;
+			}).join('\n')}
+					<br>
+					<span><button class="openlime-state">SAVE</button></span>
+					<span><input type="checkbox" name="publish" value=""> Publish</span><br>
+					<div class="openlime-annotation-edit-tools"></div>
+				</div>`;
+    		let template = document.createElement('template');
+    		template.innerHTML = html.trim();
+    		let edit = template.content.firstChild;
+
+    		let select = edit.querySelector('.openlime-select');
+    		let button = edit.querySelector('.openlime-select-button');
+    		let ul = edit.querySelector('ul');
+    		let options = edit.querySelectorAll('li');
+    		let input = edit.querySelector('[name=classes]');
+
+    		let state = edit.querySelector('.openlime-state');
+
+    		state.addEventListener('click', (e) => {
+    			if (this.enableState) this.setAnnotationCurrentState(this.annotation);
+    			this.saveCurrent();
+    			this.saveAnnotation();
+    		});
+
+    		button.addEventListener('click', (e) => {
+    			e.stopPropagation();
+    			for (let o of options)
+    				o.classList.remove('selected');
+    			select.classList.toggle('active');
+
+    		});
+
+    		ul.addEventListener('click', (e) => {
+    			e.stopPropagation();
+
+    			input.value = e.srcElement.getAttribute('data-class');
+    			input.dispatchEvent(new Event('change'));
+    			button.style.background = this.classes[input.value].stroke;
+    			button.textContent = e.srcElement.textContent;
+
+    			select.classList.toggle('active');
+    		});
+
+    		document.addEventListener('click', (e) => {
+    			select.classList.remove('active');
+    		});
+
+    		document.querySelector('.openlime-layers-menu').appendChild(edit);
+
+    		let tools = edit.querySelector('.openlime-annotation-edit-tools');
+
+    		let pin = await Skin.appendIcon(tools, '.openlime-pin');
+    		pin.addEventListener('click', (e) => { this.setTool('pin'); this.setActiveTool(pin); });
+
+    		let draw = await Skin.appendIcon(tools, '.openlime-draw');
+    		draw.addEventListener('click', (e) => { this.setTool('line'); this.setActiveTool(draw); });
+
+
+    		//		let pen = await Skin.appendIcon(tools, '.openlime-pen'); 
+    		//		pen.addEventListener('click', (e) => { this.setTool('pen'); setActive(pen); });
+
+    		let erase = await Skin.appendIcon(tools, '.openlime-erase');
+    		erase.addEventListener('click', (e) => { this.setTool('erase'); this.setActiveTool(erase); });
+
+    		let undo = await Skin.appendIcon(tools, '.openlime-undo');
+    		undo.addEventListener('click', (e) => { this.undo(); });
+
+    		let redo = await Skin.appendIcon(tools, '.openlime-redo');
+    		redo.addEventListener('click', (e) => { this.redo(); });
+
+    		/*		let colorpick = await Skin.appendIcon(tools, '.openlime-colorpick'); 
+    				undo.addEventListener('click', (e) => { this.pickColor(); }); */
+
+    		let label = edit.querySelector('[name=label]');
+    		label.addEventListener('blur', (e) => { if (this.annotation.label != label.value) this.saveCurrent(); this.saveAnnotation(); });
+
+    		let descr = edit.querySelector('[name=description]');
+    		descr.addEventListener('blur', (e) => { if (this.annotation.description != descr.value) this.saveCurrent(); this.saveAnnotation(); });
+
+    		let idx = edit.querySelector('[name=idx]');
+    		idx.addEventListener('blur', (e) => {
+    			if (this.annotation.idx != idx.value) {
+    				const svgPinIdx = this.annotation.elements[0];
+    				if (svgPinIdx) {
+    					const txt = svgPinIdx.querySelector(".pin-text");
+    					if (txt) {
+    						txt.textContent = idx.value;
+    					}
+    				}
+    				this.saveCurrent();
+    			}
+    			this.saveAnnotation();
+    		});
+
+    		Object.entries(this.annotation.data).map(k => {
+    			let dataElm = edit.querySelector(`[name=data-data-${k[0]}]`);
+    			dataElm.addEventListener('blur', (e) => { if (this.annotation.data[k[0]] != dataElm.value) this.saveCurrent(); this.saveAnnotation(); });
+    		});
+
+    		let classes = edit.querySelector('[name=classes]');
+    		classes.addEventListener('change', (e) => { if (this.annotation.class != classes.value) this.saveCurrent(); this.saveAnnotation(); });
+
+    		let publish = edit.querySelector('[name=publish]');
+    		publish.addEventListener('change', (e) => { if (this.annotation.publish != publish.value) this.saveCurrent(); this.saveAnnotation(); });
+
+    		edit.classList.add('hidden');
+    		this.editWidget = edit;
+    	}
+
+    	/** @ignore */
+    	setAnnotationCurrentState(anno) {
+    		anno.state = window.structuredClone(this.viewer.canvas.getState());
+    		// Callback to add  light/lens params or other data
+    		if (this.customState) this.customState(anno);
+    	}
+
+    	/**
+    	 * Saves annotation changes and triggers update callback
+    	 * @private
+    	 */
+    	saveAnnotation() {
+    		let edit = this.editWidget;
+    		let anno = this.annotation;
+
+    		anno.label = edit.querySelector('[name=label]').value || '';
+    		anno.description = edit.querySelector('[name=description]').value || '';
+    		anno.idx = edit.querySelector('[name=idx]').value || '0';
+    		Object.entries(anno.data).map(k => {
+    			anno.data[k[0]] = edit.querySelector(`[name=data-data-${k[0]}]`).value || '';
+    		});
+    		anno.publish = edit.querySelector('[name=publish]').checked ? 1 : 0;
+    		let select = edit.querySelector('[name=classes]');
+    		anno.class = select.value || '';
+
+    		let button = edit.querySelector('.openlime-select-button');
+    		button.style.background = this.classes[anno.class].stroke;
+
+    		for (let e of this.annotation.elements)
+    			e.setAttribute('data-class', anno.class);
+
+    		let post = {
+    			id: anno.id, idx: anno.idx, label: anno.label, description: anno.description, class: anno.class,
+    			publish: anno.publish, data: anno.data
+    		};
+    		if (this.enableState) post = { ...post, state: anno.state };
+    		// if (anno.light) post = { ...post, light: anno.light }; FIXME
+    		// if (anno.lens) post = { ...post, lens: anno.lens };
+
+    		//anno.bbox = anno.getBBoxFromElements();
+    		let serializer = new XMLSerializer();
+    		post.svg = `<svg xmlns="http://www.w3.org/2000/svg">
+				${anno.elements.map((s) => { s.classList.remove('selected'); return serializer.serializeToString(s) }).join("\n")}  
+				</svg>`;
+
+    		if (this.updateCallback) {
+    			let result = this.updateCallback(post);
+    			if (!result) {
+    				alert("Failed to update annotation");
+    				return;
+    			}
+    		}				//for (let c of element.children)
+    		//		a.elements.push(c);
+
+    		//update the entry
+    		let template = document.createElement('template');
+    		template.innerHTML = this.layer.createAnnotationEntry(anno);
+    		let entry = template.content.firstChild;
+    		//TODO find a better way to locate the entry!
+    		this.layer.annotationsListEntry.element.parentElement.querySelector(`[data-annotation="${anno.id}"]`).replaceWith(entry);
+    		this.layer.setSelected(anno);
+    	}
+
+    	/**
+    	 * Deletes the selected annotation
+    	 * @returns {void}
+    	 */
+    	deleteSelected() {
+    		let id = this.layer.selected.values().next().value;
+    		if (id)
+    			this.deleteAnnotation(id);
+    	}
+
+    	/** @ignore */
+    	deleteAnnotation(id) {
+    		let anno = this.layer.getAnnotationById(id);
+    		if (this.deleteCallback) {
+    			if (!confirm(`Deleting annotation ${anno.label}, are you sure?`))
+    				return;
+    			let result = this.deleteCallback(anno);
+    			if (!result) {
+    				alert("Failed to delete this annotation.");
+    				return;
+    			}
+    		}
+    		//remove svg elements from the canvas
+    		this.layer.svgGroup.querySelectorAll(`[data-annotation="${anno.id}"]`).forEach(e => e.remove());
+
+    		//remove entry from the list
+    		let list = this.layer.annotationsListEntry.element.parentElement.querySelector('.openlime-list');
+    		list.querySelectorAll(`[data-annotation="${anno.id}"]`).forEach(e => e.remove());
+
+    		this.layer.annotations = this.layer.annotations.filter(a => a !== anno);
+    		this.layer.clearSelected();
+    		this.hideEditWidget();
+    	}
+
+    	/**
+    	 * Exports all annotations as SVG
+    	 * @returns {void}
+    	 */
+    	exportAnnotations() {
+    		let svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    		const bBox = this.layer.boundingBox();
+    		svgElement.setAttribute('viewBox', `0 0 ${bBox.xHigh - bBox.xLow} ${bBox.yHigh - bBox.yLow}`);
+    		let style = Util.createSVGElement('style');
+    		style.textContent = this.layer.style;
+    		svgElement.appendChild(style);
+    		let serializer = new XMLSerializer();
+    		//let svg = `<svg xmlns="http://www.w3.org/2000/svg">
+    		for (let anno of this.layer.annotations) {
+    			for (let e of anno.elements) {
+    				if (e.tagName == 'path') {
+    					//Inkscape nitpicks on the commas in svg path.
+    					let d = e.getAttribute('d');
+    					e.setAttribute('d', d.replaceAll(',', ' '));
+    				}
+    				svgElement.appendChild(e.cloneNode());
+    			}
+    		}
+    		let svg = serializer.serializeToString(svgElement);
+    		/*(${this.layer.annotations.map(anno => {
+    			return `<group id="${anno.id}" title="${anno.label}" data-description="${anno.description}">
+    				${anno.elements.map((s) => { 
+    					s.classList.remove('selected'); 
+    					return serializer.serializeToString(s) 
+    				}).join("\n")}
+    				</group>`;
+    		})}
+    		</svg>`; */
+
+    		///console.log(svg);
+
+    		var e = document.createElement('a');
+    		e.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(svg));
+    		e.setAttribute('download', 'annotations.svg');
+    		e.style.display = 'none';
+    		document.body.appendChild(e);
+    		e.click();
+    		document.body.removeChild(e);
+    	}
+
+    	/** @ignore */
+    	setActiveTool(e) {
+    		if (!this.editWidget) return;
+    		let tools = this.editWidget.querySelector('.openlime-annotation-edit-tools');
+    		tools.querySelectorAll('svg').forEach(a =>
+    			a.classList.remove('active'));
+    		if (e)
+    			e.classList.add('active');
+    	}
+
+    	/**
+    	 * Sets the active drawing tool
+    	 * @param {string} tool - Tool name ('point', 'pin', 'line', 'box', 'circle', 'erase', or null)
+    	 * @private
+    	 */
+    	setTool(tool) {
+    		this.tool = tool;
+    		if (this.factory && this.factory.quit)
+    			this.factory.quit();
+    		if (tool) {
+    			if (!tool in this.tools)
+    				throw "Unknown editor tool: " + tool;
+
+    			this.factory = new this.tools[tool].tool(this.tools[tool]);
+    			this.factory.annotation = this.annotation;
+    			this.factory.layer = this.layer;
+    		}
+    		document.querySelector('.openlime-overlay').classList.toggle('erase', tool == 'erase');
+    		document.querySelector('.openlime-overlay').classList.toggle('crosshair', tool && tool != 'erase');
+    	}
+
+
+    	// UNDO STUFF	
+
+    	/**
+    	 * Performs an undo operation
+    	 * @returns {void}
+    	 */
+    	undo() {
+    		let anno = this.annotation; //current annotation.
+    		if (!anno)
+    			return;
+    		if (this.factory && this.factory.undo && this.factory.undo()) {
+    			anno.needsUpdate = true;
+    			this.viewer.redraw();
+    			return;
+    		}
+
+    		if (anno.history && anno.history.length) {
+    			//FIXME TODO history will be more complicated if it has to manage multiple tools.
+    			anno.future.push(this.annoToData(anno));
+
+    			let data = anno.history.pop();
+    			this.dataToAnno(data, anno);
+
+    			anno.needsUpdate = true;
+    			this.viewer.redraw();
+    			this.updateEditWidget();
+    		}
+    	}
+
+    	/**
+    	 * Performs a redo operation
+    	 * @returns {void}
+    	 */
+    	redo() {
+    		let anno = this.annotation; //current annotation.
+    		if (!anno)
+    			return;
+    		if (this.factory && this.factory.redo && this.factory.redo()) {
+    			anno.needsUpdate = true;
+    			this.viewer.redraw();
+    			return;
+    		}
+    		if (anno.future && anno.future.length) {
+    			anno.history.push(this.annoToData(anno));
+
+    			let data = anno.future.pop();
+    			this.dataToAnno(data, anno);
+
+    			anno.needsUpdate = true;
+    			this.viewer.redraw();
+    			this.updateEditWidget();
+    		}
+    	}
+
+    	/**
+    	 * Saves current annotation state to history
+    	 * @private
+    	 */
+    	saveCurrent() {
+    		let anno = this.annotation; //current annotation.
+    		if (!anno.history)
+    			anno.history = [];
+
+    		anno.history.push(this.annoToData(anno));
+    		anno.future = [];
+    	}
+
+    	/** @ignore */
+    	annoToData(anno) {
+    		let data = {};
+    		for (let i of ['id', 'label', 'description', 'class', 'publish', 'data'])
+    			data[i] = `${anno[i] || ''}`;
+    		data.elements = anno.elements.map(e => { let n = e.cloneNode(); n.points = e.points; return n; });
+    		return data;
+    	}
+
+    	/** @ignore */
+    	dataToAnno(data, anno) {
+    		for (let i of ['id', 'label', 'description', 'class', 'publish', 'data'])
+    			anno[i] = `${data[i]}`;
+    		anno.elements = data.elements.map(e => { let n = e.cloneNode(); n.points = e.points; return n; });
+    	}
+
+
+    	// TOOLS STUFF
+
+    	/** @ignore */
+    	keyUp(e) {
+    		if (e.defaultPrevented) return;
+    		switch (e.key) {
+    			case 'Escape':
+    				if (this.tool) {
+    					this.setActiveTool();
+    					this.setTool(null);
+    					e.preventDefault();
+    				}
+    				break;
+    			case 'Delete':
+    				this.deleteSelected();
+    				break;
+    			case 'Backspace':
+    				break;
+    			case 'z':
+    				if (e.ctrlKey)
+    					this.undo();
+    				break;
+    			case 'Z':
+    				if (e.ctrlKey)
+    					this.redo();
+    				break;
+    		}
+    	}
+
+    	/** @ignore */
+    	panStart(e) {
+    		if (e.buttons != 1 || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey)
+    			return;
+    		if (!['line', 'erase', 'box', 'circle'].includes(this.tool))
+    			return;
+    		this.panning = true;
+    		e.preventDefault();
+
+    		this.saveCurrent();
+
+    		const pos = this.mapToSvg(e);
+    		this.factory.create(pos, e);
+
+    		this.annotation.needsUpdate = true;
+
+    		this.viewer.redraw();
+    	}
+
+    	/** @ignore */
+    	panMove(e) {
+    		if (!this.panning)
+    			return false;
+
+    		const pos = this.mapToSvg(e);
+    		this.factory.adjust(pos, e);
+    	}
+
+    	/** @ignore */
+    	panEnd(e) {
+    		if (!this.panning)
+    			return false;
+    		this.panning = false;
+
+    		const pos = this.mapToSvg(e);
+    		let changed = this.factory.finish(pos, e);
+    		if (!changed) //nothing changed no need to keep current situation in history.
+    			this.annotation.history.pop();
+    		else
+    			this.saveAnnotation();
+    		this.annotation.needsUpdate = true;
+    		this.viewer.redraw();
+    	}
+
+    	/** @ignore */
+    	fingerHover(e) {
+    		if (this.tool != 'line')
+    			return;
+    		e.preventDefault();
+    		const pos = this.mapToSvg(e);
+    		this.factory.hover(pos, e);
+    		this.annotation.needsUpdate = true;
+    		this.viewer.redraw();
+    	}
+
+    	/** @ignore */
+    	fingerSingleTap(e) {
+    		if (!['point', 'pin', 'line', 'erase'].includes(this.tool))
+    			return;
+    		e.preventDefault();
+
+    		this.saveCurrent();
+
+    		const pos = this.mapToSvg(e);
+    		let changed = this.factory.tap(pos, e);
+    		if (!changed) //nothing changed no need to keep current situation in history.
+    			this.annotation.history.pop();
+    		else
+    			this.saveAnnotation();
+    		this.annotation.needsUpdate = true;
+
+    		this.viewer.redraw();
+    	}
+
+    	/** @ignore */
+    	fingerDoubleTap(e) {
+    		if (!['line'].includes(this.tool))
+    			return;
+    		e.preventDefault();
+
+    		this.saveCurrent();
+
+    		const pos = this.mapToSvg(e);
+    		let changed = this.factory.doubleTap(pos, e);
+    		if (!changed) //nothing changed no need to keep current situation in history.
+    			this.annotation.history.pop();
+    		else
+    			this.saveAnnotation();
+    		this.annotation.needsUpdate = true;
+
+    		this.viewer.redraw();
+    	}
+
+    	/**
+    	 * Converts viewer coordinates to SVG coordinates
+    	 * @param {PointerEvent} event - Pointer event
+    	 * @returns {Object} Position in SVG coordinates with pixel size information
+    	 * @private
+    	 */
+    	mapToSvg(e) {
+    		const p = { x: e.offsetX, y: e.offsetY };
+    		const layerT = this.layer.transform;
+    		const useGL = false;
+    		const layerbb = this.layer.boundingBox();
+    		const layerSize = { w: layerbb.width(), h: layerbb.height() };
+    		//compute also size of an image pixel on screen and store in pixelSize.
+    		let pos = CoordinateSystem.fromCanvasHtmlToImage(p, this.viewer.camera, layerT, layerSize, useGL);
+    		p.x += 1;
+    		let pos1 = CoordinateSystem.fromCanvasHtmlToImage(p, this.viewer.camera, layerT, layerSize, useGL);
+    		pos.pixelSize = Math.abs(pos1.x - pos.x);
+    		return pos;
+    	}
+    }
+
+
+    /** @ignore */
+    class Point {
+    	tap(pos) {
+    		let point = Util.createSVGElement('circle', { cx: pos.x, cy: pos.y, r: 10, class: 'point' });
+    		this.annotation.elements.push(point);
+    		return true;
+    	}
+    }
+
+    /** @ignore */
+    class Pin {
+    	constructor(options) {
+    		Object.assign(this, options);
+    	}
+    	tap(pos) {
+    		const str = this.template(pos.x, pos.y);
+    		let parser = new DOMParser();
+    		let point = parser.parseFromString(str, "image/svg+xml").documentElement;
+    		//		this.annotation.elements.push(point);
+    		this.annotation.elements[0] = point;
+    		return true;
+    	}
+    }
+
+    /** @ignore */
+    class Pen {
+    	constructor() {
+    		//TODO Use this.path.points as in line, instead.
+    		this.points = [];
+    	}
+    	create(pos) {
+    		this.points.push(pos);
+    		if (this.points.length == 1) {
+    			saveCurrent;
+
+    			this.path = Util.createSVGElement('path', { d: `M${pos.x} ${pos.y}`, class: 'line' });
+    			return this.path;
+    		}
+    		let p = this.path.getAttribute('d');
+    		this.path.setAttribute('d', p + ` L${pos.x} ${pos.y}`);
+    		this.path.points = this.points;
+    	}
+    	undo() {
+    		if (!this.points.length)
+    			return;
+    		this.points.pop();
+    		let d = this.points.map((p, i) => `${i == 0 ? 'M' : 'L'}${p.x} ${p.y}`).join(' ');
+    		this.path.setAttribute('d', d);
+
+    		if (this.points.length < 2) {
+    			this.points = [];
+    			this.annotation.elements = this.annotation.elements.filter((e) => e != this.path);
+    		}
+    	}
+    }
+
+    /** @ignore */
+    class Box {
+    	constructor() {
+    		this.origin = null;
+    		this.box = null;
+    	}
+
+    	create(pos) {
+    		this.origin = pos;
+    		this.box = Util.createSVGElement('rect', { x: pos.x, y: pos.y, width: 0, height: 0, class: 'rect' });
+    		return this.box;
+    	}
+
+    	adjust(pos) {
+    		let p = this.origin;
+
+    		this.box.setAttribute('x', Math.min(p.x, pos.x));
+    		this.box.setAttribute('width', Math.abs(pos.x - p.x));
+    		this.box.setAttribute('y', Math.min(p.y, pos.y));
+    		this.box.setAttribute('height', Math.abs(pos.y - p.y));
+    	}
+
+    	finish(pos) {
+    		return this.box;
+    	}
+    }
+
+    /** @ignore */
+    class Circle {
+    	constructor() {
+    		this.origin = null;
+    		this.circle = null;
+    	}
+    	create(pos) {
+    		this.origin = pos;
+    		this.circle = Util.createSVGElement('circle', { cx: pos.x, cy: pos.y, r: 0, class: 'circle' });
+    		return this.circle;
+    	}
+    	adjust(pos) {
+    		let p = this.origin;
+    		let r = Math.hypot(pos.x - p.x, pos.y - p.y);
+    		this.circle.setAttribute('r', r);
+    	}
+    	finish() {
+    		return this.circle;
+    	}
+    }
+
+    /** @ignore */
+    class Line {
+    	constructor() {
+    		this.history = [];
+    	}
+    	create(pos) {
+    		/*if(this.segment) {
+    			this.layer.svgGroup.removeChild(this.segment);
+    			this.segment = null;
+    		}*/
+    		for (let e of this.annotation.elements) {
+    			if (!e.points || e.points.length < 2)
+    				continue;
+    			if (Line.distance(e.points[0], pos) / pos.pixelSize < 5) {
+    				e.points.reverse();
+    				this.path = e;
+    				this.path.setAttribute('d', Line.svgPath(e.points));
+    				//reverse points!
+    				this.history = [this.path.points.length];
+    				return;
+    			}
+    			if (Line.distanceToLast(e.points, pos) < 5) {
+    				this.path = e;
+    				this.adjust(pos);
+    				this.history = [this.path.points.length];
+    				return;
+    			}
+    		}
+    		this.path = Util.createSVGElement('path', { d: `M${pos.x} ${pos.y}`, class: 'line' });
+    		this.path.points = [pos];
+    		this.history = [this.path.points.length];
+    		this.annotation.elements.push(this.path);
+    	}
+
+    	tap(pos) {
+    		if (!this.path) {
+    			this.create(pos);
+    			return false;
+    		} else {
+    			if (this.adjust(pos))
+    				this.history = [this.path.points.length - 1];
+    			return true;
+    		}
+    	}
+    	doubleTap(pos) {
+    		if (!this.path)
+    			return false;
+    		if (this.adjust(pos)) {
+    			this.history = [this.path.points.length - 1];
+    			this.path = null;
+    		}
+    		return false;
+    	}
+
+    	hover(pos, event) {
+    		return;
+    	}
+    	quit() {
+    		return;
+    	}
+
+    	adjust(pos) {
+    		let gap = Line.distanceToLast(this.path.points, pos);
+    		if (gap / pos.pixelSize < 4) return false;
+
+    		this.path.points.push(pos);
+
+    		this.path.getAttribute('d');
+    		this.path.setAttribute('d', Line.svgPath(this.path.points));//d + `L${pos.x} ${pos.y}`);
+    		return true;
+    	}
+
+    	finish() {
+    		this.path.setAttribute('d', Line.svgPath(this.path.points));
+    		return true; //some changes where made!
+    	}
+
+    	undo() {
+    		if (!this.path || !this.history.length)
+    			return false;
+    		this.path.points = this.path.points.slice(0, this.history.pop());
+    		this.path.setAttribute('d', Line.svgPath(this.path.points));
+    		return true;
+    	}
+    	redo() {
+    		return false;
+    	}
+    	//TODO: smooth should be STABLE, if possible.
+    	static svgPath(points) {
+    		//return points.map((p, i) =>  `${(i == 0? "M" : "L")}${p.x} ${p.y}`).join(' '); 
+
+    		let tolerance = 1.5 * points[0].pixelSize;
+    		let tmp = simplify(points, tolerance);
+
+    		let smoothed = smooth(tmp, 90, true);
+    		return smoothToPath(smoothed);
+
+    	}
+    	static distanceToLast(line, point) {
+    		let last = line[line.length - 1];
+    		return Line.distance(last, point);
+    	}
+    	static distance(a, b) {
+    		let dx = a.x - b.x;
+    		let dy = a.y - b.y;
+    		return Math.sqrt(dx * dx + dy * dy);
+    	}
+    }
+
+    /** @ignore */
+    class Erase {
+    	create(pos, event) { this.erased = false; this.erase(pos, event); }
+    	adjust(pos, event) { this.erase(pos, event); }
+    	finish(pos, event) { return this.erase(pos, event); } //true if some points where removed.
+    	tap(pos, event) { return this.erase(pos, event); }
+    	erase(pos, event) {
+    		for (let e of this.annotation.elements) {
+    			if (e == event.originSrc) {
+    				e.points = [];
+    				this.erased = true;
+    				continue;
+    			}
+
+    			let points = e.points;
+    			if (!points || !points.length)
+    				continue;
+
+    			if (Line.distanceToLast(points, pos) < 10)
+    				this.erased = true, points.pop();
+    			else if (Line.distance(points[0], pos) < 10)
+    				this.erased = true, points.shift();
+    			else
+    				continue;
+
+    			if (points.length <= 2) {
+    				e.points = [];
+    				e.setAttribute('d', '');
+    				this.annotation.needsUpdate = true;
+    				this.erased = true;
+    				continue;
+    			}
+
+    			e.setAttribute('d', Line.svgPath(points));
+    		}
+    		this.annotation.elements = this.annotation.elements.filter(e => { return !e.points || e.points.length > 2; });
+    		return this.erased;
+    	}
+    }
+
+    exports.AudioPlayer = AudioPlayer;
     exports.BoundingBox = BoundingBox;
     exports.Camera = Camera;
     exports.Canvas = Canvas;
@@ -13320,37 +24511,62 @@ vec4 data1() {
     exports.ColormapLegend = ColormapLegend;
     exports.Controller = Controller;
     exports.Controller2D = Controller2D;
+    exports.ControllerFocusContext = ControllerFocusContext;
+    exports.ControllerLens = ControllerLens;
     exports.ControllerPanZoom = ControllerPanZoom;
     exports.CoordinateSystem = CoordinateSystem;
     exports.Draggable = Draggable;
+    exports.EditorSvgAnnotation = EditorSvgAnnotation;
+    exports.FocusContext = FocusContext;
+    exports.GeoreferenceManager = GeoreferenceManager;
     exports.HSH = HSH;
     exports.Layer = Layer;
+    exports.LayerAnnotation = LayerAnnotation;
     exports.LayerAnnotationImage = LayerAnnotationImage;
+    exports.LayerBRDF = LayerBRDF;
     exports.LayerCombiner = LayerCombiner;
+    exports.LayerHDR = LayerHDR;
     exports.LayerImage = LayerImage;
+    exports.LayerLens = LayerLens;
     exports.LayerMaskedImage = LayerMaskedImage;
+    exports.LayerMultispectral = LayerMultispectral;
     exports.LayerNeuralRTI = LayerNeuralRTI;
     exports.LayerRTI = LayerRTI;
+    exports.LayerSvgAnnotation = LayerSvgAnnotation;
     exports.Layout = Layout;
     exports.LayoutTileImages = LayoutTileImages;
     exports.LayoutTiles = LayoutTiles;
+    exports.LensDashboard = LensDashboard;
+    exports.LensDashboardNavigator = LensDashboardNavigator;
+    exports.LensDashboardNavigatorRadial = LensDashboardNavigatorRadial;
     exports.LightSphereController = LightSphereController;
+    exports.MultispectralUI = MultispectralUI;
     exports.PointerManager = PointerManager;
     exports.Raster = Raster;
+    exports.Raster16Bit = Raster16Bit;
+    exports.RenderingMode = RenderingMode;
     exports.Ruler = Ruler;
     exports.ScaleBar = ScaleBar;
     exports.Shader = Shader;
+    exports.ShaderAnisotropicDiffusion = ShaderAnisotropicDiffusion;
+    exports.ShaderBRDF = ShaderBRDF;
     exports.ShaderCombiner = ShaderCombiner;
+    exports.ShaderEdgeDetection = ShaderEdgeDetection;
     exports.ShaderFilter = ShaderFilter;
+    exports.ShaderFilterBrightness = ShaderFilterBrightness;
     exports.ShaderFilterColormap = ShaderFilterColormap;
+    exports.ShaderFilterGrayscale = ShaderFilterGrayscale;
     exports.ShaderFilterOpacity = ShaderFilterOpacity;
     exports.ShaderFilterTest = ShaderFilterTest;
     exports.ShaderFilterVector = ShaderFilterVector;
     exports.ShaderFilterVectorGlyph = ShaderFilterVectorGlyph;
     exports.ShaderGammaFilter = ShaderGammaFilter;
+    exports.ShaderHDR = ShaderHDR;
+    exports.ShaderMultispectral = ShaderMultispectral;
     exports.ShaderNeural = ShaderNeural;
     exports.ShaderRTI = ShaderRTI;
     exports.Skin = Skin;
+    exports.TextToSpeechPlayer = TextToSpeechPlayer;
     exports.Tile = Tile;
     exports.Transform = Transform;
     exports.UIBasic = UIBasic;
