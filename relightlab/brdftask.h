@@ -5,12 +5,6 @@
 #include "../src/project.h"
 #include "../src/imageset.h"
 
-/*#include <QJsonObject>
-#include <QMutex>
-#include <QRect>
-#include <Eigen/Core>
-#include <QRunnable> */
-
 class BrdfParameters {
 public:
 	QString input_path;
@@ -35,8 +29,8 @@ public:
 
 	virtual void run() override;
 
-	void setParameters(BrdfParameters &param) {}
-	void initFromProject(Project &project) {}
+	void setParameters(BrdfParameters &param);
+	void initFromProject(Project &project);
 };
 
 class MedianWorker
@@ -49,7 +43,7 @@ public:
 			m_Row[i] = toProcess[i];
 	}
 
-	void run();
+	void run(){}
 
 private:
 	BrdfParameters parameters;
