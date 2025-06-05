@@ -101,5 +101,5 @@ jobs:
       if: runner.os != 'Windows'
       uses: actions/upload-artifact@v4
       with:
-        name: RelightLab_${{ runner.os }}_packages
+        name: RelightLab_${{ matrix.label }}_packages
         path: packages/RelightLab*
