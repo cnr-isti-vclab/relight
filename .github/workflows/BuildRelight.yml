@@ -14,7 +14,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu-latest', 'macos-13', 'macos-latest', 'windows-latest']
+          include:
+            - os: 'ubuntu-latest'
+              label: 'Linux'
+            - os: 'macos-13'
+              label: 'macOS13'
+            - os: 'macos-latest'
+              label: 'macOS'
+            - os: 'windows-latest'
+              label: 'Windows'
     steps:
     - uses: actions/checkout@v4
       with:
@@ -87,11 +95,11 @@ jobs:
     - name: Upload RelightLab Portable
       uses: actions/upload-artifact@v4
       with:
-        name: RelightLab_${{ runner.os }}_portable
+        name: RelightLab_${{ matrix.label }}_portable
         path: install/
     - name: Upload RelightLab Packages
       if: runner.os != 'Windows'
       uses: actions/upload-artifact@v4
       with:
-        name: RelightLab_${{ runner.os }}_packages
+        name: RelightLab_${{ matrix.label }}_packages
         path: packages/RelightLab*
