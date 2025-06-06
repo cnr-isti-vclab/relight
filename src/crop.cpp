@@ -4,6 +4,39 @@
 #include <cmath>
 #include <QRect>
 
+QPointF Crop::imgToCrop(QPointF p, QSize img_size) {
+	QTransform rot;
+	rot.rotate(angle);
+	QRectF rotatedSize = rot.mapRect(QRectF(QPointF(0, 0), img_size));
+
+	QSize center = img_size/2;
+	QSizeF new_center = rotatedSize.size()/2;
+
+	QTransform t;
+	t.translate(new_center.width(), new_center.height());
+	t.rotate(angle);
+	t.translate(-center.width(), -center.height());
+	QPointF q = t.map(p);
+	return q;
+}
+
+QPointF Crop::cropToImg(QPointF p, QSize img_size) {
+	QTransform rot;
+	rot.rotate(angle);
+	QRectF rotatedSize = rot.mapRect(QRectF(QPointF(0, 0), img_size));
+
+	QSize center = img_size/2;
+	QSizeF new_center = rotatedSize.size()/2;
+
+	QTransform t;
+	t.translate(new_center.width(), new_center.height());
+	t.rotate(angle);
+	t.translate(-center.width(), -center.height());
+
+	QPointF q = t.inverted().map(p);
+	return q;
+}
+
 QRect Crop::boundingRect(QSize img_size) {
 	QSize center = img_size/2;
 
@@ -20,7 +53,7 @@ QRect Crop::boundingRect(QSize img_size) {
 	t.translate(-center.width(), -center.height());
 
 	QTransform invRot = t.inverted();
-	QPolygonF cropPolygon = invRot.map(QRectF(*this));
+	QPolygonF cropPolygon = invRot.map(QRectF(rect()));
 
 	return cropPolygon.boundingRect().toAlignedRect();
 }
@@ -31,7 +64,7 @@ QImage Crop::cropBoundingImage(QImage src) {
 
 	QImage rotated = src.transformed(rotToAlignCrop, Qt::SmoothTransformation);
 
-	QSize targetSize = rect.size();
+	QSize targetSize = rect().size();
 	QPoint center = rotated.rect().center();
 	QRect finalCrop(center.x() - targetSize.width() / 2,
 					center.y() - targetSize.height() / 2,
@@ -73,25 +106,6 @@ void bilinearSample(float *n, const std::vector<float>& img, int width, int heig
 	}
 }
 
-/*std::vector<Eigen::Vector3f> Crop::cropBoundingNormals(std::vector<Eigen::Vector3f> input, int &w, int &h, QSize img_size) {
-	QTransform rotToAlignCrop;
-	rotToAlignCrop.rotate(angle);
-
-	//QImage rotated = src.transformed(rotToAlignCrop, Qt::SmoothTransformation);
-	//rotated.save("/home/ponchio/rotated.jpg");
-	QRectF rotatedSize = rotToAlignCrop.mapRect(QRectF(QPointF(0, 0), w, h));
-
-
-	QSize targetSize = QRect(*this).size();
-	QPoint center = rotatedSize.center();
-	QRect finalCrop(center.x() - targetSize.width() / 2,
-					center.y() - targetSize.height() / 2,
-					targetSize.width(), targetSize.height());
-
-	finalCrop = finalCrop.intersected(rotatedSize); // just in case
-	return rotatedAndCropImage(input, w, h, angle, finalCrop);
-}*/
-
 std::vector<float> Crop::cropBoundingNormals(
 		const std::vector<float>& input,
 		int &width, int &height) {
@@ -101,7 +115,7 @@ std::vector<float> Crop::cropBoundingNormals(
 
 	QRect rotatedSize = rotToAlignCrop.mapRect(QRectF(QPointF(0, 0), QPointF(width, height))).toRect();
 
-	QSize targetSize = rect.size();
+	QSize targetSize = rect().size();
 	QPoint center = QRect(QPoint(0, 0), rotatedSize.size()).center();
 	QRect cropRect(center.x() - targetSize.width() / 2,
 				   center.y() - targetSize.height() / 2,
