@@ -124,7 +124,7 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 	connect(crop_left,   QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this](double v) { cropper->setLeft  (round(v/pixelSize)); });
 	connect(crop_width,  QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this](double v) { cropper->setWidth (round(v/pixelSize)); });
 	connect(crop_height, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this](double v) { cropper->setHeight(round(v/pixelSize)); });
-	connect(crop_angle,  QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this](double v) { cropper->setAngle(round(v)); });
+	connect(crop_angle,  QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this](double v) { cropper->setAngle(v); });
 
 	connect(maximize, SIGNAL(clicked()), cropper, SLOT(maximizeCrop()));
 	connect(center, SIGNAL(clicked()), cropper, SLOT(centerCrop()));
