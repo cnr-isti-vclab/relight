@@ -1,5 +1,5 @@
 #include "rtibuilder.h"
-
+#include "../relight/normalstask.h"
 #include "../src/getopt.h"
 extern int opterr;
 
@@ -25,7 +25,7 @@ void help() {
 	cout << "       relight-cli [-q] <input.json> [output.ptm]\n\n";
 	cout << "\tinput folder containing a .lp or .dome with number of photos and light directions\n";
 	cout << "\toptional output folder (default ./)\n\n";
-	cout << "\t  -b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear\n";
+	cout << "\t-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear, skip\n";
 	cout << "\t  -p <int>  : number of planes (default: 9)\n";
 	cout << "\t  -q <int>  : jpeg quality (default: 95)\n";
 	cout << "\t  -y <int>  : number of Y planes in YCC\n\n";
@@ -98,6 +98,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	RtiBuilder builder;
+	bool skip_rti = false;
 	Dome dome;
 	int quality = 95;
 	bool evaluate_error = false;
@@ -196,6 +197,9 @@ int main(int argc, char *argv[]) {
 			} else if(b == "dmd") {
 				builder.colorspace = RtiBuilder::RGB;
 				builder.type = RtiBuilder::DMD;
+
+			} else if(b == "skip") {
+				skip_rti = true;
 
 			} else {
 				cerr << "Unknown basis type: " << optarg << " (pick rbf, ptm, lptm, hsh, yrbf or bilinear!)\n" << endl;
@@ -328,6 +332,31 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	std::string input = argv[optind++];
+	std::string output("./");
+	if(optind < argc)
+		output = argv[optind++];
+
+	if(relighted) {
+		if(redrawdir.isNull()) {
+			cerr << "Specify an output image filename using -D option\n" << endl;
+			return -1;
+		}
+		test(input, redrawdir.toStdString(), light);
+		return 1;
+	}
+
+	if(skip_rti) {
+		ImageSet image_set(input.c_str());
+		if(builder.savemeans) {
+			image_set.saveMean(output.c_str(), builder.quality);
+		}
+		if(builder.savenormals) {
+			saveNormals(NORMALS_L2, image_set, output.c_str());
+		}
+		return 0;
+	}
+
 	if(dome.lightConfiguration != Dome::DIRECTIONAL && builder.type == RtiBuilder::RBF) {
 		cerr << "RBF basis do not support positional lights (for the moment)\n";
 		return 1;
@@ -373,19 +402,6 @@ int main(int argc, char *argv[]) {
 
 	}
 
-	std::string input = argv[optind++];
-	std::string output("./");
-	if(optind < argc)
-		output = argv[optind++];
-
-	if(relighted) {
-		if(redrawdir.isNull()) {
-			cerr << "Specify an output image filename using -D option\n" << endl;
-			return -1;
-		}
-		test(input, redrawdir.toStdString(), light);
-		return 1;
-	}
 
 	std::function<bool(QString stage, int percent)> *callback = nullptr;
 

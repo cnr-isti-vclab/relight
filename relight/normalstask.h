@@ -20,6 +20,9 @@
 enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA };
 enum FlatMethod { NONE, RADIAL, FOURIER };
 
+void saveNormals(NormalSolver, ImageSet &imageSet, QString output, std::function<bool(std::string s, int d)> *callback = nullptr );
+void computeNormals(NormalSolver solver, ImageSet &imageSet, std::vector<float> &normals, std::function<bool(std::string s, int d)> *callback = nullptr);
+
 class NormalsTask :  public Task
 {
 public:

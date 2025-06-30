@@ -28,6 +28,58 @@ using namespace Eigen;
 ///         That NormalsWorker fills a vector with the colors of the normals in that line.
 ///
 
+//TODO refactgor this code.
+
+void saveNormals(NormalSolver solver, ImageSet &imageSet, QString output, std::function<bool(std::string s, int d)> *callback) {
+	std::vector<float> normals;
+	computeNormals(NORMALS_L2, imageSet, normals, callback);
+	std::vector<uint8_t> normalmap(imageSet.width * imageSet.height * 3);
+
+	for(size_t i = 0; i < normals.size(); i++)
+		normalmap[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
+
+	QImage img(normalmap.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
+	img.save(output);
+}
+
+void computeNormals(NormalSolver solver, ImageSet &imageSet, std::vector<float> &normals, std::function<bool(std::string s, int d)> *callback) {
+
+	normals.resize(imageSet.width * imageSet.height * 3);
+	RelightThreadPool pool;
+	PixelArray line;
+
+	pool.start(QThread::idealThreadCount());
+
+	for (int i=0; i<imageSet.height; i++) {
+		// Read a line
+		imageSet.readLine(line);
+
+		// Create the normal task and get the run lambda
+		uint32_t idx = i * 3 * imageSet.width;
+		//uint8_t* data = normals.data() + idx;
+		float* data = &normals[idx];
+
+		NormalsWorker *task = new NormalsWorker(solver, i, line, data, imageSet);
+
+		std::function<void(void)> run = [task](void)->void {
+			task->run();
+			delete task;
+		};
+
+		pool.queue(run);
+		pool.waitForSpace();
+
+		if(callback && ! (*callback)("Computing normals...", ((float)i / imageSet.height) * 100)) {
+			break;
+		}
+	}
+
+	// Wait for the end of all the threads
+	pool.finish();
+
+
+}
+
 void NormalsTask::run() {
 	status = RUNNING;
 	QList<QVariant> qlights = (*this)["lights"].value.toList();

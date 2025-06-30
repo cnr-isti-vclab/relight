@@ -11,11 +11,13 @@ QMAKE_CXXFLAGS += -std=c++17
 DEFINES += _USE_MATH_DEFINES
 DEFINES += NOMINMAX
 
+INCLUDEPATH += ../external/
+
 win32:INCLUDEPATH += ../libjpeg/include 
 win32:LIBS += ../libjpeg/lib/jpeg.lib 
 
 unix:INCLUDEPATH += /usr/include/eigen3
-unix:LIBS += -ljpeg -liomp5
+unix:LIBS += -ljpeg -liomp5 -ltiff
 unix:QMAKE_CXXFLAGS += -fopenmp
 
 mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/2.0.6/include \
@@ -32,7 +34,13 @@ mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 DESTDIR = "../bin"
 
 SOURCES += main.cpp \
+    ../relight/normalstask.cpp \
+    ../relight/task.cpp \
+    ../src/align.cpp \
+    ../src/bni_normal_integration.cpp \
     ../src/dome.cpp \
+    ../src/fft_normal_integration.cpp \
+    ../src/flatnormals.cpp \
     ../src/getopt.cpp \
     ../src/imageset.cpp \
     ../src/jpeg_decoder.cpp \
@@ -46,7 +54,12 @@ SOURCES += main.cpp \
     ../src/lp.cpp
 
 HEADERS += \
+    ../relight/normalstask.h \
+    ../relight/task.h \
+    ../src/bni_normal_integration.h \
     ../src/dome.h \
+    ../src/fft_normal_integration.h \
+    ../src/flatnormals.h \
     ../src/getopt.h \
     ../src/imageset.h \
     ../src/jpeg_decoder.h \

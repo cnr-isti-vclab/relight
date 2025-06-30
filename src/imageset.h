@@ -87,8 +87,10 @@ public:
 
 	Eigen::Vector3f relativeLight(const Eigen::Vector3f &light, int x, int y);
 
+	void saveMean(const char *path, int quality);
+
 protected:
-	std::function<bool(QString stage, int percent)> *callback;
+	std::function<bool(QString stage, int percent)> *callback = nullptr;
 	std::vector<JpegDecoder *> decoders;
 
 private:

@@ -1,7 +1,9 @@
 #include "imageset.h"
 #include "dome.h"
 #include "jpeg_decoder.h"
+#include "jpeg_encoder.h"
 #include "project.h"
+
 
 #include <QDir>
 #include <QFile>
@@ -475,6 +477,39 @@ void ImageSet::skipToTop() {
 			throw std::string("Cancelled");
 	}
 	current_line += top;
+}
+
+void ImageSet::saveMean(const char *path, int quality) {
+	JpegEncoder encoder;
+	encoder.setQuality(quality);
+	encoder.setColorSpace(JCS_RGB, 3);
+	encoder.setJpegColorSpace(JCS_YCbCr);
+	encoder.init(path, width, height);
+
+	std::vector<float> line(width*3, 0.0f);
+	vector<uint8_t> row(image_width*3);
+
+	for(int y = top; y < bottom; y++) {
+		if(callback && !(*callback)(QString("Reading images:"), 100*(y-top)/(height-1)))
+			throw std::string("Cancelled");
+
+		line.clear();
+		line.resize(width*3, 0.0f);
+		for(uint32_t i = 0; i < decoders.size(); i++) {
+			JpegDecoder *dec = decoders[i];
+			dec->readRows(1, row.data());
+			for(uint32_t x = 0; x < width; x++) {
+				for(int k = 0; k < 3; k++) {
+					line[x*3 + k] += row[(x + left)*3 + k];
+				}
+			}
+		}
+		for(uint32_t i = 0; i < width*3; i++) {
+			row[i] = line[i]/decoders.size();
+		}
+		encoder.writeRows(row.data(), 1);
+	}
+	encoder.finish();
 }
 
 
