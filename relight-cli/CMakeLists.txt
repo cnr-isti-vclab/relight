@@ -26,11 +26,16 @@ SET(HEADERS
 	../src/dome.h
 	../src/sphere.h
 	../src/lens.h
+	../src/flatnormals.h
+	../src/bni_normal_integration.h
+	../relight/task.h
+	../relight/normalstask.h
 )
 
 SET(SOURCES
 	main.cpp
 	rtibuilder.cpp
+	convert_rti.cpp
 	../src/getopt.cpp
 	../src/imageset.cpp
 	../src/jpeg_decoder.cpp
@@ -41,7 +46,10 @@ SET(SOURCES
 	../src/dome.cpp
 	../src/lens.cpp
 	../src/sphere.cpp
-	convert_rti.cpp
+	../src/flatnormals.cpp
+	../src/bni_normal_integration.cpp
+	../relight/task.cpp
+	../relight/normalstask.cpp
 )
 
 
@@ -51,11 +59,14 @@ target_include_directories(
 	relight-cli PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}
-		${EIGEN3_INCLUDE_DIR})
+		TIFF::TIFF
+		${EIGEN3_INCLUDE_DIR}
+		../external)
 
 target_link_libraries(
 	relight-cli PUBLIC
 		${JPEG_LIBRARIES}
+		TIFF::TIFF
 		OpenMP::OpenMP_CXX
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui
