@@ -26,6 +26,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     ../src/bni_normal_integration.h \
+    ../external/assm/Grid.h \
     camera.h \
     depthmap.h \
     gaussiangrid.h \

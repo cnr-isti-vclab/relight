@@ -282,6 +282,44 @@ void GaussianGrid::imageGrid(const char* filename) {
 }
 
 
+vector<float> GaussianGrid::blurMask(const vector<float>& mask, int w, int h, float sigma) {
+	Grid<float> img(w, h);
+	for (size_t i = 0; i < mask.size(); i++) img[i] = mask[i];
+	Grid<float> blurred = img.gaussianBlur((int)(round(sigma) * 6 + 1), sigma);
+	vector<float> out(mask.size());
+	for (size_t i = 0; i < out.size(); ++i) out[i] = blurred[i];
+	return out;
+}
+//carica la mask, applica il gaussian blur con il peso scalato da 0.5 a 1 fai la somma pesata tra la depth di Mic Mac e quella ricavata dal gaussian blur
+//gaussian, maschera 0.5 1, peso mediato
+
+vector<float> GaussianGrid::loadAndBlurMaskWeights(QString mask_path, int expected_w, int expected_h, float sigma) {
+	QImage mask(mask_path);
+	if (mask.width() != expected_w || mask.height() != expected_h) {
+		throw std::runtime_error("Mask size mismatch");
+	}
+
+	vector<float> raw(expected_w * expected_h);
+	for (int y = 0; y < expected_h; y++) {
+		for (int x = 0; x < expected_w; x++) {
+			int i = x + y * expected_w;
+			float val = qGray(mask.pixel(x, y)) / 255.0f;
+			raw[i] = val;
+		}
+	}
+
+	auto blurred = blurMask(raw, expected_w, expected_h, sigma);
+
+	// Scala da [0, 1] → [0.5, 1.0]
+	for (size_t i = 0; i < blurred.size(); i++) {
+		blurred[i] = 0.5f + 0.5f * blurred[i];
+	}
+
+	return blurred;
+}
+
+
+
 
 
 //scala tra 0 e 1. img
