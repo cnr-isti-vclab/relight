@@ -481,7 +481,7 @@ MaterialBuilder RtiBuilder::pickBaseHSH(std::vector<Vector3f> &lights, Rti::Type
 			lweights = lightWeightsHsh(light[0], light[1]);
 			break;
 		case SH:
-			lweights = lightWeightsSh(light[0], light[1]);
+			lweights = lightWeightsSh(light[0], light[1], light[2]);
 			break;
 		case H:
 			lweights = lightWeightsH(light[0], light[1]);

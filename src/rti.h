@@ -79,7 +79,7 @@ public:
 	std::vector<float> lightWeights   (float lx, float ly);
 	std::vector<float> lightWeightsPtm(float lx, float ly);
 	std::vector<float> lightWeightsHsh(float lx, float ly);
-	std::vector<float> lightWeightsSh (float lx, float ly);
+	std::vector<float> lightWeightsSh (float lx, float ly, float lz = 0.0f);
 	std::vector<float> lightWeightsH  (float lx, float ly);
 	std::vector<float> lightWeightsDmd(float lx, float ly);
 	std::vector<float> lightWeightsRbf(float lx, float ly);

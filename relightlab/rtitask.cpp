@@ -83,6 +83,8 @@ void RtiTask::setParameters(RtiParameters &p) {
 	label = parameters.summary();
 
 	builder->type         = parameters.basis;
+	if(parameters.basis == Rti::HSH)
+		builder->type = Rti::SH;
 	builder->colorspace   = parameters.colorspace;
 	builder->nplanes      = parameters.nplanes;
 	builder->yccplanes[1] = builder->yccplanes[2] = parameters.nchroma;

@@ -460,8 +460,28 @@ std::vector<float> Rti::lightWeightsHsh(float lx, float ly) {
 	return lweights;
 }
 
-std::vector<float> Rti::lightWeightsSh(float lx, float ly) {
-	float lz = sqrt(1.0f - lx*lx - ly*ly);
+std::vector<float> Rti::lightWeightsSh(float lx, float ly, float lz) {
+	if(lz == 0.0f)
+		lz = sqrt(1.0f - lx*lx - ly*ly);
+
+	const float c0 = 0.282095f;
+	 const float c1 = 0.488603f;
+	 const float c2 = 1.092548f;
+	 const float c3 = 0.315392f;
+	 const float c4 = 0.546274f;
+
+	 return {
+		 c0,                     // Y00
+		 c1 * ly,                 // Y1-1
+		 c1 * lz,                 // Y10
+		 c1 * lx,                 // Y11
+		 c2 * lx * ly,             // Y2-2
+		 c2 * ly * lz,             // Y2-1
+		 c3 * (3 * lz * lz - 1),   // Y20
+		 c2 * lx * lz,             // Y21
+		 c4 * (lx * lx - ly * ly)    // Y22
+	 };
+/*	float lz = sqrt(1.0f - lx*lx - ly*ly);
 	float phi = atan2(ly, lx);
 	if (phi < 0.0f)
 		phi = 2.0f * M_PI + phi;
@@ -502,7 +522,7 @@ std::vector<float> Rti::lightWeightsSh(float lx, float ly) {
 	lweights[8] = 0.25*sqrt(15 / M_PI)*sinT*sinT*cos(2*phi);
 	xweights[8] = 0.25*sqrt(15 / M_PI) *(-lx*lx + ly*ly);
 
-	return lweights;
+	return lweights;*/
 }
 
 std::vector<float> Rti::lightWeightsH(float /*lx*/, float /*ly*/) {
