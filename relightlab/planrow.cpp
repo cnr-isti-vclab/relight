@@ -9,7 +9,7 @@ PlanRow::PlanRow(QFrame *parent): QFrame(parent) {
 	QHBoxLayout *layout = new QHBoxLayout(this);
 
 	label = new HelpLabel("", "");
-	label->setFixedWidth(200);
+	label->setMinimumWidth(200);
 	layout->addWidget(label, 0, Qt::AlignLeft);
 	//layout->setSpacing(20);
 

@@ -15,11 +15,13 @@ BrdfMedianRow::BrdfMedianRow(BrdfParameters &_parameters, QFrame *parent):
 
 	label->label->setText("Median image");
 	buttons->addWidget(new QLabel("Light percentage:"));
-	buttons->addWidget(median_slider = new QSlider);
+	buttons->addWidget(median_slider = new QSlider(Qt::Horizontal));
 	buttons->addWidget(median_text = new QLabel);
 	int percent = int(parameters.median_percentage);
 	median_slider->setSliderPosition(percent);
 	median_text->setText(QString::number(percent));
+
+
 	connect(median_slider, &QSlider::valueChanged, [this](int v) { median_text->setText(QString::number(v)); });
 }
 
