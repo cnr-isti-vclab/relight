@@ -1,12 +1,27 @@
 #include "brdfframe.h"
 #include "relightapp.h"
 #include "reflectionview.h"
+#include "helpbutton.h"
 
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QLabel>
+#include <QSlider>
 
 //export various planes.
+
+BrdfMedianRow::BrdfMedianRow(BrdfParameters &_parameters, QFrame *parent):
+	PlanRow(parent), parameters(_parameters) {
+
+	label->label->setText("Median image");
+	buttons->addWidget(new QLabel("Light percentage:"));
+	buttons->addWidget(median_slider = new QSlider);
+	buttons->addWidget(median_text = new QLabel);
+	int percent = int(parameters.median_percentage);
+	median_slider->setSliderPosition(percent);
+	median_text->setText(QString::number(percent));
+	connect(median_slider, &QSlider::valueChanged, [this](int v) { median_text->setText(QString::number(v)); });
+}
 
 BrdfFrame::BrdfFrame(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);
@@ -14,7 +29,7 @@ BrdfFrame::BrdfFrame(QWidget *parent): QFrame(parent) {
 	content->addWidget(new QLabel("<h2>BRDF creation</h2>"));
 	content->addSpacing(30);
 
-	median_row = new BrdfMedianRow(this);
+	median_row = new BrdfMedianRow(parameters, this);
 	content->addWidget(median_row);
 	content->addStretch(1);
 
