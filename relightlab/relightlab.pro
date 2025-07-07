@@ -47,6 +47,7 @@ SOURCES += main.cpp \
     ../relight-cli/rtibuilder.cpp \
     ../src/crop.cpp \
     ../src/flatnormals.cpp \
+    brdfplan.cpp \
     imagecropper.cpp \
     processqueue.cpp \
     ../src/align.cpp \
@@ -133,6 +134,7 @@ HEADERS += \
     ../relight-cli/rtibuilder.h \
     ../src/crop.h \
     ../src/flatnormals.h \
+    brdfplan.h \
     imagecropper.h \
     processqueue.h \
     ../src/align.h \

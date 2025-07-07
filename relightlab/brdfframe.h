@@ -6,16 +6,8 @@
 #include "brdftask.h"
 
 class ZoomOverview;
-class QSlider;
-class QLabel;
+class BrdfMedianRow;
 
-class BrdfMedianRow: public PlanRow {
-public:
-	BrdfMedianRow(BrdfParameters &parameters, QFrame *parent = nullptr);
-	BrdfParameters &parameters;
-	QSlider *median_slider = nullptr;
-	QLabel *median_text = nullptr;
-};
 
 class BrdfFrame: public QFrame {
 	Q_OBJECT

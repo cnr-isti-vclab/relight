@@ -97,6 +97,8 @@ set (RELIGHT_HEADERS
     scaleframe.h
     imagecropper.h
     brdfframe.h
+    brdftask.h
+    brdfplan.h
 )
 
 set (RELIGHTLAB_SOURCES
@@ -167,6 +169,8 @@ set (RELIGHTLAB_SOURCES
     scaleframe.cpp
     imagecropper.cpp
     brdfframe.cpp
+    brdftask.cpp
+    brdfplan.cpp
 )
 
 
