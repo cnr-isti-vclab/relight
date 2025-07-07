@@ -15080,11 +15080,12 @@ vec4 data() {
 
     		let controller = new Controller2D(
     			(x, y) => {
+    				let lightdir = [x, y, Math.sqrt(1 - x * x + y * y)];
     				for (let layer of lightLayers)
     					layer.setLight([x, y], 0);
     				if (this.showLightDirections)
     					this.updateLightDirections(x, y);
-    				this.emit('lightdirection', [x, y, Math.sqrt(1 - x * x + y * y)]);
+    				this.emit('lightdirection', lightdir);
     			}, {
     			// TODO: IS THIS OK? It was false before
     			active: false,
@@ -16812,19 +16813,34 @@ vec4 data() {
 
     		let x = light[0];
     		let y = light[1];
+    		let z = 1.0;
+    		if(this.type == 'sh') {
+    			//mamp x y as lat lon to the sphere coords (xyz)
 
-    		//map the square to the circle.
-    		let r = Math.sqrt(x * x + y * y);
-    		if (r > 1) {
-    			x /= r;
-    			y /= r;
+    			// Convert to radians
+    			let PI = 3.1415;
+    			let lat = light[1] * (PI / 2.0);  // latitude ∈ [-π/2, π/2)
+    			let lon = light[0] * PI;          // longitude ∈ [-π, π)
+
+    			// Spherical to Cartesian
+    			x = Math.cos(lat) * Math.cos(lon);
+    			z = Math.cos(lat) * Math.sin(lon);
+    			y = Math.sin(lat);
+    		} else {
+    			//map the square to the circle.
+    			let r = Math.sqrt(x * x + y * y);
+    			if (r > 1) {
+    				x /= r;
+    				y /= r;
+    			}
+    			z = Math.sqrt(Math.max(0, 1 - x * x - y * y));
     		}
-    		let z = Math.sqrt(Math.max(0, 1 - x * x - y * y));
     		light = [x, y, z];
 
     		if (this.mode == 'light')
     			this.lightWeights(light, 'base');
     		this.setUniform('light', light);
+    		return light;
     	}
 
     	/**
@@ -17562,7 +17578,6 @@ vec4 render(vec3 base[np1]) {
     		let done = super.interpolateControls();
     		if (!done) {
     			let light = this.controls['light'].current.value;
-    			//this.shader.setLight(light);
     			let rotated = Transform.rotate(light[0], light[1], this.worldRotation * Math.PI);
     			this.shader.setLight([rotated.x, rotated.y]);
     		}
