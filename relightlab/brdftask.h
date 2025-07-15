@@ -4,6 +4,7 @@
 #include "task.h"
 #include "../src/project.h"
 #include "../src/imageset.h"
+#include "../src/relight_vector.h"
 
 class BrdfParameters {
 public:
@@ -24,6 +25,9 @@ public:
 	BrdfParameters parameters;
 
 	ImageSet imageset;
+	Crop crop;
+	QSize img_size;
+
 	Lens lens;
 	float pixelSize = 0.0f;
 
@@ -43,14 +47,29 @@ public:
 			m_Row[i] = toProcess[i];
 	}
 
-	void run(){}
+	void run() {
+		int nth = m_Row.nlights * parameters.median_percentage / 100;
+		assert(nth >= 0 && nth < m_Row.nlights);
+		for(size_t i = 0; i < m_Row.size(); i++) {
+			Pixel &p = m_Row[i];
+			//separate components
+			std::vector<float> c(p.size());
+			for(int k = 0; k < 3; k++) {
+				for(int j = 0; j < p.size(); j++) {
+					c[j] = p[j][k];
+				}
+				std::nth_element(c.begin(), c.begin() + nth, c.end());
+				albedo[i*3 + k] =  c[nth];
+			}
+		}
+	}
 
 private:
 	BrdfParameters parameters;
 	int row;
 	PixelArray m_Row;
 
-	float *albedo;
+	float *albedo = nullptr;
 	ImageSet &m_Imageset;
 	Lens &lens;
 	QMutex m_Mutex;

@@ -7,22 +7,26 @@
 
 class ZoomOverview;
 class BrdfMedianRow;
+class BrdfExportRow;
 
 
 class BrdfFrame: public QFrame {
 	Q_OBJECT
 public:
 	BrdfFrame(QWidget *parent = nullptr);
-	void clear();
-	void init();
 
 public slots:
+	void save();
+	void init();
+	void updateCrop(Crop crop);
+
 
 signals:
 	void processStarted();
 
 private:
 	BrdfMedianRow *median_row = nullptr;
+	BrdfExportRow *export_row = nullptr;
 	ZoomOverview *zoom_view =  nullptr;
 	BrdfParameters parameters;
 

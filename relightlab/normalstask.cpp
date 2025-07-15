@@ -52,13 +52,14 @@ QString NormalsParameters::summary() {
 }
 
 void NormalsTask::initFromProject(Project &project) {
-	crop = project.crop;
-	img_size = project.imgsize;
-	QRect unrotatedCrop = crop.boundingRect(project.imgsize);
 
 	lens = project.lens;
 	imageset.width = imageset.image_width = project.lens.width;
 	imageset.height = imageset.image_height = project.lens.height;
+
+	crop = project.crop;
+	img_size = project.imgsize;
+	QRect unrotatedCrop = crop.boundingRect(project.imgsize);
 
 	imageset.initFromProject(project);
 	imageset.setCrop(unrotatedCrop, project.offsets);
@@ -87,7 +88,7 @@ void NormalsTask::run() {
 		width = imageset.width;
 		height = imageset.height;
 
-		normals.resize(imageset.width * imageset.height * 3);
+		normals.resize(width * height * 3);
 		RelightThreadPool pool;
 		PixelArray line;
 		imageset.setCallback(nullptr);

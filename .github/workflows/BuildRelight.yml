@@ -19,7 +19,7 @@ jobs:
               label: 'Linux'
             - os: 'macos-13'
               label: 'macOS13'
-            - os: 'macos-latest'
+            - os: 'macos-14'
               label: 'macOS'
             - os: 'windows-latest'
               label: 'Windows'

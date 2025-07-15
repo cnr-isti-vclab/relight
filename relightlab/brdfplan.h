@@ -17,7 +17,6 @@ public:
 class BrdfMedianRow: public BrdfPlanRow {
 public:
 	BrdfMedianRow(BrdfParameters &parameters, QFrame *parent = nullptr);
-	BrdfParameters &parameters;
 	QSlider *median_slider = nullptr;
 	QLabel *median_text = nullptr;
 };
@@ -25,8 +24,9 @@ public:
 class BrdfExportRow: public BrdfPlanRow {
 	Q_OBJECT
 public:
-	BrdfExportRow(BrdfPlanRow &parameters, QFrame *parent = nullptr);
+	BrdfExportRow(BrdfParameters &parameters, QFrame *parent = nullptr);
 	void setPath(QString path, bool emitting = false);
+
 public slots:
 	void selectOutput();
 	void verifyPath();

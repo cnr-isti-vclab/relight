@@ -1,20 +1,17 @@
 # Roadmap for RelightLab.
 
 
+## Todo for release
 
-## Reinstate existing functions:
-
-* lp saving
-
-## New Features
-
-* consider eventual modifications to the file format to mirror interface parameters.
-* manual alignment
+* check ? mark on buttons.
+* crop selected images
+* brdf albedo
+* default dome(s) in preferences (when number of light matches)
 * ellipse reflections geometrically accurate
-* cancel button on sphere reflection processing.
 * better info on queue items.
-* remove relight_vector and jus use eigen.
-* allow resize for normals integration (it's too slow...).
+* windows installer
+* metadata
+
 
 ## Long term new features
 
@@ -27,19 +24,17 @@
 * shadow removal
 * 3d lights on sphere should take into account sphere posistion/
 * allow rescaling when building rti and normals
-* rotate and crop an existing rti.
 
 ## Bugs
 
 * dark theme on windows conflicts
+* icons and font size on linux large screen are too small.
 * Accessing the crop tab before loading the project causes it to stop working.
 * check for invalid inner circle when creating a sphere.
 * test pause/stop/play in queue.
-* deal with #lights  different from #images
 * when the sphere changes size, the icon with the reflection overview is not resized properly
 
 ## Small Bugs
 
 * Check version is properly written and read from the .relight file
-* normal integrations callbacks.
 
