@@ -1,29 +1,17 @@
 #include "brdfframe.h"
+#include "brdfplan.h"
+#include "brdftask.h"
 #include "relightapp.h"
 #include "reflectionview.h"
 #include "helpbutton.h"
+#include "processqueue.h"
 
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QSlider>
+#include <QMessageBox>
 
-//export various planes.
-
-BrdfMedianRow::BrdfMedianRow(BrdfParameters &_parameters, QFrame *parent):
-	PlanRow(parent), parameters(_parameters) {
-
-	label->label->setText("Median image");
-	buttons->addWidget(new QLabel("Light percentage:"));
-	buttons->addWidget(median_slider = new QSlider(Qt::Horizontal));
-	buttons->addWidget(median_text = new QLabel);
-	int percent = int(parameters.median_percentage);
-	median_slider->setSliderPosition(percent);
-	median_text->setText(QString::number(percent));
-
-
-	connect(median_slider, &QSlider::valueChanged, [this](int v) { median_text->setText(QString::number(v)); });
-}
 
 BrdfFrame::BrdfFrame(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *content = new QVBoxLayout(this);
@@ -31,8 +19,8 @@ BrdfFrame::BrdfFrame(QWidget *parent): QFrame(parent) {
 	content->addWidget(new QLabel("<h2>BRDF creation</h2>"));
 	content->addSpacing(30);
 
-	median_row = new BrdfMedianRow(parameters, this);
-	content->addWidget(median_row);
+	content->addWidget(median_row = new BrdfMedianRow(parameters, this));
+	content->addWidget(export_row = new BrdfExportRow(parameters, this));
 	content->addStretch(1);
 
 	{
@@ -60,7 +48,7 @@ BrdfFrame::BrdfFrame(QWidget *parent): QFrame(parent) {
 				save->setIcon(QIcon::fromTheme("save"));
 				save->setProperty("class", "large");
 				save->setMinimumWidth(200);
-				//connect(save, &QPushButton::clicked, [this]() { this->save(); });
+				connect(save, &QPushButton::clicked, [this]() { this->save(); });
 
 				buttons_layout->addWidget(save);
 			}
@@ -76,4 +64,37 @@ BrdfFrame::BrdfFrame(QWidget *parent): QFrame(parent) {
 
 
 	content->addStretch();
+}
+
+void BrdfFrame::init() {
+	export_row->suggestPath();
+	zoom_view->init();
+	zoom_view->setCrop(qRelightApp->project().crop);
+}
+
+void BrdfFrame::updateCrop(Crop crop) {
+	zoom_view->setCrop(crop);
+}
+
+
+void BrdfFrame::save() {
+
+
+	BrdfTask *task = new BrdfTask();
+	try {
+
+		task->setParameters(parameters);
+		task->output = parameters.path;
+		task->initFromProject(qRelightApp->project());
+
+	} catch(QString error) {
+		QMessageBox::critical(this, "Something went wrong", error);
+		delete task;
+		return;
+	}
+
+	ProcessQueue &queue = ProcessQueue::instance();
+	queue.addTask(task);
+
+	emit processStarted();
 }

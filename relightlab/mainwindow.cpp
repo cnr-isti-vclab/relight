@@ -52,6 +52,7 @@ MainWindow::MainWindow() {
 	connect(sphere_frame, SIGNAL(updated()), lights_frame, SLOT(updateSphere()));
 	connect(crop_frame, SIGNAL(cropChanged(Crop)), rti_frame, SLOT(updateCrop(Crop)));
 	connect(crop_frame, SIGNAL(cropChanged(Crop)), normals_frame, SLOT(updateCrop(Crop)));
+	connect(crop_frame, SIGNAL(cropChanged(Crop)), brdf_frame, SLOT(updateCrop(Crop)));
 	connect(rti_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
 	connect(brdf_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
 	connect(normals_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
@@ -60,7 +61,7 @@ MainWindow::MainWindow() {
 }
 
 void MainWindow::showQueue() {
-	tabs->setCurrentIndex(9);
+	tabs->setCurrentIndex(10);
 }
 
 void MainWindow::setTabIndex(int index) {
@@ -157,6 +158,7 @@ void MainWindow::init() {
 	crop_frame->init();
 	rti_frame->init();
 	normals_frame->init();
+	brdf_frame->init();
 }
 
 void MainWindow::showHelp() {

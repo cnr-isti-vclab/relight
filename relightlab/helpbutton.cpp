@@ -59,7 +59,7 @@ HelpButton::HelpButton(QString id, QWidget *parent): QToolButton(parent) {
 	setCursor(Qt::PointingHandCursor);
 	setIcon(QIcon::fromTheme("help-circle"));
 	setId(id);
-	//setStyleSheet("QToolButton { color: #ff00ff; }");
+	setStyleSheet("QToolButton { color: #ff00ff; }");
 	connect(this, SIGNAL(clicked()), this, SLOT(showHelp()));
 
 	setStyleSheet("QToolButton { border: none; outline: none; }");

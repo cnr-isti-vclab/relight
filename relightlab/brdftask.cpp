@@ -19,8 +19,13 @@ void BrdfTask::initFromProject(Project &project) {
 	imageset.width = imageset.image_width = project.lens.width;
 	imageset.height = imageset.image_height = project.lens.height;
 
+	crop = project.crop;
+	img_size = project.imgsize;
+	QRect unrotatedCrop = crop.boundingRect(project.imgsize);
+
 	imageset.initFromProject(project);
-	imageset.setCrop(project.crop, project.offsets);
+	imageset.setCrop(unrotatedCrop, project.offsets);
+	imageset.rotateLights(-project.crop.angle);
 
 	pixelSize = project.pixelSize;
 }
@@ -41,6 +46,15 @@ void BrdfTask::run() {
 
 	int width = 0, height = 0;
 
+	QDir destination(parameters.path);
+	if(!destination.exists()) {
+		if(!QDir().mkpath(parameters.path)) {
+			error = "Could not create brdf folder.";
+			status = FAILED;
+			return;
+		}
+	}
+
 	if(parameters.albedo == BrdfParameters::MEDIAN) {
 		width = imageset.width;
 		height = imageset.height;
@@ -57,7 +71,6 @@ void BrdfTask::run() {
 
 			// Create the normal task and get the run lambda
 			uint32_t idx = i * 3 * imageset.width;
-			//uint8_t* data = normals.data() + idx;
 			float* data = &albedo[idx];
 
 			MedianWorker *task = new MedianWorker(parameters, i, line, data, imageset, lens);
@@ -71,17 +84,19 @@ void BrdfTask::run() {
 			pool.queue(run);
 			pool.waitForSpace();
 
-			bool proceed = progressed("Computing normals...", ((float)i / imageset.height) * 100);
+			bool proceed = progressed("Computing albedo...", ((float)i / imageset.height) * 100);
 			if(!proceed)
 				return;
 		}
 
 		vector<uint8_t> albedomap(width * height * 3);
-		for(size_t i = 0; i < albedomap.size(); i++)
-			albedomap[i] = std::min(std::max(round(((albedo[i] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+		for(size_t i = 0; i < albedo.size(); i++) {
+				albedomap[i] = std::min(std::max(int(albedo[i]), 0), 255);
+		}
 
 		QImage img(albedomap.data(), width, height, width*3, QImage::Format_RGB888);
-
+		if(crop.angle != 0.0f)
+			img = crop.cropBoundingImage(img);
 
 		// Set spatial resolution if known. Need to convert as pixelSize stored in mm/pixel whereas QImage requires pixels/m
 		if( pixelSize > 0 ) {
@@ -89,6 +104,12 @@ void BrdfTask::run() {
 			img.setDotsPerMeterX(dotsPerMeter);
 			img.setDotsPerMeterY(dotsPerMeter);
 		}
-		img.save(parameters.path, nullptr, 100);
+		bool saved = img.save(destination.filePath("albedo.jpg"), "jpg", parameters.quality);
+		if(!saved) {
+			status = FAILED;
+			return;
+		}
+		progressed("Albedo done", 100);
 	}
+	status = DONE;
 }
