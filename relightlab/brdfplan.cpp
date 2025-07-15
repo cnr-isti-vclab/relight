@@ -28,7 +28,10 @@ BrdfMedianRow::BrdfMedianRow(BrdfParameters &_parameters, QFrame *parent):
 	median_text->setText(QString::number(percent));
 
 
-	connect(median_slider, &QSlider::valueChanged, [this](int v) { median_text->setText(QString::number(v)); });
+	connect(median_slider, &QSlider::valueChanged, [this](int v) {
+		parameters.median_percentage = v;
+		median_text->setText(QString::number(v));
+	});
 }
 
 
