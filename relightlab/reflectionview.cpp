@@ -143,9 +143,9 @@ void ReflectionOverview::resizeEvent(QResizeEvent */*event*/) {
 ZoomOverview::ZoomOverview(Crop _crop, int height, QWidget *parent):
 	MarkerOverview(height, parent), crop(_crop) {
 	QPolygonF p;
-	item = scene.addRect(0, 0, 0, 0, Qt::NoPen, Qt::green);
-	item->setPen(QPen(Qt::green, 2));
-	item->setBrush(QBrush(Qt::green));
+	item = scene.addRect(0, 0, 0, 0, QPen(Qt::green, 2), Qt::transparent);
+
+	//item->setBrush(QBrush(Qt::transparent));
 }
 
 void ZoomOverview::update() {
@@ -164,15 +164,16 @@ void ZoomOverview::update() {
 
 	QSize new_center = rotatedSize.size()/2;
 
-	double scale = img_item->pixmap().width()/(double)img_size.width();
+	double scale = (double)img_size.width()/img_item->pixmap().width();
 	QTransform t;
 	t.translate(new_center.width(), new_center.height());
 	t.rotate(crop.angle);
 	t.translate(-center.width(), -center.height());
-	t.scale(1/scale, 1/scale);
+	t.scale(scale, scale);
 	img_item->setTransform(t);
 
 	item->setRect(crop);
+	item->setPen(QPen(Qt::green, 2*scale));
 
 	QRectF bound = img_item->mapToScene(img_item->boundingRect()).boundingRect();
 	fitInView(bound,  Qt::KeepAspectRatio);
