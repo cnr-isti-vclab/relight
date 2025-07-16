@@ -48,7 +48,7 @@ public:
 	}
 
 	void run() {
-		int nth = m_Row.nlights * parameters.median_percentage / 100;
+		int nth = (m_Row.nlights-1) * parameters.median_percentage / 100;
 		assert(nth >= 0 && nth < m_Row.nlights);
 		for(size_t i = 0; i < m_Row.size(); i++) {
 			Pixel &p = m_Row[i];

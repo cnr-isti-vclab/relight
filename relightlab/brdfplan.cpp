@@ -15,7 +15,6 @@ BrdfPlanRow::BrdfPlanRow(BrdfParameters &_parameters, QFrame *parent):
 
 }
 
-
 BrdfMedianRow::BrdfMedianRow(BrdfParameters &_parameters, QFrame *parent):
 	BrdfPlanRow(_parameters, parent) {
 
@@ -23,6 +22,8 @@ BrdfMedianRow::BrdfMedianRow(BrdfParameters &_parameters, QFrame *parent):
 	buttons->addWidget(new QLabel("Light percentage:"));
 	buttons->addWidget(median_slider = new QSlider(Qt::Horizontal));
 	buttons->addWidget(median_text = new QLabel);
+	median_slider->setMinimum(0);
+	median_slider->setMaximum(100);
 	int percent = int(parameters.median_percentage);
 	median_slider->setSliderPosition(percent);
 	median_text->setText(QString::number(percent));
