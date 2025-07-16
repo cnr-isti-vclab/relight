@@ -35,6 +35,7 @@ HelpedButton::HelpedButton(QString id, QIcon icon, QString text, QWidget *parent
 
 	button->setIcon(icon);
 	button->setText(text);
+	connect(button, SIGNAL(clicked(bool)), this, SIGNAL(clicked()));
 }
 
 void HelpedButton::init(QString id) {

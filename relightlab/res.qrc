@@ -88,6 +88,7 @@
         <file>docs/interface/scale.html</file>
         <file>docs/interface/spheres.html</file>
         <file>docs/interface/lights.html</file>
+		<file>docs/interface/crop.html</file>
         <file>docs/interface/queue.html</file>
         <file>docs/interface/new_project.html</file>
         <file>docs/interface/open_project.html</file>

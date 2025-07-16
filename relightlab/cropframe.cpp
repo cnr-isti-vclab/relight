@@ -1,6 +1,7 @@
 ﻿#include "cropframe.h"
 #include "imagecropper.h"
 #include "relightapp.h"
+#include "helpbutton.h"
 
 #include <QLabel>
 #include <QSpinBox>
@@ -11,6 +12,7 @@
 #include <QGroupBox>
 #include <QComboBox>
 #include <QMessageBox>
+#include <QFileDialog>
 #include <QStandardItemModel>
 
 CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
@@ -94,6 +96,11 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 
 	QGridLayout *aspect_layout = new QGridLayout(aspect_box);
 	aspect_layout->setSpacing(10);
+
+	right_side->addStretch(10);
+	HelpedButton *crop_images = new HelpedButton("interface/crop", QIcon::fromTheme("crop"), "Crop images...");
+	connect(crop_images, SIGNAL(clicked()), this, SLOT(cropImages()));
+	right_side->addWidget(crop_images);
 
 	aspect_combo = new QComboBox;
 	aspect_combo->addItem("None");                  //0
@@ -214,3 +221,67 @@ void CropFrame::setCrop(Crop crop) {
 	crop_angle->setValue(crop.angle);
 }
 
+void CropFrame::cropImages() {
+	//select a few images
+	QFileDialog dialog(this, "Select images to crop", qRelightApp->project().dir.absolutePath(), "Images (*.jpg *.jpeg *.png)");
+	dialog.setFileMode(QFileDialog::ExistingFiles);
+	dialog.setViewMode(QFileDialog::List);
+	dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+	dialog.setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint | Qt::WindowCloseButtonHint);
+	dialog.setWindowTitle("Crop images");
+	dialog.setLabelText(QFileDialog::Accept, "Crop");
+	dialog.setLabelText(QFileDialog::Reject, "Cancel");
+	if(!dialog.exec())
+		return;
+	QStringList files = dialog.selectedFiles();
+	if(files.isEmpty()) {
+		QMessageBox::warning(this, "No images selected", "Please select at least one image to crop.");
+		return;
+	}
+	//select a folder
+	QString folder = QFileDialog::getExistingDirectory(this, "Select folder to save cropped images", qRelightApp->project().dir.absolutePath(), QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+	if(folder.isEmpty()) {
+		QMessageBox::warning(this, "No folder selected", "Please select a folder to save cropped images.");
+		return;
+	}
+	//get the folder of the selected images
+	QString image_folder = QFileInfo(files[0]).absolutePath();
+	//check the folder is not the same
+	if(folder == image_folder) {
+		QMessageBox::warning(this, "Same folder", "The selected folder is the same as the image folder. Please select a different folder to save cropped images.");
+		return;
+	}
+	//ask for overwrite if cropped images exist
+	QDir dir(folder);
+	for(const QString &file : files) {
+		QString filename = QFileInfo(file).fileName();
+		if(dir.exists(filename)) {
+			QMessageBox::StandardButton reply = QMessageBox::question(this, "Overwrite cropped images", 
+				"The file " + filename + " already exists in the selected folder. Do you want to overwrite it?",
+				QMessageBox::Yes | QMessageBox::No);
+			if(reply == QMessageBox::No) {
+				return; //cancel cropping
+			}
+		}
+	}
+	Crop &crop = qRelightApp->project().crop;
+	//rotate and crop
+	for(const QString &file : files) {
+		QImage img(file);
+		if(img.isNull()) {
+			QMessageBox::critical(this, "Error", "Could not load image " + file + ". Skipping this image.");
+			continue;
+		}
+
+		QImage cropped = img.copy(crop.boundingRect(img.size()));
+
+		if(crop.angle != 0.0f) {
+			cropped = crop.cropBoundingImage(cropped);
+		}
+		QString filename = QFileInfo(file).fileName();
+		if(!cropped.save(dir.filePath(filename))) {
+			QMessageBox::critical(this, "Error", "Could not save cropped image " + filename + ". Skipping this image.");
+			continue;
+		}
+	}
+}

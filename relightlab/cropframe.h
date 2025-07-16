@@ -21,6 +21,7 @@ public slots:
 	void setAspectRatio();
 	void updateCrop(Crop crop);
 	void scaleChanged(); //if units in mm are now available, update them.
+	void cropImages();
 
 signals:
 	void cropChanged(Crop);
