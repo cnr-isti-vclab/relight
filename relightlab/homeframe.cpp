@@ -5,6 +5,8 @@
 #include <QFile>
 #include <QAction>
 #include <QToolBar>
+#include <QMessageBox>
+#include <QDesktopServices>
 
 #include "homeframe.h"
 #include "relightapp.h"
@@ -53,12 +55,37 @@ HomeFrame::HomeFrame() {
 		QFileInfo fileInfo(path);
 		QString filename = fileInfo.fileName();
 		QString directory = fileInfo.absolutePath();
+		QHBoxLayout *recentLayout = new QHBoxLayout();
+		recentLayout->setContentsMargins(0, 0, 0, 0);
+		recentLayout->setSpacing(0);
+		
 
 		QLabel *label = new QLabel("<p style='line-height:150%'><a href='" + path + "'>" + filename + "</a><br/><span style='color:grey; font-size:80%;'>" + directory + "</span></p>");
 		label->setProperty("class", "recent");
 		label->setWordWrap(true);
-		leftColumnLayout->addWidget(label);
+		recentLayout->addWidget(label);
+
+		QToolButton *button = new QToolButton();
+		button->setIcon(QIcon::fromTheme("folder-open"));
+		button->setToolTip("Open project folder");
+		button->setProperty("class", "small");
+		//button style to remove border and padding
+		button->setStyleSheet("QToolButton { border: none; padding: 0px; }");
+		button->setCursor(Qt::PointingHandCursor);
+		connect(button, &QToolButton::clicked, [path]() {
+			QFileInfo fileInfo(path);
+			QDir dir(fileInfo.absolutePath());
+			if(!dir.exists()) {
+				QMessageBox::warning(nullptr, "Folder not found", "The folder for this project does not exist:\n" + dir.absolutePath());
+				return;
+			}
+			QDesktopServices::openUrl(QUrl::fromLocalFile(dir.absolutePath()));
+		});
+		
 		connect(label, SIGNAL(linkActivated(QString)), qRelightApp, SLOT(openProject(QString)));
+
+		recentLayout->addWidget(button);
+		leftColumnLayout->addLayout(recentLayout);
 	}
 	leftColumnLayout->addStretch(1);
 
