@@ -107,6 +107,7 @@ bool Project::scanDir() {
 
 	lens.width = imgsize.width();
 	lens.height = imgsize.height();
+	crop.setRect(QPoint(0, 0), imgsize);
 
 	QVector<Lens> alllens;
 	QVector<double> focals;
