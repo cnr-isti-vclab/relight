@@ -157,7 +157,7 @@ void RelightApp::run() {
 	if(darkTheme) {
 		QIcon::setThemeName("dark");
 		setPalette(dark_palette);
-	} else if(theme == "light"){
+	} else {
 		QIcon::setThemeName("light");
 	}
 

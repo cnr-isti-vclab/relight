@@ -112,8 +112,7 @@ bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &d
 
 	TIFF* outTiff = TIFFOpen(filename.toStdString().c_str(), "w");
 	if (!outTiff) {
-
-		return 1;
+		return false;
 	}
 
 	TIFFSetField(outTiff, TIFFTAG_IMAGEWIDTH, w);

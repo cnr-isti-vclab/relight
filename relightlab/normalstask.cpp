@@ -73,6 +73,18 @@ void NormalsTask::setParameters(NormalsParameters &param) {
 	label = parameters.summary();
 }
 
+void invertZ(vector<float> &z) {
+	float min = 1e20;
+	float max = -1e20;
+	for(float v: z) {
+		min = std::min(min, v);
+		max = std::max(max, v);
+	}
+	for(float &v: z) {
+		v = max - (v - min);
+	}
+}
+
 void NormalsTask::run() {
 	status = RUNNING;
 	label = parameters.summary();
@@ -231,11 +243,24 @@ void NormalsTask::run() {
 		progressed("Saving surface...", 99);
 		QString basename = output.left(output.size() -4);
 		QString filename = basename + ".ply";
-		savePly(filename, width, height, z);
+		if(!savePly(filename, width, height, z)) {
+			error = "Failed to save .ply to: " + filename;
+			status = FAILED;
+			return;
+		}
+		invertZ(z);
 		filename = basename + ".tiff";
-		saveTiff(filename, width, height, z);
+		if(!saveTiff(filename, width, height, z)) {
+			error = "Failed to save depth map to: " + filename;
+			status = FAILED;
+			return;
+		}
 		filename = basename + "_normalized.tiff";
-		saveTiff(filename, width, height, z, true);
+		if(!saveTiff(filename, width, height, z, true)) {
+			error = "Failed to save depth map to: " + filename;
+			status = FAILED;
+			return;
+		}
 	}
 	progressed("Done", 100);
 	status = DONE;

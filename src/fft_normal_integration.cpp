@@ -214,8 +214,6 @@ void fft_integrate(std::function<bool(QString s, int n)> progressed,
 		}
 	}
 	depad(cols, rows, heights, padding);
-	savePly("test.ply", cols, rows, heights);
-
 
 	/*
 	[wx, wy] = meshgrid(([1:cols]-(fix(cols/2)+1))/(cols-mod(cols,2)), ...
