@@ -25,7 +25,7 @@ done
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PATH/usr/lib
 
 $SCRIPTS_PATH/resources/linuxdeploy --appdir=$INSTALL_PATH \
-  -extra-plugins=iconengines/libqtsvgicons.so \
+  --plugin qt \
   --output appimage
 
 RELIGHT_VERSION=$(cat RELIGHT_VERSION) #get the relight version from the string
