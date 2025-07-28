@@ -16,8 +16,11 @@ public:
 	std::vector<Eigen::Vector3f> point_cloud;
 	//std::vector<float> x, y, z;
 	std::vector<float> z_grid;
+	std::vector<float> old_elevation;
+	std::vector<float> blurred_mask;
 	int grid_x, grid_y;
 	float sigma;
+	float blur = 1.0f;
 
 
 	Eigen::Vector3f pixelToRealCoordinates(int pixelX, int pixelY, float pixelZ);
@@ -34,6 +37,7 @@ public:
 	void integratedCamera(const CameraDepthmap& camera, const char *outputFile);
 	void beginIntegration();
 	void endIntegration();
+	void saveBlurredMask(const char* filename);
 
 
 	/*1.

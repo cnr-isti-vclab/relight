@@ -98,8 +98,12 @@ int main(int argc, char *argv[]) {
 		exit(-1);
 	}
 
+
+	ortho.blur = 15.0f;
+
 	ortho.verifyPointCloud();
 	ortho.beginIntegration();
+
 
 	for (const QFileInfo &tiffFile : tiffFiles) {
 
@@ -142,6 +146,7 @@ int main(int argc, char *argv[]) {
 	ortho.saveDepth(qPrintable(depthmapPath));
 	ortho.saveMask(qPrintable(maskPath));
 	ortho.saveObj("weightsElev3_0125.obj");
+	ortho.saveBlurredMask(qPrintable(base + "blurred_mask.tif"));
 
 
 

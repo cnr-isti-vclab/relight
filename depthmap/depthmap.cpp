@@ -10,8 +10,8 @@
 #include <QDebug>
 #include <QRegularExpression>
 #include <fstream>
-#include "../src/flatten.h"
-#include <assm/Grid.h>
+//#include "../src/flatten.h"
+//#include <assm/Grid.h>
 
 //carica la mask, applica il gaussian blur con il peso scalato da 0.5 a 1 fai la somma pesata tra la depth di Mic Mac e quella ricavata dal gaussian blur
 //gaussian, maschera 0.5 1, peso mediato
@@ -439,7 +439,7 @@ void Depthmap::depthIntegrateNormals(){
 	if (normals.empty()){
 		cerr << "Error: no normals found" << endl;
 	}
-	std::function<bool(std::string s, int d)> callback = [this](std::string s, int n)->bool { return true; };
+	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return true; };
 	vector<float> normals_float(normals.size()*3);
 	for(size_t i = 0; i < normals.size(); i++)
 		for(int k = 0; k < 3; k++)

@@ -13,6 +13,7 @@
 #include <QRegularExpression>
 #include <fstream>
 #include "gaussiangrid.h"
+#include "../external/assm/Grid.h"
 
 using namespace std;
 //start OrthoDepthMap class
@@ -244,7 +245,7 @@ void OrthoDepthmap::verifyPointCloud(){
 //#define PRESERVE_INTERIOR
 
 void OrthoDepthmap::beginIntegration(){
-
+	//old_elevation = elevation;
 	bool use_depthmap = false;
 	if(use_depthmap) {
 		//1. togliere dalla point tutti i punti che cadono dentro la maschera
@@ -297,7 +298,8 @@ void OrthoDepthmap::beginIntegration(){
 	weights.resize(width * height, 0);
 
 }
-
+// blur e un blending sulla maschera e salvare una copia dell'elevation
+// in modo tale che la depth Micmac(?) prenda la depth dell rti quando è 0.5 e quando è 0 prenda la depth del micmac così da riempire i punti.
 void OrthoDepthmap::endIntegration(){
 	for(size_t i =0; i < elevation.size(); i++){
 #ifdef PRESERVE_INTERIOR
@@ -311,7 +313,46 @@ void OrthoDepthmap::endIntegration(){
 		}
 #endif
 	}
+/*	Grid<float> maskGrid(width, height, 0.0f);
+	for (int y = 0; y < int(height); ++y)
+		for (int x = 0; x < int(width); ++x)
+			maskGrid.at(y, x) = mask[x + y * width];
+
+	// Applica blur
+	float blur_radius_in_pixel = 15.0f;
+	int kernelSize = int(2 * std::ceil(blur_radius_in_pixel) + 1);
+	if (kernelSize % 2 == 0) kernelSize += 1;
+
+	Grid<float> blurred = maskGrid.gaussianBlur(kernelSize, blur_radius_in_pixel);
+
+	// Salva in blurred_mask con rimappatura [0.5, 1] → [0, 1]
+	blurred_mask.resize(width * height);
+	for (int i = 0; i < width * height; ++i) {
+		float v = blurred[i];
+		blurred_mask[i] = (v <= 0.5f) ? 0.0f : (v - 0.5f) * 2.0f;
+	}
+	// vogliamo prendere la parte tra 0.5 e 1 e convertirla tra 0 e 1
+	// devo sottrarre 0.5 e moltiplicare per 2
+	// ------------------------------------------------------
+
+	for (size_t i = 0; i < elevation.size(); i++) {
+		float blur_weight = blurred_mask[i]; // valore tra 0 (MicMac) e 1 (RTI)
+
+		if (blur_weight > 0.0f) {
+			// rti fuori dalla maschera
+			if (blur_weight >= 1.0f) {
+				elevation[i] = old_elevation[i];
+			}
+			else {
+				// Blending lineare
+				elevation[i] = blur_weight * old_elevation[i] + (1.0f - blur_weight) * elevation[i];
+			}
+		}
+	}*/
 }
+
+
+
 
 void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *outputFile){
 
@@ -397,3 +438,14 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 		}
 	}
 }
+/*void OrthoDepthmap::saveBlurredMask(const char* filename) {
+	QImage img(width, height, QImage::Format_Grayscale8);
+	for (int y = 0; y < int(height); ++y) {
+		for (int x = 0; x < int(width); ++x) {
+			float value = blurred_mask[x + y * width];
+			int gray = std::clamp(int(value * 255.0f), 0, 255);
+			img.setPixel(x, y, qRgb(gray, gray, gray));
+		}
+	}
+	img.save(filename);
+}*/

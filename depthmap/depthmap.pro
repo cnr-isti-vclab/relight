@@ -1,5 +1,5 @@
 QT += core gui xml
-CONFIG += c++11 console
+CONFIG += c++17 console
 CONFIG -= app_bundle
 
 
@@ -16,8 +16,11 @@ SOURCES += \
         gaussiangrid.cpp \
         main.cpp \
         orthodepthmap.cpp
-mac:INCLUDEPATH += /opt/homebrew/include
-unix:INCLUDEPATH += ../external/eigen-3.3.9
+#mac:INCLUDEPATH += /opt/homebrew/include
+mac:INCLUDEPATH += /opt/homebrew/Cellar/libtiff/4.7.0/include /opt/homebrew/Cellar/eigen/3.4.0_1/include
+
+
+unix:INCLUDEPATH += ../external/eigen-3.3.9 ../external
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -26,6 +29,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     ../src/bni_normal_integration.h \
+    ../external/assm/Grid.h \
     camera.h \
     depthmap.h \
     gaussiangrid.h \

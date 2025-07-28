@@ -2,7 +2,7 @@
 #define GRID_H
 #include <vector>
 #include <algorithm>
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 #include <assert.h>
 
 template <class T> class Grid: public std::vector<T> {
