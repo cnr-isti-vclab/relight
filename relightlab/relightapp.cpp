@@ -4,6 +4,7 @@
 #include "recentprojects.h"
 #include "mainwindow.h"
 #include "preferences.h"
+#include "convertdialog.h"
 #include "../relight/httpserver.h"
 
 #include <QMessageBox>
@@ -88,6 +89,8 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	addAction("open_project", "Open project...", "folder", "Ctrl+O", SLOT(openProject()));
 	addAction("save_project", "Save project", "save", "Ctrl+S", SLOT(saveProject()));
 	addAction("save_project_as", "Save project as...", "", "Shift-Ctrl+S", SLOT(saveProjectAs()));
+	addAction("convert_rti", "Convert RTI to Relight...", "", "Ctrl+R", SLOT(convertRTI()));
+	addAction("view_rti", "View RTI in browser", "cast", "", SLOT(rtiView()));
 
 	addAction("preferences", "Preferences...", "", "Shift-Ctrl-P", SLOT(openPreferences()));
 	addAction("exit", "Exit", "", "Alt-F4", SLOT(close()));
@@ -108,7 +111,6 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	addAction("show_list", "Show list", "list", "");
 	addAction("show_grid", "Show grid", "grid", "");
 
-	addAction("view_rti", "View RTI in browser", "cast", "", SLOT(rtiView()));
 
 	addAction("help", "Help", "help-circle", "");
 	addAction("about", "About", "info", "");
@@ -398,6 +400,14 @@ void RelightApp::rtiView() {
 		QMessageBox::critical(nullptr, "Could not cast!", error);
 	}
 }
+
+void RelightApp::convertRTI() {
+	ConvertDialog dialog;
+	if(dialog.exec() == QDialog::Accepted) {
+		//add a task to the queue to convert the rti.
+	}
+}
+
 
 void RelightApp::openPreferences() {
 	if(!preferences)

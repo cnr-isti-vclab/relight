@@ -44,7 +44,13 @@ HomeFrame::HomeFrame() {
 	leftColumnLayout->addWidget(new_project);
 
 	HelpedButton *open_project = new HelpedButton(qRelightApp->action("open_project"), "interface/open_project");
-	leftColumnLayout->addWidget(open_project);
+	leftColumnLayout->addWidget(open_project);\
+
+	HelpedButton *view_rti = new HelpedButton(qRelightApp->action("view_rti"), "interface/rti_view");
+	leftColumnLayout->addWidget(view_rti);
+
+	HelpedButton *convert_rti = new HelpedButton(qRelightApp->action("convert_rti"), "interface/convert_rti");
+	leftColumnLayout->addWidget(convert_rti);
 
 	QLabel *recentLabel = new QLabel("<h2>Recent projects:</h2>");
 	leftColumnLayout->addSpacing(20);

@@ -98,7 +98,6 @@ SOURCES += main.cpp \
     verifydialog.cpp \
     helpbutton.cpp \
     cropframe.cpp \
-    creatertidialog.cpp \
     rtitask.cpp \
     task.cpp \
     queueitem.cpp \
@@ -115,7 +114,8 @@ SOURCES += main.cpp \
     ../src/fft_normal_integration.cpp \
     ../src/deepzoom.cpp \
     sphereframe.cpp \
-    brdftask.cpp
+    brdftask.cpp \
+    convertdialog.cpp
     ../src/crop.cpp
 
 RESOURCES += \
@@ -186,7 +186,6 @@ HEADERS += \
     verifydialog.h \
     helpbutton.h \
     cropframe.h \
-    creatertidialog.h \
     rtitask.h \
     task.h \
     queueitem.h \
@@ -206,7 +205,8 @@ HEADERS += \
     ../src/pocketfft.h \
     ../src/deepzoom.h \
     sphereframe.h \
-    brdftask.h
+    brdftask.h \
+    convertdialog.h
 
 FORMS +=
 
