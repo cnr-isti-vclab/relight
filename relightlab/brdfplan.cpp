@@ -18,6 +18,7 @@ BrdfPlanRow::BrdfPlanRow(BrdfParameters &_parameters, QFrame *parent):
 BrdfMedianRow::BrdfMedianRow(BrdfParameters &_parameters, QFrame *parent):
 	BrdfPlanRow(_parameters, parent) {
 
+	label->help->setId("brdf/median");
 	label->label->setText("Median image");
 	buttons->addWidget(new QLabel("Light percentage:"));
 	buttons->addWidget(median_slider = new QSlider(Qt::Horizontal));

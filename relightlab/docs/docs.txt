@@ -1,0 +1,68 @@
+Export Formats for RTI:
+
+There are a few format options when creating an RTI:
+
+0) RTI: this is the legacy .ptm and .rti: it works only for PTM and HSH basis and can be loaded in RTIViewer
+
+The right web format depends on your hosting characteristics.
+
+1) relight: a simple json file + a few jpegs encoding the different RTI planes (plane0.jpg, plane1.jpg etc) this is good only for very small images (details for example), under 1024x1024, I would say: some interesting photoshop trickery is possible with these images.
+
+3) Relight with deepzoom is fine for most hostings, some are very slow to transfer large numbers (not size, it's the number the problem) of files.
+    It is a tiled format which means it is very efficient for large images.
+
+4) Relight with tarzoom: this is one file per image,it's also a tiled format, easier to manage (you only have to transfer a few files).
+    Only downside is that some fileservers (more than classical hostings) won't support the partial requests (206) needed for this format.
+
+5) Relight with  itarzoom: some hosting has anti dos (denial of service) filters that will trigger on large number of requests. Since we are
+    asking for a large number of tiles, and a few planes for each tile this can trigger the filter.
+    Itarzoom makes one request per tile (grouping the planes). It is a single file. In general is a little bit better than tarzoom.
+
+
+
+
+Pick your RTI basis.
+
+
+Vocabulary (mine, i might use some word incorrectly):
+dull: no reflections, the correct term would be lambertian, no subsurface scattering (like skin or alabaster), something chalk-like.
+
+LPTM: the cheapest, but don't use it unless you have the dullest material (chalk or something like that), no reflection no bright colors.
+
+PTM
+Pro: is cheap and very robust to bad sampling, especially if the capture has been made with manual held lights.
+       normals can be derived directly from the coefficients (again accurate if the model is lambertian).
+Cons: it's unable to represent reflections properly: too few coefficients and a focus on dull materials. (but if your material is not shiny it's perfectly fine).
+
+HSH:
+Pro: it is still very robust to bad sampling.
+Cons: lighting artifact on very grazing lights, reflections are still not greaty.
+
+RBF:
+Pro: best reflections ever for the number of coefficients used.
+        You can decide how many coefficients you want (you can use 18 as in PTM (6 per channel) and still get a much better material feeling).
+Cons: very sampling dependent: bad sampling will result in jumps or irregular lighting changes.
+          very small patches of colors can be lost (color will be different) since this is focusing on reflections
+             
+YRBF:
+Pro: almost rbf in term of shiny reflections, allocates some bits for small patches of colors.
+Cons: very sampling dependent
+
+BNL:
+Pro: close to RBF in term of reflections accuracy, 
+Cons: somewhat sampling dependent: more robust than RBF, less than PTM.
+          small patches of colors can be problematic.
+
+YBNL:
+Pro:  close to BNL in term of reflections accuracy, no problem with colors.
+Cons:  somewhat sampling dependent: more robust than RBF, less than PTM.
+
+
+Normals would be better computed separately: even the basic algorithm implemented in ReligthLab is better.
+
+In summary: if you have a dome and visualization is only your concern, go for rbf or yrbf (depending on the colors of your subject)
+and pick a number of coefficients depending on the network capabilities of your average user.
+If your model is really lambertian, it doesn't really make a difference, use PTM, you get a slightly better 'smoothness' when moving the light,
+and less parameters to adjust.
+
+All of this applies to web visualization. 

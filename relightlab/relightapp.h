@@ -74,6 +74,7 @@ public slots:
 	void saveProjectAs();
 	void close();
 	void rtiView();
+	void convertRTI();
 
 	void openPreferences();
 	void notify(const QString &title, const QString &msg, int ms = 4000);

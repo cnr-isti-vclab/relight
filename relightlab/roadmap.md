@@ -3,15 +3,15 @@
 
 ## Todo for release
 
+* installer for windows.
 * check ? mark on buttons.
-* crop selected images
-* brdf albedo
-* default dome(s) in preferences (when number of light matches)
-* ellipse reflections geometrically accurate
+* default dome(s) in preferences (when number of light matches).
+* ellipse reflections geometrically accurate.
 * better info on queue items.
-* windows installer
 * metadata
-
+* history + export in json + return status to (normal/rti crop parameters date version).
+* align group of thumbs.
+* allow rescaling when building rti and normals
 
 ## Long term new features
 
@@ -23,7 +23,7 @@
 * PBR texture creation
 * shadow removal
 * 3d lights on sphere should take into account sphere posistion/
-* allow rescaling when building rti and normals
+
 
 ## Bugs
 
