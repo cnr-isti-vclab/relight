@@ -37,7 +37,7 @@ public:
 	void integratedCamera(const CameraDepthmap& camera, const char *outputFile);
 	void beginIntegration();
 	void endIntegration();
-	void saveBlurredMask(const char* filename);
+	void saveBlurredMask(const char *filename) const;
 
 
 	/*1.

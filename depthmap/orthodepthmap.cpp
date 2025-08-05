@@ -245,7 +245,7 @@ void OrthoDepthmap::verifyPointCloud(){
 //#define PRESERVE_INTERIOR
 
 void OrthoDepthmap::beginIntegration(){
-	//old_elevation = elevation;
+
 	bool use_depthmap = false;
 	if(use_depthmap) {
 		//1. togliere dalla point tutti i punti che cadono dentro la maschera
@@ -280,6 +280,8 @@ void OrthoDepthmap::beginIntegration(){
 		}
 	}
 
+	old_elevation = elevation;
+
 	for(size_t i =0; i < elevation.size(); i++) {
 #ifdef PRESERVE_INTERIOR
 		if(mask[i] == 0.0f){
@@ -292,8 +294,8 @@ void OrthoDepthmap::beginIntegration(){
 	//foto von bilinear, se non funziona riduci le dimensione x4  con image magik a parte con for
 	// guarda quanto è un pixel. scali la depth anche dell rti, con image magik
 
-	//	elevation.clear();
-	//	elevation.resize(width * height, 0);
+	//elevation.clear();
+	//elevation.resize(width * height, 0);
 	weights.clear();
 	weights.resize(width * height, 0);
 
@@ -301,6 +303,7 @@ void OrthoDepthmap::beginIntegration(){
 // blur e un blending sulla maschera e salvare una copia dell'elevation
 // in modo tale che la depth Micmac(?) prenda la depth dell rti quando è 0.5 e quando è 0 prenda la depth del micmac così da riempire i punti.
 void OrthoDepthmap::endIntegration(){
+
 	for(size_t i =0; i < elevation.size(); i++){
 #ifdef PRESERVE_INTERIOR
 		if(mask[i] == 0.0f) {
@@ -313,46 +316,145 @@ void OrthoDepthmap::endIntegration(){
 		}
 #endif
 	}
-/*	Grid<float> maskGrid(width, height, 0.0f);
-	for (int y = 0; y < int(height); ++y)
-		for (int x = 0; x < int(width); ++x)
-			maskGrid.at(y, x) = mask[x + y * width];
 
-	// Applica blur
-	float blur_radius_in_pixel = 15.0f;
-	int kernelSize = int(2 * std::ceil(blur_radius_in_pixel) + 1);
+	int mask_zeros = 0;
+	int mask_ones = 0;
+	float min_mask = 1e9f;
+	float max_mask = -1e9f;
+
+	for (float v : mask) {
+		if (v == 0.0f) mask_zeros++;
+		if (v == 1.0f) mask_ones++;
+		min_mask = std::min(min_mask, v);
+		max_mask = std::max(max_mask, v);
+	}
+
+	cout << "[Check] mask contiene:\n";
+	cout << "         " << mask_zeros << " valori = 0.0\n";
+	cout << "         " << mask_ones << " valori = 1.0\n";
+	cout << "[DEBUG] mask range: min = " << min_mask << ", max = " << max_mask << endl;
+
+
+
+	Grid<float> blurred(width, height, 0.0f);
+	for (int y = 0; y < int(height); y++)
+		for (int x = 0; x < int(width); x++)
+			blurred.at(y, x) = mask[x + y * width];
+
+
+	// blur in pixel
+	float blur_radius_pixel = 15.0f;
+	int kernelSize = int(2 * std::ceil(blur_radius_pixel) + 1);
 	if (kernelSize % 2 == 0) kernelSize += 1;
 
-	Grid<float> blurred = maskGrid.gaussianBlur(kernelSize, blur_radius_in_pixel);
+	//valori di mask
 
-	// Salva in blurred_mask con rimappatura [0.5, 1] → [0, 1]
-	blurred_mask.resize(width * height);
+	int center_x = width / 2;
+	int center_y = height / 2;
+	int center_index = center_y * width + center_x;
+
+	float center_mask_value = blurred[center_index];
+
+	if (center_mask_value == 1.0f) {
+		cout << "[Check] Il centro (x=" << center_x << ", y=" << center_y << ") dell'input al blur è 1.0" << endl;
+	} else {
+		cerr << "[Warning] Il centro dell'input al blur NON è 1.0, ma " << center_mask_value << endl;
+	}
+
+
+	float center_mask_raw = mask[center_index];
+	cout << "[Check] Il centro (x=" << center_x << ", y=" << center_y << ") della mask ha valore: "
+		 << center_mask_raw << endl;
+
+
+	//valori di  blur)
+	int input_zeros = 0;
+	int input_ones = 0;
 	for (int i = 0; i < width * height; ++i) {
+		if (blurred[i] == 0.0f) input_zeros++;
+		else if (blurred[i] == 1.0f) input_ones++;
+	}
+
+	cout << "[Check] Input al blur contiene:\n";
+	cout << "         " << input_zeros << " valori = 0.0\n";
+
+
+
+	blurred = blurred.gaussianBlur(kernelSize, blur_radius_pixel);
+
+
+
+	// Rimappa il range [0.5, 1] to [0, 1]
+	blurred_mask.resize(width * height);
+	for (int i = 0; i < width * height; i++) {
 		float v = blurred[i];
 		blurred_mask[i] = (v <= 0.5f) ? 0.0f : (v - 0.5f) * 2.0f;
+	}
+	// Debug: range dei valori nel blurred prima del remapping
+	float min_blurred = 1e9f;
+	float max_blurred = -1e9f;
+
+	for (float v : blurred) {
+		min_blurred = std::min(min_blurred, v);
+		max_blurred = std::max(max_blurred, v);
+	}
+
+	cout << "[DEBUG] blurred range: min = " << min_blurred << ", max = " << max_blurred << endl;
+
+	// Rimappa il range [0.5, 1.0] → [0, 1] solo per valori > 0.5
+	blurred_mask.resize(width * height);
+	int count_blurmask_zeros = 0;
+	int count_blurmask_ones = 0;
+
+	for (int i = 0; i < width * height; i++) {
+		float v = blurred[i];
+		if (v <= 0.5f) {
+			blurred_mask[i] = 0.0f;
+			count_blurmask_zeros++;
+		} else if (v >= 1.0f) {
+			blurred_mask[i] = 1.0f;
+			count_blurmask_ones++;
+		} else {
+			blurred_mask[i] = (v - 0.5f) * 2.0f;
+			if (blurred_mask[i] == 1.0f)
+				count_blurmask_ones++;
+		}
+	}
+
+	cout << "[Check] blurred_mask contiene:\n";
+	cout << "         " << count_blurmask_zeros << " valori = 0.0\n";
+	cout << "         " << count_blurmask_ones << " valori = 1.0\n";
+
+
+	/*blurred_mask.resize(width * height);
+	float minv = 1e9f, maxv = -1e9f;
+	for (float v : blurred)
+		minv = std::min(minv, v), maxv = std::max(maxv, v);
+
+
+	for (int i = 0; i < width * height; i++) {
+		float v = blurred[i];
+		blurred_mask[i] = (v <= 0.5f) ? 0.0f : (v - 0.5f) * 2.0f;
+	}*/
+
+
+	// Blending tra elevation e old_elevation
+	for (size_t i = 0; i < elevation.size(); i++) {
+		float blur_weight = blurred_mask[i]; // 0 = MicMac, 1 = RTI
+
+		if (blur_weight > 0.0f) {
+			if (blur_weight >= 1.0f) {
+				elevation[i] = old_elevation[i];
+			} else {
+				elevation[i] = blur_weight * old_elevation[i] +
+							   (1.0f - blur_weight) * elevation[i];
+			}
+		}
 	}
 	// vogliamo prendere la parte tra 0.5 e 1 e convertirla tra 0 e 1
 	// devo sottrarre 0.5 e moltiplicare per 2
 	// ------------------------------------------------------
-
-	for (size_t i = 0; i < elevation.size(); i++) {
-		float blur_weight = blurred_mask[i]; // valore tra 0 (MicMac) e 1 (RTI)
-
-		if (blur_weight > 0.0f) {
-			// rti fuori dalla maschera
-			if (blur_weight >= 1.0f) {
-				elevation[i] = old_elevation[i];
-			}
-			else {
-				// Blending lineare
-				elevation[i] = blur_weight * old_elevation[i] + (1.0f - blur_weight) * elevation[i];
-			}
-		}
-	}*/
 }
-
-
-
 
 void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *outputFile){
 
@@ -438,14 +540,15 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 		}
 	}
 }
-/*void OrthoDepthmap::saveBlurredMask(const char* filename) {
+void OrthoDepthmap::saveBlurredMask(const char* filename) const {
 	QImage img(width, height, QImage::Format_Grayscale8);
-	for (int y = 0; y < int(height); ++y) {
-		for (int x = 0; x < int(width); ++x) {
+	for (int y = 0; y < int(height); y++) {
+		for (int x = 0; x < int(width); x++) {
 			float value = blurred_mask[x + y * width];
-			int gray = std::clamp(int(value * 255.0f), 0, 255);
+			value = std::clamp(value, 0.0f, 1.0f);
+			int gray = int(value * 255.0f);
 			img.setPixel(x, y, qRgb(gray, gray, gray));
 		}
 	}
 	img.save(filename);
-}*/
+}

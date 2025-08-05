@@ -299,6 +299,8 @@ void Depthmap::saveTiff(const char *mask_path,const vector<float> &values, uint3
 
 
 
+
+
 	tsize_t scanLineSize = TIFFScanlineSize(maskTiff);
 	if (scanLineSize == 0) {
 		cerr << "Error computing scanline size." << endl;
