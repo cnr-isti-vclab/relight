@@ -28,6 +28,7 @@ public slots:
 private:
 	QLineEdit *input_path = nullptr;
 	QLabelButton *rti = nullptr, *web = nullptr, *iip = nullptr;
+	QLabelButton *img = nullptr, *deepzoom = nullptr, *tarzoom = nullptr, *itarzoom = nullptr;
 	QPushButton *convert_button = nullptr;
 };
 

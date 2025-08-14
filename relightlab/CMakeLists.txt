@@ -99,6 +99,7 @@ set (RELIGHT_HEADERS
     brdfframe.h
     brdftask.h
     brdfplan.h
+    convertdialog.h
 )
 
 set (RELIGHTLAB_SOURCES
@@ -171,6 +172,7 @@ set (RELIGHTLAB_SOURCES
     brdfframe.cpp
     brdftask.cpp
     brdfplan.cpp
+    convertdialog.cpp
 )
 
 

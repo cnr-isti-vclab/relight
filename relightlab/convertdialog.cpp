@@ -1,6 +1,7 @@
 #include "convertdialog.h"
 #include "helpbutton.h"
 #include "qlabelbutton.h"
+#include "../relight/zoom.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -51,6 +52,23 @@ ConvertDialog::ConvertDialog() {
 			group->addButton(web);
 			group->addButton(iip);
 		}
+
+		{
+			QHBoxLayout *web_layout = new QHBoxLayout();
+			layout->addLayout(web_layout);
+
+			web_layout->addWidget(img = new QLabelButton("Images", ".jpg"));
+			web_layout->addWidget(deepzoom = new QLabelButton("DeepZoom", ".dzi"));
+			web_layout->addWidget(tarzoom = new QLabelButton("TarZoom", ".tarzoom"));
+			web_layout->addWidget(itarzoom = new QLabelButton("iTarZoom", ".itarzoom"));
+
+			QButtonGroup *group = new QButtonGroup(this);
+			group->addButton(img);
+			group->addButton(deepzoom);
+			group->addButton(tarzoom);
+			group->addButton(itarzoom);
+		}
+		
 		{
 			convert_button = new QPushButton("Convert");
 			convert_button->setToolTip("Convert to selected format");
@@ -85,6 +103,12 @@ void ConvertDialog::selectInput() {
 	rti->setChecked(!legacy);
 	web->setEnabled(legacy);
 	web->setChecked(legacy);
+
+	img->setEnabled(legacy);
+	img->setChecked(true);
+	deepzoom->setEnabled(legacy);
+	tarzoom->setEnabled(legacy);
+	itarzoom->setEnabled(legacy);
 	
 	input_path->setText(files.first());
 	verifyPath();
@@ -154,6 +178,21 @@ void ConvertDialog::rtiToRelight(QString input) {
 			return;
 		}
 		QMessageBox::information(this, "Conversion successful", "Successfully converted to .relight format.");
+		// apply the conversion to deepzoom, tarzoom, itarzoom if applicable
+		
+		std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return true; };
+
+		if (deepzoom->isChecked() || tarzoom->isChecked() || itarzoom->isChecked()) {
+			deepZoom(output, output, quality, 0, 256, callback);
+		}
+
+		if (tarzoom->isChecked() || itarzoom->isChecked()) {
+			tarZoom(output, output, callback);
+		}
+
+		if (itarzoom->isChecked()) {
+			itarZoom(output, output, callback);
+		}
 		// Optionally, open the output directory
 		QDir dir(output);
 		if (!dir.exists()) {
@@ -162,8 +201,8 @@ void ConvertDialog::rtiToRelight(QString input) {
 		}
 		QDesktopServices::openUrl(QUrl::fromLocalFile(dir.absolutePath()));
 			
-	} catch (const std::exception &e) {
-		QMessageBox::critical(this, "Error", QString("An error occurred: %1").arg(e.what()));
+	} catch (QString e) {
+		QMessageBox::critical(this, "Error", QString("An error occurred: %1").arg(e));
 	}
 
 }
