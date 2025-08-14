@@ -6,6 +6,7 @@
 #include <QSettings>
 #include <QRect>
 #include <QTemporaryDir>
+#include <QMessageBox>
 
 #include "rtitask.h"
 #include "../relight/zoom.h"
@@ -134,6 +135,12 @@ void RtiTask::run() {
 		if(parameters.openlime && parameters.format == RtiParameters::WEB)
 			openlime();
 
+		if(parameters.format == RtiParameters::IIP) {
+			QMessageBox::information(nullptr, "To be implemented!", "IIP multi plane tif format to be implemented");
+			status = FAILED;
+			return;
+		}
+		//format is now WEB
 		if(parameters.web_layout != RtiParameters::PLAIN) {
 			deepZoom(output, output, parameters.quality, 0, 256, callback);
 		}
@@ -165,109 +172,6 @@ void RtiTask::rotatedCrop(QString output) {
 		bool saved = img.save(path, "jpg", parameters.quality);
 	}
 }
-/*
-void  RtiTask::relight(bool commonMinMax, bool saveLegacy) {
-	builder = new RtiBuilder;
-	builder->pixelSize =(*this)["pixelSize"].value.toDouble();
-	builder->commonMinMax = commonMinMax;
-
-	builder->nworkers = QSettings().value("nworkers", 8).toInt();
-	builder->samplingram = QSettings().value("ram", 512).toInt();
-
-	builder->samplingram = (*this)["ram"].value.toInt();
-	builder->type         = Rti::Type((*this)["type"].value.toInt());
-	builder->colorspace   = Rti::ColorSpace((*this)["colorspace"].value.toInt());
-	builder->nplanes      = (*this)["nplanes"].value.toInt();
-	builder->yccplanes[0] = (*this)["yplanes"].value.toInt();
-	//builder->sigma =
-
-	if( builder->colorspace == Rti::MYCC) {
-		builder->yccplanes[1] = builder->yccplanes[2] = (builder->nplanes - builder->yccplanes[0])/2;
-		builder->nplanes = builder->yccplanes[0] + 2*builder->yccplanes[1];
-	}
-
-	imageset.images = (*this)["images"].value.toStringList();
-	QList<QVariant> qlights = (*this)["lights"].value.toList();
-	std::vector<Vector3f> lights(qlights.size()/3);
-	for(int i = 0; i < qlights.size(); i+= 3)
-		for(int k = 0; k < 3; k++)
-			lights[i/3][k] = qlights[i+k].toDouble();
-	builder->lights = imageset.lights = lights;
-	imageset.light3d = project.dome.lightConfiguration != Dome::DIRECTIONAL;
-	imageset.dome_radius = project.dome.domeDiameter/2.0;
-	imageset.vertical_offset = project.dome.verticalOffset;
-	imageset.initLights();
-	imageset.initImages(input_folder.toStdString().c_str());
-
-
-	if(hasParameter("crop")) {
-		QRect rect = (*this)["crop"].value.toRect();
-		builder->crop[0] = rect.left();
-		builder->crop[1] = rect.top();
-		builder->crop[2] = rect.width();
-		builder->crop[3] = rect.height();
-		imageset.crop(rect.left(), rect.top(), rect.width(), rect.height());
-	}
-	builder->width  = imageset.width;
-	builder->height = imageset.height;
-	int quality= (*this)["quality"].value.toInt();
-
-	std::function<bool(QString s, int n)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
-
-	try {
-		if(!builder->init(&callback)) {
-			error = builder->error.c_str();
-			status = FAILED;
-			return;
-		}
-		if(saveLegacy) {
-			if(builder->type == Rti::HSH)
-				builder->saveUniversal(output.toStdString());
-			else if(builder->type == Rti::PTM)
-				builder->savePTM(output.toStdString());
-			else
-				throw "Legacy RTI and PTM formats are supported only for HSH and PTM basis";
-		} else
-			builder->save(output.toStdString(), quality);
-
-	} catch(std::string e) {
-		error = e.c_str();
-		status = STOPPED;
-		return;
-	}
-}
-*/
-
-/* not used anymore: build temporary rti and convert to legacy format */
-/* void RtiTask::toRTI() {
-	QString filename = output;
-	QTemporaryDir tmp;
-	if(!tmp.isValid()) {
-		cerr << "OOOPSS" << endl;
-		return;
-	}
-	output = tmp.path();
-	relight(true);
-	try {
-		convertToRTI(tmp.filePath("info.json").toLatin1().data(), filename.toLatin1().data());
-	} catch(QString err) {
-		error = err;
-		status = FAILED;
-	}
-} */
-
-/*
-void RtiTask::fromRTI() {
-	QString input = (*this)["input"].value.toString();
-	int quality= (*this)["quality"].value.toInt();
-	try {
-		convertRTI(input.toLatin1().data(), output.toLatin1().data(), quality);
-	} catch(QString err) {
-		error = err;
-		status = FAILED;
-	}
-} */
-
 
 void RtiTask::openlime() {
 	QStringList files = QStringList() << ":/demo/index.html"

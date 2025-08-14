@@ -28,111 +28,111 @@ HomeFrame::HomeFrame() {
 
 	//setStyleSheet(".home { background:red; padding-top:100px }");
 	QHBoxLayout *contentLayout = new QHBoxLayout(this);
-	contentLayout->addStretch(1);
-
-	// Left column
-	QVBoxLayout *leftColumnLayout = new QVBoxLayout();
-	leftColumnLayout->setSizeConstraint(QVBoxLayout::SetMinimumSize);
-
-	// Title label
-	QLabel *titleLabel = new QLabel("<h1>RelightLab</h1>");
-	titleLabel->setMinimumWidth(200);
-
-	leftColumnLayout->addWidget(titleLabel);
-
-	HelpedButton *new_project = new HelpedButton(qRelightApp->action("new_project"), "interface/new_project");
-	leftColumnLayout->addWidget(new_project);
-
-	HelpedButton *open_project = new HelpedButton(qRelightApp->action("open_project"), "interface/open_project");
-	leftColumnLayout->addWidget(open_project);\
-
-	HelpedButton *view_rti = new HelpedButton(qRelightApp->action("view_rti"), "interface/view");
-	leftColumnLayout->addWidget(view_rti);
-
-	HelpedButton *convert_rti = new HelpedButton(qRelightApp->action("convert_rti"), "interface/convert");
-	leftColumnLayout->addWidget(convert_rti);
-
-	QLabel *recentLabel = new QLabel("<h2>Recent projects:</h2>");
-	leftColumnLayout->addSpacing(20);
-	leftColumnLayout->addWidget(recentLabel);
-
-	cleanRecentProjects();
-	for(QString path: recentProjects()) {
-		QFileInfo fileInfo(path);
-		QString filename = fileInfo.fileName();
-		QString directory = fileInfo.absolutePath();
-		QHBoxLayout *recentLayout = new QHBoxLayout();
-		recentLayout->setContentsMargins(0, 0, 0, 0);
-		recentLayout->setSpacing(0);
-		
-
-		QLabel *label = new QLabel("<p style='line-height:150%'><a href='" + path + "'>" + filename + "</a><br/><span style='color:grey; font-size:80%;'>" + directory + "</span></p>");
-		label->setProperty("class", "recent");
-		label->setWordWrap(true);
-		recentLayout->addWidget(label);
-
-		QToolButton *button = new QToolButton();
-		button->setIcon(QIcon::fromTheme("folder-open"));
-		button->setToolTip("Open project folder");
-		button->setProperty("class", "small");
-		//button style to remove border and padding
-		button->setStyleSheet("QToolButton { border: none; padding: 0px; }");
-		button->setCursor(Qt::PointingHandCursor);
-		connect(button, &QToolButton::clicked, [path]() {
-			QFileInfo fileInfo(path);
-			QDir dir(fileInfo.absolutePath());
-			if(!dir.exists()) {
-				QMessageBox::warning(nullptr, "Folder not found", "The folder for this project does not exist:\n" + dir.absolutePath());
-				return;
-			}
-			QDesktopServices::openUrl(QUrl::fromLocalFile(dir.absolutePath()));
-		});
-		
-		connect(label, SIGNAL(linkActivated(QString)), qRelightApp, SLOT(openProject(QString)));
-
-		recentLayout->addWidget(button);
-		leftColumnLayout->addLayout(recentLayout);
-	}
-	leftColumnLayout->addStretch(1);
-
-	// Add columns to the content layout
-	contentLayout->addLayout(leftColumnLayout, 2);
-
-	QVBoxLayout *rightColumnLayout = new QVBoxLayout();
-	rightColumnLayout->setSpacing(20);
-
-	QToolBar *toolbar = new QToolBar;
-	HelpBrowser *browser = new HelpBrowser(this);
-
-	toolbar->addAction(QIcon::fromTheme("home"), "Home", [browser]() { browser->setSource(QUrl("index.html")); });
-	toolbar->addSeparator();
-	toolbar->addAction(QIcon::fromTheme("chevron-left"), "Back", browser, SLOT(previous()));
-	toolbar->addAction(QIcon::fromTheme("chevron-right"), "Forward", browser, SLOT(next())	);
-
-	rightColumnLayout->addWidget(toolbar);
-
-	// Right column
-	//browser->setSearchPaths(QStringList() << "qrc:/docs/");
-	browser->setAlignment(Qt::AlignTop);
-
-#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
-	browser->setSource(QUrl("home.html"), QTextDocument::HtmlResource);
-#else
-	browser->setSource(QUrl("home.html"));
-#endif
-
-	browser->setStyleSheet("background:transparent;");
-	browser->setMinimumWidth(600);
-
-	rightColumnLayout->addWidget(browser, 1);
-
-	contentLayout->addLayout(rightColumnLayout, 4);
-
-	contentLayout->addStretch(1);
-
-	// Set layout margins and spacing
 	contentLayout->setContentsMargins(20, 20, 20, 20);
-	//contentLayout->setSpacing(20);
+
+	contentLayout->addStretch(1);
+
+	{
+		// Left column
+		QVBoxLayout *leftColumnLayout = new QVBoxLayout();
+		leftColumnLayout->setSizeConstraint(QVBoxLayout::SetMinimumSize);
+
+		// Title label
+		QLabel *titleLabel = new QLabel("<h1>RelightLab</h1>");
+		titleLabel->setMinimumWidth(200);
+
+		leftColumnLayout->addWidget(titleLabel);
+
+		HelpedButton *new_project = new HelpedButton(qRelightApp->action("new_project"), "interface/new_project");
+		leftColumnLayout->addWidget(new_project);
+
+		HelpedButton *open_project = new HelpedButton(qRelightApp->action("open_project"), "interface/open_project");
+		leftColumnLayout->addWidget(open_project);\
+
+		HelpedButton *view_rti = new HelpedButton(qRelightApp->action("view_rti"), "interface/view");
+		leftColumnLayout->addWidget(view_rti);
+
+		HelpedButton *convert_rti = new HelpedButton(qRelightApp->action("convert_rti"), "interface/convert");
+		leftColumnLayout->addWidget(convert_rti);
+
+		QLabel *recentLabel = new QLabel("<h2>Recent projects:</h2>");
+		leftColumnLayout->addSpacing(20);
+		leftColumnLayout->addWidget(recentLabel);
+
+		cleanRecentProjects();
+		for(QString path: recentProjects()) {
+			QFileInfo fileInfo(path);
+			QString filename = fileInfo.fileName();
+			QString directory = fileInfo.absolutePath();
+			QHBoxLayout *recentLayout = new QHBoxLayout();
+			recentLayout->setContentsMargins(0, 0, 0, 0);
+			recentLayout->setSpacing(0);
+			
+
+			QLabel *label = new QLabel("<p style='line-height:150%'><a href='" + path + "'>" + filename + "</a><br/><span style='color:grey; font-size:80%;'>" + directory + "</span></p>");
+			label->setProperty("class", "recent");
+			label->setWordWrap(true);
+			recentLayout->addWidget(label);
+
+			QToolButton *button = new QToolButton();
+			button->setIcon(QIcon::fromTheme("folder-open"));
+			button->setToolTip("Open project folder");
+			button->setProperty("class", "small");
+			//button style to remove border and padding
+			button->setStyleSheet("QToolButton { border: none; padding: 0px; }");
+			button->setCursor(Qt::PointingHandCursor);
+			connect(button, &QToolButton::clicked, [path]() {
+				QFileInfo fileInfo(path);
+				QDir dir(fileInfo.absolutePath());
+				if(!dir.exists()) {
+					QMessageBox::warning(nullptr, "Folder not found", "The folder for this project does not exist:\n" + dir.absolutePath());
+					return;
+				}
+				QDesktopServices::openUrl(QUrl::fromLocalFile(dir.absolutePath()));
+			});
+			
+			connect(label, SIGNAL(linkActivated(QString)), qRelightApp, SLOT(openProject(QString)));
+
+			recentLayout->addWidget(button);
+			leftColumnLayout->addLayout(recentLayout);
+		}
+		leftColumnLayout->addStretch(1);
+
+		// Add columns to the content layout
+		contentLayout->addLayout(leftColumnLayout, 2);
+	}
+	contentLayout->addSpacing(40);
+	{
+		QVBoxLayout *rightColumnLayout = new QVBoxLayout();
+		rightColumnLayout->setSpacing(20);
+
+		QToolBar *toolbar = new QToolBar;
+		HelpBrowser *browser = new HelpBrowser(this);
+
+		toolbar->addAction(QIcon::fromTheme("home"), "Home", [browser]() { browser->setSource(QUrl("index.html")); });
+		toolbar->addSeparator();
+		toolbar->addAction(QIcon::fromTheme("chevron-left"), "Back", browser, SLOT(previous()));
+		toolbar->addAction(QIcon::fromTheme("chevron-right"), "Forward", browser, SLOT(next())	);
+
+		rightColumnLayout->addWidget(toolbar);
+
+		browser->setAlignment(Qt::AlignTop);
+
+	#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
+		browser->setSource(QUrl("home.html"), QTextDocument::HtmlResource);
+	#else
+		browser->setSource(QUrl("home.html"));
+	#endif
+
+		browser->setStyleSheet("background:transparent;");
+		browser->setMinimumWidth(600);
+
+		rightColumnLayout->addWidget(browser, 1);
+		contentLayout->addLayout(rightColumnLayout, 4);
+	}
+
+	contentLayout->addStretch(1);
+
 
 }
 
