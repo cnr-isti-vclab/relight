@@ -88,8 +88,8 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	addAction("new_project", "New project..", "file", "Ctrl+N", SLOT(newProject()));
 	addAction("open_project", "Open project...", "folder", "Ctrl+O", SLOT(openProject()));
 	addAction("save_project", "Save project", "save", "Ctrl+S", SLOT(saveProject()));
-	addAction("save_project_as", "Save project as...", "", "Shift-Ctrl+S", SLOT(saveProjectAs()));
-	addAction("convert_rti", "Convert RTI to Relight...", "", "Ctrl+R", SLOT(convertRTI()));
+	addAction("save_project_as", "Save project as...", "save", "Shift-Ctrl+S", SLOT(saveProjectAs()));
+	addAction("convert_rti", "Convert RTI to Relight...", "repeat", "Ctrl+R", SLOT(convertRTI()));
 	addAction("view_rti", "View RTI in browser", "cast", "", SLOT(rtiView()));
 
 	addAction("preferences", "Preferences...", "", "Shift-Ctrl-P", SLOT(openPreferences()));

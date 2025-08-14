@@ -24,7 +24,7 @@ HelpDialog* HelpDialog::m_instance = nullptr; // Initialize static instance to n
 
 HelpedButton::HelpedButton(QAction *action, QString url, QWidget *parent): QWidget(parent) {
 	init(url);
-	button->setText(action->text());
+	button->setText(' ' + action->text());
 	button->setIcon(action->icon());
 	connect(button, SIGNAL(clicked(bool)), action, SLOT(trigger()));
 }
@@ -34,7 +34,7 @@ HelpedButton::HelpedButton(QString id, QIcon icon, QString text, QWidget *parent
 	setToolTip(id);
 
 	button->setIcon(icon);
-	button->setText(text);
+	button->setText(' ' + text);
 	connect(button, SIGNAL(clicked(bool)), this, SIGNAL(clicked()));
 }
 
@@ -44,7 +44,7 @@ void HelpedButton::init(QString id) {
 
 
 	button = new QPushButton;
-	//button->setProperty("class", "large");
+	button->setProperty("class", "large");
 	button->setMinimumSize(200, 40);
 	button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 

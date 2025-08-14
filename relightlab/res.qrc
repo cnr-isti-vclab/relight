@@ -27,6 +27,7 @@
         <file>icons/dark/scalable/grid.svg</file>
         <file>icons/dark/scalable/help-circle.svg</file>
         <file>icons/dark/scalable/info.svg</file>
+        <file>icons/dark/scalable/repeat.svg</file>
         <file>icons/dark/scalable/rotate-ccw</file>
         <file>icons/dark/scalable/rotate-ccw.svg</file>
         <file>icons/dark/scalable/rotate-cw</file>
@@ -53,6 +54,7 @@
         <file>icons/light/scalable/grid.svg</file>
         <file>icons/light/scalable/help-circle.svg</file>
         <file>icons/light/scalable/info.svg</file>
+        <file>icons/light/scalable/repeat.svg</file>
         <file>icons/light/scalable/highlight.svg</file>
         <file>icons/light/scalable/home.svg</file>
         <file>icons/light/scalable/image.svg</file>
