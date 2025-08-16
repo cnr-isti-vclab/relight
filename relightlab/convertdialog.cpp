@@ -22,6 +22,10 @@ ConvertDialog::ConvertDialog() {
 //create two sections
 	QVBoxLayout *layout = new QVBoxLayout(this);
 	
+	QLabel *h2 = new QLabel("Convert RTI", this);
+	layout->addWidget(h2);
+	layout->addSpacing(40);
+
 	HelpLabel *input_label = new HelpLabel("<p>Input: .ptm, .rti or info.json:</p>", "convert /export");
 	layout->addWidget(input_label);
 	{
@@ -68,7 +72,26 @@ ConvertDialog::ConvertDialog() {
 			group->addButton(tarzoom);
 			group->addButton(itarzoom);
 		}
+
+		//output lineedit
+		{
+			HelpLabel *output_label = new HelpLabel("<p>Output: .ptm, .rti or folder:</p>", "convert /export");
+			layout->addWidget(output_label);
+
+			QHBoxLayout *output_layout = new QHBoxLayout();
+			layout->addLayout(output_layout);
+
+
+			output_path = new QLineEdit;
+			output_layout->addWidget(output_path);
+
+			QPushButton *output_button = new QPushButton("...");
+			output_layout->addWidget(output_button);
+			connect(output_button, &QPushButton::clicked, this, &ConvertDialog::selectOutput);
+		}
 		
+		layout->addSpacing(40);
+
 		{
 			convert_button = new QPushButton("Convert");
 			convert_button->setToolTip("Convert to selected format");
@@ -110,8 +133,25 @@ void ConvertDialog::selectInput() {
 	tarzoom->setEnabled(legacy);
 	itarzoom->setEnabled(legacy);
 	
-	input_path->setText(files.first());
+	input_path->setText(file);
 	verifyPath();
+}
+
+
+void ConvertDialog::selectOutput() {
+	//allow user to select a file or folder
+
+	QFileInfo info(input_path->text());
+	info.path();
+	QString file  = QFileDialog::getSaveFileName(this, "Select a file name", info.path());
+
+	bool legacy = file.endsWith(".ptm") || file.endsWith(".rti");
+	rti->setEnabled(legacy);
+	rti->setChecked(legacy);
+	web->setEnabled(!legacy);
+	web->setChecked(!legacy);
+
+	output_path->setText(file);
 }
 
 void ConvertDialog::convert() {
@@ -132,24 +172,76 @@ void ConvertDialog::convert() {
 	}
 }
 
+void ConvertDialog::initialState() {
+	web->setEnabled(false);
+	rti->setEnabled(false);
+	iip->setEnabled(false);
+	img->setEnabled(false);
+	deepzoom->setEnabled(false);
+	tarzoom->setEnabled(false);
+	itarzoom->setEnabled(false);
+	convert_button->setEnabled(false);
+}
+
 void ConvertDialog::verifyPath() {
 	convert_button->setEnabled(false);
 	if (!input_path || input_path->text().isEmpty()) {
 		QMessageBox::warning(this, "Input required", "Please select an input file.");
+		initialState();
 		return;
 	}
 
 	QFileInfo fileInfo(input_path->text());
 	if (!fileInfo.exists()) {
 		QMessageBox::warning(this, "File not found", "The selected file does not exist:\n" + fileInfo.absoluteFilePath());
+		initialState();
 		return;
 	}
 
+	// propose a filename for the output
+	if (!output_path || output_path->text().isEmpty()) {
+		QString output = input_path->text();
+		if(rti->isChecked()) {
+			output += ".rti";
+		} else if (web->isChecked()) {
+			//remove the extension and add .json
+			output = output.mid(0, output.lastIndexOf('.'));
+			//if exists add _1, _2, etc.
+			int i = 1;
+			while (QFile::exists(output)) {
+				output = output.mid(0, output.lastIndexOf('_')) + "_" + QString::number(i++);
+			}
+		} else if (iip->isChecked()) {
+			output += ".tiff";
+		}
+
+		output_path->setText(output);
+	}
 	// Enable convert button if a valid file is selected
 	convert_button->setEnabled(true);
 }
 
 void ConvertDialog::relightToRti(QString input) {
+	int quality = 95;
+	try {		
+		QString output = output_path->text();
+		QDir output_dir(output);
+		if(output_dir.exists()) {
+			auto answer = QMessageBox::question(this, "Folder already exists", "Folder '" + output + "' already exists, overwrite?");
+			if(answer == QMessageBox::No) {
+				return;
+			}
+		}
+		int status = convertToRTI(input.toStdString().c_str(), output.toStdString().c_str());
+		if (status != 0) {
+			QMessageBox::critical(this, "Conversion failed", "Failed to convert to .rti format.");
+			return;
+		}
+		QMessageBox::information(this, "Conversion successful", "Successfully converted to .rti format.");
+		
+	} catch (QString e) {
+		QMessageBox::critical(this, "Error", QString("An error occurred: %1").arg(e));
+	}
 
 }
 
@@ -164,7 +256,7 @@ void ConvertDialog::rtiToRelight(QString input) {
 			QMessageBox::warning(this, "Invalid file", "Please select a valid .ptm or .rti file.");
 			return;
 		}
-		QString output = input.mid(0, input.lastIndexOf('.'));
+		QString output = output_path->text();
 		QDir output_dir(output);
 		if(output_dir.exists()) {
 			auto answer = QMessageBox::question(this, "Folder already exists", "Folder '" + output + "' already exists, overwrite?");
