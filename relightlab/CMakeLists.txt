@@ -153,6 +153,7 @@ set (RELIGHTLAB_SOURCES
     rtiplan.cpp
     rtitask.cpp
     ../relight-cli/rtibuilder.cpp
+    ../relight-cli/convert_rti.cpp
     ../src/deepzoom.cpp
     ../src/rti.cpp
     ../src/legacy_rti.cpp
