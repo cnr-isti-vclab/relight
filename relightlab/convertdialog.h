@@ -19,8 +19,11 @@ public:
 	void relightToRelight(QString path);
 	void rtiToRelight(QString path);
 
+	void initialState();
+
 public slots:
 	void selectInput();
+	void selectOutput();
 	void verifyPath();
 	void convert();
 	
@@ -29,6 +32,7 @@ private:
 	QLineEdit *input_path = nullptr;
 	QLabelButton *rti = nullptr, *web = nullptr, *iip = nullptr;
 	QLabelButton *img = nullptr, *deepzoom = nullptr, *tarzoom = nullptr, *itarzoom = nullptr;
+	QLineEdit *output_path = nullptr;
 	QPushButton *convert_button = nullptr;
 };
 
