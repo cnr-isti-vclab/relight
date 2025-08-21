@@ -1,11 +1,13 @@
 <h2>Lights geometry</h2>
 
-<p>Many RTI software consider the light direction only, as if the lights were infinitely distant,
-this approximation is somewhat ok for a visual inspection, but severely distorts the normals.
+<p>RTI software only considers the light directions, as if the lights were infinitely distant.
+This approximation is somewhat ok for a visual inspection, but severely distorts the normals.
 We can instead take into account for each pixel the real light direction if we can reconstruct
-the geometry of the scene: 3d positions of the lights and size of the image </p>
+the geometry of the scene: 3d positions of the lights and size of the image. </p>
 
 
 <p>If the images are captured using a dome, you can provide the light directions/positions to relightlab
-instead of using reflective spheres.
+instead of using reflective spheres.   
 You can use an <a href="formats/lp.html">.lp file</a> (see formats/lp.md</p>
+<p>Alternatively use a shiny-ball capture and process the image set to generate a .dome file
+  you can reuse as long as the camera and lights do not change.</p>
