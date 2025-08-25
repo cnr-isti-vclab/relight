@@ -20,7 +20,7 @@ public:
 	std::vector<float> blurred_mask;
 	int grid_x, grid_y;
 	float sigma;
-	float blur = 1.0f;
+	float blur;
 
 
 	Eigen::Vector3f pixelToRealCoordinates(int pixelX, int pixelY, float pixelZ);

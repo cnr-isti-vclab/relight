@@ -172,7 +172,6 @@ void OrthoDepthmap::resizeNormals (int factorPowerOfTwo, int step) {
 
 void OrthoDepthmap::loadPointCloud(const char *textPath){
 
-	//apri file di testo e scarta tutto quello che non è un numero. fai un char vettore di punti
 	QFile file(textPath);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		throw QString("Error opening input file: ")+ textPath;
@@ -299,10 +298,25 @@ void OrthoDepthmap::beginIntegration(){
 	weights.clear();
 	weights.resize(width * height, 0);
 
+
+	for (int i = 0; i < width * height; ++i) {
+		if (mask[i] != 0.0f) {
+			weights[i] = 1.0f;
+		}
+	}
+
+	int w_zero = 0, w_nonzero = 0;
+	for (float w : weights) {
+		if (w == 0.0f) w_zero++;
+		else w_nonzero++;
+	}
+	cout << "[DEBUG] Weights: zero = " << w_zero << ", non-zero = " << w_nonzero << endl;
+
 }
 // blur e un blending sulla maschera e salvare una copia dell'elevation
 // in modo tale che la depth Micmac(?) prenda la depth dell rti quando è 0.5 e quando è 0 prenda la depth del micmac così da riempire i punti.
 void OrthoDepthmap::endIntegration(){
+
 
 	for(size_t i =0; i < elevation.size(); i++){
 #ifdef PRESERVE_INTERIOR
@@ -310,8 +324,8 @@ void OrthoDepthmap::endIntegration(){
 #endif
 			if(weights[i] != 0.0f) {
 				elevation[i] /= weights[i];
-				mask[i] = 1;
 			}
+
 #ifdef PRESERVE_INTERIOR
 		}
 #endif
@@ -342,8 +356,8 @@ void OrthoDepthmap::endIntegration(){
 			blurred.at(y, x) = mask[x + y * width];
 
 
-	// blur in pixel
-	float blur_radius_pixel = 15.0f;
+	// set the value for blur
+	float blur_radius_pixel = 200.0f;
 	int kernelSize = int(2 * std::ceil(blur_radius_pixel) + 1);
 	if (kernelSize % 2 == 0) kernelSize += 1;
 
@@ -388,7 +402,11 @@ void OrthoDepthmap::endIntegration(){
 	blurred_mask.resize(width * height);
 	for (int i = 0; i < width * height; i++) {
 		float v = blurred[i];
-		blurred_mask[i] = (v <= 0.5f) ? 0.0f : (v - 0.5f) * 2.0f;
+		if (v <= 0.5f) {
+			blurred_mask[i] = 0.0f;
+		} else {
+			blurred_mask[i] = (v - 0.5f) * 2.0f;
+		}
 	}
 	// Debug: range dei valori nel blurred prima del remapping
 	float min_blurred = 1e9f;
@@ -542,9 +560,20 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 }
 void OrthoDepthmap::saveBlurredMask(const char* filename) const {
 	QImage img(width, height, QImage::Format_Grayscale8);
+
+	float minVal = 1.0f, maxVal = 0.0f;
+	for (float v : blurred_mask) {
+		if (v < minVal) minVal = v;
+		if (v > maxVal) maxVal = v;
+	}
+
+	float range = std::max(1e-5f, maxVal - minVal);
+
 	for (int y = 0; y < int(height); y++) {
 		for (int x = 0; x < int(width); x++) {
 			float value = blurred_mask[x + y * width];
+			// normalizza da [minVal, maxVal] → [0, 1]
+			value = (value - minVal) / range;
 			value = std::clamp(value, 0.0f, 1.0f);
 			int gray = int(value * 255.0f);
 			img.setPixel(x, y, qRgb(gray, gray, gray));

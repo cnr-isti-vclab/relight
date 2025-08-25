@@ -233,10 +233,12 @@ bool Depthmap::loadMask(const char *tifPath){
 		cerr << "Failed to load mask TIFF file: " << tifPath << endl;
 		return false;
 	}
+
 	if(width != w || height != h){
 		cerr << "Mask is not consistent with height or width" << endl;
 		return false;
 	}
+
 
 	return true;
 

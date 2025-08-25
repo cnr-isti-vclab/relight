@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
 	ortho.saveDepth(qPrintable(output_depth));
 	ortho.saveMask(qPrintable(output_mask));
 	ortho.saveObj("weightsElev3_0125.obj");
-	//ortho.saveBlurredMask(qPrintable(base + "mask_blurred.tif"));
+	ortho.saveBlurredMask(qPrintable(maskPath));
 	//ortho.saveBlurredMask(qPrintable(base + "blurred_mask.tif"));
 
 
