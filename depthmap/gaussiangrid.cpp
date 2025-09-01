@@ -34,7 +34,87 @@ void GaussianGrid::fitLinear(std::vector<float> &x, std::vector<float> &y, float
 	// Calcolo dei coefficienti a e b
 	a = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x * sum_x);
 	b = (sum_y - a * sum_x) / n;
+
+	std::ofstream out("xy_fit_data.csv");
+	if (out.is_open()) {
+		out << "x\ty\n";
+		for (int i = 0; i < n; i++) {
+			out << x[i] << "\t" << y[i] << "\n";
+		}
+	}
 }
+
+void GaussianGrid::fitLinearRobust(std::vector<float> &x, std::vector<float> &y,
+								   float &a, float &b,
+								   int iterations, float thresh) {
+	if (x.size() != y.size()) {
+		cerr << "Errore: i vettori x e y devono avere la stessa lunghezza." << endl;
+		return;
+	}
+
+	int n = x.size();
+	std::vector<bool> mask(n, true);
+
+	for (int it = 0; it < iterations; it++) {
+		std::vector<float> x_used, y_used;
+		for (int i = 0; i < n; i++) {
+			if (mask[i]) {
+				x_used.push_back(x[i]);
+				y_used.push_back(y[i]);
+			}
+		}
+
+		if (x_used.size() < 2) break;
+
+		// fit linear on point active
+		fitLinear(x_used, y_used, a, b);
+
+		// residui
+		std::vector<float> errs;
+		for (int i = 0; i < n; i++) {
+			if (!mask[i]) continue;
+			float e = std::fabs(y[i] - (a * x[i] + b));
+			errs.push_back(e);
+		}
+		if (errs.empty()) break;
+
+		std::sort(errs.begin(), errs.end());
+		float med = errs[errs.size() / 2];
+
+		// reject outliers
+		int rejected = 0;
+		for (int i = 0; i < n; i++) {
+			float e = std::fabs(y[i] - (a * x[i] + b));
+			bool keep = (e <= thresh * med);
+			if (mask[i] && !keep) rejected++;
+			mask[i] = keep;
+		}
+
+		cout << "[RobustFit] Iter " << it+1
+				  << " a=" << a << " b=" << b
+				  << " med=" << med
+				  << " rejected=" << rejected
+				  << " kept=" << std::count(mask.begin(), mask.end(), true)
+				  << "/" << n
+				  << endl;
+
+		if (rejected == 0) break; // convergenza
+	}
+
+	//
+	std::ofstream out("xy_fit_robust.csv");
+	if (out.is_open()) {
+		out << "x,y,fit,used\n";
+		for (int i = 0; i < n; i++) {
+			float y_fit = a * x[i] + b;
+			out << x[i] << "," << y[i] << "," << y_fit << "," << (mask[i] ? 1 : 0) << "\n";
+		}
+	}
+}
+
+
+
+
 
 float GaussianGrid::bilinearInterpolation(float x, float y) {
 
@@ -74,7 +154,9 @@ void GaussianGrid::init(std::vector<Eigen::Vector3f> &cloud, std::vector<float> 
 	for(auto &v: cloud)
 		cloudZ.push_back(v[2]);
 
-	fitLinear(source, cloudZ, a, b);
+	//fitLinear(source, cloudZ, a, b);
+	fitLinearRobust(source, cloudZ, a, b, 5, 5.0f);
+	//exit(0);
 	//TODO: w and h proportional to aspect ratio of camera
 	for(size_t i = 0; i < cloud.size(); i++) {
 		cloud[i][2] -= depthmapToCloud(source[i]);
@@ -187,6 +269,7 @@ float GaussianGrid::value(float x, float y){
 
 float GaussianGrid::target(float x, float y, float h) {
 	h = depthmapToCloud(h);
+	return h;
 	return h + value(x, y);
 }
 
@@ -286,3 +369,83 @@ void GaussianGrid::imageGrid(const char* filename) {
 
 //scala tra 0 e 1. img
 
+
+
+
+
+
+//robust fit
+/* #include <stdio.h>
+#include <math.h>
+#include <stdbool.h>
+
+typedef struct {
+	double a; // slope
+	double b; // intercept
+} LinReg;
+
+LinReg fit_linear(const double *x, const double *y, const bool *mask, int n) {
+	double sumx=0, sumy=0, sumxy=0, sumxx=0;
+	int count=0;
+	for (int i=0; i<n; i++) {
+		if (!mask[i]) continue;
+		sumx  += x[i];
+		sumy  += y[i];
+		sumxy += x[i]*y[i];
+		sumxx += x[i]*x[i];
+		count++;
+	}
+
+	LinReg r = {0,0};
+	double denom = count*sumxx - sumx*sumx;
+	if (denom != 0 && count>1) {
+		r.a = (count*sumxy - sumx*sumy) / denom;
+		r.b = (sumy - r.a*sumx) / count;
+	}
+	return r;
+}
+
+LinReg robust_fit(const double *x, const double *y, int n, int iterations, double thresh) {
+	bool mask[n];
+	for (int i=0; i<n; i++) mask[i] = true;
+
+	LinReg r = {0,0};
+	for (int it=0; it<iterations; it++) {
+		r = fit_linear(x,y,mask,n);
+
+		// compute residuals
+		double errs[n];
+		int count=0;
+		for (int i=0; i<n; i++) {
+			if (!mask[i]) continue;
+			errs[count++] = fabs(y[i] - (r.a*x[i] + r.b));
+		}
+
+		// compute median error
+		if (count == 0) break;
+		for (int i=0;i<count-1;i++) // tiny selection sort for median
+			for (int j=i+1;j<count;j++)
+				if (errs[j] < errs[i]) {
+					double tmp=errs[i]; errs[i]=errs[j]; errs[j]=tmp;
+				}
+		double med = errs[count/2];
+
+		// reject outliers
+		for (int i=0; i<n; i++) {
+			double e = fabs(y[i] - (r.a*x[i] + r.b));
+			mask[i] = (e <= thresh*med);
+		}
+	}
+	return r;
+}
+
+int main(void) {
+	double x[] = {1,2,3,4,5,6,7};
+	double y[] = {2,4,6,8,100,12,14}; // note the outlier at y=100
+	int n = sizeof(x)/sizeof(x[0]);
+
+	LinReg r = robust_fit(x,y,n,5,3.0); // 5 iterations, reject >3×median error
+	printf("Robust fit: y = %.3f*x + %.3f\n", r.a, r.b);
+	return 0;
+}
+*/

@@ -19,6 +19,9 @@ public:
 
 	void init(std::vector<Eigen::Vector3f> &cloud, std::vector<float> &source);
 	void fitLinear(std::vector<float> &x, std::vector<float> &y, float &a, float &b); //ax + b
+	void fitLinearRobust(std::vector<float> &x, std::vector<float> &y,
+									   float &a, float &b,
+									   int iterations, float thresh);
 	float bilinearInterpolation(float x, float y);
 	void computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &differences);
 	void fillLaplacian(float precision);

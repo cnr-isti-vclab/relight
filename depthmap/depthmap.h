@@ -41,7 +41,7 @@ protected:
 	bool loadTiledTiff(TIFF* inTiff, std::vector<float> &elevation, uint32_t w, uint32_t h,
 					   uint32_t tileWidth, uint32_t tileLength, uint32_t bitsPerSample);
 	bool loadStripedTiff(TIFF* inTiff, std::vector<float> &elevation, uint32_t& w, uint32_t& h, uint32_t bitsPerSample);
-	void saveTiff(const char *mask_path, const std::vector<float> &values, uint32_t w, uint32_t h, uint32_t bitsPerSample) const;
+	static void saveTiff(const char *mask_path, const std::vector<float> &values, uint32_t w, uint32_t h, uint32_t bitsPerSample);
 
 };
 

@@ -128,6 +128,8 @@ int main(int argc, char *argv[]) {
 			cerr << "Failed to load depth map: " << tiffFile.fileName().toStdString() << endl;
 			return -1;
 		}
+		depthCam.saveDepth("test.tif");
+
 		if(depthCam.width != depthCam.camera.width || depthCam.height != depthCam.camera.height){
 			cerr << "width is not the same" << endl;
 			return -1;
@@ -144,7 +146,7 @@ int main(int argc, char *argv[]) {
 	ortho.saveDepth(qPrintable(output_depth));
 	ortho.saveMask(qPrintable(output_mask));
 	ortho.saveObj("weightsElev3_0125.obj");
-	ortho.saveBlurredMask(qPrintable(maskPath));
+	ortho.saveBlurredMask(qPrintable("blurred_mask.tif"));
 	//ortho.saveBlurredMask(qPrintable(base + "blurred_mask.tif"));
 
 

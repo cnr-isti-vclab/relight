@@ -276,7 +276,7 @@ bool Depthmap::loadNormals(const char *normals_path){
 
 	return true;
 }
-void Depthmap::saveTiff(const char *mask_path,const vector<float> &values, uint32_t w, uint32_t h, uint32_t bitsPerSample) const{
+void Depthmap::saveTiff(const char *mask_path,const vector<float> &values, uint32_t w, uint32_t h, uint32_t bitsPerSample){
 	//save e scrive la maschera
 
 	TIFF* maskTiff = TIFFOpen(mask_path, "w");
