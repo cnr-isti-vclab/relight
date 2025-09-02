@@ -28,12 +28,20 @@ public:
 	void imageGrid(const char* filename);
 	//interpola la griglia per spostare la depthmap, serve per creare la funzione
 	float value(float x, float y);
-	float target(float x, float y, float source); //given a point in the source depthmap compute the z in cloud coordinate space;
+
+	//given a point in the source depthmap compute the z in cloud coordinate space;
+	float target(float x, float y, float source);
+
+	//corrected elevation in source coordinates
+	float corrected(float x, float y, float source);
 
 
 
-	float depthmapToCloud(float h) {
-		return a*h + b;
+	float depthmapToCloud(float z) {
+		return a*z + b;
+	}
+	float cloudToDepthmap(float h) {
+		return (h - b)/a;
 	}
 
 

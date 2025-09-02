@@ -191,7 +191,7 @@ Eigen::Vector3f Camera::applyIntrinsicCalibration(Eigen::Vector3f& uvz) const{
 	return Eigen::Vector3f(result.x(), result.y(), uvz.z());
 }
 // du =U−Cx dv =V −Cy ρ2 =d2u +d2v
-// DRUV=Cx+(1+R3ρ2 +R5ρ4 +R7ρ6)du
+
 
 Eigen::Vector3f Camera::applyRadialDistortion(Eigen::Vector3f& uvz) {
 

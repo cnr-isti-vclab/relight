@@ -11,6 +11,7 @@
 #include <QDebug>
 #include <QRegularExpression>
 #include <fstream>
+#include <iostream>
 
 using namespace std;
 
@@ -150,21 +151,29 @@ void GaussianGrid::init(std::vector<Eigen::Vector3f> &cloud, std::vector<float> 
 	height = side;
 	float precision = 0.00001f;
 
-	vector<float> cloudZ;
-	for(auto &v: cloud)
-		cloudZ.push_back(v[2]);
+	{
+		vector<float> cloudZ;
+		for(auto &v: cloud)
+			cloudZ.push_back(v[2]);
 
-	//fitLinear(source, cloudZ, a, b);
-	fitLinearRobust(source, cloudZ, a, b, 5, 5.0f);
-	//exit(0);
+		//fitLinear(source, cloudZ, a, b);
+		fitLinearRobust(source, cloudZ, a, b, 5, 5.0f);
+	}
+	vector<Eigen::Vector3f> diff = cloud;
 	//TODO: w and h proportional to aspect ratio of camera
-	for(size_t i = 0; i < cloud.size(); i++) {
-		cloud[i][2] -= depthmapToCloud(source[i]);
+	for(size_t i = 0; i < diff.size(); i++) {
+		diff[i][2] -= depthmapToCloud(source[i]);
 	}
 
-	computeGaussianWeightedGrid(cloud);
+	computeGaussianWeightedGrid(diff);
 	fillLaplacian(precision);
 
+// Debug, check if differences are improved
+/*	for(size_t i = 0; i < cloud.size(); i++) {
+		auto p = cloud[i];
+		float t = target(p[0], p[1], source[i]);
+		cout << diff[i] << " vs: " << t - p[2] << endl;
+	} */
 }
 
 
@@ -269,9 +278,15 @@ float GaussianGrid::value(float x, float y){
 
 float GaussianGrid::target(float x, float y, float h) {
 	h = depthmapToCloud(h);
-	return h;
 	return h + value(x, y);
 }
+
+float GaussianGrid::corrected(float x, float y, float z) {
+	float h = depthmapToCloud(z);
+	h += value(x, y);
+	return cloudToDepthmap(h);
+}
+
 
 void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &differences) {
 
@@ -339,6 +354,10 @@ void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &dif
 void GaussianGrid::imageGrid(const char* filename) {
 
 	auto min_max = minmax_element(values.begin(), values.end());
+	if(min_max.first == values.end()) {
+		cerr << "No values in grid!" << endl;
+		exit(-1);
+	}
 	float z_min = *min_max.first;
 	float z_max = *min_max.second;
 
@@ -353,12 +372,12 @@ void GaussianGrid::imageGrid(const char* filename) {
 		return;
 	}
 
-	for (int i = 0; i < height; i++) {
-		for (int j = 0; j < width; j++) {
-			float value = values[i * width + j];
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			float value = values[x + y * width];
 			float normalized_value = (value - z_min) / (z_max - z_min);
 			int gray_value = static_cast<int>(normalized_value * 255);
-			image.setPixel(j, i, qRgb(gray_value, gray_value, gray_value));
+			image.setPixel(x, y, qRgb(gray_value, gray_value, gray_value));
 		}
 	}
 	image.save(filename, "png");

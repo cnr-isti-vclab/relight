@@ -182,7 +182,8 @@ void OrthoDepthmap::loadPointCloud(const char *textPath){
 
 	while (!in.atEnd()) {
 		QString line = in.readLine().trimmed();
-		QStringList parts = line.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+//		QStringList parts = line.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+		QStringList parts = line.split(QRegularExpression("\\s+"), QString::SkipEmptyParts);
 		if (line.isEmpty() || (!line[0].isDigit() && line[0] != '-' && line[0] != '+') || parts.size() != 6) {
 			continue;
 		}
@@ -589,9 +590,6 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 	std::vector<Eigen::Vector3f> imageCloud;
 	std::vector<float> source;
 
-	point_cloud.clear();
-	point_cloud.push_back(Eigen::Vector3f (-1.268f, 1.345f, -8.462f));
-
 	out << "x\ty\tz\n";
 	for (size_t i = 0; i < point_cloud.size(); i++) {
 
@@ -599,7 +597,7 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 		float h = realCoord[2];
 		Eigen::Vector3f pixelCoord = realToPixelCoord(realCoord[0], realCoord[1], realCoord[2]);
 		// project from ortho plane to camera plane, hence the fixed z
-		realCoord[2] = z;
+		//realCoord[2] = z;
 		Eigen::Vector3f imageCoords = camera.camera.projectionToImage(realCoord);
 		int pixelX = static_cast<int>(round(imageCoords[0]));
 		int pixelY = static_cast<int>(round(imageCoords[1]));
@@ -607,38 +605,30 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 
 		if (pixelX >= 0 && pixelX < camera.width && pixelY >= 0 && pixelY < camera.height) {
 			float depthValue = camera.elevation[pixelX + pixelY * camera.width];
-			//imageCloud.push_back(Eigen::Vector3f(imageCoords[0]/camera.width, imageCoords[1]/camera.height, h));
-			//source.push_back(depthValue);
+			imageCloud.push_back(Eigen::Vector3f(imageCoords[0]/camera.width, imageCoords[1]/camera.height, h));
+			source.push_back(depthValue);
 			//test
-			if (pixelCoord[0] >= 0 && pixelCoord[1] >= 0 && pixelCoord[0] < width && pixelCoord[1] < height) {
-
+			/*if (pixelCoord[0] >= 0 && pixelCoord[1] >= 0 && pixelCoord[0] < width && pixelCoord[1] < height) {
 
 				imageCloud.push_back(Eigen::Vector3f(imageCoords[0]/camera.width, imageCoords[1]/camera.height, pixelCoord[2]));
-				source.push_back(old_elevation[pixelCoord[0] + pixelCoord[1]*width]);
-			}
+				source.push_back(old_elevation[int(pixelCoord[0]) + int(pixelCoord[1])*width]);
+			}*/
 		}
+	}
 
-	}
-	std::ofstream csv("integrated_points.csv");
-	if (csv.is_open()) {
-		csv << "X,Y,Z,Elevation\n";
-		for (size_t i = 0; i < imageCloud.size(); i++) {
-			const auto& p = imageCloud[i];
-			float elev = source[i];
-			csv << p[0] << "," << p[1] << "," << p[2] << "," << elev << "\n";
-		}
-	}
 
 
 	GaussianGrid gaussianGrid;
 	cout << "minSamples: " << gaussianGrid.minSamples << ", sideFactor: " << gaussianGrid.sideFactor << endl;
 
-	gaussianGrid.minSamples = 3; // 1, 3, 5
-	gaussianGrid.sideFactor = 0.125; // 0.25, 0.5, 1, 2, 0.125
+	gaussianGrid.minSamples = 1;//TODO: 3 seems a good value // 1, 3, 5
+	gaussianGrid.sideFactor = 1; //0.25; //0.125; // 0.25, 0.5, 1, 2, 0.125
 	gaussianGrid.init(imageCloud, source);
 	cout << "Dopo init: minSamples: " << gaussianGrid.minSamples << ", sideFactor: " << gaussianGrid.sideFactor << endl;
 
 	gaussianGrid.imageGrid(("test3_0125.png"));
+
+	Depthmap::saveTiff("grid.tiff", gaussianGrid.values, gaussianGrid.width, gaussianGrid.height, 32);
 
 	//proietta il depth map del rti sull ortho
 	//1. crea array grande quantp l ortho in float inizializzalo a 0
@@ -648,28 +638,41 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 
 	//3. variabile z
 	//proietta nella camera cameraPr, controlliamo che stia dentro, se sta dentro prendiamo l'elevation e si scrive nell immagine.
-	for (int y = 0; y < height; y++) {
-		for (int x = 0; x < width; x++) {
-			Eigen::Vector3f realCoord = pixelToRealCoordinates(x, y, z);
-			realCoord[2] = z;
-			Eigen::Vector3f imageCoords = camera.camera.projectionToImage(realCoord);
-			int pixelX = static_cast<int>(std::round(imageCoords[0]));
-			int pixelY = static_cast<int>(std::round(imageCoords[1]));
+	for (int y = 0; y < camera.height; y++) {
+		for (int x = 0; x < camera.width; x++) {
 			Eigen::Vector2f p;
-			p[0] = pixelX / float(camera.width);
-			p[1] = pixelY / float(camera.height);
+			p[0] = x / float(camera.width);
+			p[1] = y / float(camera.height);
 
-			if (pixelX >= 0 && pixelX < camera.width && pixelY >= 0 && pixelY < camera.height) {
-				float depthValue = camera.elevation[pixelX + pixelY * camera.width];
-				float interpolate_h = gaussianGrid.target(p[0], p[1], depthValue);
-				float h = (interpolate_h - origin[2]) / resolution[2];
-				orthoDepth[x + y * width] = h;
+			float depthValue = camera.elevation[x + y * camera.width];
+			float z = gaussianGrid.corrected(p[0], p[1], depthValue);
+
+			Eigen::Vector3f realCoord = camera.camera.projectionToReal(Eigen::Vector3f(x, y, z));
+			Eigen::Vector3f pixelCoords = realToPixelCoord(realCoord[0], realCoord[1], realCoord[2]);
+
+			int ox = int(pixelCoords[0]);
+			int oy = int(pixelCoords[1]);
+			orthoDepth[ox + oy * width] = pixelCoords[2];
+
+		}
+	}
+
+	{
+		std::ofstream csv("integrated_points.csv");
+		if (csv.is_open()) {
+			csv << "X,Y,Z,Elevation,Diff\n";
+			for (size_t i = 0; i < imageCloud.size(); i++) {
+				const auto& p = imageCloud[i];
+				float elev = source[i];
+				float interpolate_h = gaussianGrid.target(p[0], p[1], elev);
+				csv << p[0] << "," << p[1] << "," << p[2] << "," << elev << "," << interpolate_h << "\n";
+
 			}
 		}
 	}
 
+
 	Depthmap::saveTiff("ortho_projection.tif", orthoDepth, width, height, 32);
-	exit(0);
 
 
 	float sum_diff = 0.0f;
@@ -788,9 +791,8 @@ void OrthoDepthmap::saveBlurredMask(const char* filename) const {
 	for (int y = 0; y < int(height); y++) {
 		for (int x = 0; x < int(width); x++) {
 			float value = blurred_mask[x + y * width];
-			// normalizza da [minVal, maxVal] → [0, 1]
 			value = (value - minVal) / range;
-			value = std::clamp(value, 0.0f, 1.0f);
+			value = std::max(0.0f, std::min(1.0f, value));
 			int gray = int(value * 255.0f);
 			img.setPixel(x, y, qRgb(gray, gray, gray));
 		}

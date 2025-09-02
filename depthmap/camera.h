@@ -20,6 +20,9 @@ public:
 	bool loadXml(const QString &path); //read the MicMac xml origin, origin resolution ecc.
 	bool loadInternParameters(const QString &internePath); // read the xml with the center, rotation, focal parameter, principal points parameters ecc.
 	Eigen::Vector3f projectionToImage(Eigen::Vector3f realPosition) const;
+	//inverse of the above
+	Eigen::Vector3f projectionToReal(Eigen::Vector3f imgPosition) const;
+
 	Eigen::Vector3f applyRadialDistortion(Eigen::Vector3f& u);
 	Eigen::Vector3f applyIntrinsicCalibration(Eigen::Vector3f& u) const;
 };
