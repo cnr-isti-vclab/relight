@@ -153,7 +153,7 @@ inline QString tarZoom(QString inputFolder, QString output, std::function<bool(Q
         index.insert("tilesize", data.tilesize);
         index.insert("overlap", data.overlap);
         index.insert("format", "jpg");
-        index.insert("nlevels", QDir(QString("%1/plane_0_files").arg(inputFolder)).entryList(QDir::AllDirs | QDir::NoDotAndDotDot).size());
+		index.insert("nlevels", QDir(QString("%1/plane_%2_files").arg(inputFolder).arg(i)).entryList(QDir::AllDirs | QDir::NoDotAndDotDot).size());
         index.insert("width", data.width);
         index.insert("height", data.height);
 
