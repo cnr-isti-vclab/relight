@@ -77,6 +77,7 @@ void NormalsFrame::init() {
 	export_row->suggestPath();
 	zoom_view->init();
 	zoom_view->setCrop(qRelightApp->project().crop);
+	surface_row->init();
 }
 
 void NormalsFrame::save() {
