@@ -32,6 +32,9 @@ public:
 	float bni_k = 2.0;
 	float assm_error = 0.1;
 
+	int surface_width = 0;
+	int surface_height = 0;
+
 	int quality = 95;
 	QString path;
 
@@ -55,7 +58,7 @@ public:
 
 	void setParameters(NormalsParameters &param);
 	void initFromProject(Project &project);
-	void assm(QString filename, std::vector<float> &normals, float precision);
+	void assm(QString filename, std::vector<float> &normals, int width, int height, float precision);
 
 };
 

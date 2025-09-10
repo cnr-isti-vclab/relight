@@ -7,7 +7,9 @@
 class QLabelButton;
 class QLineEdit;
 class QPushButton;
+class QSpinBox;
 class QDoubleSpinBox;
+class QGridLayout;
 
 class NormalsPlanRow: public PlanRow {
 public:
@@ -50,13 +52,22 @@ public:
 
 	QDoubleSpinBox *max_frequency = nullptr;
 	QDoubleSpinBox *blur_percentage = nullptr;
+
+	QFrame *frequency_frame = nullptr;
+	QFrame *blur_frame = nullptr;
 };
 
 class NormalsSurfaceRow: public NormalsPlanRow {
+	Q_OBJECT
 public:
 	NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *parent = nullptr);
 	void setSurfaceMethod(SurfaceIntegration surface);
+	void init();
 
+public slots:
+	void setDownsample(float down, int w, int h);
+
+private:
 	QLabelButton *none = nullptr;
 	QLabelButton *fft = nullptr;
 	QLabelButton *bni = nullptr;
@@ -64,6 +75,13 @@ public:
 
 	QDoubleSpinBox *bni_k = nullptr;
 	QDoubleSpinBox *assm_error = nullptr;
+
+	QDoubleSpinBox *downsample = nullptr;
+	QSpinBox *width = nullptr;
+	QSpinBox *height = nullptr;
+	QFrame *downsample_frame = nullptr;
+	QFrame *bni_frame = nullptr;
+	QFrame *assm_frame = nullptr;
 };
 
 
