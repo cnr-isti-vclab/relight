@@ -36,6 +36,7 @@ protected:
 	QLabelButton *file = nullptr;
 	QLineEdit *input_path = nullptr;
 	QPushButton *open = nullptr;
+	QFrame *input_frame = nullptr;
 };
 
 class NormalsFlattenRow: public NormalsPlanRow {
