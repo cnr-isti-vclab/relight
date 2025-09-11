@@ -6,7 +6,7 @@
 #
 # Requires: homebrew
 
-brew install coreutils cmake ninja libomp eigen libjpeg libtiff #opencv
+brew install coreutils ninja libomp eigen libjpeg libtiff #opencv
 
 npm install -g appdmg
 
