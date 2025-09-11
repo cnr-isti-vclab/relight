@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>css/style.qss</file>
+
         <file>icons/dark/scalable/camera.svg</file>
         <file>icons/dark/scalable/cast.svg</file>
         <file>icons/dark/scalable/check.svg</file>
@@ -40,6 +41,11 @@
         <file>icons/dark/scalable/plus.svg</file>
         <file>icons/dark/scalable/cancel.svg</file>
         <file>icons/dark/scalable/loader.svg</file>
+        <file>icons/dark/scalable/eye.svg</file>
+        <file>icons/dark/scalable/eye-off.svg</file>
+        <file>icons/dark/scalable/chevrons-up.svg</file>
+        <file>icons/dark/scalable/chevrons-down.svg</file>
+
         <file>icons/light/scalable/camera.svg</file>
         <file>icons/light/index.theme</file>
         <file>icons/light/scalable/cast.svg</file>
@@ -77,12 +83,18 @@
         <file>icons/light/scalable/loader.svg</file>
         <file>icons/light/scalable/minus.svg</file>
         <file>icons/light/scalable/plus.svg</file>
+        <file>icons/light/scalable/eye.svg</file>
+        <file>icons/light/scalable/eye-off.svg</file>
+        <file>icons/light/scalable/chevrons-down.svg</file>
+        <file>icons/light/scalable/chevrons-up.svg</file>
+
         <file>docs/style.css</file>
         <file>docs/home.html</file>
         <file>docs/index.html</file>
         <file>docs/about.html</file>
         <file>docs/gettingstarted.html</file>
-		<file>docs/publishing.html</file>
+        <file>docs/publishing.html</file>
+
         <file>docs/interface/index.html</file>
         <file>docs/interface/home.html</file>
         <file>docs/interface/image_list.html</file>
@@ -90,14 +102,18 @@
         <file>docs/interface/scale.html</file>
         <file>docs/interface/spheres.html</file>
         <file>docs/interface/lights.html</file>
-		<file>docs/interface/crop.html</file>
+        <file>docs/interface/crop.html</file>
         <file>docs/interface/queue.html</file>
         <file>docs/interface/new_project.html</file>
         <file>docs/interface/open_project.html</file>
+        <file>docs/interface/view.html</file>
+        <file>docs/interface/convert.html</file>
+
         <file>docs/normals/index.html</file>
         <file>docs/normals/flattening.html</file>
         <file>docs/normals/normalmap.html</file>
         <file>docs/normals/surface.html</file>
+
         <file>docs/rti/index.html</file>
         <file>docs/rti/basis.html</file>
         <file>docs/rti/coefficients.html</file>
@@ -106,6 +122,7 @@
         <file>docs/rti/format.html</file>
         <file>docs/rti/quality.html</file>
         <file>docs/rti/web.html</file>
+
         <file>docs/formats/index.html</file>
         <file>docs/formats/lp.html</file>
         <file>docs/formats/dome.html</file>
@@ -114,18 +131,13 @@
         <file>docs/formats/iiif.html</file>
         <file>docs/formats/project.html</file>
         <file>docs/formats/config.html</file>
-        <file>icons/dark/scalable/chevrons-down.svg</file>
-        <file>icons/dark/scalable/chevrons-up.svg</file>
-        <file>icons/light/scalable/chevrons-down.svg</file>
-        <file>icons/light/scalable/chevrons-up.svg</file>
+
+
         <file alias="relight.png">../build_scripts/relight.png</file>
         <file alias="demo/index.html">../demo/index.html</file>
         <file alias="demo/openlime.min.js">../demo/openlime.min.js</file>
         <file alias="demo/skin.svg">../demo/skin.svg</file>
         <file alias="demo/skin.css">../demo/skin.css</file>
-        <file>icons/dark/scalable/eye.svg</file>
-        <file>icons/dark/scalable/eye-off.svg</file>
-        <file>icons/light/scalable/eye.svg</file>
-        <file>icons/light/scalable/eye-off.svg</file>
+
     </qresource>
 </RCC>
