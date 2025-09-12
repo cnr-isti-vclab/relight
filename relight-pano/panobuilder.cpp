@@ -591,7 +591,7 @@ void PanoBuilder::malt_ortho(){
 		QString program = mm3d_path;
 		QStringList arguments;
 		arguments << "Malt" << "Ortho" << ".*" + format << "Relative" << "ZoomF=4"
-				  << "DirMEC=Malt" << "DirTA=TA" << "DoMEC=0" << "DoOrtho=1"
+				  << "DirMEC=Malt" << "DirTA=TA" << "DoMEC=0" << "DoOrtho=1" << "Purge=false"
 				  << "ImOrtho=.*" + format << "DirOF="+orthoPlaneDirName;
 
 		executeProcess(program, arguments);

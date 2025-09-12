@@ -182,8 +182,8 @@ void OrthoDepthmap::loadPointCloud(const char *textPath){
 
 	while (!in.atEnd()) {
 		QString line = in.readLine().trimmed();
-//		QStringList parts = line.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
-		QStringList parts = line.split(QRegularExpression("\\s+"), QString::SkipEmptyParts);
+		QStringList parts = line.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+		//		QStringList parts = line.split(QRegularExpression("\\s+"), QString::SkipEmptyParts);
 		if (line.isEmpty() || (!line[0].isDigit() && line[0] != '-' && line[0] != '+') || parts.size() != 6) {
 			continue;
 		}
@@ -564,10 +564,14 @@ void OrthoDepthmap::endIntegration(){
 	// Blending tra elevation e old_elevation
 	for (size_t i = 0; i < elevation.size(); i++) {
 		float blur_weight = blurred_mask[i]; // 0 = MicMac, 1 = RTI
+		if(weights[i] > 0.0f){
+			mask[i] = 1.0f;
+			elevation[i] /= weights[i];
+		}
 		elevation[i] = blur_weight * old_elevation[i] +
 					   (1.0f - blur_weight) * elevation[i];
-		if(weights[i] > 0.0f)
-			mask[i] = 1.0f;
+
+
 	}
 }
 // vogliamo prendere la parte tra 0.5 e 1 e convertirla tra 0 e 1
@@ -605,7 +609,7 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 
 		if (pixelX >= 0 && pixelX < camera.width && pixelY >= 0 && pixelY < camera.height) {
 			float depthValue = camera.elevation[pixelX + pixelY * camera.width];
-			imageCloud.push_back(Eigen::Vector3f(imageCoords[0]/camera.width, imageCoords[1]/camera.height, h));
+			imageCloud.push_back(Eigen::Vector3f(imageCoords[0]/camera.width, imageCoords[1]/camera.height, imageCoords[2]));
 			source.push_back(depthValue);
 			//test
 			/*if (pixelCoord[0] >= 0 && pixelCoord[1] >= 0 && pixelCoord[0] < width && pixelCoord[1] < height) {
@@ -630,11 +634,22 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 
 	Depthmap::saveTiff("grid.tiff", gaussianGrid.values, gaussianGrid.width, gaussianGrid.height, 32);
 
+
+
+
 	//proietta il depth map del rti sull ortho
 	//1. crea array grande quantp l ortho in float inizializzalo a 0
 	std::vector<float> orthoDepth(width * height, 0.0f);
 	//2. itera su x e y dell img che crei width e height di depth ortho, cord x e y ci mettiamola z e proietta in cord reali da ortho a real
 	//float z = point_cloud[0][2];
+	/*Eigen::Vector3f realTest(-1.268, 1.345, -8.462);
+	Eigen::Vector3f pixelTest = camera.camera.projectionToImage(realTest);
+	Eigen::Vector3f back = camera.camera.projectionToReal(pixelTest);
+
+	cout <<  "Real: " << realTest << endl;
+	cout << "Coords: " << pixelTest << endl;
+	cout << "Back-projected: " << back << endl;*/
+
 
 	//3. variabile z
 	//proietta nella camera cameraPr, controlliamo che stia dentro, se sta dentro prendiamo l'elevation e si scrive nell immagine.
@@ -645,18 +660,23 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 			p[1] = y / float(camera.height);
 
 			float depthValue = camera.elevation[x + y * camera.width];
-			float z = gaussianGrid.corrected(p[0], p[1], depthValue);
+			float z = gaussianGrid.target(p[0], p[1], depthValue);
 
 			Eigen::Vector3f realCoord = camera.camera.projectionToReal(Eigen::Vector3f(x, y, z));
 			Eigen::Vector3f pixelCoords = realToPixelCoord(realCoord[0], realCoord[1], realCoord[2]);
 
 			int ox = int(pixelCoords[0]);
 			int oy = int(pixelCoords[1]);
+			if(ox< 0 || ox >=width || oy < 0 || oy >= height)
+				continue;
 			orthoDepth[ox + oy * width] = pixelCoords[2];
+			float w = camera.calculateWeight(x, y);
+			//p0 e p1 devono venire uguale e vedi se depth è ugusle, h dovrebbe venire simile
+			elevation[ox + oy * width] += w * pixelCoords[2];
 
+			weights[ox+ oy * width] += w;
 		}
 	}
-
 	{
 		std::ofstream csv("integrated_points.csv");
 		if (csv.is_open()) {
@@ -674,108 +694,6 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 
 	Depthmap::saveTiff("ortho_projection.tif", orthoDepth, width, height, 32);
 
-
-	float sum_diff = 0.0f;
-	float sum_diff2 = 0.0f;
-	float min_diff = 1e9f;
-	float max_diff = -1e9f;
-	float min_h = 1e9f;
-	float max_h = -1e9f;
-
-	int valid_count = 0;
-
-	for (size_t i = 0; i < point_cloud.size(); i++) {
-
-		Eigen::Vector3f realCoord = point_cloud[i];
-		float h = realCoord[2];
-
-		min_h = std::min(min_h, h);
-		max_h = std::max(max_h, h);
-
-		Eigen::Vector3f pixelCoord = realToPixelCoord(realCoord[0], realCoord[1], realCoord[2]);
-		// project from ortho plane to camera plane, hence the fixed z
-		realCoord[2] = z;
-		Eigen::Vector3f imageCoords = camera.camera.projectionToImage(realCoord);
-		int px = static_cast<int>(round(imageCoords[0]));
-		int py = static_cast<int>(round(imageCoords[1]));
-
-		if(px >= 0 && px< camera.width && py >= 0 && py< camera.height){
-			float depthValue = camera.elevation[px + py * camera.width];
-			Eigen::Vector2f p;
-			p[0] = px / float(camera.width);
-			p[1] = py / float(camera.height);
-
-			float interpolate_h = gaussianGrid.target(p[0], p[1], depthValue);
-
-			float diff = fabsf(interpolate_h - h);
-			//cout << "diff: " << diff << endl;
-
-			min_diff = std::min(min_diff, diff);
-			max_diff = std::max(max_diff, diff);
-
-			sum_diff += diff;
-			sum_diff2 += diff * diff;
-
-			valid_count++;
-		}
-	}
-	if (valid_count > 0) {
-		float mean_diff = sum_diff / valid_count;
-		float variance = (sum_diff2 / valid_count) - (mean_diff * mean_diff);
-		float stddev = sqrtf(std::max(0.0f, variance));
-		float mse  = sum_diff2 / valid_count;
-		float rmse = sqrtf(mse);
-
-		std::cout << "[STATS] RMSE = " << rmse << "\n";
-
-		cout << "[STATS] diff interpolate - h \n";
-		cout << "		Count     = " << valid_count << "\n";
-		cout << "		Min diff  = " << min_diff << "\n";
-		cout << "		Max diff  = " << max_diff << "\n";
-		cout << "		Mean diff = " << mean_diff << "\n";
-		cout << "		Stddev    = " << stddev << "\n";
-		cout << "[STATS] Range h in point cloud:\n";
-		cout << "		Min h     = " << min_h << "\n";
-		cout << "		Max h     = " << max_h << "\n";
-	}
-
-
-	float ortho_z = realToPixelCoord(0,0,z)[2];
-
-	for(size_t y=0; y < height; y++){
-		for(size_t x=0; x < width; x++){
-#ifdef PRESERVE_INTERIOR
-			if(mask[x + y * width] != 0.0f){
-				continue;
-			}
-#endif
-
-			Eigen::Vector3f r = pixelToRealCoordinates(x, y, ortho_z);
-			assert(fabs(z-r[2]) < 0.1f);
-			Eigen::Vector3f p = camera.camera.projectionToImage(r);
-
-			int px = round(p[0]);
-			int py = round(p[1]);
-
-			if(px >= 0 && px< camera.width && py >= 0 && py< camera.height){
-				float depthValue = camera.elevation[px + py * camera.width];
-				p[0] = px / float(camera.width);
-				p[1] = py / float(camera.height);
-
-				float h = gaussianGrid.target(p[0], p[1], depthValue);
-				Eigen::Vector3f d = realToPixelCoord(r[0], r[1], h);
-
-				float w = camera.calculateWeight(px, py);
-				//p0 e p1 devono venire uguale e vedi se depth è ugusle, h dovrebbe venire simile
-				elevation[x + y * width] += w * d[2];
-
-				weights[x+ y * width] += w;
-
-			} else {
-				//elevation[x + y*width] = origin[2] + resolution[2] * elevation[x + y*width];
-			}
-		}
-	}
 }
 void OrthoDepthmap::saveBlurredMask(const char* filename) const {
 	QImage img(width, height, QImage::Format_Grayscale8);

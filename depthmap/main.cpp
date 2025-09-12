@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}*/
 	//input
-//#define MACOS 1
+#define MACOS 1
 #ifdef MACOS
 	QString base = "/Users/erika/Desktop/testProva/";
 #else

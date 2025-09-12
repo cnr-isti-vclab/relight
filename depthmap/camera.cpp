@@ -180,6 +180,21 @@ Eigen::Vector3f Camera::projectionToImage(Eigen::Vector3f realPosition) const{
 
 }
 
+Eigen::Vector3f Camera::projectionToReal(Eigen::Vector3f imgPosition) const{
+	Eigen::Vector3f uvz = imgPosition;
+	float u = (uvz.x() - PPx) / focal;
+	float v = (uvz.y() - PPy) / focal;
+	float z = uvz.z();
+	Eigen::Vector3f cameraCoords(u * z, v * z, z);
+	//world to camera projection
+	Eigen::Vector3f worldPoint = rotation * cameraCoords + center;
+
+	return worldPoint;
+
+
+}
+
+
 Eigen::Vector3f Camera::applyIntrinsicCalibration(Eigen::Vector3f& uvz) const{
 
 	float u = uvz.x();
@@ -206,5 +221,7 @@ Eigen::Vector3f Camera::applyRadialDistortion(Eigen::Vector3f& uvz) {
 
 	return Eigen::Vector3f(u_dist, v_dist, uvz.z());
 }
+
+
 
 

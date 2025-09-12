@@ -288,19 +288,16 @@ void Depthmap::saveTiff(const char *mask_path,const vector<float> &values, uint3
 	TIFFSetField(maskTiff, TIFFTAG_IMAGEWIDTH, w);
 	TIFFSetField(maskTiff, TIFFTAG_IMAGELENGTH, h);
 	TIFFSetField(maskTiff, TIFFTAG_SAMPLESPERPIXEL, 1);
-
+	TIFFSetField(maskTiff, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
 	if (bitsPerSample == 32) {
 		TIFFSetField(maskTiff, TIFFTAG_BITSPERSAMPLE, bitsPerSample);
 		TIFFSetField(maskTiff, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
-		TIFFSetField(maskTiff, TIFFTAG_COMPRESSION, COMPRESSION_LZW);
+		TIFFSetField(maskTiff, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
 	} else if (bitsPerSample == 1) {
 		TIFFSetField(maskTiff, TIFFTAG_BITSPERSAMPLE, 1);
 		TIFFSetField(maskTiff, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT);
 		TIFFSetField(maskTiff, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
 	}
-
-
-
 
 
 	tsize_t scanLineSize = TIFFScanlineSize(maskTiff);
