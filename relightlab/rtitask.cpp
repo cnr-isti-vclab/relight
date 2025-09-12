@@ -51,7 +51,7 @@ RtiTask::RtiTask(): Task() {
 void RtiTask::setProject(Project &project) {
 	builder->imageset.pixel_size = project.pixelSize;
 
-	builder->nworkers = qRelightApp->nWorkers();
+	builder->nworkers = qRelightApp->nThreads();
 	builder->samplingram = qRelightApp->samplingRam();
 
 	crop = project.crop;
