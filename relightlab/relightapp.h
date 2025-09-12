@@ -123,11 +123,11 @@ public:
 
 	//zero means auto
 	int nThreads() {
-		return QSettings().value("Nworkers", 0).toInt();
+		return QSettings().value("NThreads", 0).toInt();
 	}
 
 	void setThreads(int n) {
-		QSettings().setValue("Nworkers", n);
+		QSettings().setValue("NThreads", n);
 	}
 
 	int samplingRam() {
