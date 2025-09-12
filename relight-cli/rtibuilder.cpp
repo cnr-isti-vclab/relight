@@ -1068,7 +1068,8 @@ size_t RtiBuilder::savePTM(const std::string &output) {
 	//second reading.
 	imageset.restart();
 
-	nworkers = QThread::idealThreadCount();
+	if(!nworkers)
+		nworkers = QThread::idealThreadCount();
 
 	vector<Worker *> workers(height, nullptr);
 	for(size_t i = 0; i < nworkers; i++) {
@@ -1193,6 +1194,9 @@ size_t RtiBuilder::saveUniversal(const std::string &output) {
 
 	//second reading.
 	imageset.restart();
+
+	if(!nworkers)
+		nworkers = QThread::idealThreadCount();
 
 	vector<Worker *> workers(height, nullptr);
 	for(size_t i = 0; i < nworkers; i++) {
@@ -1427,6 +1431,9 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			savenormals = false;
 		}
 	}
+
+	if(!nworkers)
+		nworkers = QThread::idealThreadCount();
 
 	vector<Worker *> workers(height, nullptr);
 	for(size_t i = 0; i < nworkers; i++) {
