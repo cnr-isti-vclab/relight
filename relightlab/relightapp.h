@@ -91,12 +91,7 @@ public:
 	QAction *addAction(const QString &id, const QString &label, const QString &icon, const QString &shortcut, const char *method = nullptr);
 	QAction *action(const QString &id) { return actions[id]; }
 
-	QString lastProjectDir() {
-		return QSettings().value("LastProjectDir", QDir::homePath()).toString();
-	}
-	void setLastProjectDir(QString dir) {
-		QSettings().setValue("LastProjectDir", dir);
-	}
+
 	QString lastOutputDir() {
 		if(!last_output_dir.isEmpty())
 			return last_output_dir;
@@ -111,11 +106,42 @@ public:
 		last_output_dir = QString();
 	}
 
+
+	QString lastProjectDir() {
+		return QSettings().value("LastProjectDir", QDir::homePath()).toString();
+	}
+	void setLastProjectDir(QString dir) {
+		QSettings().setValue("LastProjectDir", dir);
+	}
+
 	QString lastViewDir() {
 		return QSettings().value("LastViewDir", QDir::homePath()).toString();
 	}
 	void setLastViewDir(QString dir) {
 		QSettings().setValue("LastViewDir", dir);
+	}
+
+	//zero means auto
+	int nThreads() {
+		return QSettings().value("Nworkers", 0).toInt();
+	}
+
+	void setThreads(int n) {
+		QSettings().setValue("Nworkers", n);
+	}
+
+	int samplingRam() {
+		return QSettings().value("SamplingRam", 512).toInt();
+	}
+	void setSamplingRam(int mb) {
+		QSettings().setValue("SamplingRam", mb);
+	}
+
+	int castingPort() {
+		return QSettings().value("CastingPort", 8880).toInt();
+	}
+	void setCastingPort(int port) {
+		QSettings().setValue("CastingPort", port);
 	}
 
 	bool needsSavingProceed();

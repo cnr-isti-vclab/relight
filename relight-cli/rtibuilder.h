@@ -34,7 +34,7 @@ public:
 	bool savemeans = false;
 	bool savemedians = false;
 	int crop[4] = { 0, 0, 0, 0 }; //left, top, width, height
-	size_t nworkers = 8;
+	size_t nworkers = 0; //autodetect optimal number
 
 	std::function<bool(QString stage, int percent)> *callback = nullptr;
 
