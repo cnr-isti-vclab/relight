@@ -33,7 +33,6 @@ public:
 	void loadPointCloud(const char *textPath);
 	//itera sui punti, chiama l'inversa, prima converte a intero perche sono float vede se xy stanno in w e h, se non dentro problema
 	//legge nella depth l h corrispondente
-	void verifyPointCloud();
 	void integratedCamera(const CameraDepthmap& camera, const char *outputFile);
 	void beginIntegration();
 	void endIntegration();

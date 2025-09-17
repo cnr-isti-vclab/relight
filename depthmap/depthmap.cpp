@@ -591,8 +591,6 @@ float Depthmap::calculateWeight(float x, float y) const{
 }
 
 
-
-
 //Real to Pixel Coordinates: (-0.981, 2.041, -11.132) -> Pixel: (110.688, 65.4375, -27.75)
 //point outside the image limits Point 3D: (-0.981, 2.041, -11.132), Coordinate pixel: (-1, 2)
 

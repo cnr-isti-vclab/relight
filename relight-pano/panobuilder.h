@@ -21,13 +21,14 @@ public:
 		MALT_MEC,
 		C3DC,
 		RTI,
+		DEPTHMAP,
 		MALT_ORTHO, //copy orientation xml and exif + ortho per image
 		TAWNY,
 		JPG,//convert to jpg
 		UPDATEJSON
 	};
 
-	QStringList steps = {"means", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc","rti", "malt_ortho", "tawny", "jpg", "updateJson"};
+	QStringList steps = {"means", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc","rti", "depthmap", "malt_ortho", "tawny", "jpg", "updateJson"};
 	QDir base_dir;
 	QDir datasets_dir;
 	QDir photogrammetry_dir;
@@ -64,6 +65,7 @@ public:
 	void malt_mec();
 	void c3dc();
 	void tawny();
+	void depthmap();
 	void malt_ortho();
 	void jpg();
 	void updateJson();

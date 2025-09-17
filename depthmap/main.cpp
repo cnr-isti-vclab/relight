@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 	//QString cameraDepthmap = base + "datasets/L04C12.tif";
 	//QString orientationXmlPath = base + "photogrammetry/Ori-Relative/Orientation-L04C12.tif.xml";
 	QString maskPath = base + "photogrammetry/Malt/Masq_STD-MALT_DeZoom4.tif";
-	QString plyFile = base + "photogrammetry/AperiCloud_Relative__mini.ply";
+	QString plyFile = base + "photogrammetry/AperiCloud_Relative.ply";
 	//QString point_txt = base + "photogrammetry/points_h.txt";
 	Depthmap depth;
 
@@ -84,7 +84,6 @@ int main(int argc, char *argv[]) {
 	}
 
 
-//doortho = 1 domec =0;
 
 	//ortho.computeNormals();
 	//ortho.saveNormals(qPrintable(base + "testcenterRel_copia/photogrammetry/original.png"));
@@ -99,8 +98,11 @@ int main(int argc, char *argv[]) {
 	}
 	//ortho.saveMask(qPrintable(output_mask));
 
-	ortho.verifyPointCloud();
+	//ortho.verifyPointCloud();
 	ortho.beginIntegration();
+
+	QFile::copy(depthmapPath, depthmapPath + "_backup.tif");
+	QFile::copy(maskPath, maskPath + "_backup.tif");
 
 
 	for (const QFileInfo &tiffFile : tiffFiles) {
@@ -115,6 +117,7 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 		}
+
 		/*QString orientationXmlPath = xmlDir.absoluteFilePath("Orientation-" + cameraName + ext + ".xml");
 
 		cout << "Looking for XML: " << orientationXmlPath.toStdString() << endl;*/
@@ -143,8 +146,8 @@ int main(int argc, char *argv[]) {
 
 	}
 	ortho.endIntegration();
-	ortho.saveDepth(qPrintable(output_depth));
-	ortho.saveMask(qPrintable(output_mask));
+	ortho.saveDepth(qPrintable(depthmapPath));
+	ortho.saveMask(qPrintable(maskPath));
 	ortho.saveObj("weightsElev3_0125.obj");
 	ortho.saveBlurredMask(qPrintable("blurred_mask.tif"));
 	//ortho.saveBlurredMask(qPrintable(base + "blurred_mask.tif"));

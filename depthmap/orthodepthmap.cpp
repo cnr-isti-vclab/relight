@@ -214,37 +214,30 @@ Eigen::Vector3f OrthoDepthmap::realToPixelCoord(float realX, float realY, float 
 
 }
 
-void OrthoDepthmap::verifyPointCloud(){
 
-	for(const auto& point : point_cloud){
-
-		float realX = point[0];
-		float realY = point[1];
-		float realZ = point[2];
-
-		Eigen::Vector3f pixelCoord = realToPixelCoord(realX, realY, realZ);
-
-		Eigen::Vector3f realCoord = pixelToRealCoordinates(pixelCoord[0], pixelCoord[1], pixelCoord[2]);
-
-
-		//	int pixelX = static_cast<int>(round(pixelCoord[0]));
-		//	int pixelY = static_cast<int>(round(pixelCoord[1]));
-
-		int pixelX = static_cast<int>(round(pixelCoord[0]));
-		int pixelY = static_cast<int>(round(pixelCoord[1]));
-
-		if (pixelX < 0 || pixelX >= width || pixelY < 0 || pixelY >= height) {
-			continue;
-		}
-		/*	cerr << "point inside the image limits "
-			 << "Point 3D: (" << realX << ", " << realY << ", " << pixelCoord[2] << "), "
-			 << "Coordinate pixel: (" << pixelX << ", " << pixelY <<  " " << elevation[pixelX + pixelY * width]<< ")\n";
-*/
-	}
-}
 //#define PRESERVE_INTERIOR
 
 void OrthoDepthmap::beginIntegration(){
+
+	int cx = 1025;
+	int cy = 776;
+	int holeW = 50;
+	int holeH = 50;
+
+	int x1 = cx - holeW / 2;
+	int y1 = cy - holeH / 2;
+	int x2 = cx + holeW / 2;
+	int y2 = cy + holeH / 2;
+
+
+	for (int yy = y1; yy < y2; yy++) {
+		for (int xx = x1; xx < x2; xx++) {
+			mask[xx + yy * width] = 0.0f;
+		}
+	}
+
+	// opzionale: salva la mask bucata su file per debug
+	Depthmap::saveTiff("mask_with_hole_50x50.tif", mask, width, height, 1);
 
 	bool use_depthmap = false;
 	if(use_depthmap) {
@@ -300,12 +293,12 @@ void OrthoDepthmap::beginIntegration(){
 		}
 		int step = 10;
 
-		int x1 = 720;
+		/*int x1 = 720;
 		int x2 = 1111;
 		int y1 = 20;
 		int y2 = 504;
 
-		/*int y1 = 659;
+		int y1 = 659;
 		int y2 = 1577;
 		int x1 = 883;
 		int x2 = 2145;*/
@@ -315,7 +308,7 @@ void OrthoDepthmap::beginIntegration(){
 		int x2 = 1577;*/
 
 
-		std::vector<float> elevation_section(width * height, 0.0f);
+		/*	std::vector<float> elevation_section(width * height, 0.0f);
 
 		for (int y = y1; y <= y2; y += 1) {
 			for (int x = x1; x <= x2; x += 1) {
@@ -341,7 +334,7 @@ void OrthoDepthmap::beginIntegration(){
 			}
 		}
 
-		/*	for(int y = 0; y < height; y+= step) {
+			for(int y = 0; y < height; y+= step) {
 			for(int x = 0; x < width; x += step) {
 				bool inside = (mask[x + y*width] == 1.0f);
 				if(!inside)
@@ -388,19 +381,65 @@ void OrthoDepthmap::beginIntegration(){
 		}
 	}*/
 
+
 	}
+
+
 	//exit(0);
 	old_elevation = elevation;
 
 	for(size_t i =0; i < elevation.size(); i++) {
-#ifdef PRESERVE_INTERIOR
-		if(mask[i] == 0.0f){
-#endif
-			elevation[i] = 0.0f;
-#ifdef PRESERVE_INTERIOR
-		}
-#endif
+
+		elevation[i] = 0.0f;
 	}
+	/*std::vector<float> mask_copy = mask;
+
+	std::vector<Eigen::Vector2i> locations = {
+		{1025, 776},
+		//{1444, 847},
+		//{1413, 1010},
+		//{1081, 1018}
+	};
+
+	int holeW = 200;
+	int holeH = 200;
+
+	for (const auto& loc : locations) {
+		int cx = loc.x();
+		int cy = loc.y();
+
+		int x1 = cx - holeW / 2;
+		int y1 = cy - holeH / 2;
+		int x2 = cx + holeW / 2;
+		int y2 = cy + holeH / 2;
+
+		for (int yy = y1; yy <= y2; yy++) {
+			for (int xx = x1; xx <= x2; xx++) {
+				mask_copy[xx + yy * width] = 0.0f;
+			}
+		}
+	}
+
+	Depthmap::saveTiff("mask_region_200x200.tif", mask_copy, width, height, 1);
+*/
+	/*
+	int holeW = 50;
+	int holeH = 50;
+
+	int x1 = 800; // esempio top-left x
+	int y1 = 1100;  // esempio top-left y
+	int x2 = x1 + holeW;
+	int y2 = y1 + holeH;
+
+
+	// applico il buco (metto mask = 0 nella regione 50x50)
+	for (int yy = y1; yy < y2; yy++) {
+		for (int xx = x1; xx < x2; xx++) {
+			mask[xx + yy * width] = 0.0f;
+		}
+	}
+
+	*/
 	//foto von bilinear, se non funziona riduci le dimensione x4  con image magik a parte con for
 	// guarda quanto è un pixel. scali la depth anche dell rti, con image magik
 
@@ -417,10 +456,11 @@ void OrthoDepthmap::beginIntegration(){
 	}*/
 
 }
-// blur e un blending sulla maschera e salvare una copia dell'elevation
+
+
+//  e un blending sulla maschera e salvare una copia dell'elevation
 // in modo tale che la depth Micmac(?) prenda la depth dell rti quando è 0.5 e quando è 0 prenda la depth del micmac così da riempire i punti.
 void OrthoDepthmap::endIntegration(){
-
 
 	for(size_t i =0; i < elevation.size(); i++){
 #ifdef PRESERVE_INTERIOR

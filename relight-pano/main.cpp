@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 
 	QCommandLineOption stepOption(QStringList() << "s" << "step",
 										 "starting step (rti, tapioca, schnaps, tapas, apericloud, orthoplane, tarama, malt_mec,"
-										 "c3dc, malt_ortho, jpg)", "rti");
+										 "c3dc, depthmap, malt_ortho, jpg)", "rti");
 	parser.addOption(stepOption);
 
 
@@ -134,6 +134,7 @@ int main(int argc, char *argv[])
 		catch(QString error){
 			cerr << qPrintable(error) << endl;
 		}
+
 	}
 	return 0;
 }
