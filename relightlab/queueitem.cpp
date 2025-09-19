@@ -14,7 +14,7 @@
 
 #include "task.h"
 #include "relightapp.h"
-#include "../relight/httpserver.h"
+#include "../src/network/httpserver.h"
 #include "processqueue.h"
 
 #include <iostream>

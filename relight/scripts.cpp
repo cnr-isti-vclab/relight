@@ -121,34 +121,6 @@ void Scripts::normals(QString output, QStringList images, const std::vector<Vect
 	cout << qPrintable(process.readAllStandardOutput()) << endl;
 	if(process.exitStatus() != QProcess::NormalExit)
 		cout << "Failed!" << endl;
-
-	/*py::scoped_interpreter guard{};
-
-	py::object scope = py::module_::import("__main__").attr("__dict__");
-
-	try {
-		scope["output"] = output.toStdString();
-
-		py::exec("import numpy", scope);
-		return;
-		using namespace pybind11::literals;
-		py::array_t<float> pylights({3, int(lights.size())});
-		memcpy(pylights.mutable_data(), lights.data(), lights.size()*4);
-
-		scope["lights"] = pylights;
-
-
-	} catch(py::error_already_set &e) {
-
-		cout << "Normals: " << std::string(py::str(e.type())) << endl;
-		cout << std::string(py::str(e.value())) << endl;
-
-	} catch(...) {
-		cout << qPrintable("Normals") << ": Something wrong!" << endl;
-	}
-
-	Scripts::runScript("normals/normalmap.py", scope);
- */
 }
 
 

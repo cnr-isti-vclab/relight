@@ -1,7 +1,7 @@
 #include "convertdialog.h"
 #include "helpbutton.h"
 #include "qlabelbutton.h"
-#include "../relight/zoom.h"
+#include "zoom.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>

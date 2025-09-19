@@ -37,18 +37,41 @@ ehthumbs.db
 Thumbs.db
 *~
 
-#my stuff
-*.pro.user*
-CMakeFiles
+# Build directories and CMake files #
+######################################
+build*/
+build-*/
+CMakeFiles/
 CMakeCache.txt
-CMakeLists.txt.user
+cmake_install.cmake
 Makefile
-*Qt*GCC*
-*Qt*Relaese
-build*
 install/
-!build_scripts
+!build_scripts/
+
+# IDE and Qt Creator files #
+#############################
+*.pro.user*
+CMakeLists.txt.user
+.idea/
+.vscode/
+.vs/
+*Qt*GCC*
+*Qt*Release*
+
+# Application files #
+######################
 *.AppImage
-.idea
-__pycache__
+
+# Python files #
+#################
+__pycache__/
+*.pyc
+*.pyo
+
+# Temporary and backup files #
+##############################
 *.bak
+*.tmp
+*.swp
+*.swo
+*~

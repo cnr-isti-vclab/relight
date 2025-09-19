@@ -2,7 +2,7 @@
 #include "zoom.h"
 #include "dstretch.h"
 #include "../src/rti.h"
-#include "../relight-cli/rtibuilder.h"
+#include "../src/cli/rtibuilder.h"
 
 #include <QDebug>
 #include <QFileInfo>

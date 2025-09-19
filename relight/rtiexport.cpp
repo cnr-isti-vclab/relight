@@ -12,11 +12,11 @@
 #include "rtiexport.h"
 #include "ui_rtiexport.h"
 #include "imagecropper.h"
-#include "httpserver.h"
+#include "../src/network/httpserver.h"
 #include "scripts.h"
 #include "processqueue.h"
 #include "../src/rti.h"
-#include "../relight-cli/rtibuilder.h"
+#include "../src/cli/rtibuilder.h"
 
 #include "normalstask.h"
 #include "rtitask.h"

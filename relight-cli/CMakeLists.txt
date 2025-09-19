@@ -14,7 +14,7 @@ endif()
 
 
 SET(HEADERS
-	rtibuilder.h
+	../src/cli/rtibuilder.h
 	../src/getopt.h
 	../src/imageset.h
 	../src/jpeg_decoder.h
@@ -30,7 +30,7 @@ SET(HEADERS
 
 SET(SOURCES
 	main.cpp
-	rtibuilder.cpp
+	../src/cli/rtibuilder.cpp
 	../src/getopt.cpp
 	../src/imageset.cpp
 	../src/jpeg_decoder.cpp
@@ -41,7 +41,7 @@ SET(SOURCES
 	../src/dome.cpp
 	../src/lens.cpp
 	../src/sphere.cpp
-	convert_rti.cpp
+	../src/cli/convert_rti.cpp
 )
 
 

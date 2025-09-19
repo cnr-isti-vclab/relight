@@ -9,7 +9,7 @@
 #include "helpdialog.h"
 #include "focaldialog.h"
 #include "queuewindow.h"
-#include "httpserver.h"
+#include "../src/network/httpserver.h"
 #include "settingsdialog.h"
 #include "domecalibration.h"
 #include "convertdialog.h"

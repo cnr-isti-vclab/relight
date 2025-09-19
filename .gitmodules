@@ -1,3 +1,0 @@
-[submodule "relight/pybind11"]
-	path = relight/pybind11
-	url = https://github.com/pybind/pybind11

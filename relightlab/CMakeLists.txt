@@ -78,8 +78,8 @@ set (RELIGHT_HEADERS
     cropframe.h 
     rtiframe.h
     rtitask.h
-    ../relight-cli/rtibuilder.h
-    ../relight/zoom.h  
+    ../src/cli/rtibuilder.h
+    zoom.h  
     ../src/deepzoom.h
     ../src/rti.h
     ../src/legacy_rti.h
@@ -87,7 +87,7 @@ set (RELIGHT_HEADERS
     ../src/jpeg_encoder.h
     ../src/jpeg_decoder.h
     ../src/flatnormals.h
-    ../relight/httpserver.h
+    ../src/network/httpserver.h
     queueframe.h
     queueitem.h
     normalsframe.h
@@ -152,8 +152,8 @@ set (RELIGHTLAB_SOURCES
     rtirecents.cpp
     rtiplan.cpp
     rtitask.cpp
-    ../relight-cli/rtibuilder.cpp
-    ../relight-cli/convert_rti.cpp
+    ../src/cli/rtibuilder.cpp
+    ../src/cli/convert_rti.cpp
     ../src/deepzoom.cpp
     ../src/rti.cpp
     ../src/legacy_rti.cpp
@@ -161,7 +161,7 @@ set (RELIGHTLAB_SOURCES
     ../src/jpeg_encoder.cpp
     ../src/jpeg_decoder.cpp
     ../src/flatnormals.cpp
-    ../relight/httpserver.cpp
+    ../src/network/httpserver.cpp
     queueframe.cpp
     queueitem.cpp
     normalsframe.cpp

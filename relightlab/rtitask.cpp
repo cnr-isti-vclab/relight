@@ -10,9 +10,9 @@
 
 #include "rtitask.h"
 #include "relightapp.h"
-#include "../relight/zoom.h"
+#include "zoom.h"
 #include "../src/rti.h"
-#include "../relight-cli/rtibuilder.h"
+#include "../src/cli/rtibuilder.h"
 
 
 #include <iostream>
