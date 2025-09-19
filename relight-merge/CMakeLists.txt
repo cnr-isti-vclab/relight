@@ -25,7 +25,7 @@ SET(HEADERS
 	../src/lens.h
 	../src/dome.h
 	../src/sphere.h
-	../relight-cli/rtibuilder.h
+	../src/cli/rtibuilder.h
 )
 
 SET(SOURCES
@@ -39,7 +39,7 @@ SET(SOURCES
 	../src/lens.cpp
 	../src/dome.cpp
 	../src/sphere.cpp
-	../relight-cli/rtibuilder.cpp
+	../src/cli/rtibuilder.cpp
 )
 
 

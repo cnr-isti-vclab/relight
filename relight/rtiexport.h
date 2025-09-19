@@ -1,7 +1,7 @@
 #ifndef RTIEXPORT_H
 #define RTIEXPORT_H
 
-#include "httpserver.h"
+#include "../src/network/httpserver.h"
 #include "../src/relight_vector.h"
 #include "../src/project.h"
 

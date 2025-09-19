@@ -5,7 +5,7 @@
 #include "mainwindow.h"
 #include "preferences.h"
 #include "convertdialog.h"
-#include "../relight/httpserver.h"
+#include "../src/network/httpserver.h"
 
 #include <QMessageBox>
 #include <QFileDialog>

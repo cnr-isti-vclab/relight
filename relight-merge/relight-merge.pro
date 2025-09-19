@@ -46,7 +46,7 @@ SOURCES += main.cpp \
     ../src/imageset.cpp \
     ../src/lp.cpp \
     ../src/jpeg_encoder.cpp \
-    ../relight-cli/rtibuilder.cpp
+    ../src/cli/rtibuilder.cpp
 
 HEADERS += \
     ../src/rti.h \
@@ -54,4 +54,4 @@ HEADERS += \
     ../src/imageset.h \
     ../src/lp.h \
     ../src/jpeg_encoder.h \
-    ../relight-cli/rtibuilder.h
+    ../src/cli/rtibuilder.h

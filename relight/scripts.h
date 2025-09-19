@@ -7,10 +7,6 @@
 
 #include <Eigen/Core>
 
-namespace pybind11 {
-	class object;
-}
-
 class Scripts {
 public:
 	Scripts();

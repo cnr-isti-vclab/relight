@@ -1,87 +1,102 @@
-cmake_minimum_required(VERSION 3.13)
-project(relight)
+cmake_minimum_required(VERSION 3.16)
+project(relight VERSION 1.0.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 11)
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Enable position independent code for shared libraries
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# Find framework last on macOS
 set(CMAKE_FIND_FRAMEWORK LAST)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-message(CMAKE_MODULE_PATH="${CMAKE_MODULE_PATH}")
+message(STATUS "CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
 
-option(MACOSX_MAKE_BUNDLE "If using macos, all targets will be placed in a relight macosx app bundle" ON)
+# Build options
+option(MACOSX_MAKE_BUNDLE "If using macOS, all targets will be placed in a relight macOS app bundle" ON)
 
-find_package(Qt6 COMPONENTS  Core Gui Widgets Concurrent Xml QUIET)
-
-
-if (Qt6_FOUND)
-	set(RELIGHT_QT Qt6)
-	message("Using Qt6")
-
-else()
-	find_package(Qt5 COMPONENTS  Core Gui Widgets Concurrent Xml QUIET)
-	
-	if(Qt5_FOUND)
-		set(RELIGHT_QT Qt5)
-		message("Using Qt5")
-	else()
-		message(FATAL_ERROR "Qt not found")
-	endif()
-endif()
+# Qt detection - prefer Qt6, fallback to Qt5
+find_package(Qt6 COMPONENTS Core Gui Widgets Concurrent Xml QUIET)
+set(RELIGHT_QT Qt6)
+message(STATUS "Using Qt6")
 
 
-find_package(Eigen3)
-find_package(OpenMP)
 
+# Find dependencies
+find_package(Eigen3 QUIET)
+find_package(OpenMP QUIET)
+
+# Bundle configuration for macOS
 if(MACOSX_MAKE_BUNDLE)
-	set(MACOSX_EXE_TARGET_OPTION MACOSX_BUNDLE)
+    set(MACOSX_EXE_TARGET_OPTION MACOSX_BUNDLE)
 else()
-	set(MACOSX_EXE_TARGET_OPTION "")
+    set(MACOSX_EXE_TARGET_OPTION "")
 endif()
 
+# Eigen3 setup
 if(NOT Eigen3_FOUND)
-	set(EIGEN3_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/eigen-3.3.9)
-endif()
-
-if(MSVC)
-	set(JPEGTURBO_HOME ${CMAKE_CURRENT_SOURCE_DIR}/external/libjpeg-turbo-2.0.6)
-	set(JPEG_INCLUDE_DIR ${JPEGTURBO_HOME}/include)
-	set(JPEG_LIBRARIES ${JPEGTURBO_HOME}/lib/jpeg.lib)	
+    message(STATUS "Using bundled Eigen3")
+    set(EIGEN3_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/eigen-3.3.9)
 else()
-	find_package (JPEG REQUIRED)
+    message(STATUS "Using system Eigen3")
 endif()
-	
-find_package (TIFF)
+
+# JPEG setup
+if(MSVC)
+    set(JPEGTURBO_HOME ${CMAKE_CURRENT_SOURCE_DIR}/external/libjpeg-turbo-2.0.6)
+    set(JPEG_INCLUDE_DIR ${JPEGTURBO_HOME}/include)
+    set(JPEG_LIBRARIES ${JPEGTURBO_HOME}/lib/jpeg.lib)
+    message(STATUS "Using bundled libjpeg-turbo for MSVC")
+else()
+    find_package(JPEG REQUIRED)
+    message(STATUS "Using system JPEG")
+endif()
+
+# TIFF setup
+find_package(TIFF QUIET)
 if(NOT TIFF_FOUND)
-	add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/external/tiff-4.7.0)
-	add_library(TIFF::TIFF ALIAS tiff)
+    message(STATUS "Using bundled TIFF library")
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/tiff-4.7.0)
+    add_library(TIFF::TIFF ALIAS tiff)
+else()
+    message(STATUS "Using system TIFF library")
 endif()
 
+# OpenCV setup (not needed on Apple)
 if(NOT APPLE)
-	find_package(OpenCV REQUIRED)
-	#message(STATUS ${OpenCV_INCLUDE_DIRS})
+    find_package(OpenCV REQUIRED)
+    message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
 endif()
 
 
+# Version information
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/RELIGHT_VERSION")
-	# version is read from RELIGHT_VERSION file
-	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/RELIGHT_VERSION" RELIGHT_VERSION)
-else() # should never happen
-	set(RELIGHT_VERSION "test")
+    # Version is read from RELIGHT_VERSION file
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/RELIGHT_VERSION" RELIGHT_VERSION)
+    string(STRIP "${RELIGHT_VERSION}" RELIGHT_VERSION)
+else()
+    # Fallback version
+    set(RELIGHT_VERSION "dev")
 endif()
 
-message("Relight Version: " ${RELIGHT_VERSION})
+message(STATUS "Relight Version: ${RELIGHT_VERSION}")
 
+# Include custom CMake tools
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/relight_tools.cmake)
 
-# install options
-
+# Installation options
 if(WIN32 OR APPLE)
-	set(INSTALL_TO_UNIX_LAYOUT OFF)
+    set(INSTALL_TO_UNIX_LAYOUT OFF)
 else()
-	set(INSTALL_TO_UNIX_LAYOUT ON)
+    set(INSTALL_TO_UNIX_LAYOUT ON)
 endif()
+
 include(GNUInstallDirs)
 
-add_subdirectory(relight)
+# Add subdirectories
 add_subdirectory(relightlab)
 add_subdirectory(relight-cli)
 add_subdirectory(relight-merge)

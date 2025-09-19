@@ -43,8 +43,8 @@ SOURCES += main.cpp \
     graphics_view_zoom.cpp \
     normalstask.cpp \
     rtiexport.cpp \
-    ../relight-cli/convert_rti.cpp \
-    ../relight-cli/rtibuilder.cpp \
+    ../src/cli/convert_rti.cpp \
+    ../src/cli/rtibuilder.cpp \
     ../src/imageset.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/jpeg_encoder.cpp \
@@ -105,7 +105,7 @@ HEADERS += \
     ../src/jpeg_encoder.h \
     ../src/material.h \
     ../src/eigenpca.h \
-    ../relight-cli/rtibuilder.h \
+    ../src/cli/rtibuilder.h \
     ../src/relight_threadpool.h \
     ../src/project.h \
     ../src/measure.h \
@@ -124,7 +124,7 @@ HEADERS += \
     rtitask.h \
     settingsdialog.h \
     ../src/legacy_rti.h \
-    httplib.h \
+    ../src/network/httplib.h \
     domecalibration.h \
     ../src/dome.h \
     ../src/relight_vector.h \

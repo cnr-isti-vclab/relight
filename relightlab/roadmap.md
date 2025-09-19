@@ -14,6 +14,7 @@
 * Settings->Performances: memory, workers
 * Show lens parameters (and check we make use of them)
 * BRDF interface rewamp
+
 ## Long term new features
 
 * preprocessing files and caching
@@ -27,7 +28,7 @@
 * DStretch (should maybe go into openlime?)
 
 ## Bugs
-
+* crop initialized with wrong handles size. (too small)
 * icons and font size on linux large screen are too small.
 * check for invalid inner circle when creating a sphere.
 * test pause/stop/play in queue.

@@ -43,8 +43,8 @@ SOURCES += main.cpp \
     ../external/assm/algorithms/Rasterizer.cpp \
     ../external/assm/algorithms/ScreenRemeshing.cpp \
     ../external/assm/algorithms/Triangulation.cpp \
-    ../relight-cli/convert_rti.cpp \
-    ../relight-cli/rtibuilder.cpp \
+    ../src/cli/convert_rti.cpp \
+    ../src/cli/rtibuilder.cpp \
     ../src/crop.cpp \
     ../src/flatnormals.cpp \
     brdfplan.cpp \
@@ -102,7 +102,7 @@ SOURCES += main.cpp \
     task.cpp \
     queueitem.cpp \
     queueframe.cpp \
-    ../relight/httpserver.cpp \
+    ../src/network/httpserver.cpp \
     normalsframe.cpp \
     normalstask.cpp \
     ../src/bni_normal_integration.cpp \
@@ -131,7 +131,7 @@ HEADERS += \
     ../external/assm/algorithms/ScreenMeshing.h \
     ../external/assm/algorithms/ScreenRemeshing.h \
     ../external/assm/algorithms/Triangulation.h \
-    ../relight-cli/rtibuilder.h \
+    ../src/cli/rtibuilder.h \
     ../src/crop.h \
     ../src/flatnormals.h \
     brdfplan.h \
@@ -190,8 +190,8 @@ HEADERS += \
     task.h \
     queueitem.h \
     queueframe.h \
-    ../relight/httpserver.h \
-    ../relight/httplib.h \
+    ../src/network/httpserver.h \
+    ../src/network/httplib.h \
     normalsframe.h \
     normalstask.h \
     ../src/bni_normal_integration.h \

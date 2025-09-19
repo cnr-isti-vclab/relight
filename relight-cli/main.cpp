@@ -1,4 +1,4 @@
-#include "rtibuilder.h"
+#include "../src/cli/rtibuilder.h"
 
 #include "../src/getopt.h"
 extern int opterr;

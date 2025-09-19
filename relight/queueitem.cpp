@@ -6,7 +6,7 @@
 #include <QMessageBox>
 #include <QFileInfo>
 #include "task.h"
-#include "httpserver.h"
+#include "../src/network/httpserver.h"
 
 
 #include <iostream>
