@@ -3,8 +3,8 @@
 #include "../src/jpeg_encoder.h"
 #include "../src/imageset.h"
 #include "../src/relight_threadpool.h"
-#include "../src/bni_normal_integration.h"
-#include "../src/flatnormals.h"
+#include "../src/normals/bni_normal_integration.h"
+#include "../src/normals/flatnormals.h"
 
 #include <Eigen/Eigen>
 #include <Eigen/Core>

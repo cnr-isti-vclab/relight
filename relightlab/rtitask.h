@@ -38,7 +38,7 @@ class RtiTask: public Task {
 public:
 	RtiParameters parameters;
 	Crop crop;
-	QSize img_size;
+	//QSize img_size;
 
 	RtiTask();
 	virtual ~RtiTask();

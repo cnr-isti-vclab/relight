@@ -37,9 +37,10 @@ set (RELIGHT_HEADERS
 	../src/lp.h
 	../src/relight_vector.h
 	../src/deepzoom.h
-	../src/bni_normal_integration.h
+	../src/normals/bni_normal_integration.h
+	../src/normals/normals_parameters.h
 	../relight-cli/rtibuilder.h
-	../src/flatnormals.h
+	../src/normals/flatnormals.h
 	processqueue.h
 	queueitem.h
 	queuewindow.h
@@ -93,8 +94,9 @@ set (RELIGHT_SOURCES
 	../src/exif.cpp
 	../src/lp.cpp
 	../src/deepzoom.cpp
-	../src/bni_normal_integration.cpp
-	../src/flatnormals.cpp
+	../src/normals/bni_normal_integration.cpp
+	../src/normals/normals_parameters.cpp
+	../src/normals/flatnormals.cpp
 	helpdialog.cpp
 	focaldialog.cpp
 	settingsdialog.cpp

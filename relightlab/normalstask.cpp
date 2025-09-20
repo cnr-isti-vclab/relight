@@ -3,9 +3,9 @@
 #include "../src/jpeg_encoder.h"
 #include "../src/imageset.h"
 #include "../src/relight_threadpool.h"
-#include "../src/bni_normal_integration.h"
-#include "../src/fft_normal_integration.h"
-#include "../src/flatnormals.h"
+#include "../src/normals/bni_normal_integration.h"
+#include "../src/normals/fft_normal_integration.h"
+#include "../src/normals/flatnormals.h"
 
 #include <assm/Grid.h>
 #include <assm/algorithms/PhotometricRemeshing.h>
@@ -34,38 +34,27 @@ using namespace Eigen;
 ///         That NormalsWorker fills a vector with the colors of the normals in that line.
 ///
 
-QString NormalsParameters::summary() {
-	QString ret = "Normals";
-	if(flatMethod == FLAT_RADIAL)
-		ret += " , radial flattning";
-	if(flatMethod == FLAT_FOURIER)
-		ret += ", frequencies based flattening";
-
-	if(surface_integration == SURFACE_ASSM)
-		ret += ", adaptive surface reconstruction";
-	if(surface_integration == SURFACE_BNI)
-		ret += ", bilateral surface reconstruction";
-	if(surface_integration == SURFACE_FFT)
-		ret += ", Fourier transform surface reconstruction";
-	ret += ".";
-	return ret;
-}
-
 void NormalsTask::initFromProject(Project &project) {
 
 	lens = project.lens;
-	imageset.width = imageset.image_width = project.lens.width;
-	imageset.height = imageset.image_height = project.lens.height;
-
-	crop = project.crop;
-	img_size = project.imgsize;
-	QRect unrotatedCrop = crop.boundingRect(project.imgsize);
+	//imageset.width = imageset.image_width = project.lens.width;
+	//imageset.height = imageset.image_height = project.lens.height;
+	//img_size = project.imgsize;
 
 	imageset.initFromProject(project);
-	imageset.setCrop(unrotatedCrop, project.offsets);
+
+	crop = project.crop;
+	imageset.setCrop(crop, project.offsets);
 	imageset.rotateLights(-project.crop.angle);
 
 	pixelSize = project.pixelSize;
+}
+
+void NormalsTask::initFromFolder(const char *folder, Dome &dome, Crop &crop) {
+	imageset.initFromFolder(folder);
+	imageset.initFromDome(dome);
+	imageset.setCrop(crop);
+	imageset.rotateLights(-crop.angle);
 }
 
 void NormalsTask::setParameters(NormalsParameters &param) {
@@ -115,7 +104,7 @@ void NormalsTask::run() {
 			//uint8_t* data = normals.data() + idx;
 			float* data = &normals[idx];
 
-			NormalsWorker *task = new NormalsWorker(parameters.solver, i, line, data, imageset, lens);
+			NormalsWorker *task = new NormalsWorker(parameters.solver, i, line, data, imageset); //, lens);
 
 			std::function<void(void)> run = [this, task](void)->void {
 				task->run();

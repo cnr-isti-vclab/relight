@@ -4,6 +4,7 @@
 #include "task.h"
 #include "../src/project.h"
 #include "../src/imageset.h"
+#include "../src/normals/normals_parameters.h"
 
 #include <QJsonObject>
 #include <QMutex>
@@ -11,45 +12,12 @@
 #include <Eigen/Core>
 #include <QRunnable>
 
-enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA };
-enum FlatMethod { FLAT_NONE, FLAT_RADIAL, FLAT_FOURIER, FLAT_BLUR };
-enum SurfaceIntegration { SURFACE_NONE, SURFACE_BNI, SURFACE_ASSM, SURFACE_FFT };
-
-class NormalsParameters {
-public:
-	bool compute = true;
-	QString input_path;
-
-	NormalSolver solver = NORMALS_L2;
-
-	FlatMethod flatMethod = FLAT_NONE;
-	double flatPercentage = 20;
-
-	double blurPercentage = 10;
-
-
-	SurfaceIntegration surface_integration = SURFACE_NONE;
-	float bni_k = 2.0;
-	float assm_error = 0.1;
-
-	int surface_width = 0;
-	int surface_height = 0;
-
-	int quality = 95;
-	QString path;
-
-	QString summary();
-};
-
-
 class NormalsTask :  public Task {
 public:
 	NormalsParameters parameters;
 
 	ImageSet imageset;
 	Crop crop;
-	QSize img_size;
-
 	Lens lens;
 	float pixelSize = 0.0f;
 
@@ -58,6 +26,8 @@ public:
 
 	void setParameters(NormalsParameters &param);
 	void initFromProject(Project &project);
+	void initFromFolder(const char *folder, Dome &dome, Crop &crop);
+
 	void assm(QString filename, std::vector<float> &normals, int width, int height, float precision);
 
 };
@@ -65,8 +35,8 @@ public:
 class NormalsWorker
 {
 public:
-	NormalsWorker(NormalSolver _solver, int _row, const PixelArray& toProcess, float* normals, ImageSet &imageset, Lens &_lens) :
-		solver(_solver), row(_row), m_Row(toProcess), m_Normals(normals), m_Imageset(imageset), lens(_lens){
+	NormalsWorker(NormalSolver _solver, int _row, const PixelArray& toProcess, float* normals, ImageSet &imageset): //, Lens &_lens) :
+		solver(_solver), row(_row), m_Row(toProcess), m_Normals(normals), m_Imageset(imageset) {//lens(_lens){
 		m_Row.resize(toProcess.npixels(), toProcess.nlights);
 		for(size_t i = 0; i < m_Row.size(); i++)
 			m_Row[i] = toProcess[i];
@@ -85,7 +55,7 @@ private:
 
 	float* m_Normals;
 	ImageSet &m_Imageset;
-	Lens &lens;
+	//Lens &lens;
 	QMutex m_Mutex;
 };
 

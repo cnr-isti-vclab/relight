@@ -34,7 +34,8 @@ mac:QMAKE_LFLAGS += -lomp
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 
 SOURCES += main.cpp \
-    ../src/bni_normal_integration.cpp \
+    ../src/normals/bni_normal_integration.cpp \
+    ../src/normals/normals_parameters.cpp \
     dstretchdialog.cpp \
     dstretchtask.cpp \
     history.cpp \
@@ -54,7 +55,7 @@ SOURCES += main.cpp \
     ../src/exif.cpp \
     ../src/project.cpp \
     ../src/dome.cpp \
-    ../src/flatnormals.cpp \
+    ../src/normals/flatnormals.cpp \
     helpdialog.cpp \
     ../src/measure.cpp \
     focaldialog.cpp \
@@ -113,7 +114,7 @@ HEADERS += \
     ../src/lens.h \
     ../src/image.h \
     ../src/exif.h \
-    ../src/flatnormals.h \
+    ../src/normals/flatnormals.h \
     httpserver.h \
     scripts.h \
     processqueue.h \

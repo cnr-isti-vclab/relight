@@ -6,6 +6,7 @@
 #include "task.h"
 #include "../src/imageset.h"
 #include "../src/project.h"
+#include "../src/normals/normals_parameters.h"
 
 
 #include <QJsonObject>

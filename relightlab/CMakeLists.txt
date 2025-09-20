@@ -42,8 +42,9 @@ set (RELIGHT_HEADERS
     ../src/project.h 
     ../src/sphere.h 
     ../src/white.h
-    ../src/bni_normal_integration.h
-    ../src/fft_normal_integration.h
+    ../src/normals/bni_normal_integration.h
+    ../src/normals/fft_normal_integration.h
+    ../src/normals/normals_parameters.h
     ../src/crop.h
     alignrow.h
     alignframe.h
@@ -86,7 +87,7 @@ set (RELIGHT_HEADERS
     ../src/imageset.h
     ../src/jpeg_encoder.h
     ../src/jpeg_decoder.h
-    ../src/flatnormals.h
+    ../src/normals/flatnormals.h
     ../src/network/httpserver.h
     queueframe.h
     queueitem.h
@@ -115,8 +116,9 @@ set (RELIGHTLAB_SOURCES
     ../src/project.cpp 
     ../src/sphere.cpp 
     ../src/white.cpp 
-    ../src/bni_normal_integration.cpp
-    ../src/fft_normal_integration.cpp
+    ../src/normals/bni_normal_integration.cpp
+    ../src/normals/fft_normal_integration.cpp
+    ../src/normals/normals_parameters.cpp
     ../src/crop.cpp
     alignframe.cpp
     alignpicking.cpp
@@ -160,7 +162,7 @@ set (RELIGHTLAB_SOURCES
     ../src/imageset.cpp
     ../src/jpeg_encoder.cpp
     ../src/jpeg_decoder.cpp
-    ../src/flatnormals.cpp
+    ../src/normals/flatnormals.cpp
     ../src/network/httpserver.cpp
     queueframe.cpp
     queueitem.cpp

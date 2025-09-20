@@ -105,7 +105,7 @@ bool RtiBuilder::setupFromFolder(const string &folder) {
 		return false;
 	}
 	if(crop[2] != 0) //some width specified
-		imageset.crop(crop[0], crop[1], crop[2], crop[3]);
+		imageset.setCrop(crop[0], crop[1], crop[2], crop[3]);
 
 	width = imageset.width;
 	height = imageset.height;
@@ -129,7 +129,7 @@ bool RtiBuilder::setupFromProject(const std::string &_filename) {
 		imageset.initFromProject(obj, filename);
 		//overwrite project crop if specified in builder.
 		if(crop[2] != 0) //some width specified
-			imageset.crop(crop[0], crop[1], crop[2], crop[3]);
+			imageset.setCrop(crop[0], crop[1], crop[2], crop[3]);
 
 		width = imageset.width;
 		height = imageset.height;
@@ -649,11 +649,12 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 
 	//TODO workers to speed up this.
 	for(uint32_t i = 0; i < sample.npixels(); i++) {
-		if(callback && (i % 8000) == 0)
+		if(callback && ((i % 8000) == 0)) {
 			if(!(*callback)("Coefficients quantization:", 100*i/sample.npixels()))
 				throw std::string("Cancelled.");
-		\
-			vector<float> principal = toPrincipal(sample[i]);
+		}
+
+		vector<float> principal = toPrincipal(sample[i]);
 
 		//find max and min of coefficients
 		for(uint32_t p = 0; p < nplanes; p++) {

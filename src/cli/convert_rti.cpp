@@ -179,6 +179,7 @@ int convertToRTI(const char *filename, const char *output) {
 	//RTIViewer does not support RGB PTM  in JPEG format.
 	if(type == "ptm" && colorspace == "rgb")
 		encoding = LRti::RAW;
+	//supports only RAW!
 	lrti.encodeUniversal(output, quality);
 
 	return 0;

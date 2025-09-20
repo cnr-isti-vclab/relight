@@ -43,7 +43,8 @@ SOURCES += main.cpp \
 	../src/sphere.cpp \
     ../src/cli/rtibuilder.cpp \
     ../src/cli/convert_rti.cpp \
-    ../src/lp.cpp
+    ../src/lp.cpp \
+    ../src/crop.cpp
 
 HEADERS += \
     ../src/dome.h \
@@ -59,7 +60,8 @@ HEADERS += \
     ../src/eigenpca.h \
 	../src/sphere.h \
     ../src/cli/rtibuilder.h \
-    ../src/lp.h
+    ../src/lp.h \
+    ../src/crop.h
 
 
 DISTFILES += \
