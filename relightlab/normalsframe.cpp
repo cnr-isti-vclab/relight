@@ -1,5 +1,5 @@
 #include "normalsframe.h"
-#include "normalstask.h"
+#include "../src/normals/normalstask.h"
 #include "relightapp.h"
 #include "processqueue.h"
 #include "helpbutton.h"

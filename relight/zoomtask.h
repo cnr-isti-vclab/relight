@@ -2,7 +2,7 @@
 #define ZOOMTASK_H
 
 #include <QDir>
-#include "task.h"
+#include "../src/task.h"
 
 /** TODO
  *  -   Properly show task info in the process queue: trying to delete a task shows the info for some reason

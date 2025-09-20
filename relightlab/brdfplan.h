@@ -2,7 +2,7 @@
 #define BRDFPLAN_H
 
 #include "planrow.h"
-#include "brdftask.h"
+#include "../src/brdf/brdftask.h"
 
 class QSlider;
 class QLabel;

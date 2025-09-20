@@ -10,8 +10,6 @@
 #include <QTextStream>
 
 #include <QFileInfo>
-#include <QFileDialog>
-#include <QMessageBox>
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -56,9 +54,7 @@ void Project::clear() {
 
 bool Project::setDir(QDir folder) {
 	if(!folder.exists()) {
-		//ask the user for a directory!
-		QString folder = QFileDialog::getExistingDirectory(nullptr, "Could not find the image folder: select the images folder.");
-		if(folder.isNull()) return false;
+		return false;
 	}
 	dir = folder;
 	QDir::setCurrent(dir.path());
@@ -593,8 +589,9 @@ void Project::saveLP(QString filename, vector<Vector3f> &directions) {
 		if(d.isZero())
 			invalid_count++;
 
+
 	if(invalid_count)
-		QMessageBox::warning(nullptr, "Saving LP :" + filename, QString("Missing %1 light directions").arg(invalid_count));
+		throw QString("Missing %1 light directions").arg(invalid_count);
 
 	stream << directions.size() << "\n";
 	for(size_t i = 0; i < directions.size(); i++) {
@@ -618,9 +615,7 @@ bool Project::loadLP(QString filename) {
 
 	parseLP(filename, directions, filenames); //might throw an error.
 	if(size() != directions.size())
-		QMessageBox::warning(nullptr, "Wrong number of lights (or images)",
-			"The number of lights must be the same as the number of checked images.");
-
+		throw QString("Wrong number of lights (or images)");
 
 	vector<Vector3f> ordered_dir(directions.size());
 	bool success = true;
@@ -636,18 +631,9 @@ bool Project::loadLP(QString filename) {
 	QFileInfo info(filename);
 	dome.label = info.filePath();
 	dome.directions.resize(directions.size());
-	if(success) {
-		for(size_t i = 0; i < size(); i++)
+	for(size_t i = 0; i < size(); i++)
 			dome.directions[i] = ordered_dir[i];
-	} else {
-		auto response = QMessageBox::question(nullptr, "Light directions and images",
-											  "Filenames in .lp do not match with images in the .lp directory. Do you want to just use the filename order?");
-		if(response == QMessageBox::Cancel || response == QMessageBox::No)
-			return false;
 
-		for(size_t i = 0; i < size(); i++)
-			dome.directions[i] = directions[i];
-	}
 	dome.lightConfiguration = Dome::DIRECTIONAL;
 	return true;
 }
@@ -683,8 +669,7 @@ void Project::computeOffsets() {
 /* This is obsolete, used only in legacy relight app */
 void  Project::computeDirections() {
 	if(spheres.size() == 0) {
-		QMessageBox::critical(nullptr, "Missing light directions.", "Light directions can be loaded from a .lp file or processing the spheres.");
-		return;
+		throw QString("Light directions can be loaded from a .lp file or processing the spheres.");
 	}
 	dome.directions.clear();
 	dome.directions.resize(size(), Vector3f(0, 0, 0));

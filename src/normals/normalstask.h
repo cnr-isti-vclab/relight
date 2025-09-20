@@ -1,10 +1,10 @@
 #ifndef NORMALSTASK_H
 #define NORMALSTASK_H
 
-#include "task.h"
-#include "../src/project.h"
-#include "../src/imageset.h"
-#include "../src/normals/normals_parameters.h"
+#include "../task.h"
+#include "../project.h"
+#include "../imageset.h"
+#include "normals_parameters.h"
 
 #include <QJsonObject>
 #include <QMutex>

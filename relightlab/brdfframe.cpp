@@ -1,6 +1,6 @@
 #include "brdfframe.h"
 #include "brdfplan.h"
-#include "brdftask.h"
+#include "../src/brdf/brdftask.h"
 #include "relightapp.h"
 #include "reflectionview.h"
 #include "helpbutton.h"

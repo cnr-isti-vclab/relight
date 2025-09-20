@@ -2,7 +2,7 @@
 #define DSTRETCHTASK_H
 
 #include <Eigen/Eigen>
-#include "task.h"
+#include "../src/task.h"
 
 class DStretchTask : public Task
 {

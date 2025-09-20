@@ -72,13 +72,13 @@ set (RELIGHT_HEADERS
     sphereframe.h 
     spherepicking.h 
     spheredialog.h 
-    task.h 
+    ../src/task.h 
     verifyview.h 
     verifydialog.h 
     helpbutton.h 
     cropframe.h 
     rtiframe.h
-    rtitask.h
+    ../src/rti/rtitask.h
     ../src/cli/rtibuilder.h
     zoom.h  
     ../src/deepzoom.h
@@ -92,13 +92,13 @@ set (RELIGHT_HEADERS
     queueframe.h
     queueitem.h
     normalsframe.h
-    normalstask.h
+    ../src/normals/normalstask.h
     normalsplan.h
     planrow.h
     scaleframe.h
     imagecropper.h
     brdfframe.h
-    brdftask.h
+    ../src/brdf/brdftask.h
     brdfplan.h
     convertdialog.h
 )
@@ -145,7 +145,7 @@ set (RELIGHTLAB_SOURCES
     sphereframe.cpp 
     spherepicking.cpp 
     spheredialog.cpp 
-    task.cpp 
+    ../src/task.cpp 
     verifyview.cpp 
     verifydialog.cpp 
     helpbutton.cpp 
@@ -153,7 +153,7 @@ set (RELIGHTLAB_SOURCES
     rtiframe.cpp
     rtirecents.cpp
     rtiplan.cpp
-    rtitask.cpp
+    ../src/rti/rtitask.cpp
     ../src/cli/rtibuilder.cpp
     ../src/cli/convert_rti.cpp
     ../src/deepzoom.cpp
@@ -167,13 +167,13 @@ set (RELIGHTLAB_SOURCES
     queueframe.cpp
     queueitem.cpp
     normalsframe.cpp
-    normalstask.cpp
+    ../src/normals/normalstask.cpp
     normalsplan.cpp
     planrow.cpp
     scaleframe.cpp
     imagecropper.cpp
     brdfframe.cpp
-    brdftask.cpp
+    ../src/brdf/brdftask.cpp
     brdfplan.cpp
     convertdialog.cpp
 )

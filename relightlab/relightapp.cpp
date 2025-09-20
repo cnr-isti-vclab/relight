@@ -191,7 +191,21 @@ void RelightApp::newProject() {
 
 
 	Project *project = new Project;
-	project->setDir(QDir(dir));
+	QDir folder(dir);
+	if(!folder.exists()) {
+		QString newDir = QFileDialog::getExistingDirectory(mainwindow, "Could not find the image folder: select the images folder.", dir);
+		if(newDir.isNull()) {
+			delete project;
+			return;
+		}
+		folder.setPath(newDir);
+		if(!folder.exists()) {
+			QMessageBox::critical(mainwindow, "Error", "Could not find the image folder.");
+			delete project;
+			return;
+		}
+	}
+	project->setDir(folder);
 	bool ok = project->scanDir();
 	if(!project->size()) {
 		QMessageBox::critical(mainwindow, "Houston we have a problem!", "Could not find images in directory: " + project->dir.path());

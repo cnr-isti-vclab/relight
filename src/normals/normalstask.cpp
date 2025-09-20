@@ -1,11 +1,11 @@
 #include "normalstask.h"
-#include "../src/jpeg_decoder.h"
-#include "../src/jpeg_encoder.h"
-#include "../src/imageset.h"
-#include "../src/relight_threadpool.h"
-#include "../src/normals/bni_normal_integration.h"
-#include "../src/normals/fft_normal_integration.h"
-#include "../src/normals/flatnormals.h"
+#include "../jpeg_decoder.h"
+#include "../jpeg_encoder.h"
+#include "../imageset.h"
+#include "../relight_threadpool.h"
+#include "bni_normal_integration.h"
+#include "fft_normal_integration.h"
+#include "flatnormals.h"
 
 #include <assm/Grid.h>
 #include <assm/algorithms/PhotometricRemeshing.h>

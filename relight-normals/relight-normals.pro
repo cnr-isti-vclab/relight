@@ -22,6 +22,7 @@ SOURCES += \
         ../src/dome.cpp \
         ../src/sphere.cpp \
         ../src/lens.cpp \
+        ../src/crop.cpp \
         ../src/rti.cpp \
         ../src/legacy_rti.cpp \
         ../external/assm/algorithms/Integration.cpp \
@@ -45,6 +46,7 @@ HEADERS += \
     ../src/dome.h \
     ../src/sphere.h \
     ../src/lens.h \
+    ../src/crop.h \
     ../src/rti.h \
     ../src/legacy_rti.h \
     ../external/assm/algorithms/Integration.h \

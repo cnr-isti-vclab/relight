@@ -3,7 +3,7 @@
 
 #include <QFrame>
 #include "planrow.h"
-#include "brdftask.h"
+#include "../src/brdf/brdftask.h"
 
 class ZoomOverview;
 class BrdfMedianRow;
