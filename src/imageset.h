@@ -11,6 +11,7 @@
 #include <Eigen/Core>
 #include <QStringList>
 #include <QPoint>
+#include <QSize>
 
 class QJsonObject;
 class JpegDecoder;
@@ -18,6 +19,7 @@ class QImage;
 class QRect;
 class Image;
 class Project;
+class Crop;
 
 class ImageSet {
 public:
@@ -64,9 +66,12 @@ public:
 
 	//remove not visible images and relative lights.
 	void cleanHidden(std::vector<Image> &images);
-	//use Crop instead of qrect
-	void setCrop(QRect &crop, const std::vector<QPointF> &offsets);
+
+	void setCrop(int _left, int _top, int _right, int _bottom);
+	void setCrop(Crop &crop);
+	void setCrop(Crop &crop, const std::vector<QPointF> &offsets);
 	void rotateLights(float angle);
+
 
 
 	void setLights(const std::vector<Eigen::Vector3f> &lights, const Dome::LightConfiguration configuration);
@@ -75,7 +80,8 @@ public:
 	size_t size() { return size_t(images.size()); }
 
 	QImage maxImage(std::function<bool(std::string stage, int percent)> *callback = nullptr); 
-	void crop(int _left, int _top, int _right, int _bottom);
+	QSize imageSize() { return QSize(image_width, image_height); }
+
 	void setCallback(std::function<bool(QString stage, int percent)> *_callback = nullptr) { callback = _callback; }
 	//call AFTER initImages and BEFORE breadline, decode or sample.
 

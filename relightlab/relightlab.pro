@@ -46,7 +46,7 @@ SOURCES += main.cpp \
     ../src/cli/convert_rti.cpp \
     ../src/cli/rtibuilder.cpp \
     ../src/crop.cpp \
-    ../src/flatnormals.cpp \
+    ../src/normals/flatnormals.cpp \
     brdfplan.cpp \
     imagecropper.cpp \
     processqueue.cpp \
@@ -105,13 +105,14 @@ SOURCES += main.cpp \
     ../src/network/httpserver.cpp \
     normalsframe.cpp \
     normalstask.cpp \
-    ../src/bni_normal_integration.cpp \
+    ../src/normals/bni_normal_integration.cpp \
+    ../src/normals/normals_parameters.cpp \
     scaleframe.cpp \
     planrow.cpp \
     normalsplan.cpp \
     brdfframe.cpp \
     metadataframe.cpp \
-    ../src/fft_normal_integration.cpp \
+    ../src/normals/fft_normal_integration.cpp \
     ../src/deepzoom.cpp \
     sphereframe.cpp \
     brdftask.cpp \
@@ -133,7 +134,7 @@ HEADERS += \
     ../external/assm/algorithms/Triangulation.h \
     ../src/cli/rtibuilder.h \
     ../src/crop.h \
-    ../src/flatnormals.h \
+    ../src/normals/flatnormals.h \
     brdfplan.h \
     imagecropper.h \
     processqueue.h \
@@ -194,15 +195,16 @@ HEADERS += \
     ../src/network/httplib.h \
     normalsframe.h \
     normalstask.h \
-    ../src/bni_normal_integration.h \
+    ../src/normals/bni_normal_integration.h \
+    ../src/normals/normals_parameters.h \
     scaleframe.h \
-    ../src/flatnormals.h \
+    ../src/normals/flatnormals.h \
     planrow.h \
     normalsplan.h \
     brdfframe.h \
     metadataframe.h \
-    ../src/fft_normal_integration.h \
-    ../src/pocketfft.h \
+    ../src/normals/fft_normal_integration.h \
+    ../src/normals/pocketfft.h \
     ../src/deepzoom.h \
     sphereframe.h \
     brdftask.h \

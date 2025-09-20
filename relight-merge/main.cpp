@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
 			max[k] = std::max((1 - b)*s, max[k]);
 		}
 	}
-	for(int i = 0; i < min.size(); i++) {
+	for(size_t i = 0; i < min.size(); i++) {
 		scale.push_back(max[i] - min[i]);
 		bias.push_back(-min[i] / (max[i] - min[i]));
 	}
@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
 
 		RtiBuilder &rti = rtis[i];
 		rti.loadData(input_rti_dir.path().toStdString().c_str());
-		for(int i = 0; i < rti.nplanes; i++) {
+		for(uint32_t i = 0; i < rti.nplanes; i++) {
 			auto &plane = rti.planes[i];
 			for(uint8_t &c: plane) {
 				float v = (c/255.0f - rti.material.planes[i].bias)*rti.material.planes[i].scale;
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
 		int height = rti.height;
 		vector<uint8_t> line(width*3);
 
-		for(int i = 0; i < rti.nplanes/3; i++) {
+		for(uint32_t i = 0; i < rti.nplanes/3; i++) {
 			QString filename = output_rti_dir.filePath(QString("plane_%1.jpg").arg(i));
 			JpegEncoder enc;
 			enc.setQuality(rti_quality);

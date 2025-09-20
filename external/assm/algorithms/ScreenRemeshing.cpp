@@ -576,7 +576,7 @@ void ScreenRemeshing<Projection>::delaunay_flip_edges()
 		}
 	}
 
-	for (int i = 0; !nld.empty() && i < mesh_.n_edges();) // Basically: Flip each edge at most once.
+	for (size_t i = 0; !nld.empty() && i < mesh_.n_edges();) // Basically: Flip each edge at most once.
 	{
 		auto e = nld.top().first; nld.pop();
 

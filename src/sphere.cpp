@@ -327,7 +327,7 @@ void Sphere::computeDirections(Lens &lens) {
 		major.normalize();
 		radial = { center.x() - lens.width/2.0f, center.y() - lens.height/2.0f};
 		radial.normalize();
-		float deviation = 180*acos(fabs(major.dot(radial)))/M_PI;
+//		float deviation = 180*acos(fabs(major.dot(radial)))/M_PI;
 	}
 
 

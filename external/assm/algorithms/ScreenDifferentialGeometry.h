@@ -225,9 +225,6 @@ public:
 
 	void update()
 	{
-		int width = normals_.cols();
-		int height = normals_.rows();
-
 		// Reset properties
 		for (auto f : mesh_.faces())
 		{

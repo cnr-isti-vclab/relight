@@ -55,13 +55,11 @@ void RtiTask::setProject(Project &project) {
 	builder->samplingram = qRelightApp->samplingRam();
 
 	crop = project.crop;
-	img_size = project.imgsize;
-	QRect unrotatedCrop = crop.boundingRect(project.imgsize);
 
 	ImageSet &imageset = builder->imageset;
 	imageset.initFromProject(project);
 
-	imageset.setCrop(unrotatedCrop, project.offsets);
+	imageset.setCrop(crop, project.offsets);
 	imageset.rotateLights(-crop.angle);
 	imageset.pixel_size = project.pixelSize;
 	builder->sigma = 0.125*100/imageset.images.size();

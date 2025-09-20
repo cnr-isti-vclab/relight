@@ -46,7 +46,11 @@ SOURCES += main.cpp \
     ../src/imageset.cpp \
     ../src/lp.cpp \
     ../src/jpeg_encoder.cpp \
-    ../src/cli/rtibuilder.cpp
+    ../src/cli/rtibuilder.cpp \
+    ../src/dome.cpp \
+    ../src/crop.cpp \
+    ../src/sphere.cpp \
+    ../src/lens.cpp
 
 HEADERS += \
     ../src/rti.h \
@@ -54,4 +58,8 @@ HEADERS += \
     ../src/imageset.h \
     ../src/lp.h \
     ../src/jpeg_encoder.h \
-    ../src/cli/rtibuilder.h
+    ../src/cli/rtibuilder.h \
+    ../src/dome.h \
+    ../src/crop.h \
+    ../src/sphere.h \
+    ../src/lens.h

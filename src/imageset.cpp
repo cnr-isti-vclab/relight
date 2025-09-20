@@ -101,14 +101,17 @@ bool ImageSet::initFromProject(QJsonObject &obj, const QString &filename) {
 		return false;
 
 	//needs image_width and height to apply crop
-	int range[4] = { 0, 0, 0, 0 };
+	Crop crop;
 	if(obj.contains("crop")) {
 		QJsonObject c = obj["crop"].toObject();
-		range[0] = c["left"].toInt();
-		range[1] = c["top"].toInt();
-		range[2] = c["width"].toInt();
-		range[3] = c["height"].toInt();
-		crop(range[0], range[1], range[2], range[3]);
+		crop.setLeft(c["left"].toInt());
+		crop.setTop(c["top"].toInt());
+		crop.setWidth(c["width"].toInt());
+		crop.setHeight(c["height"].toInt());
+		if(c.contains("angle"))
+			crop.angle = c["angle"].toDouble();
+		setCrop(crop);
+		//TODO should take int account align values!!!!
 	}
 	return true;
 }
@@ -223,7 +226,7 @@ bool ImageSet::initImages(const char *_path) {
 }
 
 
-void ImageSet::crop(int _left, int _top, int _width, int _height) {
+void ImageSet::setCrop(int _left, int _top, int _width, int _height) {
 	left = _left;
 	top = _top;
 	if(_width > 0) {
@@ -421,7 +424,15 @@ void ImageSet::restart() {
 	current_line = 0;
 }
 
-void ImageSet::setCrop(QRect &_crop, const std::vector<QPointF> &_offsets) {
+void ImageSet::setCrop(Crop &crop) {
+	QRect r = crop.boundingRect(imageSize());
+	setCrop(r.left(), r.top(), r.width(), r.height());
+	rotateLights(-crop.angle);
+}
+
+void ImageSet::setCrop(Crop &crop, const std::vector<QPointF> &_offsets) {
+	QRect c = crop.boundingRect(imageSize());
+
 	std::vector<QPoint> int_offsets;
 	for(const QPointF &p: _offsets)
 		int_offsets.push_back(p.toPoint());
@@ -439,14 +450,15 @@ void ImageSet::setCrop(QRect &_crop, const std::vector<QPointF> &_offsets) {
 	}
 	//TODO check +1 problem
 	QRect max_crop(l, t, r - l, b - t);
-	if(_crop.isNull())
-		_crop = max_crop;
+	if(c.isNull())
+		c = max_crop;
 	else
-		_crop = max_crop.intersected(_crop);
+		c = max_crop.intersected(c);
 
-	left =_crop.left();
-	crop(_crop.left(), _crop.top(), _crop.width(), _crop.height());
+	setCrop(c.left(), c.top(), c.width(), c.height());
 	offsets = int_offsets;
+
+	rotateLights(-crop.angle);
 }
 
 void ImageSet::rotateLights(float a) {

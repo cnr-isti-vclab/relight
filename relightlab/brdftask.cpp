@@ -20,11 +20,10 @@ void BrdfTask::initFromProject(Project &project) {
 	imageset.height = imageset.image_height = project.lens.height;
 
 	crop = project.crop;
-	img_size = project.imgsize;
-	QRect unrotatedCrop = crop.boundingRect(project.imgsize);
+	//img_size = project.imgsize;
 
 	imageset.initFromProject(project);
-	imageset.setCrop(unrotatedCrop, project.offsets);
+	imageset.setCrop(crop, project.offsets);
 	imageset.rotateLights(-project.crop.angle);
 
 	pixelSize = project.pixelSize;

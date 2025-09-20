@@ -26,7 +26,7 @@ public:
 
 	ImageSet imageset;
 	Crop crop;
-	QSize img_size;
+	//QSize img_size;
 
 	Lens lens;
 	float pixelSize = 0.0f;
@@ -41,7 +41,7 @@ class MedianWorker
 {
 public:
 	MedianWorker(BrdfParameters _parameters, int _row, const PixelArray& toProcess, float* _albedo, ImageSet &imageset, Lens &_lens) :
-		parameters(_parameters), row(_row), m_Row(toProcess), albedo(_albedo), m_Imageset(imageset), lens(_lens){
+		parameters(_parameters), row(_row), m_Row(toProcess), albedo(_albedo), m_Imageset(imageset) {
 		m_Row.resize(toProcess.npixels(), toProcess.nlights);
 		for(size_t i = 0; i < m_Row.size(); i++)
 			m_Row[i] = toProcess[i];
@@ -71,7 +71,6 @@ private:
 
 	float *albedo = nullptr;
 	ImageSet &m_Imageset;
-	Lens &lens;
 	QMutex m_Mutex;
 };
 
