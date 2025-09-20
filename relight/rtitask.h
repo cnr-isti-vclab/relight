@@ -1,7 +1,7 @@
 #ifndef RTITASK_H
 #define RTITASK_H
 
-#include "task.h"
+#include "../src/task.h"
 #include "../src/rti.h"
 #include "../src/project.h"
 #include <QMutex>

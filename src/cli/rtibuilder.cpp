@@ -14,7 +14,7 @@
 #include <QThreadPool>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QtConcurrent>
+#include <QtConcurrent/QtConcurrent>
 #include <QFuture>
 
 

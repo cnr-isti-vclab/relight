@@ -9,7 +9,7 @@
 #include <QMutex>
 #include <QTemporaryFile>
 
-#include "task.h"
+#include "../src/task.h"
 
 #include <iostream>
 using namespace std;

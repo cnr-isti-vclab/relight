@@ -18,8 +18,8 @@ message(STATUS "CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
 # Build options
 option(MACOSX_MAKE_BUNDLE "If using macOS, all targets will be placed in a relight macOS app bundle" ON)
 
-# Qt detection - prefer Qt6, fallback to Qt5
-find_package(Qt6 COMPONENTS Core Gui Widgets Concurrent Xml QUIET)
+# Qt6 detection
+find_package(Qt6 COMPONENTS Core Gui Widgets Concurrent Xml REQUIRED)
 set(RELIGHT_QT Qt6)
 message(STATUS "Using Qt6")
 

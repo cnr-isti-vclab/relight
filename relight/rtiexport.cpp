@@ -18,8 +18,8 @@
 #include "../src/rti.h"
 #include "../src/cli/rtibuilder.h"
 
-#include "normalstask.h"
-#include "rtitask.h"
+#include "../src/normals/normalstask.h"
+#include "../src/rti/rtitask.h"
 
 #include <functional>
 #include <iostream>

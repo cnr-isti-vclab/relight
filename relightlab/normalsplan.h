@@ -2,7 +2,7 @@
 #define NORMALSPLAN_H
 
 #include "planrow.h"
-#include "normalstask.h"
+#include "../src/normals/normalstask.h"
 
 class QLabelButton;
 class QLineEdit;

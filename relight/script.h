@@ -1,7 +1,7 @@
 #ifndef SCRIPT_H
 #define SCRIPT_H
 
-#include "task.h"
+#include "../src/task.h"
 
 class QTemporaryFile;
 

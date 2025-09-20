@@ -4,7 +4,7 @@
 #include <QFrame>
 //TODO we should separate RTI definitions from actual implementation (materials etc).
 #include "../src/rti.h"
-#include "rtitask.h"
+#include "../src/rti/rtitask.h"
 
 class RtiRecents;
 class RtiParameters;

@@ -1,7 +1,7 @@
 #ifndef SPHEREROW_H
 #define SPHEREROW_H
 
-#include "task.h"
+#include "../src/task.h"
 #include <QWidget>
 
 
