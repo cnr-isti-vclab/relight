@@ -85,53 +85,38 @@ SET(SOURCES
 )
 
 add_executable(relight-normals ${SOURCES} ${HEADERS})
+target_include_directories(relight-normals PUBLIC
+		${CMAKE_CURRENT_SOURCE_DIR}
+		${JPEG_INCLUDE_DIR}
+		${EIGEN3_INCLUDE_DIR}
+		../external
+)
 
-# Include directories
-target_include_directories(relight-normals PRIVATE ../external ${JPEG_INCLUDE_DIRS})
+target_link_libraries(
+	relight-normals PUBLIC
+		${JPEG_LIBRARIES}
+		TIFF::TIFF
+		OpenMP::OpenMP_CXX
+		${RELIGHT_QT}::Core
+		${RELIGHT_QT}::Gui
+		${RELIGHT_QT}::Concurrent
+)
 
-find_package(${RELIGHT_QT} REQUIRED COMPONENTS Core)
-find_package(JPEG REQUIRED)
-target_link_libraries(relight-normals PRIVATE ${RELIGHT_QT}::Core ${RELIGHT_QT}::Gui ${RELIGHT_QT}::Widgets JPEG::JPEG)
+target_compile_definitions(relight-merge PUBLIC _USE_MATH_DEFINES NOMINMAX)
 
-if(Eigen3_FOUND)
-	message(STATUS "Found Eigen3")
-	target_link_libraries(relight-normals PRIVATE Eigen3::Eigen)
+if (INSTALL_TO_UNIX_LAYOUT)
+	set(RELIGHT_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR})
 else()
-	message(STATUS "Eigen3 not found, using bundled version")
-	if(UNIX AND NOT APPLE)
-		target_include_directories(relight-normals PRIVATE /usr/include/eigen3)
+	if (APPLE AND MACOSX_MAKE_BUNDLE)
+		set(RELIGHT_INSTALL_BIN_DIR ${CMAKE_INSTALL_PREFIX}/relight.app/Contents/MacOS/)
+	else()
+		set(RELIGHT_INSTALL_BIN_DIR ${CMAKE_INSTALL_PREFIX})
 	endif()
-	target_include_directories(relight-normals PRIVATE ../external/eigen-3.4.0)
 endif()
 
-if(OpenMP_FOUND)
-	target_link_libraries(relight-normals PRIVATE OpenMP::OpenMP_CXX)
-endif()
+install (TARGETS relight-normals 
+	DESTINATION ${RELIGHT_INSTALL_BIN_DIR})
 
-if(WIN32)
-	target_link_libraries(relight-normals PRIVATE ws2_32)
-endif()
-
-if (APPLE)
-	target_link_libraries(relight-normals PRIVATE "-framework Accelerate")
-endif()
-
-if(UNIX AND NOT APPLE)
-	find_package(PkgConfig REQUIRED)
-	pkg_check_modules(TIFF REQUIRED libtiff-4)
-	target_link_libraries(relight-normals PRIVATE ${TIFF_LIBRARIES})
-	target_include_directories(relight-normals PRIVATE ${TIFF_INCLUDE_DIRS})
-	target_compile_options(relight-normals PRIVATE ${TIFF_CFLAGS_OTHER})
-endif()
-
-if(APPLE OR WIN32)
-	target_link_libraries(relight-normals PRIVATE tiff)
-	target_include_directories(relight-normals PRIVATE ../external/tiff-4.7.0/libtiff)
-endif()
-
-# Installation
-if(INSTALL_TO_UNIX_LAYOUT)
-	install(TARGETS relight-normals RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-else()
-	install(TARGETS relight-normals RUNTIME DESTINATION .)
+if (WIN32)
+	install(FILES ${JPEGTURBO_HOME}/bin/jpeg62.dll DESTINATION ${CMAKE_INSTALL_PREFIX})
 endif()

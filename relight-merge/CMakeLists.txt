@@ -12,9 +12,6 @@ if (APPLE)
 	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
-
-
-
 SET(HEADERS
 	../src/getopt.h
 	../src/rti.h
@@ -43,8 +40,6 @@ SET(SOURCES
 	../src/crop.cpp
 	../src/cli/rtibuilder.cpp
 )
-
-
 
 add_executable(relight-merge ${HEADERS} ${SOURCES})
 target_include_directories(

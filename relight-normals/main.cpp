@@ -14,7 +14,6 @@
 #include "../src/getopt.h"
 
 #include <iostream>
-#include <getopt.h>
 
 extern int opterr;
 
