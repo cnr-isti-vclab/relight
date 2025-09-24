@@ -7,11 +7,6 @@
 #include <vector>
 #include <future>
 
-/** NOTE
- *  - Alla fine di un blocco, le unique_lock vengono automaticamente rilasciate dal distruttore
- *
- */
-
 
 struct RelightThreadPool {
 public:
