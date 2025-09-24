@@ -219,8 +219,8 @@ Eigen::Vector3f OrthoDepthmap::realToPixelCoord(float realX, float realY, float 
 
 void OrthoDepthmap::beginIntegration(){
 
-	int cx = 1025;
-	int cy = 776;
+	int cx = 892;
+	int cy = 438;
 	int holeW = 50;
 	int holeH = 50;
 

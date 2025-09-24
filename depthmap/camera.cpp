@@ -221,7 +221,20 @@ Eigen::Vector3f Camera::applyRadialDistortion(Eigen::Vector3f& uvz) {
 
 	return Eigen::Vector3f(u_dist, v_dist, uvz.z());
 }
+void Camera::scale(int w, int h){
 
+	float fx = float(w) / float(width);
+	float fy = float(h) / float(height);
+	float f = sqrt(fx * fy);
+	focal *= f;
+	PPx *=f;
+	PPy *= f;
+	Cx *= f;
+	Cy *= f;
+	width = w;
+	height = h;
+
+}
 
 
 
