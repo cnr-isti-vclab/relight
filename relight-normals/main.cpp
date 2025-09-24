@@ -90,14 +90,14 @@ bool parseArgs(int argc, char *argv[], CLINormalsParameters &config) {
 	opterr = 0;
 	
 	struct option long_options[] = {
-		{"flat-radial", no_argument, 0, 1000},
-		{"flat-fourier", required_argument, 0, 1001},
-		{"flat-blur", required_argument, 0, 1002},
-		{"bni-k", required_argument, 0, 1003},
-		{"assm-error", required_argument, 0, 1006},
-		{"save-normals", required_argument, 0, 1007},
-		{"scale-down", required_argument, 0, 1009},
-		{"help", no_argument, 0, 'h'},
+		{(char*)"flat-radial", no_argument, 0, 1000},
+		{(char*)"flat-fourier", required_argument, 0, 1001},
+		{(char*)"flat-blur", required_argument, 0, 1002},
+		{(char*)"bni-k", required_argument, 0, 1003},
+		{(char*)"assm-error", required_argument, 0, 1006},
+		{(char*)"save-normals", required_argument, 0, 1007},
+		{(char*)"scale-down", required_argument, 0, 1009},
+		{(char*)"help", no_argument, 0, 'h'},
 		{0, 0, 0, 0}
 	};
 	
