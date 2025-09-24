@@ -25,6 +25,7 @@ public:
 
 	Eigen::Vector3f applyRadialDistortion(Eigen::Vector3f& u);
 	Eigen::Vector3f applyIntrinsicCalibration(Eigen::Vector3f& u) const;
+	void scale(int w, int h);
 };
 
 #endif // CAMERA_H

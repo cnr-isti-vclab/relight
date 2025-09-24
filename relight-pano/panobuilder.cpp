@@ -27,6 +27,8 @@ PanoBuilder::PanoBuilder(QString base_path)
 	//base_dir.cdUp();
 
 	datasets_dir = QDir(base_dir.filePath("datasets"));
+	qDebug() << "Base dir:" << base_dir.absolutePath();
+	qDebug() << "Trying to create:" << base_dir.filePath("photogrammetry");
 	if (!datasets_dir.exists()) {
 		throw QString("Directory datasets non trovata in ") + base_dir.absolutePath();
 	}
@@ -299,7 +301,7 @@ void PanoBuilder::rti(){
 		arguments << datasets_dir.filePath(subDirName) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18" << "-m";
 				 // <<"-3" << "2.5:0.21";
 
-		//executeProcess(relight_cli_path, arguments);
+		executeProcess(relight_cli_path, arguments);
 	}
 
 	QStringList arguments_merge;
@@ -598,7 +600,7 @@ void PanoBuilder::depthmap(){
 
 	OrthoDepthmap ortho;
 
-	if (!ortho.load(qPrintable(depthmapBackup), qPrintable(maskBackup))) {
+	if (!ortho.load(qPrintable(depthmapPath), qPrintable(maskPath))) {
 		cerr << "Failed to load depthmap or mask" << endl;
 		return;
 	}
@@ -657,7 +659,8 @@ void PanoBuilder::depthmap(){
 
 		if (depthCam.width != depthCam.camera.width || depthCam.height != depthCam.camera.height) {
 			cerr << "Dimension mismatch for: " << tiffFile.fileName().toStdString() << endl;
-			continue;
+			depthCam.camera.scale(depthCam.width, depthCam.height);
+			//continue;
 		}
 
 		cout << "Processed: " << tiffFile.fileName().toStdString() << endl;
