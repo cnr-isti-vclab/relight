@@ -102,7 +102,7 @@ target_link_libraries(
 		${RELIGHT_QT}::Concurrent
 )
 
-target_compile_definitions(relight-merge PUBLIC _USE_MATH_DEFINES NOMINMAX)
+target_compile_definitions(relight-normals PUBLIC _USE_MATH_DEFINES NOMINMAX)
 
 if (INSTALL_TO_UNIX_LAYOUT)
 	set(RELIGHT_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR})
