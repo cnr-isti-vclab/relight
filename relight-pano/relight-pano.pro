@@ -34,7 +34,7 @@ HEADERS += \
 
 
 mac:INCLUDEPATH += /opt/homebrew/include/eigen3 /opt/homebrew/Cellar/libtiff/4.7.0/include /opt/homebrew/Cellar/eigen/3.4.0_1/include ../depthmap
-unix:INCLUDEPATH += ../external/eigen-3.3.9
+unix:INCLUDEPATH += ../external/eigen-3.3.9 ../depthmap
 
 
 

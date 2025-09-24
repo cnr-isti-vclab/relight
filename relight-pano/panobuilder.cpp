@@ -8,8 +8,8 @@
 #include <Eigen/Core>
 #include "exiftransplant.h"
 #include "orixml.h"
-#include "OrthoDepthmap.h"
-#include "Depthmap.h"
+#include "orthodepthmap.h"
+#include "depthmap.h"
 #define TESTING_PLANE_0
 using namespace std;
 
@@ -138,6 +138,7 @@ void PanoBuilder::exportMeans(){
 				throw QString("Error copying EXIF data from %1 to %2").arg(meanPath, newTifFilePath);
 		}
 	}
+
 }
 
 void PanoBuilder::executeProcess(QString& program, QStringList& arguments) {
@@ -170,8 +171,13 @@ void PanoBuilder::executeProcess(QString& program, QStringList& arguments) {
 			break;
 	}
 
-	if (process.exitStatus() != QProcess::NormalExit) {
+	if (process.exitCode() != 0) {
 		throw QString("Process exited abnormally with exit code: ") + QString::number(process.exitCode());
+
+	}
+	if (process.exitStatus() != QProcess::NormalExit) {
+		throw QString("Process crashed.");
+
 	}
 }
 //1. funzione findn_planes(Dir);
@@ -296,10 +302,9 @@ void PanoBuilder::rti(){
 		//arguments << subDir.absoluteFilePath(relightFile) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18" << "-m"
 		//<<"-3" << "2.5:0.21";
 
-		arguments << datasets_dir.filePath(subDirName) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18" << "-m";
+		arguments << datasets_dir.filePath(subDirName) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18";
 				 // <<"-3" << "2.5:0.21";
-
-		//executeProcess(relight_cli_path, arguments);
+		executeProcess(relight_cli_path, arguments);
 	}
 
 	QStringList arguments_merge;
@@ -326,7 +331,6 @@ void PanoBuilder::tapioca(){
 	if (!rtiDir.exists()) {
 		throw QString("merge directory does not exist: ") + rtiDir.absolutePath();
 	}
-
 
 	exportMeans();
 	QStringList subDirNames = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
