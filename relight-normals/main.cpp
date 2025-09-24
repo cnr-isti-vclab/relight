@@ -287,6 +287,14 @@ int main(int argc, char *argv[]) {
 			
 		} else if (info.isDir()) {
 			// Load from directory
+
+			QDir dir = info.dir();
+			QStringList lp_ext;
+			lp_ext << "*.lp";
+			QStringList lps = dir.entryList(lp_ext);
+			if(lps.size() == 0)
+				throw QString("Could not find a .lp file in the folder");
+
 			Dome dome;
 			if (config.use_3d_lights) {
 				dome.domeDiameter = config.dome_radius * 2.0;  // diameter from radius
@@ -294,6 +302,7 @@ int main(int argc, char *argv[]) {
 					dome.verticalOffset = config.dome_offset;
 				}
 			}
+			dome.parseLP(dir.filePath(lps[0]));
 			
 			Crop crop;
 			if (config.use_crop) {

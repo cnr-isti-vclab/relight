@@ -1,6 +1,6 @@
 #QT -= gui
 
-CONFIG += c++11 console
+CONFIG += c++17 console
 CONFIG -= app_bundle
 
 # You can make your code fail to compile if it uses deprecated APIs.
@@ -12,6 +12,7 @@ SOURCES += \
         ../src/normals/fft_normal_integration.cpp \
         ../src/normals/flatnormals.cpp \
         ../src/normals/normals_parameters.cpp \
+        ../src/normals/normalstask.cpp \
         ../src/cli/rtibuilder.cpp \
         ../src/getopt.cpp \
         ../src/imageset.cpp \
@@ -23,18 +24,31 @@ SOURCES += \
         ../src/sphere.cpp \
         ../src/lens.cpp \
         ../src/crop.cpp \
+        ../src/lp.cpp \
+        ../src/exif.cpp \
+        ../src/measure.cpp \
+        ../src/align.cpp \
+        ../src/white.cpp \
         ../src/rti.cpp \
         ../src/legacy_rti.cpp \
-        ../external/assm/algorithms/Integration.cpp \
+        ../src/task.cpp \
+        ../src/threadpool.cpp \
         ../external/assm/SurfaceMesh.cpp \
+        ../external/assm/algorithms/DifferentialGeometry.cpp \
+        ../external/assm/algorithms/Rasterizer.cpp \
+        ../external/assm/algorithms/ScreenRemeshing.cpp \
+        ../external/assm/algorithms/Triangulation.cpp \
         main.cpp
 
 HEADERS += \
     ../src/normals/bni_normal_integration.h \
     ../src/normals/fft_normal_integration.h \
     ../src/normals/flatnormals.h \
+    ../src/normals/normalstask.h \
     ../src/normals/pocketfft.h \
     ../src/normals/normals_parameters.h \
+    ../src/task.h \
+    ../src/relight_threadpool.h \
     ../src/cli/rtibuilder.h \
     ../src/getopt.h \
     ../src/imageset.h \
@@ -47,28 +61,40 @@ HEADERS += \
     ../src/sphere.h \
     ../src/lens.h \
     ../src/crop.h \
+    ../src/lp.h \
+    ../src/exif.h \
+    ../src/measure.h \
+    ../src/align.h \
+    ../src/white.h \
     ../src/rti.h \
     ../src/legacy_rti.h \
     ../external/assm/algorithms/Integration.h \
+    ../external/assm/algorithms/DifferentialGeometry.h \
+    ../external/assm/algorithms/Rasterizer.h \
+    ../external/assm/algorithms/Triangulation.h \
+    ../external/assm/algorithms/ScreenRemeshing.h \
+    ../external/assm/algorithms/PhotometricRemeshing.h \
     ../external/assm/SurfaceMesh.h \
     ../external/assm/Types.h
 
+INCLUDEPATH += ../external/
 
-unix:INCLUDEPATH += /usr/include/eigen3
-win32:INCLUDEPATH +=  ../external/eigen-3.4.0/
+win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
+    ../external/eigen-3.3.9/ \
+    ../src/
+win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
-unix:INCLUDEPATH += /usr/include/eigen3
-unix:INCLUDEPATH += ../external/eigen-3.4.0/
-unix:LIBS += -lgomp -ltiff #-liomp5
-unix:QMAKE_CXXFLAGS += -fopenmp
+unix:QMAKE_CXXFLAGS = -fopenmp
+unix:INCLUDEPATH += ../external/eigen-3.3.9/ /usr/include/eigen3
+unix:LIBS += -ljpeg -ltiff
+unix:LIBS += -fopenmp
 
-
-mac:INCLUDEPATH += /usr/local/include \
+mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/3.1.0/include \
+    /usr/local/include \
     /usr/local/include/eigen3
+mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/3.1.0/lib/ -ljpeg
 mac:LIBS += -framework Accelerate
-mac:QMAKE_CXXFLAGS += -fopenmp
-mac:QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp -lomp -I/usr/local/include
-mac:QMAKE_LFLAGS += -lomp
+mac:QMAKE_CXXFLAGS += -Xpreprocessor -I/usr/local/include
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 
 # Default rules for deployment.

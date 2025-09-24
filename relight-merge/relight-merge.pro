@@ -1,5 +1,5 @@
 QT += concurrent
-CONFIG += c++11 console
+CONFIG += c++17 console
 CONFIG -= app_bundle
 
 # The following define makes your compiler emit warnings if you use
@@ -18,26 +18,18 @@ win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
     ../src/
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
+unix:QMAKE_CXXFLAGS = -fopenmp
+unix:INCLUDEPATH += ../external/eigen-3.3.9/ /usr/include/eigen3
+unix:LIBS += -ljpeg -ltiff
+unix:LIBS += -fopenmp
 
-unix:INCLUDEPATH += /usr/include/eigen3 /usr/include/python3.6m
-unix:LIBS += -ljpeg -liomp5
-#unix:QMAKE_CXXFLAGS += -fopenmp
-
-mac:INCLUDEPATH += /opt/homebrew/opt/jpeg-turbo/include \
+mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/3.1.0/include \
     /usr/local/include \
-    /usr/local/include/eigen3 \
-    /opt/homebrew/opt/jpeg/include \
-    /opt/homebrew/Cellar/eigen/3.4.0_1/include/eigen3
-   # /usr/local/include/eigen3
-mac:LIBS += -L/opt/homebrew/opt/jpeg-turbo/lib/ -ljpeg
+    /usr/local/include/eigen3
+mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/3.1.0/lib/ -ljpeg
 mac:LIBS += -framework Accelerate
-#mac:QMAKE_CXXFLAGS += -fopenmp
-#mac:QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp -lomp -I/usr/local/include
-#mac:QMAKE_LFLAGS += -lomp
-#mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
-mac:QMAKE_CXXFLAGS += -Xpreprocessor
-#mac:QMAKE_LFLAGS += -lomp
-mac:LIBS +=  -L/opt/homebrew/opt/jpeg/lib
+mac:QMAKE_CXXFLAGS += -Xpreprocessor -I/usr/local/include
+mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 
 SOURCES += main.cpp \
     ../src/getopt.cpp \
