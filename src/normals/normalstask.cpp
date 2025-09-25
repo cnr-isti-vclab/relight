@@ -95,6 +95,7 @@ void NormalsTask::run() {
 		imageset.setCallback(nullptr);
 		pool.start(QThread::idealThreadCount());
 
+		int last_percent = -1;
 		for (int i = 0; i < imageset.height; i++) {
 			// Read a line
 			imageset.readLine(line);

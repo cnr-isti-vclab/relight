@@ -325,13 +325,14 @@ int main(int argc, char *argv[]) {
 		
 		// Connect progress signal to show progress
 		QObject::connect(&task, &NormalsTask::progress, [](QString message, int percent) {
-			cout << qPrintable(message) << " " << percent << "%" << endl;
+			cout << "\r" << qPrintable(message) << " " << percent << "%" << endl;
 		});
 		
 		// Run the task
 		cout << "Starting normal processing..." << endl;
 		task.run();
-		
+		cout << endl;
+
 		if (task.status == Task::DONE) {
 			cout << "Output saved to: " << qPrintable(config.path) << endl;
 			
