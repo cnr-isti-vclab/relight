@@ -264,7 +264,9 @@ int PanoBuilder::findNPlanes(QDir& dir){
  *
  */
 void PanoBuilder::process(Steps starting_step, bool stop){
+	startGlobalTimer();
 	switch (starting_step) {
+
 
 	case MEANS:
 		runWithTiming("MEANS", [this]() { means(); });
