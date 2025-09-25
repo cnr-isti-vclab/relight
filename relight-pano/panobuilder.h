@@ -4,11 +4,14 @@
 #include <QObject>
 #include <QFile>
 #include <QDir>
+#include <QElapsedTimer>
+#include <QMap>
 
 class PanoBuilder : public QObject
 {
 	Q_OBJECT
 public:
+
 	enum Steps{
 
 		MEANS = 0, //rti e merge e medie
@@ -27,6 +30,7 @@ public:
 		JPG,//convert to jpg
 		UPDATEJSON
 	};
+
 
 	QStringList steps = {"means", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc","rti", "depthmap", "malt_ortho", "tawny", "jpg", "updateJson"};
 	QDir base_dir;
@@ -76,6 +80,14 @@ private:
 	void ensureExecutable(QString path);
 	QDir cd(QString path, bool create = false);
 	void rmdir(QString path);
+
+	QElapsedTimer globalTimer;
+	QMap<QString, qint64> stepTimes;
+
+	void startGlobalTimer();
+	void stopGlobalTimer();
+	void runWithTiming(const QString &label, std::function<void()> fn);
+	void printTimingReport();
 
 };
 #endif // PANOBUILDER_H

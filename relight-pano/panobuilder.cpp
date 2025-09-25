@@ -95,7 +95,7 @@ void PanoBuilder::exportMeans(){
 
 	QStringList subDirNames = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 
-//TODO: se già create le img devono essere sovrascritte
+	//TODO: se già create le img devono essere sovrascritte
 	for (const QString &subDirName : subDirNames) {
 
 		QDir currentSubDir(datasets_dir.filePath(subDirName));
@@ -120,7 +120,7 @@ void PanoBuilder::exportMeans(){
 										   (subDirName + ".jpg").toStdString().c_str());
 			if(!success)
 
-				throw QString("Unable to load exif from: ") + QString(exif.error.c_str()) + dataset.absoluteFilePath(photo);
+			throw QString("Unable to load exif from: ") + QString(exif.error.c_str()) + dataset.absoluteFilePath(photo);
 		} else {
 
 			//se formato è jpg copia se è un tif devi fare una conversion
@@ -182,6 +182,42 @@ void PanoBuilder::executeProcess(QString& program, QStringList& arguments) {
 
 	}
 }
+
+//timing
+void PanoBuilder::startGlobalTimer() {
+	stepTimes.clear();
+	globalTimer.start();
+	qDebug() << "=== START DATASET TIMING ===";
+}
+
+void PanoBuilder::stopGlobalTimer() {
+	qint64 totalElapsed = globalTimer.elapsed();
+	qDebug() << "=== END DATASET TIMING ===";
+	double totalSec = static_cast<double>(totalElapsed) / 1000.0;
+	qDebug() << "Total time:" << totalSec << "seconds";
+	printTimingReport();
+}
+
+void PanoBuilder::runWithTiming(const QString &label, std::function<void()> fn) {
+	QElapsedTimer timer;
+	timer.start();
+
+	qDebug() << "[" << label << "] Started";
+	fn();
+	qint64 elapsed = timer.elapsed();
+
+	stepTimes[label] = elapsed;
+	double elapsedSec = static_cast<double>(elapsed) / 1000.0;
+	qDebug() << "[" << label << "] Finished in" << elapsedSec << "seconds";
+}
+
+void PanoBuilder::printTimingReport() {
+	qDebug() << "=== STEP TIMING REPORT ===";
+	for (auto it = stepTimes.begin(); it != stepTimes.end(); ++it) {
+		double sec = static_cast<double>(it.value()) / 1000.0;
+		qDebug() << it.key() << ":" << sec << "seconds";
+	}
+}
 //1. funzione findn_planes(Dir);
 //1.5 controlla se esiste la directory di destinazione del
 //2. leggere quanti plane_* ci sono usando entryList
@@ -230,23 +266,54 @@ int PanoBuilder::findNPlanes(QDir& dir){
 void PanoBuilder::process(Steps starting_step, bool stop){
 	switch (starting_step) {
 
-	case MEANS:      means();      if(stop) break;
-	case TAPIOCA:    tapioca();    if(stop) break;
-	case SCHNAPS:    schnaps();    if(stop) break;
-	case TAPAS:      tapas();      if(stop) break;
-	case APERICLOUD: apericloud(); if(stop) break;
-	case ORTHOPLANE: orthoplane(); if(stop) break;
-	case TARAMA:     tarama();     if(stop) break;
-	case MALT_MEC:   malt_mec();   if(stop) break;
-	case C3DC:       c3dc();       if(stop) break;
-	case RTI:        rti();        if(stop) break;
-	case DEPTHMAP:   depthmap();   if(stop) break;
-	case MALT_ORTHO: malt_ortho(); if(stop) break;
-	case TAWNY:      tawny();      if(stop) break;
-	case JPG:        jpg();        if(stop) break;
-	case UPDATEJSON: updateJson(); if(stop) break;
-
+	case MEANS:
+		runWithTiming("MEANS", [this]() { means(); });
+		if (stop) break;
+	case TAPIOCA:
+		runWithTiming("TAPIOCA", [this]() { tapioca(); });
+		if (stop) break;
+	case SCHNAPS:
+		runWithTiming("SCHNAPS", [this]() { schnaps(); });
+		if (stop) break;
+	case TAPAS:
+		runWithTiming("TAPAS", [this]() { tapas(); });
+		if (stop) break;
+	case APERICLOUD:
+		runWithTiming("APERICLOUD", [this]() { apericloud(); });
+		if (stop) break;
+	case ORTHOPLANE:
+		runWithTiming("ORTHOPLANE", [this]() { orthoplane(); });
+		if (stop) break;
+	case TARAMA:
+		runWithTiming("TARAMA", [this]() { tarama(); });
+		if (stop) break;
+	case MALT_MEC:
+		runWithTiming("MALT_MEC", [this]() { malt_mec(); });
+		if (stop) break;
+	case C3DC:
+		runWithTiming("C3DC", [this]() { c3dc(); });
+		if (stop) break;
+	case RTI:
+		runWithTiming("RTI", [this]() { rti(); });
+		if (stop) break;
+	case DEPTHMAP:
+		runWithTiming("DEPTHMAP", [this]() { depthmap(); });
+		if (stop) break;
+	case MALT_ORTHO:
+		runWithTiming("MALT_ORTHO", [this]() { malt_ortho(); });
+		if (stop) break;
+	case TAWNY:
+		runWithTiming("TAWNY", [this]() { tawny(); });
+		if (stop) break;
+	case JPG:
+		runWithTiming("JPG", [this]() { jpg(); });
+		if (stop) break;
+	case UPDATEJSON:
+		runWithTiming("UPDATEJSON", [this]() { updateJson(); });
+		if (stop) break;
 	}
+	 stopGlobalTimer();
+
 }
 
 void PanoBuilder::means(){
@@ -305,11 +372,8 @@ void PanoBuilder::rti(){
 		//<<"-3" << "2.5:0.21";
 
 		arguments << datasets_dir.filePath(subDirName) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18";
-				 // <<"-3" << "2.5:0.21";
-<<<<<<< HEAD
-=======
+			// <<"-3" << "2.5:0.21";
 
->>>>>>> ab57306dad0103bbbf95b2e280c424e35f6c9a0c
 		executeProcess(relight_cli_path, arguments);
 	}
 
@@ -746,7 +810,7 @@ void PanoBuilder::malt_ortho(){
 }
 
 
-	/*	QString depthmapPath = base_dir.filePath("photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif");
+/*	QString depthmapPath = base_dir.filePath("photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif");
 		if (!QFile::copy(depthmapPath + "_backup.tif", depthmapPath)) {
 			cout << "Error copying depthmap" << depthmapPath.toStdString() << endl;
 			exit(0);
