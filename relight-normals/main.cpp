@@ -287,7 +287,7 @@ int main(int argc, char *argv[]) {
 		} else if (info.isDir()) {
 			// Load from directory
 
-			QDir dir = info.dir();
+			QDir dir(config.input_path);
 			QStringList lp_ext;
 			lp_ext << "*.lp";
 			QStringList lps = dir.entryList(lp_ext);
@@ -347,8 +347,8 @@ int main(int argc, char *argv[]) {
 			return 1;
 		}
 		
-	} catch (const std::exception& e) {
-		cerr << "Error: " << e.what() << endl;
+	} catch (const QString &e) {
+		cerr << "Error: " << qPrintable(e) << endl;
 		return 1;
 	} catch (...) {
 		cerr << "Unknown error occurred" << endl;
