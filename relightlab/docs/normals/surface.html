@@ -1,17 +1,24 @@
-#Generate a 3D surface
+<h2>Generate a 3D surface</h2>
 
 <!-- Normal maps can be integrated to create a 3d surface. This process has two main limitations: 
 one is error accumulation, the other is dealing with discontinuties -->
 
-##Fourier normal integration
+<h3>Fourier normal integration</h3>
 
-<!-- cannot properly deal with discontinuities, it is dense (large meshes, 2 triangles per pixel), and very fast -->
+<p>Fast method to integrate the normals, it will generate a dense mesh with many triangles, you might want to downsample the
+normal map to generate more manageable meshes.</p>
+<p>Main drawback is that this method cannot handle discontinuities.</p>
 
-##Bilateral normal integration
 
-<!-- can deal with discontinuties (there is a parameter that basically control the probability
-a sudden change in normal is marked as a discontinuity), it is dense, it is very slow -->
+<h3 id="bni">Bilateral normal integration</h3>
 
-#Adaptive surface meshing
+<p>Similar to fourier normal integration method (dense mesh) but can deal with discontinuities in depth, but can be extremely slow</p>
+<P>A parameter called "Discontiuity propensity" defines how likely a jump in depth is likely to be recognized as a discontinuity.</p>
+
+
+
+<h3 id="assm">Adaptive surface meshing</h3>
+<p>This method cannot deal with discontinuities but will produce a more manageable mesh with higher density at surface features.</p>
+<p>A parameter called "Mesh error in pixels", controls how closely you want the simplified mesh to follow the surface. Higher values result in less triangles.</p>
 <!-- cannot deal with discontinuities but the resulting mesh is reasonably small. Slow.
 A parameter controls the precision of the output -->

@@ -11,7 +11,9 @@ public:
 
 private:
 	TabWidget *tabs;
+	QWidget *buildCasting();
 	QWidget *buildAppearance();
+	QWidget *buildPerformances();
 };
 
 #endif // PREFERENCES_H

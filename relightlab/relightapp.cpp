@@ -393,7 +393,7 @@ void RelightApp::rtiView() {
 	try {
 		HttpServer &server = HttpServer::instance();
 		server.stop();
-		server.port = 8880;
+		server.port = qRelightApp->castingPort();
 		server.start(dirname);
 		server.show();
 	} catch(QString error) {

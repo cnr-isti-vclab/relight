@@ -13,6 +13,7 @@
 #include <QDir>
 
 #include "task.h"
+#include "relightapp.h"
 #include "../relight/httpserver.h"
 #include "processqueue.h"
 
@@ -156,7 +157,7 @@ void QueueItem::casting() {
 		try {
 			HttpServer &server = HttpServer::instance();
 			server.stop();
-			server.port = 8880;
+			server.port = qRelightApp->castingPort();
 			server.start(task->output);
 			server.show();
 		} catch(QString error) {

@@ -201,7 +201,19 @@ void NormalsTask::run() {
 		}
 		img.save(parameters.path, nullptr, 100);
 	}
-	
+
+	if(parameters.surface_width != 0 &&
+		(parameters.surface_width != imageset.width || parameters.surface_height != imageset.height)) {
+		//scale normals.
+		std::vector<float> tmp(parameters.surface_width*parameters.surface_height*3);
+
+		bilinear_interpolation3f((Eigen::Vector3f *)normals.data(), width, height,
+							   parameters.surface_width, parameters.surface_height, (Eigen::Vector3f *)tmp.data());
+		swap(tmp, normals);
+
+		width = parameters.surface_width;
+		height = parameters.surface_height;
+	}
 
 	if(parameters.surface_integration == SURFACE_ASSM) {
 		
@@ -211,7 +223,7 @@ void NormalsTask::run() {
 		//TODO move to saveply
 		QString filename = output.left(output.size() -4) + ".ply";
 
-		assm(filename, normals, parameters.assm_error);
+		assm(filename, normals, width, height, parameters.assm_error);
 
 	} else if(parameters.surface_integration == SURFACE_BNI || parameters.surface_integration == SURFACE_FFT) {
 		QString type = parameters.surface_integration == SURFACE_BNI ? "Bilateral" : "Fourier";
@@ -350,15 +362,15 @@ bool saveObj(const char *filename, pmp::SurfaceMesh &mesh) {
 	return true;
 }
 
-void NormalsTask::assm(QString filename, vector<float> &_normals, float approx_error) {
-	Grid<Eigen::Vector3f> normals(imageset.width, imageset.height, Eigen::Vector3f(0.0f, 0.0f, 0.0f));
-	for(int y = 0; y < imageset.height; y++)
-		for(int x = 0; x < imageset.width; x++) {
-			int i = 3*(x + y*imageset.width);
+void NormalsTask::assm(QString filename, vector<float> &_normals, int width, int height, float approx_error) {
+	Grid<Eigen::Vector3f> normals(width, height, Eigen::Vector3f(0.0f, 0.0f, 0.0f));
+	for(int y = 0; y < height; y++)
+		for(int x = 0; x < width; x++) {
+			int i = 3*(x + y*width);
 			normals.at(y, x) = Eigen::Vector3f(-_normals[i+0], -_normals[i+1], -_normals[i+2]);
 		}
 
-	Grid<unsigned char> mask(imageset.width, imageset.height, 0);
+	Grid<unsigned char> mask(width, height, 0);
 	mask.fill(255);
 
 	float l_min = 1;
@@ -374,7 +386,7 @@ void NormalsTask::assm(QString filename, vector<float> &_normals, float approx_e
 
 	for(auto vertex: mesh.vertices()) {
 		auto &p = mesh.position(vertex);
-		p[1] = imageset.height -p[1] -1;
+		p[1] = height -p[1] -1;
 		p[2] *= -1;
 	}
 	savePly(filename.toStdString().c_str(), mesh);

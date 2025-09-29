@@ -170,9 +170,10 @@ bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &d
 	return true;
 }
 
-void bilinear_interpolation(float *data, uint32_t input_width,
+template <class T>
+void bilinear_interpolation(T *data, uint32_t input_width,
 							uint32_t input_height, uint32_t output_width,
-							uint32_t output_height, float *output) {
+							uint32_t output_height, T *output) {
 	float x_ratio, y_ratio;
 
 	if (output_width > 1) {
@@ -197,12 +198,12 @@ void bilinear_interpolation(float *data, uint32_t input_width,
 			float x_weight = (x_ratio * (float)j) - x_l;
 			float y_weight = (y_ratio * (float)i) - y_l;
 
-			float a = data[(int)y_l * input_width + (int)x_l];
-			float b = data[(int)y_l * input_width + (int)x_h];
-			float c = data[(int)y_h * input_width + (int)x_l];
-			float d = data[(int)y_h * input_width + (int)x_h];
+			T a = data[(int)y_l * input_width + (int)x_l];
+			T b = data[(int)y_l * input_width + (int)x_h];
+			T c = data[(int)y_h * input_width + (int)x_l];
+			T d = data[(int)y_h * input_width + (int)x_h];
 
-			float pixel = a * (1.0 - x_weight) * (1.0 - y_weight) +
+			T pixel = a * (1.0 - x_weight) * (1.0 - y_weight) +
 					b * x_weight * (1.0 - y_weight) +
 					c * y_weight * (1.0 - x_weight) +
 					d * x_weight * y_weight;
@@ -210,6 +211,13 @@ void bilinear_interpolation(float *data, uint32_t input_width,
 			output[i * output_width + j] = pixel;
 		}
 	}
+}
+
+void bilinear_interpolation3f(Eigen::Vector3f *data, uint32_t input_width,
+							uint32_t input_height, uint32_t output_width,
+							uint32_t output_height, Eigen::Vector3f *output) {
+	return bilinear_interpolation<Eigen::Vector3f>(data, input_width, input_height,
+												   output_width, output_height, output);
 }
 
 

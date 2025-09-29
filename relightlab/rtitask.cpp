@@ -9,6 +9,7 @@
 #include <QMessageBox>
 
 #include "rtitask.h"
+#include "relightapp.h"
 #include "../relight/zoom.h"
 #include "../src/rti.h"
 #include "../relight-cli/rtibuilder.h"
@@ -50,8 +51,8 @@ RtiTask::RtiTask(): Task() {
 void RtiTask::setProject(Project &project) {
 	builder->imageset.pixel_size = project.pixelSize;
 
-	builder->nworkers = QSettings().value("nworkers", 8).toInt();
-	builder->samplingram = QSettings().value("ram", 512).toInt();
+	builder->nworkers = qRelightApp->nThreads();
+	builder->samplingram = qRelightApp->samplingRam();
 
 	crop = project.crop;
 	img_size = project.imgsize;
