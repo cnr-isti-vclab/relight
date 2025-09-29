@@ -193,11 +193,16 @@ target_include_directories(
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}
 		TIFF::TIFF
-		${EIGEN3_INCLUDE_DIR}
 		${OpenCV_INCLUDE_DIRS}
 		../external
 	)
 	
+if(Eigen3_FOUND)
+	target_link_libraries(relightlab PUBLIC Eigen3::Eigen)
+else()
+	target_include_directories(relightlab PUBLIC ${EIGEN3_INCLUDE_DIR})
+endif()
+
 target_link_libraries(
 	relightlab PUBLIC
 		${JPEG_LIBRARIES}

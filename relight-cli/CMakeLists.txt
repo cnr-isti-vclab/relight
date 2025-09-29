@@ -50,8 +50,14 @@ add_executable(relight-cli ${HEADERS} ${SOURCES})
 target_include_directories(
 	relight-cli PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
-		${JPEG_INCLUDE_DIR}
-		${EIGEN3_INCLUDE_DIR})
+		${JPEG_INCLUDE_DIR})
+
+if(Eigen3_FOUND)
+	target_link_libraries(relight-cli PUBLIC Eigen3::Eigen)
+else()
+	target_include_directories(relight-cli PUBLIC ${EIGEN3_INCLUDE_DIR})
+endif()
+
 
 target_link_libraries(
 	relight-cli PUBLIC
