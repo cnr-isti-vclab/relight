@@ -267,7 +267,6 @@ void PanoBuilder::process(Steps starting_step, bool stop){
 	startGlobalTimer();
 	switch (starting_step) {
 
-
 	case MEANS:
 		runWithTiming("MEANS", [this]() { means(); });
 		if (stop) break;
@@ -593,7 +592,7 @@ void PanoBuilder::malt_mec(){
 	QString program = mm3d_path;
 	QStringList arguments;
 	arguments << "Malt" << "Ortho" << ".*" + format << "Relative" << "DoOrtho=1" << "ZoomF=4" << "DirMEC=Malt"
-			  << "DirTA=TA" << "ImOrtho=.*" + format << "DirOF=Ortho-Lights" << "NbVI=2" << "Purge=true"
+			  << "DirTA=TA" << "ImOrtho=.*" + format << "DirOF=Ortho-Lights" << "NbVI=3" << "Purge=true"
 			  << QString("DefCor=%1").arg(DefCor)
 			  << QString("Regul=%1").arg(Regul);
 	//DefCor 2 is to big

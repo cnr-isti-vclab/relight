@@ -21,6 +21,8 @@ public:
 	int grid_x, grid_y;
 	float sigma;
 	float blur;
+	//use blurred micmac depthmap
+	bool use_depthmap = false;
 
 
 	Eigen::Vector3f pixelToRealCoordinates(int pixelX, int pixelY, float pixelZ);

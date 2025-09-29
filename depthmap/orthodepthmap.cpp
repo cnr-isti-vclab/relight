@@ -607,10 +607,15 @@ void OrthoDepthmap::endIntegration(){
 		if(weights[i] > 0.0f){
 			mask[i] = 1.0f;
 			elevation[i] /= weights[i];
+
 		}
+		else {
+			mask[i] = 0;
+		}
+		if(use_depthmap){
 		elevation[i] = blur_weight * old_elevation[i] +
 					   (1.0f - blur_weight) * elevation[i];
-
+		}
 
 	}
 }
