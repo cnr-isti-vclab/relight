@@ -157,9 +157,14 @@ void HelpDialog::backward() {
 }
 
 void HelpDialog::showPage(QString id) {
-	QUrl url(id + ".html");
+	//take care of the fragment
+	QStringList parts = id.split('#');
+	id = parts[0] + ".html";
+	if(parts.size() == 2)
+		id += '#' + parts[1];
+	QUrl url(id);
 #if QT_VERSION > QT_VERSION_CHECK(5, 15, 0)
-	browser->setSource(url, QTextDocument::MarkdownResource);
+	browser->setSource(url, QTextDocument::HtmlResource);
 #else
 	browser->setSource(url);
 #endif

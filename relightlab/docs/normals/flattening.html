@@ -1,14 +1,23 @@
-#Flattening normals
+<h2>Flattening normals</h2>
 
-<!-- The object might be flat, but the normals are computed using the light direction, 
-and failing to account for exact light position (or worse just using the direction) and other
-phenomena like vignetting, we will get a deformed surface normals -->
+<p>Normal directions might be warped due do missing or inaccureate 3D lights position calibration.</p>
+<p>I might also be hard to take account of other phenomena such as vignetting (it is a work in progress)</P> 
+<p>If we already know that the object is reasonably flat, we can compute and apply a transformation
+to force the normals back on an average plane</p>
 
-##Radial flattening
-<!-- we fit a second degree polinomial throuugh the normals assuming the normals will be flat on average,
-the resulting normals wont show 'banana' effects -->
+<h3 id="radial">Radial flattening</h3>
 
-##Fourier flattening
-<!-- Here we decompoose normal frequencies (like sound) and filter low frequencies (there is a parameter
-to tune it, this not only account for the 'banana' problems but also for local deformations (depending on the
-parameter value -->
+<p>We fit a second degree polinomial throuugh the normal directions assuming the normals will be flat on average</p>
+
+<h3 id="fourier">Fourier flattening</h3>
+
+<p>Here we decompoose normal frequencies (like sound) and filter low frequencies, global deformationa can be removed</p>
+<p>The parameter "Fourier high-pass frequency" specify the lowest frequency that wont be cut and is expressed
+as a percentage of the dataset width.</p>
+<p>20% seems to be a reasonable value for deformatins caused by the wrong light positions, but you might also use it to
+remove smaller geometry features by lowering the value.</p>
+
+<h3 id="blur">Gaussian blur</h3>
+
+<p>Similar to fourier we can remove low frequency applying a gaussian blur and then removing it from the normalmap.</p>
+<p>Blur parameter defines the amount of blur in percentage of the image width</p>

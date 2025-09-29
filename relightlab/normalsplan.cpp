@@ -26,21 +26,18 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 	compute = new QLabelButton("Compute", "Compute normals from images");
 	buttons->addWidget(compute, 0, Qt::AlignCenter);
 
+	file = new QLabelButton("Normalmap", "Load a normalmap image.");
+	buttons->addWidget(file, 0, Qt::AlignCenter);
 
 	{
-		QVBoxLayout *button_layout =new QVBoxLayout;
-		file = new QLabelButton("Normalmap", "Load a normalmap image.");
+		input_frame = new QFrame;
+		QHBoxLayout *input_layout = new QHBoxLayout(input_frame);
+		input_layout->addWidget(new QLabel("File path:"));
+		input_layout->addWidget(input_path = new QLineEdit);
+		input_layout->addWidget(open = new QPushButton("..."));
+		planLayout->addWidget(input_frame);
 
-		button_layout->addWidget(file);
-		{
-			QHBoxLayout *loader_layout = new QHBoxLayout;
-			loader_layout->addWidget(input_path = new QLineEdit);
-			loader_layout->addWidget(open = new QPushButton("..."));
-			button_layout->addLayout(loader_layout);
-			connect(open, &QPushButton::clicked, this, &NormalsSourceRow::selectOutput);
-
-		}
-		buttons->addLayout(button_layout, 0); //, Qt::AlignCenter);
+		connect(open, &QPushButton::clicked, this, &NormalsSourceRow::selectOutput);
 	}
 
 	connect(compute, &QAbstractButton::clicked, this, [this](){ setComputeSource(true); });
@@ -60,6 +57,8 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 void NormalsSourceRow::setComputeSource(bool build) {
 	parameters.compute = build;
 	compute->setChecked(build);
+
+	input_frame->setVisible(!build);
 }
 
 
@@ -95,33 +94,35 @@ NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *par
 
 	buttons->addWidget(none, 1, Qt::AlignCenter);
 	buttons->addWidget(radial, 1, Qt::AlignCenter);
-
-	QVBoxLayout *button_layout =new QVBoxLayout;
-	button_layout->addWidget(fourier);
-
-	QHBoxLayout *loader_layout = new QHBoxLayout;
-	loader_layout->addWidget(new QLabel("Fourier low pass frequency."));
-	loader_layout->addWidget(max_frequency = new QDoubleSpinBox);
-	max_frequency->setRange(0, 100);
-	max_frequency->setDecimals(4);
-	max_frequency->setValue(parameters.flatPercentage);
-	button_layout->addLayout(loader_layout);
-	buttons->addLayout(button_layout, 1); //, Qt::AlignCenter);
+	buttons->addWidget(fourier, 1, Qt::AlignCenter);
+	buttons->addWidget(gaussian, 1, Qt::AlignCenter);
 
 
+	{
+		frequency_frame = new QFrame;
+		QHBoxLayout *frequency_layout = new QHBoxLayout(frequency_frame);
 
-	QVBoxLayout *button2_layout =new QVBoxLayout;
-	button2_layout->addWidget(gaussian);
-	\
-	QHBoxLayout *gaussian_layout = new QHBoxLayout;
-	gaussian_layout->addWidget(new QLabel("Blur %"));
-	gaussian_layout->addWidget(blur_percentage = new QDoubleSpinBox);
-	blur_percentage->setRange(0, 100);
-	blur_percentage->setDecimals(4);
-	blur_percentage->setValue(parameters.blurPercentage);
-	button2_layout->addLayout(gaussian_layout);
-	buttons->addLayout(button2_layout, 1); //, Qt::AlignCenter);
+		frequency_layout->addWidget(new HelpLabel("Fourier high pass frequency %", "normals/flattening#fourier"));
+		frequency_layout->addWidget(max_frequency = new QDoubleSpinBox);
+		max_frequency->setRange(0, 100);
+		max_frequency->setDecimals(4);
+		max_frequency->setValue(parameters.flatPercentage);
 
+		planLayout->addWidget(frequency_frame);
+	}
+
+
+	{
+		blur_frame = new QFrame;
+		QHBoxLayout *blur_layout = new QHBoxLayout(blur_frame);
+
+		blur_layout->addWidget(new HelpLabel("Blur %", "normals/flattening#blur"));
+		blur_layout->addWidget(blur_percentage = new QDoubleSpinBox);
+		blur_percentage->setRange(0, 100);
+		blur_percentage->setDecimals(4);
+		blur_percentage->setValue(parameters.blurPercentage);
+		planLayout->addWidget(blur_frame);
+	}
 
 
 	connect(none, &QAbstractButton::clicked, this, [this](){ setFlattenMethod(FLAT_NONE); });
@@ -155,6 +156,9 @@ void NormalsFlattenRow::setFlattenMethod(FlatMethod method) {
 	radial->setChecked(method == FLAT_RADIAL);
 	fourier->setChecked(method == FLAT_FOURIER);
 	gaussian->setChecked(method == FLAT_BLUR);
+
+	frequency_frame->setVisible(method == FLAT_FOURIER);
+	blur_frame->setVisible(method == FLAT_BLUR);
 }
 
 void NormalsFlattenRow::setFourierFrequency(double f) {
@@ -174,49 +178,92 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 	label->label->setText("Surface:");
 	label->help->setId("normals/flattening");
 
+
 	none = new QLabelButton("None", "Do not generate a mesh.");
 	fft = new QLabelButton("Fourier Normal Integration", "Dense, very fast");
 	bni = new QLabelButton("Bilateral Normal Integration", "Dense, allows discontinuity");
 	assm = new QLabelButton("Adaptive Surface Meshing.", "Adaptive, no discontinuities.");
 
 	buttons->addWidget(none, 0, Qt::AlignCenter);
-
 	buttons->addWidget(fft);
-	{
-		QVBoxLayout *bni_layout =new QVBoxLayout;
-		bni_layout->addWidget(bni);
-		{
-			QHBoxLayout *bni_parameter = new QHBoxLayout;
-			bni_parameter->addWidget(new QLabel("Discontinuity propensity."));
-			bni_parameter->addWidget(bni_k = new QDoubleSpinBox);
-			bni_k->setRange(0.00, 50);
-			bni_k->setValue(parameters.bni_k);
+	buttons->addWidget(bni); //, Qt::AlignCenter);
+	buttons->addWidget(assm);
 
-			bni_layout->addLayout(bni_parameter);
-		}
-		buttons->addLayout(bni_layout, 0); //, Qt::AlignCenter);
+
+	//add surface downsampling header.
+	{
+		downsample_frame = new QFrame;
+		QGridLayout *downsample_layout = new QGridLayout(downsample_frame);
+		downsample_layout->setSpacing(6); //default spacing, it was modified by parent and inheritance
+		downsample_layout->addWidget(new QLabel("Surface downsampling: "), 0, 0);
+		downsample = new QDoubleSpinBox();
+		downsample->setMaximum(100);
+		downsample->setMinimum(1);
+		downsample_layout->addWidget(downsample, 0, 1);
+		downsample_layout->addWidget(new QLabel("Width:"), 1, 0);
+		downsample_layout->addWidget(width = new QSpinBox(), 1, 1);
+		width->setRange(1, 64000);
+		downsample_layout->addWidget(new QLabel("Height:"), 2, 0);
+		downsample_layout->addWidget(height = new QSpinBox(), 2, 1);
+		height->setRange(1, 64000);
+
+
+		planLayout->addWidget(downsample_frame);
+	}
+	{
+		bni_frame = new QFrame;
+		QGridLayout *bni_layout = new QGridLayout(bni_frame);
+		bni_layout->setSpacing(6); //default spacing, it was modified by parent and inheritance
+
+		bni_layout->addWidget(new HelpLabel("Discontinuity propensity.", "normals/surface#bni"), 0, 0);
+		bni_layout->addWidget(bni_k = new QDoubleSpinBox, 0, 1);
+		bni_k->setRange(0.00, 50);
+		bni_k->setValue(parameters.bni_k);
+
+		planLayout->addWidget(bni_frame);
 	}
 
 	{
-		QVBoxLayout *assm_layout =new QVBoxLayout;
-		assm_layout->addWidget(assm);
+		assm_frame = new QFrame;
+		QGridLayout *assm_layout = new QGridLayout(assm_frame);
+		assm_layout->setSpacing(6); //default spacing, it was modified by parent and inheritance
 
-		{
-			QHBoxLayout *assm_parameter = new QHBoxLayout;
-			assm_parameter->addWidget(new QLabel("Mesh error in pixels.."));
-			assm_parameter->addWidget(assm_error = new QDoubleSpinBox);
-			assm_error->setRange(0.001, 100);
-			assm_error->setValue(parameters.assm_error);
+		assm_layout->addWidget(new HelpLabel("Mesh error in pixels..", "normals/surface#assm"), 0, 0);
+		assm_layout->addWidget(assm_error = new QDoubleSpinBox, 0, 1);
+		assm_error->setRange(0.001, 100);
+		assm_error->setValue(parameters.assm_error);
 
-			assm_layout->addLayout(assm_parameter);
-		}
-		buttons->addLayout(assm_layout, 0); //, Qt::AlignCenter);
+		planLayout->addWidget(assm_frame);
 	}
+
 
 	connect(none, &QAbstractButton::clicked, this, [this](){ setSurfaceMethod(SURFACE_NONE); });
 	connect(fft, &QAbstractButton::clicked, this, [this](){ setSurfaceMethod(SURFACE_FFT); });
 	connect(bni, &QAbstractButton::clicked, this, [this](){ setSurfaceMethod(SURFACE_BNI); });
 	connect(assm, &QAbstractButton::clicked, this, [this](){ setSurfaceMethod(SURFACE_ASSM); });
+
+	connect(downsample, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double v) {
+		float d = downsample->value();
+
+		Project &p = qRelightApp->project();
+		setDownsample(d, p.imgsize.width()/d, p.imgsize.height()/d);
+	});
+
+	connect(width, qOverload<int>(&QSpinBox::valueChanged), this, [this](int w) {
+		//TODO basic validation?
+		Project &p = qRelightApp->project();
+		float d = p.imgsize.width()/(float)w;
+
+		setDownsample(d, w, p.imgsize.height()/d);
+	});
+
+	connect(height, qOverload<int>(&QSpinBox::valueChanged), this, [this](int h) {
+		//TODO basic validation?
+		Project &p = qRelightApp->project();
+		float d = p.imgsize.height()/(float)h;
+
+		setDownsample(d, p.imgsize.width()/d, h);
+	});
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	connect(bni_k, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.bni_k = v; });
@@ -235,13 +282,39 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 	setSurfaceMethod(parameters.surface_integration);
 }
 
+void NormalsSurfaceRow::init() {
+	Project &p = qRelightApp->project();
+	setDownsample(1.0f, p.imgsize.width(), p.imgsize.height());
+}
+
+
 void NormalsSurfaceRow::setSurfaceMethod(SurfaceIntegration surface) {
 	parameters.surface_integration = surface;
 	none->setChecked(surface == SURFACE_NONE);
 	bni->setChecked(surface == SURFACE_BNI);
 	assm->setChecked(surface == SURFACE_ASSM);
+
+	downsample_frame->setVisible(surface == SURFACE_BNI || surface == SURFACE_FFT);
+	bni_frame->setVisible(surface == SURFACE_BNI);
+	assm_frame->setVisible(surface == SURFACE_ASSM);
 }
 
+void NormalsSurfaceRow::setDownsample(float down, int w, int h) {
+	downsample->blockSignals(true);
+	width->blockSignals(true);
+	height->blockSignals(true);
+
+	downsample->setValue(down);
+	width->setValue(w);
+	height->setValue(h);
+
+	downsample->blockSignals(false);
+	width->blockSignals(false);
+	height->blockSignals(false);
+
+	parameters.surface_width = w;
+	parameters.surface_height = h;
+}
 
 
 NormalsExportRow::NormalsExportRow(NormalsParameters &parameters, QFrame *parent): NormalsPlanRow(parameters, parent) {

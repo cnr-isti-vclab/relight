@@ -6,6 +6,7 @@
 
 class HelpLabel;
 class QHBoxLayout;
+class QVBoxLayout;
 
 class PlanRow: public QFrame {
 	Q_OBJECT
@@ -13,8 +14,9 @@ public:
 	PlanRow(QFrame *parent = nullptr);
 
 	HelpLabel *label = nullptr;
+	QFrame *planFrame = nullptr;
+	QVBoxLayout *planLayout = nullptr;
 	QHBoxLayout *buttons = nullptr;
-	QFrame *buttonsFrame = nullptr;
 };
 
 

@@ -275,12 +275,6 @@ void RtiQualityRow::allowLossless(bool allow) {
 RtiWebLayoutRow::RtiWebLayoutRow(RtiParameters &parameters, QFrame *parent):
 	RtiPlanRow(parameters, parent) {
 	//reparent buttons to make space for export openlime viewer checkbox
-	QVBoxLayout *content = new QVBoxLayout;
-	delete buttons;
-
-	buttonsFrame->setLayout(content);
-	buttons = new QHBoxLayout;
-	content->addLayout(buttons);
 
 	label->label->setText("Web layout:");
 	label->help->setId("rti/web");
@@ -311,7 +305,7 @@ RtiWebLayoutRow::RtiWebLayoutRow(RtiParameters &parameters, QFrame *parent):
 	QCheckBox *openlime = new QCheckBox("Add openlime viewer code.");
 	openlime->setChecked(parameters.openlime);
 	connect(openlime, &QCheckBox::stateChanged, [this](int state) { this->parameters.openlime = state > 0; });
-	content->addWidget(openlime);
+	planLayout->addWidget(openlime);
 }
 
 void RtiWebLayoutRow::setWebLayout(RtiParameters::WebLayout layout, bool emitting) {
