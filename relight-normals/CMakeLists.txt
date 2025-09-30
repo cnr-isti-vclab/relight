@@ -88,9 +88,13 @@ add_executable(relight-normals ${SOURCES} ${HEADERS})
 target_include_directories(relight-normals PUBLIC
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}
-		${EIGEN3_INCLUDE_DIR}
 		../external
 )
+if(Eigen3_FOUND)
+	target_link_libraries(relight-normals PUBLIC Eigen3::Eigen)
+else()
+	target_include_directories(relight-normals PUBLIC ${EIGEN3_INCLUDE_DIR})
+endif()
 
 target_link_libraries(
 	relight-normals PUBLIC
