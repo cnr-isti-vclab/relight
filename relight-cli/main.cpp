@@ -384,7 +384,7 @@ int main(int argc, char *argv[]) {
 			return -1;
 		}
 		test(input, redrawdir.toStdString(), light);
-		return 1;
+		return 0;
 	}
 
 	std::function<bool(QString stage, int percent)> *callback = nullptr;
