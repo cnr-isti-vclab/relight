@@ -32,7 +32,7 @@ public:
 
 	QDoubleSpinBox *image_width;
 	QDoubleSpinBox *vertical_offset;
-	QDoubleSpinBox *diameter;
+	QDoubleSpinBox *radius;
 	DirectionsView *directions_view;
 
 	QButtonGroup *group = nullptr;
