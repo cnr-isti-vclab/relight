@@ -437,7 +437,8 @@ MaterialBuilder RtiBuilder::pickBasePTM(std::vector<Vector3f> &lights) {
 				}
 			}
 		}
-		mat.svd.compute(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+		// DEPRECATED mat.svd.compute(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+		mat.svd = Eigen::JacobiSVD<Eigen::MatrixXf>(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
 		mat.useEigen = true;
 	} else {
 		if(colorspace == LRGB) {

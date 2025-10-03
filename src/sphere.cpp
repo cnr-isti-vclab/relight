@@ -394,7 +394,9 @@ Vector3f intersection(std::vector<Line> &lines) {
 		A(i, 2) = lines[i].direction[2];
 		B(i) = lines[i].origin.dot(lines[i].direction);
 	}
-	Eigen::VectorXd X = A.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(B);
+	// DEPRECATED Eigen::VectorXd X = A.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(B);
+	Eigen::VectorXd X = Eigen::JacobiSVD<Eigen::MatrixXd>(A, Eigen::ComputeThinU | Eigen::ComputeThinV).solve(B);
+  // Faster for big matrices Eigen::VectorXd X = Eigen::BDCSVD<Eigen::MatrixXd>(A, Eigen::ComputeThinU | Eigen::ComputeThinV).solve(B);
 	return Vector3f(X[0], X[1], X[2]);
 }
 
