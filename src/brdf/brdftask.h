@@ -1,10 +1,10 @@
 #ifndef BRDFTASK_H
 #define BRDFTASK_H
 
-#include "task.h"
-#include "../src/project.h"
-#include "../src/imageset.h"
-#include "../src/relight_vector.h"
+#include "../task.h"
+#include "../project.h"
+#include "../imageset.h"
+#include "../relight_vector.h"
 
 class BrdfParameters {
 public:

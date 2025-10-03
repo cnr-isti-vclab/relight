@@ -1,31 +1,30 @@
 QT += core concurrent
 
 TARGET = relight-cli
-CONFIG += console
+CONFIG += console c++17
 CONFIG -= app_bundle
 
 TEMPLATE = app
 
-QMAKE_CXXFLAGS += -std=c++17
-
 DEFINES += _USE_MATH_DEFINES
 DEFINES += NOMINMAX
 
-win32:INCLUDEPATH += ../libjpeg/include 
-win32:LIBS += ../libjpeg/lib/jpeg.lib 
+win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
+    ../external/eigen-3.3.9/ \
+    ../src/
+win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
-unix:INCLUDEPATH += /usr/include/eigen3
-unix:LIBS += -ljpeg -liomp5
-unix:QMAKE_CXXFLAGS += -fopenmp
+unix:QMAKE_CXXFLAGS = -fopenmp
+unix:INCLUDEPATH += ../external/eigen-3.3.9/ /usr/include/eigen3
+unix:LIBS += -ljpeg -ltiff
+unix:LIBS += -fopenmp
 
-mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/2.0.6/include \
+mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/3.1.0/include \
     /usr/local/include \
     /usr/local/include/eigen3
-mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/2.0.6/lib/ -ljpeg 
+mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/3.1.0/lib/ -ljpeg
 mac:LIBS += -framework Accelerate
-mac:QMAKE_CXXFLAGS += -fopenmp
-mac:QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp -lomp -I/usr/local/include
-mac:QMAKE_LFLAGS += -lomp
+mac:QMAKE_CXXFLAGS += -Xpreprocessor -I/usr/local/include
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
 
 

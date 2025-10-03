@@ -26,6 +26,7 @@ SET(HEADERS
 	../src/dome.h
 	../src/sphere.h
 	../src/lens.h
+	../src/crop.h
 )
 
 SET(SOURCES
@@ -41,6 +42,7 @@ SET(SOURCES
 	../src/dome.cpp
 	../src/lens.cpp
 	../src/sphere.cpp
+	../src/crop.cpp
 	../src/cli/convert_rti.cpp
 )
 
