@@ -12,7 +12,7 @@
 #include <QUrl>
 #include <QDir>
 
-#include "task.h"
+#include "../src/task.h"
 #include "relightapp.h"
 #include "../src/network/httpserver.h"
 #include "processqueue.h"

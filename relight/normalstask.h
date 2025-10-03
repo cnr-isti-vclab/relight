@@ -3,7 +3,7 @@
 
 #endif // NORMALSTASK_H
 
-#include "task.h"
+#include "../src/task.h"
 #include "../src/imageset.h"
 #include "../src/project.h"
 #include "../src/normals/normals_parameters.h"

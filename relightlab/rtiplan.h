@@ -3,7 +3,7 @@
 
 #include <QFrame>
 #include "../src/rti.h"
-#include "rtitask.h"
+#include "../src/rti/rtitask.h"
 #include "planrow.h"
 
 class QComboBox;

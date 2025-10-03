@@ -98,13 +98,13 @@ SOURCES += main.cpp \
     verifydialog.cpp \
     helpbutton.cpp \
     cropframe.cpp \
-    rtitask.cpp \
-    task.cpp \
+    ../src/rti/rtitask.cpp \
+    ../src/task.cpp \
     queueitem.cpp \
     queueframe.cpp \
     ../src/network/httpserver.cpp \
     normalsframe.cpp \
-    normalstask.cpp \
+    ../src/normals/normalstask.cpp \
     ../src/normals/bni_normal_integration.cpp \
     ../src/normals/normals_parameters.cpp \
     scaleframe.cpp \
@@ -115,7 +115,7 @@ SOURCES += main.cpp \
     ../src/normals/fft_normal_integration.cpp \
     ../src/deepzoom.cpp \
     sphereframe.cpp \
-    brdftask.cpp \
+    ../src/brdf/brdftask.cpp \
     convertdialog.cpp
     ../src/crop.cpp
 
@@ -187,14 +187,14 @@ HEADERS += \
     verifydialog.h \
     helpbutton.h \
     cropframe.h \
-    rtitask.h \
-    task.h \
+    ../src/rti/rtitask.h \
+    ../src/task.h \
     queueitem.h \
     queueframe.h \
     ../src/network/httpserver.h \
     ../src/network/httplib.h \
     normalsframe.h \
-    normalstask.h \
+    ../src/normals/normalstask.h \
     ../src/normals/bni_normal_integration.h \
     ../src/normals/normals_parameters.h \
     scaleframe.h \
@@ -207,7 +207,7 @@ HEADERS += \
     ../src/normals/pocketfft.h \
     ../src/deepzoom.h \
     sphereframe.h \
-    brdftask.h \
+    ../src/brdf/brdftask.h \
     convertdialog.h
 
 FORMS +=

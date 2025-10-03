@@ -182,7 +182,17 @@ void MainWindow::newProject() {
 
 	clear();
 
-	project.setDir(QDir(dir));
+	QDir folder(dir);
+	if(!folder.exists()) {
+		QString newDir = QFileDialog::getExistingDirectory(this, "Could not find the image folder: select the images folder.", dir);
+		if(newDir.isNull()) return;
+		folder.setPath(newDir);
+		if(!folder.exists()) {
+			QMessageBox::critical(this, "Error", "Could not find the image folder.");
+			return;
+		}
+	}
+	project.setDir(folder);
 	bool ok = project.scanDir();
 	if(!project.size()) {
 		QMessageBox::critical(this, "Houston we have a problem!", "Could not find images in directory: " + project.dir.path());

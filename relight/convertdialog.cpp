@@ -3,7 +3,7 @@
 #include <QFile>
 #include <QMessageBox>
 #include <QFileDialog>
-#include "rtitask.h"
+#include "../src/rti/rtitask.h"
 #include "processqueue.h"
 
 

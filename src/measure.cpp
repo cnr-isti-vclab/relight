@@ -3,11 +3,6 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
-#include <QPen>
-#include <QFont>
-#include <QPainterPath>
-#include <QGraphicsPathItem>
-#include <QGraphicsScene>
 
 
 
