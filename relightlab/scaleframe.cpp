@@ -25,6 +25,7 @@ ScaleFrame::ScaleFrame(QWidget *parent): QFrame(parent) {
 	controls->addWidget(take);
 
 	scale = new QDoubleSpinBox;
+	scale->setMaximum(10000.0);
 	controls->addWidget(scale);
 
 	pixelSize = new QLabel("mm");

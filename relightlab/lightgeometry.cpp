@@ -77,10 +77,10 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	});
 
 	grid->addWidget(new QLabel("Dome radius:"), 3, 0);
-	grid->addWidget(diameter = new QDoubleSpinBox, 3, 1);
-	diameter->setRange(0, 10000);
+	grid->addWidget(radius = new QDoubleSpinBox, 3, 1);
+	radius->setRange(0, 10000);
 	grid->addWidget(new QLabel("mm"), 3, 2);
-	connect(diameter, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) { qRelightApp->project().dome.domeDiameter = v*2.0; });
+	connect(radius, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) { qRelightApp->project().dome.domeDiameter = v*2.0; });
 
 	grid->addWidget(new QLabel("Vertical offset:"), 4, 0);
 	grid->addWidget(vertical_offset = new QDoubleSpinBox, 4, 1);
@@ -106,7 +106,7 @@ void LightsGeometry::setSpherical(QAbstractButton *button) {
 	dome.lightConfiguration = Dome::DIRECTIONAL;
 
 	bool spherical = (button == sphere_approx->radioButton());
-	diameter->setEnabled(spherical == Dome::SPHERICAL);
+	radius->setEnabled(spherical == Dome::SPHERICAL);
 	vertical_offset->setEnabled(spherical == Dome::SPHERICAL);
 
 	if(button == sphere_approx->radioButton()) {
@@ -127,11 +127,11 @@ void LightsGeometry::init() {
 	group->button(dome.lightConfiguration)->setChecked(true);
 
 	bool spherical = dome.lightConfiguration == Dome::SPHERICAL;
-	diameter->setEnabled(spherical);
+	radius->setEnabled(spherical);
 	vertical_offset->setEnabled(spherical);
 
 	image_width->setValue(dome.imageWidth);
-	diameter->setValue(dome.domeDiameter/2.0);
+	radius->setValue(dome.domeDiameter/2.0);
 	vertical_offset->setValue(dome.verticalOffset);
 	directions_view->initFromDome(dome);
 }
