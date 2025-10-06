@@ -18,7 +18,7 @@ bool Camera::loadXml(const QString &pathXml){
 	//orientation xml
 	QFile file(pathXml);
 	if (!file.open(QIODevice::ReadOnly)) {
-		cerr << "Cannot open XML file: " << pathXml.toStdString() << endl;
+		cerr << "Cannot open XML file: " << pathXml.toStdString() << "error: " << qPrintable(file.errorString()) << endl;
 		return false;
 	}
 

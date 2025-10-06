@@ -47,6 +47,8 @@ public:
 	bool verbose = false;
 	bool debug = false;
 	QString format = "jpg";
+	QString light3d;
+
 
 	PanoBuilder(QString path);
 	void setMm3d(QString path);

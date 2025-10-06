@@ -224,30 +224,37 @@ void PanoBuilder::printTimingReport() {
 //3. se n_planes=0 si assegna
 //4. altrimenti si controlla se è uguale se non uguale esci
 
-int PanoBuilder::findNPlanes(QDir& dir){
-
+int PanoBuilder::findNPlanes(QDir& dir) {
 	if (!dir.exists()) {
 		throw QString("Directory does not exist: ") + dir.absolutePath();
 	}
 
-	int n_planes= 0;
+	int maxPlanes = -1;
 	QStringList subDirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 	if (subDirs.isEmpty()) {
-		throw QString("No subdirectories found in directory: %1").arg(dir.absolutePath());;
+		throw QString("No subdirectories found in directory: %1").arg(dir.absolutePath());
 	}
 
 	for (const QString &subDirName : subDirs) {
 		QDir subDir(dir.filePath(subDirName));
-		QStringList planeFiles = subDir.entryList(QStringList() << "plane_*", QDir::Files);
-		int n_planesDir = planeFiles.size();
-		if(n_planes==0){
-			n_planes = n_planesDir;
-		} else {
-			if(n_planes != n_planesDir)
-				throw QString("The number of dir and planes is not the same");
+		QStringList planeFiles = subDir.entryList(QStringList() << "plane_*.jpg" << "plane_*.tif", QDir::Files);
+
+		for (const QString &planeFile : planeFiles) {
+			QString base = QFileInfo(planeFile).baseName(); // e.g. "plane_2"
+			QStringList parts = base.split("_");
+			if (parts.size() < 2) continue;
+
+			bool ok = false;
+			int num = parts.last().toInt(&ok);
+			if (ok && num > maxPlanes)
+				maxPlanes = num;
 		}
 	}
-	return n_planes;
+
+	if (maxPlanes < 0)
+		throw QString("No plane files found in any subdirectory of ") + dir.absolutePath();
+
+	return maxPlanes + 1; // totale piani trovati
 }
 
 /* directory structures:
@@ -373,7 +380,9 @@ void PanoBuilder::rti(){
 		//<<"-3" << "2.5:0.21";
 
 		arguments << datasets_dir.filePath(subDirName) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18";
-			// <<"-3" << "2.5:0.21";
+			// <<"-3" << "2.5:0.21" 3 1.6:0.04 ;
+		if(!light3d.isEmpty())
+			arguments << "-3" << light3d;
 
 		executeProcess(relight_cli_path, arguments);
 	}
@@ -391,7 +400,7 @@ void PanoBuilder::rti(){
 /*Tie Points computation using Tapioca: Tapioca runs Pastis program (for tie points matching) using SIFT algorithm an
 transforms the pictures (creating .tif files in grayscale) to make them usable for the
 different steps of micmac*/
-
+//TODO: choose to users tapioca parameters 1500 as the scale where the correspondence detection between images is performed.
 void PanoBuilder::tapioca(){
 
 	QDir currentDir = cd("photogrammetry", true);
@@ -488,7 +497,7 @@ void PanoBuilder::apericloud(){
 		throw QString("Homol directory does not exist in current directory: ") + homolDir.absolutePath();
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "AperiCloud" << ".*" + format << "Relative" << "Bin=0" << "SH=_mini" << "WithCam=0";
+	arguments << "AperiCloud" << ".*" + format << "Relative" << "Bin=0" << "WithCam=0";
 
 	executeProcess(program, arguments);
 }
@@ -624,20 +633,6 @@ void PanoBuilder::malt_mec(){
 		QFile::remove(depthTfwBackup);
 		QFile::copy(depthTfw, depthTfwBackup);
 	}
-
-	QString maskXml = maskPath + ".xml";
-	if (QFile::exists(maskXml)) {
-		QString maskXmlBackup = maskXml + "_backup.xml";
-		QFile::remove(maskXmlBackup);
-		QFile::copy(maskXml, maskXmlBackup);
-	}
-
-	QString maskTfw = maskPath.left(maskPath.size() - 4) + ".tfw";
-	if (QFile::exists(maskTfw)) {
-		QString maskTfwBackup = maskTfw + "_backup.tfw";
-		QFile::remove(maskTfwBackup);
-		QFile::copy(maskTfw, maskTfwBackup);
-	}
 }
 
 void PanoBuilder::c3dc(){
@@ -719,6 +714,8 @@ void PanoBuilder::depthmap(){
 				break;
 			}
 		}
+		if(orientationXmlPath.isEmpty())
+			throw(QString("Missing camera parameter xml file for image: %1").arg(cameraName));
 
 		if (!depthCam.camera.loadXml(orientationXmlPath)) {
 			cerr << "Missing or invalid XML: " << orientationXmlPath.toStdString() << endl;
@@ -798,12 +795,13 @@ void PanoBuilder::malt_ortho(){
 		//QString orthoPlaneDirName = QString("Ortho_plane_%1").arg(plane);
 		//rmdir("Tmp-MM-Dir");
 		//rmdir(orthoPlaneDirName);
+		QString pattern = QString("merge/Face_*/plane_%1.jpg").arg(plane);
 
 		QString program = mm3d_path;
 		QStringList arguments;
-		arguments << "Malt" << "Ortho" << ".*" + format << "Relative" << "ZoomF=4"
+		arguments << "Malt" << "Ortho" << pattern  << "Relative" << "ZoomF=4"
 				  << "DirMEC=Malt" << "DirTA=TA" << "DoMEC=0" << "DoOrtho=1" << "Purge=false"
-				  << "ImOrtho=.*" + format << "DirOF="+orthoPlaneDirName;
+				  << "ImOrtho=" + pattern << "DirOF=" +orthoPlaneDirName;
 
 		executeProcess(program, arguments);
 
@@ -850,7 +848,7 @@ void PanoBuilder::tawny() {
 
 
 		QStringList arguments;
-		arguments << "Tawny" << planeDirName << "DEq=0" << "DegRap=0" << QString("Out=plane_%1.tif").arg(plane);
+		arguments << "Tawny" << planeDirName << "DEq=0" << "RadiomEgual" << "DegRap=0" << QString("Out=plane_%1.tif").arg(plane);
 		executeProcess(program, arguments);
 	}
 }

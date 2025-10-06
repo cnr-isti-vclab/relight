@@ -52,6 +52,9 @@ int main(int argc, char *argv[])
 													"Regul check the amount of smoothing applied during the orthorectification process. Default is 0.05", "0.05");
 	parser.addOption(regulOption);
 
+	QCommandLineOption light3dOption(QStringList() << "3" << "Light3d", "Sets the regularization parameter ", "help", "");
+	parser.addOption(light3dOption);
+
 	QCommandLineOption stepOption(QStringList() << "s" << "step",
 										 "starting step (rti, tapioca, schnaps, tapas, apericloud, orthoplane, tarama, malt_mec,"
 										 "c3dc, depthmap, malt_ortho, jpg)", "rti");
@@ -91,7 +94,8 @@ int main(int argc, char *argv[])
 	}
 	cout << "DefCor value: " << defCor << endl;
 	cout << "Regul value: " << regul << endl;
-	//exit(0);
+
+	QString light3d = parser.value(light3dOption);
 
 	bool interactive = parser.isSet(interactiveOption);
 	bool stop = parser.isSet(stopOption);
@@ -110,6 +114,7 @@ int main(int argc, char *argv[])
 			PanoBuilder builder(datasetsFolder);
 			builder.DefCor= defCor;
 			builder.Regul = regul;
+			builder.light3d = light3d;
 			builder.verbose = verbose;
 			builder.debug = debug;
 
