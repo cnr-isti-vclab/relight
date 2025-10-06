@@ -67,6 +67,7 @@ public:
 
 public slots:
 	void setDownsample(float down, int w, int h);
+	void setCrop(Crop crop);
 
 private:
 	QLabelButton *none = nullptr;

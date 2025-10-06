@@ -246,23 +246,24 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 		float d = downsample->value();
 
 		Project &p = qRelightApp->project();
-		setDownsample(d, p.imgsize.width()/d, p.imgsize.height()/d);
+		Crop &crop = p.crop;
+		setDownsample(d, crop.width()/d, crop.height()/d);
 	});
 
 	connect(width, qOverload<int>(&QSpinBox::valueChanged), this, [this](int w) {
 		//TODO basic validation?
 		Project &p = qRelightApp->project();
-		float d = p.imgsize.width()/(float)w;
-
-		setDownsample(d, w, p.imgsize.height()/d);
+		Crop &crop = p.crop;
+		float d = crop.width()/(float)w;
+		setDownsample(d, w, crop.height()/d);
 	});
 
 	connect(height, qOverload<int>(&QSpinBox::valueChanged), this, [this](int h) {
 		//TODO basic validation?
 		Project &p = qRelightApp->project();
-		float d = p.imgsize.height()/(float)h;
-
-		setDownsample(d, p.imgsize.width()/d, h);
+		Crop &crop = p.crop;
+		float d = crop.height()/(float)h;
+		setDownsample(d, crop.width()/d, h);
 	});
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -284,7 +285,8 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 
 void NormalsSurfaceRow::init() {
 	Project &p = qRelightApp->project();
-	setDownsample(1.0f, p.imgsize.width(), p.imgsize.height());
+	Crop &crop = p.crop;
+	setDownsample(1.0f, crop.width(), crop.height());
 }
 
 
@@ -316,6 +318,13 @@ void NormalsSurfaceRow::setDownsample(float down, int w, int h) {
 	parameters.surface_height = h;
 }
 
+void NormalsSurfaceRow::setCrop(Crop crop) {
+
+	float down = downsample->value();
+	QSize size = crop.size();
+
+	setDownsample(down, size.width()/down, size.height()/down);
+}
 
 NormalsExportRow::NormalsExportRow(NormalsParameters &parameters, QFrame *parent): NormalsPlanRow(parameters, parent) {
 	label->label->setText("Directory/File:");
@@ -365,6 +374,7 @@ void NormalsExportRow::selectOutput() {
 	qRelightApp->setLastOutputDir(output_parent_dir.absolutePath());
 	setPath(output);
 }
+
 
 
 void NormalsExportRow::suggestPath() {
