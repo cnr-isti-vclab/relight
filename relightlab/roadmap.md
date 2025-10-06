@@ -35,7 +35,7 @@
   the ecc algorithm works on pairs, we need bundle adjustment.
 
 ## Bugs
-* beerf adds jpg to folder
+* brdrf adds jpg to folder
 * downsampling doesn't work properly with crop
 * How HSH with 18 planes is possible? (missing 27?)
 * crop initialized with wrong handles size. (too small)

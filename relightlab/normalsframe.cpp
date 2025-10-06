@@ -128,4 +128,5 @@ void NormalsFrame::save() {
 
 void NormalsFrame::updateCrop(Crop crop) {
 	zoom_view->setCrop(crop);
+	surface_row->setCrop(crop);
 }
