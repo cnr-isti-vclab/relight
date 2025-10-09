@@ -48,7 +48,8 @@ void DetectHighlights::run() {
 
 		Image &image = project.images[i];
 
-		QImage img(image.filename);
+		QImage img;
+		img.load(image.filename, "JPG");
 		if(img.isNull()) {
 			setStatus(FAILED);
 			progressed(QString("Failed loading image: %1").arg(image.filename), 100);

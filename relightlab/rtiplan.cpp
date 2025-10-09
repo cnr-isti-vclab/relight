@@ -122,7 +122,7 @@ RtiPlanesRow::RtiPlanesRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 	buttons->addWidget(new QLabel("Number of coefficients:"));
 	nplanesbox = new QComboBox;
 	nplanesbox->setFixedWidth(100);
-	for(int i = 0; i < 7; i++) {
+	for(int i = 0; i < 8; i++) {
 		nplanesbox->addItem(QString::number(nplanes[i]), QVariant(nplanes[i]));
 	}
 	connect(nplanesbox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int n) {
@@ -148,7 +148,7 @@ RtiPlanesRow::RtiPlanesRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 void RtiPlanesRow::forceNPlanes(QList<int> n_planes) {
 	QStandardItemModel *model =	  qobject_cast<QStandardItemModel *>(nplanesbox->model());
 	Q_ASSERT(model != nullptr);
-	for(int i = 0; i < 7; i++) {
+	for(int i = 0; i < 8; i++) {
 		QStandardItem *item = model->item(i);
 		bool disabled = !n_planes.contains(nplanes[i]);
 		item->setFlags(disabled ? item->flags() & ~Qt::ItemIsEnabled

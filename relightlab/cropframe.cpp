@@ -164,13 +164,7 @@ void CropFrame::init() {
 	auto *model = qobject_cast<QStandardItemModel*>(units->model());
 	auto *item = model->item(1);
 	item->setEnabled(project.pixelSize != 0.0f);
-/*
-	QImage img(project.dir.filePath(filename));
-	if(img.isNull()) {
-		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
-		return;
-	}
-	cropper->setImage(QPixmap::fromImage(img));*/
+
 	cropper->showImage(0);
 	cropper->setCrop(project.crop);
 	cropper->fit();

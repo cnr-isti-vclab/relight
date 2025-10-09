@@ -362,7 +362,8 @@ void RelightApp::loadThumbnails() {
 	for(size_t i = 0; i < m_project->images.size(); i++) {
 		Image &image = m_project->images[i];
 		if(i == 0) {
-			QImage img(image.filename);
+			QImage img;
+			img.load(image.filename, "JPG");
 			if(img.isNull()) {
 				img = QImage(256, 256, QImage::Format_ARGB32);
 				img.fill(Qt::black);
@@ -494,7 +495,8 @@ void ThumbailLoader::run() {
 	for(QString path: paths) {
 		if(stop_request)
 			break;
-		QImage img(path);
+		QImage img;
+		img.load(path, "JPG");
 		if(img.isNull()) //TODO shoudl actually warn!
 			break;
 		{

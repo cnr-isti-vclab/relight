@@ -166,7 +166,8 @@ void RtiTask::rotatedCrop(QString output) {
 	QStringList planes = destination.entryList(QStringList(QString("plane_*.jpg")), QDir::Files);
 	for(QString plane: planes) {
 		QString path = destination.absoluteFilePath(plane);
-		QImage img(path);
+		QImage img;
+		img.load(path, "JPG");
 		img = crop.cropBoundingImage(img);
 		bool saved = img.save(path, "jpg", parameters.quality);
 	}

@@ -31,7 +31,8 @@ void FindAlignment::run() {
 			.arg(inner.left())
 			.arg(inner.top());
 
-	QImage img(cache_filename);
+	QImage img;
+	img.load(cache_filename, "JPG");
 	if(!img.isNull()) {
 		align->readCacheThumbs(img);
 		progressed(QString("Done."), 100);
@@ -46,7 +47,8 @@ void FindAlignment::run() {
 		Image &image = project.images[i];
 		if(image.skip) continue;
 
-		QImage img(image.filename);
+		QImage img;
+		img.load(image.filename, "JPG");
 		if(img.isNull()) {
 			setStatus(FAILED);
 			progressed(QString("Failed loading image: %1").arg(image.filename), 100);

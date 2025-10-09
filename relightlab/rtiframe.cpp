@@ -143,6 +143,12 @@ void RtiFrame::exportRti() {
 		project.dome.lightConfiguration = Dome::DIRECTIONAL;
 	}
 
+	if(parameters.format == RtiParameters::WEB &&
+			std::max(project.crop.width(), project.crop.height()) > 4096) {
+		QMessageBox::warning(this, "Texture size limitations",
+							 "WebGL texture have a maximum allowed size (variable), the browser might be unable to show the RTI without deepzoom.");
+	}
+
 	RtiTask *rti_task = new RtiTask();
 	try {
 		rti_task->setProject(project);
