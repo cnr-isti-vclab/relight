@@ -22,18 +22,11 @@ html, body {
 	height: 100%
 }
 
-#openlime>canvas {
-	width: 100%;
-	height: 100%;
-	/* this is important, it would cause firefox flickering! */
-	overflow: hidden;
-}
-
 	</style>
 </head>
 
 <body>
-	<div id="openlime"></div>
+	<div id="demo" class="openlime"></div>
 </body>
 
 <script src="openlime.min.js"></script>
@@ -87,7 +80,7 @@ async function autodetectNormals(layout) {
 async function init() {
 	let layout = await autodetect();
 	let normals = await autodetectNormals(layout);
-	var lime = new OpenLIME.Viewer('#openlime', { background:'black' });
+	var lime = new OpenLIME.Viewer('#demo', { background:'black' });
 
 
 	let layer = new OpenLIME.Layer({ 
@@ -102,7 +95,7 @@ async function init() {
 	let ui = new OpenLIME.UIBasic(lime, { skin: 'skin.svg', showLightDirections: true });
 	ui.actions.light.active = true;
 	ui.actions.layers.display = true;
-	lime.camera.maxFixedZoom = 1;
+	lime.camera.maxFixedZoom = 4;
 	window.lime = lime;
 }
 

@@ -30,7 +30,8 @@ void ImageView::showImage(int id) {
 
 	QString filename = project.images[id].filename;
 
-	QImage img(filename);
+	QImage img;
+	img.load(filename, "JPG");
 	if(img.isNull()) {
 		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
 		return;

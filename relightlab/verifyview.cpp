@@ -129,7 +129,7 @@ void VerifyView::resizeEvent(QResizeEvent *) {
 }
 
 void VerifyView::keyPressEvent(QKeyEvent *event) {
-	if (event->key() == Qt::Key_Delete) {
+	if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
 		marker_item->setPos(center);
 		update();
 		return;

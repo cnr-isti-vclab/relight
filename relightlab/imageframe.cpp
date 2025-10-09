@@ -142,7 +142,8 @@ void ImageFrame::rotateImage(int id, bool clockwise) {
 	assert(id >= 0 && id < project.images.size());
 
 	Image &image = project.images[id];
-	QImage source(image.filename);
+	QImage source;
+	source.load(image.filename, "JPG");
 	QImage rotated = source.transformed(rotate);
 	rotated.save(image.filename, "jpg", 100);
 	//thumbs needs to be rotated!!!
