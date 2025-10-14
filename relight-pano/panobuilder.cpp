@@ -10,7 +10,7 @@
 #include "orixml.h"
 #include "orthodepthmap.h"
 #include "depthmap.h"
-#define TESTING_PLANE_0
+//#define TESTING_PLANE_0
 using namespace std;
 
 
@@ -224,37 +224,43 @@ void PanoBuilder::printTimingReport() {
 //3. se n_planes=0 si assegna
 //4. altrimenti si controlla se è uguale se non uguale esci
 
-int PanoBuilder::findNPlanes(QDir& dir) {
+int PanoBuilder::findNPlanes(QDir& dir){
 	if (!dir.exists()) {
 		throw QString("Directory does not exist: ") + dir.absolutePath();
 	}
 
-	int maxPlanes = -1;
+	int n_planes = 0;
 	QStringList subDirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-	if (subDirs.isEmpty()) {
+	if (subDirs.isEmpty())
 		throw QString("No subdirectories found in directory: %1").arg(dir.absolutePath());
-	}
 
 	for (const QString &subDirName : subDirs) {
 		QDir subDir(dir.filePath(subDirName));
-		QStringList planeFiles = subDir.entryList(QStringList() << "plane_*.jpg" << "plane_*.tif", QDir::Files);
 
-		for (const QString &planeFile : planeFiles) {
-			QString base = QFileInfo(planeFile).baseName(); // e.g. "plane_2"
-			QStringList parts = base.split("_");
-			if (parts.size() < 2) continue;
+		subDir.setFilter(QDir::Files);
+		subDir.setNameFilters(QStringList() << "plane_*.jpg" << "plane_*.JPG" << "plane_*.jpeg" << "plane_*.JPEG");
 
-			bool ok = false;
-			int num = parts.last().toInt(&ok);
-			if (ok && num > maxPlanes)
-				maxPlanes = num;
+		QStringList planeFiles = subDir.entryList();
+		int n_planesDir = planeFiles.size();
+		cout << "Found " << n_planesDir << " planes in " << qPrintable(subDirName) << endl;
+
+		if (n_planesDir == 0) {
+				cout << "No plane files found in " << qPrintable(subDirName) << endl;
+				continue;
+			}
+		if (n_planes == 0) {
+			n_planes = n_planesDir;
+		} else if (n_planes != n_planesDir) {
+			throw QString("Inconsistent number of planes across subdirectories — %1 has %2 planes, expected %3")
+				.arg(subDirName)
+				.arg(n_planesDir)
+				.arg(n_planes);
 		}
 	}
+	if (n_planes == 0)
+		throw QString("No plane_* directories found in any subfolder of %1").arg(dir.absolutePath());
 
-	if (maxPlanes < 0)
-		throw QString("No plane files found in any subdirectory of ") + dir.absolutePath();
-
-	return maxPlanes + 1; // totale piani trovati
+	return n_planes;
 }
 
 /* directory structures:
@@ -743,70 +749,139 @@ void PanoBuilder::depthmap(){
 	//ortho.saveObj("weightsElev3_0125.obj");
 
 }
-
-void PanoBuilder::malt_ortho(){
-
+//for each directory in merge folder, copy the xml file in ori-relative file and rename plane_0, plane_1 ecc. after remove it.
+//malt_ortho project the all the plane and create the output folder Ortho_plane inside we found the directory projection.
+void PanoBuilder::malt_ortho() {
 	QDir currentDir = cd("photogrammetry");
 
 	QDir mergeDir(base_dir.filePath("merge"));
 	if (!mergeDir.exists()) {
 		throw QString("Merge dir directory does not exist in base directory: ") + mergeDir.absolutePath();
-
 	}
-	QDir rtiDir(base_dir.filePath("rti"));
-	if (!rtiDir.exists()) {
-		throw QString("rti dir directory does not exist in base directory: ") + rtiDir.absolutePath();
 
+	QDir oriDir(currentDir.filePath("Ori-Relative"));
+	if (!oriDir.exists()) {
+		throw QString("Ori-Relative directory does not exist in current directory: ") + oriDir.absolutePath();
 	}
-	//exportMeans();
 
 	QStringList subDirs = mergeDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 	if (subDirs.isEmpty())
 		throw QString("No subdirectories found in 'merge' directory.");
+
 	int n_planes = findNPlanes(mergeDir);
-	for (int plane =0; plane < n_planes; plane++){
+
+	for (int plane = 0; plane < n_planes; plane++) {
+
 		QString orthoPlaneDirName = QString("Ortho_plane_%1").arg(plane);
 		rmdir("Tmp-MM-Dir");
 		rmdir(orthoPlaneDirName);
 
-		for (const QString &subDirName : subDirs) {
-			QDir subDir(mergeDir.filePath(subDirName));
+		QStringList tempXmlPaths;
+		QStringList tempPlanePaths;
 
+		// Cp and rename XML file
+		for (int i = 0; i < subDirs.size(); i++) {
+			QString subDirName = subDirs[i];
+			QDir subDir(mergeDir.filePath(subDirName));
 			QString planeFileName = QString("plane_%1.jpg").arg(plane);
 			QString planeFilePath = subDir.filePath(planeFileName);
 
-			if (!QFile::exists(planeFilePath))
-				throw QString("Error: %1 does not exist in directory: ").arg(planeFilePath).arg(subDir.absolutePath());
+			if (!QFile::exists(planeFilePath)) {
+				cout << "Plane image missing: " << qPrintable(planeFilePath) << endl;
+				continue;
+			}
 
-			//QString exifCommand = QString("exiftool -tagsfromfile %1 %2").arg(planeFilePath, newTifFilePath);
-			//int result = system(exifCommand.toStdString().c_str());
-			//if (result != 0)
-			//	throw QString("Error copying EXIF data from %1 to %2").arg(planeFilePath, newTifFilePath);
+			// Copia il file plane_X.jpg nella directory photogrammetry/
+			QString destPlanePath = currentDir.filePath(planeFileName);
+			if (QFile::exists(destPlanePath))
+				QFile::remove(destPlanePath);
 
+			if (QFile::copy(planeFilePath, destPlanePath)) {
+				tempPlanePaths << destPlanePath;
+				if (verbose)
+					cout << "Copied " << qPrintable(planeFileName)
+						 << " from " << qPrintable(subDirName) << endl;
+			} else {
+				cout << "Failed to copy plane image: " << qPrintable(planeFilePath) << endl;
+				continue;
+			}
+
+			//
+			QString sourceXmlName = QString("Orientation-%1.jpg.xml").arg(subDirName);
+			QString sourceXmlPath = oriDir.filePath(sourceXmlName);
+
+			if (!QFile::exists(sourceXmlPath)) {
+				cout << "Missing orientation file: " << qPrintable(sourceXmlPath) << endl;
+				continue;
+			}
+
+			QString planeXmlName = QString("Orientation-plane_%1_%2.jpg.xml").arg(plane).arg(subDirName);
+			QString planeXmlPath = oriDir.filePath(planeXmlName);
+
+			if (QFile::exists(planeXmlPath))
+				QFile::remove(planeXmlPath);
+
+			if (QFile::copy(sourceXmlPath, planeXmlPath)) {
+				tempXmlPaths << planeXmlPath;
+				if (verbose)
+					cout << "Copied " << qPrintable(sourceXmlName)
+						 << " -> " << qPrintable(planeXmlName) << endl;
+			} else {
+				cout << "Failed to copy " << qPrintable(sourceXmlPath) << endl;
+			}
 		}
 
-		//else if (!QFile::exists(newTifFilePath)) {
-
-		//QString newFileName = QString("%1.jpg").arg(subDirName);
-		//QString newFilePath = currentDir.filePath(newFileName);
-		/*if(verbose)
-			cout << "Copied planes and renamed: " << qPrintable(planeFilePath) << " to " << qPrintable(newFilePath) << endl;*/
-
-		//QString orthoPlaneDirName = QString("Ortho_plane_%1").arg(plane);
-		//rmdir("Tmp-MM-Dir");
-		//rmdir(orthoPlaneDirName);
-		QString pattern = QString("merge/Face_*/plane_%1.jpg").arg(plane);
 
 		QString program = mm3d_path;
 		QStringList arguments;
-		arguments << "Malt" << "Ortho" << pattern  << "Relative" << "ZoomF=4"
-				  << "DirMEC=Malt" << "DirTA=TA" << "DoMEC=0" << "DoOrtho=1" << "Purge=false"
-				  << "ImOrtho=" + pattern << "DirOF=" +orthoPlaneDirName;
+		arguments << "Malt" << "Ortho" << "plane_.*" + format << "Relative" << "ZoomF=4" << "DirMEC=Malt" << "DirTA=TA" << "DoMEC=0"
+				  << "DoOrtho=1" << "Purge=false" << "ImOrtho=plane_.*" + format << "DirOF=" +orthoPlaneDirName;
 
-		executeProcess(program, arguments);
+		try {
+			executeProcess(program, arguments);
+		} catch (QString &e) {
+			cout << "Error during Malt Ortho for plane " << plane << ": "
+				 << qPrintable(e) << endl;
+		}
 
+		// Cancella i file temporanei
+		for (const QString &tempXml : tempXmlPaths) {
+			if (QFile::exists(tempXml)) {
+				QFile::remove(tempXml);
+				if (verbose)
+					cout << "Removed temp xml: " << qPrintable(tempXml) << endl;
+			}
+				// cancella anche le immagini photogrammetry/plane_
+		}
+		for (const QString &tempPlane : tempPlanePaths) {
+			if (QFile::exists(tempPlane)) {
+				QFile::remove(tempPlane);
+				if (verbose)
+					cout << "Removed temp plane image: " << qPrintable(tempPlane) << endl;
+			}
+		}
+
+
+		cout << "Completed Malt Ortho for plane " << plane << endl;
 	}
 }
+
+
+//QString exifCommand = QString("exiftool -tagsfromfile %1 %2").arg(planeFilePath, newTifFilePath);
+//int result = system(exifCommand.toStdString().c_str());
+//if (result != 0)
+//	throw QString("Error copying EXIF data from %1 to %2").arg(planeFilePath, newTifFilePath);
+
+//else if (!QFile::exists(newTifFilePath)) {
+
+//QString newFileName = QString("%1.jpg").arg(subDirName);
+//QString newFilePath = currentDir.filePath(newFileName);
+/*if(verbose)
+			cout << "Copied planes and renamed: " << qPrintable(planeFilePath) << " to " << qPrintable(newFilePath) << endl;*/
+
+//QString orthoPlaneDirName = QString("Ortho_plane_%1").arg(plane);
+//rmdir("Tmp-MM-Dir");
+//rmdir(orthoPlaneDirName);
 
 
 /*	QString depthmapPath = base_dir.filePath("photogrammetry/Malt/Z_Num7_DeZoom4_STD-MALT.tif");
