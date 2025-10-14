@@ -18,6 +18,7 @@ class TabWidget: public QTabWidget {
 public:
 	TabWidget(QWidget *parent = nullptr);
 	void addTab(QWidget *widget, QString label);
+	void setTabsEnabled(bool on); //all but the first.
 };
 
 
