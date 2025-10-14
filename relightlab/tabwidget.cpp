@@ -43,3 +43,8 @@ void TabWidget::addTab(QWidget *widget, QString label) {
 	scrollArea->setWidgetResizable(true);
 	QTabWidget::addTab(scrollArea, label);
 }
+
+void TabWidget::setTabsEnabled(bool on) { //all but the first.
+	for(int i = 1; i < count(); i++)
+		setTabEnabled(i, on);
+}

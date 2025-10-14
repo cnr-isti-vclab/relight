@@ -46,6 +46,7 @@ MainWindow::MainWindow() {
 	tabs->addTab(normals_frame = new NormalsFrame, "Normals");
 	tabs->addTab(queue_frame = new QueueFrame, "Queue");
 
+	tabs->setTabsEnabled(false);
 
 	connect(scale_frame, SIGNAL(pixelSizeChanged()), lights_frame, SLOT(setPixelSize()));
 	connect(scale_frame, SIGNAL(pixelSizeChanged()), crop_frame, SLOT(scaleChanged()));
@@ -149,6 +150,7 @@ void MainWindow::clear() {
 	crop_frame->clear();
 }
 
+//this is only called when loading a project.
 void MainWindow::init() {
 	image_frame->init();
 	align_frame->init();
@@ -159,6 +161,8 @@ void MainWindow::init() {
 	rti_frame->init();
 	normals_frame->init();
 	brdf_frame->init();
+
+	tabs->setTabsEnabled(true);
 }
 
 void MainWindow::showHelp() {

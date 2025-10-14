@@ -51,27 +51,63 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	setStyleSheet(style.readAll());
 	//Default font size can be read using QApplication::font().pointSize(), not pointPixel
 
-	dark_palette.setColor(QPalette::Window,QColor(53,53,53));
-	dark_palette.setColor(QPalette::WindowText,Qt::white);
-	dark_palette.setColor(QPalette::Disabled,QPalette::WindowText,QColor(127,127,127));
-	dark_palette.setColor(QPalette::Disabled,QPalette::Text,QColor(127,127,127));
-	dark_palette.setColor(QPalette::Base,QColor(42,42,42));
-	dark_palette.setColor(QPalette::AlternateBase,QColor(66,66,66));
-	dark_palette.setColor(QPalette::Button,QColor(53,53,53));
-	dark_palette.setColor(QPalette::ToolTipBase,QColor(53,53,53));
-	dark_palette.setColor(QPalette::ToolTipText,Qt::white);
-	dark_palette.setColor(QPalette::Text,QColor(220, 220, 220));
-	dark_palette.setColor(QPalette::Dark,QColor(35,35,35));
-	dark_palette.setColor(QPalette::Shadow,QColor(20,20,20));
+	// Dark theme color definitions
+	QColor dark_window(53, 53, 53);
+	QColor dark_base(42, 42, 42);
+	QColor dark_alternate(66, 66, 66);
+	QColor dark_darker(35, 35, 35);
+	// Slightly softer shadow than pure black to avoid harsh borders in Fusion
+	QColor dark_shadow(30, 30, 30);
+	QColor dark_text(220, 220, 220);
+	QColor dark_highlight(42, 130, 218);
 
-	dark_palette.setColor(QPalette::ButtonText,Qt::white);
-	dark_palette.setColor(QPalette::Disabled,QPalette::ButtonText,QColor(127,127,127));
-	dark_palette.setColor(QPalette::BrightText,Qt::red);
-	dark_palette.setColor(QPalette::Link,QColor(42,130,218));
-	dark_palette.setColor(QPalette::Highlight,QColor(42,130,218));
-	dark_palette.setColor(QPalette::Disabled,QPalette::Highlight,QColor(80,80,80));
-	dark_palette.setColor(QPalette::HighlightedText,Qt::white);
-	dark_palette.setColor(QPalette::Disabled,QPalette::HighlightedText,QColor(127,127,127));
+	// Disabled variants (tweak here)
+	QColor dark_disabled_text(127, 127, 127);
+	QColor dark_disabled_base(32, 32, 32);
+	QColor dark_disabled_button(38, 38, 38);
+	QColor dark_disabled_highlight(80, 80, 80);
+
+	
+
+	dark_palette.setColor(QPalette::Window, dark_window);
+	dark_palette.setColor(QPalette::Base, dark_base);
+	dark_palette.setColor(QPalette::AlternateBase, dark_alternate);
+	dark_palette.setColor(QPalette::Dark, dark_darker);
+	dark_palette.setColor(QPalette::Shadow, dark_shadow);
+	dark_palette.setColor(QPalette::Button, dark_window);
+	// Provide bevel roles used by Fusion for frames (affects QComboBox frame/popup)
+	dark_palette.setColor(QPalette::Light,    dark_base.lighter(140));
+	dark_palette.setColor(QPalette::Midlight, dark_base.lighter(120));
+	dark_palette.setColor(QPalette::Mid,      dark_base.darker(110));
+
+	dark_palette.setColor(QPalette::WindowText, Qt::white);
+	dark_palette.setColor(QPalette::Text, dark_text);
+	dark_palette.setColor(QPalette::ButtonText, Qt::white);
+	dark_palette.setColor(QPalette::BrightText, Qt::red);
+	dark_palette.setColor(QPalette::Highlight, dark_highlight);
+	dark_palette.setColor(QPalette::HighlightedText, Qt::white);
+
+	dark_palette.setColor(QPalette::ToolTipBase, dark_window);
+	dark_palette.setColor(QPalette::ToolTipText, Qt::white);
+	dark_palette.setColor(QPalette::Link, dark_highlight);
+
+	// Disabled roles
+	dark_palette.setColor(QPalette::Disabled, QPalette::WindowText,     dark_disabled_text);
+	dark_palette.setColor(QPalette::Disabled, QPalette::Text,           dark_disabled_text);
+	dark_palette.setColor(QPalette::Disabled, QPalette::ButtonText,     dark_disabled_text);
+	dark_palette.setColor(QPalette::Disabled, QPalette::Base,           dark_disabled_base);
+	dark_palette.setColor(QPalette::Disabled, QPalette::Button,         dark_disabled_button);
+	dark_palette.setColor(QPalette::Disabled, QPalette::Highlight,      dark_disabled_highlight);
+ 	dark_palette.setColor(QPalette::Disabled, QPalette::HighlightedText,dark_disabled_text);
+	// Keep bevel/frames consistent when disabled
+	dark_palette.setColor(QPalette::Disabled, QPalette::Light,    dark_base.lighter(130));
+	dark_palette.setColor(QPalette::Disabled, QPalette::Midlight, dark_base.lighter(115));
+	dark_palette.setColor(QPalette::Disabled, QPalette::Mid,      dark_base.darker(110));
+	dark_palette.setColor(QPalette::Disabled, QPalette::Dark,     dark_darker);
+	dark_palette.setColor(QPalette::Disabled, QPalette::Shadow,   dark_shadow);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+	dark_palette.setColor(QPalette::Disabled, QPalette::PlaceholderText,dark_disabled_text);
+#endif
 
 	this->setStyle(new ProxyStyle(QStyleFactory::create("Fusion")));
 

@@ -64,4 +64,31 @@ QSpinBox::down-button, QDoubleSpinBox::down-button {
 	border-radius:0px;
 }
 
-`
+QTabBar::tab {
+    color: palette(button-text);
+}
+
+QTabBar::tab:selected {
+    color: palette(highlighted-text);
+	background: palette(highlight);
+}
+
+QTabBar::tab:enabled {
+    color: palette(button-text);
+}
+
+QTabBar::tab:selected:enabled {
+    color: palette(highlighted-text);
+    background: palette(highlight);
+}
+
+/* Disabled tabs: use a neutral palette gray that adapts to theme */
+QTabBar::tab:disabled {
+    color: palette(mid);
+}
+
+QTabBar::tab:selected:disabled {
+    color: palette(mid);
+    /* optional: avoid strong highlight for disabled selection */
+    /* background: palette(midlight); */
+}
