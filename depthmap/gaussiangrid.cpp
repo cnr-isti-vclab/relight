@@ -12,6 +12,7 @@
 #include <QRegularExpression>
 #include <fstream>
 #include <iostream>
+#include <queue>
 
 using namespace std;
 
@@ -118,7 +119,10 @@ void GaussianGrid::fitLinearRobust(std::vector<float> &x, std::vector<float> &y,
 
 
 float GaussianGrid::bilinearInterpolation(float x, float y) {
-
+	//clamp to border
+	float epsilon = 1e-5;
+	x = std::max(0.0f, std::min(x, float(width-1) - epsilon));
+	y = std::max(0.0f, std::min(y, float(height-1) - epsilon));
 	float x1 = floor(x);
 	float y1 = floor(y);
 	float x2 = x1+1;
@@ -166,6 +170,7 @@ void GaussianGrid::init(std::vector<Eigen::Vector3f> &cloud, std::vector<float> 
 	}
 
 	computeGaussianWeightedGrid(diff);
+	imageGrid("beforelaplacian.png");
 	fillLaplacian(precision);
 
 // Debug, check if differences are improved
@@ -178,90 +183,125 @@ void GaussianGrid::init(std::vector<Eigen::Vector3f> &cloud, std::vector<float> 
 
 
 void GaussianGrid::fillLaplacian(float precision){
-	float mean = 0;
-	float count = 0;
-	for(int i = 0; i < values.size(); i++){
-		if(weights[i] != 0){
-			mean += values[i];
-			count++;
+	// Compute mean of known values (fallback only)
+	float sum = 0.0f;
+	int known = 0;
+	for (size_t i = 0; i < values.size(); ++i) {
+		if (weights[i] != 0) {
+			sum += values[i]; ++known;
 		}
 	}
-	mean/=count;
-	for(int i = 0; i < values.size(); i++){
-		if(weights[i] == 0){
-			values[i] = mean;
+	if (known == 0)
+		throw QString("No micmac values in gaussian grid.");
+	const float mean = sum / known;
+
+	int unknown = 0;
+	for (size_t i = 0; i < values.size(); ++i) if (weights[i] == 0) ++unknown;
+	if (unknown == 0) return;
+
+	// Front-propagation initialization: assign unknowns when they have assigned neighbors
+	const int min_assigned_neighbors = 1; // set to 2 for a smoother start if desired
+	std::vector<uint8_t> assigned(values.size(), 0);
+	std::queue<int> q;
+
+	for (int y = 0; y < height; ++y) {
+		const int row = y * width;
+		for (int x = 0; x < width; ++x) {
+			const int idx = row + x;
+			if (weights[idx] > 0) {
+				assigned[idx] = 1;
+				q.push(idx);
+			}
 		}
 	}
 
-	std::vector<float> old_values = values;
-	std::vector<float> new_values = values;
+	auto try_assign = [&](int x, int y) {
+		if (x < 0 || x >= width || y < 0 || y >= height) return false;
+		const int idx = y * width + x;
+		if (assigned[idx]) return false;
+
+		float sum_n = 0.0f;
+		int cnt = 0;
+		if (y > 0 && assigned[(y - 1) * width + x]) { sum_n += values[(y - 1) * width + x]; ++cnt; }
+		if (y < height - 1 && assigned[(y + 1) * width + x]) { sum_n += values[(y + 1) * width + x]; ++cnt; }
+		if (x > 0 && assigned[y * width + (x - 1)]) { sum_n += values[y * width + (x - 1)]; ++cnt; }
+		if (x < width - 1 && assigned[y * width + (x + 1)]) { sum_n += values[y * width + (x + 1)]; ++cnt; }
+
+		if (cnt >= min_assigned_neighbors) {
+			values[idx] = sum_n / cnt;
+			assigned[idx] = 1;
+			q.push(idx);
+			return true;
+		}
+		return false;
+	};
+
+	// BFS wave from known samples
+	while (!q.empty()) {
+		int idx = q.front(); q.pop();
+		int x = idx % width;
+		int y = idx / width;
+
+		(void)try_assign(x - 1, y);
+		(void)try_assign(x + 1, y);
+		(void)try_assign(x, y - 1);
+		(void)try_assign(x, y + 1);
+	}
+
+	// Fallback for any disconnected leftovers (shouldn't happen on a connected grid)
+	for (size_t i = 0; i < values.size(); ++i) {
+		if (!assigned[i]) values[i] = mean, assigned[i] = 1;
+	}
+
+	// Red-Black Gauss-Seidel with Successive Over-Relaxation (SOR)
+	const float omega = 1.9f;    // tune in [1.0, 2.0); ~1.8-1.95 often best
+	const int   max_iter = 1000; // fewer iterations thanks to better init
 
 	bool converged = false;
-	float max_iter = 1000;
+	for (int it = 0; it < max_iter; ++it) {
+		float max_delta = 0.0f;
 
-	for (int i = 0; i < max_iter; i++) {
+		// Two-color sweep (checkerboard pattern)
+		for (int color = 0; color < 2; ++color) {
+			for (int y = 0; y < height; ++y) {
+				const int row = y * width;
+				for (int x = 0; x < width; ++x) {
+					if (((x + y) & 1) != color) continue;
 
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; ++x) {
-				int index = y * width + x;
+					const int idx = row + x;
+					if (weights[idx] > 0) continue; // keep known samples fixed
 
-				if (weights[index] > 0) {
-					continue;
-				}
+					float sum_neighbors = 0.0f;
+					int count_neighbors = 0;
 
-				float sum_neighbors = 0.0f;
-				int count_neighbors = 0;
+					if (y > 0)           { sum_neighbors += values[(y - 1) * width + x]; ++count_neighbors; }
+					if (y < height - 1)  { sum_neighbors += values[(y + 1) * width + x]; ++count_neighbors; }
+					if (x > 0)           { sum_neighbors += values[row + (x - 1)];       ++count_neighbors; }
+					if (x < width - 1)   { sum_neighbors += values[row + (x + 1)];       ++count_neighbors; }
 
-				//neighbors up
-				if (y > 0) {
-					sum_neighbors += old_values[(y - 1) * width + x];
-					count_neighbors++;
-				}
+					if (count_neighbors == 0) continue;
 
-				// neigh down
-				if (y < height - 1) {
-					sum_neighbors += old_values[(y + 1) * width + x];
-					count_neighbors++;
-				}
+					const float avg = sum_neighbors / count_neighbors;
+					const float oldv = values[idx];
+					const float newv = oldv + omega * (avg - oldv);
+					values[idx] = newv;
 
-				// neigh left
-				if (x > 0) {
-					sum_neighbors += old_values[y * width + (x - 1)];
-					count_neighbors++;
-				}
-
-				// neigh right
-				if (x < width - 1) {
-					sum_neighbors += old_values[y * width + (x + 1)];
-					count_neighbors++;
-				}
-
-				// update the value
-				if (count_neighbors > 0) {
-					new_values[index] = sum_neighbors / count_neighbors;
+					const float d = std::fabs(newv - oldv);
+					if (d > max_delta) max_delta = d;
 				}
 			}
 		}
 
-		float max_difference = 0.0f;
-		for (size_t i = 0; i < values.size(); ++i) {
-			max_difference = std::max(max_difference, std::abs(new_values[i] - old_values[i]));
-		}
-
-		if (max_difference < precision) {
-			qDebug() << "Converged after" << i + 1 << "iterations.";
+		if (max_delta < precision) {
+			qDebug() << "Converged after" << it + 1 << " iterations.";
 			converged = true;
 			break;
 		}
-
-		old_values = new_values;
 	}
 
 	if (!converged) {
 		qDebug() << "Reached maximum iterations without full convergence.";
 	}
-
-	values = new_values;
 }
 
 float GaussianGrid::value(float x, float y){

@@ -28,12 +28,13 @@ PanoBuilder::PanoBuilder(QString base_path)
 
 	datasets_dir = QDir(base_dir.filePath("datasets"));
 	qDebug() << "Base dir:" << base_dir.absolutePath();
-	qDebug() << "Trying to create:" << base_dir.filePath("photogrammetry");
+
 	if (!datasets_dir.exists()) {
 		throw QString("Directory datasets non trovata in ") + base_dir.absolutePath();
 	}
 	photogrammetry_dir = QDir(base_dir.filePath("photogrammetry"));
 	if (!photogrammetry_dir.exists()) {
+		qDebug() << "Creating:" << base_dir.filePath("photogrammetry");
 		if (!base_dir.mkdir("photogrammetry")) {
 			throw QString("Could not create directory: photogrammetry");
 		}
@@ -244,10 +245,9 @@ int PanoBuilder::findNPlanes(QDir& dir){
 		int n_planesDir = planeFiles.size();
 		cout << "Found " << n_planesDir << " planes in " << qPrintable(subDirName) << endl;
 
-		if (n_planesDir == 0) {
-				cout << "No plane files found in " << qPrintable(subDirName) << endl;
-				continue;
-			}
+		if (n_planesDir == 0)
+			throw QString("No plane files found in " + subDirName);
+
 		if (n_planes == 0) {
 			n_planes = n_planesDir;
 		} else if (n_planes != n_planesDir) {
@@ -724,19 +724,16 @@ void PanoBuilder::depthmap(){
 			throw(QString("Missing camera parameter xml file for image: %1").arg(cameraName));
 
 		if (!depthCam.camera.loadXml(orientationXmlPath)) {
-			cerr << "Missing or invalid XML: " << orientationXmlPath.toStdString() << endl;
-			continue;
+			throw QString("Missing or invalid XML: " + orientationXmlPath);
 		}
 
 		if (!depthCam.loadDepth(qPrintable(tiffFile.absoluteFilePath()))) {
-			cerr << "Unable to load depth map: " << tiffFile.fileName().toStdString() << endl;
-			continue;
+			throw QString("Unable to load depth map: " + tiffFile.fileName());
 		}
 
 		if (depthCam.width != depthCam.camera.width || depthCam.height != depthCam.camera.height) {
-			cerr << "Dimension mismatch for: " << tiffFile.fileName().toStdString() << endl;
+			qDebug() << "Resizing rti depthmap: " << tiffFile.fileName();
 			depthCam.camera.scale(depthCam.width, depthCam.height);
-			//continue;
 		}
 
 		cout << "Processed: " << tiffFile.fileName().toStdString() << endl;
@@ -787,12 +784,12 @@ void PanoBuilder::malt_ortho() {
 			QString planeFilePath = subDir.filePath(planeFileName);
 
 			if (!QFile::exists(planeFilePath)) {
-				cout << "Plane image missing: " << qPrintable(planeFilePath) << endl;
-				continue;
+				throw QString("Plane image missing: " + planeFilePath);
 			}
 
 			// Copia il file plane_X.jpg nella directory photogrammetry/
-			QString destPlanePath = currentDir.filePath(planeFileName);
+			QString destPlaneName = QString("plane_%1_%2.jpg").arg(plane).arg(subDirName);
+			QString destPlanePath = currentDir.filePath(destPlaneName);
 			if (QFile::exists(destPlanePath))
 				QFile::remove(destPlanePath);
 
@@ -802,8 +799,7 @@ void PanoBuilder::malt_ortho() {
 					cout << "Copied " << qPrintable(planeFileName)
 						 << " from " << qPrintable(subDirName) << endl;
 			} else {
-				cout << "Failed to copy plane image: " << qPrintable(planeFilePath) << endl;
-				continue;
+				throw QString("Failed to copy plane image: " + planeFilePath);
 			}
 
 			//
@@ -811,8 +807,7 @@ void PanoBuilder::malt_ortho() {
 			QString sourceXmlPath = oriDir.filePath(sourceXmlName);
 
 			if (!QFile::exists(sourceXmlPath)) {
-				cout << "Missing orientation file: " << qPrintable(sourceXmlPath) << endl;
-				continue;
+				throw QString("Missing orientation file: " + sourceXmlPath);
 			}
 
 			QString planeXmlName = QString("Orientation-plane_%1_%2.jpg.xml").arg(plane).arg(subDirName);
@@ -842,6 +837,7 @@ void PanoBuilder::malt_ortho() {
 		} catch (QString &e) {
 			cout << "Error during Malt Ortho for plane " << plane << ": "
 				 << qPrintable(e) << endl;
+			cout << "Command Line: " << qPrintable(arguments.join(" ")) << endl;
 		}
 
 		// Cancella i file temporanei
@@ -923,8 +919,13 @@ void PanoBuilder::tawny() {
 
 
 		QStringList arguments;
-		arguments << "Tawny" << planeDirName << "DEq=0" << "RadiomEgual" << "DegRap=0" << QString("Out=plane_%1.tif").arg(plane);
-		executeProcess(program, arguments);
+		arguments << "Tawny" << planeDirName << "DEq=0" << "RadiomEgal=0" << "DegRap=0" << QString("Out=plane_%1.tif").arg(plane);
+		try {
+			executeProcess(program, arguments);
+		} catch (QString &e) {
+			cout << "Error during Tawny: " << qPrintable(e) << endl;
+			cout << "Command Line: " << qPrintable(arguments.join(" ")) << endl;
+		}
 	}
 }
 // <<"DEq=3" << "DegRap=2" << "SzV=5"
@@ -962,8 +963,7 @@ void PanoBuilder::jpg() {
 		}
 		QStringList tifFiles = orthoDir.entryList(QStringList() << "plane_*.tif", QDir::Files);
 		if (tifFiles.isEmpty()) {
-			cout << "No plane_*.tif files in " << qPrintable(orthoDir.absolutePath()) << endl;
-			continue;
+			throw QString("No plane_*.tif files in " + orthoDir.absolutePath());
 		}
 
 		QString tifFile = tifFiles.first();

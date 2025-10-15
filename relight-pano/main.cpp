@@ -27,44 +27,46 @@ int main(int argc, char *argv[])
 	QCommandLineParser parser;
 	parser.setApplicationDescription("relight-pano: builds an RTI panorama");
 	parser.addHelpOption();
-	//folder
 	parser.addPositionalArgument("folder", "path folder containing rti datasets");
 
-	QCommandLineOption interactiveOption(QStringList() << "i" << "interactive",
-										 "open users interface");
+	QCommandLineOption micmacOption(QStringList()      << "M" << "micmac",          "Micmac mm3d path",     "/Users/erika/Desktop/micmac/bin");
+	QCommandLineOption cliOption(QStringList()         << "C" << "relight-cli",     "Relight-cli path",     ",Users/erika/Desktop/projects/relight/relight-cli/relight-cli");
+	QCommandLineOption mergeOption(QStringList()       << "G" << "relight-merge",   "Relight-merge path",   "/Users/erika/Desktop/projects/relight/relight-merge/relight-merge");
+	QCommandLineOption normalsOption(QStringList()     << "N" << "relight-normals", "Relight-normals path", "/Users/erika/Desktop/projects/relight/relight-normals/relight-normals");
+
+	QCommandLineOption interactiveOption(QStringList() << "i" << "interactive",  "Open users interface");
+	QCommandLineOption verboseOption(QStringList()     << "v" << "verbose",      "Enable verbose output");
+	QCommandLineOption debugOption(QStringList()       << "d" << "debug",        "Enable debug output");
+	QCommandLineOption stepOption(QStringList()        << "s" << "step",
+								  "Starting step (rti, tapioca, schnaps, tapas, apericloud, orthoplane, tarama, malt_mec, c3dc, depthmap, malt_ortho, jpg)", "rti");
+	QCommandLineOption stopOption(QStringList()        << "S" << "stop",         "Stop after first step");
+
+	parser.addOption(micmacOption);
+	parser.addOption(cliOption);
+	parser.addOption(mergeOption);
+	parser.addOption(normalsOption);
+
 	parser.addOption(interactiveOption);
-
-	QCommandLineOption verboseOption(QStringList() << "v" << "verbose", "Enable verbose output");
 	parser.addOption(verboseOption);
-
-	QCommandLineOption debugOption(QStringList() << "d" << "debug", "Enable debug output");
 	parser.addOption(debugOption);
+	parser.addOption(stepOption);
+	parser.addOption(stopOption);
+
 
 	//Using DefCor for malt_mec function, which indicates the level of correlation between pixels
 	//higher values ​​of DefCor force a stronger correlation between adjacent pixels, which might improve spatial coherence in reconstructed images, but reduce detail.
 	//Too high a value could cause excessive smoothness between pixels.
-	QCommandLineOption defCorOption(QStringList() << "c" << "DefCor", "Specifies the correlation between pixels (DefCor parameter)",
+	QCommandLineOption defCorOption(QStringList()      << "c" << "DefCor", "Specifies the correlation between pixels (DefCor parameter)",
 									"Higher values increase pixel correlation. Default is 0.2", "0.2");
 	parser.addOption(defCorOption);
 	//A higher value for Regul might impose greater smoothing or stability,
 	//while lower values ​​would allow for more variability and detail, but might result in greater sensitivity to noise.
-	QCommandLineOption regulOption(QStringList() << "r" << "Regul", "Sets the regularization parameter (Regul)",
+	QCommandLineOption regulOption(QStringList()       << "r" << "Regul", "Sets the regularization parameter (Regul)",
 													"Regul check the amount of smoothing applied during the orthorectification process. Default is 0.05", "0.05");
 	parser.addOption(regulOption);
 
-	QCommandLineOption light3dOption(QStringList() << "3" << "Light3d", "Sets the regularization parameter ", "help", "");
+	QCommandLineOption light3dOption(QStringList()     << "3" << "Light3d", "Sets the regularization parameter ", "help", "");
 	parser.addOption(light3dOption);
-
-	QCommandLineOption stepOption(QStringList() << "s" << "step",
-										 "starting step (rti, tapioca, schnaps, tapas, apericloud, orthoplane, tarama, malt_mec,"
-										 "c3dc, depthmap, malt_ortho, jpg)", "rti");
-	parser.addOption(stepOption);
-
-
-	QCommandLineOption stopOption(QStringList() << "S" << "stop",
-								  "stop after first step");
-	parser.addOption(stopOption);
-
 
 	// Process the actual command line arguments given by the user
 	parser.process(app);
@@ -98,9 +100,9 @@ int main(int argc, char *argv[])
 	QString light3d = parser.value(light3dOption);
 
 	bool interactive = parser.isSet(interactiveOption);
-	bool stop = parser.isSet(stopOption);
-	bool verbose = parser.isSet(verboseOption);
-	bool debug = parser.isSet(debugOption);
+	bool stop        = parser.isSet(stopOption);
+	bool verbose     = parser.isSet(verboseOption);
+	bool debug       = parser.isSet(debugOption);
 
 	PanoBuilder::Steps startingStep = PanoBuilder::RTI;
 	bool steps = parser.isSet(stepOption);
@@ -127,15 +129,14 @@ int main(int argc, char *argv[])
 				}
 				startingStep = (PanoBuilder::Steps) s;
 			}
-			// builder.setMm3d("/home/ponchio/devel/micmac/bin/mm3d");
-			builder.setMm3d("/Users/erika/Desktop/micmac/bin/mm3d");
-		//builder.setMm3d("/home/erika/micmac/bin/mm3d");
-			//builder.setRelightCli("/home/ponchio/devel/relight/relight-cli/relight-cli");
-			builder.setRelightCli("/Users/erika/Desktop/projects/relight/relight-cli/relight-cli");
-		// builder.setRelightCli("/home/erika/relight/relight-cli/relight-cli");
-			//builder.setRelightMerge("/home/ponchio/devel/relight/relight-merge/relight-merge");
-			builder.setRelightMerge("/Users/erika/Desktop/projects/relight/build/relight-merge/relight-merge");
-		// builder.setRelightMerge("/home/erika/relight/relight-merge/relight-merge");
+
+			builder.setMm3d(parser.value(micmacOption));
+			builder.setRelightCli(parser.value(cliOption));
+			builder.setRelightMerge(parser.value(mergeOption));
+
+			//builder.setMm3d("/home/erika/micmac/bin/mm3d");
+			// builder.setRelightCli("/home/erika/relight/relight-cli/relight-cli");
+			// builder.setRelightMerge("/home/erika/relight/relight-merge/relight-merge");
 
 			builder.process(startingStep, stop);
 		}
