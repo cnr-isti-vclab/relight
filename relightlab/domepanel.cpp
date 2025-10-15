@@ -126,7 +126,6 @@ void DomePanel::setSphereSelected() {
 }
 
 void DomePanel::init() {
-	dome = qRelightApp->project().dome;
 	//TODO something more explicit than the dome label would be better.
 	setSphereSelected();
 	updateDomeList();
@@ -261,6 +260,8 @@ void DomePanel::loadLP(QString path) {
 }
 
 void DomePanel::loadDome(QString path) {
+	Dome &dome = qRelightApp->project().dome;
+
 	float imageWidth = dome.imageWidth;
 	Dome new_dome;
 	new_dome.load(path);
@@ -269,7 +270,6 @@ void DomePanel::loadDome(QString path) {
 		QMessageBox::warning(this, "Wrong number of lights (or images)",
 			"The number of lights must be the same as the number of checked images.");
 
-	Dome &dome = qRelightApp->project().dome;
 	dome = new_dome;
 
 	QFileInfo info(path);

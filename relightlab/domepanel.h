@@ -30,7 +30,6 @@ signals:
 	void useSpheres();
 
 private:
-	Dome dome;
 	QStringList dome_labels;
 	QStringList dome_paths;
 

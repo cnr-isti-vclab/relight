@@ -18,7 +18,13 @@ void DirectionsView::initFromDome(Dome &dome) {
 	qreal diameter = lightSize;
 
 	int count = 0;
-	for(Vector3f dir: dome.directions) {
+	std::vector<Vector3f> dirs;
+	switch(dome.lightConfiguration) {
+	case Dome::DIRECTIONAL: dirs = dome.directions; break;
+	case Dome::SPHERICAL: dirs = dome.positionsSphere; break;
+	case Dome::LIGHTS3D: dirs = dome.positions3d; break;
+	}
+	for(Vector3f dir: dirs) {
 		dir.normalize();
 		QGraphicsEllipseItem *e = scene.addEllipse(dir[0]*scale, -dir[1]*scale, diameter, diameter);
 		e->setToolTip(QString::number(count++));

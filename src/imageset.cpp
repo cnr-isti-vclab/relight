@@ -126,7 +126,6 @@ void ImageSet::initFromDome(Dome &dome) {
 			setLights(dome.directions, dome.lightConfiguration);
 		break;
 		case Dome::SPHERICAL:			
-			dome.updateSphereDirections();
 			setLights(dome.positionsSphere, dome.lightConfiguration);
 		break;
 		case Dome::LIGHTS3D:

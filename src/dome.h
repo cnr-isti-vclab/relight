@@ -48,7 +48,6 @@ public:
 	Dome();
 	Dome(const QString &filename) { load(filename); }
 	void fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens);
-	void updateSphereDirections();
 	void parseLP(const QString &lp_path);
 	//TODO: move savelp here from project
 	//void saveLP(const QString &lp_path);
