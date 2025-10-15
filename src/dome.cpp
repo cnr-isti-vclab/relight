@@ -10,8 +10,22 @@
 #include <QList>
 #include <QFile>
 
+#include <Eigen/Dense>
+
 using namespace std;
 using namespace Eigen;
+
+static float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, const Vector3f &center, float radius) {
+	float a = direction.norm();
+	float b = direction.dot(origin - center)*2.0f;
+	float c = center.squaredNorm() + origin.squaredNorm() + center.dot(origin)*2.0f - radius*radius;
+
+	float det = b*b - 4.0f*a*c;
+	if(det <= 0)
+		return 0;
+	float d = (-b + sqrt(det))/(2.0f*a);
+	return d;
+}
 
 Dome::Dome() {}
 
@@ -47,39 +61,105 @@ QJsonArray toJson(std::vector<Color3f> &values) {
 	}
 	return jvalues;
 }
-void Dome::updateSphereDirections() {
-	positionsSphere.resize(directions.size());
-	for(size_t i = 0; i < directions.size(); i++) {
-		Vector3f &p = positionsSphere[i] = directions[i];
-		p *= domeDiameter/2.0;
-		p[2] += verticalOffset;
-	}
-	positions3d = positionsSphere;
-}
 
+//rename in recompute directions.
 void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens) {
-	switch(lightConfiguration) {
-	case Dome::DIRECTIONAL:
-		computeDirections(images, spheres, lens, directions);
-		break;
-	case Dome::SPHERICAL:
-		computeDirections(images, spheres, lens, directions);
-		updateSphereDirections();
-		break;
-	case Dome::LIGHTS3D:
-		computeParallaxPositions(images, spheres, lens, positions3d);
-		directions = positions3d;
-		positionsSphere.resize(directions.size());
-		for(size_t i = 0; i < directions.size(); i++) {
-			float len = directions[i].norm();
-			directions[i] /= len;
-			positionsSphere[i] = positions3d[i];
-			positionsSphere[i][2] -= verticalOffset;
-			len = positionsSphere[i].norm();
-			positionsSphere[i] *= domeDiameter/(2.0f*len);
-			positionsSphere[i][2] += verticalOffset;
+
+	if(spheres.size() == 0) {
+		throw QString("Light directions can be loaded from a .lp file or processing the spheres.");
+	}
+	//count valid images:
+	int valid_count = 0;
+	for(Image &img: images)
+		if(!img.skip)
+			valid_count++;
+
+	directions.clear();
+	directions.resize(valid_count, Vector3f(0, 0, 0));
+	positions3d.clear();
+	positions3d.resize(valid_count, Vector3f(0, 0, 0));
+	positionsSphere.clear();
+	positionsSphere.resize(valid_count, Vector3f(0, 0, 0));
+
+	vector<float> weights(valid_count, 0.0f);
+
+	for(auto sphere: spheres) {
+		sphere->computeDirections(lens);
+		if(sphere->directions.size() != images.size()) //directions for skipped images are still there (0, though)
+			throw QString("Sphere number of directions is different than images");
+
+		//if we have a focal length we can rotate the directions of the lights appropriately, unless in the center!
+		if(lens.focalLength && (sphere->center != QPointF(0, 0))) {
+			//we need to take into account the fact thet the sphere is not centered.
+			//we adjust by the angle with the view direction of the highlight.
+
+
+			float bx = sphere->center.x();
+			float by = sphere->center.y();
+			Vector3f viewDir = lens.viewDirection(bx, by);
+			viewDir.normalize();
+			float angle = acos(Vector3f(0, 0, -1).dot(viewDir));
+
+			Vector3f axis = Vector3f(viewDir[1], - viewDir[0], 0);
+			axis.normalize();
+
+			AngleAxisf rotation(angle, axis);
+			for(Vector3f &v: sphere->directions) {
+				//TODO remove this after verification.
+				Vector3f g = v*cos(angle) + axis.cross(v)*sin(angle) + axis *(axis.dot(v)) * (1 - cos(angle));
+				v = rotation * v;
+				assert(fabs(v[0] - g[0]) < 0.01);
+				assert(fabs(v[1] - g[1]) < 0.01);
+				assert(fabs(v[2] - g[2]) < 0.01);
+			}
 		}
-		break;
+		for(size_t i = 0; i < sphere->directions.size(); i++) {
+			Vector3f d = sphere->directions[i];
+			if(d.isZero())
+				continue;
+			directions[i] += d;
+			weights[i] += 1.0f; //actually weight should be the distance of the light to the center.
+		}
+	}
+
+	for(size_t i = 0; i < directions.size(); i++) {
+		if(weights[i] == 0)
+			continue;
+		directions[i] /= weights[i];
+	}
+
+	if(domeDiameter && imageWidth) {
+		for(auto sphere: spheres) {
+			//find intersection between reflection directions and sphere.
+			for(size_t i = 0; i < sphere->directions.size(); i++) {
+				Vector3f direction = sphere->directions[i];
+				if(direction == Vector3f(0, 0, 0))
+					continue;
+
+				direction.normalize();
+				Vector3f origin = lens.viewDirection(sphere->lights[i].x(), sphere->lights[i].y());
+				//bring it back to surface plane
+				origin[2] = 0;
+				//normalize by width
+				origin /= lens.ccdWidth();
+
+				float radius = (domeDiameter/imageWidth)/2;
+				Vector3f center(0, 0, verticalOffset/imageWidth);
+				float distance = lineSphereDistance(origin, direction, center, radius);
+				Vector3f position = origin + direction*distance;
+				direction = (position - Vector3f(0, 0, verticalOffset/imageWidth))/radius;
+				positionsSphere[i] += position;
+			}
+		}
+		for(size_t i = 0; i < positionsSphere.size(); i++) {
+			if(weights[i] == 0)
+				continue;
+			positionsSphere[i] /= weights[i];
+		}
+	}
+
+	if(spheres.size() > 1) {
+		computeParallaxPositions(images, spheres, lens, positions3d);
 	}
 }
 

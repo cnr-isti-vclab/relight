@@ -45,7 +45,7 @@ public:
 
 	std::vector<QPointF> border;        //2d pixels sampled on the border of the sphere.
 	std::vector<QPointF> lights;       //2d pixel of the light spot for this sphere.
-	std::vector<Eigen::Vector3f> directions;  //
+	std::vector<Eigen::Vector3f> directions;  //of the light relative to the center of the sphere.
 
 
 	Sphere(int n_lights = 0);

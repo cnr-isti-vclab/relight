@@ -411,6 +411,7 @@ void computeDirections(std::vector<Image> &images, std::vector<Sphere *> &sphere
 	for(Sphere *sphere: spheres) {
 		sphere->computeDirections(lens);
 	}
+	//for each sphere compute the directions relative to the center of the image and average them.
 	//compute just average direction
 	for(size_t i = 0; i < spheres[0]->lights.size(); i++) {
 		if(images[i].skip)

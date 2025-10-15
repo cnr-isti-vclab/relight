@@ -637,8 +637,8 @@ bool Project::loadLP(QString filename) {
 	dome.lightConfiguration = Dome::DIRECTIONAL;
 	return true;
 }
-
-float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, const Vector3f &center, float radius) {
+//used only in relight legacy app.
+static float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, const Vector3f &center, float radius) {
 	float a = direction.norm();
 	float b = direction.dot(origin - center)*2.0f;
 	float c = center.squaredNorm() + origin.squaredNorm() + center.dot(origin)*2.0f - radius*radius;

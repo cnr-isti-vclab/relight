@@ -114,7 +114,6 @@ void LightsGeometry::setSpherical(QAbstractButton *button) {
 	} else if(button == lights3d->radioButton()) {
 		dome.lightConfiguration = Dome::LIGHTS3D;
 	}
-
 	init();
 }
 
@@ -133,6 +132,7 @@ void LightsGeometry::init() {
 	image_width->setValue(dome.imageWidth);
 	radius->setValue(dome.domeDiameter/2.0);
 	vertical_offset->setValue(dome.verticalOffset);
+
 	directions_view->initFromDome(dome);
 }
 
