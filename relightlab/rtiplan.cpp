@@ -148,7 +148,7 @@ RtiPlanesRow::RtiPlanesRow(RtiParameters &parameters, QFrame *parent): RtiPlanRo
 void RtiPlanesRow::forceNPlanes(QList<int> n_planes) {
 	QStandardItemModel *model =	  qobject_cast<QStandardItemModel *>(nplanesbox->model());
 	Q_ASSERT(model != nullptr);
-	for(int i = 0; i < 8; i++) {
+	for(int i = 0; i < model->rowCount(); i++) {
 		QStandardItem *item = model->item(i);
 		bool disabled = !n_planes.contains(nplanes[i]);
 		item->setFlags(disabled ? item->flags() & ~Qt::ItemIsEnabled
@@ -160,14 +160,17 @@ void RtiPlanesRow::forceNPlanes(QList<int> n_planes) {
 
 
 void RtiPlanesRow::forceNPlanes(int n_planes) {
-	QStandardItemModel *model =	  qobject_cast<QStandardItemModel *>(nplanesbox->model());
+	QList<int> l;
+	l.push_back(n_planes);
+	forceNPlanes(l);
+	/*QStandardItemModel *model =	  qobject_cast<QStandardItemModel *>(nplanesbox->model());
 	Q_ASSERT(model != nullptr);
 	for(int i = 0; i < 7; i++) {
 		QStandardItem *item = model->item(i);
 		bool disabled = n_planes >= 0 && n_planes != nplanes[i];
 		item->setFlags(disabled ? item->flags() & ~Qt::ItemIsEnabled
 								: item->flags() | Qt::ItemIsEnabled);
-	}
+	}*/
 }
 
 void RtiPlanesRow::setNPlanes(int nplanes, bool emitting) {
