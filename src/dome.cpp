@@ -131,24 +131,26 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 	if(domeDiameter && imageWidth) {
 		for(auto sphere: spheres) {
 			//find intersection between reflection directions and sphere.
+			//we are working in normalized coordinates where imageWidth is 1.0
 			for(size_t i = 0; i < sphere->directions.size(); i++) {
 				Vector3f direction = sphere->directions[i];
 				if(direction == Vector3f(0, 0, 0))
 					continue;
 
 				direction.normalize();
+				//this is in focal ccd width coords.
 				Vector3f origin = lens.viewDirection(sphere->lights[i].x(), sphere->lights[i].y());
 				//bring it back to surface plane
 				origin[2] = 0;
 				//normalize by width
 				origin /= lens.ccdWidth();
 
-				float radius = (domeDiameter/imageWidth)/2;
+				float radius = (domeDiameter/2.0f)/imageWidth;
 				Vector3f center(0, 0, verticalOffset/imageWidth);
 				float distance = lineSphereDistance(origin, direction, center, radius);
 				Vector3f position = origin + direction*distance;
 				direction = (position - Vector3f(0, 0, verticalOffset/imageWidth))/radius;
-				positionsSphere[i] += position;
+				positionsSphere[i] += position*imageWidth;
 			}
 		}
 		for(size_t i = 0; i < positionsSphere.size(); i++) {

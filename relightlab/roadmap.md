@@ -15,10 +15,11 @@
 * BRDF interface rewamp
 * check for zero value on scale (or unreasonable ones)
 * change max value for scale.
-* change maxFixedZoom for Openlime.
+* warn user if switching project while working on align or spheres.
 
 ## Long term new features
 
+* Focu stackin: https://github.com/PetteriAimonen/focus-stack
 * Normals: Robust photometric stereo (https://people.eecs.berkeley.edu/~yima/matrix-rank/Files/robust_stereo.pdf)
 * preprocessing files and caching
 * TIF/CR2/JPEGXL support
@@ -35,9 +36,7 @@
   the ecc algorithm works on pairs, we need bundle adjustment.
 
 ## Bugs
-* brdrf adds jpg to folder
-* downsampling doesn't work properly with crop
-* How HSH with 18 planes is possible? (missing 27?)
+* brdf adds jpg to folder
 * crop initialized with wrong handles size. (too small)
 * icons and font size on linux large screen are too small.
 * check for invalid inner circle when creating a sphere.
