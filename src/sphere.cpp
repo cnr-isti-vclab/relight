@@ -344,6 +344,16 @@ void Sphere::computeDirections(Lens &lens) {
 		float y = lights[i].y();
 		Vector3f dir = lens.viewDirection(x, y);
 
+		viewDir.normalize();
+		float angle = acos(Vector3f(0, 0, -1).dot(viewDir));
+
+		Vector3f axis = Vector3f(viewDir[1], - viewDir[0], 0);
+		if(axis.norm() == 0) //the sphere is in the center, no correction is needed
+			axis = Vector3f(1, 0, 0);
+		axis.normalize();
+
+		AngleAxisf rotation(angle, axis);
+
 		if(ellipse) {
 			Eigen::Vector2f diff = { x - center.x(), y - center.y() };
 			Eigen::Vector2f cradial = radial*diff.dot(radial); //find radial component;
@@ -354,16 +364,24 @@ void Sphere::computeDirections(Lens &lens) {
 			x = diff.x();
 			y = -diff.y();
 		} else {
-			x = (x - inner.left() - smallradius)/radius;
-			y = -(y - inner.top() - smallradius)/radius; //inverted y  coords
+			//x = (x - inner.left() - smallradius)/radius;
+			//y = -(y - inner.top() - smallradius)/radius; //inverted y  coords
+			x  = (x - center.x())/radius;
+			y  = -(y - center.y())/radius;
 		}
 
-		float d = sqrt(x*x + y*y);
-		float a = asin(d)*2;
+		x = std::min(max(x, -1.0f), 1.0f);
+		y = std::min(max(y, -1.0f), 1.0f);
+
+		//x, y is now the reflection spot in unit sphere coords, the direction is twice the angle.
 
 		//this takes into account large spheres
+		float d = sqrt(x*x + y*y);
+		float a = asin(d)*2; //double the angle for the reflection.
+
 		float delta = acos((viewDir.dot(dir))/(dir.norm() * viewDir.norm()));
-		a += delta;
+		a += delta; //add the angle between the center of the sphere and the reflection.
+
 		float r = sin(a);
 		x *= r/d;
 		y *= r/d;
@@ -371,7 +389,7 @@ void Sphere::computeDirections(Lens &lens) {
 		float z2 = std::min(1.0, std::max(0.0, (1.0 - x*x - y*y)));
 		float z = sqrt(z2);
 
-		directions[i] = Vector3f(x, y, z);
+		directions[i] = rotation * Vector3f(x, y, z);
 	}
 
 }

@@ -89,30 +89,7 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 			throw QString("Sphere number of directions is different than images");
 
 		//if we have a focal length we can rotate the directions of the lights appropriately, unless in the center!
-		if(lens.focalLength && (sphere->center != QPointF(0, 0))) {
-			//we need to take into account the fact thet the sphere is not centered.
-			//we adjust by the angle with the view direction of the highlight.
 
-
-			float bx = sphere->center.x();
-			float by = sphere->center.y();
-			Vector3f viewDir = lens.viewDirection(bx, by);
-			viewDir.normalize();
-			float angle = acos(Vector3f(0, 0, -1).dot(viewDir));
-
-			Vector3f axis = Vector3f(viewDir[1], - viewDir[0], 0);
-			axis.normalize();
-
-			AngleAxisf rotation(angle, axis);
-			for(Vector3f &v: sphere->directions) {
-				//TODO remove this after verification.
-				Vector3f g = v*cos(angle) + axis.cross(v)*sin(angle) + axis *(axis.dot(v)) * (1 - cos(angle));
-				v = rotation * v;
-				assert(fabs(v[0] - g[0]) < 0.01);
-				assert(fabs(v[1] - g[1]) < 0.01);
-				assert(fabs(v[2] - g[2]) < 0.01);
-			}
-		}
 		for(size_t i = 0; i < sphere->directions.size(); i++) {
 			Vector3f d = sphere->directions[i];
 			if(d.isZero())
@@ -146,6 +123,7 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 				origin /= lens.ccdWidth();
 
 				float radius = (domeDiameter/2.0f)/imageWidth;
+				//Here a small error could hide, because of the z of the sphere is not on the plane of the object.
 				Vector3f center(0, 0, verticalOffset/imageWidth);
 				float distance = lineSphereDistance(origin, direction, center, radius);
 				Vector3f position = origin + direction*distance;
