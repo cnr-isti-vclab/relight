@@ -31,8 +31,8 @@ public:
 	QString label;
 	QString notes;
 	std::vector<Eigen::Vector3f> directions;       //estimated infinite far away lights.
-	std::vector<Eigen::Vector3f> positionsSphere;  //3d positions if sphericals
-	std::vector<Eigen::Vector3f> positions3d;      //3d positions
+	std::vector<Eigen::Vector3f> positionsSphere;  //3d positions, in mm
+	std::vector<Eigen::Vector3f> positions3d;      //3d positions, in mm
 
 	//TODO rename
 	std::vector<Color3f> ledAdjust;  //multiply pixel valut to correct for led differences

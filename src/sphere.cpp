@@ -375,7 +375,7 @@ void Sphere::computeDirections(Lens &lens) {
 	}
 
 }
-
+//this is in normalized (image width is 1) coords
 Line Sphere::toLine(Vector3f dir, Lens &lens) {
 	Line line;
 	line.origin[0] = (center.x() - lens.width/2.0f)/lens.width;
@@ -431,13 +431,13 @@ void computeDirections(std::vector<Image> &images, std::vector<Sphere *> &sphere
 void computeParallaxPositions(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &positions) {
 	positions.clear();
 
+	if(spheres.size() < 2)
+		return;
+
 	for(Sphere *sphere: spheres)
 		sphere->computeDirections(lens);
 	
-	if(spheres.size() == 1) {
-		positions = spheres[0]->directions;
-		return;
-	}
+
 	//for each reflection, compute the lines and the best intersection, estimate the radiuus of the positions vertices
 	float radius = 0;
 	for(size_t i = 0; i < spheres[0]->directions.size(); i++) {
