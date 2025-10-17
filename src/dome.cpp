@@ -140,6 +140,9 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 
 	if(spheres.size() > 1) {
 		computeParallaxPositions(images, spheres, lens, positions3d);
+		float factor = imageWidth ? imageWidth*2.0f : 1.0f;
+		for(Vector3f &p: positions3d)
+			p *= factor;
 	}
 }
 

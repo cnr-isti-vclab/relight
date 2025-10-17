@@ -1,9 +1,8 @@
-#include <assert.h>
-
-#include <algorithm>
-
 #include "rtibuilder.h"
 #include "../src/lp.h"
+#include "../src/jpeg_decoder.h"
+#include "../src/jpeg_encoder.h"
+#include "../src/eigenpca.h"
 
 #include <QDir>
 #include <QFile>
@@ -17,17 +16,13 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QFuture>
 
-
-#include "../src/jpeg_decoder.h"
-#include "../src/jpeg_encoder.h"
-
-//#include "../src/pca.h"
-#include "../src/eigenpca.h"
-
 #include <Eigen/Core>
 
+#include <algorithm>
 #include <set>
 #include <iostream>
+
+#include <assert.h>
 #include <math.h>
 
 using namespace std;

@@ -12,6 +12,7 @@
 #include <Eigen/Eigenvalues>
 
 #include <iostream>
+#include <algorithm>
 #include <math.h>
 #include <assert.h>
 
@@ -271,7 +272,7 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 
 	if(!update_positions)
 		return;
-	
+
 
 	if(max_luma_pixel < 127) {
 		//highlight in the mid greys? probably all the sphere is in shadow.
@@ -304,7 +305,7 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 				QRgb c = img.pixel(x, y);
 				int g = qGray(c);
 				if(g < threshold) continue;
-				
+
 				newbari += QPointF(x*double(g), y*double(g));
 				weight += g;
 			}
@@ -318,6 +319,7 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 	lights[n] = bari;
 }
 
+//compute light directions relative to the sphere center from the highlights.
 void Sphere::computeDirections(Lens &lens) {
 
 	Eigen::Vector2f radial;
@@ -327,7 +329,7 @@ void Sphere::computeDirections(Lens &lens) {
 		major.normalize();
 		radial = { center.x() - lens.width/2.0f, center.y() - lens.height/2.0f};
 		radial.normalize();
-//		float deviation = 180*acos(fabs(major.dot(radial)))/M_PI;
+		//		float deviation = 180*acos(fabs(major.dot(radial)))/M_PI;
 	}
 
 
@@ -364,8 +366,6 @@ void Sphere::computeDirections(Lens &lens) {
 			x = diff.x();
 			y = -diff.y();
 		} else {
-			//x = (x - inner.left() - smallradius)/radius;
-			//y = -(y - inner.top() - smallradius)/radius; //inverted y  coords
 			x  = (x - center.x())/radius;
 			y  = -(y - center.y())/radius;
 		}
@@ -398,22 +398,89 @@ Line Sphere::toLine(Vector3f dir, Lens &lens) {
 	Line line;
 	line.origin[0] = (center.x() - lens.width/2.0f)/lens.width;
 	line.origin[1] = (center.y() - lens.height/2.0f)/lens.width;
+	line.origin[2] = 0;
 	line.direction = dir;
 	return line;
 }
 
+/*
+
+// debug for parallax
+static inline float pointLineDistance(const Line& line, const Eigen::Vector3f& p) {
+	Eigen::Vector3f o(line.origin[0], line.origin[1], line.origin[2]);
+	Eigen::Vector3f u(line.direction[0], line.direction[1], line.direction[2]);
+
+	float n = u.norm();
+	if (n < 1e-12f) {
+		// Degenerate line: treat it as a point at 'o'
+		return (p - o).norm();
+	}
+	u /= n;
+
+	Eigen::Vector3f r = p - o;
+	Eigen::Vector3f perp = r - u * r.dot(u); // (I - uu^T) r
+	return perp.norm();
+}
+
+static inline float distanceSum(std::vector<Line> &lines, const Eigen::Vector3f& p) {
+	float d = 0;
+	for(Line &line: lines) {
+		float r = pointLineDistance(line, p);
+		d += r*r;
+	}
+	return sqrt(d/lines.size());
+}
+
+void verify(std::vector<Line> &lines, Vector3f pos) {
+	Vector3f best;
+	float best_dist = 1e20;
+	for(float x = -1; x <= 1; x += 0.1) {
+		for(float y = -1; y <= 1; y += 0.1) {
+			for(float z = -1; z <= 1; z+= 0.1) {
+				Vector3f p(x, y, z);
+				float d = distanceSum(lines, p);
+				cout << "D: " << d << " pos: " << p[0] << " " << p[1] << " " << p[2] << endl;
+
+				if(d < best_dist) {
+					best_dist = d;
+					best = p;
+				}
+			}
+		}
+	}
+	cout << "Distance: " << best_dist << " pos: " << best[0] << " " << best[1] << " " << best[2] << endl;
+
+	cout << "Vs: " << distanceSum(lines, pos) << endl;
+}
+*/
+
 //find the intersection of the lines using least squares approximation.
 Vector3f intersection(std::vector<Line> &lines) {
-	Eigen::MatrixXd A(lines.size(), 3);
-	Eigen::VectorXd B(lines.size());
-	for(size_t i = 0; i < lines.size(); i++) {
-		A(i, 0) = lines[i].direction[0];
-		A(i, 1) = lines[i].direction[1];
-		A(i, 2) = lines[i].direction[2];
-		B(i) = lines[i].origin.dot(lines[i].direction);
+	using Mat3 = Eigen::Matrix3d;
+	using Vec3 = Eigen::Vector3d;
+
+	Mat3 M = Mat3::Zero();
+	Vec3 b = Vec3::Zero();
+
+	for (const auto &L : lines) {
+		Vec3 u(L.direction[0], L.direction[1], L.direction[2]);
+		double n = u.norm();
+		if (n < 1e-12) continue;       // skip degenerate directions
+		u /= n;
+
+		Vec3 o(L.origin[0], L.origin[1], L.origin[2]);
+		Mat3 P = Mat3::Identity() - u * u.transpose(); // projects onto plane ⟂ to u
+
+		M += P;
+		b += P * o;
 	}
-	Eigen::VectorXd X = A.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(B);
-	return Vector3f(X[0], X[1], X[2]);
+
+	// Tikhonov regularization for near-parallel sets
+	const double lambda = 1e-9;
+	M += lambda * Mat3::Identity();
+
+	Vec3 x = M.ldlt().solve(b);
+	return Vector3f(float(x[0]), float(x[1]), float(x[2]));
 }
 
 //estimate light directions relative to the center of the image.
@@ -445,6 +512,8 @@ void computeDirections(std::vector<Image> &images, std::vector<Sphere *> &sphere
 	}
 }
 
+
+//move this stuff in Dome.
 //estimate light positions using parallax (image width is the unit).
 void computeParallaxPositions(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &positions) {
 	positions.clear();
@@ -454,10 +523,10 @@ void computeParallaxPositions(std::vector<Image> &images, std::vector<Sphere *> 
 
 	for(Sphere *sphere: spheres)
 		sphere->computeDirections(lens);
-	
+
 
 	//for each reflection, compute the lines and the best intersection, estimate the radiuus of the positions vertices
-	float radius = 0;
+	vector<float> radia;
 	for(size_t i = 0; i < spheres[0]->directions.size(); i++) {
 		if(images[i].skip)
 			continue;
@@ -468,10 +537,14 @@ void computeParallaxPositions(std::vector<Image> &images, std::vector<Sphere *> 
 			lines.push_back(sphere->toLine(sphere->directions[i], lens));
 		}
 		Vector3f position = intersection(lines);
-		radius += position.norm();
+
+		radia.push_back(position.norm());
 		positions.push_back(position);
 	}
-	radius /= spheres[0]->directions.size();
+	//find median
+	size_t m = radia.size()/2;
+	std::nth_element(radia.begin(), radia.begin() + m, radia.end());
+	float radius  = radia[m];
 	//if some directions is too different from the average radius, we bring the direction closer to the average.
 	float threshold = 0.1;
 	for(Vector3f &dir: positions) {
@@ -479,6 +552,8 @@ void computeParallaxPositions(std::vector<Image> &images, std::vector<Sphere *> 
 		if(fabs(d - radius) > threshold*radius) {
 			dir *= radius/d;
 		}
+		if(dir[2] < 0) //might be flipped for nearly paralle directions.
+			dir *= -1;
 	}
 }
 
