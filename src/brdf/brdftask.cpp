@@ -81,7 +81,7 @@ void BrdfTask::run() {
 			uint32_t idx = i * 3 * imageset.width;
 			float* data = &albedo[idx];
 
-			MedianWorker *task = new MedianWorker(parameters, i, line, data, imageset, lens);
+			AlbedoWorker *task = new AlbedoWorker(parameters, i, line, data, imageset, lens);
 
 			std::function<void(void)> run = [this, task](void)->void {
 				task->run();

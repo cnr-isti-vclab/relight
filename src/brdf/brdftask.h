@@ -38,10 +38,10 @@ public:
 
 };
 
-class MedianWorker
+class AlbedoWorker
 {
 public:
-	MedianWorker(BrdfParameters _parameters, int _row, const PixelArray& toProcess, float* _albedo, ImageSet &imageset, Lens &_lens) :
+	AlbedoWorker(BrdfParameters _parameters, int _row, const PixelArray& toProcess, float* _albedo, ImageSet &imageset, Lens &_lens) :
 		parameters(_parameters), row(_row), m_Row(toProcess), albedo(_albedo), m_Imageset(imageset) {
 		m_Row.resize(toProcess.npixels(), toProcess.nlights);
 		for(size_t i = 0; i < m_Row.size(); i++)
@@ -53,14 +53,24 @@ public:
 		assert(nth >= 0 && nth < m_Row.nlights);
 		for(size_t i = 0; i < m_Row.size(); i++) {
 			Pixel &p = m_Row[i];
-			//separate components
-			std::vector<float> c(p.size());
-			for(int k = 0; k < 3; k++) {
-				for(int j = 0; j < p.size(); j++) {
-					c[j] = p[j][k];
+			if(parameters.albedo == BrdfParameters::MEDIAN) {
+				//separate components
+				std::vector<float> c(p.size());
+				for(int k = 0; k < 3; k++) {
+					for(size_t j = 0; j < p.size(); j++) {
+						c[j] = p[j][k];
+					}
+					std::nth_element(c.begin(), c.begin() + nth, c.end());
+					albedo[i*3 + k] =  c[nth];
 				}
-				std::nth_element(c.begin(), c.begin() + nth, c.end());
-				albedo[i*3 + k] =  c[nth];
+			} else if(parameters.albedo == BrdfParameters::MEAN) {
+				for(int k = 0; k < 3; k++) {
+					albedo[i*3 + k] = 0.0f;
+					for(size_t j = 0; j < p.size(); j++) {
+						albedo[i*3 + k] += p[j][k];
+					}
+					albedo[i*3 + k] /= p.size();
+				}
 			}
 		}
 	}

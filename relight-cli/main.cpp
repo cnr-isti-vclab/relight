@@ -397,7 +397,7 @@ int main(int argc, char *argv[]) {
 	if(skip_rti) {
 
 		try {
-			QFileInfo info(input.c_str());
+			QFileInfo info(output.c_str());
 			QString folder;
 			QString normals_filename;
 			QString albedo_filename;
@@ -411,7 +411,7 @@ int main(int argc, char *argv[]) {
 				normals_filename = info.fileName();
 				albedo_filename = info.fileName();
 			}
-			QDir dir(folder);
+			QDir dir(input.c_str());
 
 			//TODO: refactor this!
 			QStringList lp_ext;
@@ -429,7 +429,7 @@ int main(int argc, char *argv[]) {
 				crop.setRect(QRect(builder.crop[0], builder.crop[1], builder.crop[2], builder.crop[3]));
 			}
 
-			if(builder.savemeans || builder.savemeans) {
+			if(builder.savemeans || builder.savemedians) {
 				//image_set.saveMean(output.c_str(), builder.quality);
 				BrdfTask brdf;
 				brdf.initFromFolder(input.c_str(), dome, crop);
