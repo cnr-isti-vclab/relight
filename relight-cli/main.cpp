@@ -397,7 +397,21 @@ int main(int argc, char *argv[]) {
 	if(skip_rti) {
 
 		try {
-			QDir dir(input.c_str());
+			QFileInfo info(input.c_str());
+			QString folder;
+			QString normals_filename;
+			QString albedo_filename;
+			QString ext = ".jpg";
+			if(info.isDir()) {
+				folder = input.c_str();
+				albedo_filename = "normals.jpg";
+				albedo_filename = "albedo.jpg";
+			} else {
+				folder = info.absolutePath();
+				normals_filename = info.fileName();
+				albedo_filename = info.fileName();
+			}
+			QDir dir(folder);
 
 			//TODO: refactor this!
 			QStringList lp_ext;
@@ -415,28 +429,25 @@ int main(int argc, char *argv[]) {
 				crop.setRect(QRect(builder.crop[0], builder.crop[1], builder.crop[2], builder.crop[3]));
 			}
 
-			if(builder.savemeans) {
+			if(builder.savemeans || builder.savemeans) {
 				//image_set.saveMean(output.c_str(), builder.quality);
 				BrdfTask brdf;
-				brdf.parameters.albedo = BrdfParameters::MEAN;
-				brdf.parameters.path = "means.png";
+				brdf.initFromFolder(input.c_str(), dome, crop);
+				brdf.parameters.albedo = builder.savemeans ? BrdfParameters::MEAN : BrdfParameters::MEDIAN;
+				brdf.parameters.path = folder;
+				brdf.parameters.albedo_path = albedo_filename;
 				brdf.run();
 			}
 
-			if(builder.savemedians) {
-				//image_set.saveMean(output.c_str(), builder.quality);
-				BrdfTask brdf;
-				brdf.parameters.path = "medians.png";
-				brdf.run();
-
-			}
 			if(builder.savenormals) {
 				NormalsTask normals;
 
 				normals.initFromFolder(input.c_str(), dome, crop);
-				normals.parameters.path = "normals.png";
+				normals.parameters.path = folder;
+				normals.parameters.basename = normals_filename.mid(0, -4);
 				normals.run();
 			}
+
 		} catch(QString error) {
 			cerr << qPrintable(error) << endl;
 			return 1;
