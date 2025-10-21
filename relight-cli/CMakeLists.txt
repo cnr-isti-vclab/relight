@@ -27,6 +27,22 @@ SET(HEADERS
 	../src/sphere.h
 	../src/lens.h
 	../src/crop.h
+	../src/brdf/brdftask.h 
+	../external/assm/algorithms/DifferentialGeometry.h
+	../external/assm/algorithms/Integration.h
+	../external/assm/algorithms/PhotometricRemeshing.h
+	../external/assm/algorithms/Rasterizer.h
+	../external/assm/algorithms/ScreenDifferentialGeometry.h
+	../external/assm/algorithms/ScreenMeshing.h
+	../external/assm/algorithms/ScreenRemeshing.h
+	../external/assm/algorithms/Triangulation.h
+	../src/normals/bni_normal_integration.h
+	../src/normals/fft_normal_integration.h
+	../src/normals/pocketfft.h
+	../src/normals/flatnormals.h
+	../src/normals/normals_parameters.h
+	../src/normals/normalstask.h
+	../src/task.h
 )
 
 SET(SOURCES
@@ -44,6 +60,18 @@ SET(SOURCES
 	../src/sphere.cpp
 	../src/crop.cpp
 	../src/cli/convert_rti.cpp
+	../src/brdf/brdftask.cpp
+	../external/assm/SurfaceMesh.cpp
+	../external/assm/algorithms/DifferentialGeometry.cpp
+	../external/assm/algorithms/Rasterizer.cpp
+	../external/assm/algorithms/ScreenRemeshing.cpp
+	../external/assm/algorithms/Triangulation.cpp
+	../src/normals/bni_normal_integration.cpp
+	../src/normals/fft_normal_integration.cpp
+	../src/normals/flatnormals.cpp
+	../src/normals/normals_parameters.cpp
+	../src/normals/normalstask.cpp
+	../src/task.cpp
 )
 
 
@@ -51,8 +79,11 @@ SET(SOURCES
 add_executable(relight-cli ${HEADERS} ${SOURCES})
 target_include_directories(
 	relight-cli PUBLIC 
+		TIFF::TIFF
 		${CMAKE_CURRENT_SOURCE_DIR}
-		${JPEG_INCLUDE_DIR})
+		${JPEG_INCLUDE_DIR}
+		../external
+)
 
 if(Eigen3_FOUND)
 	target_link_libraries(relight-cli PUBLIC Eigen3::Eigen)
@@ -64,6 +95,7 @@ endif()
 target_link_libraries(
 	relight-cli PUBLIC
 		${JPEG_LIBRARIES}
+		TIFF::TIFF
 		OpenMP::OpenMP_CXX
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui

@@ -53,7 +53,8 @@ void NormalsTask::initFromProject(Project &project) {
 void NormalsTask::initFromFolder(const char *folder, Dome &dome, Crop &crop) {
 	imageset.initFromFolder(folder);
 	imageset.initFromDome(dome);
-	imageset.setCrop(crop);
+	if(crop.width() > 0)
+		imageset.setCrop(crop);
 	imageset.rotateLights(-crop.angle);
 }
 
@@ -77,6 +78,16 @@ void invertZ(vector<float> &z) {
 void NormalsTask::run() {
 	status = RUNNING;
 	label = parameters.summary();
+
+	QDir destination(parameters.path);
+	if(!destination.exists()) {
+		if(!QDir().mkpath(parameters.path)) {
+			error = "Could not create brdf folder.";
+			status = FAILED;
+			return;
+		}
+	}
+
 
 	function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
@@ -211,7 +222,7 @@ void NormalsTask::run() {
 		if(!proceed)
 			return;
 		//TODO move to saveply
-		QString filename = output.left(output.size() -4) + ".ply";
+		QString filename = destination.filePath(parameters.basename + ".ply");
 
 		assm(filename, normals, width, height, parameters.assm_error);
 
@@ -243,21 +254,20 @@ void NormalsTask::run() {
 		//TODO remove extension properly
 
 		progressed("Saving surface...", 99);
-		QString basename = output.left(output.size() -4);
-		QString filename = basename + ".ply";
+		QString filename = destination.filePath(parameters.basename + ".ply");
 		if(!savePly(filename, width, height, z)) {
 			error = "Failed to save .ply to: " + filename;
 			status = FAILED;
 			return;
 		}
 		invertZ(z);
-		filename = basename + ".tiff";
+		filename = destination.filePath(parameters.basename + ".tiff");
 		if(!saveTiff(filename, width, height, z)) {
 			error = "Failed to save depth map to: " + filename;
 			status = FAILED;
 			return;
 		}
-		filename = basename + "_normalized.tiff";
+		filename = destination.filePath(parameters.basename + "_normalized.tiff");
 		if(!saveTiff(filename, width, height, z, true)) {
 			error = "Failed to save depth map to: " + filename;
 			status = FAILED;

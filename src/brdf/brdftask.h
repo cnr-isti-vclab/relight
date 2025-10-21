@@ -9,12 +9,13 @@
 class BrdfParameters {
 public:
 	QString input_path;
-	enum AlbedoMethod { NONE, MEDIAN };
+	enum AlbedoMethod { NONE, MEDIAN, MEAN };
 	AlbedoMethod albedo = MEDIAN;
 	float median_percentage = 66;
 
 	int quality = 95;
-	QString path;
+	QString path; //this is a generic folder with stock names
+	QString albedo_path; //
 
 	QString summary();
 };
@@ -26,8 +27,6 @@ public:
 
 	ImageSet imageset;
 	Crop crop;
-	//QSize img_size;
-
 	Lens lens;
 	float pixelSize = 0.0f;
 
@@ -35,6 +34,8 @@ public:
 
 	void setParameters(BrdfParameters &param);
 	void initFromProject(Project &project);
+	void initFromFolder(const char *folder, Dome &dome, Crop &crop);
+
 };
 
 class MedianWorker
@@ -66,7 +67,7 @@ public:
 
 private:
 	BrdfParameters parameters;
-	int row;
+	int row; //unused at the moment but miht be used at a later time.
 	PixelArray m_Row;
 
 	float *albedo = nullptr;

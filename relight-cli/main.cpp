@@ -1,4 +1,7 @@
 #include "../src/cli/rtibuilder.h"
+#include "../src/normals/normalstask.h"
+#include "../src/brdf/brdftask.h"
+#include "../src/lp.h"
 
 #include "../src/getopt.h"
 extern int opterr;
@@ -25,7 +28,7 @@ void help() {
 	cout << "       relight-cli [-q] <input.json> [output.ptm]\n\n";
 	cout << "\tinput folder containing a .lp or .dome with number of photos and light directions\n";
 	cout << "\toptional output folder (default ./)\n\n";
-	cout << "\t  -b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear\n";
+	cout << "\t  -b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear, skip\n";
 	cout << "\t  -p <int>  : number of planes (default: 9)\n";
 	cout << "\t  -q <int>  : jpeg quality (default: 95)\n";
 	cout << "\t  -y <int>  : number of Y planes in YCC\n\n";
@@ -98,6 +101,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	RtiBuilder builder;
+	bool skip_rti = false;
 	Dome dome;
 	int quality = 95;
 	bool evaluate_error = false;
@@ -196,6 +200,9 @@ int main(int argc, char *argv[]) {
 			} else if(b == "dmd") {
 				builder.colorspace = RtiBuilder::RGB;
 				builder.type = RtiBuilder::DMD;
+
+			} else if(b == "skip") {
+				skip_rti = true;
 
 			} else {
 				cerr << "Unknown basis type: " << optarg << " (pick rbf, ptm, lptm, hsh, yrbf or bilinear!)\n" << endl;
@@ -384,6 +391,56 @@ int main(int argc, char *argv[]) {
 			return -1;
 		}
 		test(input, redrawdir.toStdString(), light);
+		return 0;
+	}
+
+	if(skip_rti) {
+
+		try {
+			QDir dir(input.c_str());
+
+			//TODO: refactor this!
+			QStringList lp_ext;
+			lp_ext << "*.lp";
+			QStringList lps = dir.entryList(lp_ext);
+			if(lps.size() == 0)
+				throw QString("Could not find a .lp file in the folder");
+
+			Dome dome;
+			vector<QString> filenames;
+			parseLP(dir.filePath(lps[0]), dome.directions, filenames);
+
+			Crop crop;
+			if(builder.crop[2] != 0) { //no crop specitied
+				crop.setRect(QRect(builder.crop[0], builder.crop[1], builder.crop[2], builder.crop[3]));
+			}
+
+			if(builder.savemeans) {
+				//image_set.saveMean(output.c_str(), builder.quality);
+				BrdfTask brdf;
+				brdf.parameters.albedo = BrdfParameters::MEAN;
+				brdf.parameters.path = "means.png";
+				brdf.run();
+			}
+
+			if(builder.savemedians) {
+				//image_set.saveMean(output.c_str(), builder.quality);
+				BrdfTask brdf;
+				brdf.parameters.path = "medians.png";
+				brdf.run();
+
+			}
+			if(builder.savenormals) {
+				NormalsTask normals;
+
+				normals.initFromFolder(input.c_str(), dome, crop);
+				normals.parameters.path = "normals.png";
+				normals.run();
+			}
+		} catch(QString error) {
+			cerr << qPrintable(error) << endl;
+			return 1;
+		}
 		return 0;
 	}
 

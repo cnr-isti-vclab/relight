@@ -21,7 +21,6 @@ public:
 	Lens lens;
 	float pixelSize = 0.0f;
 
-
 	virtual void run() override;
 
 	void setParameters(NormalsParameters &param);

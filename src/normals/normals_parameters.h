@@ -26,7 +26,8 @@ public:
 	int surface_height = 0;
 
 	int quality = 95;
-	QString path;
+	QString path = "./"; //destination folder, create if not existing.
+	QString basename = "normals"; //filename for normals  img.
 
 	QString summary();
 };

@@ -29,6 +29,15 @@ void BrdfTask::initFromProject(Project &project) {
 	pixelSize = project.pixelSize;
 }
 
+
+void BrdfTask::initFromFolder(const char *folder, Dome &dome, Crop &crop) {
+	imageset.initFromFolder(folder);
+	imageset.initFromDome(dome);
+	if(crop.width() > 0)
+		imageset.setCrop(crop);
+	imageset.rotateLights(-crop.angle);
+}
+
 void BrdfTask::setParameters(BrdfParameters &param) {
 	parameters = param;
 	label = parameters.summary();
@@ -103,7 +112,7 @@ void BrdfTask::run() {
 			img.setDotsPerMeterX(dotsPerMeter);
 			img.setDotsPerMeterY(dotsPerMeter);
 		}
-		bool saved = img.save(destination.filePath("albedo.jpg"), "jpg", parameters.quality);
+		bool saved = img.save(destination.filePath(parameters.albedo_path), "jpg", parameters.quality);
 		if(!saved) {
 			status = FAILED;
 			return;
