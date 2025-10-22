@@ -29,16 +29,16 @@ int main(int argc, char *argv[])
 	parser.addHelpOption();
 	parser.addPositionalArgument("folder", "path folder containing rti datasets");
 
-	QCommandLineOption micmacOption(QStringList()      << "M" << "micmac",          "Micmac mm3d path",     "/Users/erika/Desktop/micmac/bin");
-	QCommandLineOption cliOption(QStringList()         << "C" << "relight-cli",     "Relight-cli path",     ",Users/erika/Desktop/projects/relight/relight-cli/relight-cli");
-	QCommandLineOption mergeOption(QStringList()       << "G" << "relight-merge",   "Relight-merge path",   "/Users/erika/Desktop/projects/relight/relight-merge/relight-merge");
-	QCommandLineOption normalsOption(QStringList()     << "N" << "relight-normals", "Relight-normals path", "/Users/erika/Desktop/projects/relight/relight-normals/relight-normals");
+	QCommandLineOption micmacOption(QStringList()      << "M" << "micmac",          "Micmac mm3d path",     "micbin", "/Users/erika/Desktop/micmac/bin");
+	QCommandLineOption cliOption(QStringList()         << "C" << "relight-cli",     "Relight-cli path",     "clibin", ",Users/erika/Desktop/projects/relight/relight-cli/relight-cli");
+	QCommandLineOption mergeOption(QStringList()       << "G" << "relight-merge",   "Relight-merge path",   "mergebin", "/Users/erika/Desktop/projects/relight/relight-merge/relight-merge");
+	QCommandLineOption normalsOption(QStringList()     << "N" << "relight-normals", "Relight-normals path", "normalsbin", "/Users/erika/Desktop/projects/relight/relight-normals/relight-normals");
 
 	QCommandLineOption interactiveOption(QStringList() << "i" << "interactive",  "Open users interface");
 	QCommandLineOption verboseOption(QStringList()     << "v" << "verbose",      "Enable verbose output");
 	QCommandLineOption debugOption(QStringList()       << "d" << "debug",        "Enable debug output");
 	QCommandLineOption stepOption(QStringList()        << "s" << "step",
-								  "Starting step (rti, tapioca, schnaps, tapas, apericloud, orthoplane, tarama, malt_mec, c3dc, depthmap, malt_ortho, jpg)", "rti");
+								  "Starting step (means, tapioca, schnaps, tapas, apericloud, orthoplane, tarama, malt_mec, c3dc, rti, depthmap, malt_ortho, jpg)", "step");
 	QCommandLineOption stopOption(QStringList()        << "S" << "stop",         "Stop after first step");
 
 	parser.addOption(micmacOption);
@@ -104,7 +104,8 @@ int main(int argc, char *argv[])
 	bool verbose     = parser.isSet(verboseOption);
 	bool debug       = parser.isSet(debugOption);
 
-	PanoBuilder::Steps startingStep = PanoBuilder::RTI;
+
+
 	bool steps = parser.isSet(stepOption);
 	if (interactive && steps) {
 		cout << "Run in interactive mode" << endl;
@@ -120,16 +121,6 @@ int main(int argc, char *argv[])
 			builder.verbose = verbose;
 			builder.debug = debug;
 
-			if(steps){
-				QString step_name = parser.value(stepOption);
-				int s = builder.findStep(step_name);
-				if(s==-1){
-					cerr << "Unknown step: " << qPrintable(step_name) << endl;
-					return -1;
-				}
-				startingStep = (PanoBuilder::Steps) s;
-			}
-
 			builder.setMm3d(parser.value(micmacOption));
 			builder.setRelightCli(parser.value(cliOption));
 			builder.setRelightMerge(parser.value(mergeOption));
@@ -137,6 +128,17 @@ int main(int argc, char *argv[])
 			//builder.setMm3d("/home/erika/micmac/bin/mm3d");
 			// builder.setRelightCli("/home/erika/relight/relight-cli/relight-cli");
 			// builder.setRelightMerge("/home/erika/relight/relight-merge/relight-merge");
+
+			PanoBuilder::Steps  startingStep = PanoBuilder::MEANS;
+			if(steps) {
+				QString step_name = parser.value(stepOption);
+				int s = builder.findStep(step_name);
+				if(s == -1){
+					cerr << "Unknown step: " << qPrintable(step_name) << endl;
+					return -1;
+				}
+				startingStep = (PanoBuilder::Steps) s;
+			}
 
 			builder.process(startingStep, stop);
 		}

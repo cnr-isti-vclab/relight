@@ -343,7 +343,7 @@ void PanoBuilder::means(){
 		//output si salva dentro la dir datasets
 		QString relightCliPath = relight_cli_path;
 		QStringList arguments;
-		arguments <<"-b" << "skip" << "-m" << inputPath << outputPath;
+		arguments <<"-b" << "skip" << "-M" << inputPath << outputPath;
 		executeProcess(relightCliPath, arguments);
 
 		QString command = relightCliPath + " " + arguments.join(" ");
