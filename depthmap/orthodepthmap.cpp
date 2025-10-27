@@ -293,93 +293,6 @@ void OrthoDepthmap::beginIntegration(){
 		}
 		int step = 10;
 
-		/*int x1 = 720;
-		int x2 = 1111;
-		int y1 = 20;
-		int y2 = 504;
-
-		int y1 = 659;
-		int y2 = 1577;
-		int x1 = 883;
-		int x2 = 2145;*/
-		/*	int y1 = 504;
-		int y2 = 1111;
-		int x1 = 883;
-		int x2 = 1577;*/
-
-
-		/*	std::vector<float> elevation_section(width * height, 0.0f);
-
-		for (int y = y1; y <= y2; y += 1) {
-			for (int x = x1; x <= x2; x += 1) {
-
-				bool inside = (mask[x + y * width] == 1.0f);
-				if (!inside) continue;
-
-				elevation_section[x + y * width] = elevation[x + y * width];
-
-				if(((x % step) == 0) && ((y % step) == 0)) {
-					auto point = pixelToRealCoordinates(x, y, elevation[x + y * width]);
-					point_cloud.push_back(point);
-				}
-			}
-		}
-
-		Depthmap::saveTiff("quadrante.tif", elevation_section, width, height, 32);
-		std::ofstream csv("points.csv");
-		if (csv.is_open()) {
-			csv << "X,Y,Z\n";
-			for (auto &p : point_cloud) {
-				csv << p[0] << "," << p[1] << "," << p[2] << "\n";
-			}
-		}
-
-			for(int y = 0; y < height; y+= step) {
-			for(int x = 0; x < width; x += step) {
-				bool inside = (mask[x + y*width] == 1.0f);
-				if(!inside)
-					continue;
-				auto point = pixelToRealCoordinates(x, y, elevation[x + y*width]);
-				point_cloud.push_back(point);
-			}
-		}
-	}*/
-		/*struct Quadrant {
-			int x1, y1; // top-left
-			int x2, y2; // bottom-right
-			std::string name;
-		};
-
-		std::vector<Quadrant> quadrants = {
-			{720, 20, 1111, 504,  "quad1"},
-			{1111, 504, 1577, 883, "quad2"},
-			{1577, 659, 2145, 883, "quad3"}  // corretto quad3 con altezza "vera"
-		};
-
-		for (const auto& q : quadrants) {
-			int cropW = q.x2 - q.x1 + 1;
-			int cropH = q.y2 - q.y1 + 1;
-			std::vector<float> elevation_crop(width * height, 0.0f);
-
-			for (int y = 0; y < cropH; y++) {
-				for (int x = 0; x < cropW; x++) {
-					int srcX = q.x1 + x;
-					int srcY = q.y1 + y;
-					if (srcX < 0 || srcX >= width || srcY < 0 || srcY >= height) continue;
-
-					bool inside = (mask[srcX + srcY * width] == 1.0f);
-					if (!inside) continue;
-
-					elevation_crop[srcX + srcY * width] = elevation[srcX + srcY * width];
-				}
-			}
-
-			std::string filename = q.name + "_crop.tif";
-			Depthmap::saveTiff(filename.c_str(), elevation_crop, width, height, 32);
-			cout << "Salvato quadrante in " << filename
-				 << " (dim=" << cropW << "x" << cropH << ")" << endl;
-		}
-	}*/
 
 
 	}
@@ -392,68 +305,8 @@ void OrthoDepthmap::beginIntegration(){
 
 		elevation[i] = 0.0f;
 	}
-	/*std::vector<float> mask_copy = mask;
-
-	std::vector<Eigen::Vector2i> locations = {
-		{1025, 776},
-		//{1444, 847},
-		//{1413, 1010},
-		//{1081, 1018}
-	};
-
-	int holeW = 200;
-	int holeH = 200;
-
-	for (const auto& loc : locations) {
-		int cx = loc.x();
-		int cy = loc.y();
-
-		int x1 = cx - holeW / 2;
-		int y1 = cy - holeH / 2;
-		int x2 = cx + holeW / 2;
-		int y2 = cy + holeH / 2;
-
-		for (int yy = y1; yy <= y2; yy++) {
-			for (int xx = x1; xx <= x2; xx++) {
-				mask_copy[xx + yy * width] = 0.0f;
-			}
-		}
-	}
-
-	Depthmap::saveTiff("mask_region_200x200.tif", mask_copy, width, height, 1);
-*/
-	/*
-	int holeW = 50;
-	int holeH = 50;
-
-	int x1 = 800; // esempio top-left x
-	int y1 = 1100;  // esempio top-left y
-	int x2 = x1 + holeW;
-	int y2 = y1 + holeH;
-
-
-	// applico il buco (metto mask = 0 nella regione 50x50)
-	for (int yy = y1; yy < y2; yy++) {
-		for (int xx = x1; xx < x2; xx++) {
-			mask[xx + yy * width] = 0.0f;
-		}
-	}
-
-	*/
-	//foto von bilinear, se non funziona riduci le dimensione x4  con image magik a parte con for
-	// guarda quanto è un pixel. scali la depth anche dell rti, con image magik
-
-	//elevation.clear();
-	//elevation.resize(width * height, 0);
 	weights.clear();
 	weights.resize(width * height, 0);
-
-
-	/*for (int i = 0; i < width * height; ++i) {
-		if (mask[i] != 0.0f) {
-			weights[i] = 1.0f;
-		}
-	}*/
 
 }
 
@@ -461,6 +314,23 @@ void OrthoDepthmap::beginIntegration(){
 //  e un blending sulla maschera e salvare una copia dell'elevation
 // in modo tale che la depth Micmac(?) prenda la depth dell rti quando è 0.5 e quando è 0 prenda la depth del micmac così da riempire i punti.
 void OrthoDepthmap::endIntegration(){
+
+	// normalize elevation by weights
+	//fragni
+	for (size_t i = 0; i < elevation.size(); ++i) {
+		if (weights[i] > 0.0f)
+			elevation[i] /= weights[i];
+	}
+
+//fill holes in elevation (weight[i] == 0 means hole)  using laplacian. (see gaussiangrid)
+	{
+		GaussianGrid g;
+		float precision = 1e-4f; // o un valore più grande se vuoi convergenza più rapida
+		g.fillLaplacian(width, height, elevation, weights, precision);
+	}
+
+
+//	sbertezz.
 
 	for(size_t i =0; i < elevation.size(); i++){
 #ifdef PRESERVE_INTERIOR
@@ -606,7 +476,8 @@ void OrthoDepthmap::endIntegration(){
 		float blur_weight = blurred_mask[i]; // 0 = MicMac, 1 = RTI
 		if(weights[i] > 0.0f){
 			mask[i] = 1.0f;
-			elevation[i] /= weights[i];
+		//	sbarbugli leva questa riga che hai già normalizzato sopra.
+		//	elevation[i] /= weights[i];
 
 		}
 		else {
@@ -631,7 +502,7 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 		return;
 	}
 	//test
-	float z = point_cloud[0][2];
+	//float z = point_cloud[0][2];
 	//auto o = camera.camera.projectionToImage(Eigen::Vector3f(0, 0, z));
 	//auto u = camera.camera.projectionToImage(Eigen::Vector3f(1, 0, z));
 
@@ -644,7 +515,7 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 
 		Eigen::Vector3f realCoord = point_cloud[i];
 		float h = realCoord[2];
-		Eigen::Vector3f pixelCoord = realToPixelCoord(realCoord[0], realCoord[1], realCoord[2]);
+		//Eigen::Vector3f pixelCoord = realToPixelCoord(realCoord[0], realCoord[1], realCoord[2]);
 		// project from ortho plane to camera plane, hence the fixed z
 		//realCoord[2] = z;
 		Eigen::Vector3f imageCoords = camera.camera.projectionToImage(realCoord);
@@ -722,6 +593,7 @@ void OrthoDepthmap::integratedCamera(const CameraDepthmap& camera, const char *o
 			weights[ox+ oy * width] += w;
 		}
 	}
+
 	{
 		std::ofstream csv("integrated_points.csv");
 		if (csv.is_open()) {

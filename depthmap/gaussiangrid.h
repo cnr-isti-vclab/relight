@@ -24,7 +24,7 @@ public:
 									   int iterations, float thresh);
 	float bilinearInterpolation(float x, float y);
 	void computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &differences);
-	void fillLaplacian(float precision);
+	void fillLaplacian(int w, int h, std::vector<float> &values, std::vector<float> &weights, float precision);
 	void imageGrid(const char* filename);
 	//interpola la griglia per spostare la depthmap, serve per creare la funzione
 	float value(float x, float y);

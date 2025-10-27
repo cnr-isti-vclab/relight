@@ -29,10 +29,10 @@ int main(int argc, char *argv[])
 	parser.addHelpOption();
 	parser.addPositionalArgument("folder", "path folder containing rti datasets");
 
-	QCommandLineOption micmacOption(QStringList()      << "M" << "micmac",          "Micmac mm3d path",     "micbin", "/Users/erika/Desktop/micmac/bin");
-	QCommandLineOption cliOption(QStringList()         << "C" << "relight-cli",     "Relight-cli path",     "clibin", ",Users/erika/Desktop/projects/relight/relight-cli/relight-cli");
-	QCommandLineOption mergeOption(QStringList()       << "G" << "relight-merge",   "Relight-merge path",   "mergebin", "/Users/erika/Desktop/projects/relight/relight-merge/relight-merge");
-	QCommandLineOption normalsOption(QStringList()     << "N" << "relight-normals", "Relight-normals path", "normalsbin", "/Users/erika/Desktop/projects/relight/relight-normals/relight-normals");
+	QCommandLineOption micmacOption(QStringList()      << "M" << "micmac",          "Micmac mm3d path",     "micbin", "/home/erika/micmac/bin/mm3d");
+	QCommandLineOption cliOption(QStringList()         << "C" << "relight-cli",     "Relight-cli path",     "clibin", "/home/erika/relight/relight-cli/relight-cli");
+	QCommandLineOption mergeOption(QStringList()       << "G" << "relight-merge",   "Relight-merge path",   "mergebin", "/home/erika/relight/relight-merge/relight-merge");
+	QCommandLineOption normalsOption(QStringList()     << "N" << "relight-normals", "Relight-normals path", "normalsbin", "/home/erika/relight/relight-normals/relight-normals");
 
 	QCommandLineOption interactiveOption(QStringList() << "i" << "interactive",  "Open users interface");
 	QCommandLineOption verboseOption(QStringList()     << "v" << "verbose",      "Enable verbose output");

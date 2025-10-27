@@ -5,6 +5,7 @@
 #include <QProcess>
 #include <QFileInfo>
 #include <QImage>
+#include <QImageReader>
 #include <Eigen/Core>
 #include "exiftransplant.h"
 #include "orixml.h"
@@ -114,6 +115,7 @@ void PanoBuilder::exportMeans(){
 			if (!QFile::copy(meanPath, subDirName + ".jpg")) {
 				throw QString("Failed to copy %1 to %2").arg(meanPath).arg(subDirName);
 			}
+
 			cout << "Copying EXIF from " << qPrintable(dataset.absoluteFilePath(photo))
 				 << " to " << qPrintable(meanPath) << endl;
 			ExifTransplant exif;
@@ -333,27 +335,68 @@ void PanoBuilder::process(Steps starting_step, bool stop){
 void PanoBuilder::means(){
 	//1. iterare sulle sottodir di datasets
 	QStringList subDirNames = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-	for (const QString &subDirName : subDirNames) {
-		QDir currentSubDir(datasets_dir.filePath(subDirName));
+//itera su subdir prendere la prima img jpg e controlla che tute le dir abbiano la stessa risoluzione Qimage reader, w e h =0 se è 0 non confronto poi confronto tutti gli altri
+	QSize referenceSize(0, 0);
+	QString referenceFolder;
+	bool resolutionMismatch = false;
 
+	for (const QString &subDirName : subDirNames) {
+
+		QDir currentSubDir(datasets_dir.filePath(subDirName));
 		QString inputPath = currentSubDir.absolutePath();
 		QString outputPath = datasets_dir.filePath(subDirName + ".jpg");
+
+
+		QStringList imageFiles = currentSubDir.entryList(QStringList() << "*.jpg" << "*.JPG" << "*.png", QDir::Files);
+		if (imageFiles.isEmpty()) {
+			qWarning() << "No images found in folder:" << currentSubDir.absolutePath();
+			continue;
+		}
+
+		QString firstImagePath = currentSubDir.filePath(imageFiles.first());
+		QImageReader reader(firstImagePath);
+		QSize size = reader.size();
+		int w = size.width();
+		int h = size.height();
+
+		// --- Controllo risoluzione ---
+		if (w == 0 || h == 0) {
+			qWarning() << "Skipping invalid image (size 0):" << firstImagePath;
+		} else if (referenceSize.width() == 0 && referenceSize.height() == 0) {
+
+			referenceSize = size;
+			referenceFolder = subDirName;
+			cout << "Reference resolution set to " << w << "x" << h
+				 << " from folder " << qPrintable(referenceFolder) << endl;
+		} else if (size != referenceSize) {
+			resolutionMismatch = true;
+			cout << "WARNING: Resolution mismatch in folder "
+				 << qPrintable(subDirName)
+				 << " (" << w << "x" << h << "), expected "
+				 << referenceSize.width() << "x" << referenceSize.height()
+				 << endl;
+		}
 
 		//"relight-cli -b skip -m", input, output("output.jpg");
 		//output si salva dentro la dir datasets
 		QString relightCliPath = relight_cli_path;
-		QStringList arguments;
-		arguments <<"-b" << "skip" << "-M" << inputPath << outputPath;
+		QStringList arguments; arguments <<"-b" << "skip" << "-m" << inputPath << outputPath;
 		executeProcess(relightCliPath, arguments);
 
 		QString command = relightCliPath + " " + arguments.join(" ");
 		if (verbose) {
 			cout << "Running command: " << qPrintable(command) << endl;
 		}
-
+	}
+	if (resolutionMismatch) {
+		cout << "\nWARNING: Some datasets have images with different resolutions.\n"
+			 << "MicMac may fail during Tapas or AperiCloud.\n" << endl;
+	} else {
+		cout << "\nAll datasets have consistent image resolution." << endl;
 	}
 
 	//2. modifica l'export means dentro photogrammetry
+
 	exportMeans();
 }
 
@@ -547,7 +590,7 @@ void PanoBuilder::orthoplane(){
 	//M = (Rr0^-1 * diag(1, -1, -1)) )
 	Eigen::Matrix3d M = Rr0.transpose() * Ra0;
 
-	cout << "Matrice M = (Rr0^-1 * diag(1, -1, -1)): " << M << endl;
+	//cout << "Matrice M = (Rr0^-1 * diag(1, -1, -1)): " << M << endl;
 
 	oriXml.setOrientation(Ra0, Ca0);
 	QString savePath = oriAbsDir.filePath(xmlFiles[0]);
@@ -970,9 +1013,12 @@ void PanoBuilder::jpg() {
 		QString tifFilePath = orthoDir.filePath(tifFile);
 
 		QString baseName = tifFile.split(".").first();
-		QImage img;
-		if (!img.load(tifFilePath)) {
-			throw QString("Failed to load image: ").arg(tifFilePath);
+		QImageReader reader(tifFilePath);
+		QImageReader::setAllocationLimit(8000);
+
+		QImage img = reader.read();
+		if (img.isNull()) {
+			throw QString("Failed to load image: %1 error: %2").arg(tifFilePath).arg(reader.errorString());
 		}
 		QString jpgFileName = QString("%1.jpg").arg(baseName);
 		QString jpgFilePath = panoramaDir.filePath(jpgFileName);

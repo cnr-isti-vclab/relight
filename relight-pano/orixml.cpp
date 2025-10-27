@@ -26,7 +26,7 @@ OriXml::OriXml(QString path){
 		throw QString("Centre element not found in XML.");
 		return;
 	}
-	cout << qPrintable(centreElement.text()) << endl;
+	//cout << qPrintable(centreElement.text()) << endl;
 	//split, ritorna un Qstriglist
 	//qlist
 
@@ -87,7 +87,7 @@ void OriXml::saveOrientation(QString savePath) {
 
 	QTextStream stream(&file);
 	stream << doc.toString();
-	cout << qPrintable(doc.toString()) << endl;
+	//cout << qPrintable(doc.toString()) << endl;
 
 	cout << "File saved correctly in " << savePath.toStdString() << endl;
 }

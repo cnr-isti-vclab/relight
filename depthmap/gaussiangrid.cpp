@@ -171,7 +171,7 @@ void GaussianGrid::init(std::vector<Eigen::Vector3f> &cloud, std::vector<float> 
 
 	computeGaussianWeightedGrid(diff);
 	imageGrid("beforelaplacian.png");
-	fillLaplacian(precision);
+	fillLaplacian(width, height, values, weights, precision); //?
 
 // Debug, check if differences are improved
 /*	for(size_t i = 0; i < cloud.size(); i++) {
@@ -181,8 +181,8 @@ void GaussianGrid::init(std::vector<Eigen::Vector3f> &cloud, std::vector<float> 
 	} */
 }
 
-
-void GaussianGrid::fillLaplacian(float precision){
+// fillLaplacian(int w, int h, vector<float> &values, vector<float> &weights, precision)
+void GaussianGrid::fillLaplacian(int width, int height, std::vector<float> &values, std::vector<float> &weights, float precision){
 	// Compute mean of known values (fallback only)
 	float sum = 0.0f;
 	int known = 0;
@@ -195,7 +195,7 @@ void GaussianGrid::fillLaplacian(float precision){
 		throw QString("No micmac values in gaussian grid.");
 	const float mean = sum / known;
 
-	int unknown = 0;
+	int unknown = 0; // just use the difference between total and known.
 	for (size_t i = 0; i < values.size(); ++i) if (weights[i] == 0) ++unknown;
 	if (unknown == 0) return;
 
