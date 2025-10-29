@@ -5,6 +5,7 @@
 #include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
 #include <QResizeEvent>
+#include <QMessageBox>
 
 #include "relightapp.h"
 #include "imageframe.h"
@@ -12,6 +13,7 @@
 #include "imageview.h"
 #include "imagelist.h"
 #include "imagegrid.h"
+#include "../src/sphere.h"
 
 #include <iostream>
 using namespace std;
@@ -62,10 +64,15 @@ ImageFrame::ImageFrame(QWidget *parent): QFrame(parent) {
 
 	connect(image_list, SIGNAL(skipChanged(int)), image_grid, SLOT(setSkipped(int)));
 	connect(image_list, SIGNAL(skipChanged(int)), image_view, SLOT(setSkipped(int)));
+	connect(image_list, SIGNAL(skipChanged(int)), this, SLOT(updateSkipped(int)));
+
 	connect(image_grid, SIGNAL(skipChanged(int)), image_list, SLOT(setSkipped(int)));
 	connect(image_grid, SIGNAL(skipChanged(int)), image_view, SLOT(setSkipped(int)));
+	connect(image_grid, SIGNAL(skipChanged(int)), this, SLOT(updateSkipped(int)));
+
 	connect(image_view, SIGNAL(skipChanged(int)), image_grid, SLOT(setSkipped(int)));
 	connect(image_view, SIGNAL(skipChanged(int)), image_list, SLOT(setSkipped(int)));
+	connect(image_view, SIGNAL(skipChanged(int)), this, SLOT(updateSkipped(int)));
 
 	connect(qRelightApp->action("rotate_left"),  SIGNAL(triggered(bool)), this, SLOT(rotateLeft()));
 	connect(qRelightApp->action("rotate_right"),  SIGNAL(triggered(bool)), this, SLOT(rotateRight()));
@@ -108,6 +115,34 @@ void ImageFrame::init() {
 		image_view->fit();
 	}
 	listMode(); //TODO actually use last used mode used by the user but only in imageframe
+}
+
+void ImageFrame::updateSkipped(int n) {
+//ask mr. project to update the sphere directions and dome lights if using spheres.
+	Project &project = qRelightApp->project();
+	Image &img = project.images[n];
+	if(img.skip) {
+		for(Sphere *sphere: project.spheres) {
+
+			sphere->lights[n] = QPointF(0, 0);
+			sphere->directions[n] = Eigen::Vector3f(0, 0, 0);
+		}
+	} else {
+		QImage image;
+		image.load(img.filename, "JPG");
+		if(image.isNull()) {
+			QMessageBox::critical(this, "Could not find an image", "Could not load image: " + img.filename + "!");
+			return;
+		}
+		for(Sphere *sphere: project.spheres) {
+			sphere->findHighlight(image, n, img.skip);
+			sphere->computeDirections(project.lens);
+		}
+	}
+	if(project.dome.label.isEmpty()) {
+		project.dome.fromSpheres(project.images, project.spheres, project.lens);
+	}
+	emit skipChanged();
 }
 
 int ImageFrame::currentImage() {

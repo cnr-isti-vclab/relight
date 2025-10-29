@@ -48,6 +48,8 @@ MainWindow::MainWindow() {
 
 	tabs->setTabsEnabled(false);
 
+	connect(image_frame, SIGNAL(skipChanged()), lights_frame, SLOT(skipChanged()));
+	connect(image_frame, SIGNAL(skipChanged()), rti_frame, SLOT(skipChanged()));
 	connect(scale_frame, SIGNAL(pixelSizeChanged()), lights_frame, SLOT(setPixelSize()));
 	connect(scale_frame, SIGNAL(pixelSizeChanged()), crop_frame, SLOT(scaleChanged()));
 	connect(sphere_frame, SIGNAL(updated()), lights_frame, SLOT(updateSphere()));

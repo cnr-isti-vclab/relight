@@ -30,6 +30,7 @@ public slots:
 	void init();
 	void exportRti();
 
+	void skipChanged(); //check for number of images to update the number of coefficients.
 	void basisChanged();
 	void colorspaceChanged();
 	void nplanesChanged();

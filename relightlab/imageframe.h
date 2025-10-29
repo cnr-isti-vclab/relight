@@ -47,6 +47,11 @@ public slots:
 	void imageMode();
 	void listMode();
 	void gridMode();
+
+	void updateSkipped(int n);
+
+signals:
+	void skipChanged();
 };
 
 #endif // IMAGEFRAME_H

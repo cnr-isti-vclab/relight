@@ -108,6 +108,12 @@ void RtiFrame::init() {
 	updateNPlanes();
 }
 
+//ensure this is called AFTER updating the dome!
+void RtiFrame::skipChanged() {
+	//if number of lights is too low some values will not be available.
+	updateNPlanes();
+}
+
 void RtiFrame::exportRti() {
 
 	Project &project = qRelightApp->project();

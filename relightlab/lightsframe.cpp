@@ -59,5 +59,7 @@ void LightsFrame::setPixelSize() {
 	geometry->image_width->setValue(qRelightApp->project().dome.imageWidth);
 }
 
-
+void LightsFrame::skipChanged() {
+	geometry->init();
+}
 

@@ -31,6 +31,7 @@ public:
 	void init(); //initialize interface using the current project
 	void setTabIndex(int index);
 	void setTabWidget(QWidget *widget);
+	void changeSkipped();
 
 public slots:
 	void showQueue();

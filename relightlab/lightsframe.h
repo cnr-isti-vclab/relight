@@ -25,6 +25,7 @@ public slots:
 	void init();
 	void setPixelSize();
 	void updateSphere();
+	void skipChanged();
 
 private:
 	QTabWidget *choice = nullptr;
