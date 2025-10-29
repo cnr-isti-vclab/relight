@@ -352,10 +352,6 @@ void NormalsExportRow::verifyPath() {
 		QMessageBox::warning(this, "Invalid output path", "The specified path is not valid");
 		return;
 	}
-	if(!path.endsWith(".jpg") && !path.endsWith(".png")) {
-		path += ".jpg";
-		path_edit->setText(path);
-	}
 	parameters.path = path;
 }
 
@@ -363,11 +359,8 @@ void NormalsExportRow::selectOutput() {
 	//get folder if not legacy.
 	QString output_parent = qRelightApp->lastOutputDir();
 
-	QString output = QFileDialog::getSaveFileName(this, "Select a file name", output_parent);
+	QString output = QFileDialog::getSaveFileName(this, "Select a folder name", output_parent);
 	if(output.isNull()) return;
-
-	if(!output.endsWith(".jpg") && !output.endsWith(".png"))
-			output += ".jpg";
 
 	QDir output_parent_dir(output);
 	output_parent_dir.cdUp();
@@ -380,7 +373,7 @@ void NormalsExportRow::selectOutput() {
 void NormalsExportRow::suggestPath() {
 	QDir input = qRelightApp->project().dir;
 	input.cdUp();
-	QString filename = input.filePath("normals.jpg");
+	QString filename = input.filePath("normals");
 	setPath(filename);
 }
 

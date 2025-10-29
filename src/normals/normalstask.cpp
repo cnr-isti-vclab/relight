@@ -82,7 +82,7 @@ void NormalsTask::run() {
 	QDir destination(parameters.path);
 	if(!destination.exists()) {
 		if(!QDir().mkpath(parameters.path)) {
-			error = "Could not create brdf folder.";
+			error = "Could not create normals folder: " + parameters.path;
 			status = FAILED;
 			return;
 		}
@@ -106,7 +106,6 @@ void NormalsTask::run() {
 		imageset.setCallback(nullptr);
 		pool.start(QThread::idealThreadCount());
 
-		int last_percent = -1;
 		for (int i = 0; i < imageset.height; i++) {
 			// Read a line
 			imageset.readLine(line);
@@ -200,7 +199,7 @@ void NormalsTask::run() {
 			img.setDotsPerMeterX(dotsPerMeter);
 			img.setDotsPerMeterY(dotsPerMeter);
 		}
-		img.save(parameters.path, nullptr, 100);
+		img.save(destination.filePath(parameters.basename + ".jpg"), nullptr, 100);
 	}
 
 	if(parameters.surface_width != 0 &&

@@ -69,7 +69,7 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 		throw QString("Light directions can be loaded from a .lp file or processing the spheres.");
 	}
 	//count valid images:
-	int valid_count = 0;
+	size_t valid_count = 0;
 	for(Image &img: images)
 		if(!img.skip)
 			valid_count++;
@@ -85,19 +85,25 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 
 	for(auto sphere: spheres) {
 		sphere->computeDirections(lens);
+
 		if(sphere->directions.size() != images.size()) //directions for skipped images are still there (0, though)
 			throw QString("Sphere number of directions is different than images");
 
+		size_t count = 0;
 		//if we have a focal length we can rotate the directions of the lights appropriately, unless in the center!
-
 		for(size_t i = 0; i < sphere->directions.size(); i++) {
-			Vector3f d = sphere->directions[i];
-			if(d.isZero())
+			if(images[i].skip)
 				continue;
-			directions[i] += d;
-			weights[i] += 1.0f; //actually weight should be the distance of the light to the center.
+			Vector3f d = sphere->directions[i];
+			if(!d.isZero()) {
+				directions[count] += d;
+				weights[count] += 1.0f; //actually weight should be the distance of the light to the center.
+			}
+			count++;
 		}
+		assert(count == directions.size());
 	}
+
 
 	for(size_t i = 0; i < directions.size(); i++) {
 		if(weights[i] == 0)
@@ -109,27 +115,33 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 		for(auto sphere: spheres) {
 			//find intersection between reflection directions and sphere.
 			//we are working in normalized coordinates where imageWidth is 1.0
+			size_t count = 0;
 			for(size_t i = 0; i < sphere->directions.size(); i++) {
-				Vector3f direction = sphere->directions[i];
-				if(direction == Vector3f(0, 0, 0))
+				if(images[i].skip)
 					continue;
 
-				direction.normalize();
-				//this is in focal ccd width coords.
-				Vector3f origin = lens.viewDirection(sphere->lights[i].x(), sphere->lights[i].y());
-				//bring it back to surface plane
-				origin[2] = 0;
-				//normalize by width
-				origin /= lens.ccdWidth();
+				Vector3f direction = sphere->directions[i];
+				if(!direction.isZero()) {
 
-				float radius = (domeDiameter/2.0f)/imageWidth;
-				//Here a small error could hide, because of the z of the sphere is not on the plane of the object.
-				Vector3f center(0, 0, verticalOffset/imageWidth);
-				float distance = lineSphereDistance(origin, direction, center, radius);
-				Vector3f position = origin + direction*distance;
-				direction = (position - Vector3f(0, 0, verticalOffset/imageWidth))/radius;
-				positionsSphere[i] += position*imageWidth;
+					direction.normalize();
+					//this is in focal ccd width coords.
+					Vector3f origin = lens.viewDirection(sphere->lights[i].x(), sphere->lights[i].y());
+					//bring it back to surface plane
+					origin[2] = 0;
+					//normalize by width
+					origin /= lens.ccdWidth();
+
+					float radius = (domeDiameter/2.0f)/imageWidth;
+					//Here a small error could hide, because of the z of the sphere is not on the plane of the object.
+					Vector3f center(0, 0, verticalOffset/imageWidth);
+					float distance = lineSphereDistance(origin, direction, center, radius);
+					Vector3f position = origin + direction*distance;
+					direction = (position - Vector3f(0, 0, verticalOffset/imageWidth))/radius;
+					positionsSphere[count] += position*imageWidth;
+				}
+				count++;
 			}
+			assert(count == directions.size());
 		}
 		for(size_t i = 0; i < positionsSphere.size(); i++) {
 			if(weights[i] == 0)
@@ -143,6 +155,7 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 		float factor = imageWidth ? imageWidth*2.0f : 1.0f;
 		for(Vector3f &p: positions3d)
 			p *= factor;
+		assert(positions3d.size() == directions.size());
 	}
 }
 

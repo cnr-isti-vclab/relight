@@ -195,7 +195,7 @@ bool inEllipse(double x, double y, double a, double b, double theta) {
 	return value <= 1.0;
 }
 
-
+//if update_positions is true, this is only building the sphere thumbnail
 void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) {
 	if(sphereImg.isNull()) {
 		sphereImg = QImage(inner.width(), inner.height(), QImage::Format_ARGB32);
@@ -205,8 +205,11 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 
 	thumbs[n] =img.copy(inner);
 
-	if(skip)
+	if(skip) {
+		lights[n] = QPointF(0, 0);
+		directions[n] = Vector3f(0, 0, 0);
 		return;
+	}
 
 	uchar threshold = 240;
 	//0.5% of the area allocated to the reflection.

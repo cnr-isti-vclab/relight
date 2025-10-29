@@ -32,7 +32,7 @@ void DetectHighlights::run() {
 			.arg(inner.left())
 			.arg(inner.top());
 
-	if(!update_positions) {
+	if(!update_positions) { //just look for the sphere icon
 		QImage img(cache_filename);
 		if(!img.isNull()) {
 			sphere->readCacheThumbs(img);
