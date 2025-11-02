@@ -192,8 +192,8 @@ void bilinear_interpolation(T *data, uint32_t input_width,
 		for (int j = 0; j < output_width; j++) {
 			float x_l = floor(x_ratio * (float)j);
 			float y_l = floor(y_ratio * (float)i);
-			float x_h = ceil(x_ratio * (float)j);
-			float y_h = ceil(y_ratio * (float)i);
+			float x_h = std::min(input_width-1.0f, ceil(x_ratio * (float)j));
+			float y_h = std::min(input_height-1.0f, ceil(y_ratio * (float)i));
 
 			float x_weight = (x_ratio * (float)j) - x_l;
 			float y_weight = (y_ratio * (float)i) - y_l;

@@ -137,6 +137,11 @@ void NormalsTask::run() {
 			//rotate and crop the normals.
 			normals = crop.cropBoundingNormals(normals, width, height);
 		}
+		//check no normals with z == 0.
+		for(size_t i = 2; i < normals.size(); i+=3) {
+			assert(normals[i] > 0.000001);
+		}
+
 	} else {
 		QImage normalmap(parameters.input_path);
 		if(normalmap.isNull()) {
@@ -183,7 +188,7 @@ void NormalsTask::run() {
 		}
 	}
 
-	if(parameters.compute || parameters.flatMethod != FLAT_NONE) {
+	if(parameters.compute) {
 		// Save the normals
 
 		vector<uint8_t> normalmap(width * height * 3);
@@ -210,6 +215,11 @@ void NormalsTask::run() {
 		bilinear_interpolation3f((Eigen::Vector3f *)normals.data(), width, height,
 							   parameters.surface_width, parameters.surface_height, (Eigen::Vector3f *)tmp.data());
 		swap(tmp, normals);
+
+		//check no normals with z == 0.
+		for(size_t i = 2; i < normals.size(); i+=3) {
+			assert(normals[i] > 0.000001);
+		}
 
 		width = parameters.surface_width;
 		height = parameters.surface_height;

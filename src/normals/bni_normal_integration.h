@@ -35,4 +35,5 @@ void bilinear_interpolation3f(Eigen::Vector3f *data, uint32_t input_width,
 							  uint32_t input_height, uint32_t output_width,
 							  uint32_t output_height, Eigen::Vector3f *output);
 
+
 #endif // BNI_NORMAL_INTEGRATION_H
