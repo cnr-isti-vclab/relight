@@ -103,10 +103,10 @@ void ifft2(const ComplexMatrix& input, MatrixXd& output) {
 		}
 }
 
-void pad(int &w, int &h, std::vector<float> &normals, int padding) {
+void pad(int &w, int &h, std::vector<Eigen::Vector3f> &normals, int padding) {
 	int W = w + 2*padding;
 	int H = h + 2*padding;
-	std::vector<float> n(W*H*3);
+	std::vector<Eigen::Vector3f> n(W*H);
 	for(int y = 0; y < H;  y++) {
 		for(int x = 0; x < W; x++) {
 			int X = x - padding;
@@ -133,10 +133,10 @@ void pad(int &w, int &h, std::vector<float> &normals, int padding) {
 				Y = H - padding + h - 1 -y;
 				flipy = -1;
 			}
-			n[3*(x + y*W) + 0] = flipx*normals[3*(X + Y*w) + 0];
-			n[3*(x + y*W) + 1] = flipy*normals[3*(X + Y*w) + 1];
-			n[3*(x + y*W) + 2] = normals[3*(X + Y*w) + 2];
-			assert(!isnan(n[x + y*W]));
+			n[x + y*W][0] = flipx*normals[X + Y*w][0];
+			n[x + y*W][1] = flipy*normals[X + Y*w][1];
+			n[x + y*W][2] = normals[X + Y*w][2];
+			assert(!isnan(n[x + y*W][0]));
 		}
 	}
 	w = W;
@@ -159,10 +159,11 @@ void depad(int &w, int &h, std::vector<float> &heights, int padding) {
 	swap(elev, heights);
 }
 
+
 bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z);
 
 void fft_integrate(std::function<bool(QString s, int n)> progressed,
-				   int cols, int rows, std::vector<float> &normals, std::vector<float> &heights) {
+				   int cols, int rows, std::vector<Eigen::Vector3f> &normals, std::vector<float> &heights) {
 
 
 	int minsize = std::min(cols, rows);
@@ -174,7 +175,7 @@ void fft_integrate(std::function<bool(QString s, int n)> progressed,
 	MatrixXd dzdy(rows, cols);
 	for (int i = 0; i < rows; ++i) {
 		for (int j = 0; j < cols; ++j) {
-			float *normal = &normals[3*(i * cols + j)];
+			auto &normal = normals[i * cols + j];
 			dzdx(i, j) = normal[0] / normal[2]; // dz/dx = -nx/nz
 			dzdy(i, j) = -normal[1] / normal[2]; // dz/dy = -ny/nz			assert(!isnan(dzdx(i, j)));
 			assert(!isnan(dzdy(i, j)));

@@ -50,8 +50,8 @@ private:
 class NormalsWorker
 {
 public:
-	NormalsWorker(NormalSolver _solver, int _row, PixelArray& toProcess, float* normals, ImageSet &imageset) :
-		 solver(_solver), row(_row), m_Row(toProcess), m_Normals(normals), m_Imageset(imageset){}
+    NormalsWorker(NormalSolver _solver, int _row, PixelArray& toProcess, Eigen::Vector3f* normals, ImageSet &imageset) :
+	    solver(_solver), row(_row), m_Row(toProcess), m_Normals(normals), m_Imageset(imageset){}
 
 	void run();
 private:
@@ -62,7 +62,7 @@ private:
 	NormalSolver solver;
 	int row;
 	PixelArray m_Row;
-	float* m_Normals;
+	Eigen::Vector3f* m_Normals;
 	ImageSet &m_Imageset;
 	QMutex m_Mutex;
 };

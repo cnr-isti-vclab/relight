@@ -53,7 +53,7 @@ void NormalsTask::run() {
 	int start = clock();
 	imageSet.setCallback(nullptr);
 
-	std::vector<float> normals(imageSet.width * imageSet.height * 3);
+	std::vector<Eigen::Vector3f> normals(imageSet.width * imageSet.height);
 
 	RelightThreadPool pool;
 	PixelArray line;
@@ -65,10 +65,10 @@ void NormalsTask::run() {
 		imageSet.readLine(line);
 
 		// Create the normal task and get the run lambda
-		uint32_t idx = i * 3 * imageSet.width;
-		float* data = &normals[idx];
+	uint32_t idx = i * imageSet.width;
+	Eigen::Vector3f* data = &normals[idx];
 
-		NormalsWorker *task = new NormalsWorker(solver, i, line, data, imageSet);
+	NormalsWorker *task = new NormalsWorker(solver, i, line, data, imageSet);
 
 		std::function<void(void)> run = [this, task](void)->void {
 			task->run();
@@ -99,8 +99,11 @@ void NormalsTask::run() {
 
 
 	std::vector<uint8_t> normalmap(imageSet.width * imageSet.height * 3);
-	for(size_t i = 0; i < normals.size(); i++)
-		normalmap[i] = floor(((normals[i] + 1.0f) / 2.0f) * 255);
+	for(size_t i = 0; i < normals.size(); i++) {
+		normalmap[i*3 + 0] = floor(((normals[i][0] + 1.0f) / 2.0f) * 255);
+		normalmap[i*3 + 1] = floor(((normals[i][1] + 1.0f) / 2.0f) * 255);
+		normalmap[i*3 + 2] = floor(((normals[i][2] + 1.0f) / 2.0f) * 255);
+	}
 
 	// Save the final result
 	QImage img(normalmap.data(), imageSet.width, imageSet.height, imageSet.width*3, QImage::Format_RGB888);
@@ -117,8 +120,8 @@ void NormalsTask::run() {
 	if(exportSurface || exportDepthmap) {
 		if(!progressed("Integrating normals...", 0))
 			return;
-		std::vector<float> z;
-		bni_integrate(callback, imageSet.width, imageSet.height, normals, z, exportK);
+	std::vector<float> z;
+	bni_integrate(callback, imageSet.width, imageSet.height, normals, z, exportK);
 		if(z.size() == 0) {
 			error = "Failed to integrate normals";
 			status = FAILED;
@@ -203,13 +206,11 @@ void NormalsWorker::solveL2()
 			}
 		}
 
-		mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
-		mNormals.col(0).normalize();
-		m_Normals[normalIdx+0] = mNormals(0, 0);
-		m_Normals[normalIdx+1] = mNormals(1, 0);
-		m_Normals[normalIdx+2] = mNormals(2, 0);
+	mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
+	mNormals.col(0).normalize();
+	m_Normals[normalIdx] = Eigen::Vector3f(mNormals(0, 0), mNormals(1, 0), mNormals(2, 0));
 
-		normalIdx += 3;
+	normalIdx += 1;
 	}
 }
 

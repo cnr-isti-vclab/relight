@@ -69,7 +69,7 @@ void NormalsImage::save(QString filename) {
 	flat.save(filename);
 }
 
-void flattenRadialNormals(int w, int h, std::vector<float> &normals, double binSize) {
+void flattenRadialNormals(int w, int h, std::vector<Eigen::Vector3f> &normals, double binSize) {
 
 	//don't use normals not flat enough
 	double z_threshold = 0.7171;
@@ -80,9 +80,9 @@ void flattenRadialNormals(int w, int h, std::vector<float> &normals, double binS
 			int index = 3*(x + y*w);
 
 			Vector3d n;
-			n[0] = double(normals[index]);
-			n[1] = double(normals[index+1]);
-			n[2] = double(normals[index+2]);
+			n[0] = double(normals[index/3][0]);
+			n[1] = double(normals[index/3][1]);
+			n[2] = double(normals[index/3][2]);
 
 			assert(!isnan(n[0]));
 			assert(!isnan(n[1]));
@@ -148,9 +148,10 @@ void flattenRadialNormals(int w, int h, std::vector<float> &normals, double binS
 	for(int y = 0; y < h; y++) {
 		for(int x = 0; x < w; x++) {
 			Vector3d n;
-			n[0] = double(normals[3*(x + y*w)]);
-			n[1] = double(normals[3*(x + y*w) + 1]);
-			n[2] = double(normals[3*(x + y*w) + 2]);
+			int idx = 3*(x + y*w);
+			n[0] = double(normals[idx/3][0]);
+			n[1] = double(normals[idx/3][1]);
+			n[2] = double(normals[idx/3][2]);
 			Vector3d radial;
 			radial[0] = x - w/2.0;
 			radial[1] = h/2.0 - y;
@@ -161,9 +162,10 @@ void flattenRadialNormals(int w, int h, std::vector<float> &normals, double binS
 			radial = radial * inward;
 			n -= radial;
 			n.normalize();
-			normals[3*(x + y*w)] = float(n[0]);
-			normals[3*(x + y*w) + 1] = float(n[1]);
-			normals[3*(x + y*w) + 2] = float(n[2]);
+			int pos = x + y*w;
+			normals[pos][0] = float(n[0]);
+			normals[pos][1] = float(n[1]);
+			normals[pos][2] = float(n[2]);
 
 		}
 	}
@@ -207,10 +209,10 @@ void flattenRadialHeights(int w, int h, std::vector<float> &heights, double binS
 }
 
 
-void flattenBlurNormals(int w, int h, std::vector<float> &normals, double sigma) {
+void flattenBlurNormals(int w, int h, std::vector<Eigen::Vector3f> &normals, double sigma) {
 	Grid<Eigen::Vector2f> img(w, h, Eigen::Vector2f(0, 0));
-	for(size_t i = 0; i < normals.size()/3; i++) {
-		img[i] = Eigen::Vector2f(normals[i*3], normals[i*3+1]);
+	for(size_t i = 0; i < normals.size(); i++) {
+		img[i] = Eigen::Vector2f(normals[i][0], normals[i][1]);
 	}
 	//resize img properly.
 	Grid<Eigen::Vector2f> blurred;
@@ -227,13 +229,13 @@ void flattenBlurNormals(int w, int h, std::vector<float> &normals, double sigma)
 	}
 	for(size_t i = 0; i < blurred.size(); i++) {
 		Eigen::Vector2f v = img[i] - blurred[i];
-		normals[i*3] = v[0];
-		normals[i*3+1] = v[1];
-		normals[i*3+2] = sqrt(1 - v[0]*v[0] + v[1]*v[1]);
+		normals[i][0] = v[0];
+		normals[i][1] = v[1];
+		normals[i][2] = sqrt(1 - v[0]*v[0] + v[1]*v[1]);
 	}
 }
 
-void flattenFourierNormals(int w, int h, std::vector<float> &normals, float padding, double sigma, bool exponential) {
+void flattenFourierNormals(int w, int h, std::vector<Eigen::Vector3f> &normals, float padding, double sigma, bool exponential) {
 
 	int padding_amount = round(padding* std::min(w, h));
 	unsigned int W = w + padding_amount*2;
@@ -251,9 +253,10 @@ void flattenFourierNormals(int w, int h, std::vector<float> &normals, float padd
 	for(int y = 0; y < h; y++) {
 		for(int x = 0; x < w; x++) {
 			Vector3d n;
-			n[0] = double(normals[3*(x + y*w)]);
-			n[1] = double(normals[3*(x + y*w)+1]);
-			n[2] = double(normals[3*(x + y*w)+2]);
+			int idx = 3*(x + y*w);
+			n[0] = double(normals[idx/3][0]);
+			n[1] = double(normals[idx/3][1]);
+			n[2] = double(normals[idx/3][2]);
 
 
 			if(exponential) {
@@ -344,9 +347,10 @@ void flattenFourierNormals(int w, int h, std::vector<float> &normals, float padd
 
 			double b = sqrt(1 - r*r - g*g);
 
-			normals[3*(x + y*w)] = float(r);
-			normals[3*(x + y*w) + 1] = float(g);
-			normals[3*(x + y*w) + 2] = float(b);
+			int pos = x + y*w;
+			normals[pos][0] = float(r);
+			normals[pos][1] = float(g);
+			normals[pos][2] = float(b);
 
 			/*
 			 //differences might be nice to export.

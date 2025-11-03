@@ -160,3 +160,28 @@ std::vector<float> Crop::cropBoundingNormals(
 
 	return cropped;
 }
+
+std::vector<Eigen::Vector3f> Crop::cropBoundingNormals(
+		const std::vector<Eigen::Vector3f> &input,
+		int &width, int &height) {
+	// Convert Eigen vectors to flat float buffer, call existing implementation and convert back
+	std::vector<float> flat(input.size()*3);
+	for(size_t i = 0; i < input.size(); i++) {
+		flat[3*i + 0] = input[i][0];
+		flat[3*i + 1] = input[i][1];
+		flat[3*i + 2] = input[i][2];
+	}
+	int w = width;
+	int h = height;
+	std::vector<float> cropped = cropBoundingNormals(flat, w, h);
+	// convert back
+	std::vector<Eigen::Vector3f> out(w*h);
+	for(int i = 0; i < w*h; i++) {
+		out[i][0] = cropped[3*i + 0];
+		out[i][1] = cropped[3*i + 1];
+		out[i][2] = cropped[3*i + 2];
+	}
+	width = w;
+	height = h;
+	return out;
+}

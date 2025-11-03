@@ -20,6 +20,7 @@ public:
 	Crop crop;
 	Lens lens;
 	float pixelSize = 0.0f;
+	float z_threshold =0.001;
 
 	virtual void run() override;
 
@@ -27,14 +28,14 @@ public:
 	void initFromProject(Project &project);
 	void initFromFolder(const char *folder, Dome &dome, Crop &crop);
 
-	void assm(QString filename, std::vector<float> &normals, int width, int height, float precision);
-
+	void assm(QString filename, std::vector<Eigen::Vector3f> &normals, int width, int height, float precision);
+	void fixNormal(Eigen::Vector3f &n); //check for nan, and z< threshold
 };
 
 class NormalsWorker
 {
 public:
-	NormalsWorker(NormalSolver _solver, int _row, const PixelArray& toProcess, float* normals, ImageSet &imageset): //, Lens &_lens) :
+	NormalsWorker(NormalSolver _solver, int _row, const PixelArray& toProcess, Eigen::Vector3f* normals, ImageSet &imageset): //, Lens &_lens) :
 		solver(_solver), row(_row), m_Row(toProcess), m_Normals(normals), m_Imageset(imageset) {//lens(_lens){
 		m_Row.resize(toProcess.npixels(), toProcess.nlights);
 		for(size_t i = 0; i < m_Row.size(); i++)
@@ -52,7 +53,7 @@ private:
 	int row;
 	PixelArray m_Row;
 
-	float* m_Normals;
+	Eigen::Vector3f* m_Normals;
 	ImageSet &m_Imageset;
 	//Lens &lens;
 	QMutex m_Mutex;

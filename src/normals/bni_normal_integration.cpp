@@ -27,12 +27,12 @@ bool saveDepthMap(const QString &filename, size_t w, size_t h, std::vector<float
 	return false;
 }
 
-bool saveNormalMap(const QString &filename, size_t w, size_t h, std::vector<float> &normals) {
+bool saveNormalMap(const QString &filename, size_t w, size_t h, std::vector<Eigen::Vector3f> &normals) {
 	QImage img(w, h, QImage::Format_ARGB32);
 	for(size_t y = 0; y < h; y++) {
 		uint8_t *line = img.scanLine(y);
 		for(size_t x = 0; x < w; x++) {
-			float *n = &normals[3*(x + y*w)];
+			auto &n = normals[x + y*w];
 			line[4*x + 0] = 255;
 			line[4*x + 1] = floor(n[0]*255.0f);
 			line[4*x + 2] = floor(n[1]*255.0f);
@@ -223,7 +223,7 @@ void bilinear_interpolation3f(Eigen::Vector3f *data, uint32_t input_width,
 
 class NormalMap {
 public:
-	vector<float> normals;
+	vector<Eigen::Vector3f> normals;
 	vector<float> heights;
 	int w;
 	int h;
@@ -233,20 +233,21 @@ public:
 		scaled.w = w/2;
 		scaled.h = h/2;
 
-		scaled.normals.resize(scaled.w*scaled.h*3);
+		scaled.normals.resize(scaled.w*scaled.h);
 		for(int y = 0; y < scaled.h; y++) {
 			for(int x = 0; x < scaled.w; x++) {
-				float *p = &scaled.normals[3*(x + y*scaled.w)];
+				Eigen::Vector3f p(0,0,0);
 				for(int k = 0; k < 3; k++) {
-					p[k] = (normals[k + 3*(2*x + 2*y*h)] +
-							normals[k + 3*(2*x + 1 + 2*y*h)] +
-							normals[k + 3*(2*x + (2*y + 1)*h)] +
-							normals[k + 3*(2*x + 1 + (2*y +1)*h)])/4.0f;
+					p[k] = (normals[(2*x + 2*y*h)][k] +
+							normals[(2*x + 1 + 2*y*h)][k] +
+							normals[(2*x + (2*y + 1)*h)][k] +
+							normals[(2*x + 1 + (2*y +1)*h)][k])/4.0f;
 				}
 				//normalize:
 				float length = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);
 				for(int k = 0; k < 3; k++)
 					p[k] /= length;
+				scaled.normals[x + y*scaled.w] = p;
 
 			}
 		}
@@ -256,15 +257,10 @@ public:
 	void pull(NormalMap &small) { //update normals
 		heights.resize(w*h, 0);
 		bilinear_interpolation(small.heights.data(), small.w, small.h, w, h, heights.data());
-		/*for(int y = 0; y < h; y++) {
-			for(int x = 0; x < w; x++) {
-				heights[x + y*h] = small.heights[tx + ty*small.h];
-			}
-		}*/
 	}
 };
 
-std::vector<float> bni_pyramid(std::function<bool(QString s, int n)> progressed, int &w, int &h, std::vector<float> &normalmap,
+std::vector<float> bni_pyramid(std::function<bool(QString s, int n)> progressed, int &w, int &h, std::vector<Eigen::Vector3f> &normalmap,
 							   double k,
 							   double tolerance,
 							   double solver_tolerance,
@@ -391,7 +387,7 @@ Eigen::VectorXd bni_integrate_direct(Eigen::SparseMatrix<double> &A, Eigen::Vect
 }
 
 
-void bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int h, std::vector<float> &normalmap, std::vector<float> &heights,
+void bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int h, std::vector<Eigen::Vector3f> &normalmap, std::vector<float> &heights,
 				   double k,
 				   double tolerance,
 				   double solver_tolerance,
@@ -408,9 +404,9 @@ void bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int 
 	for(int y = 0; y < h; y++) {
 		for(int x= 0; x < w; x++) {
 			int pos = x + y*w;
-			nx(pos) = normalmap[pos*3+1];
-			ny(pos) = normalmap[pos*3+0];
-			nz(y, x) = -normalmap[pos*3+2];
+			nx(pos) = normalmap[pos][1];
+			ny(pos) = normalmap[pos][0];
+			nz(y, x) = -normalmap[pos][2];
 		}
 	}
 	//BUILD A maps which encodes half derivatives (positive, negative, dx and dy)

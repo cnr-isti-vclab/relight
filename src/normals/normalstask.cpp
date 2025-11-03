@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <iostream>
 #include <time.h>
+#include <cmath>
 
 using namespace std;
 using namespace Eigen;
@@ -91,7 +92,7 @@ void NormalsTask::run() {
 
 	function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
-	vector<float> normals;
+	std::vector<Eigen::Vector3f> normals;
 
 	int width = 0, height = 0;
 
@@ -100,7 +101,7 @@ void NormalsTask::run() {
 		width = imageset.width;
 		height = imageset.height;
 
-		normals.resize(width * height * 3);
+	normals.resize(width * height);
 		RelightThreadPool pool;
 		PixelArray line;
 		imageset.setCallback(nullptr);
@@ -111,9 +112,8 @@ void NormalsTask::run() {
 			imageset.readLine(line);
 
 			// Create the normal task and get the run lambda
-			uint32_t idx = i * 3 * imageset.width;
-			//uint8_t* data = normals.data() + idx;
-			float* data = &normals[idx];
+			uint32_t idx = i * imageset.width;
+			Eigen::Vector3f* data = &normals[idx];
 
 			NormalsWorker *task = new NormalsWorker(parameters.solver, i, line, data, imageset); //, lens);
 
@@ -134,12 +134,12 @@ void NormalsTask::run() {
 		// Wait for the end of all the threads
 		pool.finish();
 		if(crop.angle != 0.0f) {
-			//rotate and crop the normals.
-			normals = crop.cropBoundingNormals(normals, width, height);
+		//rotate and crop the normals.
+		normals = crop.cropBoundingNormals(normals, width, height);
 		}
 		//check no normals with z == 0.
-		for(size_t i = 2; i < normals.size(); i+=3) {
-			assert(normals[i] > 0.000001);
+		for(Eigen::Vector3f &n: normals) {
+			fixNormal(n);
 		}
 
 	} else {
@@ -153,15 +153,16 @@ void NormalsTask::run() {
 		height = normalmap.height();
 		//convert image into normals
 
-		normals.resize(width * height * 3);
-		for(int y = 0; y < height; y++)
+		normals.resize(width * height);
+		for(int y = 0; y < height; y++) {
 			for(int x = 0; x < width; x++) {
 				QRgb rgb = normalmap.pixel(x, y);
-				int i = 3*(x + y*width);
-				normals[i+0] = (qRed(rgb) / 255.0f) * 2.0f - 1.0f;
-				normals[i+1] = (qGreen(rgb) / 255.0f) * 2.0f - 1.0f;
-				normals[i+2] = (qBlue(rgb) / 255.0f) * 2.0f - 1.0f;
+				int i = (x + y*width);
+				normals[i][0] = (qRed(rgb) / 255.0f) * 2.0f - 1.0f;
+				normals[i][1] = (qGreen(rgb) / 255.0f) * 2.0f - 1.0f;
+				normals[i][2] = (qBlue(rgb) / 255.0f) * 2.0f - 1.0f;
 			}
+		}
 	}
 
 	if(parameters.flatMethod != FLAT_NONE) {
@@ -192,8 +193,11 @@ void NormalsTask::run() {
 		// Save the normals
 
 		vector<uint8_t> normalmap(width * height * 3);
-		for(size_t i = 0; i < normals.size(); i++)
-			normalmap[i] = std::min(std::max(round(((normals[i] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+		for(size_t i = 0; i < normals.size(); i++) {
+			normalmap[i*3 + 0] = std::min(std::max(round(((normals[i][0] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+			normalmap[i*3 + 1] = std::min(std::max(round(((normals[i][1] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+			normalmap[i*3 + 2] = std::min(std::max(round(((normals[i][2] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+		}
 
 		QImage img(normalmap.data(), width, height, width*3, QImage::Format_RGB888);
 	
@@ -210,15 +214,14 @@ void NormalsTask::run() {
 	if(parameters.surface_width != 0 &&
 		(parameters.surface_width != imageset.width || parameters.surface_height != imageset.height)) {
 		//scale normals.
-		std::vector<float> tmp(parameters.surface_width*parameters.surface_height*3);
+		std::vector<Eigen::Vector3f> tmp(parameters.surface_width*parameters.surface_height);
 
 		bilinear_interpolation3f((Eigen::Vector3f *)normals.data(), width, height,
-							   parameters.surface_width, parameters.surface_height, (Eigen::Vector3f *)tmp.data());
+					   parameters.surface_width, parameters.surface_height, (Eigen::Vector3f *)tmp.data());
 		swap(tmp, normals);
 
-		//check no normals with z == 0.
-		for(size_t i = 2; i < normals.size(); i+=3) {
-			assert(normals[i] > 0.000001);
+		for(Eigen::Vector3f &n: normals) {
+			fixNormal(n);
 		}
 
 		width = parameters.surface_width;
@@ -233,7 +236,7 @@ void NormalsTask::run() {
 		//TODO move to saveply
 		QString filename = destination.filePath(parameters.basename + ".ply");
 
-		assm(filename, normals, width, height, parameters.assm_error);
+	assm(filename, normals, width, height, parameters.assm_error);
 
 	} else if(parameters.surface_integration == SURFACE_BNI || parameters.surface_integration == SURFACE_FFT) {
 		QString type = parameters.surface_integration == SURFACE_BNI ? "Bilateral" : "Fourier";
@@ -285,6 +288,16 @@ void NormalsTask::run() {
 	}
 	progressed("Done", 100);
 	status = DONE;
+}
+
+void NormalsTask::fixNormal(Eigen::Vector3f &n) {
+	if(std::isnan(n[0]) || std::isnan(n[1]) || std::isnan(n[2]) || n[2] < z_threshold) {
+		if(std::isnan(n[0])) n[0] = 0.0;
+		if(std::isnan(n[1])) n[1] = 0.0;
+		if(std::isnan(n[2]) || n[2] < z_threshold)
+			n[2] = z_threshold;
+		n.normalize();
+	}
 }
 
 bool savePly(const char *filename, pmp::SurfaceMesh &mesh) {
@@ -371,12 +384,12 @@ bool saveObj(const char *filename, pmp::SurfaceMesh &mesh) {
 	return true;
 }
 
-void NormalsTask::assm(QString filename, vector<float> &_normals, int width, int height, float approx_error) {
+void NormalsTask::assm(QString filename, std::vector<Eigen::Vector3f> &_normals, int width, int height, float approx_error) {
 	Grid<Eigen::Vector3f> normals(width, height, Eigen::Vector3f(0.0f, 0.0f, 0.0f));
 	for(int y = 0; y < height; y++)
 		for(int x = 0; x < width; x++) {
-			int i = 3*(x + y*width);
-			normals.at(y, x) = Eigen::Vector3f(-_normals[i+0], -_normals[i+1], -_normals[i+2]);
+			int i = (x + y*width);
+			normals.at(y, x) = Eigen::Vector3f(-_normals[i][0], -_normals[i][1], -_normals[i][2]);
 		}
 
 	Grid<unsigned char> mask(width, height, 0);
@@ -454,16 +467,13 @@ void NormalsWorker::solveL2()
 
 		mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
 		mNormals.col(0).normalize();
-		assert(!isnan(mNormals.col(0)[0]));
-		assert(!isnan(mNormals.col(0)[1]));
-		assert(!isnan(mNormals.col(0)[2]));
-		m_Normals[normalIdx+0] = float(mNormals.col(0)[0]);
-		m_Normals[normalIdx+1] = float(mNormals.col(0)[1]);
-		m_Normals[normalIdx+2] = float(mNormals.col(0)[2]);
+		// Task-level validation will handle NaN/z-threshold checks; write the normalized normal
+		m_Normals[normalIdx] = Eigen::Vector3f(float(mNormals.col(0)[0]), float(mNormals.col(0)[1]), float(mNormals.col(0)[2]));
 
-		normalIdx += 3;
+		normalIdx += 1;
 	}
 }
+
 void NormalsWorker::solveSBL()
 {
 }

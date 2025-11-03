@@ -5,6 +5,7 @@
 #include <QPolygon>
 #include <QTransform>
 #include <vector>
+#include <Eigen/Core>
 
 /* Crop coordinates:
  *
@@ -38,6 +39,7 @@ public:
 	QRect boundingRect(QSize img_size);
 	QImage cropBoundingImage(QImage src);
 	std::vector<float> cropBoundingNormals(const std::vector<float> &input, int &w, int &h);
+	std::vector<Eigen::Vector3f> cropBoundingNormals(const std::vector<Eigen::Vector3f> &input, int &w, int &h);
 };
 
 #endif // CROP_H
