@@ -46,6 +46,7 @@ void LightsFrame::clear() {
 
 void LightsFrame::updateSphere() {
 	geometry->setFromSpheres();
+	geometry->init();
 }
 
 void LightsFrame::init() {
@@ -60,6 +61,11 @@ void LightsFrame::setPixelSize() {
 }
 
 void LightsFrame::skipChanged() {
+	// Recompute dome if using spheres
+	Dome &dome = qRelightApp->project().dome;
+	if(dome.lightSource == Dome::FROM_SPHERES) {
+		geometry->setFromSpheres();
+	}
 	geometry->init();
 }
 

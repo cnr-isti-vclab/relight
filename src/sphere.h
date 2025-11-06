@@ -70,8 +70,6 @@ public:
 
 //estimate light directions relative to the center of the image.
 void computeDirections(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Eigen::Vector3f> &directions);
-//estimate light positions using parallax (image width is the unit).
-void computeParallaxPositions(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Eigen::Vector3f> &positions);
 //estimate light positions assuming they live on a sphere (parameters provided by dome
 void computeSphericalPositions(std::vector<Image> &images, std::vector<Sphere *> &spheres, Dome &dome, Lens &lens, std::vector<Eigen::Vector3f> &positions);
 

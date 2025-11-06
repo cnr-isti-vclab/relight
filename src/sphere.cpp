@@ -400,7 +400,7 @@ void Sphere::computeDirections(Lens &lens) {
 Line Sphere::toLine(Vector3f dir, Lens &lens) {
 	Line line;
 	line.origin[0] = (center.x() - lens.width/2.0f)/lens.width;
-	line.origin[1] = (center.y() - lens.height/2.0f)/lens.width;
+	line.origin[1] = -(center.y() - lens.height/2.0f)/lens.width;
 	line.origin[2] = 0;
 	line.direction = dir;
 	return line;
@@ -457,35 +457,7 @@ void verify(std::vector<Line> &lines, Vector3f pos) {
 }
 */
 
-//find the intersection of the lines using least squares approximation.
-Vector3f intersection(std::vector<Line> &lines) {
-	using Mat3 = Eigen::Matrix3d;
-	using Vec3 = Eigen::Vector3d;
-
-	Mat3 M = Mat3::Zero();
-	Vec3 b = Vec3::Zero();
-
-	for (const auto &L : lines) {
-		Vec3 u(L.direction[0], L.direction[1], L.direction[2]);
-		double n = u.norm();
-		if (n < 1e-12) continue;       // skip degenerate directions
-		u /= n;
-
-		Vec3 o(L.origin[0], L.origin[1], L.origin[2]);
-		Mat3 P = Mat3::Identity() - u * u.transpose(); // projects onto plane ⟂ to u
-
-		M += P;
-		b += P * o;
-	}
-
-	// Tikhonov regularization for near-parallel sets
-	const double lambda = 1e-9;
-	M += lambda * Mat3::Identity();
-
-	Vec3 x = M.ldlt().solve(b);
-	return Vector3f(float(x[0]), float(x[1]), float(x[2]));
-}
-
+/*
 //estimate light directions relative to the center of the image.
 void computeDirections(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &directions) {
 
@@ -513,64 +485,7 @@ void computeDirections(std::vector<Image> &images, std::vector<Sphere *> &sphere
 		dir.normalize();
 		directions.push_back(dir);
 	}
-}
-
-
-//move this stuff in Dome.
-//estimate light positions using parallax (image width is the unit).
-void computeParallaxPositions(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &positions) {
-	positions.clear();
-
-	if(spheres.size() < 2)
-		return;
-
-	for(Sphere *sphere: spheres)
-		sphere->computeDirections(lens);
-
-
-	//for each reflection, compute the lines and the best intersection, estimate the radiuus of the positions vertices
-	vector<float> radia;
-	for(size_t i = 0; i < spheres[0]->directions.size(); i++) {
-		if(images[i].skip)
-			continue;
-
-		std::vector<Line> lines;
-		for(Sphere *sphere: spheres) {
-			if(sphere->directions[i].isZero()) continue;
-			lines.push_back(sphere->toLine(sphere->directions[i], lens));
-		}
-		Vector3f position = intersection(lines);
-
-		radia.push_back(position.norm());
-		positions.push_back(position);
-	}
-	//find median
-	size_t m = radia.size()/2;
-	std::nth_element(radia.begin(), radia.begin() + m, radia.end());
-	float radius  = radia[m];
-	//if some directions is too different from the average radius, we bring the direction closer to the average.
-	float threshold = 0.1;
-	for(Vector3f &dir: positions) {
-		float d = dir.norm();
-		if(fabs(d - radius) > threshold*radius) {
-			dir *= radius/d;
-		}
-		if(dir[2] < 0) //might be flipped for nearly paralle directions.
-			dir *= -1;
-	}
-}
-
-//estimate light positions assuming they live on a sphere (parameters provided by dome
-void computeSphericalPositions(std::vector<Image> &images, std::vector<Sphere *> &spheres, Dome &dome, Lens &lens, std::vector<Vector3f> &positions) {
-	positions.clear();
-	computeDirections(images, spheres, lens, positions);
-	assert(dome.imageWidth > 0 && dome.domeDiameter > 0);
-
-	for(Vector3f &p: positions) {
-		p *= dome.domeDiameter/2.0;
-		p[2] += dome.verticalOffset;
-	}
-}
+}*/
 
 QJsonObject Sphere::toJson() {
 	QJsonObject sphere;

@@ -15,6 +15,10 @@
 using namespace std;
 using namespace Eigen;
 
+//estimate light positions using parallax (image width is the unit).
+void computeParallaxPositions(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Eigen::Vector3f> &positions);
+
+
 static float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, const Vector3f &center, float radius) {
 	float a = direction.norm();
 	float b = direction.dot(origin - center)*2.0f;
@@ -30,12 +34,45 @@ static float lineSphereDistance(const Vector3f &origin, const Vector3f &directio
 Dome::Dome() {}
 
 static QStringList lightConfigs = { "directional", "spherical", "lights3d" };
+static QStringList lightSources = { "unknown", "from_spheres", "from_lp" };
 
 
 void Dome::parseLP(const QString &lp_path) {
 	std::vector<QString> filenames;
 	::parseLP(lp_path, directions, filenames);
 	lightConfiguration = DIRECTIONAL;
+	lightSource = FROM_LP;
+}
+
+void Dome::recomputePositions() {
+	// Recompute 3D positions from directions when geometry parameters change	
+	positionsSphere.clear();
+	
+	if(!domeDiameter || !imageWidth || directions.empty())
+		return;
+	
+	positionsSphere.resize(directions.size(), Vector3f(0, 0, 0));
+	positions3d.resize(directions.size(), Vector3f(0, 0, 0));
+	
+	// Compute sphere positions from directions
+	for(size_t i = 0; i < directions.size(); i++) {
+		Vector3f direction = directions[i];
+		if(direction.isZero())
+			continue;
+			
+		direction.normalize();
+		
+		// Assuming origin at image center (0, 0, 0) for directions from .lp files
+		Vector3f origin(0, 0, 0);
+		
+		float radius = (domeDiameter/2.0f)/imageWidth;
+		Vector3f center(0, 0, verticalOffset/imageWidth);
+		float distance = lineSphereDistance(origin, direction, center, radius);
+		Vector3f position = origin + direction*distance;
+		positions3d[i] = positionsSphere[i] = position*imageWidth;
+
+	}
+
 }
 
 QJsonArray toJson(std::vector<Vector3f> &values) {
@@ -82,6 +119,8 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 	positionsSphere.resize(valid_count, Vector3f(0, 0, 0));
 
 	vector<float> weights(valid_count, 0.0f);
+
+	lightSource = FROM_SPHERES;
 
 	for(auto sphere: spheres) {
 		sphere->computeDirections(lens);
@@ -159,6 +198,80 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 	}
 }
 
+
+//find the intersection of the lines using least squares approximation.
+Vector3f intersection(std::vector<Line> &lines) {
+	using Mat3 = Eigen::Matrix3d;
+	using Vec3 = Eigen::Vector3d;
+
+	Mat3 M = Mat3::Zero();
+	Vec3 b = Vec3::Zero();
+
+	for (const auto &L : lines) {
+		Vec3 u(L.direction[0], L.direction[1], L.direction[2]);
+		double n = u.norm();
+		if (n < 1e-12) continue;       // skip degenerate directions
+		u /= n;
+
+		Vec3 o(L.origin[0], L.origin[1], L.origin[2]);
+		Mat3 P = Mat3::Identity() - u * u.transpose(); // projects onto plane ⟂ to u
+
+		M += P;
+		b += P * o;
+	}
+
+	// Tikhonov regularization for near-parallel sets
+	const double lambda = 1e-9;
+	M += lambda * Mat3::Identity();
+
+	Vec3 x = M.ldlt().solve(b);
+	return Vector3f(float(x[0]), float(x[1]), float(x[2]));
+}
+
+//move this stuff in Dome.
+//estimate light positions using parallax (image width is the unit).
+void computeParallaxPositions(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &positions) {
+	positions.clear();
+
+	if(spheres.size() < 2)
+		return;
+
+	for(Sphere *sphere: spheres)
+		sphere->computeDirections(lens);
+
+
+	//for each reflection, compute the lines and the best intersection, estimate the radiuus of the positions vertices
+	vector<float> radia;
+	for(size_t i = 0; i < spheres[0]->directions.size(); i++) {
+		if(images[i].skip)
+			continue;
+
+		std::vector<Line> lines;
+		for(Sphere *sphere: spheres) {
+			if(sphere->directions[i].isZero()) continue;
+			lines.push_back(sphere->toLine(sphere->directions[i], lens));
+		}
+		Vector3f position = intersection(lines);
+
+		radia.push_back(position.norm());
+		positions.push_back(position);
+	}
+	//find median
+	size_t m = radia.size()/2;
+	std::nth_element(radia.begin(), radia.begin() + m, radia.end());
+	float radius  = radia[m];
+	//if some directions is too different from the average radius, we bring the direction closer to the average.
+	float threshold = 0.1;
+	for(Vector3f &dir: positions) {
+		float d = dir.norm();
+		if(fabs(d - radius) > threshold*radius) {
+			dir *= radius/d;
+		}
+		if(dir[2] < 0) //might be flipped for nearly parallel directions.
+			dir *= -1;
+	}
+}
+
 void Dome::save(const QString &filename) {
 	QFile file(filename);
 	bool open = file.open(QFile::WriteOnly | QFile::Truncate);
@@ -188,6 +301,7 @@ QJsonObject Dome::toJson() {
 	dome.insert("domeDiameter", domeDiameter);
 	dome.insert("verticalOffset", verticalOffset);
 	dome.insert("lightConfiguration", lightConfigs[lightConfiguration]);
+	dome.insert("lightSource", lightSources[lightSource]);
 	dome.insert("directions", ::toJson(directions));
 	dome.insert("positionsSphere", ::toJson(positionsSphere));
 	dome.insert("positions3d", ::toJson(positions3d));
@@ -223,6 +337,14 @@ void Dome::fromJson(const QJsonObject &obj) {
 		int index = lightConfigs.indexOf(obj["lightConfiguration"].toString());
 		if(index >= 0)
 			lightConfiguration = LightConfiguration(index);
+	}
+	if(obj.contains("lightSource")) {
+		lightSource = UNKNOWN;
+		int index = lightSources.indexOf(obj["lightSource"].toString());
+		if(index >= 0)
+			lightSource = LightSource(index);
+	} else {
+		lightSource = label.isEmpty() ? FROM_SPHERES : FROM_LP;
 	}
 	::fromJson(obj["directions"].toArray(), directions);
 	::fromJson(obj["positionsSphere"].toArray(), positionsSphere);

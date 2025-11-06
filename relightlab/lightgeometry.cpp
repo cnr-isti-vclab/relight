@@ -74,19 +74,26 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 		auto &project = qRelightApp->project();
 		project.dome.imageWidth = v;
 		project.pixelSize = project.dome.imageWidth/project.imgsize.width();
+		recomputeGeometry();
 	});
 
 	grid->addWidget(new QLabel("Dome radius:"), 3, 0);
 	grid->addWidget(radius = new QDoubleSpinBox, 3, 1);
 	radius->setRange(0, 10000);
 	grid->addWidget(new QLabel("mm"), 3, 2);
-	connect(radius, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) { qRelightApp->project().dome.domeDiameter = v*2.0; });
+	connect(radius, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) {
+		qRelightApp->project().dome.domeDiameter = v*2.0;
+		recomputeGeometry();
+	});
 
 	grid->addWidget(new QLabel("Vertical offset:"), 4, 0);
 	grid->addWidget(vertical_offset = new QDoubleSpinBox, 4, 1);
 	vertical_offset->setRange(-1000, 1000);
 	grid->addWidget(new QLabel("mm"), 4, 2);
-	connect(vertical_offset, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) { qRelightApp->project().dome.verticalOffset = v; });
+	connect(vertical_offset, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) {
+		qRelightApp->project().dome.verticalOffset = v;
+		recomputeGeometry();
+	});
 
 
 	/* it seems basically impossible to have a widget scale while preserving aspect ratio, bummer */
@@ -129,9 +136,17 @@ void LightsGeometry::init() {
 	radius->setEnabled(spherical);
 	vertical_offset->setEnabled(spherical);
 
+	//stop signals!
+	image_width->blockSignals(true);
+	radius->blockSignals(true);
+	vertical_offset->blockSignals(true);
 	image_width->setValue(dome.imageWidth);
 	radius->setValue(dome.domeDiameter/2.0);
 	vertical_offset->setValue(dome.verticalOffset);
+
+	image_width->blockSignals(false);
+	radius->blockSignals(false);
+	vertical_offset->blockSignals(false);
 
 	directions_view->initFromDome(dome);
 }
@@ -143,6 +158,7 @@ void LightsGeometry::setFromSpheres() {
 	//call appropriate compute directions/positions
 	Dome &dome = project.dome;
 	dome.label = "";
+	dome.lightSource = Dome::FROM_SPHERES;
 	dome.fromSpheres(project.images, project.spheres, project.lens);
 
 	init();
@@ -158,4 +174,18 @@ void LightsGeometry::exportDome() {
 	Dome &dome = qRelightApp->project().dome;
 	dome.save(filename);
 	qRelightApp->addDome(filename);
+}
+
+void LightsGeometry::recomputeGeometry() {
+	Project &project = qRelightApp->project();
+	Dome &dome = project.dome;
+	
+	// When geometry parameters change, recompute positions for both sources
+	if(dome.lightSource == Dome::FROM_SPHERES) {
+		if(project.spheres.size() > 0)
+			dome.fromSpheres(project.images, project.spheres, project.lens);
+	} else if(dome.lightSource == Dome::FROM_LP) {
+			dome.recomputePositions();
+	}	
+	init();
 }

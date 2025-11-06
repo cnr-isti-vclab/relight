@@ -126,7 +126,8 @@ void SphereFrame::removeSphere(SphereRow *row) {
 	layout()->removeWidget(row);
 	delete row;
 
-
+	// Emit updated signal so lights can be recomputed
+	emit updated();
 }
 
 SphereRow *SphereFrame::findRow(Sphere *sphere) {

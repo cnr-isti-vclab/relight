@@ -139,7 +139,7 @@ void ImageFrame::updateSkipped(int n) {
 			sphere->computeDirections(project.lens);
 		}
 	}
-	if(project.dome.label.isEmpty()) {
+	if(project.dome.lightSource == Dome::FROM_SPHERES) {
 		project.dome.fromSpheres(project.images, project.spheres, project.lens);
 	}
 	emit skipChanged();

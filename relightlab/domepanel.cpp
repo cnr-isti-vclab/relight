@@ -117,16 +117,19 @@ DomePanel::DomePanel(QWidget *parent): QFrame(parent) {
 }
 
 void DomePanel::setSphereSelected() {
-	bool use_sphere = qRelightApp->project().dome.label.isEmpty();
+	bool use_sphere = qRelightApp->project().dome.lightSource == Dome::FROM_SPHERES;
 	QPalette pal = palette();
 	QColor highlightColor = pal.color(QPalette::Highlight);  // Theme-defined highlight color
 	QColor normalColor = pal.color(QPalette::Window);
 	sphere_frame->setPalette(QPalette(use_sphere? highlightColor : normalColor));
 	dome_frame->setPalette(QPalette(use_sphere? normalColor : highlightColor));
+	
+	// Force visual update
+	sphere_frame->update();
+	dome_frame->update();
 }
 
 void DomePanel::init() {
-	//TODO something more explicit than the dome label would be better.
 	setSphereSelected();
 	updateDomeList();
 }
@@ -253,9 +256,13 @@ void DomePanel::loadLP(QString path) {
 	dome.directions = directions;
 	QFileInfo info(path);
 	dome.label = info.filePath();
+	dome.lightSource = Dome::FROM_LP;
+	dome.recomputePositions();
+
 	qRelightApp->addDome(path);
 
 	updateDomeList(path);
+	setSphereSelected();  // Update highlighting after loading LP
 	emit updated();
 }
 
@@ -278,6 +285,9 @@ void DomePanel::loadDome(QString path) {
 	//preserve image width if we actually have a measurement.
 	if(imageWidth != 0 && qRelightApp->project().measures.size() != 0)
 		dome.imageWidth = imageWidth;
+	dome.recomputePositions();
+
 	updateDomeList(path);
+	setSphereSelected();  // Update highlighting after loading dome
 	emit updated();
 }

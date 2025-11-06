@@ -45,5 +45,6 @@ public slots:
 	void setFromSpheres();              //when reflective spheres reflections have been processed
 	void setSpherical(QAbstractButton *button);
 	void exportDome();
+	void recomputeGeometry();           //recompute positions when geometry parameters change
 };
 #endif // LIGHTGEOMETRY_H

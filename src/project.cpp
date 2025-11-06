@@ -635,6 +635,7 @@ bool Project::loadLP(QString filename) {
 			dome.directions[i] = ordered_dir[i];
 
 	dome.lightConfiguration = Dome::DIRECTIONAL;
+	dome.lightSource = Dome::FROM_LP;
 	return true;
 }
 //used only in relight legacy app.
