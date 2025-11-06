@@ -22,7 +22,7 @@ public:
 	float sigma;
 	float blur;
 	//use blurred micmac depthmap
-	bool use_depthmap = false;
+	bool use_depthmap = true;
 
 
 	Eigen::Vector3f pixelToRealCoordinates(int pixelX, int pixelY, float pixelZ);

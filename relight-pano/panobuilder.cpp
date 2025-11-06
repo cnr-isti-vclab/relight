@@ -741,8 +741,8 @@ void PanoBuilder::depthmap(){
 	}
 
 	try {
-		ortho.loadDepth(qPrintable(depthmapPath));
-		ortho.loadMask(qPrintable(maskPath));
+		ortho.loadDepth(qPrintable(depthmapBackup));
+		ortho.loadMask(qPrintable(maskBackup));
 		ortho.loadPointCloud(qPrintable(plyFile));
 	} catch (QString e) {
 		cerr << "Error loading depth data: " << qPrintable(e) << endl;
@@ -1023,7 +1023,7 @@ void PanoBuilder::jpg() {
 		QString jpgFileName = QString("%1.jpg").arg(baseName);
 		QString jpgFilePath = panoramaDir.filePath(jpgFileName);
 
-		if (!img.save(jpgFilePath)) {
+		if (!img.save(jpgFilePath, "jpg", 98)) {
 			throw QString("Failed to save image: ").arg(jpgFilePath);
 		} else {
 			cout << "Saved image as: " << qPrintable(jpgFilePath) << endl;

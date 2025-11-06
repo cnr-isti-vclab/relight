@@ -115,9 +115,6 @@ void GaussianGrid::fitLinearRobust(std::vector<float> &x, std::vector<float> &y,
 }
 
 
-
-
-
 float GaussianGrid::bilinearInterpolation(float x, float y) {
 	//clamp to border
 	float epsilon = 1e-5;
@@ -186,18 +183,23 @@ void GaussianGrid::fillLaplacian(int width, int height, std::vector<float> &valu
 	// Compute mean of known values (fallback only)
 	float sum = 0.0f;
 	int known = 0;
+	bool hasUnknown = false;
+
 	for (size_t i = 0; i < values.size(); ++i) {
 		if (weights[i] != 0) {
-			sum += values[i]; ++known;
+			sum += values[i];
+			++known;
+		} else {
+			hasUnknown = true;
 		}
 	}
 	if (known == 0)
 		throw QString("No micmac values in gaussian grid.");
-	const float mean = sum / known;
 
-	int unknown = 0; // just use the difference between total and known.
-	for (size_t i = 0; i < values.size(); ++i) if (weights[i] == 0) ++unknown;
-	if (unknown == 0) return;
+	if (!hasUnknown)
+		return;
+
+	const float mean = sum / known;
 
 	// Front-propagation initialization: assign unknowns when they have assigned neighbors
 	const int min_assigned_neighbors = 1; // set to 2 for a smoother start if desired
@@ -329,6 +331,11 @@ float GaussianGrid::corrected(float x, float y, float z) {
 
 
 void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &differences) {
+
+
+	if (values.size() != size_t(width*height) || weights.size() != size_t(width*height)) {
+		qCritical() << "Grid size mismatch!";
+	}
 
 	float x_min = 0;
 	float x_max = 1;

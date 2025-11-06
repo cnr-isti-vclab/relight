@@ -239,66 +239,6 @@ void OrthoDepthmap::beginIntegration(){
 	// opzionale: salva la mask bucata su file per debug
 	Depthmap::saveTiff("mask_with_hole_50x50.tif", mask, width, height, 1);
 
-	bool use_depthmap = false;
-	if(use_depthmap) {
-		//1. togliere dalla point tutti i punti che cadono dentro la maschera
-		//2. aggiungere un campionamento regolare dentro la maschera
-		int count = 0;
-		float sum_diff = 0.0f;
-		float sum_sq_diff = 0.0f;
-		float min_diff = 1e9f;
-		float max_diff = -1e9f;
-		int valid_count = 0;
-
-		for(size_t i = 0; i < point_cloud.size(); i++) {
-
-			Eigen::Vector3f point = point_cloud[i];
-			Eigen::Vector3f pixel = realToPixelCoord(point[0], point[1], point[2]);
-
-			int mx = std::max<float>(0, std::min<float>(width-1, int(pixel[0])));
-			int my = std::max<float>(0, std::min<float>(height-1, int(pixel[1])));
-
-			bool inside = mask[mx + my*width] == 1.0f;
-			if(inside){
-				float z = elevation[mx + my * width];
-				float diff = fabsf(pixel[2] - z);
-
-
-				sum_diff += diff;
-				sum_sq_diff += diff * diff;
-				min_diff = std::min(min_diff, diff);
-				max_diff = std::max(max_diff, diff);
-				valid_count++;
-				//continue;
-			}else {
-				//	point_cloud[count++] = point;
-			}
-		}
-		point_cloud.resize(count);
-
-		if (valid_count > 0) {
-			float mean_diff = sum_diff / valid_count;
-			float variance = (sum_sq_diff / valid_count) - (mean_diff * mean_diff);
-			float stddev = sqrtf(std::max(0.0f, variance));
-			float mse = sum_sq_diff / valid_count;
-			float rmse = sqrtf(mse);
-
-			std::cout << "[STATS] Differenza pixel[2] - z (solo inside mask)\n";
-			std::cout << "        Count     = " << valid_count << "\n";
-			std::cout << "        Min diff  = " << min_diff << "\n";
-			std::cout << "        Max diff  = " << max_diff << "\n";
-			std::cout << "        Mean diff = " << mean_diff << "\n";
-			std::cout << "        Stddev    = " << stddev << "\n";
-			std::cout << "        RMSE      = " << rmse << "\n";
-		}
-		int step = 10;
-
-
-
-	}
-
-
-	//exit(0);
 	old_elevation = elevation;
 
 	for(size_t i =0; i < elevation.size(); i++) {
@@ -317,20 +257,25 @@ void OrthoDepthmap::endIntegration(){
 
 	// normalize elevation by weights
 	//fragni
-	for (size_t i = 0; i < elevation.size(); ++i) {
+	for (size_t i = 0; i < elevation.size(); i++) {
 		if (weights[i] > 0.0f)
 			elevation[i] /= weights[i];
 	}
 
-//fill holes in elevation (weight[i] == 0 means hole)  using laplacian. (see gaussiangrid)
+	//fill holes in elevation (weight[i] == 0 means hole)  using laplacian. (see gaussiangrid)
+	//	sbertezz.
+
 	{
-		GaussianGrid g;
-		float precision = 1e-4f; // o un valore più grande se vuoi convergenza più rapida
-		g.fillLaplacian(width, height, elevation, weights, precision);
+		float precision = 1e-4f;
+		GaussianGrid::fillLaplacian(width, height, elevation, weights, precision);
+
+		for (size_t i = 0; i < weights.size(); ++i) {
+			if (weights[i] == 0.0f && elevation[i] != 0.0f) {
+				weights[i] = 1.0f;
+			}
+		}
 	}
 
-
-//	sbertezz.
 
 	for(size_t i =0; i < elevation.size(); i++){
 #ifdef PRESERVE_INTERIOR
@@ -411,17 +356,12 @@ void OrthoDepthmap::endIntegration(){
 
 	blurred = blurred.gaussianBlur(kernelSize, blur_radius_pixel);
 
-
-
 	// Rimappa il range [0.5, 1] to [0, 1]
 	blurred_mask.resize(width * height);
-	for (int i = 0; i < width * height; i++) {
+	for (int i = 0; i < width*height; ++i) {
 		float v = blurred[i];
-		if (v <= 0.5f) {
-			blurred_mask[i] = 0.0f;
-		} else {
-			blurred_mask[i] = (v - 0.5f) * 2.0f;
-		}
+		if (v <= 0.5f) blurred_mask[i] = 0.0f;
+		else blurred_mask[i] = (v - 0.5f) * 2.0f;
 	}
 	// Debug: range dei valori nel blurred prima del remapping
 	float min_blurred = 1e9f;
@@ -476,16 +416,16 @@ void OrthoDepthmap::endIntegration(){
 		float blur_weight = blurred_mask[i]; // 0 = MicMac, 1 = RTI
 		if(weights[i] > 0.0f){
 			mask[i] = 1.0f;
-		//	sbarbugli leva questa riga che hai già normalizzato sopra.
-		//	elevation[i] /= weights[i];
+			//	sbarbugli leva questa riga che hai già normalizzato sopra.
+			//	elevation[i] /= weights[i];
 
 		}
 		else {
 			mask[i] = 0;
 		}
 		if(use_depthmap){
-		elevation[i] = blur_weight * old_elevation[i] +
-					   (1.0f - blur_weight) * elevation[i];
+			elevation[i] = blur_weight * old_elevation[i] +
+						   (1.0f - blur_weight) * elevation[i];
 		}
 
 	}
