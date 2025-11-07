@@ -179,7 +179,7 @@ target_compile_definitions(relight
 
 if (APPLE)
 	set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../build_scripts/relight.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../build_scripts/relight.icns DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/relight.app/Contents/Resources/")
+	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../build_scripts/relight.icns DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/relightlab.app/Contents/Resources/")
 	set_target_properties(relight PROPERTIES 
 		MACOSX_BUNDLE_ICON_FILE relight.icns
 		MACOSX_BUNDLE_BUNDLE_VERSION "${RELIGHT_VERSION}"
@@ -190,7 +190,7 @@ if (APPLE)
 	
 	set_additional_settings_info_plist(
 		TARGET relight
-		FILE ${CMAKE_CURRENT_BINARY_DIR}/relight.app/Contents/Info.plist)
+		FILE ${CMAKE_CURRENT_BINARY_DIR}/relightlab.app/Contents/Info.plist)
 endif()
 
 if (INSTALL_TO_UNIX_LAYOUT)

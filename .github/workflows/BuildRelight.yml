@@ -36,12 +36,6 @@ jobs:
       with:
         p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
         p12-password: ${{ secrets.MACOS_CERTIFICATE_PSSW }}
-    - name: Set CodeSign Certificate Windows
-      if: runner.os == 'Windows' && env.WIN_CERT != null
-      run: |
-        New-Item -ItemType directory -Path certificate
-        Set-Content -Path certificate\certificate.txt -Value '${{ secrets.WIN_CERTIFICATE }}'
-        certutil -decode certificate\certificate.txt certificate\certificate.pfx
 
     - name: Install OpenCV on Ubuntu
       if: runner.os == 'Linux'
@@ -86,7 +80,6 @@ jobs:
       shell: bash
       run: >
         bash build_scripts/${{ runner.os }}/2_deploy.sh
-        --cert_pssw='${{ secrets.WIN_CERTIFICATE_PSSW }}'
         --cert_id='${{ secrets.MACOS_CERT_ID }}'
         --notarization_user='${{ secrets.MACOS_NOTARIZATION_USER }}'
         --notarization_pssw='${{ secrets.MACOS_NOTARIZATION_PSSW }}'
