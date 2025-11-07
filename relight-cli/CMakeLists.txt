@@ -79,9 +79,9 @@ SET(SOURCES
 add_executable(relight-cli ${HEADERS} ${SOURCES})
 target_include_directories(
 	relight-cli PUBLIC 
-		TIFF::TIFF
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}
+		TIFF::TIFF
 		../external
 )
 
