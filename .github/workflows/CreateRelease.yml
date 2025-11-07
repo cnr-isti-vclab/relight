@@ -178,6 +178,7 @@ jobs:
         token: "${{ secrets.GITHUB_TOKEN }}"
         tag: "RelightLab-${{steps.envs.outputs.rl_version}}"
         name: "RelightLab-${{steps.envs.outputs.rl_version}}"
+        draft: true
         artifacts: |
           RelightLab${{steps.envs.outputs.rl_version}}-linux.tar.gz
           relightlab_linux_appimage/RelightLab${{steps.envs.outputs.rl_version}}-linux.AppImage

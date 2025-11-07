@@ -15,12 +15,12 @@ jobs:
       fail-fast: false
       matrix:
           include:
-            - os: 'ubuntu-latest'
+            - os: 'ubuntu-22.04'
               label: 'Linux'
-            - os: 'macos-13'
-              label: 'macOS13'
-            - os: 'macos-14'
-              label: 'macOS'
+            - os: 'macos-15-intel'
+              label: 'macOS_x86_64'
+            - os: 'macos-latest'
+              label: 'macOS_arm64'
             - os: 'windows-latest'
               label: 'Windows'
     steps:
@@ -44,7 +44,7 @@ jobs:
         certutil -decode certificate\certificate.txt certificate\certificate.pfx
 
     - name: Install OpenCV on Ubuntu
-      if: matrix.os == 'ubuntu-latest'
+      if: runner.os == 'Linux'
       run: |
         sudo apt-get update && sudo apt-get install -y libopencv-dev
         echo "QT_VERSION=6.6.*" >> $GITHUB_ENV
@@ -55,7 +55,7 @@ jobs:
         echo "QT_VERSION=6.8.0" >> $GITHUB_ENV
 
     - name: Install OpenCV on Windows
-      if: matrix.os == 'windows-latest'
+      if: runner.os == 'Windows'
       run: |
         choco install opencv -y
         echo "OpenCV installed at C:\tools\opencv\build"
