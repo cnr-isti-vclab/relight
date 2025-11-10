@@ -14,6 +14,7 @@ private:
 	QWidget *buildCasting();
 	QWidget *buildAppearance();
 	QWidget *buildPerformances();
+	QWidget *buildDome();
 };
 
 #endif // PREFERENCES_H

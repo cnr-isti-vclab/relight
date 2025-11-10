@@ -181,6 +181,11 @@ void ScaleFrame::setLengthLabel(double length) {
 }
 
 void ScaleFrame::setLength(double length) {
+	if(length == 0) {
+		QMessageBox::warning(this, "Invalid length", "Length must be bigger then zero");
+		return;
+	}
+
 	auto &scene = viewer->scene();
 
 	text->setPlainText(QString::number(length) + "mm");

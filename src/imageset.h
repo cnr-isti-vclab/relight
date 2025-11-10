@@ -47,7 +47,7 @@ public:
 	~ImageSet();
 
 	//light3d if lights are positional instead of directional.
-	static void parseLP(QString sphere_path, std::vector<Eigen::Vector3f> &lights, std::vector<QString> &filenames, int skip_image = -1);
+	//static void parseLP(QString sphere_path, std::vector<Eigen::Vector3f> &lights, std::vector<QString> &filenames, int skip_image = -1);
 	static void parseJSON(QString filename,  std::vector<Eigen::Vector3f> &lights);
 
 

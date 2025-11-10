@@ -144,6 +144,13 @@ public:
 		QSettings().setValue("CastingPort", port);
 	}
 
+	QString defaultDome() {
+		return QSettings().value("DefaultDome", QString()).toString();
+	}
+	void setDefaultDome(const QString &path) {
+		QSettings().setValue("DefaultDome", path);
+	}
+
 	bool needsSavingProceed();
 
 	QStringList domes();

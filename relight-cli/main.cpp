@@ -421,6 +421,7 @@ int main(int argc, char *argv[]) {
 				throw QString("Could not find a .lp file in the folder");
 
 			Dome dome;
+			dome.parseLP(dir.filePath(lps[0]));
 			vector<QString> filenames;
 			parseLP(dir.filePath(lps[0]), dome.directions, filenames);
 

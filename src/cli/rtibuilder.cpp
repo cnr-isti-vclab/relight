@@ -85,9 +85,8 @@ bool RtiBuilder::setupFromFolder(const string &folder) {
 			throw QString("Could not find a .lp file in the folder")
 				;
 		Dome dome;
-		vector<QString> filenames;
-		parseLP(dir.filePath(lps[0]), dome.directions, filenames);
-
+		dome.parseLP(dir.filePath(lps[0]));
+		
 		if(skip_image >= 0) {
 			imageset.images.removeAt(skip_image);
 			dome.directions.erase(dome.directions.begin() + skip_image);

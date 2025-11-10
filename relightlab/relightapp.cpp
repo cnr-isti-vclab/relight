@@ -10,6 +10,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QTemporaryDir>
+#include <QTextStream>
 #include <QStyleFactory>
 #include <QStyle>
 #include <QAction>
@@ -268,22 +269,49 @@ void RelightApp::newProject() {
 
 	project_filename = QString();
 
+	// Check for default dome first
+	QString defaultDomePath = qRelightApp->defaultDome();
+	bool defaultDomeLoaded = false;
+	
+	if (!defaultDomePath.isEmpty() && QFile::exists(defaultDomePath)) {
+		try {
+			Dome tempDome;
+			tempDome.load(defaultDomePath);
 
-	//Check for .lp files in the folder
-	QStringList img_ext;
-	img_ext << "*.lp";
-	QStringList lps = QDir(dir).entryList(img_ext);
-	if(lps.size() > 0) {
-		int answer = QMessageBox::question(mainwindow, "Found an .lp file: " + lps[0], "Do you wish to load " + lps[0] + "?", QMessageBox::Yes, QMessageBox::No);
-		if(answer != QMessageBox::No) {
-			try {
-				bool loaded = project->loadLP(lps[0]);
-				if(loaded) {
-					QFileInfo info(lps[0]);
-					addDome(info.filePath());
+			// Check if number of lights matches
+			if (tempDome.directions.size() == project->size()) {
+				int answer = QMessageBox::question(mainwindow, 
+					"Use default dome?", 
+					"A default dome is configured with " + QString::number(tempDome.directions.size()) + " lights.\n"
+					"Do you wish to use it for this project?",
+					QMessageBox::Yes, QMessageBox::No);
+				
+				if (answer == QMessageBox::Yes) {
+					project->dome = tempDome;
+					addDome(QFileInfo(defaultDomePath).absoluteFilePath());
+					defaultDomeLoaded = true;
 				}
-			} catch(QString error) {
-				QMessageBox::critical(mainwindow, "Could not load the .lp file", error);
+			}
+		} catch(QString error) {
+			// Silently fail if we can't check/load the default dome
+		}
+	}
+
+	//Check for .lp files in the folder (only if default dome wasn't used)
+	if (!defaultDomeLoaded) {
+		QStringList img_ext;
+		img_ext << "*.lp";
+		QStringList lps = folder.entryList(img_ext);
+		if(lps.size() > 0) {
+			int answer = QMessageBox::question(mainwindow, "Found an .lp file: " + lps[0], 
+				"Do you wish to load " + lps[0] + "?", QMessageBox::Yes, QMessageBox::No);
+			if(answer != QMessageBox::No) {
+				try {
+					project->dome.load(folder.filePath(lps[0]));
+					addDome(QFileInfo(folder.filePath(lps[0])).absoluteFilePath());
+				} catch(QString error) {
+					QMessageBox::critical(mainwindow, "Could not load the .lp file", error);
+				}
 			}
 		}
 	}
