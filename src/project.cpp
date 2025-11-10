@@ -609,35 +609,10 @@ void Project::saveLP(QString filename, vector<Vector3f> &directions) {
 
 
 bool Project::loadLP(QString filename) {
-	vector<QString> filenames;
-	vector<Vector3f> directions;
-
-
-	parseLP(filename, directions, filenames); //might throw an error.
-	if(size() != directions.size())
-		throw QString("Wrong number of lights (or images)");
-
-	vector<Vector3f> ordered_dir(directions.size());
-	bool success = true;
-	for(size_t i = 0; i < filenames.size(); i++) {
-		QString &s = filenames[i];
-		int pos = indexOf(s);
-		if(pos == -1) {
-			success = false;
-			break;
-		}
-		ordered_dir[pos] = directions[i];
-	}
-	QFileInfo info(filename);
-	dome.label = info.filePath();
-	dome.directions.resize(directions.size());
-	for(size_t i = 0; i < size(); i++)
-			dome.directions[i] = ordered_dir[i];
-
-	dome.lightConfiguration = Dome::DIRECTIONAL;
-	dome.lightSource = Dome::FROM_LP;
+	dome.parseLP(filename);
 	return true;
 }
+
 //used only in relight legacy app.
 static float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, const Vector3f &center, float radius) {
 	float a = direction.norm();

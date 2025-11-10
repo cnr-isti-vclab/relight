@@ -79,7 +79,14 @@ public:
 	void rotateImages();
 	void rotateImages(bool clockwise);
 	bool hasDirections() { return dome.directions.size() > 0; }
-	size_t size() { return images.size(); }
+	//return number of non skipped images.
+	size_t size() { 
+		size_t count = 0;
+		for(const Image &img: images)
+			if(!img.skip)
+				count++;
+		return count;
+	}
 
 	//remove skipped
 	QStringList getImages() const {

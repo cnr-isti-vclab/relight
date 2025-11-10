@@ -15,6 +15,44 @@ directions underepresented. The basis functions will have to interpolate the lig
 the type of interpolation yelds different results. PTM and HSH are very robust, while RBF and BLN
 will result in 'jerky' light changes when exploring the interpolated region.</p>
 
+<h3>Bases pro and cons</h3>
+
+<p><b>LPTM</b>: the cheapest, but don't use it unless you have the dullest material (chalk or something like that), no reflection no bright colors.</p>
+
+<p><b>PTM</b><br/>
+Pro: is cheap and very robust to bad sampling, especially if the capture has been made with manual held lights.
+       normals can be derived directly from the coefficients (again accurate if the model is lambertian).<br/>
+Cons: it's unable to represent reflections properly: too few coefficients and a focus on dull materials. (but if your material is not shiny it's perfectly fine).
+</p>
+
+<p><b>HSH</b><br/>
+Pro: it is still very robust to bad sampling.<br/>
+Cons: lighting artifact on very grazing lights, reflections are still not greaty.
+</p>
+
+<p><b>RBF:</b><br/>
+Pro: best reflections ever for the number of coefficients used.
+        You can decide how many coefficients you want (you can use 18 as in PTM (6 per channel) and still get a much better material feeling).<br/>
+Cons: very sampling dependent: bad sampling will result in jumps or irregular lighting changes.
+          very small patches of colors can be lost (color will be different) since this is focusing on reflections
+</p>
+
+<p><b>YRBF:</b><br/>
+Pro: almost rbf in term of shiny reflections, allocates some bits for small patches of colors.<br/>
+Cons: very sampling dependent
+</p>
+
+<p><b>BNL:</b><br/>
+Pro: close to RBF in term of reflections accuracy, 
+Cons: somewhat sampling dependent: more robust than RBF, less than PTM.<br/>
+          small patches of colors can be problematic.
+</p>
+
+<p><b>YBNL:</b><br/>
+Pro:  close to BNL in term of reflections accuracy, no problem with colors.<br/>
+Cons:  somewhat sampling dependent: more robust than RBF, less than PTM.
+</p>
+
 <p><b>Format:</b> RTIViewer supports only PTM and HSH basis, while the <a href="rti/web.html">web formats</a> support all of the basis</p>
 
 <p><b>Per pixel light direction:</b> a common approximation assumes the light direction is the same for all the pixels.

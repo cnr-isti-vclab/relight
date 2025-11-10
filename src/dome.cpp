@@ -9,7 +9,7 @@
 #include <QJsonDocument>
 #include <QList>
 #include <QFile>
-
+#include <QFileInfo>
 #include <Eigen/Dense>
 
 using namespace std;
@@ -40,6 +40,9 @@ static QStringList lightSources = { "unknown", "from_spheres", "from_lp" };
 void Dome::parseLP(const QString &lp_path) {
 	std::vector<QString> filenames;
 	::parseLP(lp_path, directions, filenames);
+
+	QFileInfo info(lp_path);
+	label = info.filePath();
 	lightConfiguration = DIRECTIONAL;
 	lightSource = FROM_LP;
 }
@@ -283,6 +286,12 @@ void Dome::save(const QString &filename) {
 }
 
 void Dome::load(const QString &filename) {
+	QFileInfo info(filename);
+	if(info.suffix().toLower() == "lp") {
+		parseLP(filename);
+		return;
+	}
+
 	QFile file(filename);
 	bool open = file.open(QFile::ReadOnly);
 	if(!open) {

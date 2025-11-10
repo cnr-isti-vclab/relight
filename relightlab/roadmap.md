@@ -5,7 +5,6 @@
 
 * installer for windows.
 * default dome(s) in preferences (when number of light matches).
-* ellipse reflections geometrically accurate.
 * better info on queue items.
 * metadata
 * history + export in json + return status to (normal/rti crop parameters date version).
@@ -13,8 +12,6 @@
 * Settings->Performances, port: add tab title.
 * Show lens parameters (and check we make use of them)
 * BRDF interface rewamp
-* check for zero value on scale (or unreasonable ones)
-* change max value for scale.
 * warn user if switching project while working on align or spheres.
 
 ## Long term new features

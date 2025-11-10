@@ -10,16 +10,21 @@
 #include <QRadioButton>
 #include <QGroupBox>
 #include <QSpinBox>
+#include <QLineEdit>
+#include <QFileDialog>
+#include <QHBoxLayout>
 
 Preferences::Preferences(QWidget *parent): QDialog(parent) {
 	setWindowTitle("Preferences - RelightLab");
 	setModal(true);
+	setMinimumWidth(600);
 
 	tabs = new TabWidget;
 
 	tabs->addTab(buildAppearance(), "Appearance");
 	tabs->addTab(buildPerformances(), "Performances");
 	tabs->addTab(buildCasting(), "Casting");
+	tabs->addTab(buildDome(), "Domes");
 
 	QVBoxLayout *layout = new QVBoxLayout(this);
 	layout->addWidget(tabs);
@@ -112,6 +117,61 @@ QWidget *Preferences::buildAppearance() {
 		content->addWidget(box);
 	}
 
+	return widget;
+}
 
+QWidget *Preferences::buildDome() {
+	QWidget *widget = new QWidget;
+	QVBoxLayout *layout = new QVBoxLayout(widget);
+	
+	QLabel *description = new QLabel(
+		"Specify a default dome file (.dome or .lp) to use when creating new projects.\n"
+		"The default dome will be used if the number of lights matches the images in the project.\n"
+		"If an .lp file exists in the image folder, you will be asked which one to use."
+	);
+	description->setWordWrap(true);
+	layout->addWidget(description);
+	
+	QHBoxLayout *fileLayout = new QHBoxLayout;
+	
+	QLineEdit *domePathEdit = new QLineEdit;
+	domePathEdit->setText(qRelightApp->defaultDome());
+	domePathEdit->setReadOnly(true);
+	domePathEdit->setPlaceholderText("No default dome set");
+	
+	QPushButton *browseButton = new QPushButton("Browse...");
+	QPushButton *clearButton = new QPushButton("Clear");
+	
+	fileLayout->addWidget(new QLabel("Default dome file:"));
+	fileLayout->addWidget(domePathEdit, 1);
+	fileLayout->addWidget(browseButton);
+	fileLayout->addWidget(clearButton);
+	
+	layout->addLayout(fileLayout);
+	layout->addStretch();
+	
+	connect(browseButton, &QPushButton::clicked, [domePathEdit]() {
+		QString filename = QFileDialog::getOpenFileName(
+			nullptr,
+			"Select Default Dome File",
+			qRelightApp->lastProjectDir(),
+			"Dome files (*.dome *.lp);;All files (*.*)"
+		);
+		
+		if (!filename.isEmpty()) {
+			domePathEdit->setText(filename);
+			qRelightApp->setDefaultDome(filename);
+			
+			// Update last directory
+			QFileInfo info(filename);
+			qRelightApp->setLastProjectDir(info.absolutePath());
+		}
+	});
+	
+	connect(clearButton, &QPushButton::clicked, [domePathEdit]() {
+		domePathEdit->clear();
+		qRelightApp->setDefaultDome(QString());
+	});
+	
 	return widget;
 }
