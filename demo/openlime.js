@@ -15799,7 +15799,7 @@ vec4 data() {
     	 */
     	setActiveControllers(on) {
     		for (let c of this.viewer.controllers) {
-    			if(c != this.panzoom)  //panzoom is always active	
+    			if(c == this.panzoom)  //panzoom is always active	
     				continue;
     			c.active = on;
     		}

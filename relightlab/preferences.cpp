@@ -17,7 +17,7 @@
 Preferences::Preferences(QWidget *parent): QDialog(parent) {
 	setWindowTitle("Preferences - RelightLab");
 	setModal(true);
-	setMinimumWidth(600);
+	setMinimumWidth(800);
 
 	tabs = new TabWidget;
 
