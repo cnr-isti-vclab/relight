@@ -95,6 +95,8 @@ async function init() {
 	let ui = new OpenLIME.UIBasic(lime, { skin: 'skin.svg', showLightDirections: true });
 	ui.actions.light.active = true;
 	ui.actions.layers.display = true;
+	ui.actions.zoomin.display = true;
+	ui.actions.zoomout.display = true;
 	lime.camera.maxFixedZoom = 4;
 	window.lime = lime;
 }
