@@ -26,7 +26,7 @@ void BrdfTask::initFromProject(Project &project) {
 	imageset.setCrop(crop, project.offsets);
 	imageset.rotateLights(-project.crop.angle);
 
-	pixelSize = project.pixelSize;
+	imageset.pixel_size = project.pixelSize;
 }
 
 
@@ -107,8 +107,8 @@ void BrdfTask::run() {
 			img = crop.cropBoundingImage(img);
 
 		// Set spatial resolution if known. Need to convert as pixelSize stored in mm/pixel whereas QImage requires pixels/m
-		if( pixelSize > 0 ) {
-			int dotsPerMeter = round(1000.0/pixelSize);
+		if( imageset.pixel_size > 0 ) {
+			int dotsPerMeter = round(1000.0/imageset.pixel_size);
 			img.setDotsPerMeterX(dotsPerMeter);
 			img.setDotsPerMeterY(dotsPerMeter);
 		}

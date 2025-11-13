@@ -28,7 +28,6 @@ public:
 	ImageSet imageset;
 	Crop crop;
 	Lens lens;
-	float pixelSize = 0.0f;
 
 	virtual void run() override;
 
