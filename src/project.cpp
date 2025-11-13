@@ -269,6 +269,8 @@ void Project::load(QString filename) {
 	imgsize.setHeight(obj["height"].toInt());
 	if(!imgsize.isValid())
 		throw QString("Missing or invalid width and/or height in project.");
+	if(obj.contains("pixelSize"))
+		pixelSize = obj["pixelSize"].toDouble();
 
 	QFileInfo info(filename);
 	QDir folder = info.dir();
@@ -391,6 +393,7 @@ void Project::save(QString filename) {
 
 	project.insert("width", imgsize.width());
 	project.insert("height", imgsize.height());
+	project.insert("pixelSize", pixelSize);
 
 	//as a folder for images compute the relative path to the saving file location!
 	QFileInfo info(filename);
