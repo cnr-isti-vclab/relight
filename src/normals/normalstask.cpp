@@ -199,16 +199,26 @@ void NormalsTask::run() {
 			normalmap[i*3 + 2] = std::min(std::max(round(((normals[i][2] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
 		}
 
-		QImage img(normalmap.data(), width, height, width*3, QImage::Format_RGB888);
-	
-
-		// Set spatial resolution if known. Need to convert as pixelSize stored in mm/pixel whereas QImage requires pixels/m
-		if( imageset.pixel_size > 0 ) {
-			int dotsPerMeter = round(1000.0/imageset.pixel_size);
-			img.setDotsPerMeterX(dotsPerMeter);
-			img.setDotsPerMeterY(dotsPerMeter);
+		// Use JpegEncoder to save with proper colorspace handling
+		JpegEncoder encoder;
+		encoder.setColorSpace(JCS_RGB, 3);
+		encoder.setJpegColorSpace(JCS_RGB); // Keep RGB colorspace to preserve normal map values
+		encoder.setQuality(100);
+		encoder.setOptimize(true);
+		encoder.setChromaSubsampling(false); // No chroma subsampling for normal maps
+		
+		// Set spatial resolution if known
+		if(imageset.pixel_size > 0) {
+			float dotsPerMeter = 1000.0f / imageset.pixel_size;
+			encoder.setDotsPerMeter(dotsPerMeter);
 		}
-		img.save(destination.filePath(parameters.basename + ".jpg"), nullptr, 100);
+		
+		QString filename = destination.filePath(parameters.basename + ".jpg");
+		if(!encoder.encode(normalmap.data(), width, height, filename.toStdString().c_str())) {
+			error = "Failed to save normal map JPEG: " + filename;
+			status = FAILED;
+			return;
+		}
 	}
 
 	if(parameters.surface_width != 0 &&

@@ -8,6 +8,7 @@ TEMPLATE = app
 
 DEFINES += _USE_MATH_DEFINES
 DEFINES += NOMINMAX
+DEFINES += HAVE_LCMS2
 
 INCLUDEPATH += ../external/
 
@@ -18,16 +19,24 @@ win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
 unix:QMAKE_CXXFLAGS = -fopenmp
 unix:INCLUDEPATH += ../external/eigen-3.3.9/ /usr/include/eigen3
-unix:LIBS += -ljpeg -ltiff
+unix:LIBS += -ljpeg -ltiff -llcms2
 unix:LIBS += -fopenmp
 
 mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/3.1.0/include \
     /usr/local/include \
     /usr/local/include/eigen3
-mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/3.1.0/lib/ -ljpeg
+mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/3.1.0/lib/ -ljpeg -llcms2
 mac:LIBS += -framework Accelerate
 mac:QMAKE_CXXFLAGS += -Xpreprocessor -I/usr/local/include
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
+
+win32:LCMS2_HOME = $$getenv(LCMS2_HOME)
+win32:!isEmpty(LCMS2_HOME) {
+    INCLUDEPATH += $$LCMS2_HOME/include
+    LIBS += $$LCMS2_HOME/lib/lcms2.lib
+} else {
+    LIBS += -llcms2
+}
 
 
 DESTDIR = "../bin"
@@ -44,6 +53,7 @@ SOURCES += main.cpp \
     ../src/imageset.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/jpeg_encoder.cpp \
+    ../src/icc_profiles.cpp \
     ../src/lens.cpp \
     ../src/normals/bni_normal_integration.cpp \
     ../src/normals/fft_normal_integration.cpp \
@@ -74,6 +84,7 @@ HEADERS += \
     ../src/imageset.h \
     ../src/jpeg_decoder.h \
     ../src/jpeg_encoder.h \
+    ../src/icc_profiles.h \
     ../src/lens.h \
     ../src/material.h \
     ../src/normals/bni_normal_integration.h \

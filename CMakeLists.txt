@@ -71,6 +71,10 @@ if(NOT APPLE)
     message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
 endif()
 
+# LittleCMS2 setup (mandatory)
+find_package(LCMS2 REQUIRED)
+message(STATUS "Using LittleCMS2 include dirs: ${LCMS2_INCLUDE_DIRS}")
+
 
 # Version information
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/RELIGHT_VERSION")

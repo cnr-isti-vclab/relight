@@ -1,6 +1,7 @@
 #include "jpeg_encoder.h"
 
 #include <cmath>
+#include <cstring>
 #include <iostream>
 using namespace std;
 
@@ -48,6 +49,14 @@ void JpegEncoder::setChromaSubsampling(bool subsample) {
 
 void JpegEncoder::setDotsPerMeter(float dotsPerMeter) {
 	this->dotsPerCM = round( dotsPerMeter / 100.0 );  // JPEG requires a resolution in pixels/cm
+}
+
+void JpegEncoder::setICCProfile(const uint8_t* data, size_t length) {
+	icc_profile.assign(data, data + length);
+}
+
+void JpegEncoder::setICCProfile(const std::vector<uint8_t>& profile) {
+	icc_profile = profile;
 }
 
 
@@ -105,6 +114,9 @@ bool JpegEncoder::encode(uint8_t* img, int width, int height) {
 
 	jpeg_start_compress(&info, (boolean)true);
 
+	// Write ICC profile if present
+	writeICCProfile();
+
 	writeRows(img, height);
 /*	int rowSize = info.image_width * info.input_components;
 	while (info.next_scanline < info.image_height) {
@@ -150,6 +162,10 @@ bool JpegEncoder::init(int width, int height) {
 		}
 
 	jpeg_start_compress(&info, (boolean)true);
+	
+	// Write ICC profile if present
+	writeICCProfile();
+	
 	return true;
 }
 
@@ -191,6 +207,35 @@ void JpegEncoder :: onMessage(j_common_ptr /* cinfo */)
 	/*char buffer[JMSG_LENGTH_MAX];
 	(*cinfo->err->format_message) (cinfo, buffer);
 	fprintf(stderr, "%s\n", buffer);*/
+}
+
+void JpegEncoder::writeICCProfile() {
+	if (icc_profile.empty()) {
+		return;
+	}
+	
+	// ICC profile is written as one or more APP2 markers
+	// Each marker: "ICC_PROFILE\0" + seq_no + num_markers + data
+	// Maximum data per marker is 65533 bytes (65535 - 2 for marker length field)
+	const unsigned int MAX_BYTES_PER_MARKER = 65533 - 14; // 14 = header size
+	const unsigned int num_markers = (icc_profile.size() + MAX_BYTES_PER_MARKER - 1) / MAX_BYTES_PER_MARKER;
+	
+	size_t offset = 0;
+	for (unsigned int marker_num = 1; marker_num <= num_markers; marker_num++) {
+		size_t length = std::min(MAX_BYTES_PER_MARKER, (unsigned int)(icc_profile.size() - offset));
+		
+		// Build marker data
+		std::vector<uint8_t> marker_data(14 + length);
+		std::memcpy(&marker_data[0], "ICC_PROFILE\0", 12);
+		marker_data[12] = marker_num;
+		marker_data[13] = num_markers;
+		std::memcpy(&marker_data[14], &icc_profile[offset], length);
+		
+		// Write APP2 marker
+		jpeg_write_marker(&info, JPEG_APP0 + 2, marker_data.data(), marker_data.size());
+		
+		offset += length;
+	}
 }
 
 
