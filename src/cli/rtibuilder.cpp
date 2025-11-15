@@ -524,6 +524,8 @@ void RtiBuilder::pickBases(PixelArray &sample) {
 			}
 		}
 	}
+	
+	// Use histogram-based quantile approach for range computation
 	minmaxMaterial(sample);
 	finalizeMaterial();
 }
@@ -630,10 +632,6 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 		}
 	}
 
-
-	//TODO: range is need only for MRGB and MYCC
-
-
 	if(callback && !(*callback)("Coefficients quantization:", 0))
 		throw std::string("Cancelled.");
 
@@ -641,23 +639,61 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 		normalizeHistogram(sample, 0.95);
 	}
 
-	//TODO workers to speed up this.
+	// Build histograms for each plane using quantile-based approach
+	// This clamps outliers and improves resolution for the vast majority of the image
+	std::vector<std::vector<float>> values(nplanes);
+	
+	// Reserve space upfront to avoid reallocations during push_back
+	for(uint32_t p = 0; p < nplanes; p++) {
+		values[p].reserve(sample.npixels());
+	}
+	
+	// Collect all coefficient values from sampled pixels
 	for(uint32_t i = 0; i < sample.npixels(); i++) {
 		if(callback && ((i % 8000) == 0)) {
-			if(!(*callback)("Coefficients quantization:", 100*i/sample.npixels()))
+			if(!(*callback)("Computing histogram quantiles:", 50*i/sample.npixels()))
 				throw std::string("Cancelled.");
 		}
 
 		vector<float> principal = toPrincipal(sample[i]);
 
-		//find max and min of coefficients
+		//collect values for each plane
 		for(uint32_t p = 0; p < nplanes; p++) {
-			Material::Plane &plane = material.planes[p];
-			plane.min = std::min(principal[p], plane.min);
-			plane.max = std::max(principal[p], plane.max);
+			values[p].push_back(principal[p]);
+		}
+	}
+
+	// Compute quantile-based min/max for each plane
+	for(uint32_t p = 0; p < nplanes; p++) {
+		if(callback && ((p % 3) == 0)) {
+			if(!(*callback)("Computing histogram quantiles:", 50 + 50*p/nplanes))
+				throw std::string("Cancelled.");
 		}
 
+		Material::Plane &plane = material.planes[p];
+		
+		size_t n = values[p].size();
+		if(n == 0)
+			continue;
+			
+		// Compute quantile indices
+		size_t lowIdx = (size_t)((1.0 - rangeQuantile) / 2.0 * n);
+		size_t highIdx = (size_t)((1.0 + rangeQuantile) / 2.0 * n);
+		lowIdx = std::min(lowIdx, n - 1);
+		highIdx = std::min(highIdx, n - 1);
+		
+		std::nth_element(values[p].begin(), values[p].begin() + lowIdx, values[p].end());
+		plane.min = values[p][lowIdx];
+		
+		std::nth_element(values[p].begin() + lowIdx, values[p].begin() + highIdx, values[p].end());
+		plane.max = values[p][highIdx];
+		
+		// Ensure we have a valid range
+		if(plane.max <= plane.min) {
+			plane.max = plane.min + 1e-6f;
+		}
 	}
+
 	//compute common min max for 3 colors
 	if(commonMinMax && colorspace == RGB) {
 		auto &planes = material.planes;
@@ -673,17 +709,11 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 }
 
 void RtiBuilder::finalizeMaterial() {
-	float maxscale = 0.0f;
-	//ensure scale is the same for all materials
-	for(auto &plane: material.planes)
-		maxscale = std::max(plane.max - plane.min, maxscale);
-
-	//tested different scales for different coefficients (taking into account quantization for instance)
-	// for all datasets the quality/space is worse.
-	//rangecompress allows better quality at a large cost.
+	// Quantization uses the histogram-based min/max from each plane
+	// This provides better resolution by clamping outliers
 	int c = 0;
 	for(Material::Plane &plane: material.planes) {
-		plane.scale = rangecompress*(plane.max - plane.min) + (1 - rangecompress)*maxscale;
+		plane.scale = plane.max - plane.min;
 		plane.bias = -plane.min/plane.scale;
 		plane.scale /= 255.0f;
 		if(colorspace == LRGB && c < 3) { //no need to scale the base image.

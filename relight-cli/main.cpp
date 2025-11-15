@@ -23,7 +23,7 @@ using namespace std;
 void help() {
 	cout << "Create an RTI from a set of images and a set of light directions (.lp) in a folder.\n";
 	cout << "It is also possible to convert from .ptm or .rti to relight format and viceversa.\n\n";
-	cout << "Usage: relight-cli [-bpqy3PnmMwkrsSRBcCeEv]<input folder> [output folder]\n\n";
+	cout << "Usage: relight-cli [-bpqy3PnmMwkrsSRQcCeEv]<input folder> [output folder]\n\n";
 	cout << "       relight-cli [-q] <input.ptm|.rti> [output folder]\n\n";
 	cout << "       relight-cli [-q] <input.json> [output.ptm]\n\n";
 	cout << "\tinput folder containing a .lp or .dome with number of photos and light directions\n";
@@ -48,7 +48,8 @@ void help() {
 	cout << "\t  -s <int>  : sampling RAM for pca  in MB (default 500MB)\n";
 	cout << "\t  -S <float>: sigma in rgf gaussian interpolation default 0.125 (~100 img)\n";
 	cout << "\t  -R <float>: regularization coeff for bilinear default 0.1\n";
-	cout << "\t  -B <float>: range compress bits for planes (default 0.0) 1.0 means compress\n";
+	cout << "\t  -Q <float>: quantile for histogram-based range compression (default 0.995 = 99.5%)\n";
+	cout << "\t              Clamps outliers to improve quantization resolution for most pixels\n";
 	cout << "\t  -c <float>: coeff quantization (to test!) default 1.5\n";
 	cout << "\t  -C        : apply chroma subsampling \n";
 	cout << "\t  -e        : evaluate reconstruction error (default: false)\n";
@@ -112,7 +113,7 @@ int main(int argc, char *argv[]) {
 
 	opterr = 0;
 	char c;
-	while ((c  = getopt (argc, argv, "hmMn3:r:d:q:p:s:c:reE:b:y:S:R:CD:B:L:k:P:v")) != -1)
+	while ((c  = getopt (argc, argv, "hmMn3:r:d:q:p:s:c:reE:b:y:S:R:CD:Q:L:k:P:v")) != -1)
 		switch (c)
 		{
 		case 'h':
@@ -276,12 +277,12 @@ int main(int argc, char *argv[]) {
 				builder.regularization = reg;
 			break;
 		}
-		case 'B': {
-			float compress = float(atof(optarg));
-			if(compress >= 0.0f && compress <= 1.0f)
-				builder.rangecompress = compress;
+		case 'Q': {
+			float quantile = float(atof(optarg));
+			if(quantile > 0.0f && quantile < 1.0f)
+				builder.rangeQuantile = quantile;
 			else {
-				cerr << "Range compression must be between 0 and 1!\n" << endl;
+				cerr << "Range quantile must be between 0 and 1 (e.g., 0.995 for 99.5%)!\n" << endl;
 				return 1;
 			}
 			break;
@@ -512,8 +513,12 @@ int main(int argc, char *argv[]) {
 		dome.directions = builder.imageset.lights();
 		//dome.updateSphereDirections();
 	}
-
-	builder.init(callback);
+	try {
+		builder.init(callback);
+	} catch(QString error) {
+		cerr << qPrintable(error) << endl;
+		return 1;
+	}
 	int size = builder.save(output, quality);
 	if(size == 0) {
 		cerr << "Failed saving: " << builder.error << " !\n" << endl;
