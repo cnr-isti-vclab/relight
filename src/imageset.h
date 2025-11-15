@@ -8,6 +8,8 @@
 #include <functional>
 #include <string>
 
+#include <lcms2.h>
+
 #include <Eigen/Core>
 #include <QStringList>
 #include <QPoint>
@@ -77,7 +79,13 @@ public:
 	void setLights(const std::vector<Eigen::Vector3f> &lights, const Dome::LightConfiguration configuration);
 	std::vector<Eigen::Vector3f> &lights() { return lights1; }
 
+	void setForceSRGB(bool enable) { force_srgb = enable; }
+	bool isSRGBForced() const { return force_srgb; }
+
 	size_t size() { return size_t(images.size()); }
+
+	bool hasICCProfile() const { return !icc_profile_data.empty(); }
+	const std::vector<uint8_t> &getICCProfile() const { return icc_profile_data; }
 
 	QImage maxImage(std::function<bool(std::string stage, int percent)> *callback = nullptr); 
 	QSize imageSize() { return QSize(image_width, image_height); }
@@ -96,10 +104,17 @@ public:
 protected:
 	std::function<bool(QString stage, int percent)> *callback;
 	std::vector<JpegDecoder *> decoders;
+	std::vector<uint8_t> icc_profile_data;
+	cmsHPROFILE input_profile = nullptr;
+	cmsHTRANSFORM color_transform = nullptr;
+	bool force_srgb = false;
+	cmsHPROFILE srgb_profile = nullptr;
 
 private:
 
 	void compensateIntensity(PixelArray &pixels);
+	void ensureColorTransform();
+	void applyColorTransform(uint8_t *data, size_t pixel_count);
 };
 
 #endif // IMAGESET_H

@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstdint>
+#include <vector>
 
 #include <jpeglib.h>
 
@@ -26,6 +27,11 @@ public:
 	void setChromaSubsampling(bool subsample);
 	void setDotsPerMeter(float dotsPerMeter);
 
+	// ICC color profile support
+	void setICCProfile(const uint8_t* data, size_t length);
+	void setICCProfile(const std::vector<uint8_t>& profile);
+	bool hasICCProfile() const { return !icc_profile.empty(); }
+
 	bool encode(uint8_t *img, int width, int height, FILE* file);
 	bool encode(uint8_t *img, int width, int height, const char* path);
 	bool encode(uint8_t *img, int width, int height, uint8_t *&buffer, int &length);
@@ -37,6 +43,7 @@ public:
 private:
 	bool init(int width, int height);
 	bool encode(uint8_t* img, int width, int height);
+	void writeICCProfile();
 	static void onError(j_common_ptr cinfo);
 	static void onMessage(j_common_ptr cinfo);
 
@@ -45,13 +52,14 @@ private:
 	jpeg_error_mgr errMgr;
 
 	J_COLOR_SPACE colorSpace = JCS_RGB;
-	J_COLOR_SPACE jpegColorSpace = JCS_YCbCr;
+	J_COLOR_SPACE  jpegColorSpace = JCS_YCbCr;
 	int numComponents = 3;
 	bool optimize = true;
 	bool subsample = false;
 
 	int quality = 95;
 	int dotsPerCM = 0;
+	std::vector<uint8_t> icc_profile;
 };
 
 #endif // JPEGENCODER_H_

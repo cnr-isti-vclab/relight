@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstdint>
+#include <vector>
 
 #include <jpeglib.h>
 
@@ -36,15 +37,21 @@ public:
 	bool restart();
 	bool chromaSubsampled() { return subsampled; }
 
+	// ICC color profile support
+	bool hasICCProfile() const { return !icc_profile.empty(); }
+	const std::vector<uint8_t>& getICCProfile() const { return icc_profile; }
+
 private:
 	FILE *file = nullptr;
 	bool init(int &width, int &height);
 	bool decode(uint8_t*& img, int& width, int& height);
+	void extractICCProfile();
 
 	jpeg_decompress_struct decInfo;
 	jpeg_error_mgr errMgr;
 
 	bool subsampled = false;
+	std::vector<uint8_t> icc_profile;
 };
 
 #endif // JPEGDECODER_H_

@@ -17,6 +17,12 @@ class QDir;
 //store pair light, coefficients for each resampled light direction.
 typedef std::vector<std::vector<std::pair<int, float>>> Resamplemap;
 
+// ICC color profile handling mode
+enum ColorProfileMode {
+	COLOR_PROFILE_PRESERVE,  // Pass through input ICC profile
+	COLOR_PROFILE_SRGB       // Convert to sRGB (requires LittleCMS2)
+};
+
 class RtiBuilder: public Rti {
 public:
 	ImageSet imageset;
@@ -35,6 +41,7 @@ public:
 	bool savemedians = false;
 	int crop[4] = { 0, 0, 0, 0 }; //left, top, width, height
 	size_t nworkers = 0; //autodetect optimal number
+	ColorProfileMode colorProfileMode = COLOR_PROFILE_PRESERVE;
 
 	std::function<bool(QString stage, int percent)> *callback = nullptr;
 

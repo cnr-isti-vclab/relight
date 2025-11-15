@@ -27,6 +27,7 @@ SET(HEADERS
 	../src/image.h
 	../src/jpeg_decoder.h
 	../src/jpeg_encoder.h
+	../src/icc_profiles.h
 	../src/relight_vector.h
 	../src/project.h
 	../src/dome.h
@@ -65,6 +66,7 @@ SET(SOURCES
 	../src/image.cpp
 	../src/jpeg_decoder.cpp
 	../src/jpeg_encoder.cpp
+	../src/icc_profiles.cpp
 	../src/project.cpp
 	../src/dome.cpp
 	../src/sphere.cpp
@@ -106,7 +108,11 @@ target_link_libraries(
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui
 		${RELIGHT_QT}::Concurrent
+		${LCMS2_LIBRARIES}
 )
+
+target_include_directories(relight-normals PRIVATE ${LCMS2_INCLUDE_DIRS})
+target_compile_definitions(relight-normals PUBLIC HAVE_LCMS2)
 
 target_compile_definitions(relight-normals PUBLIC _USE_MATH_DEFINES NOMINMAX)
 
