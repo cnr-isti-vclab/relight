@@ -66,15 +66,17 @@ void help() {
 int convertRTI(const char *file, const char *output, int quality);
 
 //converts relight into PTM format
-int convertToRTI(const char *file, const char *output);
+int convertToRTI(const char *file, const char *output, int quality, QString &msg);
 
-void test(std::string input, std::string output,  Eigen::Vector3f light) {
+void test(std::string input, std::string output,  Eigen::Vector3f light, float test_sigma = 0.0f) {
 
 	Rti rti;
 	if(!rti.load(input.c_str())) {
 		cerr << "Failed loading rti: " << input << " !\n" << endl;
 		return;
 	}
+	if(test_sigma != 0.0f)
+		rti.sigma = test_sigma;
 
 	light = light / light.norm();
 	//   rti.render(light[0], light[1], buffer.data());
@@ -103,6 +105,7 @@ int main(int argc, char *argv[]) {
 
 	RtiBuilder builder;
 	bool skip_rti = false;
+	float sigma_test = 0.0f;
 	Dome dome;
 	int quality = 95;
 	bool evaluate_error = false;
@@ -247,8 +250,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'S': {
 			float sigma = float(atof(optarg));
-			if(sigma > 0)
-				builder.sigma = sigma;
+			if(sigma > 0) {
+				sigma_test = builder.sigma = sigma;
+			}
 			break;
 		}
 		case 'k': {
@@ -382,7 +386,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	std::string input = argv[optind++];
-	std::string output("./");
+	const char *output = "./";
 	if(optind < argc)
 		output = argv[optind++];
 
@@ -391,14 +395,14 @@ int main(int argc, char *argv[]) {
 			cerr << "Specify an output image filename using -D option\n" << endl;
 			return -1;
 		}
-		test(input, redrawdir.toStdString(), light);
+		test(input, redrawdir.toStdString(), light, sigma_test);
 		return 0;
 	}
 
 	if(skip_rti) {
 
 		try {
-			QFileInfo info(output.c_str());
+			QFileInfo info(output);
 			QString folder;
 			QString normals_filename;
 			QString albedo_filename;
@@ -483,11 +487,22 @@ int main(int argc, char *argv[]) {
 			}
 
 		} else if(info.suffix() == "json") {
-			return convertToRTI(input.c_str(), output.c_str());
+			try {
+				QString msg;
+				int status = convertToRTI(input.c_str(), output, quality, msg);
+				if(status == 1) {
+					cerr << qPrintable(msg) << endl;
+				}
+			} catch(QString error) {
+				cerr << qPrintable(error) << endl;
+				return 1;
+			}
+			return 0;
 
 		} else if(info.suffix() == "rti" || info.suffix() == "ptm") {
 			try {
-				return convertRTI(input.c_str(), output.c_str(), quality);
+				convertRTI(input.c_str(), output, quality);
+
 			} catch(QString error) {
 				cerr << qPrintable(error) << endl;
 				return 1;
@@ -513,15 +528,29 @@ int main(int argc, char *argv[]) {
 		dome.directions = builder.imageset.lights();
 		//dome.updateSphereDirections();
 	}
+	QString out = output;
+	int size = 0; //size of the output
+
 	try {
+		if(out.endsWith(".ptm") || out.endsWith(".rti"))
+			builder.commonMinMax = true; //needed by legacy formats
+
 		builder.init(callback);
+
+		if(out.endsWith(".ptm")) {
+			size = builder.savePTM(output);
+		} else if(out.endsWith(".rti")) {
+
+			size = builder.saveUniversal(output);
+		} else {
+			size = builder.save(output, quality);
+		}
+		if(size == 0) {
+			cerr << "Failed saving: " << builder.error << " !\n" << endl;
+			return 1;
+		}
 	} catch(QString error) {
 		cerr << qPrintable(error) << endl;
-		return 1;
-	}
-	int size = builder.save(output, quality);
-	if(size == 0) {
-		cerr << "Failed saving: " << builder.error << " !\n" << endl;
 		return 1;
 	}
 
@@ -533,7 +562,7 @@ int main(int argc, char *argv[]) {
 
 	if(redrawdir.size()) {
 		Rti rti;
-		if(!rti.load(output.c_str())) {
+		if(!rti.load(output)) {
 			cerr << "Failed loading rti: " << output << " !\n" << endl;
 			return 1;
 		}
@@ -555,7 +584,7 @@ int main(int argc, char *argv[]) {
 
 	if(evaluate_error) {
 		Rti rti;
-		if(!rti.load(output.c_str())) {
+		if(!rti.load(output)) {
 			cerr << "Failed loading rti: " << output << " !\n" << endl;
 			return 1;
 		}
@@ -594,7 +623,7 @@ int main(int argc, char *argv[]) {
 			return 0;
 		}
 
-		QDir out(output.c_str());
+		QDir out(output);
 		builder.setupFromFolder(input.c_str());
 		ImageSet &imgset = builder.imageset;
 

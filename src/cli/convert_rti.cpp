@@ -17,7 +17,6 @@ int convertRTI(const char *file, const char *output, int quality) {
 	LRti lrti;
 	if(!lrti.load(file)) {
 		throw QString("Failed loading file %1: %2").arg(file).arg(lrti.error.c_str());
-		return 1;
 	}
 
 	RtiBuilder rti;
@@ -62,7 +61,7 @@ int convertRTI(const char *file, const char *output, int quality) {
 				rti.bias.push_back(lrti.bias[order[i]]);
 			}
 		}
-	} else {
+	} else { //HSH
 		rti.scale.resize(lrti.scale.size()*3);
 		rti.bias.resize(lrti.scale.size()*3);
 		for(size_t i = 0; i < lrti.scale.size(); i++) {
@@ -88,7 +87,8 @@ int convertRTI(const char *file, const char *output, int quality) {
 
 
 
-int convertToRTI(const char *filename, const char *output) {
+//0 ok, 1 warning 2 error
+int convertToRTI(const char *filename, const char *output, int quality, QString &msg) {
 	QFile file(filename);
 	if(!file.open(QFile::ReadOnly))
 		throw QString("Failed opening: %1").arg(filename);
@@ -101,7 +101,8 @@ int convertToRTI(const char *filename, const char *output) {
 	lrti.height = obj["height"].toInt();
 	QString type = obj["type"].toString();
 	QString colorspace = obj["colorspace"].toString();
-	int quality = obj["quality"].toInt();
+	//if the original data is low quality there is no reason to use a higher quality
+	quality = std::min(quality, obj["quality"].toInt());
 	uint nplanes = uint(obj["nplanes"].toInt());
 	lrti.scale.resize(nplanes);
 	lrti.bias.resize(nplanes);
@@ -114,18 +115,16 @@ int convertToRTI(const char *filename, const char *output) {
 
 	if(type == "ptm") {
 		order = { 5,3,4, 0,2,1};
+		lrti.scale.resize(6);
+		lrti.bias.resize(6);
 		if(colorspace == "rgb") {
 			lrti.type = LRti::PTM_RGB;
 			if(nplanes != 18)
 				throw QString("Wrong number of planes (%1) was expecting 18.").arg(nplanes);
 
-			int count = 0;
-			lrti.scale.resize(6);
-			lrti.bias.resize(6);
 			for(uint i = 0; i < 6; i++) {
-				lrti.scale[order[i]] = float(scale[count*3].toDouble());
-				lrti.bias[order[i]] = float(bias[count*3].toDouble());
-				count++;
+				lrti.scale[order[i]] = float(scale[i*3].toDouble());
+				lrti.bias[order[i]] = float(bias[i*3].toDouble());
 			}
 
 		} else if(colorspace == "lrgb") {
@@ -133,14 +132,11 @@ int convertToRTI(const char *filename, const char *output) {
 			if(nplanes != 9)
 				throw QString("Wrong number of planes (%1) was expecting 9.").arg(nplanes);
 
-			int count = 3;
 			for(uint i = 0; i < 6; i++) {
-				lrti.scale[order[i]] = float(scale[count].toDouble());
-				lrti.bias[order[i]] = float(bias[count].toDouble());
-				count++;
+				lrti.scale[order[i]] = float(scale[i+3].toDouble());
+				lrti.bias[order[i]] = float(bias[i+3].toDouble());
 			}
-			lrti.scale.resize(6);
-			lrti.bias.resize(6);
+
 		} else {
 			throw QString("Cannot convert PTM relight with colorspace: %1").arg(colorspace);
 		}
@@ -179,8 +175,24 @@ int convertToRTI(const char *filename, const char *output) {
 	//RTIViewer does not support RGB PTM  in JPEG format.
 	if(type == "ptm" && colorspace == "rgb")
 		encoding = LRti::RAW;
+
 	//supports only RAW!
-	lrti.encodeUniversal(output, quality);
+	QString out(output);
+	if(out.endsWith("rti")) {
+		lrti.encodeUniversal(output, quality);
+		if(lrti.type == LRti::PTM_LRGB || lrti.type == LRti::PTM_RGB) {
+			msg = "RTIViewer wont read universal rti (.rti) with PTM basis, use .ptm";
+			return 1;
+		}
+
+	} else if(out.endsWith("ptm")) {
+		lrti.encode(encoding, output, quality);
+		if((lrti.width%8) != 8) {
+			msg = "RTIVIewer does not support compressed .ptm when width is not a multiple of 8.\n"
+					"The image will be slightly cropped.";
+			return 1;
+		}
+	}
 
 	return 0;
 }

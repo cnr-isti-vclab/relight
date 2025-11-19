@@ -1029,22 +1029,25 @@ public:
 	}
 };
 
+template <class C> std::ostringstream &join(std::vector<C> &v, std::ostringstream &stream, const char *separator = " ") {
+	for(size_t i = 0; i < v.size(); i++) {
+		stream << v[i];
+		if(i != v.size()-1)
+			stream << separator;
+	}
+	return stream;
+}
+
 size_t RtiBuilder::savePTM(const std::string &output) {
 	//.ptm format requires min/max to be 1 per r, g and b;
 	assert(commonMinMax == true);
 
-	//.ptm coeff order is x*x, y*y, x*y, x, y, 1
-	//while in relight it is: 1, x, y, xx, xy, yy,
-	int coeffRemap[6] = { 3, 5, 4, 1, 2, 0};
 
 
-	//update scale bias and range in Rti structure
-	scale.resize(nplanes);
-	bias.resize(nplanes);
-
-	for(uint32_t p = 0; p < nplanes; p++) {
-		scale[p] = material.planes[p].scale;
-		bias[p]  = material.planes[p].bias;
+	// Crop width to multiple of 8 for LRGB JPEG (RTIViewer requirement)
+	uint32_t write_width = width;
+	if(colorspace == LRGB) {
+		write_width = 8 * (width / 8);
 	}
 
 	FILE *file = fopen(output.c_str(), "wb");
@@ -1060,35 +1063,49 @@ size_t RtiBuilder::savePTM(const std::string &output) {
 	stream << "PTM_1.2\n";
 	assert(colorspace == RGB || colorspace == LRGB);
 	if(colorspace == RGB)
-		stream << "PTM_FORMAT_RGB\n"; //PTM_FORMAT_JPEG_LRGB for JPEG
+		stream << "PTM_FORMAT_RGB\n";
 	else
-		stream << "PTM_FORMAT_LRGB\n"; //PTM_FORMAT_JPEG_LRGB for JPEG
+		stream << "PTM_FORMAT_JPEG_LRGB\n";
 
-	stream <<  width << "\n" << height << "\n";
+	stream << write_width << "\n" << height << "\n";
 
+
+
+	//.ptm coeff order is x*x, y*y, x*y, x, y, 1
+	//while in relight it is: 1, x, y, xx, xy, yy,
+	int	scale_order[6] = { 5,3,4, 0,2,1};
 
 	//bias and scale are shared among rgb for the corresponding harmonic
 	vector<int> gbias(6);
 	vector<float> gscale(6);
 
 	for(size_t i = 0; i < gbias.size(); i++) {
-		int j = coeffRemap[i];
 		if(colorspace == LRGB) {
-			gbias[i] = static_cast<int>(bias[j+3]*255.0);
-			gscale[i] = scale[j+3];
+			gbias[scale_order[i]] = std::max(0, std::min(255, (int)floor(material.planes[i+3].bias*255.0 + 0.5)));
+			gscale[scale_order[i]] = material.planes[i+3].scale;
 		} else {
-			gbias[i] = static_cast<int>(bias[j*3]*255.0);
-			gscale[i] = scale[j*3];
+			gbias[scale_order[i]] = std::max(0, std::min(255, (int)floor(material.planes[i*3].bias*255.0 + 0.5)));
+			gscale[scale_order[i]] = material.planes[i*3].scale;
 		}
 	}
-	for(float s: gscale)
-		stream << s << " ";
-	stream << "\n";
-	for(float b: gbias)
-		stream << b << " ";
-	stream << "\n";
+
+	join(gscale, stream) << "\n";
+	join(gbias, stream) << "\n";
+
+	if(colorspace == LRGB) {
+		// JPEG compression parameters
+		int quality = 95;
+		stream << quality << "\n";
+		stream << "0 0 0 0 0 0 0 0 0\n";  // compressed offset
+		stream << "0 0 0 0 0 0 0 0 0\n";  // compressed side-information
+		stream << "0 0 0 0 0 0 0 0 0\n";  // compressed order
+		stream << "0 1 2 3 4 5 6 7 8\n";  // JPEG transforms
+		stream << "-1 -1 -1 -1 -1 -1 -1 -1 -1\n";  // reference planes
+		// JPEG sizes will be written after encoding
+	}
 
 	fwrite(stream.str().data(), 1, stream.str().size(), file);
+
 
 	//second reading.
 	imageset.restart();
@@ -1105,12 +1122,21 @@ size_t RtiBuilder::savePTM(const std::string &output) {
 	QThreadPool pool;
 	pool.setMaxThreadCount(nworkers);
 
-	vector<uint8_t> line(width*6);
+	// RGB: create buffer for direct writing
+	// LRGB: collect planes for JPEG encoding
+	vector<uint8_t> buffer;
+	vector<vector<uint8_t>> planes;
+	
+	if(colorspace == RGB) {
+		// RGB buffer: 3 color channels * width * height * 6 coefficients
+		buffer.resize(width * height * 6 * 3);
+	} else {
+		// LRGB: 9 planes (cropped width)
+		planes.resize(9);
+		for(auto &p: planes)
+			p.resize(write_width * height);
+	}
 
-	//PTM RGB data is stored as such: first Red plane, then Green then Blue ``plane,
-	//for each pixel 6 coefficients
-
-	size_t data_start = ftell(file);
 	size_t component_size = width*height*6;
 	size_t line_size = width*6;
 
@@ -1118,7 +1144,6 @@ size_t RtiBuilder::savePTM(const std::string &output) {
 		if(callback && y > 0) {
 			bool keep_going = (*callback)("Saving:", 100*(y)/(height + nworkers-1));
 			if(!keep_going) {
-				cout << "TODO: clean up directory, we are already saving!" << endl;
 				break;
 			}
 		}
@@ -1126,35 +1151,39 @@ size_t RtiBuilder::savePTM(const std::string &output) {
 			futures[y - nworkers].waitForFinished();
 
 			Worker *doneworker = workers[y - nworkers];
-
 			uint32_t row = y - nworkers;
+
 			if(colorspace == RGB) {
-				//worker line is organized for jpeg saving (so plane 1, 2, 3 in line[0] as data rgbrgbrgb etc.
+				int invorder[18] = { 5,11,17,  3,9,15,  4,10,16,  0,6,12,  2,8,14, 1,7,13 };
+				// RGB: write directly to buffer in correct order
+				// Data is organized: Red plane (all pixels, 6 coeff each), Green plane, Blue plane
+
+				int coeffRemap[6] = { 3, 5, 4, 1, 2, 0};
 				for(int c = 0; c < 3; c++) {
-					fseek(file, data_start + component_size*c + line_size*(height - row-1), SEEK_SET);
+					uint8_t *line = &buffer[component_size*c + line_size*(height - row-1)];
 
 					for(uint32_t x = 0; x < width; x++) {
 						for(uint32_t j = 0; j < doneworker->line.size(); j++) { //these are 6 rgb
 							line[x*6 + j] = doneworker->line[coeffRemap[j]][x*3 + c];
 						}
 					}
-					fwrite(line.data(), 1, line.size(), file);
 				}
-			} else { //data is organized first for each pixel the 6 luma coefficient (remapped), then the RGB base image. (PTM 1.2)
-				for(uint32_t x = 0; x < width; x++) {
-					for(uint32_t j = 0; j < 6; j++) { //these are 2 rgb
-						int k = coeffRemap[j];
-						int jpeg = 1+k/3;
-						int component = k%3;
-						line[x*6 + j] = doneworker->line[jpeg][x*3 + component];
+			} else {
+				int invorder[9] = {6,7,8, 5,3,4, 0,2,1};
+
+				// LRGB: 9 planes (RGB base + 6 luma coefficients) - crop to write_width
+				for(uint32_t x = 0; x < write_width; x++) {
+					uint32_t idx = x + (height - row - 1)*write_width;
+					// RGB base
+					for(int p = 0; p < 9; p++) {
+						int k = invorder[p];
+						int relight_jpeg = p/3;
+						int relight_component = p%3;
+						planes[k][idx] = doneworker->line[relight_jpeg][x*3 + relight_component];
 					}
 				}
-				fseek(file, data_start + line_size*(height - row-1), SEEK_SET);
-				fwrite(line.data(), 1, width*6, file);
-
-				fseek(file, data_start + line_size*height + 3*width*(height - row-1), SEEK_SET);
-				fwrite(doneworker->line[0].data(), 1, width*3, file);
 			}
+
 			if(y < height)
 				workers[y] = doneworker;
 			else
@@ -1167,6 +1196,40 @@ size_t RtiBuilder::savePTM(const std::string &output) {
 			imageset.readLine(worker->sample);
 
 			futures[y] = QtConcurrent::run(&pool, [worker](){worker->run(); });
+		}
+	}
+
+	// Write data to file
+	if(colorspace == RGB) {
+		// RGB: write buffer directly
+		fwrite(buffer.data(), 1, buffer.size(), file);
+	} else {
+		// LRGB: encode as JPEG - 9 grayscale images (using cropped width)
+		int quality = 95;
+		vector<uint8_t*> buffers(9, nullptr);
+		vector<int> sizes(9, 0);
+
+		// Encode each plane as a grayscale JPEG
+		for(int i = 0; i < 9; i++) {
+			JpegEncoder enc;
+			enc.setQuality(quality);
+			enc.setColorSpace(JCS_GRAYSCALE, 1);
+			enc.setJpegColorSpace(JCS_GRAYSCALE);
+
+			enc.encode(planes[i].data(), write_width, height, buffers[i], sizes[i]);
+		}
+
+		// Write JPEG sizes to header
+		std::ostringstream size_stream;
+		for(int i = 0; i < 9; i++)
+			size_stream << sizes[i] << (i < 8 ? " " : "\n");
+		size_stream << "0 0 0 0 0 0 0 0 0\n";  // motion vector residuals
+		fwrite(size_stream.str().data(), 1, size_stream.str().size(), file);
+
+		// Write JPEG data
+		for(int i = 0; i < 9; i++) {
+			fwrite(buffers[i], 1, sizes[i], file);
+			delete[] buffers[i];
 		}
 	}
 	int64_t total = ftell(file);
@@ -1247,7 +1310,7 @@ size_t RtiBuilder::saveUniversal(const std::string &output) {
 
 			Worker *doneworker = workers[y - nworkers];
 
-			//worker line is organized for jpeg saving (so plane 1, 2, 3 in line[0] as data rgbrgrg etc.
+			//worker line is organized for jpeg saving (so plane 1, 2, 3 in line[0] as data rgbrgbrgb etc.
 			for(size_t j = 0; j < doneworker->line.size(); j++) {
 				for(uint32_t x = 0; x < width; x++) {
 					line[x*nplanes + j + 0*nplanes/3] = doneworker->line[j][x*3+0];

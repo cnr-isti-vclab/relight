@@ -404,6 +404,17 @@ template <class C> std::ostringstream &join(std::vector<C> &v, std::ostringstrea
 	return stream;
 }
 
+void LRti::cropToEight() {
+	int new_width = 8*(width/8);
+	for(auto &plane: data) {
+		for(int y = 0; y < height; y++) {
+			memcpy(&plane[y*new_width], &plane[y*width], new_width);
+		}
+		plane.resize(height*new_width);
+	}
+	width = new_width;
+}
+
 bool LRti::encode(Encoding encoding, int &size, uint8_t *&buffer, int quality) {
 	std::string f;
 	switch(encoding) {
@@ -414,13 +425,13 @@ bool LRti::encode(Encoding encoding, int &size, uint8_t *&buffer, int quality) {
 	case JPEG:
 		if(type == PTM_LRGB) f = "PTM_FORMAT_JPEG_LRGB";
 		else if(type == PTM_RGB) f = "PTM_FORMAT_JPEG_RGB";
+		cropToEight();
 		break;
 	default:
 		break;
 	}
 	if(f.empty()) {
-		cerr << "Unsupported or incompatible save format" << endl;
-		return false;
+		throw QString(".ptm supports only PTM basis");
 	}
 	
 	int bsize = 0;  //binary size
@@ -448,9 +459,11 @@ bool LRti::encode(Encoding encoding, int &size, uint8_t *&buffer, int quality) {
 	stream << f << "\n";
 	stream << width << "\n" << height << "\n";
 	join(scale, stream) << "\n";
-	//for(auto &b: bias)
-	//	b = floor(b*255.0 + 0.5);
-	join(bias, stream) << "\n";
+
+	std::vector<int> int_bias(6);
+	for(int i = 0; i < 6; i++)
+		int_bias[i] = std::max(0, std::min(255, (int)floor(bias[i]*255.0 + 0.5)));
+	join(int_bias, stream) << "\n";
 	
 	switch(encoding) {
 	case RAW:
@@ -570,7 +583,7 @@ bool LRti::encodeUniversal(const char *filename, int /*quality*/) {
 	vector<float> gscale(basisTerms[type]); 
 	
 	for(size_t i = 0; i < gbias.size(); i++) {
-		gbias[i] = -bias[i];
+		gbias[i] = -bias[i] * scale[i];
 		gscale[i] = scale[i];
 	}
 	fwrite(gscale.data(), sizeof(float), gscale.size(), file);
@@ -661,12 +674,12 @@ bool LRti::encodeJPEG(vector<int> &sizes, vector<uint8_t *> &buffers, int qualit
 				delete []buffers[i];
 			return false;
 		}
-		std::ostringstream filename;
+		/*std::ostringstream filename;
 		filename << "coeff_" << k << ".jpg";
 		
 		FILE *file = fopen(filename.str().c_str(), "wb");
 		fwrite(buffers[k], 1, sizes[k], file);
-		fclose(file);
+		fclose(file); */
 	}
 	return true;
 }

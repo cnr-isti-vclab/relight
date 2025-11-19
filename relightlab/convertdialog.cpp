@@ -15,7 +15,7 @@
 #include <QDesktopServices>
 
 
-int convertToRTI(const char *filename, const char *output);
+int convertToRTI(const char *filename, const char *output, int quality, QString &msg);
 int convertRTI(const char *file, const char *output, int quality);
 
 ConvertDialog::ConvertDialog() {
@@ -232,11 +232,12 @@ void ConvertDialog::relightToRti(QString input) {
 				return;
 			}
 		}
-		int status = convertToRTI(input.toStdString().c_str(), output.toStdString().c_str());
-		if (status != 0) {
-			QMessageBox::critical(this, "Conversion failed", "Failed to convert to .rti format.");
-			return;
-		}
+		QString msg;
+		int status = convertToRTI(input.toStdString().c_str(), output.toStdString().c_str(), quality, msg);
+		if (status == 2) {
+			QMessageBox::critical(this, "Conversion failed", msg);
+		} else if(status == 1)
+			QMessageBox::warning(this, "Warning: ", msg);
 		QMessageBox::information(this, "Conversion successful", "Successfully converted to .rti format.");
 		
 	} catch (QString e) {

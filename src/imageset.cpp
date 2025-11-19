@@ -213,8 +213,10 @@ bool ImageSet::initImages(const char *_path) {
 		if(!dec->init(filepath.toStdString().c_str(), w, h))
 			throw QString("Failed decoding image: " + filepath);
 
-		if(width && (width != w || height != h))
+		if(width && (width != w || height != h)) {
+			std::cout << width << " " << w << " h: " << height << " " << h << endl;
 			throw QString("Inconsistent image size for " + filepath);
+		}
 
 		right = image_width = width = w;
 		bottom = image_height = height = h;

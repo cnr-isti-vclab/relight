@@ -49,6 +49,9 @@ protected:
 	//load jpeg into data;
 	bool decodeJPEG(size_t size, unsigned char *buffer, uint32_t plane);
 	bool encodeJPEG(std::vector<int> &sizes, std::vector<uint8_t *> &buffers, int quality = 90);
+
+	//crop width to multiple of 8 for RTIViewer compatibility
+	void cropToEight();
 };
 
 #endif // RRTI_H
