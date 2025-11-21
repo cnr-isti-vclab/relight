@@ -137,7 +137,11 @@ HomeFrame::HomeFrame() {
 }
 
 void HelpBrowser::doSetSource(const QUrl &url, QTextDocument::ResourceType type) {
-	QFile html_file(":/docs/" + url.url());
+	// Extract the path and fragment from the URL
+	QString urlPath = url.path();
+	QString fragment = url.fragment();
+
+	QFile html_file(":/docs/" + urlPath);
 	html_file.open(QFile::ReadOnly);
 	QString htmlContent = html_file.readAll();
 
