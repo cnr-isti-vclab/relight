@@ -13,7 +13,6 @@ void ZoomTask::run()
     bool deleteFiles = hasParameter("deletefiles") ? (*this)["deletefiles"].value.toBool() : false;
 
 	std::function<bool(QString s, int n)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
-    QString zoomError;
 
     // Try copying info.json to the output folder to allow for casting
     if (output.compare(input_folder) != 0)
@@ -43,41 +42,41 @@ void ZoomTask::run()
         return;
     }
 
-    switch (m_ZoomType)
-    {
-    case ZoomType::DeepZoom:
-        // Deepzoom error checking
-        if (quality == -1) {
-            error = "Unspecified jpeg quality for DeepZoom";
-            status = FAILED;
-            return;
-        }else if (overlap == -1) {
-            error = "Unspecified overlap for DeepZoom";
-            status = FAILED;
-            return;
-        } else if (tilesize == -1) {
-            error = "Unspecified tile size for DeepZoom";
-            status = FAILED;
-            return;
-        } else {
-            // Launching deep zoom
-            zoomError = deepZoom(input_folder, output, quality, overlap, tilesize, callback);
+    try {
+        switch (m_ZoomType)
+        {
+        case ZoomType::DeepZoom:
+            // Deepzoom error checking
+            if (quality == -1) {
+                error = "Unspecified jpeg quality for DeepZoom";
+                status = FAILED;
+                return;
+            }else if (overlap == -1) {
+                error = "Unspecified overlap for DeepZoom";
+                status = FAILED;
+                return;
+            } else if (tilesize == -1) {
+                error = "Unspecified tile size for DeepZoom";
+                status = FAILED;
+                return;
+            } else {
+                // Launching deep zoom
+                deepZoom(input_folder, output, quality, overlap, tilesize, callback);
+            }
+            break;
+        case ZoomType::Tarzoom:
+            // Launching tar zoom
+            tarZoom(input_folder, output, callback);
+            break;
+        case ZoomType::ITarzoom:
+            // Launching itar zoom
+            itarZoom(input_folder, output, callback);
+            break;
+        case ZoomType::None:
+            break;
         }
-        break;
-    case ZoomType::Tarzoom:
-        // Launching tar zoom
-        zoomError = tarZoom(input_folder, output, callback);
-        break;
-    case ZoomType::ITarzoom:
-        // Launching itar zoom
-        zoomError = itarZoom(input_folder, output, callback);
-        break;
-    case ZoomType::None:
-        break;
-    }
-
-    if (zoomError.compare("OK") != 0) {
-        error = zoomError;
+    } catch(QString e) {
+        error = e;
         status = FAILED;
         return;
     }

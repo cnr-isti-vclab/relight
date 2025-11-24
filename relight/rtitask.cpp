@@ -31,7 +31,6 @@ void RtiTask::run() {
 	status = RUNNING;
 	QStringList steps = (*this)["steps"].value.toStringList();
 	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
-    QString err;
     for(auto step: steps) {
 		if(step == "relight")
 			relight();
@@ -39,22 +38,27 @@ void RtiTask::run() {
 			relight(true, true);
 		else if(step == "fromRTI")
 			fromRTI();
-		//TODO! deepZOOM should set error and status?
         else if(step == "deepzoom") {
-			if ((err = deepZoom(output, output, 95, 0, 256, callback)).compare("OK") != 0) {
-				error = err;
+			try {
+				deepZoom(output, output, 95, 0, 256, callback);
+			} catch(QString e) {
+				error = e;
                 status = FAILED;
 			}
         }
         else if(step == "tarzoom") {
-			if ((err = tarZoom(output, output, callback)).compare("OK") != 0) {
-				error = err;
+			try {
+				tarZoom(output, output, callback);
+			} catch(QString e) {
+				error = e;
                 status = FAILED;
 			}
         }
         else if(step == "itarzoom") {
-			if ((err = itarZoom(output, output, callback)).compare("OK") != 0) {
-				error = err;
+			try {
+				itarZoom(output, output, callback);
+			} catch(QString e) {
+				error = e;
                 status = FAILED;
 			}
         }

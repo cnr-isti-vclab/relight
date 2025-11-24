@@ -105,6 +105,7 @@ set (RELIGHT_HEADERS
 
 set (RELIGHTLAB_SOURCES
 	main.cpp 
+    zoom.cpp 
     processqueue.cpp 
     ../src/align.cpp 
     ../src/dome.cpp 

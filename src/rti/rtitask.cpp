@@ -13,6 +13,7 @@
 #include "zoom.h"
 #include "../src/rti.h"
 #include "../src/cli/rtibuilder.h"
+#include "../src/deepzoom.h"
 
 
 #include <iostream>
@@ -122,7 +123,7 @@ void RtiTask::run() {
 				mime = PTM;
 				builder->savePTM(output.toStdString());
 			} else
-				throw "Legacy RTI and PTM formats are supported only for HSH and PTM basis";
+				throw QString("Legacy RTI and PTM formats are supported only for HSH and PTM basis");
 		} else {
 			mime = RELIGHT;
 			builder->save(output.toStdString(), parameters.quality);
@@ -135,9 +136,11 @@ void RtiTask::run() {
 			openlime();
 
 		if(parameters.format == RtiParameters::IIP) {
-			QMessageBox::information(nullptr, "To be implemented!", "IIP multi plane tif format to be implemented");
-			status = FAILED;
-			return;
+			// Build TIFF pyramids for IIP using tiffZoom helper
+			tiffZoom(output, output, parameters.quality, 256,
+				[this](QString s, int n)->bool {
+					return progressed(s, n);
+				});
 		}
 		//format is now WEB
 		if(parameters.web_layout != RtiParameters::PLAIN) {
@@ -149,11 +152,9 @@ void RtiTask::run() {
 		if(parameters.web_layout == RtiParameters::ITARZOOM) {
 			itarZoom(output, output, callback);
 		}
-
-
-	} catch(std::string e) {
-		error = e.c_str();
-		status = STOPPED;
+	} catch(QString e) {
+		error = e;
+		status = FAILED;
 		return;
 	}
 

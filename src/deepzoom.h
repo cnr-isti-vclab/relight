@@ -3,10 +3,29 @@
 
 #include <string>
 #include <vector>
+#include <deque>
+#include <array>
 
 #include <QString>
 
 class JpegEncoder;
+
+enum class PyramidFormat {
+	DeepZoom,
+	Google,
+	Zoomify,
+	TiledTiff
+};
+
+struct TileRowConfig {
+	QString basePath;      // root folder for the layout (zoomify uses TileGroup folders under this path)
+	QString levelPath;     // folder specific to this level (deepzoom/google layouts)
+	QString suffix = ".jpg";
+	PyramidFormat format = PyramidFormat::DeepZoom;
+	int level = 0;         // layout level identifier used in filenames
+	int tilesX = 0;        // number of tiles along X for this level (used by zoomify indexing)
+	int tileStartIndex = 0;// cumulative tile offset for zoomify groups
+};
 
 class Tile {
 public:
@@ -18,6 +37,7 @@ public:
 class TileRow: public std::vector<Tile> {
 public:
 	QString path;
+	TileRowConfig layout;
 	int tileside;
 	int overlap;
 
@@ -33,37 +53,64 @@ public:
 
 
 	TileRow() {}
-	TileRow(int _tileside, int _overlap, QString path, int width, int height, int quality = 95);
+	TileRow(int _tileside, int _overlap, const TileRowConfig &config, int width, int height, int quality = 95);
 	void nextRow();
 	void finishRow();
 
-	//returns resized line once every 2 lines or empty array
-	std::vector<uint8_t> addLine(std::vector<uint8_t> line);
-	//scale 2 lines into a single line half the length for smaller level
-	std::vector<uint8_t> scaleLines( std::vector<uint8_t> &line0, std::vector<uint8_t> &line1);
+	//returns resized line once the gaussian kernel can be applied, or empty array
+	std::vector<uint8_t> addLine(const std::vector<uint8_t> &line);
+	void finalizeInput();
+	std::vector<uint8_t> drainScaledLine();
 private:
 	//actually write the line to the jpegs
-	void writeLine(std::vector<uint8_t> newline);
+	void writeLine(const std::vector<uint8_t> &newline);
+	std::vector<uint8_t> emitReadyScaledLine();
+	std::vector<uint8_t> applyHorizontalFilter(const std::vector<uint8_t> &line) const;
+	std::vector<uint8_t> applyVerticalFilter(const std::array<const std::vector<uint8_t>*,5> &lines) const;
+	const std::vector<uint8_t> &lineForIndex(int index) const;
+	void expireObsoleteLines(int centerIndex);
+	QString tileFilePath(int col) const;
+
+	struct FilteredLine {
+		int index = 0;
+		std::vector<uint8_t> data;
+	};
+	std::deque<FilteredLine> filtered;
+	int lastInputLine = -1;
+	int scaledLinesProduced = 0;
+	int scaledLinesTarget = 0;
+	int downsampleWidth = 0;
+	bool hasNextLevel = false;
+	bool inputCompleted = false;
 
 };
 
 class DeepZoom {
 public:
-	int tileside = 254;
+	int tileside = 256;
 	int overlap = 1;
 	int width, height;
 	int quality; //0 100 jpeg quality
 	QString output;
-	bool build(QString filename, QString basename, int tile_size = 254, int overlap = 1);
+	bool build(QString filename, QString basename, int tile_size = 254, int overlap = 1, PyramidFormat format = PyramidFormat::DeepZoom);
 
 private:
 	std::vector<TileRow> rows;      //one row per level
 	std::vector<int> heights;
 	std::vector<int> widths;
+	PyramidFormat layoutFormat = PyramidFormat::DeepZoom;
+	QString layoutRoot;
+	QString tileSuffix = ".jpg";
+	std::vector<int> tilesX;
+	std::vector<int> tilesY;
+	std::vector<int> zoomifyOffsets;
 
 	int nLevels();
 	void initRows();
-	TileRow createTileRow(QString level_path, int width, int height);
+	bool buildTiledImages(QString input);
+	bool buildTiledTiff(QString input);
+	void finalizeMetadata();
+	void flushLevels();
 };
 
 #endif // DEEPZOOM_H

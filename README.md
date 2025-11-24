@@ -83,6 +83,14 @@ Scale and bias will be applied to the texture coefficients (from [0, 1]) as:
 
 [libvips](https://github.com/libvips/libvips/) can be used to [generate deepzoom, zoomify and google pyramidal formats](http://libvips.blogspot.com/2013/03/making-deepzoom-zoomify-and-google-maps.html), scripts can be found in the directory *test*.
 
+The native `DeepZoom` generator is now able to emit multiple layouts without relying on the Python/libvips helper scripts. Run `deepzoom/main.cpp` (built as `relight-deepzoom`) with:
+
+```
+relight-deepzoom <input.jpg> <basename> [format=deepzoom] [tileSize=254] [overlap=1]
+```
+
+Supported `format` values are `deepzoom`, `google`, `zoomify`, and `tiff`. The `tiff` option writes a tiled multi-resolution TIFF pyramid, while the others create JPEG tiles in the expected folder layouts (including Zoomify `ImageProperties.xml`).
+
 # Web Viewer
 
 *relight.min.js* is a small Javascript library to render the RTI on a WebGL canvas.

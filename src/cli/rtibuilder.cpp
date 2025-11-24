@@ -575,7 +575,7 @@ void RtiBuilder::normalizeHistogram(PixelArray &sample, double percentile) {
 	for(uint32_t i = 0; i < sample.npixels(); i++) {
 		if(callback && (i % 8000) == 0)
 			if(!(*callback)("Histogram normalization:", 100*i/sample.npixels()))
-				throw std::string("Cancelled.");
+				throw QString("Cancelled.");
 
 		vector<float> principal = toPrincipal(sample[i]);
 
@@ -633,7 +633,7 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 	}
 
 	if(callback && !(*callback)("Coefficients quantization:", 0))
-		throw std::string("Cancelled.");
+		throw QString("Cancelled.");
 
 	if(colorspace == RGB && histogram_fix) {
 		normalizeHistogram(sample, 0.95);
@@ -652,7 +652,7 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 	for(uint32_t i = 0; i < sample.npixels(); i++) {
 		if(callback && ((i % 8000) == 0)) {
 			if(!(*callback)("Computing histogram quantiles:", 50*i/sample.npixels()))
-				throw std::string("Cancelled.");
+				throw QString("Cancelled.");
 		}
 
 		vector<float> principal = toPrincipal(sample[i]);
@@ -667,7 +667,7 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 	for(uint32_t p = 0; p < nplanes; p++) {
 		if(callback && ((p % 3) == 0)) {
 			if(!(*callback)("Computing histogram quantiles:", 50 + 50*p/nplanes))
-				throw std::string("Cancelled.");
+				throw QString("Cancelled.");
 		}
 
 		Material::Plane &plane = material.planes[p];
@@ -725,7 +725,7 @@ void RtiBuilder::finalizeMaterial() {
 	}
 
 	if(callback && !(*callback)("Coefficients quantization:", 100))
-		throw std::string("Cancelled.");
+		throw QString("Cancelled.");
 	//	estimateError(sample, indices, weights);
 }
 
@@ -1883,7 +1883,7 @@ void RtiBuilder::buildResampleMap(std::vector<Vector3f> &lights, std::vector<std
 		if(callback) {
 			bool keep_going = (*callback)("Resampling light directions", 100*y/resolution);
 			if(!keep_going) {
-				throw std::string("Cancelled.");
+				throw QString("Cancelled.");
 			}
 		}
 

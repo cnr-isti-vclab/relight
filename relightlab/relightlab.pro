@@ -38,6 +38,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 SOURCES += main.cpp \
+    zoom.cpp \
     ../external/assm/SurfaceMesh.cpp \
     ../external/assm/algorithms/DifferentialGeometry.cpp \
     ../external/assm/algorithms/Rasterizer.cpp \

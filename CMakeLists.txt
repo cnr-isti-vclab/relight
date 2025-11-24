@@ -99,5 +99,6 @@ include(GNUInstallDirs)
 # Add subdirectories
 add_subdirectory(relightlab)
 add_subdirectory(relight-cli)
+add_subdirectory(relight-deepzoom)
 add_subdirectory(relight-merge)
 add_subdirectory(relight-normals)
