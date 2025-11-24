@@ -115,15 +115,6 @@ void PanoBuilder::exportMeans(){
 			if (!QFile::copy(meanPath, subDirName + ".jpg")) {
 				throw QString("Failed to copy %1 to %2").arg(meanPath).arg(subDirName);
 			}
-
-			cout << "Copying EXIF from " << qPrintable(dataset.absoluteFilePath(photo))
-				 << " to " << qPrintable(meanPath) << endl;
-			ExifTransplant exif;
-			bool success = exif.transplant(dataset.absoluteFilePath(photo).toStdString().c_str(),
-										   (subDirName + ".jpg").toStdString().c_str());
-			if(!success)
-
-			throw QString("Unable to load exif from: ") + QString(exif.error.c_str()) + dataset.absoluteFilePath(photo);
 		} else {
 
 			//se formato è jpg copia se è un tif devi fare una conversion
@@ -137,13 +128,46 @@ void PanoBuilder::exportMeans(){
 			if (convertResult != 0)
 				throw QString("Error converting %1 to %2").arg(meanPath, newTifFilePath);
 
-			QString exifCommand = QString("exiftool -tagsfromfile %1 %2").arg(meanPath, newTifFilePath);
-			int result = system(exifCommand.toStdString().c_str());
-			if (result != 0)
-				throw QString("Error copying EXIF data from %1 to %2").arg(meanPath, newTifFilePath);
 		}
 	}
 
+}
+void PanoBuilder::exifTransplant(){
+	QStringList subDirNames = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+
+	for (const QString &subDirName : subDirNames){
+		QDir datasetDir(datasets_dir.filePath(subDirName));
+		QStringList photos = datasetDir.entryList(QStringList() << "*.jpg" << "*.JPG", QDir::Files);
+		if (photos.isEmpty())
+			throw QString("No jpg file found in %1").arg(datasetDir.path());
+
+		QString originalPhoto = datasetDir.filePath(photos.first());
+
+		QString outJpg  = photogrammetry_dir.filePath(subDirName + ".jpg");
+		QString outTif  = photogrammetry_dir.filePath(subDirName + ".tif");
+
+		if (format == "jpg"){
+			cout << "Transplant EXIF → JPG : "
+				 << qPrintable(originalPhoto) << " → " << qPrintable(outJpg) << endl;
+
+			ExifTransplant exif;
+			if (!exif.transplant(originalPhoto.toStdString().c_str(),
+								 outJpg.toStdString().c_str())){
+				throw QString("EXIF transplant failed: %1").arg(exif.error.c_str());
+			}
+		}
+		else {
+			cout << "Copy EXIF → TIF : "
+				 << qPrintable(originalPhoto) << " → " << qPrintable(outTif) << endl;
+
+			QString cmd = QString(
+							  "exiftool -TagsFromFile \"%1\" -overwrite_original \"%2\"")
+							  .arg(originalPhoto, outTif);
+
+			if (system(cmd.toStdString().c_str()) != 0)
+				throw QString("Error copying EXIF via exiftool for %1").arg(outTif);
+		}
+	}
 }
 
 void PanoBuilder::executeProcess(QString& program, QStringList& arguments) {
@@ -328,14 +352,14 @@ void PanoBuilder::process(Steps starting_step, bool stop){
 		runWithTiming("UPDATEJSON", [this]() { updateJson(); });
 		if (stop) break;
 	}
-	 stopGlobalTimer();
+	stopGlobalTimer();
 
 }
 
 void PanoBuilder::means(){
 	//1. iterare sulle sottodir di datasets
 	QStringList subDirNames = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-//itera su subdir prendere la prima img jpg e controlla che tute le dir abbiano la stessa risoluzione Qimage reader, w e h =0 se è 0 non confronto poi confronto tutti gli altri
+	//itera su subdir prendere la prima img jpg e controlla che tute le dir abbiano la stessa risoluzione Qimage reader, w e h =0 se è 0 non confronto poi confronto tutti gli altri
 	QSize referenceSize(0, 0);
 	QString referenceFolder;
 	bool resolutionMismatch = false;
@@ -844,6 +868,8 @@ void PanoBuilder::malt_ortho() {
 			} else {
 				throw QString("Failed to copy plane image: " + planeFilePath);
 			}
+			//copy exif from correct mean image
+
 
 			//
 			QString sourceXmlName = QString("Orientation-%1.jpg.xml").arg(subDirName);
@@ -868,7 +894,7 @@ void PanoBuilder::malt_ortho() {
 				cout << "Failed to copy " << qPrintable(sourceXmlPath) << endl;
 			}
 		}
-
+		exifTransplant();
 
 		QString program = mm3d_path;
 		QStringList arguments;
@@ -890,7 +916,7 @@ void PanoBuilder::malt_ortho() {
 				if (verbose)
 					cout << "Removed temp xml: " << qPrintable(tempXml) << endl;
 			}
-				// cancella anche le immagini photogrammetry/plane_
+			// cancella anche le immagini photogrammetry/plane_
 		}
 		for (const QString &tempPlane : tempPlanePaths) {
 			if (QFile::exists(tempPlane)) {

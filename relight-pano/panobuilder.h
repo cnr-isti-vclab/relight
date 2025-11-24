@@ -57,6 +57,7 @@ public:
 	int findStep(QString step);
 	int findNPlanes(QDir& dir);
 	void exportMeans();
+	void exifTransplant();
 	void executeProcess(QString& process, QStringList& arguments);
 	void process(Steps starting_step = RTI, bool stop = false);
 	void means();

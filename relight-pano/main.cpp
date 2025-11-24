@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 													"Regul check the amount of smoothing applied during the orthorectification process. Default is 0.05", "0.05");
 	parser.addOption(regulOption);
 
-	QCommandLineOption light3dOption(QStringList()     << "3" << "Light3d", "Sets the regularization parameter ", "help", "2.5:0.44");
+	QCommandLineOption light3dOption(QStringList()     << "L" << "Light3d", "Sets the regularization parameter", "lights");
 	parser.addOption(light3dOption);
 
 	// Process the actual command line arguments given by the user
