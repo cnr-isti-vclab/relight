@@ -56,20 +56,13 @@ jobs:
         echo ("OpenCV_DIR=C:\tools\opencv\build\x64\vc16\lib") >> $env:GITHUB_ENV
         echo ("QT_VERSION=6.6.*") >> $env:GITHUB_ENV
 
-    - name: Install LCMS2 on Ubuntu
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update && sudo apt-get install -y liblcms2-dev
-
-    - name: Install LCMS2 on macOS
-      if: runner.os == 'macOS'
-      run: |
-        brew install lcms2
-
-    - name: Install LCMS2 on Windows
+    - name: Install LCMS2 via vcpkg on Windows
       if: runner.os == 'Windows'
       run: |
-        choco install lcms2 -y
+        git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+        C:\vcpkg\bootstrap-vcpkg.bat
+        C:\vcpkg\vcpkg.exe install lcms:x64-windows
+        echo ("CMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake") >> $env:GITHUB_ENV
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v4

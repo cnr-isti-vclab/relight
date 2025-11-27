@@ -32,4 +32,13 @@ else
     echo "=== jumping installation of qt packages..."
 fi
 
-choco install lcms2
+# Install vcpkg if not already installed
+if [ ! -d "C:/vcpkg" ]; then
+    echo "=== Installing vcpkg..."
+    git clone https://github.com/microsoft/vcpkg.git C:/vcpkg
+    C:/vcpkg/bootstrap-vcpkg.bat
+fi
+
+# Install lcms2 via vcpkg
+echo "=== Installing lcms2 via vcpkg..."
+C:/vcpkg/vcpkg.exe install lcms:x64-windows
