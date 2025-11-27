@@ -19,6 +19,7 @@ SET(HEADERS
 	../src/imageset.h
 	../src/jpeg_decoder.h
 	../src/jpeg_encoder.h
+	../src/icc_profiles.h
 	../src/material.h
 	../src/relight_vector.h
 	../src/rti.h
@@ -52,6 +53,7 @@ SET(SOURCES
 	../src/imageset.cpp
 	../src/jpeg_decoder.cpp
 	../src/jpeg_encoder.cpp
+	../src/icc_profiles.cpp
 	../src/rti.cpp
 	../src/legacy_rti.cpp
 	../src/lp.cpp
@@ -99,7 +101,11 @@ target_link_libraries(
 		OpenMP::OpenMP_CXX
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui
-		${RELIGHT_QT}::Concurrent)
+		${RELIGHT_QT}::Concurrent
+		${LCMS2_LIBRARIES})
+
+target_include_directories(relight-cli PRIVATE ${LCMS2_INCLUDE_DIRS})
+target_compile_definitions(relight-cli PUBLIC HAVE_LCMS2)
 
 target_compile_definitions(relight-cli PUBLIC _USE_MATH_DEFINES NOMINMAX)
 

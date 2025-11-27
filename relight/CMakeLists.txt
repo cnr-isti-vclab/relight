@@ -31,6 +31,7 @@ set (RELIGHT_HEADERS
 	../src/imageset.h
 	../src/jpeg_decoder.h
 	../src/jpeg_encoder.h
+	../src/icc_profiles.h
 	../src/exif.h
 	../src/material.h
 	../src/eigenpca.h
@@ -89,6 +90,7 @@ set (RELIGHT_SOURCES
 	../src/imageset.cpp
 	../src/jpeg_decoder.cpp
 	../src/jpeg_encoder.cpp
+	../src/icc_profiles.cpp
 	../src/rti.cpp
 	../src/legacy_rti.cpp
 	../src/exif.cpp
@@ -169,7 +171,11 @@ target_link_libraries(
 		${RELIGHT_QT}::Widgets
 		${RELIGHT_QT}::Concurrent
 		${RELIGHT_QT}::Xml
+		${LCMS2_LIBRARIES}
 	)
+
+target_include_directories(relight PRIVATE ${LCMS2_INCLUDE_DIRS})
+target_compile_definitions(relight PUBLIC HAVE_LCMS2)
 
 target_compile_definitions(relight PUBLIC _USE_MATH_DEFINES NOMINMAX)
 

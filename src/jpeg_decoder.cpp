@@ -1,4 +1,5 @@
 #include "jpeg_decoder.h"
+#include <cstring>
 
 JpegDecoder::JpegDecoder() {
 	decInfo.err = jpeg_std_error(&errMgr);
@@ -77,7 +78,14 @@ bool JpegDecoder::init(const char* path, int &width, int &height) {
 }
 
 bool JpegDecoder::init(int &width, int &height) {
+	// Save APP2 markers to capture ICC profile
+	jpeg_save_markers(&decInfo, JPEG_APP0 + 2, 0xFFFF);
+	
 	jpeg_read_header(&decInfo, (boolean)true);
+	
+	// Extract ICC profile if present
+	extractICCProfile();
+	
 	//decInfo.out_color_space = colorSpace;
 	//decInfo.jpeg_color_space = jpegColorSpace;
 	decInfo.raw_data_out = (boolean)false;
@@ -90,6 +98,43 @@ bool JpegDecoder::init(int &width, int &height) {
 	width = decInfo.image_width;
 	height = decInfo.image_height;
 	return true;
+}
+
+void JpegDecoder::extractICCProfile() {
+	icc_profile.clear();
+	
+	// ICC profiles can span multiple APP2 segments
+	// Format: "ICC_PROFILE\0" + seq_no (1 byte) + num_markers (1 byte) + data
+	const int MAX_SEGMENTS = 255;
+	std::vector<std::vector<uint8_t>> segments(MAX_SEGMENTS);
+	int num_markers = 0;
+	
+	for (jpeg_saved_marker_ptr marker = decInfo.marker_list; marker != nullptr; marker = marker->next) {
+		if (marker->marker == JPEG_APP0 + 2 && marker->data_length >= 14) {
+			// Check for ICC_PROFILE signature
+			if (std::memcmp(marker->data, "ICC_PROFILE\0", 12) == 0) {
+				int seq_no = marker->data[12];
+				num_markers = marker->data[13];
+				
+				if (seq_no > 0 && seq_no <= MAX_SEGMENTS) {
+					// Store segment data (skip 14-byte header)
+					segments[seq_no - 1].assign(
+						marker->data + 14,
+						marker->data + marker->data_length
+					);
+				}
+			}
+		}
+	}
+	
+	// Reassemble segments in order
+	if (num_markers > 0) {
+		for (int i = 0; i < num_markers; i++) {
+			if (!segments[i].empty()) {
+				icc_profile.insert(icc_profile.end(), segments[i].begin(), segments[i].end());
+			}
+		}
+	}
 }
 
 size_t JpegDecoder::readRows(int nrows, uint8_t *buffer) { //return false on end.

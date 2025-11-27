@@ -3,22 +3,7 @@
 # Relight can be compiled.
 #
 # Run this script if you never installed any of the Relight dependencies.
-
-DONT_INSTALL_QT=false
-
-#checking for parameters
-for i in "$@"
-do
-case $i in
-    ---dont_install_qt)
-        DONT_INSTALL_QT=true
-        shift # past argument=value
-        ;;
-    *)
-        # unknown option
-        ;;
-esac
-done
+# Note: Qt should be installed separately (e.g., via the Qt installer or GitHub Actions)
 
 sudo apt-get update
 echo "=== installing mesa packages..."
@@ -29,11 +14,4 @@ sudo apt-get install -y cmake ninja-build patchelf fuse libjpeg-dev libeigen3-de
 # qt dependencies (for deployment)
 sudo apt-get install -y libxcb-cursor0
 
-#sudo apt-get install libopencv-dev
-
-#if [ "$DONT_INSTALL_QT" = false ] ; then
-#    echo "=== installing qt packages..."
-#    sudo apt-get install -y qt5-default qttools5-dev-tools qtdeclarative5-dev
-#else
-#    echo "=== jumping installation of qt packages..."
-#fi
+sudo apt-get install -y liblcms2-dev

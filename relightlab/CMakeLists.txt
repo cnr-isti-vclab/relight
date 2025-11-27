@@ -86,6 +86,7 @@ set (RELIGHT_HEADERS
     ../src/legacy_rti.h
     ../src/imageset.h
     ../src/jpeg_encoder.h
+    ../src/icc_profiles.h
     ../src/jpeg_decoder.h
     ../src/normals/flatnormals.h
     ../src/network/httpserver.h
@@ -162,6 +163,7 @@ set (RELIGHTLAB_SOURCES
     ../src/legacy_rti.cpp
     ../src/imageset.cpp
     ../src/jpeg_encoder.cpp
+    ../src/icc_profiles.cpp
     ../src/jpeg_decoder.cpp
     ../src/normals/flatnormals.cpp
     ../src/network/httpserver.cpp
@@ -216,8 +218,12 @@ target_link_libraries(
 		${RELIGHT_QT}::Gui
 		${RELIGHT_QT}::Widgets
 		${RELIGHT_QT}::Concurrent
-		${RELIGHT_QT}::Xml
-	)
+        ${RELIGHT_QT}::Xml
+        ${LCMS2_LIBRARIES}
+)
+
+target_include_directories(relightlab PRIVATE ${LCMS2_INCLUDE_DIRS})
+target_compile_definitions(relightlab PUBLIC HAVE_LCMS2)
 
 target_compile_definitions(relightlab PUBLIC _USE_MATH_DEFINES NOMINMAX)
 

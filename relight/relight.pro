@@ -10,6 +10,7 @@ TEMPLATE = app
 
 DEFINES += _USE_MATH_DEFINES
 DEFINES += NOMINMAX
+DEFINES += HAVE_LCMS2
 
 INCLUDEPATH += ../external/
 
@@ -19,19 +20,27 @@ win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
 unix:INCLUDEPATH += /usr/include/eigen3
-unix:LIBS += -ljpeg -ltiff -lgomp #-liomp5
+unix:LIBS += -ljpeg -ltiff -llcms2 -lgomp #-liomp5
 unix:QMAKE_CXXFLAGS += -fopenmp
 
 
 mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/2.0.6/include \
     /usr/local/include \
     /usr/local/include/eigen3
-mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/2.0.6/lib/ -ljpeg
+mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/2.0.6/lib/ -ljpeg -llcms2
 mac:LIBS += -framework Accelerate
 mac:QMAKE_CXXFLAGS += -fopenmp
 mac:QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp -lomp -I/usr/local/include
 mac:QMAKE_LFLAGS += -lomp
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
+
+win32:LCMS2_HOME = $$getenv(LCMS2_HOME)
+win32:!isEmpty(LCMS2_HOME) {
+    INCLUDEPATH += $$LCMS2_HOME/include
+    LIBS += $$LCMS2_HOME/lib/lcms2.lib
+} else {
+    LIBS += -llcms2
+}
 
 SOURCES += main.cpp \
     ../src/normals/bni_normal_integration.cpp \
@@ -49,6 +58,7 @@ SOURCES += main.cpp \
     ../src/imageset.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/jpeg_encoder.cpp \
+    ../src/icc_profiles.cpp \
     ../src/rti.cpp \
     ../src/legacy_rti.cpp \
     ../src/deepzoom.cpp \
@@ -104,6 +114,7 @@ HEADERS += \
     ../src/imageset.h \
     ../src/jpeg_decoder.h \
     ../src/jpeg_encoder.h \
+    ../src/icc_profiles.h \
     ../src/material.h \
     ../src/eigenpca.h \
     ../src/cli/rtibuilder.h \

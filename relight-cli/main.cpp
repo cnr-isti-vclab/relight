@@ -52,6 +52,7 @@ void help() {
 	cout << "\t              Clamps outliers to improve quantization resolution for most pixels\n";
 	cout << "\t  -c <float>: coeff quantization (to test!) default 1.5\n";
 	cout << "\t  -C        : apply chroma subsampling \n";
+	cout << "\t  -I <preserve|srgb>: ICC color profile handling (default: preserve)\n";
 	cout << "\t  -e        : evaluate reconstruction error (default: false)\n";
 	cout << "\t  -E <int>  : evaluate error on a single image (but remove it for fitting)\n";
 
@@ -116,7 +117,7 @@ int main(int argc, char *argv[]) {
 
 	opterr = 0;
 	char c;
-	while ((c  = getopt (argc, argv, "hmMn3:r:d:q:p:s:c:reE:b:y:S:R:CD:Q:L:k:P:v")) != -1)
+	while ((c  = getopt (argc, argv, "hmMn3:r:d:q:p:s:c:reE:b:y:S:R:CD:Q:L:k:P:I:v")) != -1)
 		switch (c)
 		{
 		case 'h':
@@ -294,6 +295,18 @@ int main(int argc, char *argv[]) {
 		case 'C':
 			builder.chromasubsampling = true;
 			break;
+		case 'I': {
+			string mode = optarg;
+			if(mode == "preserve") {
+				builder.colorProfileMode = COLOR_PROFILE_PRESERVE;
+			} else if(mode == "srgb") {
+				builder.colorProfileMode = COLOR_PROFILE_SRGB;
+			} else {
+				cerr << "Invalid color profile mode: " << optarg << " (use 'preserve' or 'srgb')\n" << endl;
+				return 1;
+			}
+			break;
+		}
 
 		case 'c':
 			builder.rangescale = float(atof(optarg));

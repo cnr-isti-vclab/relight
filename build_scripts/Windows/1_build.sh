@@ -65,8 +65,16 @@ then
     export Qt5_DIR=$QT_DIR
 fi
 
+# Set vcpkg toolchain file if it exists
+VCPKG_TOOLCHAIN=""
+if [ -f "C:/vcpkg/scripts/buildsystems/vcpkg.cmake" ]; then
+    VCPKG_TOOLCHAIN="-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+elif [ ! -z "$CMAKE_TOOLCHAIN_FILE" ]; then
+    VCPKG_TOOLCHAIN="-DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE"
+fi
+
 cd $BUILD_PATH
 export NINJA_STATUS="[%p (%f/%t) ] "
-cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH $CCACHE $SOURCE_PATH
+cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH $CCACHE $VCPKG_TOOLCHAIN $SOURCE_PATH
 ninja
 ninja install

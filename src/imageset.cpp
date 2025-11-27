@@ -26,6 +26,13 @@ ImageSet::ImageSet(const char *path) {
 }
 
 ImageSet::~ImageSet() {
+	if(color_transform)
+		cmsDeleteTransform(color_transform);
+	if(input_profile)
+		cmsCloseProfile(input_profile);
+	if(srgb_profile)
+		cmsCloseProfile(srgb_profile);
+
 	//TODO decoders should take care to properly finish
 	for(JpegDecoder *dec: decoders)
 		delete dec;
@@ -206,6 +213,17 @@ bool ImageSet::initImages(const char *_path) {
 #endif
 
 	QDir dir(_path);
+	QString icc_profile_source;
+	if(color_transform) {
+		cmsDeleteTransform(color_transform);
+		color_transform = nullptr;
+	}
+	if(input_profile) {
+		cmsCloseProfile(input_profile);
+		input_profile = nullptr;
+	}
+	icc_profile_data.clear();
+
 	for(int i = 0; i < images.size(); i++) {
 		QString filepath = dir.filePath(images[i]);
 		int w, h;
@@ -221,8 +239,19 @@ bool ImageSet::initImages(const char *_path) {
 		right = image_width = width = w;
 		bottom = image_height = height = h;
 
+		if(icc_profile_data.empty() && dec->hasICCProfile()) {
+			icc_profile_data = dec->getICCProfile();
+			icc_profile_source = filepath;
+		} else if(!icc_profile_data.empty() && dec->hasICCProfile() && dec->getICCProfile() != icc_profile_data) {
+			throw QString("Input images use different ICC profiles. First profile found in %1, mismatch detected in %2")
+				.arg(icc_profile_source.isEmpty() ? QString("(unknown)") : icc_profile_source)
+				.arg(filepath);
+		}
+
 		decoders.push_back(dec);
 	}
+	if(force_srgb)
+		ensureColorTransform();
 	return true;
 }
 
@@ -249,7 +278,7 @@ QImage ImageSet::maxImage(std::function<bool(std::string stage, int percent)> *c
 	QImage image(w, h, QImage::Format::Format_RGB888);
 	image.fill(0);
 	
-	uint8_t *row = new uint8_t[w*h*3];
+	uint8_t *row = new uint8_t[w*3];
 	
 	restart();
 	for(int y = 0; y < image_height; y++) {
@@ -262,11 +291,12 @@ QImage ImageSet::maxImage(std::function<bool(std::string stage, int percent)> *c
 		for(uint32_t i = 0; i < decoders.size(); i++) {
 			JpegDecoder *dec = decoders[i];
 			dec->readRows(1, row);
+			applyColorTransform(row, w);
 			
 			for(int x = 0; x < image_width; x++) {
 				rowmax[x*3 + 0] = std::max(rowmax[x*3 + 0], row[x*3 + 0]);
-				rowmax[x*3 + 1] = std::max(rowmax[x*3 + 1], row[x*3 + 0]);
-				rowmax[x*3 + 2] = std::max(rowmax[x*3 + 2], row[x*3 + 0]);
+				rowmax[x*3 + 1] = std::max(rowmax[x*3 + 1], row[x*3 + 1]);
+				rowmax[x*3 + 2] = std::max(rowmax[x*3 + 2], row[x*3 + 2]);
 			}
 		}
 	}
@@ -278,6 +308,7 @@ void ImageSet::decode(size_t img, unsigned char *buffer) {
 	//TODO FIX for crop!;
 	assert(width == image_width && height == image_height);
 	decoders[img]->readRows(height, buffer);
+	applyColorTransform(buffer, size_t(width)*size_t(height));
 }
 
 
@@ -315,6 +346,7 @@ void ImageSet::readLine(PixelArray &pixels) {
 
 	for(size_t i = 0; i < decoders.size(); i++) {
 		decoders[i]->readRows(1, row.data());
+		applyColorTransform(row.data(), width);
 		int x_offset = offsets.size() ? offsets[i].x() : 0;
 
 		for(int x = left; x < right; x++) {
@@ -372,6 +404,7 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 		for(uint32_t i = 0; i < decoders.size(); i++) {
 			JpegDecoder *dec = decoders[i];
 			dec->readRows(1, row.data());
+			applyColorTransform(row.data(), image_width);
 			uint32_t x = 0;
 			for(int k: selection) {
 				Color3f &pixel = sample[x][i];
@@ -416,6 +449,33 @@ void ImageSet::compensateIntensity(PixelArray &pixels) {
 		}
 	}
 
+}
+
+void ImageSet::ensureColorTransform() {
+	if(!force_srgb)
+		return;
+	if(color_transform)
+		return;
+	if(icc_profile_data.empty())
+		return;
+	if(!srgb_profile)
+		srgb_profile = cmsCreate_sRGBProfile();
+	if(input_profile)
+		cmsCloseProfile(input_profile);
+	input_profile = cmsOpenProfileFromMem(icc_profile_data.data(), icc_profile_data.size());
+	if(!input_profile)
+		return;
+	color_transform = cmsCreateTransform(input_profile, TYPE_RGB_8, srgb_profile, TYPE_RGB_8, INTENT_PERCEPTUAL, cmsFLAGS_COPY_ALPHA);
+}
+
+void ImageSet::applyColorTransform(uint8_t *data, size_t pixel_count) {
+	if(!force_srgb)
+		return;
+	if(!color_transform)
+		ensureColorTransform();
+	if(!color_transform)
+		return;
+	cmsDoTransform(color_transform, data, data, pixel_count);
 }
 
 void ImageSet::restart() {

@@ -2,6 +2,7 @@
 #include "../src/lp.h"
 #include "../src/jpeg_decoder.h"
 #include "../src/jpeg_encoder.h"
+#include "../src/icc_profiles.h"
 #include "../src/eigenpca.h"
 
 #include <QDir>
@@ -1460,14 +1461,46 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	vector<vector<uint8_t>> line(njpegs); //row in the new base.
 	for(auto &p: line)
 		p.resize(width*3, 0);
-	
+
+	std::vector<uint8_t> preserved_icc;
+	if(imageset.hasICCProfile())
+		preserved_icc = imageset.getICCProfile();
+
+	const uint8_t *output_icc_data = nullptr;
+	size_t output_icc_length = 0;
+	bool srgb_profile_available = sRGB_ICC_profile_length > 0;
+	switch(colorProfileMode) {
+	case COLOR_PROFILE_PRESERVE:
+	default:
+		if(!preserved_icc.empty()) {
+			output_icc_data = preserved_icc.data();
+			output_icc_length = preserved_icc.size();
+		}
+		break;
+	case COLOR_PROFILE_SRGB:
+		if(srgb_profile_available) {
+			output_icc_data = sRGB_ICC_profile;
+			output_icc_length = sRGB_ICC_profile_length;
+		} else if(!preserved_icc.empty()) {
+			cerr << "sRGB ICC profile blob missing; falling back to preserving source profile." << endl;
+			output_icc_data = preserved_icc.data();
+			output_icc_length = preserved_icc.size();
+		}
+		break;
+	}
+	// TODO: integrate LittleCMS2 to actually convert pixel data when COLOR_PROFILE_SRGB is requested.
+
 	vector<JpegEncoder *> encoders(njpegs);
 	
 	for(uint32_t i = 0; i < encoders.size(); i++) {
 		encoders[i] = new JpegEncoder();
 		encoders[i]->setQuality(quality);
 		encoders[i]->setColorSpace(JCS_RGB, 3);
-		encoders[i]->setJpegColorSpace(JCS_YCbCr);
+		if (colorspace == RGB) {
+			encoders[i]->setJpegColorSpace(JCS_YCbCr);
+		} else {
+			encoders[i]->setJpegColorSpace(JCS_RGB);
+		}
 
 		// Set spatial resolution if known. Convert to pixels/m as RtiBuilder stores this in mm/pixel
 		if(imageset.pixel_size > 0) encoders[i]->setDotsPerMeter(1000.0/imageset.pixel_size);
@@ -1486,6 +1519,9 @@ size_t RtiBuilder::save(const string &output, int quality) {
 				encoders[i]->setChromaSubsampling(true);
 			}
 		}
+
+		if(output_icc_data && output_icc_length > 0)
+			encoders[i]->setICCProfile(output_icc_data, output_icc_length);
 		
 		encoders[i]->init(dir.filePath("plane_%1.jpg").arg(i).toStdString().c_str(), width, height);
 	}

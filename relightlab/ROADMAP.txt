@@ -1,0 +1,12 @@
+Current:
+1) rti tab 
+2) align tab
+
+Future:
+
+1) opacity, colorchecker image roles
+2) lens deformation (barrel compensation etc)
+3) Photometric stereo tab (normas + albedo (and maybe specular etc) and 3d surface and highmap (also from the decompositions)
+4) normal flattening and decomposition (same for albedo)
+5) openlime config tab
+6) conversion .ptm functionality

@@ -8,7 +8,7 @@
 
 #cmake, ninja, libtiff are already installed
 
-brew install coreutils libomp eigen libjpeg 
+brew install coreutils libomp eigen libjpeg lcms2
 
 npm install -g appdmg
 
