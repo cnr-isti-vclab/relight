@@ -29,6 +29,8 @@ sudo apt-get install -y cmake ninja-build patchelf fuse libjpeg-dev libeigen3-de
 # qt dependencies (for deployment)
 sudo apt-get install -y libxcb-cursor0
 
+sudo apt-get install -y liblcms2-dev
+
 #sudo apt-get install libopencv-dev
 
 #if [ "$DONT_INSTALL_QT" = false ] ; then

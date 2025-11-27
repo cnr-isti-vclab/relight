@@ -31,3 +31,5 @@ if [ "$DONT_INSTALL_QT" = false ] ; then
 else
     echo "=== jumping installation of qt packages..."
 fi
+
+choco install lcms2
