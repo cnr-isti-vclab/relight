@@ -48,6 +48,30 @@ Makefile
 install/
 !build_scripts/
 
+
+# Clangd cache #
+################
+.cache/
+
+# Qt build artifacts #
+######################
+.qmake.stash
+*_autogen/
+
+# Node.js files #
+#################
+package-lock.json
+node_modules/
+
+# Executable files (should be in build/ or install/) #
+#######################################################
+/relight/relight
+/relight-cli/relight-cli
+/relight-merge/relight-merge
+/relight-normals/relight-normals
+/relightlab/relightlab
+
+
 # IDE and Qt Creator files #
 #############################
 *.pro.user*
