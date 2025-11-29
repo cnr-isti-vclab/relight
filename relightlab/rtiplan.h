@@ -13,6 +13,7 @@ class QLabelButton;
 class HelpLabel;
 class QVBoxLayout;
 class QLineEdit;
+class QLabel;
 
 class RtiPlanRow: public PlanRow {
 	Q_OBJECT
@@ -88,13 +89,18 @@ public:
 	RtiQualityRow(RtiParameters &parameters, QFrame *parent = nullptr);
 	void setQuality(int quality, bool emitting = false); //0 stands for lossless.
 	void allowLossless(bool allow);
+	void setColorProfileMode(ColorProfileMode mode, bool emitting = false);
+	void updateProfileInfo(const QString &profileDesc, bool isSRGB);
 
 private:
 	QCheckBox *losslessbox;
 	QSpinBox *qualitybox;
+	QLabel *profileLabel;
+	QLabelButton *preserve, *srgb;
 
 signals:
 	void qualityChanged();
+	void colorProfileModeChanged();
 };
 
 

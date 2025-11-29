@@ -36,6 +36,7 @@ public slots:
 	void nplanesChanged();
 	void formatChanged();
 	void qualityChanged();
+	void colorProfileModeChanged();
 	void layoutChanged();
 
 	void updateCrop(Crop crop);

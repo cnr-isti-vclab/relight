@@ -27,6 +27,7 @@ set (RELIGHT_HEADERS
 	../src/lens.h
 	../src/image.h
 	../src/project.h
+	../src/colorprofile.h
 	../src/legacy_rti.h
 	../src/imageset.h
 	../src/jpeg_decoder.h
@@ -84,6 +85,7 @@ set (RELIGHT_SOURCES
 	../src/lens.cpp
 	../src/image.cpp
 	../src/project.cpp
+	../src/colorprofile.cpp
 	scripts.cpp
 	../relight-cli/rtibuilder.cpp
 	../relight-cli/convert_rti.cpp

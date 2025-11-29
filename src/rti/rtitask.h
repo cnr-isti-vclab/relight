@@ -4,6 +4,7 @@
 #include "../task.h"
 #include "../project.h"
 #include "../rti.h"
+#include "../colorprofile.h"
 #include <QMutex>
 
 class RtiBuilder;
@@ -28,6 +29,7 @@ public:
 	bool openlime = true; //include openlime viewer //TODO: might want different interfaces.
 
 	int quality = 95;
+	ColorProfileMode colorProfileMode = COLOR_PROFILE_PRESERVE;
 	QString path;
 
 	QString summary();

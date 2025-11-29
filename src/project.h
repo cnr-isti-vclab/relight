@@ -40,6 +40,10 @@ public:
 	std::vector<QPointF> offsets;
 	float pixelSize = 0.0f; //if computed from measures in mm
 
+	// ICC color profile information (detected from images)
+	QString icc_profile_description;
+	bool icc_profile_is_srgb = false;
+
 	QString name;
 	std::vector<QString> authors;
 	QString platform;

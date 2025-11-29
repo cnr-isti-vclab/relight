@@ -33,7 +33,7 @@ std::vector<uint8_t> downsampleGaussian(const std::vector<uint8_t> &src, int wid
 			for(int c = 0; c < 3; ++c) {
 				int acc = 0;
 				for(int k = -2; k <= 2; ++k) {
-					int ix = std::clamp(center + k, 0, width - 1);
+					int ix = std::min(std::max(center + k, 0), width - 1);
 					acc += kGaussianKernel[k + 2] * src[(y*width + ix)*3 + c];
 				}
 				horiz[(y*halfW + x)*3 + c] = static_cast<uint8_t>((acc + (kGaussianNorm/2)) / kGaussianNorm);
@@ -47,7 +47,7 @@ std::vector<uint8_t> downsampleGaussian(const std::vector<uint8_t> &src, int wid
 			for(int c = 0; c < 3; ++c) {
 				int acc = 0;
 				for(int k = -2; k <= 2; ++k) {
-					int iy = std::clamp(centerY + k, 0, height - 1);
+					int iy = std::min(std::max(centerY + k, 0), height - 1);
 					acc += kGaussianKernel[k + 2] * horiz[(iy*halfW + x)*3 + c];
 				}
 				out[(y*halfW + x)*3 + c] = static_cast<uint8_t>((acc + (kGaussianNorm/2)) / kGaussianNorm);
@@ -171,7 +171,7 @@ std::vector<uint8_t> TileRow::emitReadyScaledLine() {
 
 	std::array<const std::vector<uint8_t>*, 5> lines;
 	for(int k = -2; k <= 2; ++k) {
-		int idx = std::clamp(center + k, 0, height - 1);
+		int idx = std::min(std::max(center + k, 0), height - 1);
 		lines[k + 2] = &lineForIndex(idx);
 	}
 	std::vector<uint8_t> scaled = applyVerticalFilter(lines);
@@ -189,7 +189,7 @@ std::vector<uint8_t> TileRow::applyHorizontalFilter(const std::vector<uint8_t> &
 		for(int c = 0; c < 3; ++c) {
 			int acc = 0;
 			for(int k = -2; k <= 2; ++k) {
-				int src = std::clamp(center + k, 0, width - 1);
+				int src = std::min(std::max(center + k, 0), width - 1);
 				acc += kGaussianKernel[k + 2] * line[src*3 + c];
 			}
 			filtered[i*3 + c] = static_cast<uint8_t>((acc + (kGaussianNorm/2)) / kGaussianNorm);

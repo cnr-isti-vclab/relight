@@ -81,6 +81,8 @@ public:
 
 	void setForceSRGB(bool enable) { force_srgb = enable; }
 	bool isSRGBForced() const { return force_srgb; }
+	bool isSRGBProfile() const;
+	QString getProfileDescription() const;
 
 	size_t size() { return size_t(images.size()); }
 

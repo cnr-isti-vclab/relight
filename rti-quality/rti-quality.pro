@@ -19,6 +19,7 @@ DESTDIR = "../bin"
 SOURCES += main.cpp \
     ../src/getopt.cpp \
     ../src/imageset.cpp \
+    ../src/colorprofile.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/jpeg_encoder.cpp \
 	../src/rti.cpp

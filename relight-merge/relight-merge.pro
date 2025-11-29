@@ -45,6 +45,7 @@ SOURCES += main.cpp \
     ../src/rti.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/imageset.cpp \
+    ../src/colorprofile.cpp \
     ../src/lp.cpp \
     ../src/jpeg_encoder.cpp \
     ../src/icc_profiles.cpp \
@@ -58,6 +59,7 @@ HEADERS += \
     ../src/rti.h \
     ../src/jpeg_decoder.h \
     ../src/imageset.h \
+    ../src/colorprofile.h \
     ../src/lp.h \
     ../src/jpeg_encoder.h \
     ../src/icc_profiles.h \

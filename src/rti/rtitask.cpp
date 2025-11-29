@@ -72,6 +72,9 @@ void RtiTask::setProject(Project &project) {
 
 	builder->width  = imageset.width;
 	builder->height = imageset.height;
+	
+	// Apply color profile mode from parameters
+	imageset.setForceSRGB(parameters.colorProfileMode == COLOR_PROFILE_SRGB);
 }
 
 RtiTask::~RtiTask() {

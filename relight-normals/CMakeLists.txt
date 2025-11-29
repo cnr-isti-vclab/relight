@@ -68,6 +68,7 @@ SET(SOURCES
 	../src/jpeg_encoder.cpp
 	../src/icc_profiles.cpp
 	../src/project.cpp
+	../src/colorprofile.cpp
 	../src/dome.cpp
 	../src/sphere.cpp
 	../src/lens.cpp

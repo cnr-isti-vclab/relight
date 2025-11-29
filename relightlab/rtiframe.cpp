@@ -57,6 +57,7 @@ RtiFrame::RtiFrame(QWidget *parent): QFrame(parent) {
 	connect(format_row,     &RtiFormatRow::formatChanged,         this, &RtiFrame::formatChanged);
 	connect(layout_row,     &RtiWebLayoutRow::layoutChanged,      this, &RtiFrame::layoutChanged);
 	connect(quality_row,    &RtiQualityRow::qualityChanged,       this, &RtiFrame::qualityChanged);
+	connect(quality_row,    &RtiQualityRow::colorProfileModeChanged, this, &RtiFrame::colorProfileModeChanged);
 
 	{
 		QHBoxLayout *save_row = new QHBoxLayout;
@@ -106,6 +107,10 @@ void RtiFrame::init() {
 	zoom_view->init();
 	zoom_view->setCrop(qRelightApp->project().crop);
 	updateNPlanes();
+	
+	// Update color profile info from the project
+	Project &project = qRelightApp->project();
+	quality_row->updateProfileInfo(project.icc_profile_description, project.icc_profile_is_srgb);
 }
 
 //ensure this is called AFTER updating the dome!
@@ -272,6 +277,9 @@ void RtiFrame::formatChanged() {
 }
 
 void RtiFrame::qualityChanged() {
+}
+
+void RtiFrame::colorProfileModeChanged() {
 }
 
 void RtiFrame::layoutChanged() {

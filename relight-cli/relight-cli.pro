@@ -51,6 +51,7 @@ SOURCES += main.cpp \
     ../src/dome.cpp \
     ../src/getopt.cpp \
     ../src/imageset.cpp \
+    ../src/colorprofile.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/jpeg_encoder.cpp \
     ../src/icc_profiles.cpp \
@@ -82,6 +83,7 @@ HEADERS += \
     ../src/dome.h \
     ../src/getopt.h \
     ../src/imageset.h \
+    ../src/colorprofile.h \
     ../src/jpeg_decoder.h \
     ../src/jpeg_encoder.h \
     ../src/icc_profiles.h \

@@ -259,6 +259,28 @@ RtiQualityRow::RtiQualityRow(RtiParameters &parameters, QFrame *parent): RtiPlan
 	qualitybox->setMaximum(100);
 	qualitybox->setValue(parameters.quality);
 	buttons->addWidget(qualitybox, Qt::AlignRight);
+	
+	buttons->addSpacing(20);
+	
+	// Color profile info and controls
+	profileLabel = new QLabel("Profile: Unknown");
+	profileLabel->setMaximumWidth(250);
+	profileLabel->setVisible(false);
+	buttons->addWidget(profileLabel, Qt::AlignRight);
+	
+	buttons->addWidget(preserve = new QLabelButton("Preserve", "Keep input color profile"));
+	buttons->addWidget(srgb = new QLabelButton("Convert to sRGB", "Convert to sRGB color space"));
+	preserve->setVisible(false);
+	srgb->setVisible(false);
+	
+	connect(preserve, &QAbstractButton::clicked, this, [this](){ setColorProfileMode(COLOR_PROFILE_PRESERVE, true); });
+	connect(srgb, &QAbstractButton::clicked, this, [this](){ setColorProfileMode(COLOR_PROFILE_SRGB, true); });
+	
+	QButtonGroup *group = new QButtonGroup(this);
+	group->addButton(preserve);
+	group->addButton(srgb);
+	
+	setColorProfileMode(parameters.colorProfileMode);
 }
 
 void RtiQualityRow::setQuality(int quality, bool emitting) {
@@ -273,6 +295,40 @@ void RtiQualityRow::setQuality(int quality, bool emitting) {
 }
 void RtiQualityRow::allowLossless(bool allow) {
 	losslessbox->setEnabled(allow);
+}
+
+void RtiQualityRow::setColorProfileMode(ColorProfileMode mode, bool emitting) {
+	parameters.colorProfileMode = mode;
+
+	if(emitting) {
+		emit colorProfileModeChanged();
+		return;
+	}
+
+	switch(mode) {
+	case COLOR_PROFILE_PRESERVE: preserve->setChecked(true); break;
+	case COLOR_PROFILE_SRGB: srgb->setChecked(true); break;
+	}
+}
+
+void RtiQualityRow::updateProfileInfo(const QString &profileDesc, bool isSRGB) {
+	QString text = "Profile: " + profileDesc;
+	profileLabel->setText(text);
+	
+	// Show/hide profile controls based on whether profile exists
+	bool hasProfile = (profileDesc != "No profile");
+	profileLabel->setVisible(hasProfile);
+	preserve->setVisible(hasProfile);
+	srgb->setVisible(hasProfile);
+	
+	// If profile is already sRGB or missing, disable the conversion option
+	if(isSRGB || !hasProfile) {
+		srgb->setEnabled(false);
+		preserve->setChecked(true);
+		setColorProfileMode(COLOR_PROFILE_PRESERVE, false);
+	} else {
+		srgb->setEnabled(true);
+	}
 }
 
 RtiWebLayoutRow::RtiWebLayoutRow(RtiParameters &parameters, QFrame *parent):

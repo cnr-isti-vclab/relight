@@ -85,7 +85,8 @@ set (RELIGHT_HEADERS
     ../src/rti.h
     ../src/legacy_rti.h
     ../src/imageset.h
-    ../src/jpeg_encoder.h
+    ../src/colorprofile.h
+    ../src/jpeg_decoder.h
     ../src/icc_profiles.h
     ../src/jpeg_decoder.h
     ../src/normals/flatnormals.h
@@ -162,7 +163,8 @@ set (RELIGHTLAB_SOURCES
     ../src/rti.cpp
     ../src/legacy_rti.cpp
     ../src/imageset.cpp
-    ../src/jpeg_encoder.cpp
+    ../src/colorprofile.cpp
+    ../src/jpeg_decoder.cpp
     ../src/icc_profiles.cpp
     ../src/jpeg_decoder.cpp
     ../src/normals/flatnormals.cpp

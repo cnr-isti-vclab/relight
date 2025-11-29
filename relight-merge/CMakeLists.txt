@@ -17,6 +17,7 @@ SET(HEADERS
 	../src/rti.h
 	../src/jpeg_decoder.h
 	../src/imageset.h
+	../src/colorprofile.h
 	../src/icc_profiles.h
 	../src/lp.h
 	../src/jpeg_encoder.h

@@ -20,6 +20,7 @@ SOURCES += \
         ../src/cli/rtibuilder.cpp \
         ../src/getopt.cpp \
         ../src/imageset.cpp \
+        ../src/colorprofile.cpp \
         ../src/image.cpp \
         ../src/jpeg_decoder.cpp \
         ../src/jpeg_encoder.cpp \
@@ -57,6 +58,7 @@ HEADERS += \
     ../src/cli/rtibuilder.h \
     ../src/getopt.h \
     ../src/imageset.h \
+    ../src/colorprofile.h \
     ../src/image.h \
     ../src/jpeg_decoder.h \
     ../src/jpeg_encoder.h \

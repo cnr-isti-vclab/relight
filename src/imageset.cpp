@@ -2,6 +2,7 @@
 #include "dome.h"
 #include "jpeg_decoder.h"
 #include "project.h"
+#include "colorprofile.h"
 
 #include <QDir>
 #include <QFile>
@@ -476,6 +477,14 @@ void ImageSet::applyColorTransform(uint8_t *data, size_t pixel_count) {
 	if(!color_transform)
 		return;
 	cmsDoTransform(color_transform, data, data, pixel_count);
+}
+
+bool ImageSet::isSRGBProfile() const {
+	return ColorProfile::isSRGBProfile(icc_profile_data);
+}
+
+QString ImageSet::getProfileDescription() const {
+	return ColorProfile::getProfileDescription(icc_profile_data);
 }
 
 void ImageSet::restart() {

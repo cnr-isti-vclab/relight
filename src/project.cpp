@@ -5,6 +5,8 @@
 #include "align.h"
 #include "white.h"
 #include "lp.h"
+#include "colorprofile.h"
+#include "jpeg_decoder.h"
 
 #include <QFile>
 #include <QTextStream>
@@ -148,6 +150,27 @@ bool Project::scanDir() {
 		images[i].valid &= (lens.focal35() == alllens[i].focal35());
 		images[i].skip = !images[i].valid;
 	}
+	
+	// Detect ICC color profile from first valid image
+	icc_profile_description = "No profile";
+	icc_profile_is_srgb = false;
+	
+	for(const Image &image: images) {
+		if(!image.skip) {
+			QString filepath = dir.filePath(image.filename);
+			JpegDecoder dec;
+			int w, h;
+			if(dec.init(filepath.toStdString().c_str(), w, h)) {
+				if(dec.hasICCProfile()) {
+					std::vector<uint8_t> profile_data = dec.getICCProfile();
+					icc_profile_description = ColorProfile::getProfileDescription(profile_data);
+					icc_profile_is_srgb = ColorProfile::isSRGBProfile(profile_data);
+				}
+				break; // Only check first valid image
+			}
+		}
+	}
+	
 	needs_saving = true;
 	return resolutions.size() == 1 && focals.size() == 1;
 }
@@ -272,6 +295,17 @@ void Project::load(QString filename) {
 	if(obj.contains("pixelSize"))
 		pixelSize = obj["pixelSize"].toDouble();
 
+	// Load ICC profile information
+	if(obj.contains("iccProfileDescription"))
+		icc_profile_description = obj["iccProfileDescription"].toString();
+	else
+		icc_profile_description = "No profile";
+		
+	if(obj.contains("iccProfileIsSRGB"))
+		icc_profile_is_srgb = obj["iccProfileIsSRGB"].toBool();
+	else
+		icc_profile_is_srgb = false;
+
 	QFileInfo info(filename);
 	QDir folder = info.dir();
 	folder.cd(obj["folder"].toString());
@@ -394,6 +428,12 @@ void Project::save(QString filename) {
 	project.insert("width", imgsize.width());
 	project.insert("height", imgsize.height());
 	project.insert("pixelSize", pixelSize);
+
+	// Save ICC profile information
+	if(icc_profile_description != "No profile") {
+		project.insert("iccProfileDescription", icc_profile_description);
+		project.insert("iccProfileIsSRGB", icc_profile_is_srgb);
+	}
 
 	//as a folder for images compute the relative path to the saving file location!
 	QFileInfo info(filename);
