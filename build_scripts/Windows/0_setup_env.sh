@@ -14,8 +14,10 @@ if [ ! -d "C:/vcpkg" ]; then
 fi
 
 echo "=== Installing dependencies via vcpkg..."
+
 # Libraries
-C:/vcpkg/vcpkg.exe install lcms:x64-windows opencv4:x64-windows
+C:/vcpkg/vcpkg.exe install lcms:x64-windows 
+#C:/vcpkg/vcpkg.exe installopencv4:x64-windows
 
 # Tools 
 C:/vcpkg/vcpkg.exe install cmake:x64-windows ninja:x64-windows ccache:x64-windows wget:x64-windows nsis:x64-windows || true

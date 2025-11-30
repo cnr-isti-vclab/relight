@@ -22,8 +22,11 @@ case $i in
 esac
 done
 
-${QT_DIR}windeployqt $INSTALL_PATH/relight.exe
 ${QT_DIR}windeployqt $INSTALL_PATH/relightlab.exe
+${QT_DIR}windeployqt $INSTALL_PATH/relight-cli.exe
+${QT_DIR}windeployqt $INSTALL_PATH/relight-normals.exe
+${QT_DIR}windeployqt $INSTALL_PATH/relight-merge.exe
+${QT_DIR}windeployqt $INSTALL_PATH/relight-deepzoom.exe
 
 OPENCV_PATH="C:/tools/opencv/build/x64/vc16/bin"  # Chocolatey
 

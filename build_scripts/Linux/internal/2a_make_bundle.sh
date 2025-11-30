@@ -26,3 +26,5 @@ cp $SCRIPTS_PATH/../relight.png $INSTALL_PATH/usr/share/icons/Yaru/512x512/apps/
 chmod +x $INSTALL_PATH/usr/bin/relightlab
 chmod +x $INSTALL_PATH/usr/bin/relight-cli
 chmod +x $INSTALL_PATH/usr/bin/relight-merge
+chmod +x $INSTALL_PATH/usr/bin/relight-normals
+chmod +x $INSTALL_PATH/usr/bin/relight-deepzoom

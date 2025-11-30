@@ -11,7 +11,8 @@ sudo apt-get install -y mesa-common-dev libglu1-mesa-dev
 
 sudo apt-get install -y cmake ninja-build patchelf fuse libjpeg-dev libeigen3-dev
 
-sudo apt-get install -y libopencv-dev
+#not neeeded for the moment.
+#sudo apt-get install -y libopencv-dev
 
 sudo apt-get install -y libxcb-cursor0
 sudo apt-get install -y liblcms2-dev
