@@ -87,8 +87,8 @@ set (RELIGHT_HEADERS
     ../src/imageset.h
     ../src/colorprofile.h
     ../src/jpeg_decoder.h
+    ../src/jpeg_encoder.h
     ../src/icc_profiles.h
-    ../src/jpeg_decoder.h
     ../src/normals/flatnormals.h
     ../src/network/httpserver.h
     queueframe.h
@@ -165,8 +165,8 @@ set (RELIGHTLAB_SOURCES
     ../src/imageset.cpp
     ../src/colorprofile.cpp
     ../src/jpeg_decoder.cpp
+    ../src/jpeg_encoder.cpp
     ../src/icc_profiles.cpp
-    ../src/jpeg_decoder.cpp
     ../src/normals/flatnormals.cpp
     ../src/network/httpserver.cpp
     queueframe.cpp
