@@ -95,7 +95,7 @@ jobs:
     - name: Configure and Build
       shell: bash
       run: |
-        bash build_scripts/${{ runner.os }}/1_build.sh --ccache
+        bash build_scripts/${{ runner.os }}/1_build.sh
 
     - name: Deploy
       shell: bash

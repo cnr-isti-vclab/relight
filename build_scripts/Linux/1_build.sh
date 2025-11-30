@@ -1,78 +1,23 @@
 #!/bin/bash
 
-# this is a script shell for compiling relight in a Linux environment.
-# Requires a Qt environment which is set-up properly, and an accessible
-# cmake binary.
-#
-# Without given arguments, relightlab will be built in the relightlab/build
-# directory, and installed in $BUILD_PATH/../install.
-#
-# You can give as argument the BUILD_PATH and the INSTALL_PATH in the
-# following way:
-# bash 1_build.sh --build_path=/path/to/build --install_path=/path/to/install
-# -b and -i arguments are also supported.
+# Script that configures and builds RelightLab on Linux using CMake/Ninja.
 
-#default paths wrt the script folder
+set -euo pipefail
+
 SCRIPTS_PATH="$(dirname "$(realpath "$0")")"
-SOURCE_PATH=$SCRIPTS_PATH/../..
-BUILD_PATH=$SOURCE_PATH/build
-INSTALL_PATH=$SOURCE_PATH/install/usr/
-CORES="-j4"
-QT_DIR=""
-CCACHE=""
+SOURCE_PATH="$SCRIPTS_PATH/../.."
+BUILD_PATH="$SOURCE_PATH/build"
+INSTALL_PATH="$SOURCE_PATH/install/usr"
 
-#check parameters
-for i in "$@"
-do
-case $i in
-    -b=*|--build_path=*)
-        BUILD_PATH="${i#*=}"
-        shift # past argument=value
-        ;;
-    -i=*|--install_path=*)
-        INSTALL_PATH="${i#*=}"/usr/
-        shift # past argument=value
-        ;;
-    -j*)
-        CORES=$i
-        shift # past argument=value
-        ;;
-    -qt=*|--qt_dir=*)
-        QT_DIR=${i#*=}
-        shift # past argument=value
-        ;;
-    --ccache)
-        CCACHE="-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
-        shift # past argument=value
-        ;;
-    *)
-        # unknown option
-        ;;
-esac
-done
+CCACHE_FLAGS=(-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache)
 
-#create build path if necessary
-if ! [ -d $BUILD_PATH ]
-then
-    mkdir -p $BUILD_PATH
-fi
+mkdir -p "$BUILD_PATH" "$INSTALL_PATH"
 
-#create install path if necessary
-if ! [ -d $INSTALL_PATH ]
-then
-    mkdir -p $INSTALL_PATH
-fi
+BUILD_PATH=$(realpath "$BUILD_PATH")
+INSTALL_PATH=$(realpath "$INSTALL_PATH")
 
-BUILD_PATH=$(realpath $BUILD_PATH)
-INSTALL_PATH=$(realpath $INSTALL_PATH)
-
-if [ ! -z "$QT_DIR" ]
-then
-    export Qt5_DIR=$QT_DIR
-fi
-
-cd $BUILD_PATH
+cd "$BUILD_PATH"
 export NINJA_STATUS="[%p (%f/%t) ] "
-cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH $CCACHE $SOURCE_PATH
+cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$INSTALL_PATH" "${CCACHE_FLAGS[@]}" "$SOURCE_PATH"
 ninja
 ninja install
