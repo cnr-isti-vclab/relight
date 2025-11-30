@@ -65,11 +65,11 @@ else()
     message(STATUS "Using system TIFF library")
 endif()
 
-# OpenCV setup (not needed on Apple)
-if(NOT APPLE)
-    find_package(OpenCV REQUIRED)
-    message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
-endif()
+# OpenCV setup, not needed for the moment,.
+#if(NOT APPLE)
+#    find_package(OpenCV REQUIRED)
+#    message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
+#endif()
 
 # LittleCMS2 setup (mandatory)
 find_package(LCMS2 REQUIRED)
