@@ -46,7 +46,7 @@ jobs:
     - name: Setup Qt version for macOS
       if: runner.os == 'Windows'
       run: |
-        echo "QT_VERSION=6.6.*" >> $GITHUB_ENV
+        echo ("QT_VERSION=6.6.*") >> $env:GITHUB_ENV
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
