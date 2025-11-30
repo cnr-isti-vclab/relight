@@ -6,12 +6,12 @@
 # Note: Qt should be installed separately (e.g., via the Qt installer or GitHub Actions)
 
 sudo apt-get update
-echo "=== installing mesa packages..."
+
 sudo apt-get install -y mesa-common-dev libglu1-mesa-dev 
 
 sudo apt-get install -y cmake ninja-build patchelf fuse libjpeg-dev libeigen3-dev
 
-# qt dependencies (for deployment)
-sudo apt-get install -y libxcb-cursor0
+sudo apt-get install -y libopencv-dev
 
+sudo apt-get install -y libxcb-cursor0
 sudo apt-get install -y liblcms2-dev

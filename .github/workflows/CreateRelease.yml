@@ -18,7 +18,7 @@ jobs:
       with:
         submodules: true
     - name: Update Relight version
-      run : |
+      run: |
         echo ${{ github.event.inputs.version }} | tr -d '\n'> RELIGHT_VERSION
     - name: commit RELIGHT_VERSION change
       uses: EndBug/add-and-commit@v9
@@ -50,6 +50,7 @@ jobs:
         submodules: true
         ref: master
     - name: Setup MSVC
+      if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
     - name: Set CodeSign Certificate macOS
       if: runner.os == 'macOS'
@@ -71,12 +72,9 @@ jobs:
 
     - name: Install vcpkg and dependencies on Windows
       if: runner.os == 'Windows'
+      shell: bash
       run: |
-        git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
-        C:\vcpkg\bootstrap-vcpkg.bat
-        C:\vcpkg\vcpkg.exe install opencv4:x64-windows lcms:x64-windows
-        echo ("CMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake") >> $env:GITHUB_ENV
-        echo ("QT_VERSION=6.6.*") >> $env:GITHUB_ENV
+        bash build_scripts/Windows/0_setup_env.sh
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
@@ -114,6 +112,7 @@ jobs:
         name: RelightLab_${{ matrix.label }}_portable
         path: install/
     - name: Upload RelightLab Packages
+      if: runner.os != 'Windows'
       uses: actions/upload-artifact@v4
       with:
         name: RelightLab_${{ matrix.label }}_packages
