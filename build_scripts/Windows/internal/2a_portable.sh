@@ -22,14 +22,17 @@ case $i in
 esac
 done
 
-${QT_DIR}windeployqt $INSTALL_PATH/relight.exe
 ${QT_DIR}windeployqt $INSTALL_PATH/relightlab.exe
+${QT_DIR}windeployqt $INSTALL_PATH/relight-cli.exe
+${QT_DIR}windeployqt $INSTALL_PATH/relight-normals.exe
+${QT_DIR}windeployqt $INSTALL_PATH/relight-merge.exe
+${QT_DIR}windeployqt $INSTALL_PATH/relight-deepzoom.exe
 
-OPENCV_PATH="C:/tools/opencv/build/x64/vc16/bin"  # Chocolatey
 
-# Copy OpenCV DLLs
-echo "Copying OpenCV DLLs from $OPENCV_PATH to $INSTALL_PATH..."
-cp "$OPENCV_PATH"/*.dll "$INSTALL_PATH" || { echo "Failed to copy OpenCV DLLs"; exit 1; }
+# Copy OpenCV DLLs, not needed for the moment.
+#OPENCV_PATH="C:/tools/opencv/build/x64/vc16/bin"  # Chocolatey TODO check for vkpg
+#echo "Copying OpenCV DLLs from $OPENCV_PATH to $INSTALL_PATH..."
+#cp "$OPENCV_PATH"/*.dll "$INSTALL_PATH" || { echo "Failed to copy OpenCV DLLs"; exit 1; }
 
 # remove all .lib files
 for file in $(find $INSTALL_PATH -name '*.lib');

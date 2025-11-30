@@ -28,45 +28,36 @@ jobs:
       with:
         submodules: true
     - name: Setup MSVC
+      if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Set CodeSign Certificate macOS
-      if: runner.os == 'macOS' && env.MAC_CERT != null
-      uses: apple-actions/import-codesign-certs@v2
-      with:
-        p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
-        p12-password: ${{ secrets.MACOS_CERTIFICATE_PSSW }}
 
-    - name: Install OpenCV on Ubuntu
+
+    - name: Setup Qt version for Linux
       if: runner.os == 'Linux'
       run: |
-        sudo apt-get update && sudo apt-get install -y libopencv-dev
         echo "QT_VERSION=6.6.*" >> $GITHUB_ENV
 
-    - name: Install OpenCV on macOS
+    - name: Setup Qt version for macOS
       if: runner.os == 'macOS'
       run: |
         echo "QT_VERSION=6.8.0" >> $GITHUB_ENV
 
-    - name: Install vcpkg and dependencies on Windows
+    - name: Setup Qt version for macOS
       if: runner.os == 'Windows'
       run: |
-        git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
-        C:\vcpkg\bootstrap-vcpkg.bat
-        C:\vcpkg\vcpkg.exe install opencv4:x64-windows lcms:x64-windows
-        echo ("CMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake") >> $env:GITHUB_ENV
-        echo ("QT_VERSION=6.6.*") >> $env:GITHUB_ENV
+        echo "QT_VERSION=6.6.*" >> $env:GITHUB_ENV
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
       with:
         cache: 'true'
         version: ${{ env.QT_VERSION }}
-        
+
     - name: Install dependencies
       shell: bash
       run: |
-        bash build_scripts/${{ runner.os }}/0_setup_env.sh --dont_install_qt
+        bash build_scripts/${{ runner.os }}/0_setup_env.sh
 
     - name: Ccache
       uses: hendrikmuhs/ccache-action@v1.2
@@ -75,8 +66,16 @@ jobs:
     - name: Configure and Build
       shell: bash
       run: |
-        bash build_scripts/${{ runner.os }}/1_build.sh --ccache
+        bash build_scripts/${{ runner.os }}/1_build.sh
+
         
+    - name: Set CodeSign Certificate macOS
+      if: runner.os == 'macOS' && env.MAC_CERT != null
+      uses: apple-actions/import-codesign-certs@v2
+      with:
+        p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
+        p12-password: ${{ secrets.MACOS_CERTIFICATE_PSSW }}
+
     - name: Deploy
       shell: bash
       run: >
