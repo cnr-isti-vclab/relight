@@ -34,6 +34,7 @@ SET(SOURCES
 	../src/rti.cpp
 	../src/jpeg_decoder.cpp
 	../src/imageset.cpp
+	../src/colorprofile.cpp
 	../src/lp.cpp
 	../src/jpeg_encoder.cpp
 	../src/icc_profiles.cpp
