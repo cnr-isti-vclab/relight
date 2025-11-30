@@ -20,10 +20,10 @@ if (APPLE)
 	SET(CMAKE_INSTALL_RPATH $ORIGIN/../Frameworks)
 	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 else()
-	#opencv deply fails on mac, qt is not in the path it seems.
-	#Cannot resolve rpath "@rpath/QtGui.framework/Versions/A/QtGui" ERROR: using QList("/opt/homebrew/Cellar/opencv/4.11.0/lib", "/Users/runner/work/relight/relight/install/lib")
-	set(OPENCV_RELIGHT_LIBS opencv_core  opencv_imgcodecs opencv_imgproc opencv_video)
-	add_compile_definitions(WITH_OPENCV)
+	#opencv deply fails on mac, qt is not in the path it seems.	
+    #OPENCV not needed for the moment.
+	#set(OPENCV_RELIGHT_LIBS opencv_core  opencv_imgcodecs opencv_imgproc opencv_video)
+	#add_compile_definitions(WITH_OPENCV)
 endif()
 
 
@@ -200,7 +200,7 @@ target_include_directories(
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}
 		TIFF::TIFF
-		${OpenCV_INCLUDE_DIRS}
+#		${OpenCV_INCLUDE_DIRS}
 		../external
 	)
 	
@@ -215,7 +215,7 @@ target_link_libraries(
 		${JPEG_LIBRARIES}
 		TIFF::TIFF
 		OpenMP::OpenMP_CXX
-		${OPENCV_RELIGHT_LIBS}
+#		${OPENCV_RELIGHT_LIBS}
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui
 		${RELIGHT_QT}::Widgets
