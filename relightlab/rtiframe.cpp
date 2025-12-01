@@ -110,7 +110,9 @@ void RtiFrame::init() {
 	
 	// Update color profile info from the project
 	Project &project = qRelightApp->project();
-	quality_row->updateProfileInfo(project.icc_profile_description, project.icc_profile_is_srgb);
+	quality_row->updateProfileInfo(project.icc_profile_description,
+		project.icc_profile_is_srgb,
+		project.icc_profile_is_display_p3);
 }
 
 //ensure this is called AFTER updating the dome!

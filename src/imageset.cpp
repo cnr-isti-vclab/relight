@@ -3,6 +3,7 @@
 #include "jpeg_decoder.h"
 #include "project.h"
 #include "colorprofile.h"
+#include "icc_profiles.h"
 
 #include <QDir>
 #include <QFile>
@@ -31,8 +32,6 @@ ImageSet::~ImageSet() {
 		cmsDeleteTransform(color_transform);
 	if(input_profile)
 		cmsCloseProfile(input_profile);
-	if(srgb_profile)
-		cmsCloseProfile(srgb_profile);
 
 	//TODO decoders should take care to properly finish
 	for(JpegDecoder *dec: decoders)
@@ -251,9 +250,17 @@ bool ImageSet::initImages(const char *_path) {
 
 		decoders.push_back(dec);
 	}
-	if(force_srgb)
-		ensureColorTransform();
 	return true;
+}
+
+void ImageSet::setColorProfileMode(ColorProfileMode mode) {
+	if(color_profile_mode == mode)
+		return;
+	color_profile_mode = mode;
+	if(color_transform) {
+		cmsDeleteTransform(color_transform);
+		color_transform = nullptr;
+	}
 }
 
 
@@ -452,31 +459,41 @@ void ImageSet::compensateIntensity(PixelArray &pixels) {
 
 }
 
-void ImageSet::ensureColorTransform() {
-	if(!force_srgb)
-		return;
-	if(color_transform)
-		return;
+void ImageSet::createColorTransform() {
 	if(icc_profile_data.empty())
-		return;
-	if(!srgb_profile)
-		srgb_profile = cmsCreate_sRGBProfile();
+		throw QString("Color profile conversion requested but input images lack an embedded ICC profile.");
+	cmsHPROFILE output_profile = createOutputProfile();
+	if(!output_profile)
+		throw QString("Failed creating target ICC profile for color conversion.");
 	if(input_profile)
 		cmsCloseProfile(input_profile);
 	input_profile = cmsOpenProfileFromMem(icc_profile_data.data(), icc_profile_data.size());
 	if(!input_profile)
-		return;
-	color_transform = cmsCreateTransform(input_profile, TYPE_RGB_8, srgb_profile, TYPE_RGB_8, INTENT_PERCEPTUAL, cmsFLAGS_COPY_ALPHA);
+		throw QString("Failed opening source ICC profile for color conversion.");
+	color_transform = cmsCreateTransform(input_profile, TYPE_RGB_8, output_profile, TYPE_RGB_8, INTENT_PERCEPTUAL, cmsFLAGS_COPY_ALPHA);
+	cmsCloseProfile(output_profile);
+	if(!color_transform)
+		throw QString("Failed creating ICC color transform for the requested profile.");
 }
 
 void ImageSet::applyColorTransform(uint8_t *data, size_t pixel_count) {
-	if(!force_srgb)
+	if(color_profile_mode == COLOR_PROFILE_PRESERVE)
 		return;
 	if(!color_transform)
-		ensureColorTransform();
-	if(!color_transform)
-		return;
+		createColorTransform();
 	cmsDoTransform(color_transform, data, data, pixel_count);
+}
+
+cmsHPROFILE ImageSet::createOutputProfile() {
+	switch(color_profile_mode) {
+	case COLOR_PROFILE_SRGB:
+		return cmsCreate_sRGBProfile();
+	case COLOR_PROFILE_DISPLAY_P3:
+		return cmsOpenProfileFromMem(DisplayP3_ICC_profile, DisplayP3_ICC_profile_length);
+	case COLOR_PROFILE_PRESERVE:
+	default:
+		return nullptr;
+	}
 }
 
 bool ImageSet::isSRGBProfile() const {

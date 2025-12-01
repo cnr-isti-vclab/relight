@@ -52,6 +52,9 @@ void Project::clear() {
 
 	crop = Crop();
 	needs_saving = false;
+	icc_profile_description = "No profile";
+	icc_profile_is_srgb = false;
+	icc_profile_is_display_p3 = false;
 }
 
 bool Project::setDir(QDir folder) {
@@ -154,6 +157,7 @@ bool Project::scanDir() {
 	// Detect ICC color profile from first valid image
 	icc_profile_description = "No profile";
 	icc_profile_is_srgb = false;
+	icc_profile_is_display_p3 = false;
 	
 	for(const Image &image: images) {
 		if(!image.skip) {
@@ -165,6 +169,7 @@ bool Project::scanDir() {
 					std::vector<uint8_t> profile_data = dec.getICCProfile();
 					icc_profile_description = ColorProfile::getProfileDescription(profile_data);
 					icc_profile_is_srgb = ColorProfile::isSRGBProfile(profile_data);
+					icc_profile_is_display_p3 = ColorProfile::isDisplayP3Profile(profile_data);
 				}
 				break; // Only check first valid image
 			}
@@ -306,6 +311,11 @@ void Project::load(QString filename) {
 	else
 		icc_profile_is_srgb = false;
 
+	if(obj.contains("iccProfileIsDisplayP3"))
+		icc_profile_is_display_p3 = obj["iccProfileIsDisplayP3"].toBool();
+	else
+		icc_profile_is_display_p3 = false;
+
 	QFileInfo info(filename);
 	QDir folder = info.dir();
 	folder.cd(obj["folder"].toString());
@@ -433,6 +443,7 @@ void Project::save(QString filename) {
 	if(icc_profile_description != "No profile") {
 		project.insert("iccProfileDescription", icc_profile_description);
 		project.insert("iccProfileIsSRGB", icc_profile_is_srgb);
+		project.insert("iccProfileIsDisplayP3", icc_profile_is_display_p3);
 	}
 
 	//as a folder for images compute the relative path to the saving file location!

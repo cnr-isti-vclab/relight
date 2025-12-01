@@ -74,7 +74,7 @@ void RtiTask::setProject(Project &project) {
 	builder->height = imageset.height;
 	
 	// Apply color profile mode from parameters
-	imageset.setForceSRGB(parameters.colorProfileMode == COLOR_PROFILE_SRGB);
+	imageset.setColorProfileMode(parameters.colorProfileMode);
 }
 
 RtiTask::~RtiTask() {
@@ -90,6 +90,7 @@ void RtiTask::setParameters(RtiParameters &p) {
 	builder->colorspace   = parameters.colorspace;
 	builder->nplanes      = parameters.nplanes;
 	builder->yccplanes[1] = builder->yccplanes[2] = parameters.nchroma;
+	builder->colorProfileMode = parameters.colorProfileMode;
 
 	if( builder->colorspace == Rti::MYCC) {
 		if((parameters.nchroma + parameters.nplanes)%2 == 1) {

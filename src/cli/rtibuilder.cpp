@@ -92,6 +92,7 @@ bool RtiBuilder::setupFromFolder(const string &folder) {
 			imageset.images.removeAt(skip_image);
 			dome.directions.erase(dome.directions.begin() + skip_image);
 		}
+		imageset.setColorProfileMode(colorProfileMode);
 		imageset.initImages(folder.c_str());
 		imageset.setLights(dome.directions, Dome::DIRECTIONAL);
 
@@ -121,6 +122,7 @@ bool RtiBuilder::setupFromProject(const std::string &_filename) {
 			imageset.pixel_size = obj["pixelSizeInMM"].toDouble();
 
 
+		imageset.setColorProfileMode(colorProfileMode);
 		imageset.initFromProject(obj, filename);
 		//overwrite project crop if specified in builder.
 		if(crop[2] != 0) //some width specified
@@ -1468,7 +1470,6 @@ size_t RtiBuilder::save(const string &output, int quality) {
 
 	const uint8_t *output_icc_data = nullptr;
 	size_t output_icc_length = 0;
-	bool srgb_profile_available = sRGB_ICC_profile_length > 0;
 	switch(colorProfileMode) {
 	case COLOR_PROFILE_PRESERVE:
 	default:
@@ -1478,17 +1479,14 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		}
 		break;
 	case COLOR_PROFILE_SRGB:
-		if(srgb_profile_available) {
-			output_icc_data = sRGB_ICC_profile;
-			output_icc_length = sRGB_ICC_profile_length;
-		} else if(!preserved_icc.empty()) {
-			cerr << "sRGB ICC profile blob missing; falling back to preserving source profile." << endl;
-			output_icc_data = preserved_icc.data();
-			output_icc_length = preserved_icc.size();
-		}
+		output_icc_data = sRGB_ICC_profile;
+		output_icc_length = sRGB_ICC_profile_length;
+		break;
+	case COLOR_PROFILE_DISPLAY_P3:
+		output_icc_data = DisplayP3_ICC_profile;
+		output_icc_length = DisplayP3_ICC_profile_length;
 		break;
 	}
-	// TODO: integrate LittleCMS2 to actually convert pixel data when COLOR_PROFILE_SRGB is requested.
 
 	vector<JpegEncoder *> encoders(njpegs);
 	

@@ -3,6 +3,7 @@
 
 #include "relight_vector.h"
 #include "dome.h"
+#include "colorprofile.h"
 #include <vector>
 #include <string>
 #include <functional>
@@ -79,8 +80,8 @@ public:
 	void setLights(const std::vector<Eigen::Vector3f> &lights, const Dome::LightConfiguration configuration);
 	std::vector<Eigen::Vector3f> &lights() { return lights1; }
 
-	void setForceSRGB(bool enable) { force_srgb = enable; }
-	bool isSRGBForced() const { return force_srgb; }
+	void setColorProfileMode(ColorProfileMode mode);
+	ColorProfileMode getColorProfileMode() const { return color_profile_mode; }
 	bool isSRGBProfile() const;
 	QString getProfileDescription() const;
 
@@ -109,14 +110,14 @@ protected:
 	std::vector<uint8_t> icc_profile_data;
 	cmsHPROFILE input_profile = nullptr;
 	cmsHTRANSFORM color_transform = nullptr;
-	bool force_srgb = false;
-	cmsHPROFILE srgb_profile = nullptr;
+	ColorProfileMode color_profile_mode = COLOR_PROFILE_PRESERVE;
 
 private:
 
 	void compensateIntensity(PixelArray &pixels);
-	void ensureColorTransform();
+	void createColorTransform();
 	void applyColorTransform(uint8_t *data, size_t pixel_count);
+	cmsHPROFILE createOutputProfile();
 };
 
 #endif // IMAGESET_H

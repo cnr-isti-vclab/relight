@@ -269,16 +269,20 @@ RtiQualityRow::RtiQualityRow(RtiParameters &parameters, QFrame *parent): RtiPlan
 	buttons->addWidget(profileLabel, Qt::AlignRight);
 	
 	buttons->addWidget(preserve = new QLabelButton("Preserve", "Keep input color profile"));
-	buttons->addWidget(srgb = new QLabelButton("Convert to sRGB", "Convert to sRGB color space"));
+	buttons->addWidget(srgb = new QLabelButton("sRGB", "Convert to sRGB color space"));
+	buttons->addWidget(displayp3 = new QLabelButton("Display P3", "Convert to Display P3 color space"));
 	preserve->setVisible(false);
 	srgb->setVisible(false);
+	displayp3->setVisible(false);
 	
 	connect(preserve, &QAbstractButton::clicked, this, [this](){ setColorProfileMode(COLOR_PROFILE_PRESERVE, true); });
 	connect(srgb, &QAbstractButton::clicked, this, [this](){ setColorProfileMode(COLOR_PROFILE_SRGB, true); });
+	connect(displayp3, &QAbstractButton::clicked, this, [this](){ setColorProfileMode(COLOR_PROFILE_DISPLAY_P3, true); });
 	
 	QButtonGroup *group = new QButtonGroup(this);
 	group->addButton(preserve);
 	group->addButton(srgb);
+	group->addButton(displayp3);
 	
 	setColorProfileMode(parameters.colorProfileMode);
 }
@@ -308,10 +312,11 @@ void RtiQualityRow::setColorProfileMode(ColorProfileMode mode, bool emitting) {
 	switch(mode) {
 	case COLOR_PROFILE_PRESERVE: preserve->setChecked(true); break;
 	case COLOR_PROFILE_SRGB: srgb->setChecked(true); break;
+	case COLOR_PROFILE_DISPLAY_P3: displayp3->setChecked(true); break;
 	}
 }
 
-void RtiQualityRow::updateProfileInfo(const QString &profileDesc, bool isSRGB) {
+void RtiQualityRow::updateProfileInfo(const QString &profileDesc, bool isSRGB, bool isDisplayP3) {
 	QString text = "Profile: " + profileDesc;
 	profileLabel->setText(text);
 	
@@ -320,14 +325,36 @@ void RtiQualityRow::updateProfileInfo(const QString &profileDesc, bool isSRGB) {
 	profileLabel->setVisible(hasProfile);
 	preserve->setVisible(hasProfile);
 	srgb->setVisible(hasProfile);
+	displayp3->setVisible(hasProfile);
 	
-	// If profile is already sRGB or missing, disable the conversion option
-	if(isSRGB || !hasProfile) {
-		srgb->setEnabled(false);
-		preserve->setChecked(true);
+	bool allowSRGB = hasProfile && !isSRGB;
+	bool allowP3 = hasProfile && !isDisplayP3;
+	srgb->setEnabled(allowSRGB);
+	displayp3->setEnabled(allowP3);
+	
+	if(!hasProfile) {
 		setColorProfileMode(COLOR_PROFILE_PRESERVE, false);
-	} else {
-		srgb->setEnabled(true);
+		preserve->setChecked(true);
+		return;
+	}
+
+	switch(parameters.colorProfileMode) {
+	case COLOR_PROFILE_SRGB:
+		if(!allowSRGB) {
+			setColorProfileMode(COLOR_PROFILE_PRESERVE, false);
+			preserve->setChecked(true);
+		}
+		break;
+	case COLOR_PROFILE_DISPLAY_P3:
+		if(!allowP3) {
+			setColorProfileMode(COLOR_PROFILE_PRESERVE, false);
+			preserve->setChecked(true);
+		}
+		break;
+	case COLOR_PROFILE_PRESERVE:
+	default:
+		preserve->setChecked(true);
+		break;
 	}
 }
 

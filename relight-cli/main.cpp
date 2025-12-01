@@ -52,7 +52,7 @@ void help() {
 	cout << "\t              Clamps outliers to improve quantization resolution for most pixels\n";
 	cout << "\t  -c <float>: coeff quantization (to test!) default 1.5\n";
 	cout << "\t  -C        : apply chroma subsampling \n";
-	cout << "\t  -I <preserve|srgb>: ICC color profile handling (default: preserve)\n";
+	cout << "\t  -I <preserve|srgb|displayp3>: ICC color profile handling (default: preserve)\n";
 	cout << "\t  -e        : evaluate reconstruction error (default: false)\n";
 	cout << "\t  -E <int>  : evaluate error on a single image (but remove it for fitting)\n";
 
@@ -301,8 +301,10 @@ int main(int argc, char *argv[]) {
 				builder.colorProfileMode = COLOR_PROFILE_PRESERVE;
 			} else if(mode == "srgb") {
 				builder.colorProfileMode = COLOR_PROFILE_SRGB;
+			} else if(mode == "displayp3") {
+				builder.colorProfileMode = COLOR_PROFILE_DISPLAY_P3;
 			} else {
-				cerr << "Invalid color profile mode: " << optarg << " (use 'preserve' or 'srgb')\n" << endl;
+				cerr << "Invalid color profile mode: " << optarg << " (use 'preserve', 'srgb', or 'displayp3')\n" << endl;
 				return 1;
 			}
 			break;

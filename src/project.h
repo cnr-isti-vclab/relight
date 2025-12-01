@@ -43,6 +43,7 @@ public:
 	// ICC color profile information (detected from images)
 	QString icc_profile_description;
 	bool icc_profile_is_srgb = false;
+	bool icc_profile_is_display_p3 = false;
 
 	QString name;
 	std::vector<QString> authors;

@@ -8,5 +8,7 @@
 // This is a minimal sRGB profile compatible with most software
 extern const uint8_t sRGB_ICC_profile[];
 extern const size_t sRGB_ICC_profile_length;
+extern const uint8_t DisplayP3_ICC_profile[];
+extern const size_t DisplayP3_ICC_profile_length;
 
 #endif // ICC_PROFILES_H
