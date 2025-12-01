@@ -18,6 +18,7 @@ SET(HEADERS
 	../src/rti.h
 	../src/jpeg_decoder.h
 	../src/imageset.h
+	../src/exif.h
 	../src/colorprofile.h
 	../src/icc_profiles.h
 	../src/lp.h
@@ -35,6 +36,7 @@ SET(SOURCES
 	../src/rti.cpp
 	../src/jpeg_decoder.cpp
 	../src/imageset.cpp
+	../src/exif.cpp
 	../src/colorprofile.cpp
 	../src/lp.cpp
 	../src/jpeg_encoder.cpp

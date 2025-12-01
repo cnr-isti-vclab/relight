@@ -53,7 +53,8 @@ SOURCES += main.cpp \
     ../src/dome.cpp \
     ../src/crop.cpp \
     ../src/sphere.cpp \
-    ../src/lens.cpp
+    ../src/lens.cpp \
+    ../src/exif.cpp
 
 HEADERS += \
     ../src/rti.h \
@@ -67,4 +68,5 @@ HEADERS += \
     ../src/dome.h \
     ../src/crop.h \
     ../src/sphere.h \
-    ../src/lens.h
+    ../src/lens.h \
+    ../src/exif.h

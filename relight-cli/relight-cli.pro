@@ -68,7 +68,8 @@ SOURCES += main.cpp \
     ../src/cli/convert_rti.cpp \
     ../src/lp.cpp \
     ../src/crop.cpp \
-    ../src/task.cpp
+    ../src/task.cpp \
+    ../src/exif.cpp
 
 HEADERS += \
     ../external/assm/algorithms/DifferentialGeometry.h \
@@ -103,7 +104,8 @@ HEADERS += \
 	../src/sphere.h \
     ../src/cli/rtibuilder.h \
     ../src/lp.h \
-    ../src/crop.h
+    ../src/crop.h \
+    ../src/exif.h
 
 
 DISTFILES += \

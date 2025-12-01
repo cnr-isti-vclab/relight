@@ -18,6 +18,7 @@ SET(HEADERS
 	../src/cli/rtibuilder.h
 	../src/getopt.h
 	../src/imageset.h
+	../src/exif.h
 	../src/colorprofile.h
 	../src/jpeg_decoder.h
 	../src/jpeg_encoder.h
@@ -53,6 +54,7 @@ SET(SOURCES
 	../src/cli/rtibuilder.cpp
 	../src/getopt.cpp
 	../src/imageset.cpp
+	../src/exif.cpp
 	../src/colorprofile.cpp
 	../src/jpeg_decoder.cpp
 	../src/jpeg_encoder.cpp
