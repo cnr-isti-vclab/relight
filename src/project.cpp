@@ -166,8 +166,9 @@ bool Project::scanDir() {
 			int w, h;
 			if(dec.init(filepath.toStdString().c_str(), w, h)) {
 				if(dec.hasICCProfile()) {
+					bool is_rgb = false;
 					std::vector<uint8_t> profile_data = dec.getICCProfile();
-					icc_profile_description = ColorProfile::getProfileDescription(profile_data);
+					icc_profile_description = ColorProfile::getProfileDescription(profile_data, is_rgb);
 					icc_profile_is_srgb = ColorProfile::isSRGBProfile(profile_data);
 					icc_profile_is_display_p3 = ColorProfile::isDisplayP3Profile(profile_data);
 				}

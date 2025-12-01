@@ -4,6 +4,7 @@
 #include "project.h"
 #include "colorprofile.h"
 #include "icc_profiles.h"
+#include "exif.h"
 
 #include <QDir>
 #include <QFile>
@@ -12,6 +13,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QVariant>
 
 #include <string>
 #include <set>
@@ -213,16 +215,10 @@ bool ImageSet::initImages(const char *_path) {
 #endif
 
 	QDir dir(_path);
-	QString icc_profile_source;
-	if(color_transform) {
-		cmsDeleteTransform(color_transform);
-		color_transform = nullptr;
-	}
-	if(input_profile) {
-		cmsCloseProfile(input_profile);
-		input_profile = nullptr;
-	}
 	icc_profile_data.clear();
+	bool first = true;
+	bool has_profile = false;
+	bool is_exif_srgb = false;
 
 	for(int i = 0; i < images.size(); i++) {
 		QString filepath = dir.filePath(images[i]);
@@ -239,16 +235,36 @@ bool ImageSet::initImages(const char *_path) {
 		right = image_width = width = w;
 		bottom = image_height = height = h;
 
-		if(icc_profile_data.empty() && dec->hasICCProfile()) {
-			icc_profile_data = dec->getICCProfile();
-			icc_profile_source = filepath;
-		} else if(!icc_profile_data.empty() && dec->hasICCProfile() && dec->getICCProfile() != icc_profile_data) {
-			throw QString("Input images use different ICC profiles. First profile found in %1, mismatch detected in %2")
-				.arg(icc_profile_source.isEmpty() ? QString("(unknown)") : icc_profile_source)
-				.arg(filepath);
+		Exif exif;
+		exif.parse(filepath);
+
+		if(first) {
+			has_profile = dec->hasICCProfile();
+			if(has_profile) {
+				const auto &profile = dec->getICCProfile();
+				icc_profile_data = profile;
+			} else
+				is_exif_srgb = exif.value(Exif::ColorSpace, QString()).toString() == "sRGB";
+			first = false;
 		}
 
+		//logic here:
+		//Ensure all images have ICCProfile or all have not
+		if(dec->hasICCProfile()) {
+			if(!has_profile || icc_profile_data != dec->getICCProfile()) {
+				throw QString("Input images use different ICC profiles. Mismatch detected in %1")
+					.arg(filepath);
+			}
+		} else {
+			if(has_profile)
+				throw QString("Input images %1 lacks ICC profile while previous have one.").arg(filepath);
+			if(is_exif_srgb != (exif.value(Exif::ColorSpace, QString()).toString() == "sRGB"))
+				throw QString("Input image %1 has a different exif colorspace.").arg(filepath);
+		}
 		decoders.push_back(dec);
+	}
+	if(is_exif_srgb) {
+		icc_profile_data = ICCProfiles::sRGBData();
 	}
 	return true;
 }
@@ -459,49 +475,12 @@ void ImageSet::compensateIntensity(PixelArray &pixels) {
 
 }
 
-void ImageSet::createColorTransform() {
-	if(icc_profile_data.empty())
-		throw QString("Color profile conversion requested but input images lack an embedded ICC profile.");
-	cmsHPROFILE output_profile = createOutputProfile();
-	if(!output_profile)
-		throw QString("Failed creating target ICC profile for color conversion.");
-	if(input_profile)
-		cmsCloseProfile(input_profile);
-	input_profile = cmsOpenProfileFromMem(icc_profile_data.data(), icc_profile_data.size());
-	if(!input_profile)
-		throw QString("Failed opening source ICC profile for color conversion.");
-	color_transform = cmsCreateTransform(input_profile, TYPE_RGB_8, output_profile, TYPE_RGB_8, INTENT_PERCEPTUAL, cmsFLAGS_COPY_ALPHA);
-	cmsCloseProfile(output_profile);
-	if(!color_transform)
-		throw QString("Failed creating ICC color transform for the requested profile.");
-}
-
 void ImageSet::applyColorTransform(uint8_t *data, size_t pixel_count) {
 	if(color_profile_mode == COLOR_PROFILE_PRESERVE)
 		return;
 	if(!color_transform)
-		createColorTransform();
+		color_transform = ColorProfile::createColorTransform(icc_profile_data, color_profile_mode, input_profile);
 	cmsDoTransform(color_transform, data, data, pixel_count);
-}
-
-cmsHPROFILE ImageSet::createOutputProfile() {
-	switch(color_profile_mode) {
-	case COLOR_PROFILE_SRGB:
-		return cmsCreate_sRGBProfile();
-	case COLOR_PROFILE_DISPLAY_P3:
-		return cmsOpenProfileFromMem(DisplayP3_ICC_profile, DisplayP3_ICC_profile_length);
-	case COLOR_PROFILE_PRESERVE:
-	default:
-		return nullptr;
-	}
-}
-
-bool ImageSet::isSRGBProfile() const {
-	return ColorProfile::isSRGBProfile(icc_profile_data);
-}
-
-QString ImageSet::getProfileDescription() const {
-	return ColorProfile::getProfileDescription(icc_profile_data);
 }
 
 void ImageSet::restart() {

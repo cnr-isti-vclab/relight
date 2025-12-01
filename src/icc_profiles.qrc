@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icc_profiles/Display P3.icc</file>
+    </qresource>
+</RCC>

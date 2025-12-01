@@ -146,6 +146,7 @@ set (RELIGHT_FORMS
 
 set (RELIGHT_RESOURCES
 	icons.qrc
+	../src/icc_profiles.qrc
 )
 
 add_executable(relight ${MACOSX_EXE_TARGET_OPTION} ${RELIGHT_HEADERS} ${RELIGHT_SOURCES} ${RELIGHT_FORMS} ${RELIGHT_RESOURCES})

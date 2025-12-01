@@ -185,7 +185,8 @@ set (RELIGHTLAB_SOURCES
 
 
 set (RELIGHTLAB_RESOURCES
-	res.qrc
+    res.qrc
+    ../src/icc_profiles.qrc
 )
 
 file(GLOB ASSM_SOURCES ../external/assm/SurfaceMesh.cpp ../external/assm/algorithms/*.cpp)

@@ -92,7 +92,7 @@ void IfdHeader::parse(QDataStream &stream, quint32 startPos) {
 	stream.device()->seek(pos);
 }
 
-void Exif::parse(QString &filename) {
+void Exif::parse(const QString &filename) {
 	QFile file(filename);
 	if(!file.open(QIODevice::ReadOnly))
 		throw QString("Could not open file: " + filename);

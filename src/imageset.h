@@ -82,8 +82,6 @@ public:
 
 	void setColorProfileMode(ColorProfileMode mode);
 	ColorProfileMode getColorProfileMode() const { return color_profile_mode; }
-	bool isSRGBProfile() const;
-	QString getProfileDescription() const;
 
 	size_t size() { return size_t(images.size()); }
 
@@ -115,9 +113,7 @@ protected:
 private:
 
 	void compensateIntensity(PixelArray &pixels);
-	void createColorTransform();
 	void applyColorTransform(uint8_t *data, size_t pixel_count);
-	cmsHPROFILE createOutputProfile();
 };
 
 #endif // IMAGESET_H

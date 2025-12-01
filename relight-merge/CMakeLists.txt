@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_FIND_FRAMEWORK LAST)
 
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 if (APPLE)
 	set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version" FORCE)
@@ -45,7 +46,11 @@ SET(SOURCES
 	../src/cli/rtibuilder.cpp
 )
 
-add_executable(relight-merge ${HEADERS} ${SOURCES})
+set(RESOURCES
+	../src/icc_profiles.qrc
+)
+
+add_executable(relight-merge ${HEADERS} ${SOURCES} ${RESOURCES})
 target_include_directories(
 	relight-merge PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}

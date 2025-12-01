@@ -21,6 +21,7 @@ public:
 	Eigen::Vector3f position = Eigen::Vector3f(0, 0, 0);   //3d light position */
 	double exposureTime = 0;
 	double isoSpeedRatings = 0;
+	QString colorSpace;
 	QSize size;
 
 	Image(QString s = ""): filename(s) {}

@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_FIND_FRAMEWORK LAST)
 
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 if (APPLE)
 	set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version" FORCE)
@@ -56,6 +57,7 @@ SET(SOURCES
 	../src/jpeg_decoder.cpp
 	../src/jpeg_encoder.cpp
 	../src/icc_profiles.cpp
+	../src/icc_profiles.qrc
 	../src/rti.cpp
 	../src/legacy_rti.cpp
 	../src/lp.cpp

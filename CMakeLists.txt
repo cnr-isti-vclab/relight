@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Embed absolute source dir for locating runtime assets (e.g., ICC profiles)
+add_compile_definitions(RELIGHT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+
 # Enable position independent code for shared libraries
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 

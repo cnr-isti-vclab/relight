@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_FIND_FRAMEWORK LAST)
 
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 if (APPLE)
 	set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version" FORCE)
@@ -87,7 +88,11 @@ SET(SOURCES
 	../external/assm/algorithms/ScreenRemeshing.cpp
 )
 
-add_executable(relight-normals ${SOURCES} ${HEADERS})
+set(RESOURCES
+	../src/icc_profiles.qrc
+)
+
+add_executable(relight-normals ${SOURCES} ${HEADERS} ${RESOURCES})
 target_include_directories(relight-normals PUBLIC
 		${CMAKE_CURRENT_SOURCE_DIR}
 		${JPEG_INCLUDE_DIR}

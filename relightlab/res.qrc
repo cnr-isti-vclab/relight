@@ -132,7 +132,6 @@
         <file>docs/formats/project.html</file>
         <file>docs/formats/config.html</file>
 
-
         <file alias="relight.png">../build_scripts/relight.png</file>
         <file alias="demo/index.html">../demo/index.html</file>
         <file alias="demo/openlime.min.js">../demo/openlime.min.js</file>

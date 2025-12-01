@@ -287,7 +287,7 @@ public:
 		};
 	} */
 
-	void parse(QString &filename);
+	void parse(const QString &filename);
 
 private:
 	void readHeaders(QDataStream &stream, quint32 startPos);

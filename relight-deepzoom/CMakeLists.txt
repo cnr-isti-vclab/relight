@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_FIND_FRAMEWORK LAST)
 
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 if (APPLE)
 	set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version" FORCE)
@@ -25,7 +26,11 @@ SET(SOURCES
 	../src/jpeg_encoder.cpp
 )
 
-add_executable(relight-deepzoom ${HEADERS} ${SOURCES})
+set(RESOURCES
+	../src/icc_profiles.qrc
+)
+
+add_executable(relight-deepzoom ${HEADERS} ${SOURCES} ${RESOURCES})
 target_include_directories(
 	relight-deepzoom PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}

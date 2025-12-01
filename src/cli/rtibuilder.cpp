@@ -1468,24 +1468,20 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	if(imageset.hasICCProfile())
 		preserved_icc = imageset.getICCProfile();
 
-	const uint8_t *output_icc_data = nullptr;
-	size_t output_icc_length = 0;
+	std::vector<uint8_t> output_icc_profile;
 	switch(colorProfileMode) {
 	case COLOR_PROFILE_PRESERVE:
 	default:
-		if(!preserved_icc.empty()) {
-			output_icc_data = preserved_icc.data();
-			output_icc_length = preserved_icc.size();
-		}
+		output_icc_profile = preserved_icc;
 		break;
 	case COLOR_PROFILE_SRGB:
-		output_icc_data = sRGB_ICC_profile;
-		output_icc_length = sRGB_ICC_profile_length;
+		output_icc_profile = ICCProfiles::sRGBData();
 		break;
 	case COLOR_PROFILE_DISPLAY_P3:
-		output_icc_data = DisplayP3_ICC_profile;
-		output_icc_length = DisplayP3_ICC_profile_length;
+	{
+		output_icc_profile = ICCProfiles::displayP3Data();
 		break;
+	}
 	}
 
 	vector<JpegEncoder *> encoders(njpegs);
@@ -1518,8 +1514,8 @@ size_t RtiBuilder::save(const string &output, int quality) {
 			}
 		}
 
-		if(output_icc_data && output_icc_length > 0)
-			encoders[i]->setICCProfile(output_icc_data, output_icc_length);
+		if(!output_icc_profile.empty())
+			encoders[i]->setICCProfile(output_icc_profile);
 		
 		encoders[i]->init(dir.filePath("plane_%1.jpg").arg(i).toStdString().c_str(), width, height);
 	}

@@ -20,7 +20,13 @@ public:
 	static bool isDisplayP3Profile(const std::vector<uint8_t> &profile_data);
 	
 	// Get human-readable profile description
+	static QString getProfileDescription(const std::vector<uint8_t> &profile_data, bool &is_rgb);
 	static QString getProfileDescription(const std::vector<uint8_t> &profile_data);
+
+	static cmsHTRANSFORM createColorTransform(const std::vector<uint8_t> &profile_data,
+		ColorProfileMode mode,
+		cmsHPROFILE &input_profile_handle);
+	static cmsHPROFILE createOutputProfile(ColorProfileMode mode);
 };
 
 #endif // COLORPROFILE_H

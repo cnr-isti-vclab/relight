@@ -37,9 +37,9 @@ void Image::fromJson(const QJsonObject &obj) {
 }
 
 void Image::readExif(Exif &exif) {
-	exposureTime = exif[Exif::ExposureTime].toDouble();
-	isoSpeedRatings = exif[Exif::ISOSpeedRatings].toDouble();
-	//ColorSpace
+	exposureTime = exif.value(Exif::ExposureTime, 0.0).toDouble();
+	isoSpeedRatings = exif.value(Exif::ISOSpeedRatings, 0.0).toDouble();
+	colorSpace = exif.value(Exif::ColorSpace, QString()).toString();
 
 	/*for(auto tag: exif.keys()) {
 		cout << qPrintable(exif.tagNames[tag]) << " = " << qPrintable(exif[tag].toString()) << endl;

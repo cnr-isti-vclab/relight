@@ -3,6 +3,8 @@
 SCRIPTS_PATH="$(dirname "$(realpath "$0")")"/..
 INSTALL_PATH=$SCRIPTS_PATH/../../install
 QT_DIR=""
+LCMS_DLL_OVERRIDE=""
+LCMS_DLL_NAME="lcms2-2.dll"
 
 #checking for parameters
 for i in "$@"
@@ -16,6 +18,10 @@ case $i in
         QT_DIR=${i#*=}/bin/
         shift # past argument=value
         ;;
+    -lcms=*|--lcms_dll=*)
+        LCMS_DLL_OVERRIDE="${i#*=}"
+        shift
+        ;;
     *)
         # unknown option
         ;;
@@ -27,6 +33,8 @@ ${QT_DIR}windeployqt $INSTALL_PATH/relight-cli.exe
 ${QT_DIR}windeployqt $INSTALL_PATH/relight-normals.exe
 ${QT_DIR}windeployqt $INSTALL_PATH/relight-merge.exe
 ${QT_DIR}windeployqt $INSTALL_PATH/relight-deepzoom.exe
+
+cp C:/vcpkg/installed/x64-windows/bin/lcms2-2.dll "$INSTALL_PATH"
 
 
 # Copy OpenCV DLLs, not needed for the moment.

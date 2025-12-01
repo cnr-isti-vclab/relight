@@ -3,12 +3,15 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <vector>
 
-// Standard sRGB ICC profile (v2, approximately 3KB)
-// This is a minimal sRGB profile compatible with most software
-extern const uint8_t sRGB_ICC_profile[];
-extern const size_t sRGB_ICC_profile_length;
-extern const uint8_t DisplayP3_ICC_profile[];
-extern const size_t DisplayP3_ICC_profile_length;
+#include <lcms2.h>
+
+class ICCProfiles {
+public:
+	static const std::vector<uint8_t> &sRGBData();
+	static const std::vector<uint8_t> &displayP3Data();
+	static cmsHPROFILE openDisplayP3Profile();
+};
 
 #endif // ICC_PROFILES_H

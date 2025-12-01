@@ -1,12 +1,8 @@
 QT += widgets xml concurrent
 CONFIG += c++17
 
-#TODO: this might be needed in CMake
-#find_package(Qt5Svg REQUIRED)
-#target_link_libraries( ${APP_NAME} Qt5::Svg )
-
 DEFINES += QT_DEPRECATED_WARNINGS
-DEFINES += _USE_MATH_DEFINES WITH_OPENCV
+DEFINES += _USE_MATH_DEFINES #WITH_OPENCV not needed now
 DEFINES += NOMINMAX
 DEFINES += HAVE_LCMS2
 
