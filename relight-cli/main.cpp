@@ -220,7 +220,9 @@ int main(int argc, char *argv[]) {
 			break; */
 		case '3': { //assume lights positionals. (0, 0) is in the center of the image, (might add these values), and unit is image width
 			dome.lightConfiguration = Dome::SPHERICAL;
-			dome.domeDiameter = 2*float(atof(optarg));
+			dome.imageWidth = 1.0f;
+			dome.domeDiameter = 2.0f*float(atof(optarg));
+
 			QString params(optarg);
 			if(params.contains(':')) {
 				dome.verticalOffset = params.split(':')[1].toDouble();
@@ -440,10 +442,7 @@ int main(int argc, char *argv[]) {
 			if(lps.size() == 0)
 				throw QString("Could not find a .lp file in the folder");
 
-			Dome dome;
 			dome.parseLP(dir.filePath(lps[0]));
-			vector<QString> filenames;
-			parseLP(dir.filePath(lps[0]), dome.directions, filenames);
 
 			Crop crop;
 			if(builder.crop[2] != 0) { //no crop specitied
@@ -529,7 +528,18 @@ int main(int argc, char *argv[]) {
 		}
 	} else if(info.isDir()) {
 
-		if(!builder.setupFromFolder(input)) {
+		//look for .lp
+		QDir dir(input.c_str());
+		QStringList lp_ext;
+		lp_ext << "*.lp";
+		QStringList lps = dir.entryList(lp_ext);
+		if(lps.size() == 0)
+			throw QString("Could not find a .lp file in the folder");
+
+		dome.parseLP(dir.filePath(lps[0]));
+
+
+		if(!builder.setupFromFolder(input, dome)) {
 			cerr << builder.error << " !\n" << endl;
 			return 1;
 		}
@@ -538,11 +548,6 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	//if spherical dome has been specified, i
-	if(dome.lightConfiguration == Dome::SPHERICAL) {
-		dome.directions = builder.imageset.lights();
-		//dome.updateSphereDirections();
-	}
 	QString out = output;
 	int size = 0; //size of the output
 
@@ -639,7 +644,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		QDir out(output);
-		builder.setupFromFolder(input.c_str());
+		builder.setupFromFolder(input.c_str(), dome);
 		ImageSet &imgset = builder.imageset;
 
 		double mse = 0;

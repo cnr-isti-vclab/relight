@@ -5,7 +5,6 @@
 
 #include "../src/rti.h"
 #include "../src/imageset.h"
-#include "../src/dome.h"
 #include "../src/material.h"
 #include "../src/relight_vector.h"
 #include "../src/colorprofile.h"
@@ -14,6 +13,7 @@
 
 #include <functional>
 class QDir;
+class Dome;
 
 //store pair light, coefficients for each resampled light direction.
 typedef std::vector<std::vector<std::pair<int, float>>> Resamplemap;
@@ -41,7 +41,7 @@ public:
 
 	RtiBuilder();
 	~RtiBuilder();
-	bool setupFromFolder(const std::string &folder);
+	bool setupFromFolder(const std::string &folder, Dome &dome);
 	bool setupFromProject(const std::string &filename);
 	bool init(std::function<bool(QString stage, int percent)> *_callback = nullptr);
 

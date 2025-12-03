@@ -220,6 +220,7 @@ void DomePanel::exportDome() {
 
 	if(filename.endsWith(".lp")) {
 		try {
+			//TODO this should be a function in Dome.
 			qRelightApp->project().saveLP(filename, dome.directions);
 		} catch(QString error) {
 			QMessageBox::critical(this, "Failed to save the .lp file", error);
