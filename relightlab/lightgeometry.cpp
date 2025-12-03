@@ -16,6 +16,7 @@
 #include <QDoubleSpinBox>
 #include <QSpinBox>
 #include <QFileDialog>
+#include <QMessageBox>
 
 using namespace std;
 
@@ -120,6 +121,10 @@ void LightsGeometry::setSpherical(QAbstractButton *button) {
 		dome.lightConfiguration = Dome::SPHERICAL;
 	} else if(button == lights3d->radioButton()) {
 		dome.lightConfiguration = Dome::LIGHTS3D;
+	}
+	if(!qRelightApp->project().lens.focalLength && dome.lightConfiguration != Dome::DIRECTIONAL) {
+		QMessageBox::warning(this, "Missing focal lenght.", "The images do not contain informations about the focal length,"
+							 "it will not be possible to use geometric information to correct threedimensional light posisions.");
 	}
 	init();
 }

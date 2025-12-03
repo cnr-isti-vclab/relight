@@ -705,7 +705,7 @@ void  Project::computeDirections() {
 
 	vector<float> weights(size(), 0.0f);
 
-	if(spheres.size()) {
+	if(spheres.size() && lens.focalLength) {
 		for(auto sphere: spheres) {
 			sphere->computeDirections(lens);
 			if(sphere->directions.size() != size())

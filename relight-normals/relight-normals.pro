@@ -44,8 +44,7 @@ SOURCES += \
         ../external/assm/algorithms/Rasterizer.cpp \
         ../external/assm/algorithms/ScreenRemeshing.cpp \
         ../external/assm/algorithms/Triangulation.cpp \
-        main.cpp \
-    ../src/exif.cpp
+        main.cpp
 
 HEADERS += \
     ../src/normals/bni_normal_integration.h \
@@ -84,8 +83,7 @@ HEADERS += \
     ../external/assm/algorithms/ScreenRemeshing.h \
     ../external/assm/algorithms/PhotometricRemeshing.h \
     ../external/assm/SurfaceMesh.h \
-    ../external/assm/Types.h \
-    ../src/exif.h
+    ../external/assm/Types.h
 
 INCLUDEPATH += ../external/
 

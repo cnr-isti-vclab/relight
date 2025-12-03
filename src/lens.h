@@ -9,10 +9,10 @@ class Exif;
 
 class Lens {
 public:
-	int width = 0, height = 0;
+	int width = 0, height = 0; //in pixels of the image
 	bool focal35equivalent = true;
 	double focalLength = 0; //in mm
-	double pixelSizeX = 0, pixelSizeY = 0;
+	double pixelSizeX = 0, pixelSizeY = 0; //in mm! this is needed to compute geometric distances using the focal length in mm.
 	double principalOffsetX = 0, principalOffsetY = 0;
 
 	//double ccdWidth = 0;           //in mm

@@ -85,6 +85,7 @@ void Lens::readExif(Exif &exif) {
 	}*/
 
 	focalLength = exif[Exif::FocalLengthIn35mmFilm].toDouble();
+
 	if(focalLength) {
 		focal35equivalent = true;
 		pixelSizeX = pixelSizeY = 35/(double)width;
