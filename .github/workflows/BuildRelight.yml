@@ -63,6 +63,7 @@ jobs:
       uses: hendrikmuhs/ccache-action@v1.2
       with:
         key: ${{ runner.os }}-${{ github.ref }}
+
     - name: Configure and Build
       shell: bash
       run: |
@@ -70,7 +71,7 @@ jobs:
 
         
     - name: Set CodeSign Certificate macOS
-      if: runner.os == 'macOS' && env.MAC_CERT != null
+      if: runner.os == 'macOS' && secrets.MACOS_CERTIFICATE != ''
       uses: apple-actions/import-codesign-certs@v2
       with:
         p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}

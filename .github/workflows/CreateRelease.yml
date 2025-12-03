@@ -52,29 +52,23 @@ jobs:
     - name: Setup MSVC
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
-    - name: Set CodeSign Certificate macOS
-      if: runner.os == 'macOS'
-      uses: apple-actions/import-codesign-certs@v2
-      with:
-        p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
-        p12-password: ${{ secrets.MACOS_CERTIFICATE_PSSW }}
 
-    - name: Install OpenCV on Ubuntu
+
+
+    - name: Setup Qt version for Linux
       if: runner.os == 'Linux'
       run: |
-        sudo apt-get update && sudo apt-get install -y libopencv-dev
         echo "QT_VERSION=6.6.*" >> $GITHUB_ENV
 
-    - name: Install OpenCV on macOS
+    - name: Setup Qt version for macOS
       if: runner.os == 'macOS'
       run: |
         echo "QT_VERSION=6.8.0" >> $GITHUB_ENV
 
-    - name: Install vcpkg and dependencies on Windows
+    - name: Setup Qt version for macOS
       if: runner.os == 'Windows'
-      shell: bash
       run: |
-        bash build_scripts/Windows/0_setup_env.sh
+        echo "QT_VERSION=6.6.*" >> $env:GITHUB_ENV
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
@@ -85,7 +79,7 @@ jobs:
     - name: Install dependencies
       shell: bash
       run: |
-        bash build_scripts/${{ runner.os }}/0_setup_env.sh --dont_install_qt
+        bash build_scripts/${{ runner.os }}/0_setup_env.sh
 
     - name: Ccache
       uses: hendrikmuhs/ccache-action@v1.2
@@ -96,6 +90,14 @@ jobs:
       shell: bash
       run: |
         bash build_scripts/${{ runner.os }}/1_build.sh
+
+
+    - name: Set CodeSign Certificate macOS
+      if: runner.os == 'macOS' && secrets.MACOS_CERTIFICATE != ''
+      uses: apple-actions/import-codesign-certs@v2
+      with:
+        p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
+        p12-password: ${{ secrets.MACOS_CERTIFICATE_PSSW }}
 
     - name: Deploy
       shell: bash
@@ -142,6 +144,7 @@ jobs:
         chmod +x relightlab_linux_portable/usr/bin/relight-cli
         chmod +x relightlab_linux_portable/usr/bin/relight-merge
         chmod +x relightlab_linux_portable/usr/bin/relight-normals
+        chmod +x relightlab_linux_portable/usr/bin/relight-deepzoom
         chmod +x relightlab_linux_portable/AppRun
     - name: Create RelightLab Portable Linux Archive
       run: |
@@ -166,6 +169,7 @@ jobs:
         chmod +x relightlab_macos_x86_64_portable/RelightLab*.app/Contents/MacOS/relight-cli
         chmod +x relightlab_macos_x86_64_portable/RelightLab*.app/Contents/MacOS/relight-merge
         chmod +x relightlab_macos_x86_64_portable/RelightLab*.app/Contents/MacOS/relight-normals
+        chmod +x relightlab_macos_x86_64_portable/RelightLab*.app/Contents/MacOS/relight-deepzoom
     - name: Create RelightLab Portable MacOS x86_64
       run: |
         cd relightlab_macos_x86_64_portable
@@ -189,6 +193,7 @@ jobs:
         chmod +x relightlab_macos_arm64_portable/RelightLab*.app/Contents/MacOS/relight-cli
         chmod +x relightlab_macos_arm64_portable/RelightLab*.app/Contents/MacOS/relight-merge
         chmod +x relightlab_macos_arm64_portable/RelightLab*.app/Contents/MacOS/relight-normals
+        chmod +x relightlab_macos_arm64_portable/RelightLab*.app/Contents/MacOS/relight-deepzoom
     - name: Create RelightLab Portable MacOS arm64
       run: |
         cd relightlab_macos_arm64_portable
