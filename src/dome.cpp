@@ -43,13 +43,14 @@ void Dome::parseLP(const QString &lp_path) {
 
 	QFileInfo info(lp_path);
 	label = info.filePath();
-	lightConfiguration = DIRECTIONAL;
 	lightSource = FROM_LP;
+	recomputePositions();
 }
 
 void Dome::recomputePositions() {
 	// Recompute 3D positions from directions when geometry parameters change	
 	positionsSphere.clear();
+	positions3d.clear();
 	
 	if(!domeDiameter || !imageWidth || directions.empty())
 		return;

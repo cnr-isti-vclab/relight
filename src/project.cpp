@@ -662,12 +662,6 @@ void Project::saveLP(QString filename, vector<Vector3f> &directions) {
 	}
 }
 
-
-bool Project::loadLP(QString filename) {
-	dome.parseLP(filename);
-	return true;
-}
-
 //used only in relight legacy app.
 static float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, const Vector3f &center, float radius) {
 	float a = direction.norm();
