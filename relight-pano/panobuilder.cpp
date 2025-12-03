@@ -112,9 +112,17 @@ void PanoBuilder::exportMeans(){
 		QString photo = photos[0];
 
 		if(format == "jpg"){
-			if (!QFile::copy(meanPath, subDirName + ".jpg")) {
-				throw QString("Failed to copy %1 to %2").arg(meanPath).arg(subDirName);
+			QString destPath = photogrammetry_dir.filePath(subDirName + ".jpg");
+
+			if (QFile::exists(destPath))
+				QFile::remove(destPath);
+
+			// copia il mean nella cartella photogrammetry
+			if (!QFile::copy(meanPath, destPath)) {
+				throw QString("Failed to copy %1 to %2").arg(meanPath).arg(destPath);
 			}
+
+			cout << "Copied MEAN → " << qPrintable(destPath) << endl;
 		} else {
 
 			//se formato è jpg copia se è un tif devi fare una conversion
@@ -420,8 +428,8 @@ void PanoBuilder::means(){
 	}
 
 	//2. modifica l'export means dentro photogrammetry
-
 	exportMeans();
+	exifTransplant();
 }
 
 void PanoBuilder::rti(){
@@ -486,6 +494,7 @@ void PanoBuilder::tapioca(){
 	}
 
 	exportMeans();
+	exifTransplant();
 	QStringList subDirNames = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 	for (const QString &subDirName : subDirNames) {
 		QString meanFile = datasets_dir.filePath(subDirName + ".jpg");
