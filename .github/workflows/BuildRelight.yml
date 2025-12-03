@@ -6,6 +6,7 @@ on:
 env:
   MAC_CERT: ${{secrets.MACOS_CERT_ID}}
   WIN_CERT: ${{secrets.WIN_CERTIFICATE}}
+  MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
 
 jobs:
   relightlab_build:
@@ -71,7 +72,7 @@ jobs:
 
         
     - name: Set CodeSign Certificate macOS
-      if: runner.os == 'macOS' && secrets.MACOS_CERTIFICATE != ''
+      if: runner.os == 'macOS' && env.MACOS_CERTIFICATE != ''
       uses: apple-actions/import-codesign-certs@v2
       with:
         p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}

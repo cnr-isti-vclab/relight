@@ -9,6 +9,9 @@ on:
         required: true
         default: 'YYYY.MM'
 
+env:
+  MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+
 jobs:
   update_rl_version:
     name: Update RELIGHT_VERSION
@@ -93,7 +96,7 @@ jobs:
 
 
     - name: Set CodeSign Certificate macOS
-      if: runner.os == 'macOS' && secrets.MACOS_CERTIFICATE != ''
+      if: runner.os == 'macOS' && env.MACOS_CERTIFICATE != ''
       uses: apple-actions/import-codesign-certs@v2
       with:
         p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
