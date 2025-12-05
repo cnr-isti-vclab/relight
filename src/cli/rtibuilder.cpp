@@ -1,4 +1,5 @@
 #include "rtibuilder.h"
+#include "../src/dome.h"
 #include "../src/lp.h"
 #include "../src/jpeg_decoder.h"
 #include "../src/jpeg_encoder.h"
@@ -70,7 +71,7 @@ static Vector3f fromOcta(int x, int y, int resolution) {
 RtiBuilder::RtiBuilder() {}
 RtiBuilder::~RtiBuilder() {}
 
-bool RtiBuilder::setupFromFolder(const string &folder) {
+bool RtiBuilder::setupFromFolder(const string &folder, Dome &dome) {
 	
 	try {
 		QDir dir(folder.c_str());
@@ -79,22 +80,13 @@ bool RtiBuilder::setupFromFolder(const string &folder) {
 		img_ext << "*.jpg" << "*.JPG";
 		imageset.images = dir.entryList(img_ext);
 
-		QStringList lp_ext;
-		lp_ext << "*.lp";
-		QStringList lps = dir.entryList(lp_ext);
-		if(lps.size() == 0)
-			throw QString("Could not find a .lp file in the folder")
-				;
-		Dome dome;
-		dome.parseLP(dir.filePath(lps[0]));
-		
 		if(skip_image >= 0) {
 			imageset.images.removeAt(skip_image);
 			dome.directions.erase(dome.directions.begin() + skip_image);
 		}
 		imageset.setColorProfileMode(colorProfileMode);
 		imageset.initImages(folder.c_str());
-		imageset.setLights(dome.directions, Dome::DIRECTIONAL);
+		imageset.initFromDome(dome);
 
 	} catch(QString e) {
 		error = e.toStdString();
