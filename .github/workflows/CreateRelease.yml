@@ -52,10 +52,14 @@ jobs:
               label: 'Windows'
               qt_version: '6.6.*'
     steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+        ref: master
+
     - uses: ./.github/actions/setup
       with:
         qt_version: ${{ matrix.qt_version }}
-        checkout_ref: master
 
     - name: Configure and Build
       shell: bash

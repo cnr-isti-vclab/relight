@@ -31,6 +31,10 @@ jobs:
               qt_version: '6.6.*'
 
     steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
     - uses: ./.github/actions/setup
       with:
         qt_version: ${{ matrix.qt_version }}

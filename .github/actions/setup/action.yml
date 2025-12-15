@@ -1,23 +1,14 @@
 name: Setup RelightLab Dependencies
-description: Checkout, install Qt, MSVC, dependencies, and setup ccache
+description: Install Qt, MSVC, dependencies, and setup ccache
 
 inputs:
   qt_version:
     description: 'Qt version to install'
     required: true
-  checkout_ref:
-    description: 'Git ref to checkout (optional)'
-    required: false
-    default: ''
 
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: true
-        ref: ${{ inputs.checkout_ref }}
-
     - name: Setup MSVC
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
