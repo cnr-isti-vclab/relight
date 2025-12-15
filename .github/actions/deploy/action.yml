@@ -35,7 +35,7 @@ runs:
         mkdir -p "$INSTALL_PATH/share/icons/Yaru/512x512/apps/"
         
         cp "$SCRIPTS_PATH/resources/relightlab.desktop" "$INSTALL_PATH/share/applications/relightlab.desktop"
-        cp "$SOURCE_PATH/build_scripts/relight.png" "$INSTALL_PATH/share/icons/Yaru/512x512/apps/relight.png"
+        cp "$SCRIPTS_PATH/relight.png" "$INSTALL_PATH/share/icons/Yaru/512x512/apps/relight.png"
         
         chmod +x "$INSTALL_PATH/bin/relightlab"
         chmod +x "$INSTALL_PATH/bin/relight-cli"
@@ -123,7 +123,7 @@ runs:
         SCRIPTS_PATH="$GITHUB_WORKSPACE/build_scripts/macOS"
         sed "s%INST_PATH%$INSTALL_PATH%g" "$SCRIPTS_PATH/resources/dmg_latest.json" > "$SCRIPTS_PATH/resources/dmg_final.json"
         sed -i '' "s%RL_VERSION%$RELIGHT_VERSION%g" "$SCRIPTS_PATH/resources/dmg_final.json"
-        sed -i '' "s%GITHUB_WORKSPACE%$GITHUB_WORKSPACE%g" "$SCRIPTS_PATH/resources/dmg_final.json"
+        sed -i '' "s%SOURCE_PATH%$GITHUB_WORKSPACE%g" "$SCRIPTS_PATH/resources/dmg_final.json"
         
         mkdir -p "$PACKAGES_PATH"
         
@@ -156,7 +156,7 @@ runs:
         windeployqt "$INSTALL_PATH/relight-deepzoom.exe"
         
         # Copy LCMS DLL
-        cp C:/vcpkg/installed/x64-windows/bin/lcms2.dll "$INSTALL_PATH/" || cp C:/vcpkg/installed/x64-windows/bin/lcms2-2.dll "$INSTALL_PATH/" || true
+        cp C:/vcpkg/installed/x64-windows/bin/lcms2-2.dll "$INSTALL_PATH/"
         
         # Remove all .lib files
         find "$INSTALL_PATH" -name '*.lib' -delete
@@ -166,5 +166,3 @@ runs:
             echo "Downloading vc_redist because it was missing..."
             wget https://aka.ms/vs/17/release/vc_redist.x64.exe -O "$INSTALL_PATH/vc_redist.x64.exe"
         fi
-        
-        echo "======= Portable Version Created ======="
