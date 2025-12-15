@@ -41,53 +41,21 @@ jobs:
           include:
             - os: 'ubuntu-22.04'
               label: 'Linux'
+              qt_version: '6.6.*'
             - os: 'macos-15-intel'
               label: 'macOS_x86_64'
+              qt_version: '6.8.0'
             - os: 'macos-latest'
               label: 'macOS_arm64'
+              qt_version: '6.8.0'
             - os: 'windows-latest'
               label: 'Windows'
+              qt_version: '6.6.*'
     steps:
-    - uses: actions/checkout@v4
+    - uses: ./.github/actions/setup
       with:
-        submodules: true
-        ref: master
-    - name: Setup MSVC
-      if: runner.os == 'Windows'
-      uses: ilammy/msvc-dev-cmd@v1
-
-
-
-    - name: Setup Qt version for Linux
-      if: runner.os == 'Linux'
-      run: |
-        echo "QT_VERSION=6.6.*" >> $GITHUB_ENV
-
-    - name: Setup Qt version for macOS
-      if: runner.os == 'macOS'
-      run: |
-        echo "QT_VERSION=6.8.0" >> $GITHUB_ENV
-
-    - name: Setup Qt version for macOS
-      if: runner.os == 'Windows'
-      run: |
-        echo "QT_VERSION=6.6.*" >> $env:GITHUB_ENV
-
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v4
-      with:
-        cache: 'true'
-        version: ${{ env.QT_VERSION }}
-
-    - name: Install dependencies
-      shell: bash
-      run: |
-        bash build_scripts/${{ runner.os }}/0_setup_env.sh
-
-    - name: Ccache
-      uses: hendrikmuhs/ccache-action@v1.2
-      with:
-        key: ${{ runner.os }}-${{ github.ref }}
+        qt_version: ${{ matrix.qt_version }}
+        checkout_ref: master
 
     - name: Configure and Build
       shell: bash

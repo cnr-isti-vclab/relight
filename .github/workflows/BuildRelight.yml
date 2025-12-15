@@ -4,8 +4,6 @@ on:
   [push, pull_request]
 
 env:
-  MAC_CERT: ${{secrets.MACOS_CERT_ID}}
-  WIN_CERT: ${{secrets.WIN_CERTIFICATE}}
   MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
 
 jobs:
@@ -33,28 +31,9 @@ jobs:
               qt_version: '6.6.*'
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: ./.github/actions/setup
       with:
-        submodules: true
-    - name: Setup MSVC
-      if: runner.os == 'Windows'
-      uses: ilammy/msvc-dev-cmd@v1
-
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v4
-      with:
-        cache: 'true'
-        version: ${{ matrix.qt_version }}
-
-    - name: Install dependencies
-      shell: bash
-      run: |
-        bash build_scripts/${{ runner.os }}/0_setup_env.sh
-
-    - name: Ccache
-      uses: hendrikmuhs/ccache-action@v1.2
-      with:
-        key: ${{ runner.os }}-${{ github.ref }}
+        qt_version: ${{ matrix.qt_version }}
 
     - name: Configure and Build
       shell: bash
