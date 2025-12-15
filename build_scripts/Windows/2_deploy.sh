@@ -6,6 +6,8 @@
 #
 # You can give as argument the path where relightlab is installed.
 
+set -euo pipefail
+
 SCRIPTS_PATH="$(dirname "$(realpath "$0")")"
 INSTALL_PATH=$SCRIPTS_PATH/../../install
 QT_DIR_OPTION=""
