@@ -1,0 +1,43 @@
+name: Build RelightLab
+description: Configure and build RelightLab using CMake and Ninja
+
+runs:
+  using: composite
+  steps:
+    - name: Configure and Build
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        SOURCE_PATH="${GITHUB_WORKSPACE}"
+        BUILD_PATH="${SOURCE_PATH}/build"
+        INSTALL_PATH="${GITHUB_WORKSPACE}/${INSTALL_PATH}"
+        
+        CCACHE_FLAGS=(-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache)
+        
+        mkdir -p "$BUILD_PATH" "$INSTALL_PATH"
+        
+        cd "$BUILD_PATH"
+        export NINJA_STATUS="[%p (%f/%t) ] "
+        
+        # Build CMake arguments based on platform
+        CMAKE_ARGS=(
+          -GNinja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_INSTALL_PREFIX="$INSTALL_PATH"
+          "${CCACHE_FLAGS[@]}"
+        )
+        
+        # Add platform-specific arguments
+        if [ "${{ runner.os }}" = "macOS" ]; then
+          OPENMP_PATH="$(brew --prefix libomp)"
+          CMAKE_ARGS+=(-DOpenMP_ROOT="$OPENMP_PATH")
+
+        elif [ "${{ runner.os }}" = "Windows" ]; then
+          CMAKE_ARGS+=(-DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake")
+        fi
+        
+        # Configure and build
+        cmake "${CMAKE_ARGS[@]}" "$SOURCE_PATH"
+        ninja
+        ninja install
