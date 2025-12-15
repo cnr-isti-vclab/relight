@@ -26,7 +26,6 @@ runs:
       if: runner.os == 'Linux'
       shell: bash
       run: |
-        SOURCE_PATH="${GITHUB_WORKSPACE}"
         INSTALL_PATH="${GITHUB_WORKSPACE}/install$( [ "${{ runner.os }}" = "Linux" ] && echo "/usr" )"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
         SCRIPTS_PATH="${GITHUB_WORKSPACE}/build_scripts/Linux"

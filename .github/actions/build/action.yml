@@ -9,7 +9,7 @@ runs:
       run: |
         SOURCE_PATH="${GITHUB_WORKSPACE}"
         BUILD_PATH="${SOURCE_PATH}/build"
-        INSTALL_PATH="${SOURCE_PATH}/install$( [ "${{ runner.os }}" = "Linux" ] && echo "/usr" )"
+        INSTALL_PATH="${SOURCE_PATH}/install$( [ "${{ runner.os }}" = "Linux" ] && echo "/usr" || echo "")"
 
         CCACHE_FLAGS=(-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache)
         
