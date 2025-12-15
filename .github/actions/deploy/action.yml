@@ -26,8 +26,6 @@ runs:
       if: runner.os == 'Linux'
       shell: bash
       run: |
-        set -euo pipefail
-        
         SOURCE_PATH="${GITHUB_WORKSPACE}"
         INSTALL_PATH="${GITHUB_WORKSPACE}/install$( [ "${{ runner.os }}" = "Linux" ] && echo "/usr" )"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
@@ -71,8 +69,6 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        set -euo pipefail
-        
         INSTALL_PATH="${GITHUB_WORKSPACE}/install"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
         APPNAME="relightlab.app"
@@ -148,8 +144,6 @@ runs:
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        set -euo pipefail
-        
         INSTALL_PATH="${GITHUB_WORKSPACE}/install"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
         

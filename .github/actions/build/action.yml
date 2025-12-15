@@ -7,8 +7,6 @@ runs:
     - name: Configure and Build
       shell: bash
       run: |
-        set -euo pipefail
-        
         SOURCE_PATH="${GITHUB_WORKSPACE}"
         BUILD_PATH="${SOURCE_PATH}/build"
         INSTALL_PATH="${SOURCE_PATH}/install$( [ "${{ runner.os }}" = "Linux" ] && echo "/usr" )"
