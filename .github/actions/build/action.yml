@@ -27,7 +27,11 @@ runs:
         )
         
         # Add platform-specific arguments
-        if [ "${{ runner.os }}" = "macOS" ]; then
+        if [ "${{ runner.os }}" = "Linux" ]; then
+          # Force bundled TIFF library for portability
+          CMAKE_ARGS+=(-DTIFF_FOUND=OFF)
+          
+        elif [ "${{ runner.os }}" = "macOS" ]; then
           OPENMP_PATH="$(brew --prefix libomp)"
           CMAKE_ARGS+=(-DOpenMP_ROOT="$OPENMP_PATH")
 
