@@ -35,7 +35,7 @@ runs:
         mkdir -p "$INSTALL_PATH/share/icons/Yaru/512x512/apps/"
         
         cp "$SCRIPTS_PATH/resources/relightlab.desktop" "$INSTALL_PATH/share/applications/relightlab.desktop"
-        cp "$SCRIPTS_PATH/relight.png" "$INSTALL_PATH/share/icons/Yaru/512x512/apps/relight.png"
+        cp "${GITHUB_WORKSPACE}/build_scripts/relight.png" "$INSTALL_PATH/share/icons/Yaru/512x512/apps/relight.png"
         
         chmod +x "$INSTALL_PATH/bin/relightlab"
         chmod +x "$INSTALL_PATH/bin/relight-cli"
@@ -70,6 +70,8 @@ runs:
       run: |
         INSTALL_PATH="${GITHUB_WORKSPACE}/install"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
+        SCRIPTS_PATH="$GITHUB_WORKSPACE/build_scripts/macOS"
+
         APPNAME="relightlab.app"
         
         echo "======= Creating AppBundle ======="
@@ -120,7 +122,6 @@ runs:
         APPNAME="RelightLab${RELIGHT_VERSION}.app"
         
         # Create dmg config
-        SCRIPTS_PATH="$GITHUB_WORKSPACE/build_scripts/macOS"
         sed "s%INST_PATH%$INSTALL_PATH%g" "$SCRIPTS_PATH/resources/dmg_latest.json" > "$SCRIPTS_PATH/resources/dmg_final.json"
         sed -i '' "s%RL_VERSION%$RELIGHT_VERSION%g" "$SCRIPTS_PATH/resources/dmg_final.json"
         sed -i '' "s%SOURCE_PATH%$GITHUB_WORKSPACE%g" "$SCRIPTS_PATH/resources/dmg_final.json"
