@@ -47,6 +47,7 @@ cmake_install.cmake
 Makefile
 install/
 !build_scripts/
+!.github/actions/build/
 
 
 # Clangd cache #

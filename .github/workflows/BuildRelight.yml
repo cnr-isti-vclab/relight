@@ -10,6 +10,8 @@ jobs:
   relightlab_build:
     name: Build Relight
     runs-on: ${{ matrix.os }}
+    env:
+      INSTALL_PATH: ${{ runner.os == 'Linux' && 'install/usr' || 'install' }}
     strategy:
       fail-fast: false
       matrix:
@@ -39,12 +41,8 @@ jobs:
       with:
         qt_version: ${{ matrix.qt_version }}
 
-    - name: Configure and Build
-      shell: bash
-      run: |
-        bash build_scripts/${{ runner.os }}/1_build.sh
+    - uses: ./.github/actions/build
 
-        
     - name: Set CodeSign Certificate macOS
       if: runner.os == 'macOS' && env.MACOS_CERTIFICATE != ''
       uses: apple-actions/import-codesign-certs@v2

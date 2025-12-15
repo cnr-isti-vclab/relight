@@ -13,6 +13,11 @@ runs:
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
 
+    - name: Ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ runner.os }}-${{ github.ref }}
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
       with:
@@ -42,7 +47,4 @@ runs:
       run: |
         C:/vcpkg/vcpkg.exe install lcms:x64-windows
 
-    - name: Ccache
-      uses: hendrikmuhs/ccache-action@v1.2
-      with:
-        key: ${{ runner.os }}-${{ github.ref }}
+
