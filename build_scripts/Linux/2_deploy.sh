@@ -7,32 +7,13 @@
 #
 # You can give as argument the path where you installed relightlab.
 
+set -euo pipefail
+
 SCRIPTS_PATH="$(dirname "$(realpath "$0")")"
 INSTALL_PATH=$SCRIPTS_PATH/../../install
 PACKAGES_PATH=$SCRIPTS_PATH/../../packages
 QT_DIR_OPTION=""
 
-#checking for parameters
-for i in "$@"
-do
-case $i in
-    -i=*|--install_path=*)
-        INSTALL_PATH="${i#*=}"
-        shift # past argument=value
-        ;;
-    -qt=*|--qt_dir=*)
-        QT_DIR_OPTION=-qt=${i#*=}
-        shift # past argument=value
-        ;;
-    -p=*|--packages_path=*)
-        PACKAGES_PATH="${i#*=}"
-        shift # past argument=value
-        ;;
-    *)
-        # unknown option
-        ;;
-esac
-done
 
 # The script will terminate after the first line that fails
 set -e

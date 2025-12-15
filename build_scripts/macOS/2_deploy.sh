@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 SCRIPTS_PATH="$(dirname "$(realpath "$0")")"
 
 INSTALL_PATH=$SCRIPTS_PATH/../../install
@@ -15,25 +17,13 @@ NOTAR_PASSWORD=""
 for i in "$@"
 do
 case $i in
-    -i=*|--install_path=*)
-        INSTALL_PATH="${i#*=}"
+    -ci=*|--cert_id=*)
+        CERT_ID="${i#*=}"
         shift # past argument=value
-        ;;
-    -qt=*|--qt_dir=*)
-        QT_DIR_OPTION=-qt=${i#*=}
+    ;;
+    -nu=*|--notarization_user=*)
+        NOTAR_USER="${i#*=}"
         shift # past argument=value
-        ;;
-    -p=*|--packages_path=*)
-        PACKAGES_PATH="${i#*=}"
-        shift # past argument=value
-        ;;
-        -ci=*|--cert_id=*)
-                CERT_ID="${i#*=}"
-                shift # past argument=value
-        ;;
-        -nu=*|--notarization_user=*)
-                NOTAR_USER="${i#*=}"
-                shift # past argument=value
                 ;;  
     -np=*|--notarization_pssw=*)
         NOTAR_PASSWORD="${i#*=}"

@@ -20,18 +20,7 @@ CERT_PSSW=""
 for i in "$@"
 do
 case $i in
-    -i=*|--install_path=*)
-        INSTALL_PATH="${i#*=}"
-        shift # past argument=value
-        ;;
-    -qt=*|--qt_dir=*)
-        QT_DIR_OPTION=qt="${i#*=}"
-        shift # past argument=value
-        ;;
-    -p=*|--packages_path=*)
-        PACKAGES_PATH="${i#*=}"
-        shift # past argument=value
-        ;;
+
     -cf=*|--cert_file=*)
         CERT_FILE_OPTION=cf="${i#*=}"
         shift # past argument=value
