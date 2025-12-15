@@ -10,7 +10,7 @@ set -euo pipefail
 
 echo "=== Installing dependencies via vcpkg..."
 
-C:/vcpkg/vcpkg.exe install ninja:x64-windows ccache:x64-windows 
+C:/vcpkg/vcpkg.exe install ccache:x64-windows 
 C:/vcpkg/vcpkg.exe install lcms:x64-windows 
 
 #wget is needed for Windows redistributable
