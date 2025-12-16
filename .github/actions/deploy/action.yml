@@ -42,13 +42,13 @@ runs:
         chmod +x "$INSTALL_PATH/bin/relight-merge"
         chmod +x "$INSTALL_PATH/bin/relight-normals"
         chmod +x "$INSTALL_PATH/bin/relight-deepzoom"
-        cp "$SCRIPTS_PATH/resources/AppRun" "${GITHUB_WORKSPACE}/install/AppRun"
-        chmod +x "${GITHUB_WORKSPACE}/install/AppRun"
         
         echo "======= Creating Portable Version ======="
         export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$INSTALL_PATH/lib"
         
         if "$SCRIPTS_PATH/resources/linuxdeploy" --appdir="${GITHUB_WORKSPACE}/install" --plugin qt; then
+            cp "$SCRIPTS_PATH/resources/AppRun" "${GITHUB_WORKSPACE}/install/AppRun"
+            chmod +x "${GITHUB_WORKSPACE}/install/AppRun"
             echo "Portable version created successfully"
         else
             echo "linuxdeploy failed with error code $?. Script was not completed successfully."
