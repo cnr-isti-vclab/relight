@@ -108,7 +108,6 @@ void Exif::parse(const QString &filename) {
 		quint16 length;
 		stream >> length;
 		file.seek(file.pos() + length - 2);
-		break;
 	}
 	quint16 length;
 	stream >> length;
