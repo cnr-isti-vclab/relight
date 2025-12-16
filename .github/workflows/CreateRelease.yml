@@ -200,8 +200,8 @@ jobs:
           RelightLab${{ github.event.inputs.version }}-linux.tar.gz
           relightlab_linux_appimage/RelightLab${{ github.event.inputs.version }}-linux.AppImage
           RelightLab${{ github.event.inputs.version }}-macos_x86_64.tar.gz
-          relightlab_macos_dmg/RelightLab${{ github.event.inputs.version }}-macos_x86_64.dmg
+          relightlab_macos_x86_64_dmg/RelightLab${{ github.event.inputs.version }}-macos_x86_64.dmg
           RelightLab${{ github.event.inputs.version }}-macos_arm64.tar.gz
-          relightlab_macos_dmg/RelightLab${{ github.event.inputs.version }}-macos_arm64.dmg
+          relightlab_macos_arm64_dmg/RelightLab${{ github.event.inputs.version }}-macos_arm64.dmg
           RelightLab${{ github.event.inputs.version }}-windows.zip
           relightlab_windows_installer/RelightLab${{ github.event.inputs.version }}-windows.exe
