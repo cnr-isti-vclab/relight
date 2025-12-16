@@ -904,6 +904,7 @@ void PanoBuilder::malt_ortho() {
 			}
 		}
 		exifTransplant();
+		//exportMeans();
 
 		QString program = mm3d_path;
 		QStringList arguments;
