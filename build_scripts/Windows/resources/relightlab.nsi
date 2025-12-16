@@ -16,6 +16,8 @@ RequestExecutionLevel admin
 !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
 !define MUI_FINISHPAGE_RUN "$INSTDIR\\relightlab.exe"
 
+SetCompressor /SOLID lzma
+
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "${DISTRIB_FOLDER}\\LICENSE.txt"
 !insertmacro MUI_PAGE_DIRECTORY
@@ -31,7 +33,6 @@ OutFile "RelightLab${PRODUCT_VERSION}-windows.exe"
 InstallDir "$PROGRAMFILES64\\RelightLab"
 ShowInstDetails show
 ShowUnInstDetails show
-SetCompressor /SOLID lzma
 
 Section "RelightLab" SEC01
     SetShellVarContext all
