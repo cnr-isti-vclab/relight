@@ -1,0 +1,51 @@
+name: Setup RelightLab Dependencies
+description: Install Qt, MSVC, dependencies, and setup ccache
+
+inputs:
+  qt_version:
+    description: 'Qt version to install'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Setup MSVC
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ runner.os }}-${{ github.ref }}
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        cache: 'true'
+        version: ${{ inputs.qt_version }}
+
+    - name: Install Linux dependencies
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mesa-common-dev libglu1-mesa-dev 
+        sudo apt-get install -y cmake ninja-build patchelf fuse libjpeg-dev libeigen3-dev
+        sudo apt-get install -y libxcb-cursor0
+        sudo apt-get install -y liblcms2-dev
+
+    - name: Install macOS dependencies
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        brew install coreutils libomp eigen libjpeg 
+        npm install -g appdmg
+
+    - name: Install Windows dependencies
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        C:/vcpkg/vcpkg.exe install lcms:x64-windows
+        choco install nsis -y
+
+

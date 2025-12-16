@@ -6,6 +6,8 @@
 #
 # You can give as argument the path where relightlab is installed.
 
+set -euo pipefail
+
 SCRIPTS_PATH="$(dirname "$(realpath "$0")")"
 INSTALL_PATH=$SCRIPTS_PATH/../../install
 QT_DIR_OPTION=""
@@ -18,18 +20,7 @@ CERT_PSSW=""
 for i in "$@"
 do
 case $i in
-    -i=*|--install_path=*)
-        INSTALL_PATH="${i#*=}"
-        shift # past argument=value
-        ;;
-    -qt=*|--qt_dir=*)
-        QT_DIR_OPTION=qt="${i#*=}"
-        shift # past argument=value
-        ;;
-    -p=*|--packages_path=*)
-        PACKAGES_PATH="${i#*=}"
-        shift # past argument=value
-        ;;
+
     -cf=*|--cert_file=*)
         CERT_FILE_OPTION=cf="${i#*=}"
         shift # past argument=value
@@ -57,6 +48,7 @@ if [ "$SIGN" = true ] ; then
     echo "======= Portable Version Signed ======="
 fi
 
+#this is taken from meshlab!
 #bash $SCRIPTS_PATH/internal/2c_installer.sh -i=$INSTALL_PATH -p=$PACKAGES_PATH
 
 #echo "======= Installer Created ======="

@@ -1,0 +1,198 @@
+name: Deploy RelightLab
+description: Package and deploy RelightLab for distribution (portable + platform-specific packages)
+
+inputs:
+  cert_id:
+    description: 'macOS code signing certificate ID'
+    required: false
+    default: ''
+  notarization_user:
+    description: 'macOS notarization Apple ID'
+    required: false
+    default: ''
+  notarization_password:
+    description: 'macOS notarization password'
+    required: false
+    default: ''
+  notarization_team:
+    description: 'macOS notarization team ID'
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Deploy (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        INSTALL_PATH="${GITHUB_WORKSPACE}/install$( [ "${{ runner.os }}" = "Linux" ] && echo "/usr" || echo "")"
+        PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
+        SCRIPTS_PATH="${GITHUB_WORKSPACE}/build_scripts/Linux"
+        
+        echo "======= Creating Bundle ======="
+        mkdir -p "$INSTALL_PATH/share/applications/"
+        mkdir -p "$INSTALL_PATH/share/icons/Yaru/512x512/apps/"
+        
+        cp "$SCRIPTS_PATH/resources/relightlab.desktop" "$INSTALL_PATH/share/applications/relightlab.desktop"
+        cp "${GITHUB_WORKSPACE}/build_scripts/relight.png" "$INSTALL_PATH/share/icons/Yaru/512x512/apps/relight.png"
+        
+        chmod +x "$INSTALL_PATH/bin/relightlab"
+        chmod +x "$INSTALL_PATH/bin/relight-cli"
+        chmod +x "$INSTALL_PATH/bin/relight-merge"
+        chmod +x "$INSTALL_PATH/bin/relight-normals"
+        chmod +x "$INSTALL_PATH/bin/relight-deepzoom"
+        
+        echo "======= Creating Portable Version ======="
+        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$INSTALL_PATH/lib"
+        
+        if "$SCRIPTS_PATH/resources/linuxdeploy" --appdir="${GITHUB_WORKSPACE}/install" --plugin qt; then
+            
+            echo "Portable version created successfully"
+        else
+            echo "linuxdeploy failed with error code $?. Script was not completed successfully."
+            exit 1
+        fi
+
+        #adding LD_LIBRARY_PATH configuration for the portable version
+        cp "$SCRIPTS_PATH/resources/AppRun" "${GITHUB_WORKSPACE}/install/AppRun"
+        chmod +x "${GITHUB_WORKSPACE}/install/AppRun"
+        
+        echo "======= Creating AppImage ======="
+        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$INSTALL_PATH/lib"
+        
+        "$SCRIPTS_PATH/resources/linuxdeploy" --appdir="${GITHUB_WORKSPACE}/install" \
+          --plugin qt \
+          --output appimage
+        
+        RELIGHT_VERSION=$(cat "$GITHUB_WORKSPACE/RELIGHT_VERSION")
+        mkdir -p "$PACKAGES_PATH"
+        mv RelightLab-*.AppImage "$PACKAGES_PATH/RelightLab${RELIGHT_VERSION}-linux.AppImage"
+
+    - name: Deploy (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        INSTALL_PATH="${GITHUB_WORKSPACE}/install"
+        PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
+        mkdir -p "$PACKAGES_PATH"
+        SCRIPTS_PATH="$GITHUB_WORKSPACE/build_scripts/macOS"
+
+        APPNAME="relightlab.app"
+        
+        echo "======= Creating AppBundle ======="
+        
+        message=$(macdeployqt "$INSTALL_PATH/$APPNAME" 2>&1)
+        
+        if [[ $message == *"ERROR"* ]]; then
+            echo "macdeployqt failed:"
+            echo "$message"
+            exit 1
+        fi
+        
+        ls "$INSTALL_PATH/$APPNAME/Contents/Frameworks"
+        
+        # Remove everything from install path except the appbundle
+        cd "$INSTALL_PATH"
+        ls | grep -xv "${APPNAME}" | xargs rm -rf || true
+        
+        if [ -n "${{ inputs.cert_id }}" ]; then
+            echo "======= Signing AppBundle ======="
+            codesign --options "runtime" --timestamp --force --deep --sign "${{ inputs.cert_id }}" "$INSTALL_PATH/$APPNAME"
+            spctl -a -vvv "$INSTALL_PATH/$APPNAME"
+        fi
+        
+        if [ -n "${{ inputs.notarization_user }}" ]; then
+            echo "======= Notarizing AppBundle ======="
+            
+            xcrun notarytool store-credentials "notarytool-profile" \
+              --apple-id "${{ inputs.notarization_user }}" \
+              --team-id "${{ inputs.notarization_team }}" \
+              --password "${{ inputs.notarization_password }}"
+            
+            ditto -c -k --keepParent "$INSTALL_PATH/$APPNAME" "$INSTALL_PATH/notarization.zip"
+            
+            xcrun notarytool submit "$INSTALL_PATH/notarization.zip" --keychain-profile "notarytool-profile" --wait
+            
+            xcrun stapler staple "$INSTALL_PATH/$APPNAME"
+            
+            rm -rf "$INSTALL_PATH/notarization.zip"
+        fi
+        
+        echo "======= Creating DMG ======="
+        
+        RELIGHT_VERSION=$(cat "$GITHUB_WORKSPACE/RELIGHT_VERSION")
+        
+        # Rename app with version
+        mv "$INSTALL_PATH/$APPNAME" "$INSTALL_PATH/RelightLab${RELIGHT_VERSION}.app"
+        APPNAME="RelightLab${RELIGHT_VERSION}.app"
+        
+        # Create dmg config
+        sed "s%INST_PATH%$INSTALL_PATH%g" "$SCRIPTS_PATH/resources/dmg_latest.json" > "$SCRIPTS_PATH/resources/dmg_final.json"
+        sed -i '' "s%RL_VERSION%$RELIGHT_VERSION%g" "$SCRIPTS_PATH/resources/dmg_final.json"
+        sed -i '' "s%SOURCE_PATH%$GITHUB_WORKSPACE%g" "$SCRIPTS_PATH/resources/dmg_final.json"
+        
+        mkdir -p "$PACKAGES_PATH"
+        
+        # Detect architecture for DMG naming
+        ARCH=$(uname -m)
+        if [ "$ARCH" = "x86_64" ]; then
+            DMG_NAME="RelightLab${RELIGHT_VERSION}-macos_x86_64.dmg"
+        else
+            DMG_NAME="RelightLab${RELIGHT_VERSION}-macos_arm64.dmg"
+        fi
+        
+        appdmg "$SCRIPTS_PATH/resources/dmg_final.json" "$PACKAGES_PATH/$DMG_NAME"
+        
+        rm "$SCRIPTS_PATH/resources/dmg_final.json"
+
+    - name: Deploy (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        INSTALL_PATH="${GITHUB_WORKSPACE}/install"
+        PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
+        mkdir -p "$PACKAGES_PATH"
+
+        # 2a: Create Portable - run windeployqt
+        echo "======= Creating Portable Version ======="
+        
+        windeployqt "$INSTALL_PATH/relightlab.exe"
+        windeployqt "$INSTALL_PATH/relight-cli.exe"
+        windeployqt "$INSTALL_PATH/relight-normals.exe"
+        windeployqt "$INSTALL_PATH/relight-merge.exe"
+        windeployqt "$INSTALL_PATH/relight-deepzoom.exe"
+        
+        # Copy LCMS DLL
+        cp C:/vcpkg/installed/x64-windows/bin/lcms2-2.dll "$INSTALL_PATH/"
+        
+        # Remove all .lib files
+        find "$INSTALL_PATH" -name '*.lib' -delete
+        
+        # Download vc_redist if missing
+        if [ ! -f "$INSTALL_PATH/vc_redist.x64.exe" ]; then
+            echo "Downloading vc_redist because it was missing..."
+            wget https://aka.ms/vs/17/release/vc_redist.x64.exe -O "$INSTALL_PATH/vc_redist.x64.exe"
+        fi
+
+        echo "======= Building Installer ======="
+        RESOURCES_PATH="${GITHUB_WORKSPACE}/build_scripts/Windows/resources"
+        RELIGHT_VERSION=$(cat "${GITHUB_WORKSPACE}/RELIGHT_VERSION")
+        NSIS_SCRIPT="$INSTALL_PATH/relightlab_final.nsi"
+
+        cp "${GITHUB_WORKSPACE}/LICENSE" "$INSTALL_PATH/LICENSE.txt"
+
+        sed "s%RELIGHT_VERSION%$RELIGHT_VERSION%g" "$RESOURCES_PATH/relightlab.nsi" > "$NSIS_SCRIPT"
+        sed -i "s%DISTRIB_PATH%.%g" "$NSIS_SCRIPT"
+
+        MAKENSIS_BIN="/c/Program Files (x86)/NSIS/makensis.exe"
+
+        "$MAKENSIS_BIN" "$NSIS_SCRIPT"
+        rm "$NSIS_SCRIPT"
+
+        INSTALLER_SRC=$(find "$INSTALL_PATH" -maxdepth 1 -name 'RelightLab*-windows.exe' | head -n 1)
+        if [ -z "$INSTALLER_SRC" ]; then
+          echo "Failed to locate generated installer"
+          exit 1
+        fi
+        mv "$INSTALLER_SRC" "$PACKAGES_PATH/"

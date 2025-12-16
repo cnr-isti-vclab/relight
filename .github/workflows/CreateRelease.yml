@@ -9,6 +9,9 @@ on:
         required: true
         default: 'YYYY.MM'
 
+env:
+  MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+
 jobs:
   update_rl_version:
     name: Update RELIGHT_VERSION
@@ -38,73 +41,41 @@ jobs:
           include:
             - os: 'ubuntu-22.04'
               label: 'Linux'
+              qt_version: '6.6.*'
             - os: 'macos-15-intel'
               label: 'macOS_x86_64'
+              qt_version: '6.8.0'
             - os: 'macos-latest'
               label: 'macOS_arm64'
+              qt_version: '6.8.0'
             - os: 'windows-latest'
               label: 'Windows'
+              qt_version: '6.6.*'
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
         ref: master
-    - name: Setup MSVC
-      if: runner.os == 'Windows'
-      uses: ilammy/msvc-dev-cmd@v1
+
+    - uses: ./.github/actions/setup
+      with:
+        qt_version: ${{ matrix.qt_version }}
+
+    - uses: ./.github/actions/build
+
     - name: Set CodeSign Certificate macOS
-      if: runner.os == 'macOS'
+      if: runner.os == 'macOS' && env.MACOS_CERTIFICATE != ''
       uses: apple-actions/import-codesign-certs@v2
       with:
         p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
         p12-password: ${{ secrets.MACOS_CERTIFICATE_PSSW }}
 
-    - name: Install OpenCV on Ubuntu
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update && sudo apt-get install -y libopencv-dev
-        echo "QT_VERSION=6.6.*" >> $GITHUB_ENV
-
-    - name: Install OpenCV on macOS
-      if: runner.os == 'macOS'
-      run: |
-        echo "QT_VERSION=6.8.0" >> $GITHUB_ENV
-
-    - name: Install vcpkg and dependencies on Windows
-      if: runner.os == 'Windows'
-      shell: bash
-      run: |
-        bash build_scripts/Windows/0_setup_env.sh
-
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v4
+    - uses: ./.github/actions/deploy
       with:
-        cache: 'true'
-        version: ${{ env.QT_VERSION }}
-
-    - name: Install dependencies
-      shell: bash
-      run: |
-        bash build_scripts/${{ runner.os }}/0_setup_env.sh --dont_install_qt
-
-    - name: Ccache
-      uses: hendrikmuhs/ccache-action@v1.2
-      with:
-        key: ${{ runner.os }}-${{ github.ref }}
-
-    - name: Configure and Build
-      shell: bash
-      run: |
-        bash build_scripts/${{ runner.os }}/1_build.sh
-
-    - name: Deploy
-      shell: bash
-      run: >
-        bash build_scripts/${{ runner.os }}/2_deploy.sh
-        --cert_id='${{ secrets.MACOS_CERT_ID }}'
-        --notarization_user='${{ secrets.MACOS_NOTARIZATION_USER }}'
-        --notarization_pssw='${{ secrets.MACOS_NOTARIZATION_PSSW }}'
-        --notarization_team='${{ secrets.MACOS_NOTARIZATION_TEAM_ID }}'
+        cert_id: ${{ secrets.MACOS_CERT_ID }}
+        notarization_user: ${{ secrets.MACOS_NOTARIZATION_USER }}
+        notarization_password: ${{ secrets.MACOS_NOTARIZATION_PSSW }}
+        notarization_team: ${{ secrets.MACOS_NOTARIZATION_TEAM_ID }}
 
     - name: Upload RelightLab Portable
       uses: actions/upload-artifact@v4
@@ -112,7 +83,6 @@ jobs:
         name: RelightLab_${{ matrix.label }}_portable
         path: install/
     - name: Upload RelightLab Packages
-      if: runner.os != 'Windows'
       uses: actions/upload-artifact@v4
       with:
         name: RelightLab_${{ matrix.label }}_packages
@@ -131,18 +101,22 @@ jobs:
       with:
         name: RelightLab_Linux_portable
         path: relightlab_linux_portable
+
     - name: Download Linux AppImage
       uses: actions/download-artifact@v4
       with:
         name: RelightLab_Linux_packages
         path: relightlab_linux_appimage
+
     - name: Change Permissions
       run: |
         chmod +x relightlab_linux_portable/usr/bin/relightlab
         chmod +x relightlab_linux_portable/usr/bin/relight-cli
         chmod +x relightlab_linux_portable/usr/bin/relight-merge
         chmod +x relightlab_linux_portable/usr/bin/relight-normals
+        chmod +x relightlab_linux_portable/usr/bin/relight-deepzoom
         chmod +x relightlab_linux_portable/AppRun
+
     - name: Create RelightLab Portable Linux Archive
       run: |
         cd relightlab_linux_portable
@@ -155,6 +129,7 @@ jobs:
       with:
         name: RelightLab_macOS_x86_64_packages
         path: relightlab_macos_x86_64_dmg
+
     - name: Download MacOS Portable
       uses: actions/download-artifact@v4
       with:
@@ -166,6 +141,7 @@ jobs:
         chmod +x relightlab_macos_x86_64_portable/RelightLab*.app/Contents/MacOS/relight-cli
         chmod +x relightlab_macos_x86_64_portable/RelightLab*.app/Contents/MacOS/relight-merge
         chmod +x relightlab_macos_x86_64_portable/RelightLab*.app/Contents/MacOS/relight-normals
+        chmod +x relightlab_macos_x86_64_portable/RelightLab*.app/Contents/MacOS/relight-deepzoom
     - name: Create RelightLab Portable MacOS x86_64
       run: |
         cd relightlab_macos_x86_64_portable
@@ -189,6 +165,7 @@ jobs:
         chmod +x relightlab_macos_arm64_portable/RelightLab*.app/Contents/MacOS/relight-cli
         chmod +x relightlab_macos_arm64_portable/RelightLab*.app/Contents/MacOS/relight-merge
         chmod +x relightlab_macos_arm64_portable/RelightLab*.app/Contents/MacOS/relight-normals
+        chmod +x relightlab_macos_arm64_portable/RelightLab*.app/Contents/MacOS/relight-deepzoom
     - name: Create RelightLab Portable MacOS arm64
       run: |
         cd relightlab_macos_arm64_portable
@@ -201,11 +178,11 @@ jobs:
       with:
         name: RelightLab_Windows_portable
         path: relightlab_windows_portable
-#    - name: Download Windows Installer
-#      uses: actions/download-artifact@v4
-#      with:
-#        name: RelightLab_Windows_packages
-#        path: relightlab_windows_installer
+    - name: Download Windows Installer
+      uses: actions/download-artifact@v4
+      with:
+        name: RelightLab_Windows_packages
+        path: relightlab_windows_installer
     - name: Create RelightLab Portable Windows Archive
       run: |
         cd relightlab_windows_portable
@@ -227,4 +204,4 @@ jobs:
           RelightLab${{ github.event.inputs.version }}-macos_arm64.tar.gz
           relightlab_macos_dmg/RelightLab${{ github.event.inputs.version }}-macos_arm64.dmg
           RelightLab${{ github.event.inputs.version }}-windows.zip
-#          relightlab_windows_installer/RelightLab${{ github.event.inputs.version }}-windows.exe
+          relightlab_windows_installer/RelightLab${{ github.event.inputs.version }}-windows.exe

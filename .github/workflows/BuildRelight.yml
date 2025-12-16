@@ -4,8 +4,7 @@ on:
   [push, pull_request]
 
 env:
-  MAC_CERT: ${{secrets.MACOS_CERT_ID}}
-  WIN_CERT: ${{secrets.WIN_CERTIFICATE}}
+  MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
 
 jobs:
   relightlab_build:
@@ -17,81 +16,52 @@ jobs:
           include:
             - os: 'ubuntu-22.04'
               label: 'Linux'
+              qt_version: '6.6.*'
+
             - os: 'macos-15-intel'
               label: 'macOS_x86_64'
+              qt_version: '6.8.0'
+
             - os: 'macos-latest'
               label: 'macOS_arm64'
+              qt_version: '6.8.0'
+
             - os: 'windows-latest'
               label: 'Windows'
+              qt_version: '6.6.*'
+
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
-    - name: Setup MSVC
-      if: runner.os == 'Windows'
-      uses: ilammy/msvc-dev-cmd@v1
 
-
-
-    - name: Setup Qt version for Linux
-      if: runner.os == 'Linux'
-      run: |
-        echo "QT_VERSION=6.6.*" >> $GITHUB_ENV
-
-    - name: Setup Qt version for macOS
-      if: runner.os == 'macOS'
-      run: |
-        echo "QT_VERSION=6.8.0" >> $GITHUB_ENV
-
-    - name: Setup Qt version for macOS
-      if: runner.os == 'Windows'
-      run: |
-        echo "QT_VERSION=6.6.*" >> $env:GITHUB_ENV
-
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v4
+    - uses: ./.github/actions/setup
       with:
-        cache: 'true'
-        version: ${{ env.QT_VERSION }}
+        qt_version: ${{ matrix.qt_version }}
 
-    - name: Install dependencies
-      shell: bash
-      run: |
-        bash build_scripts/${{ runner.os }}/0_setup_env.sh
+    - uses: ./.github/actions/build
 
-    - name: Ccache
-      uses: hendrikmuhs/ccache-action@v1.2
-      with:
-        key: ${{ runner.os }}-${{ github.ref }}
-    - name: Configure and Build
-      shell: bash
-      run: |
-        bash build_scripts/${{ runner.os }}/1_build.sh
-
-        
     - name: Set CodeSign Certificate macOS
-      if: runner.os == 'macOS' && env.MAC_CERT != null
+      if: runner.os == 'macOS' && env.MACOS_CERTIFICATE != ''
       uses: apple-actions/import-codesign-certs@v2
       with:
         p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
         p12-password: ${{ secrets.MACOS_CERTIFICATE_PSSW }}
 
-    - name: Deploy
-      shell: bash
-      run: >
-        bash build_scripts/${{ runner.os }}/2_deploy.sh
-        --cert_id='${{ secrets.MACOS_CERT_ID }}'
-        --notarization_user='${{ secrets.MACOS_NOTARIZATION_USER }}'
-        --notarization_pssw='${{ secrets.MACOS_NOTARIZATION_PSSW }}'
-        --notarization_team='${{ secrets.MACOS_NOTARIZATION_TEAM_ID }}'
+    - uses: ./.github/actions/deploy
+      with:
+        cert_id: ${{ secrets.MACOS_CERT_ID }}
+        notarization_user: ${{ secrets.MACOS_NOTARIZATION_USER }}
+        notarization_password: ${{ secrets.MACOS_NOTARIZATION_PSSW }}
+        notarization_team: ${{ secrets.MACOS_NOTARIZATION_TEAM_ID }}
 
     - name: Upload RelightLab Portable
       uses: actions/upload-artifact@v4
       with:
         name: RelightLab_${{ matrix.label }}_portable
         path: install/
+
     - name: Upload RelightLab Packages
-      if: runner.os != 'Windows'
       uses: actions/upload-artifact@v4
       with:
         name: RelightLab_${{ matrix.label }}_packages
