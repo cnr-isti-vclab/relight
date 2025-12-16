@@ -12,10 +12,14 @@ DirectionsView::DirectionsView(QWidget *parent): QGraphicsView(parent) {
 void DirectionsView::initFromDome(Dome &dome) {
 	scene.clear();
 
-
 	qreal scale = width();
 	//scene goes from [-1, +1]x[-1, +1], view will just zoom on it
 	qreal diameter = lightSize;
+
+	QPen pen(Qt::green, 1, Qt::DashLine);
+	scene.addLine(0, -scale, 0, scale, pen);
+	scene.addLine(-scale, 0, scale, 0, pen);
+
 
 	int count = 0;
 	std::vector<Vector3f> dirs;

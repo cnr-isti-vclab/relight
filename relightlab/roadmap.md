@@ -16,6 +16,7 @@
 
 ## Long term new features
 
+* Show exif data.
 * Focu stackin: https://github.com/PetteriAimonen/focus-stack
 * Normals: Robust photometric stereo (https://people.eecs.berkeley.edu/~yima/matrix-rank/Files/robust_stereo.pdf)
 * preprocessing files and caching

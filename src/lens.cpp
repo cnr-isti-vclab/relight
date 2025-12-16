@@ -83,8 +83,9 @@ void Lens::readExif(Exif &exif) {
 		focal35equivalent = false;
 		return;
 	}*/
-
-	focalLength = exif[Exif::FocalLengthIn35mmFilm].toDouble();
+	double focalLength35 = exif[Exif::FocalLengthIn35mmFilm].toDouble();
+	if(focalLength35)
+		focalLength = focalLength35;
 
 	if(focalLength) {
 		focal35equivalent = true;
