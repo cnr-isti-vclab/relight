@@ -46,7 +46,12 @@ runs:
         echo "======= Creating Portable Version ======="
         export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$INSTALL_PATH/lib"
         
-        if "$SCRIPTS_PATH/resources/linuxdeploy" --appdir="${GITHUB_WORKSPACE}/install" --plugin qt; then
+        LIBTIFF_PATH=$(ldconfig -p | awk '/libtiff\.so/ {print $4; exit}')
+        EXTRA_ARGS=""
+        if [ -n "$LIBTIFF_PATH" ]; then
+          EXTRA_ARGS="--library $LIBTIFF_PATH"
+        fi
+        if "$SCRIPTS_PATH/resources/linuxdeploy" --appdir="${GITHUB_WORKSPACE}/install" --plugin qt $EXTRA_ARGS; then
             echo "Portable version created successfully"
         else
             echo "linuxdeploy failed with error code $?. Script was not completed successfully."
@@ -56,9 +61,15 @@ runs:
         echo "======= Creating AppImage ======="
         export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$INSTALL_PATH/lib"
         
+        LIBTIFF_PATH=$(ldconfig -p | awk '/libtiff\.so/ {print $4; exit}')
+        EXTRA_ARGS=""
+        if [ -n "$LIBTIFF_PATH" ]; then
+            EXTRA_ARGS="--library $LIBTIFF_PATH"
+        fi
         "$SCRIPTS_PATH/resources/linuxdeploy" --appdir="${GITHUB_WORKSPACE}/install" \
           --plugin qt \
-          --output appimage
+          --output appimage \
+          $EXTRA_ARGS
         
         RELIGHT_VERSION=$(cat "$GITHUB_WORKSPACE/RELIGHT_VERSION")
         mkdir -p "$PACKAGES_PATH"
