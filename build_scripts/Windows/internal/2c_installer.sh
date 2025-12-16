@@ -1,68 +1,48 @@
 #!/bin/bash
 
-SCRIPTS_PATH="$(dirname "$(realpath "$0")")"/..
-RESOURCES_PATH=$SCRIPTS_PATH/../../resources
-INSTALL_PATH=$SCRIPTS_PATH/../../install
-PACKAGES_PATH=$SCRIPTS_PATH/../../packages
+set -euo pipefail
 
-#checking for parameters
-for i in "$@"
-do
-case $i in
-    -i=*|--install_path=*)
-        INSTALL_PATH="${i#*=}"
-        shift # past argument=value
-        ;;
-    -p=*|--packages_path=*)
-        PACKAGES_PATH="${i#*=}"
-        shift # past argument=value
-        ;;
-    *)
-        # unknown option
-        ;;
-esac
+SCRIPTS_PATH="$(dirname "$(realpath "$0")")"/..
+RESOURCES_PATH="$SCRIPTS_PATH/resources"
+INSTALL_PATH="$SCRIPTS_PATH/../../install"
+PACKAGES_PATH="$SCRIPTS_PATH/../../packages"
+ROOT_PATH="$SCRIPTS_PATH/../../.."
+
+while [ $# -gt 0 ]; do
+    case $1 in
+        -i=*|--install_path=*)
+            INSTALL_PATH="${1#*=}"
+            ;;
+        -p=*|--packages_path=*)
+            PACKAGES_PATH="${1#*=}"
+            ;;
+    esac
+    shift || true
 done
 
-# Make nsis script
+mkdir -p "$PACKAGES_PATH"
 
-#get version
-IFS=' ' #space delimiter
-STR_VERSION=$($INSTALL_PATH/meshlab.exe --version)
-read -a strarr <<< "$STR_VERSION"
-ML_VERSION=${strarr[1]} #get the meshlab version from the string
+RELIGHT_VERSION=$(cat "$ROOT_PATH/RELIGHT_VERSION")
 
-sed "s%MESHLAB_VERSION%$ML_VERSION%g" $RESOURCES_PATH/windows/meshlab.nsi > $RESOURCES_PATH/windows/meshlab_final.nsi
-sed -i "s%DISTRIB_PATH%.%g" $RESOURCES_PATH/windows/meshlab_final.nsi
+# Ensure licensing info ships inside installer bundle
+cp "$ROOT_PATH/LICENSE" "$INSTALL_PATH/LICENSE.txt"
 
-mv $RESOURCES_PATH/windows/meshlab_final.nsi $INSTALL_PATH/
-cp $RESOURCES_PATH/windows/ExecWaitJob.nsh $INSTALL_PATH/
-cp $RESOURCES_PATH/windows/FileAssociation.nsh $INSTALL_PATH/
+# Prepare NSIS script
+sed "s%RELIGHT_VERSION%$RELIGHT_VERSION%g" "$RESOURCES_PATH/relightlab.nsi" > "$INSTALL_PATH/relightlab_final.nsi"
+sed -i "s%DISTRIB_PATH%.%g" "$INSTALL_PATH/relightlab_final.nsi"
 
-# Make Installer
+# Build installer
+makensis.exe "$INSTALL_PATH/relightlab_final.nsi"
 
-makensis.exe $INSTALL_PATH/meshlab_final.nsi
+rm "$INSTALL_PATH/relightlab_final.nsi"
 
-rm $INSTALL_PATH/meshlab_final.nsi
-rm $INSTALL_PATH/ExecWaitJob.nsh
-rm $INSTALL_PATH/FileAssociation.nsh
+INSTALLER_SRC=$(find "$INSTALL_PATH" -maxdepth 1 -name 'RelightLab*-windows.exe' | head -n 1)
+if [ -z "$INSTALLER_SRC" ]; then
+    echo "Failed to locate generated installer"
+    exit 1
+fi
 
-mkdir $PACKAGES_PATH
-
-# get the name of the installer file, without the path
-INSTALLER_NAME=$(basename $INSTALL_PATH/MeshLab*-windows.exe)
-
-# get the name of the installer without the extension
-INSTALLER_NAME=${INSTALLER_NAME%.*}
-
-# get running architecture
-ARCH=$(uname -m)
-
-# append the architecture and extension to the installer name
-INSTALLER_NAME=${INSTALLER_NAME}_$ARCH.exe
-
-# rename the installer and move it to the packages folder
-mv $INSTALL_PATH/MeshLab*-windows.exe $INSTALL_PATH/$INSTALLER_NAME
-mv $INSTALL_PATH/$INSTALLER_NAME $PACKAGES_PATH
+mv "$INSTALLER_SRC" "$PACKAGES_PATH/"
 
 
 

@@ -83,7 +83,6 @@ jobs:
         name: RelightLab_${{ matrix.label }}_portable
         path: install/
     - name: Upload RelightLab Packages
-      if: runner.os != 'Windows'
       uses: actions/upload-artifact@v4
       with:
         name: RelightLab_${{ matrix.label }}_packages
@@ -102,11 +101,13 @@ jobs:
       with:
         name: RelightLab_Linux_portable
         path: relightlab_linux_portable
+
     - name: Download Linux AppImage
       uses: actions/download-artifact@v4
       with:
         name: RelightLab_Linux_packages
         path: relightlab_linux_appimage
+
     - name: Change Permissions
       run: |
         chmod +x relightlab_linux_portable/usr/bin/relightlab
@@ -115,6 +116,7 @@ jobs:
         chmod +x relightlab_linux_portable/usr/bin/relight-normals
         chmod +x relightlab_linux_portable/usr/bin/relight-deepzoom
         chmod +x relightlab_linux_portable/AppRun
+
     - name: Create RelightLab Portable Linux Archive
       run: |
         cd relightlab_linux_portable
@@ -127,6 +129,7 @@ jobs:
       with:
         name: RelightLab_macOS_x86_64_packages
         path: relightlab_macos_x86_64_dmg
+
     - name: Download MacOS Portable
       uses: actions/download-artifact@v4
       with:
@@ -175,11 +178,11 @@ jobs:
       with:
         name: RelightLab_Windows_portable
         path: relightlab_windows_portable
-#    - name: Download Windows Installer
-#      uses: actions/download-artifact@v4
-#      with:
-#        name: RelightLab_Windows_packages
-#        path: relightlab_windows_installer
+    - name: Download Windows Installer
+      uses: actions/download-artifact@v4
+      with:
+        name: RelightLab_Windows_packages
+        path: relightlab_windows_installer
     - name: Create RelightLab Portable Windows Archive
       run: |
         cd relightlab_windows_portable
@@ -201,4 +204,4 @@ jobs:
           RelightLab${{ github.event.inputs.version }}-macos_arm64.tar.gz
           relightlab_macos_dmg/RelightLab${{ github.event.inputs.version }}-macos_arm64.dmg
           RelightLab${{ github.event.inputs.version }}-windows.zip
-#          relightlab_windows_installer/RelightLab${{ github.event.inputs.version }}-windows.exe
+          relightlab_windows_installer/RelightLab${{ github.event.inputs.version }}-windows.exe

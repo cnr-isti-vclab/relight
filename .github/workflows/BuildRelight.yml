@@ -60,8 +60,8 @@ jobs:
       with:
         name: RelightLab_${{ matrix.label }}_portable
         path: install/
+
     - name: Upload RelightLab Packages
-      if: runner.os != 'Windows'
       uses: actions/upload-artifact@v4
       with:
         name: RelightLab_${{ matrix.label }}_packages

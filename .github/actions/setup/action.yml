@@ -38,7 +38,7 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        brew install coreutils libomp eigen libjpeg lcms2
+        brew install coreutils libomp eigen libjpeg 
         npm install -g appdmg
 
     - name: Install Windows dependencies

@@ -47,13 +47,16 @@ runs:
         export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$INSTALL_PATH/lib"
         
         if "$SCRIPTS_PATH/resources/linuxdeploy" --appdir="${GITHUB_WORKSPACE}/install" --plugin qt; then
-            cp "$SCRIPTS_PATH/resources/AppRun" "${GITHUB_WORKSPACE}/install/AppRun"
-            chmod +x "${GITHUB_WORKSPACE}/install/AppRun"
+            
             echo "Portable version created successfully"
         else
             echo "linuxdeploy failed with error code $?. Script was not completed successfully."
             exit 1
         fi
+
+        #adding LD_LIBRARY_PATH configuration for the portable version
+        cp "$SCRIPTS_PATH/resources/AppRun" "${GITHUB_WORKSPACE}/install/AppRun"
+        chmod +x "${GITHUB_WORKSPACE}/install/AppRun"
         
         echo "======= Creating AppImage ======="
         export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$INSTALL_PATH/lib"
@@ -72,6 +75,7 @@ runs:
       run: |
         INSTALL_PATH="${GITHUB_WORKSPACE}/install"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
+        mkdir -p "$PACKAGES_PATH"
         SCRIPTS_PATH="$GITHUB_WORKSPACE/build_scripts/macOS"
 
         APPNAME="relightlab.app"
@@ -169,3 +173,23 @@ runs:
             echo "Downloading vc_redist because it was missing..."
             wget https://aka.ms/vs/17/release/vc_redist.x64.exe -O "$INSTALL_PATH/vc_redist.x64.exe"
         fi
+
+        echo "======= Building Installer ======="
+        RESOURCES_PATH="${GITHUB_WORKSPACE}/build_scripts/Windows/resources"
+        RELIGHT_VERSION=$(cat "${GITHUB_WORKSPACE}/RELIGHT_VERSION")
+        NSIS_SCRIPT="$INSTALL_PATH/relightlab_final.nsi"
+
+        cp "${GITHUB_WORKSPACE}/LICENSE" "$INSTALL_PATH/LICENSE.txt"
+
+        sed "s%RELIGHT_VERSION%$RELIGHT_VERSION%g" "$RESOURCES_PATH/relightlab.nsi" > "$NSIS_SCRIPT"
+        sed -i "s%DISTRIB_PATH%.%g" "$NSIS_SCRIPT"
+
+        makensis.exe "$NSIS_SCRIPT"
+        rm "$NSIS_SCRIPT"
+
+        INSTALLER_SRC=$(find "$INSTALL_PATH" -maxdepth 1 -name 'RelightLab*-windows.exe' | head -n 1)
+        if [ -z "$INSTALLER_SRC" ]; then
+          echo "Failed to locate generated installer"
+          exit 1
+        fi
+        mv "$INSTALLER_SRC" "$PACKAGES_PATH/"
