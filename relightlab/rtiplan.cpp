@@ -262,12 +262,7 @@ RtiQualityRow::RtiQualityRow(RtiParameters &parameters, QFrame *parent): RtiPlan
 	
 	buttons->addSpacing(20);
 	
-	// Color profile info and controls
-	profileLabel = new QLabel("Profile: Unknown");
-	profileLabel->setMaximumWidth(250);
-	profileLabel->setVisible(false);
-	buttons->addWidget(profileLabel, Qt::AlignRight);
-	
+	// Color profile controls (show current profile in the Preserve button)
 	buttons->addWidget(preserve = new QLabelButton("Preserve", "Keep input color profile"));
 	buttons->addWidget(srgb = new QLabelButton("sRGB", "Convert to sRGB color space"));
 	buttons->addWidget(displayp3 = new QLabelButton("Display P3", "Convert to Display P3 color space"));
@@ -317,21 +312,20 @@ void RtiQualityRow::setColorProfileMode(ColorProfileMode mode, bool emitting) {
 }
 
 void RtiQualityRow::updateProfileInfo(const QString &profileDesc, bool isSRGB, bool isDisplayP3) {
-	QString text = "Profile: " + profileDesc;
-	profileLabel->setText(text);
-	
-	// Show/hide profile controls based on whether profile exists
+	// Show current profile in the Preserve button and adjust convert buttons
 	bool hasProfile = (profileDesc != "No profile");
-	profileLabel->setVisible(hasProfile);
 	preserve->setVisible(hasProfile);
-	srgb->setVisible(hasProfile);
-	displayp3->setVisible(hasProfile);
-	
+	if(hasProfile) {
+		preserve->setText(profileDesc);
+	} else {
+		preserve->setText("Preserve");
+	}
+
+	// show convert options only when a profile exists and they would change it
+	srgb->setVisible(hasProfile && !isSRGB);
+	displayp3->setVisible(hasProfile && !isDisplayP3);
 	bool allowSRGB = hasProfile && !isSRGB;
 	bool allowP3 = hasProfile && !isDisplayP3;
-	srgb->setEnabled(allowSRGB);
-	displayp3->setEnabled(allowP3);
-	
 	if(!hasProfile) {
 		setColorProfileMode(COLOR_PROFILE_PRESERVE, false);
 		preserve->setChecked(true);

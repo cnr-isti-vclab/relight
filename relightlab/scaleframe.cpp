@@ -25,6 +25,7 @@ ScaleFrame::ScaleFrame(QWidget *parent): QFrame(parent) {
 	controls->addWidget(take);
 
 	scale = new QDoubleSpinBox;
+	scale->setKeyboardTracking(false);
 	scale->setMaximum(10000.0);
 	controls->addWidget(scale);
 

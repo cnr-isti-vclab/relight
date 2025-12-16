@@ -46,19 +46,23 @@ CropFrame::CropFrame(QWidget *parent): QFrame(parent) {
 
 	area_layout->addWidget(new QLabel("Width"), 1, 0);
 	area_layout->addWidget(crop_width = new QDoubleSpinBox, 1, 1);
+	crop_width->setKeyboardTracking(false);
 
 	area_layout->addWidget(new QLabel("Height"), 2, 0);
 	area_layout->addWidget(crop_height = new QDoubleSpinBox, 2, 1);
+	crop_height->setKeyboardTracking(false);
 
 	area_layout->addWidget(new QLabel("Top"), 3, 0);
 	area_layout->addWidget(crop_top = new QDoubleSpinBox, 3, 1);
+	crop_top->setKeyboardTracking(false);
 
 	area_layout->addWidget(new QLabel("Left"), 4, 0);
 	area_layout->addWidget(crop_left = new QDoubleSpinBox, 4, 1);
+	crop_left->setKeyboardTracking(false);
 
 	area_layout->addWidget(new QLabel("Angle"), 5, 0);
 	area_layout->addWidget(crop_angle = new QDoubleSpinBox, 5, 1);
-
+	crop_angle->setKeyboardTracking(false);
 
 	crop_top   ->setMaximum(65535);
 	crop_left  ->setMaximum(65535);

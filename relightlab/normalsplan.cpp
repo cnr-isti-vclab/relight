@@ -104,6 +104,7 @@ NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *par
 
 		frequency_layout->addWidget(new HelpLabel("Fourier high pass frequency %", "normals/flattening#fourier"));
 		frequency_layout->addWidget(max_frequency = new QDoubleSpinBox);
+		max_frequency->setKeyboardTracking(false);
 		max_frequency->setRange(0, 100);
 		max_frequency->setDecimals(4);
 		max_frequency->setValue(parameters.flatPercentage);
@@ -217,6 +218,7 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 
 		bni_layout->addWidget(new HelpLabel("Discontinuity propensity.", "normals/surface#bni"), 0, 0);
 		bni_layout->addWidget(bni_k = new QDoubleSpinBox, 0, 1);
+		bni_k->setKeyboardTracking(false);
 		bni_k->setRange(0.00, 50);
 		bni_k->setValue(parameters.bni_k);
 
@@ -230,6 +232,7 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 
 		assm_layout->addWidget(new HelpLabel("Mesh error in pixels..", "normals/surface#assm"), 0, 0);
 		assm_layout->addWidget(assm_error = new QDoubleSpinBox, 0, 1);
+		assm_error->setKeyboardTracking(false);
 		assm_error->setRange(0.001, 100);
 		assm_error->setValue(parameters.assm_error);
 

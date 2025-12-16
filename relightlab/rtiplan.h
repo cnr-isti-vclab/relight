@@ -95,7 +95,6 @@ public:
 private:
 	QCheckBox *losslessbox;
 	QSpinBox *qualitybox;
-	QLabel *profileLabel;
 	QLabelButton *preserve, *srgb, *displayp3;
 
 signals:

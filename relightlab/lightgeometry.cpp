@@ -69,6 +69,7 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	grid->setColumnMinimumWidth(0, 200);
 	grid->addWidget(new QLabel("Image width:"), 2, 0);
 	grid->addWidget(image_width = new QDoubleSpinBox, 2, 1);
+	image_width->setKeyboardTracking(false);
 	image_width->setRange(0, 10000);
 	grid->addWidget(new QLabel("mm"), 2, 2);
 	connect(image_width, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) {
@@ -80,6 +81,7 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 
 	grid->addWidget(new QLabel("Dome radius:"), 3, 0);
 	grid->addWidget(radius = new QDoubleSpinBox, 3, 1);
+	radius->setKeyboardTracking(false);
 	radius->setRange(0, 10000);
 	grid->addWidget(new QLabel("mm"), 3, 2);
 	connect(radius, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) {
@@ -89,6 +91,7 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 
 	grid->addWidget(new QLabel("Vertical offset:"), 4, 0);
 	grid->addWidget(vertical_offset = new QDoubleSpinBox, 4, 1);
+	vertical_offset->setKeyboardTracking(false);
 	vertical_offset->setRange(-1000, 1000);
 	grid->addWidget(new QLabel("mm"), 4, 2);
 	connect(vertical_offset, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) {
