@@ -46,5 +46,6 @@ runs:
       shell: bash
       run: |
         C:/vcpkg/vcpkg.exe install lcms:x64-windows
+        choco install nsis -y
 
 
