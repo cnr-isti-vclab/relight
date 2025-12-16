@@ -184,7 +184,17 @@ runs:
         sed "s%RELIGHT_VERSION%$RELIGHT_VERSION%g" "$RESOURCES_PATH/relightlab.nsi" > "$NSIS_SCRIPT"
         sed -i "s%DISTRIB_PATH%.%g" "$NSIS_SCRIPT"
 
-        makensis.exe "$NSIS_SCRIPT"
+        MAKENSIS_BIN="/c/Program Files (x86)/NSIS/makensis.exe"
+        if [ ! -x "$MAKENSIS_BIN" ]; then
+          MAKENSIS_BIN="/c/Program Files/NSIS/makensis.exe"
+          echo "Found finally!"
+        fi
+        if [ ! -x "$MAKENSIS_BIN" ]; then
+          echo "makensis.exe not found after installation"
+          exit 1
+        fi
+
+        "$MAKENSIS_BIN" "$NSIS_SCRIPT"
         rm "$NSIS_SCRIPT"
 
         INSTALLER_SRC=$(find "$INSTALL_PATH" -maxdepth 1 -name 'RelightLab*-windows.exe' | head -n 1)
