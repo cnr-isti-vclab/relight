@@ -152,7 +152,8 @@ runs:
       run: |
         INSTALL_PATH="${GITHUB_WORKSPACE}/install"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
-        
+        mkdir -p "$PACKAGES_PATH"
+
         # 2a: Create Portable - run windeployqt
         echo "======= Creating Portable Version ======="
         
