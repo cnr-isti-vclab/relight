@@ -10,7 +10,9 @@ double Lens::focal35() {
 	if(focal35equivalent) return focalLength;
 	else {
 		double w = pixelSizeX * width;
-		return focalLength * 35 / w;
+		double h = pixelSizeY * height;
+		double diag = sqrt(w*w + h*h);
+		return focalLength * diag / 43.27;
 	}
 }
 
@@ -19,9 +21,11 @@ Vector3f Lens::viewDirection(float x, float y) {
 	if(!focalLength)
 		return Vector3f(0, 0, -1);
 	float focal = focalLength;
-	if(focal35equivalent) {
+	if(focal35equivalent) { //focal length assume a diagonal of 43.27
 		double w = pixelSizeX * width;
-		focal  = focalLength * w / 35;
+		double h = pixelSizeY * height;
+		double diag = sqrt(w*w + h*h);
+		focal  = focalLength * diag / 43.27;
 	}
 	x -= width/2;
 	y -= height/2;
@@ -75,24 +79,48 @@ void Lens::fromJson(const QJsonObject &obj) {
 }
 
 void Lens::readExif(Exif &exif) {
-	focalLength = exif[Exif::FocalLength].toDouble();
-	//pixelSizeX = exif[Exif::PixelXDimension].toDouble();
-	//pixelSizeY = exif[Exif::PixelYDimension].toDouble();
+	focal35equivalent = true;
 
-	/*if(focalLength && pixelSizeX && pixelSizeY) {
-		focal35equivalent = false;
-		return;
-	}*/
+	
+	// Use 35mm equivalent from EXIF if available
 	double focalLength35 = exif[Exif::FocalLengthIn35mmFilm].toDouble();
-	if(focalLength35)
+	if(focalLength35) {
 		focalLength = focalLength35;
-
-	if(focalLength) {
-		focal35equivalent = true;
-		pixelSizeX = pixelSizeY = 35/(double)width;
+		double diag = sqrt((double)width * width + (double)height * height);
+		pixelSizeX = pixelSizeY = 43.27 / diag;
+		return;
 	}
-	//FocalPlaneXResolution
-	//FocalPlaneYResolution
-	//FocalPlaneResolutionUnit
-	//FocalLength
+
+	focalLength = exif[Exif::FocalLength].toDouble();
+	if(!focalLength)
+		return;
+	
+	double focalPlaneXRes = exif[Exif::FocalPlaneXResolution].toDouble();
+	double focalPlaneYRes = exif[Exif::FocalPlaneYResolution].toDouble();
+	double focalPlaneResUnit = exif[Exif::FocalPlaneResolutionUnit].toDouble();
+	
+	// Convert resolution unit to mm
+	double unitToMm = 25.4; // inches to mm
+	if(focalPlaneResUnit == 3)
+		unitToMm = 10.0; // cm to mm
+	
+	// If we have focal plane resolution, calculate actual pixel size
+	if(focalPlaneXRes > 0 && focalPlaneYRes > 0 && focalLength > 0) {
+		pixelSizeX = unitToMm / focalPlaneXRes;
+		pixelSizeY = unitToMm / focalPlaneYRes;
+		
+		// Calculate 35mm equivalent focal length for reference
+		double sensorWidth = pixelSizeX * width;
+		double sensorHeight = pixelSizeY * height;
+		double sensorDiag = sqrt(sensorWidth * sensorWidth + sensorHeight * sensorHeight);
+		focalLength *= 43.27 / sensorDiag;
+
+		double diag = sqrt((double)width * width + (double)height * height);
+		pixelSizeX = pixelSizeY = 43.27 / diag;
+		
+	} else {
+		// Last resort: assume full frame sensor
+		double diag = sqrt((double)width * width + (double)height * height);
+		pixelSizeX = pixelSizeY = 43.27 / diag;
+	}
 }
