@@ -35,7 +35,7 @@ runs:
         mkdir -p "$INSTALL_PATH/share/applications/"
         mkdir -p "$INSTALL_PATH/share/icons/Yaru/512x512/apps/"
         
-        cp "$DEPLOY_PATH/relightlab.desktop" "$INSTALL_PATH/share/applications/relightlab.desktop"
+        cp "$RESOURCES_PATH/relightlab.desktop" "$INSTALL_PATH/share/applications/relightlab.desktop"
         cp "${DEPLOY_PATH}/relight.png" "$INSTALL_PATH/share/icons/Yaru/512x512/apps/relight.png"
         
         chmod +x "$INSTALL_PATH/bin/relightlab"
