@@ -28,7 +28,7 @@ runs:
       run: |
         INSTALL_PATH="${GITHUB_WORKSPACE}/install$( [ "${{ runner.os }}" = "Linux" ] && echo "/usr" || echo "")"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
-        DEPLOY_PATH = "${GITHUB_WORKSPACE}/deploy"
+        DEPLOY_PATH="${GITHUB_WORKSPACE}/deploy"
         RESOURCES_PATH="${DEPLOY_PATH}/Linux"
         
         echo "======= Creating Bundle ======="
@@ -77,7 +77,7 @@ runs:
         INSTALL_PATH="${GITHUB_WORKSPACE}/install"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
         mkdir -p "$PACKAGES_PATH"
-        DEPLOY_PATH = "${GITHUB_WORKSPACE}/deploy"
+        DEPLOY_PATH="${GITHUB_WORKSPACE}/deploy"
         RESOURCES_PATH="${DEPLOY_PATH}/macOS"
 
         APPNAME="relightlab.app"
@@ -154,7 +154,7 @@ runs:
       run: |
         INSTALL_PATH="${GITHUB_WORKSPACE}/install"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
-        DEPLOY_PATH = "${GITHUB_WORKSPACE}/deploy"
+        DEPLOY_PATH="${GITHUB_WORKSPACE}/deploy"
         RESOURCES_PATH="${DEPLOY_PATH}/Windows"
         mkdir -p "$PACKAGES_PATH"
 
