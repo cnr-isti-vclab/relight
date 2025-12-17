@@ -236,8 +236,8 @@ target_compile_definitions(relightlab
 
 if (APPLE)
 
-	set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../build_scripts/relightlab.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../build_scripts/relightlab.icns DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/relightlab.app/Contents/Resources/")
+	set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../deploy/relightlab.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../deploy/relightlab.icns DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/relightlab.app/Contents/Resources/")
 	set_target_properties(relightlab PROPERTIES 
 		MACOSX_BUNDLE_ICON_FILE relightlab.icns
 		MACOSX_BUNDLE_BUNDLE_VERSION "${RELIGHT_VERSION}"

@@ -1,6 +1,6 @@
 {
   "title": "RelightLab",
-  "icon": "SOURCE_PATH/build_scripts/relight.icns",
+  "icon": "SOURCE_PATH/deploy/relight.icns",
   "background": "dmg_background.png",
   "window" : { "size" : { "width" : 500, "height" : 400 } },
   "contents": [
