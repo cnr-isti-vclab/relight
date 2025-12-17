@@ -28,14 +28,15 @@ runs:
       run: |
         INSTALL_PATH="${GITHUB_WORKSPACE}/install$( [ "${{ runner.os }}" = "Linux" ] && echo "/usr" || echo "")"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
-        SCRIPTS_PATH="${GITHUB_WORKSPACE}/build_scripts/Linux"
+        DEPLOY_PATH = "${GITHUB_WORKSPACE}/deploy"
+        RESOURCES_PATH="${DEPLOY_PATH}/Linux"
         
         echo "======= Creating Bundle ======="
         mkdir -p "$INSTALL_PATH/share/applications/"
         mkdir -p "$INSTALL_PATH/share/icons/Yaru/512x512/apps/"
         
-        cp "$SCRIPTS_PATH/resources/relightlab.desktop" "$INSTALL_PATH/share/applications/relightlab.desktop"
-        cp "${GITHUB_WORKSPACE}/build_scripts/relight.png" "$INSTALL_PATH/share/icons/Yaru/512x512/apps/relight.png"
+        cp "$RESOURCES_PATH/relightlab.desktop" "$INSTALL_PATH/share/applications/relightlab.desktop"
+        cp "${GITHUB_WORKSPACE}/deploy/relight.png" "$INSTALL_PATH/share/icons/Yaru/512x512/apps/relight.png"
         
         chmod +x "$INSTALL_PATH/bin/relightlab"
         chmod +x "$INSTALL_PATH/bin/relight-cli"
@@ -46,7 +47,7 @@ runs:
         echo "======= Creating Portable Version ======="
         export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$INSTALL_PATH/lib"
         
-        if "$SCRIPTS_PATH/resources/linuxdeploy" --appdir="${GITHUB_WORKSPACE}/install" --plugin qt; then
+        if "$RESOURCES_PATH/linuxdeploy" --appdir="${GITHUB_WORKSPACE}/install" --plugin qt; then
             
             echo "Portable version created successfully"
         else
@@ -55,13 +56,13 @@ runs:
         fi
 
         #adding LD_LIBRARY_PATH configuration for the portable version
-        cp "$SCRIPTS_PATH/resources/AppRun" "${GITHUB_WORKSPACE}/install/AppRun"
+        cp "$RESOURCES_PATH/AppRun" "${GITHUB_WORKSPACE}/install/AppRun"
         chmod +x "${GITHUB_WORKSPACE}/install/AppRun"
         
         echo "======= Creating AppImage ======="
         export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$INSTALL_PATH/lib"
         
-        "$SCRIPTS_PATH/resources/linuxdeploy" --appdir="${GITHUB_WORKSPACE}/install" \
+        "$RESOURCES_PATH/linuxdeploy" --appdir="${GITHUB_WORKSPACE}/install" \
           --plugin qt \
           --output appimage
         
@@ -76,7 +77,8 @@ runs:
         INSTALL_PATH="${GITHUB_WORKSPACE}/install"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
         mkdir -p "$PACKAGES_PATH"
-        SCRIPTS_PATH="$GITHUB_WORKSPACE/build_scripts/macOS"
+        DEPLOY_PATH = "${GITHUB_WORKSPACE}/deploy"
+        RESOURCES_PATH="${DEPLOY_PATH}/macOS"
 
         APPNAME="relightlab.app"
         
@@ -128,9 +130,9 @@ runs:
         APPNAME="RelightLab${RELIGHT_VERSION}.app"
         
         # Create dmg config
-        sed "s%INST_PATH%$INSTALL_PATH%g" "$SCRIPTS_PATH/resources/dmg_latest.json" > "$SCRIPTS_PATH/resources/dmg_final.json"
-        sed -i '' "s%RL_VERSION%$RELIGHT_VERSION%g" "$SCRIPTS_PATH/resources/dmg_final.json"
-        sed -i '' "s%SOURCE_PATH%$GITHUB_WORKSPACE%g" "$SCRIPTS_PATH/resources/dmg_final.json"
+        sed "s%INST_PATH%$INSTALL_PATH%g" "$RESOURCES_PATH/dmg_latest.json" > "$RESOURCES_PATH/dmg_final.json"
+        sed -i '' "s%RL_VERSION%$RELIGHT_VERSION%g" "$RESOURCES_PATH/dmg_final.json"
+        sed -i '' "s%SOURCE_PATH%$GITHUB_WORKSPACE%g" "$RESOURCES_PATH/dmg_final.json"
         
         mkdir -p "$PACKAGES_PATH"
         
@@ -142,9 +144,9 @@ runs:
             DMG_NAME="RelightLab${RELIGHT_VERSION}-macos_arm64.dmg"
         fi
         
-        appdmg "$SCRIPTS_PATH/resources/dmg_final.json" "$PACKAGES_PATH/$DMG_NAME"
+        appdmg "$RESOURCES_PATH/dmg_final.json" "$PACKAGES_PATH/$DMG_NAME"
         
-        rm "$SCRIPTS_PATH/resources/dmg_final.json"
+        rm "$RESOURCES_PATH/dmg_final.json"
 
     - name: Deploy (Windows)
       if: runner.os == 'Windows'
@@ -152,6 +154,8 @@ runs:
       run: |
         INSTALL_PATH="${GITHUB_WORKSPACE}/install"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
+        DEPLOY_PATH = "${GITHUB_WORKSPACE}/deploy"
+        RESOURCES_PATH="${DEPLOY_PATH}/Windows"
         mkdir -p "$PACKAGES_PATH"
 
         # 2a: Create Portable - run windeployqt
@@ -176,7 +180,6 @@ runs:
         fi
 
         echo "======= Building Installer ======="
-        RESOURCES_PATH="${GITHUB_WORKSPACE}/build_scripts/Windows/resources"
         RELIGHT_VERSION=$(cat "${GITHUB_WORKSPACE}/RELIGHT_VERSION")
         NSIS_SCRIPT="$INSTALL_PATH/relightlab_final.nsi"
 
