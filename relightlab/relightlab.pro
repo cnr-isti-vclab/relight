@@ -228,6 +228,6 @@ FORMS +=
 DISTFILES += \
     css/style.qss \
     roadmap.md \
-    ../build_scripts/relight.png
+    ../deploy/relight.png
 
 
