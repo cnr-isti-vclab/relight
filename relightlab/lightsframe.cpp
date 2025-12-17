@@ -13,6 +13,7 @@
 #include <QFileDialog>
 #include <QDoubleSpinBox>
 #include <QScrollArea>
+#include <QMessageBox>
 
 LightsFrame::LightsFrame() {
 	QHBoxLayout *page = new QHBoxLayout(this);
@@ -45,6 +46,12 @@ void LightsFrame::clear() {
 }
 
 void LightsFrame::updateSphere() {
+	Project &project = qRelightApp->project();
+	if(project.spheres.size() == 0) {
+		QMessageBox::warning(this, "No spheres defined",
+			"There are no reflective spheres defined for this project.\n"
+			"Please add reflective spheres in the Spheres tab before computing light directions.");
+	}
 	geometry->setFromSpheres();
 	geometry->init();
 }
@@ -64,6 +71,13 @@ void LightsFrame::skipChanged() {
 	// Recompute dome if using spheres
 	Dome &dome = qRelightApp->project().dome;
 	if(dome.lightSource == Dome::FROM_SPHERES) {
+		// Validate spheres still exist before recomputing
+		if(qRelightApp->project().spheres.size() == 0) {
+			QMessageBox::warning(this, "No spheres available",
+				"Light directions were computed from spheres, but no spheres are defined.\n"
+				"Please add spheres or load light directions from a dome/LP file.");
+			return;
+		}
 		geometry->setFromSpheres();
 	}
 	geometry->init();

@@ -364,6 +364,12 @@ void Project::load(QString filename) {
 		}
 	}
 
+	// Backward compatibility: if spheres exist but lightSource wasn't saved (old projects),
+	// set lightSource to FROM_SPHERES since that was the implicit behavior
+	if(spheres.size() > 0 && dome.lightSource == Dome::UNKNOWN) {
+		dome.lightSource = Dome::FROM_SPHERES;
+	}
+
 	if(obj.contains("measures")) {
 		for(auto jmeasure: obj["measures"].toArray()) {
 			Measure *measure = new Measure;

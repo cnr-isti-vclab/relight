@@ -106,21 +106,25 @@ QJsonArray toJson(std::vector<Color3f> &values) {
 //rename in recompute directions.
 void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens) {
 
-	if(spheres.size() == 0) {
-		throw QString("Light directions can be loaded from a .lp file or processing the spheres.");
-	}
+	directions.clear();
+	positions3d.clear();
+	positionsSphere.clear();
+
 	//count valid images:
 	size_t valid_count = 0;
 	for(Image &img: images)
 		if(!img.skip)
 			valid_count++;
 
-	directions.clear();
+
 	directions.resize(valid_count, Vector3f(0, 0, 0));
-	positions3d.clear();
 	positions3d.resize(valid_count, Vector3f(0, 0, 0));
-	positionsSphere.clear();
 	positionsSphere.resize(valid_count, Vector3f(0, 0, 0));
+
+	if(spheres.size() == 0) {
+		//		throw QString("Light directions can be loaded from a .lp file or processing the spheres.");
+		return;
+	}
 
 	vector<float> weights(valid_count, 0.0f);
 
@@ -354,7 +358,9 @@ void Dome::fromJson(const QJsonObject &obj) {
 		if(index >= 0)
 			lightSource = LightSource(index);
 	} else {
-		lightSource = label.isEmpty() ? FROM_SPHERES : FROM_LP;
+		// For old projects without lightSource field, set to UNKNOWN
+		// The Project::load() will set it properly based on whether spheres exist
+		lightSource = UNKNOWN;
 	}
 	::fromJson(obj["directions"].toArray(), directions);
 	::fromJson(obj["positionsSphere"].toArray(), positionsSphere);

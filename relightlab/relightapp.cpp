@@ -57,6 +57,7 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	QColor dark_base(42, 42, 42);
 	QColor dark_alternate(66, 66, 66);
 	QColor dark_darker(35, 35, 35);
+
 	// Slightly softer shadow than pure black to avoid harsh borders in Fusion
 	QColor dark_shadow(30, 30, 30);
 	QColor dark_text(220, 220, 220);
@@ -77,9 +78,9 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	dark_palette.setColor(QPalette::Shadow, dark_shadow);
 	dark_palette.setColor(QPalette::Button, dark_window);
 	// Provide bevel roles used by Fusion for frames (affects QComboBox frame/popup)
-	dark_palette.setColor(QPalette::Light,    dark_base.lighter(140));
-	dark_palette.setColor(QPalette::Midlight, dark_base.lighter(120));
-	dark_palette.setColor(QPalette::Mid,      dark_base.darker(110));
+	dark_palette.setColor(QPalette::Light,    dark_window.darker(125));
+	dark_palette.setColor(QPalette::Midlight, dark_window.darker(115));
+	dark_palette.setColor(QPalette::Mid,      dark_window.lighter(125));
 
 	dark_palette.setColor(QPalette::WindowText, Qt::white);
 	dark_palette.setColor(QPalette::Text, dark_text);
@@ -101,8 +102,8 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	dark_palette.setColor(QPalette::Disabled, QPalette::Highlight,      dark_disabled_highlight);
  	dark_palette.setColor(QPalette::Disabled, QPalette::HighlightedText,dark_disabled_text);
 	// Keep bevel/frames consistent when disabled
-	dark_palette.setColor(QPalette::Disabled, QPalette::Light,    dark_base.lighter(130));
-	dark_palette.setColor(QPalette::Disabled, QPalette::Midlight, dark_base.lighter(115));
+	dark_palette.setColor(QPalette::Disabled, QPalette::Light,    dark_window.lighter(120));
+	dark_palette.setColor(QPalette::Disabled, QPalette::Midlight, dark_window.lighter(110));
 	dark_palette.setColor(QPalette::Disabled, QPalette::Mid,      dark_base.darker(110));
 	dark_palette.setColor(QPalette::Disabled, QPalette::Dark,     dark_darker);
 	dark_palette.setColor(QPalette::Disabled, QPalette::Shadow,   dark_shadow);

@@ -172,6 +172,14 @@ void DomePanel::updateDomeList(QString path) {
 }
 
 void DomePanel::setSpheres() {
+
+	Project &project = qRelightApp->project();
+	if(project.spheres.size() == 0) {
+		QMessageBox::warning(this, "No spheres defined",
+							 "There are no reflective spheres defined for this project.\n"
+							 "Please add reflective spheres in the Spheres tab before using this option.");
+		return;
+	}
 	dome_list->blockSignals(true);
 	dome_list->setCurrentIndex(0);
 	dome_list->blockSignals(false);

@@ -19,7 +19,9 @@ PlanRow::PlanRow(QFrame *parent): QFrame(parent) {
 		planFrame->setMinimumWidth(860);
 		planFrame->setMaximumWidth(1280);
 		planFrame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-		planFrame->setFrameStyle(QFrame::Box);
+		planFrame->setFrameShape(QFrame::Box);
+		planFrame->setFrameShadow(QFrame::Plain);
+		planFrame->setForegroundRole(QPalette::Mid);
 
 		planLayout = new QVBoxLayout(planFrame);
 		planLayout->setSpacing(24);

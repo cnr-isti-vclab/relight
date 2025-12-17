@@ -190,8 +190,14 @@ void LightsGeometry::recomputeGeometry() {
 	
 	// When geometry parameters change, recompute positions for both sources
 	if(dome.lightSource == Dome::FROM_SPHERES) {
-		if(project.spheres.size() > 0)
-			dome.fromSpheres(project.images, project.spheres, project.lens);
+		if(project.spheres.size() == 0) {
+			QMessageBox::warning(this, "No spheres available",
+				"Cannot recompute geometry: light directions were computed from spheres, "
+				"but no spheres are defined.\n"
+				"Please add spheres or load light directions from a dome/LP file.");
+			return;
+		}
+		dome.fromSpheres(project.images, project.spheres, project.lens);
 	} else if(dome.lightSource == Dome::FROM_LP) {
 			dome.recomputePositions();
 	}	

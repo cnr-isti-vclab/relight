@@ -3,7 +3,6 @@
 
 ## Todo for release
 
-* installer for windows.
 * default dome(s) in preferences (when number of light matches).
 * better info on queue items.
 * metadata
