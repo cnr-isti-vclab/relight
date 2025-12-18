@@ -31,7 +31,7 @@ void DirectionsView::initFromDome(Dome &dome) {
 	for(Vector3f dir: dirs) {
 		dir.normalize();
 		QGraphicsEllipseItem *e = scene.addEllipse(dir[0]*scale, -dir[1]*scale, diameter, diameter);
-		e->setToolTip(QString::number(count++));
+		e->setToolTip(QString::number(++count));
 		e->setBrush(Qt::white);
 	}
 

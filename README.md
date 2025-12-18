@@ -1,5 +1,5 @@
 
-**Relight** is a library to create and view relightable images (RTI).
+**Relight** is a library and set of tools to create and view relightable images (RTI).
 
 ## [Demo](https://vcg.isti.cnr.it/relight/)
 
@@ -7,36 +7,125 @@
 
 Relight supports:
 
-* [Relight](#Relight fitter) a PCA based format (see paper)
-* [PTM, HSH](#PTM) 
-* [Web viewer](#viewer)
-* [Zoomify, deepzoom, google, IIP, IIIF](#lod)
+* [RelightLab](#relightlab) - GUI application for creating RTIs and normal maps
+* [Relight CLI](#relight-cli) - Command-line RTI processing tool with PCA based format
+* [PTM, HSH](#ptm-hsh) - Standard RTI formats
+* [OpenLIME](#openlime-web-viewer) - Modern web viewer for RTIs (recommended)
+* [Zoomify, deepzoom, google, IIP, IIIF](#relight-tiled-web-format) - Tiled format support
+* [Relight.js](#relightjs-legacy-viewer) - Legacy JavaScript viewer (obsolete)
 
 Relight new formats provide better accuracy and smaller size.
 
-# Relight fitter
+# RelightLab
+
+*RelightLab* is a Qt GUI application for creating relightable images (RTI) and performing photometric stereo processing from a set of photographs.
+
+## Key Features
+
+* **Project Management**: Create, save, and load projects with datasets
+* **Light Direction Detection**: 
+  - Import light positions from `.lp` or `.dome` files
+  - Auto-detect light directions using reflective spheres
+* **Multiple Output Formats**: Export RTI in various formats (PTM, HSH, RBF, etc.)
+* **Normal Map Extraction**: Generate normal maps from the image stack
+* **Scale Calibration**: Establish real-world measurements for accurate analysis
+* **Crop Region Selection**: Process only specific areas of interest
+* **Web Publishing**: Export in web-friendly formats (DeepZoom, TarZoom, IIIF)
+* **Queue Management**: Monitor and manage processing tasks
+
+
+# Relight CLI
 
 *relight-cli* is a Qt command-line program to process a stack of photos into an RTI.
 
-	Usage: relight-cli [-frqpsScCey]<input folder> [output folder]
+## Usage
 
-	input folder containing a .lp with number of photos and light directions
-	optional output folder (default is ./)
+```shell
+relight-cli [-bpqy3PnmMwkrsSRQcCeEv] <input folder> [output folder]
+relight-cli [-q] <input.ptm|.rti> [output folder]
+relight-cli [-q] <input.json> [output.ptm]
+```
 
-	-b <basis>: rbf(default), ptm, lptm, hsh, yrbf, bilinear
-	-p <int>  : number of planes (default: 9)
-	-y <int>  : number of Y planes in YCC
-	-r <int>  : side of the basis bilinear grid (default 8)
-	-q <int>  : jpeg quality (default: 90)
-	-s <int>  : sampling rate for pca (default 4)
-	-S <int>  : sigma in rgf gaussian interpolation default 0.125 (~100 img)
-	-C        : apply chroma subsampling 
-	-e        : evaluate reconstruction error (default: false)
+## Basic Options
 
-*relight-cli* can also be used to convert .ptm files into relight format:
+* **Input**: Folder containing a `.lp` or `.dome` file with photo count and light directions
+* **Output**: Optional output folder (default: `./`)
 
-	relight-cli [-q]<file.ptm> [output folder]
-	-q <int>  : jpeg quality (default: 90)
+### Core Parameters
+
+* `-b <basis>`: Basis type - `rbf` (default), `ptm`, `lptm`, `hsh`, `sh`, `h`, `yrbf`, `bilinear`, `yptm`, `yhsh`, `dmd`, `skip`
+* `-p <int>`: Number of coefficient planes (default: 9)
+* `-q <int>`: JPEG quality (default: 95)
+* `-y <int>`: Number of Y planes in YCC colorspace
+
+### Processing Options
+
+* `-3 <radius[:offset]>`: 3D light positions processing
+  - `radius`: Ratio of dome diameter to image width
+  - `offset`: Optional vertical offset of sphere center to surface
+* `-P <pixel_size>`: Pixel size in millimeters (saved in JSON and image metadata)
+* `-n`: Extract normal maps
+* `-m`: Extract mean image
+* `-M`: Extract median image (7/8th quantile)
+* `-w <int>`: Number of worker threads (default: 8)
+* `-k <W>x<H>+<X>+<Y>`: Crop region (width×height+offsetX+offsetY)
+
+### Advanced Options
+
+* `-H`: Fix overexposure in PTM and HSH due to bad sampling
+* `-r <int>`: Side of the basis function grid (default: 8, 0 means RBF interpolation)
+* `-s <int>`: RAM sampling for PCA in MB (default: 500MB)
+* `-S <float>`: Sigma for RGF Gaussian interpolation (default: 0.125, ~100 images)
+* `-R <float>`: Regularization coefficient for bilinear (default: 0.1)
+* `-Q <float>`: Quantile for histogram-based range compression (default: 0.995)
+  - Clamps outliers to improve quantization resolution
+* `-c <float>`: Coefficient quantization (default: 1.5)
+* `-C`: Apply chroma subsampling
+* `-I <mode>`: ICC color profile handling
+  - `preserve` (default): Keep original color profile
+  - `srgb`: Convert to sRGB
+  - `displayp3`: Convert to Display P3
+* `-e`: Evaluate reconstruction error
+* `-E <int>`: Evaluate error on specific image (excludes it from fitting)
+
+### Testing Options
+
+* `-D <path>`: Directory to store rebuilt images
+* `-L <x:y:z>`: Reconstruct single image from light parameters
+* `-v`: Verbose mode - print progress information
+
+## Format Conversion
+
+Convert PTM/RTI files to relight format:
+
+```shell
+relight-cli [-q] <file.ptm> [output folder]
+```
+
+Convert relight format to PTM:
+
+```shell
+relight-cli [-q] <input.json> [output.ptm]
+```
+
+## Examples
+
+```shell
+# Basic RTI creation with default RBF basis
+relight-cli ./photos ./output
+
+# High-quality PTM with 18 planes
+relight-cli -b ptm -p 18 -q 98 ./photos ./output
+
+# Extract normals and mean image
+relight-cli -n -m ./photos ./output
+
+# Process with cropping and custom quality
+relight-cli -k 1024x768+100+50 -q 90 ./photos ./output
+
+# 3D light processing with dome setup
+relight-cli -3 2.5:0.1 -b bilinear ./photos ./output
+```
 
 
 # Relight web format
@@ -91,7 +180,38 @@ relight-deepzoom <input.jpg> <basename> [format=deepzoom] [tileSize=254] [overla
 
 Supported `format` values are `deepzoom`, `google`, `zoomify`, and `tiff`. The `tiff` option writes a tiled multi-resolution TIFF pyramid, while the others create JPEG tiles in the expected folder layouts (including Zoomify `ImageProperties.xml`).
 
-# Web Viewer
+# OpenLIME Web Viewer
+
+[**OpenLIME**](https://github.com/cnr-isti-vclab/openlime) is the recommended modern web viewer for displaying RTIs and other relightable images in the browser. It provides a powerful, feature-rich interface with support for multiple image formats and interactive visualization.
+
+## Features
+
+* **RTI Support**: Display all relight formats (RBF, PTM, HSH, etc.)
+* **Multi-resolution**: Seamless support for tiled formats (DeepZoom, IIIF, etc.)
+* **Interactive Controls**: Light direction manipulation, zoom, pan
+* **Annotations**: Add measurements, markers, and annotations
+* **Modern Architecture**: Built with ES6 modules and WebGL
+* **Extensible**: Plugin system for custom functionality
+
+## Usage
+
+```javascript
+import { Viewer, UIBasic } from 'openlime';
+
+const viewer = new Viewer('#viewer-container');
+const layer = viewer.addLayer('rti', { 
+    url: 'path/to/rti/info.json',
+    layout: 'image' // or 'deepzoom', 'iiif', etc.
+});
+
+const ui = new UIBasic(viewer);
+```
+
+For detailed documentation and examples, visit the [OpenLIME repository](https://github.com/cnr-isti-vclab/openlime).
+
+# Relight.js (Legacy Viewer)
+
+> **Note**: This viewer is now obsolete. Please use [OpenLIME](#openlime-web-viewer) for new projects.
 
 *relight.min.js* is a small Javascript library to render the RTI on a WebGL canvas.
 
@@ -129,88 +249,92 @@ Methods:
 * draw(time): draw the canvas, use time for interpolation
 * redraw(): schedule an animaterequest
 
-## Building relight
+## Building Relight
 
-### Debian Linux
+### Prerequisites
 
-```
-$ uname -a
-Linux x220 5.10.0-3-amd64 #1 SMP Debian 5.10.13-1 (2021-02-06) x86_64 GNU/Linux
-
-$ cat /etc/os-release 
-PRETTY_NAME="Debian GNU/Linux bullseye/sid"
-NAME="Debian GNU/Linux"
-ID=debian
-HOME_URL="https://www.debian.org/"
-SUPPORT_URL="https://www.debian.org/support"
-BUG_REPORT_URL="https://bugs.debian.org/"
-```
-
-Install dependencies. (replace libturbojpeg-dev with libjpeg62-turbo-devin for Ubuntu older than 2020)
+Clone the repository:
 
 ```shell
-$ apt update && apt install \
-    build-essential \
-    cmake \
-    git \
-    qt6-base-dev \
-    libeigen3-dev \
-    libturbojpeg6-dev \
-    libomp-dev \
-    libopencv-dev
+git clone https://github.com/cnr-isti-vclab/relight.git
+cd relight
+git submodule update --init --recursive
 ```
 
-Clone this repository and build.
+### Linux (Ubuntu 22.04+)
+
+Install dependencies:
 
 ```shell
-$ git clone https://github.com/cnr-isti-vclab/relight.git
-$ cd relight
-$ git submodule update --init --recursive
-$ cmake .
-$ make
+sudo apt-get update
+sudo apt-get install -y mesa-common-dev libglu1-mesa-dev 
+sudo apt-get install -y cmake ninja-build patchelf fuse libjpeg-dev libeigen3-dev
+sudo apt-get install -y libxcb-cursor0 liblcms2-dev
+sudo apt-get install -y qt6-base-dev
+
 ```
 
-### MacOS
+Build:
 
-Installed tools: 
-* Homebrew, CMake, Qt6
-
-Add homebrew binaries on your PATH: 
 ```shell
-echo 'PATH="/opt/homebrew/bin:$PATH"' >> ./zshrc
-source ~/.zshrc
+mkdir -p build
+cd build
+cmake ../ -DCMAKE_BUILD_TYPE=Release
+make -j 8
 ```
 
-Add some additional enviroment constants to your shell
+### macOS
+
+Install dependencies via Homebrew:
+
 ```shell
-echo "$(brew shellenv)" >> ./zshrc
-source ~/.zshrc
+brew install coreutils libomp eigen libjpeg cmake ninja qt@6
 ```
 
-Install dependencies: 
+Build:
+
 ```shell
-brew install jpeg-turbo coreutils llvm cmake ninja eigen 
+mkdir -p build
+cd build
+cmake ../ -DCMAKE_BUILD_TYPE=Release -DOpenMP_ROOT=$(brew --prefix libomp)
+make -j 8
 ```
 
-Set the Qt_DIR to point to your Qt6 installation and libomp path: 
+**Note**: If Qt is not found automatically, you may need to specify `Qt6_DIR`:
 ```shell
-export OPENMP_PATH=$(brew --prefix libomp)
-export cmake -D OpenMP_ROOT=$OPENMP_PATH -D Qt6_DIR=/yourpath/Qt/version/macos/lib/cmake/Qt6
-make
+cmake ../ -DCMAKE_BUILD_TYPE=Release \
+  -DOpenMP_ROOT=$(brew --prefix libomp) \
+  -DQt6_DIR=$(brew --prefix qt@6)/lib/cmake/Qt6
 ```
 
+### Windows
 
-# TODO
+Install dependencies:
 
-* White balance and other conversion from RAW features (dcraw)
-* use color tablet to calibrate raw images
-* contrast and other image processing
-* measure to be added to the images from tag
-* remove lens distortion
-* find spheres (very optional)
-* mask artifact
-* crop
-* join pieces
-* align images using mutual information (or better an edge detector?)
-* find highlight
+1. Install [Visual Studio 2022](https://visualstudio.microsoft.com/) with C++ support
+2. Install [CMake](https://cmake.org/download/)
+3. Install [Ninja](https://ninja-build.org/)
+4. Install Qt 6.6 or later from [qt.io](https://www.qt.io/download)
+
+Install vcpkg dependencies:
+
+```shell
+C:\vcpkg\vcpkg.exe install lcms:x64-windows
+```
+
+Build (from Developer Command Prompt):
+
+```shell
+mkdir build
+cd build
+cmake ../ -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake
+cmake --build . --config Release
+```
+
+**Note**: You may need to specify `Qt6_DIR` if Qt is not found automatically:
+```shell
+cmake ../ -DCMAKE_BUILD_TYPE=Release ^
+  -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake ^
+  -DQt6_DIR=C:\Qt\6.6.0\msvc2019_64\lib\cmake\Qt6
+```
 
