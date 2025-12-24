@@ -803,7 +803,7 @@ struct SwitchCost {
 };
 
 
-bool RtiBuilder::saveJSON(QDir &dir, int quality) {
+bool RtiBuilder::saveJSON(QDir &dir, int quality, QString color_profile) {
 	//save info.json
 	QFile info(dir.filePath("info.json"));
 	info.open(QFile::WriteOnly);
@@ -856,7 +856,10 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality) {
 		stream << "\"nplanes\": " << nplanes << ",\n";
 	
 	stream << "\"quality\": " << quality << ",\n";
-	
+
+	if(!color_profile.isEmpty())
+		stream << "\"colorProfile\": \"" << color_profile << "\",\n";
+		
 	if(type == RBF || type == BILINEAR) {
 		stream << "\"basis\": [\n";
 		for(size_t i = 0; i < basis.size(); i++) {
@@ -1377,9 +1380,32 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		}
 	}
 
+
+	std::vector<uint8_t> preserved_icc;
+	if(imageset.hasICCProfile())
+		preserved_icc = imageset.getICCProfile();
+
+	std::vector<uint8_t> output_icc_profile;
+	switch(colorProfileMode) {
+	case COLOR_PROFILE_PRESERVE:
+	default:
+		output_icc_profile = preserved_icc;
+		break;
+	case COLOR_PROFILE_SRGB:
+		output_icc_profile = ICCProfiles::sRGBData();
+		break;
+	case COLOR_PROFILE_DISPLAY_P3:
+		output_icc_profile = ICCProfiles::displayP3Data();
+		break;
+	}
+	QString color_profile = ColorProfile::getProfileDescription(output_icc_profile);
+	color_profile.replace(QRegExp("\\s+"), " ");
+	color_profile.replace(QRegExp("[^a-zA-Z0-9 _-]"), "");
+	color_profile.replace(QRegExp(" +"), " ");
+
 	
 	//TODO error control
-	bool ok = saveJSON(dir, quality);
+	bool ok = saveJSON(dir, quality, color_profile);
 	if(!ok) return 0;
 	
 	//save materials as a single png
@@ -1455,26 +1481,6 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	vector<vector<uint8_t>> line(njpegs); //row in the new base.
 	for(auto &p: line)
 		p.resize(width*3, 0);
-
-	std::vector<uint8_t> preserved_icc;
-	if(imageset.hasICCProfile())
-		preserved_icc = imageset.getICCProfile();
-
-	std::vector<uint8_t> output_icc_profile;
-	switch(colorProfileMode) {
-	case COLOR_PROFILE_PRESERVE:
-	default:
-		output_icc_profile = preserved_icc;
-		break;
-	case COLOR_PROFILE_SRGB:
-		output_icc_profile = ICCProfiles::sRGBData();
-		break;
-	case COLOR_PROFILE_DISPLAY_P3:
-	{
-		output_icc_profile = ICCProfiles::displayP3Data();
-		break;
-	}
-	}
 
 	vector<JpegEncoder *> encoders(njpegs);
 	

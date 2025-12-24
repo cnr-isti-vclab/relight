@@ -78,7 +78,7 @@ int convertRTI(const char *file, const char *output, int quality) {
 			throw QString("Could not create output dir!\n");
 	}
 
-	rti.saveJSON(dir, quality);
+	rti.saveJSON(dir, quality, "");
 	for(uint32_t p = 0; p < rti.nplanes; p += 3) {
 		lrti.encodeJPEGtoFile(p, quality, dir.filePath("plane_%1.jpg").arg(p/3).toStdString().c_str());
 	}

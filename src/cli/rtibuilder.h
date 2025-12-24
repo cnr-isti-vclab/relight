@@ -48,7 +48,7 @@ public:
 	size_t save(const std::string &output, int quality = 95);
 	size_t savePTM(const std::string &output);
 	size_t saveUniversal(const std::string &output);
-	bool saveJSON(QDir &dir, int quality);
+	bool saveJSON(QDir &dir, int quality, QString color_profile);
 
 	void processLine(PixelArray &sample, PixelArray &resample, std::vector<std::vector<uint8_t>> &line,
 					 std::vector<uchar> &normal, std::vector<uchar> &mean, std::vector<uchar> &median);

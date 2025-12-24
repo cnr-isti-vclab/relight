@@ -138,5 +138,7 @@
         <file alias="demo/skin.svg">../demo/skin.svg</file>
         <file alias="demo/skin.css">../demo/skin.css</file>
 
+       <file alias="Display P3.icc">../src/icc_profiles/Display P3.icc</file>
+
     </qresource>
 </RCC>

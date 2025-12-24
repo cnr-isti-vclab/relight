@@ -27,7 +27,7 @@ void setupLights(ImageSet &imageset, Dome &dome);
 QString RtiParameters::summary() {
 	QString basisLabels[] =  { "PTM", "HSH", "RBF", "BLN", "NEURAL" };
 	QString colorspaceLabels[] =  { "RGB", "LRGB", "YCC", "RGB", "YCC" };
-	QString formatLabels[] = { "", "web: images", "web: deepzoom", "web: tarzoom", "web: itarzoom", "IIIF: tiff" };
+	QString formatLabels[] = { "web: images", "web: deepzoom", "web: tarzoom", "web: itarzoom"};
 
 	QString s_basis  = basisLabels[basis];
 	QString s_colorspace = colorspaceLabels[colorspace];
@@ -36,10 +36,17 @@ QString RtiParameters::summary() {
 		s_planes += "." + QString::number(nchroma);
 	}
 	QString s_format;
-	if(format == RtiParameters::RTI)
+	switch(format) {
+	case RtiParameters::RTI:
 		s_format = basis == Rti::PTM ? ".ptm" : ".rti";
-	else
-		s_format = formatLabels[format];
+		break;
+	case WEB:
+		s_format = formatLabels[web_layout];
+		break;
+	case IIP:
+		s_format =  "IIIF: tiff";
+		break;
+	}
 
 	QString txt = QString("%1%3 (%2) %4").arg(s_basis).arg(s_colorspace).arg(s_planes).arg(s_format);
 	return txt;
@@ -183,13 +190,20 @@ void RtiTask::openlime() {
 	                                  << ":/demo/openlime.min.js"
 	                                  << ":/demo/skin.css"
 	                                  << ":/demo/skin.svg";
-	QDir dir(output);
+	QDir dir(parameters.path);
 	for(QString file: files) {
 		QFile fp(file);
 		fp.open(QFile::ReadOnly);
 		QFileInfo info(file);
 		QFile copy(dir.filePath(info.fileName()));
 		copy.open(QFile::WriteOnly);
-		copy.write(fp.readAll());
+		QByteArray content = fp.readAll();
+		if(file == ":/demo/index.html") {
+			// Replace the HTML title with the output folder name
+			QByteArray oldTitle = "<title>OpenLime</title>";
+			QByteArray newTitle = "<title>" + dir.dirName().toUtf8() + "</title>";
+			content.replace(oldTitle, newTitle);
+		}
+		copy.write(content);
 	}
 }
