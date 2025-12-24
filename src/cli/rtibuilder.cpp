@@ -17,6 +17,7 @@
 #include <QJsonObject>
 #include <QtConcurrent/QtConcurrent>
 #include <QFuture>
+#include <QRegularExpression>
 
 #include <Eigen/Core>
 
@@ -1399,10 +1400,9 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		break;
 	}
 	QString color_profile = ColorProfile::getProfileDescription(output_icc_profile);
-	color_profile.replace(QRegExp("\\s+"), " ");
-	color_profile.replace(QRegExp("[^a-zA-Z0-9 _-]"), "");
-	color_profile.replace(QRegExp(" +"), " ");
-
+	color_profile.replace(QRegularExpression("\\s+"), " ");
+	color_profile.replace(QRegularExpression("[^a-zA-Z0-9 _-]"), "");
+	color_profile.replace(QRegularExpression(" +"), " ");
 	
 	//TODO error control
 	bool ok = saveJSON(dir, quality, color_profile);

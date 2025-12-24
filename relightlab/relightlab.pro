@@ -131,6 +131,7 @@ SOURCES += main.cpp \
     ../src/crop.cpp
 
 RESOURCES += \
+    ../src/icc_profiles.qrc \
     res.qrc
 
 

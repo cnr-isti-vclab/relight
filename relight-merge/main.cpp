@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
 		//save json
 		QDir output_rti_dir(output_dir.filePath(input_rti_dir.dirName()));
 		uint32_t rti_quality = use_rti_quality ? rti.quality : quality;
-		rti.saveJSON(output_rti_dir, rti_quality);
+		rti.saveJSON(output_rti_dir, rti_quality, "");
 		int width = rti.width;
 		int height = rti.height;
 		vector<uint8_t> line(width*3);
