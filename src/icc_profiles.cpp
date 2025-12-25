@@ -8,7 +8,7 @@
 namespace {
 
 std::vector<uint8_t> loadDisplayP3Profile() {
-	QFile file(":/Display P3.icc");
+	QFile file(":/icc_profiles/Display P3.icc");
 	if(!file.open(QIODevice::ReadOnly)) {
 		throw QString("Unable to open Display P3 ICC profile" + file.fileName() + ':' + file.errorString());
 	}

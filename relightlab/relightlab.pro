@@ -132,6 +132,7 @@ SOURCES += main.cpp \
     convertdialog.cpp
 
 RESOURCES += \
+    ../src/icc_profiles.qrc \
     res.qrc
 
 
