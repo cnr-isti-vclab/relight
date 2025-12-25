@@ -6,36 +6,30 @@
 using namespace std;
 
 
-QString BrdfParameters::summary() {
-	QString ret;
-	if(albedo == MEDIAN)
-		ret = "Median";
-	return ret;
-}
-
 
 void BrdfTask::initFromProject(Project &project) {
 	lens = project.lens;
 	imageset.width = imageset.image_width = project.lens.width;
 	imageset.height = imageset.image_height = project.lens.height;
 
-	crop = project.crop;
 	//img_size = project.imgsize;
 
 	imageset.initFromProject(project);
-	imageset.setCrop(crop, project.offsets);
-	imageset.rotateLights(-project.crop.angle);
+	parameters.crop = project.crop;
+	imageset.setCrop(parameters.crop, project.offsets);
+	imageset.rotateLights(-parameters.crop.angle);
 
 	imageset.pixel_size = project.pixelSize;
 }
 
 
-void BrdfTask::initFromFolder(const char *folder, Dome &dome, Crop &crop) {
+void BrdfTask::initFromFolder(const char *folder, Dome &dome, const Crop &folderCrop) {
 	imageset.initFromFolder(folder);
 	imageset.initFromDome(dome);
-	if(crop.width() > 0)
-		imageset.setCrop(crop);
-	imageset.rotateLights(-crop.angle);
+	parameters.crop = folderCrop;
+	if(folderCrop.width() > 0)
+		imageset.setCrop(folderCrop);
+	imageset.rotateLights(-folderCrop.angle);
 }
 
 void BrdfTask::setParameters(BrdfParameters &param) {
@@ -103,8 +97,8 @@ void BrdfTask::run() {
 		}
 
 		QImage img(albedomap.data(), width, height, width*3, QImage::Format_RGB888);
-		if(crop.angle != 0.0f)
-			img = crop.cropBoundingImage(img);
+		if(parameters.crop.angle != 0.0f)
+			img = parameters.crop.cropBoundingImage(img);
 
 		// Set spatial resolution if known. Need to convert as pixelSize stored in mm/pixel whereas QImage requires pixels/m
 		if( imageset.pixel_size > 0 ) {
@@ -120,4 +114,11 @@ void BrdfTask::run() {
 		progressed("Albedo done", 100);
 	}
 	status = DONE;
+}
+
+QJsonObject BrdfTask::info() const {
+	QJsonObject obj = Task::info();
+	obj["taskType"] = "BRDF";
+	obj["parameters"] = parameters.toJson();
+	return obj;
 }

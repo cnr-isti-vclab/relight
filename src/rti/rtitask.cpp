@@ -7,6 +7,7 @@
 #include <QRect>
 #include <QTemporaryDir>
 #include <QMessageBox>
+#include <QJsonObject>
 
 #include "rtitask.h"
 #include "relightapp.h"
@@ -24,34 +25,6 @@ int convertRTI(const char *file, const char *output, int quality);
 
 void setupLights(ImageSet &imageset, Dome &dome);
 
-QString RtiParameters::summary() {
-	QString basisLabels[] =  { "PTM", "HSH", "RBF", "BLN", "NEURAL" };
-	QString colorspaceLabels[] =  { "RGB", "LRGB", "YCC", "RGB", "YCC" };
-	QString formatLabels[] = { "web: images", "web: deepzoom", "web: tarzoom", "web: itarzoom"};
-
-	QString s_basis  = basisLabels[basis];
-	QString s_colorspace = colorspaceLabels[colorspace];
-	QString s_planes = QString::number(nplanes);
-	if(nchroma) {
-		s_planes += "." + QString::number(nchroma);
-	}
-	QString s_format;
-	switch(format) {
-	case RtiParameters::RTI:
-		s_format = basis == Rti::PTM ? ".ptm" : ".rti";
-		break;
-	case WEB:
-		s_format = formatLabels[web_layout];
-		break;
-	case IIP:
-		s_format =  "IIIF: tiff";
-		break;
-	}
-
-	QString txt = QString("%1%3 (%2) %4").arg(s_basis).arg(s_colorspace).arg(s_planes).arg(s_format);
-	return txt;
-}
-
 RtiTask::RtiTask(): Task() {
 	builder = new RtiBuilder;
 }
@@ -62,13 +35,13 @@ void RtiTask::setProject(Project &project) {
 	builder->nworkers = qRelightApp->nThreads();
 	builder->samplingram = qRelightApp->samplingRam();
 
-	crop = project.crop;
+	parameters.crop = project.crop;
 
 	ImageSet &imageset = builder->imageset;
 	imageset.initFromProject(project);
 
-	imageset.setCrop(crop, project.offsets);
-	imageset.rotateLights(-crop.angle);
+	imageset.setCrop(parameters.crop, project.offsets);
+	imageset.rotateLights(-parameters.crop.angle);
 	imageset.pixel_size = project.pixelSize;
 	builder->sigma = 0.125*100/imageset.images.size();
 
@@ -79,7 +52,7 @@ void RtiTask::setProject(Project &project) {
 
 	builder->width  = imageset.width;
 	builder->height = imageset.height;
-	
+
 	// Apply color profile mode from parameters
 	imageset.setColorProfileMode(parameters.colorProfileMode);
 }
@@ -116,7 +89,7 @@ void RtiTask::setParameters(RtiParameters &p) {
 
 void RtiTask::run() {
 
-	status = RUNNING;	
+	status = RUNNING;
 	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
 	QString output = parameters.path; //masking Task::output.
@@ -139,7 +112,7 @@ void RtiTask::run() {
 			mime = RELIGHT;
 			builder->save(output.toStdString(), parameters.quality);
 		}
-		if(crop.angle != 0.0f) {
+		if(parameters.crop.angle != 0.0f) {
 			rotatedCrop(output);
 		}
 
@@ -163,6 +136,7 @@ void RtiTask::run() {
 		if(parameters.web_layout == RtiParameters::ITARZOOM) {
 			itarZoom(output, output, callback);
 		}
+
 	} catch(QString e) {
 		error = e;
 		status = FAILED;
@@ -173,6 +147,13 @@ void RtiTask::run() {
 		status = DONE;
 }
 
+QJsonObject RtiTask::info() const {
+	QJsonObject obj = Task::info();
+	obj["taskType"] = "RTI";
+	obj["parameters"] = parameters.toJson();
+	return obj;
+}
+
 void RtiTask::rotatedCrop(QString output) {
 	QDir destination(output);
 	QStringList planes = destination.entryList(QStringList(QString("plane_*.jpg")), QDir::Files);
@@ -180,16 +161,16 @@ void RtiTask::rotatedCrop(QString output) {
 		QString path = destination.absoluteFilePath(plane);
 		QImage img;
 		img.load(path, "JPG");
-		img = crop.cropBoundingImage(img);
+		img = parameters.crop.cropBoundingImage(img);
 		bool saved = img.save(path, "jpg", parameters.quality);
 	}
 }
 
 void RtiTask::openlime() {
 	QStringList files = QStringList() << ":/demo/index.html"
-	                                  << ":/demo/openlime.min.js"
-	                                  << ":/demo/skin.css"
-	                                  << ":/demo/skin.svg";
+									  << ":/demo/openlime.min.js"
+									  << ":/demo/skin.css"
+									  << ":/demo/skin.svg";
 	QDir dir(parameters.path);
 	for(QString file: files) {
 		QFile fp(file);

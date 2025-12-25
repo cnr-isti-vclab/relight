@@ -80,6 +80,7 @@ SOURCES += main.cpp \
     parameter.cpp \
     task.cpp \
     rtitask.cpp \
+    ../src/rti/rtiparameters.cpp \
     settingsdialog.cpp \
     domecalibration.cpp \
     ../src/lp.cpp \
@@ -136,6 +137,7 @@ HEADERS += \
     parameter.h \
     task.h \
     rtitask.h \
+    ../src/rti/rtiparameters.h \
     settingsdialog.h \
     ../src/legacy_rti.h \
     ../src/network/httplib.h \

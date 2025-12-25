@@ -17,6 +17,7 @@
 
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QJsonObject>
 #include <QImage>
 #include <QTextStream>
 #include <vector>
@@ -44,19 +45,20 @@ void NormalsTask::initFromProject(Project &project) {
 
 	imageset.initFromProject(project);
 
-	crop = project.crop;
-	imageset.setCrop(crop, project.offsets);
-	imageset.rotateLights(-project.crop.angle);
+	parameters.crop = project.crop;
+	imageset.setCrop(parameters.crop, project.offsets);
+	imageset.rotateLights(-parameters.crop.angle);
 
 	imageset.pixel_size = project.pixelSize;
 }
 
-void NormalsTask::initFromFolder(const char *folder, Dome &dome, Crop &crop) {
+void NormalsTask::initFromFolder(const char *folder, Dome &dome, const Crop &folderCrop) {
 	imageset.initFromFolder(folder);
 	imageset.initFromDome(dome);
-	if(crop.width() > 0)
-		imageset.setCrop(crop);
-	imageset.rotateLights(-crop.angle);
+	parameters.crop = folderCrop;
+	if(folderCrop.width() > 0)
+		imageset.setCrop(folderCrop);
+	imageset.rotateLights(-folderCrop.angle);
 }
 
 void NormalsTask::setParameters(NormalsParameters &param) {
@@ -133,9 +135,9 @@ void NormalsTask::run() {
 
 		// Wait for the end of all the threads
 		pool.finish();
-		if(crop.angle != 0.0f) {
+		if(parameters.crop.angle != 0.0f) {
 		//rotate and crop the normals.
-		normals = crop.cropBoundingNormals(normals, width, height);
+		normals = parameters.crop.cropBoundingNormals(normals, width, height);
 		}
 		//check no normals with z == 0.
 		for(Eigen::Vector3f &n: normals) {
@@ -308,6 +310,13 @@ void NormalsTask::fixNormal(Eigen::Vector3f &n) {
 			n[2] = z_threshold;
 		n.normalize();
 	}
+}
+
+QJsonObject NormalsTask::info() const {
+	QJsonObject obj = Task::info();
+	obj["taskType"] = "NORMALS";
+	obj["parameters"] = parameters.toJson();
+	return obj;
 }
 
 bool savePly(const char *filename, pmp::SurfaceMesh &mesh) {

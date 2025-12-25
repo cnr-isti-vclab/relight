@@ -5,20 +5,7 @@
 #include "../project.h"
 #include "../imageset.h"
 #include "../relight_vector.h"
-
-class BrdfParameters {
-public:
-	QString input_path;
-	enum AlbedoMethod { NONE, MEDIAN, MEAN };
-	AlbedoMethod albedo = MEDIAN;
-	float median_percentage = 66;
-
-	int quality = 95;
-	QString path; //this is a generic folder with stock names
-	QString albedo_path; //
-
-	QString summary();
-};
+#include "brdfparameters.h"
 
 //TODO: this is the same as normalstask!
 class BrdfTask :  public Task {
@@ -26,14 +13,14 @@ public:
 	BrdfParameters parameters;
 
 	ImageSet imageset;
-	Crop crop;
 	Lens lens;
 
 	virtual void run() override;
+	virtual QJsonObject info() const override;
 
 	void setParameters(BrdfParameters &param);
 	void initFromProject(Project &project);
-	void initFromFolder(const char *folder, Dome &dome, Crop &crop);
+	void initFromFolder(const char *folder, Dome &dome, const Crop &crop);
 
 };
 

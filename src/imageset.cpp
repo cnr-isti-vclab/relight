@@ -490,7 +490,7 @@ void ImageSet::restart() {
 	current_line = 0;
 }
 
-void ImageSet::setCrop(Crop &crop) {
+void ImageSet::setCrop(const Crop &crop) {
 	QRect r = crop.boundingRect(imageSize());
 	setCrop(r.left(), r.top(), r.width(), r.height());
 	rotateLights(-crop.angle);

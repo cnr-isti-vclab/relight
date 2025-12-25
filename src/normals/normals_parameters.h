@@ -3,12 +3,15 @@
 
 #include <QString>
 
+#include "../taskparameters.h"
+
 enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA };
 enum FlatMethod { FLAT_NONE, FLAT_RADIAL, FLAT_FOURIER, FLAT_BLUR };
 enum SurfaceIntegration { SURFACE_NONE, SURFACE_BNI, SURFACE_ASSM, SURFACE_FFT };
 
-class NormalsParameters {
+class NormalsParameters : public TaskParameters {
 public:
+	NormalsParameters() { path = "./"; }
 	bool compute = true;
 	QString input_path;
 
@@ -25,11 +28,10 @@ public:
 	int surface_width = 0;
 	int surface_height = 0;
 
-	int quality = 95;
-	QString path = "./"; //destination folder, create if not existing.
 	QString basename = "normals"; //filename for normals  img.
 
-	QString summary();
+	QString summary() const override;
+	QJsonObject toJson() const override;
 };
 
 #endif // NORMALS_PARAMETERS_H

@@ -160,6 +160,14 @@ void ProcessQueue::clear() {
 	emit update();
 }
 
+void ProcessQueue::clearHistory() {
+	{
+		QMutexLocker locker(&lock);
+		past.clear();
+	}
+	emit update();
+}
+
 void ProcessQueue::start() {
 	{
 		QMutexLocker locker(&lock);

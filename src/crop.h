@@ -36,7 +36,7 @@ public:
 	//viceversa
 	QPointF cropToImg(QPointF p, QSize img_size);
 	//bounding box of the cropped region (including rotation)
-	QRect boundingRect(QSize img_size);
+	QRect boundingRect(QSize img_size) const;
 	QImage cropBoundingImage(QImage src);
 	std::vector<float> cropBoundingNormals(const std::vector<float> &input, int &w, int &h);
 	std::vector<Eigen::Vector3f> cropBoundingNormals(const std::vector<Eigen::Vector3f> &input, int &w, int &h);

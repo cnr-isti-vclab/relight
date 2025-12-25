@@ -6,6 +6,7 @@
 #include <QSettings>
 #include <QProcess>
 #include <QDebug>
+#include <QJsonObject>
 
 #include <iostream>
 using namespace std;
@@ -134,4 +135,13 @@ bool Task::progressed(QString s, int percent) {
 	if(status == STOPPED)
 		return false;
 	return true;
+}
+
+QJsonObject Task::info() const {
+	QJsonObject obj;
+	obj["id"] = id;
+	obj["label"] = label;
+	obj["status"] = static_cast<int>(status);
+	obj["output"] = output;
+	return obj;
 }

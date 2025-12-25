@@ -17,15 +17,15 @@ public:
 	NormalsParameters parameters;
 
 	ImageSet imageset;
-	Crop crop;
 	Lens lens;
 	float z_threshold =0.001;
 
 	virtual void run() override;
+	virtual QJsonObject info() const override;
 
 	void setParameters(NormalsParameters &param);
 	void initFromProject(Project &project);
-	void initFromFolder(const char *folder, Dome &dome, Crop &crop);
+	void initFromFolder(const char *folder, Dome &dome, const Crop &crop);
 
 	void assm(QString filename, std::vector<Eigen::Vector3f> &normals, int width, int height, float precision);
 	void fixNormal(Eigen::Vector3f &n); //check for nan, and z< threshold

@@ -46,22 +46,28 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 SOURCES += main.cpp \
-    zoom.cpp \
     ../external/assm/SurfaceMesh.cpp \
     ../external/assm/algorithms/DifferentialGeometry.cpp \
     ../external/assm/algorithms/Rasterizer.cpp \
     ../external/assm/algorithms/ScreenRemeshing.cpp \
     ../external/assm/algorithms/Triangulation.cpp \
+    ../src/brdf/brdftask.cpp \
+    ../src/brdf/brdfparameters.cpp \
     ../src/cli/convert_rti.cpp \
     ../src/cli/rtibuilder.cpp \
-    ../src/crop.cpp \
+    ../src/network/httpserver.cpp \
     ../src/normals/flatnormals.cpp \
-    brdfplan.cpp \
-    imagecropper.cpp \
-    processqueue.cpp \
+    ../src/normals/normalstask.cpp \
+    ../src/normals/bni_normal_integration.cpp \
+    ../src/normals/normals_parameters.cpp \
+    ../src/normals/fft_normal_integration.cpp \
+    ../src/rti/rtiparameters.cpp \
+    ../src/rti/rtitask.cpp \
+    ../src/crop.cpp \
     ../src/align.cpp \
     ../src/dome.cpp \
     ../src/exif.cpp \
+    ../src/lp.cpp \
     ../src/image.cpp \
     ../src/imageset.cpp \
     ../src/colorprofile.cpp \
@@ -75,6 +81,12 @@ SOURCES += main.cpp \
     ../src/rti.cpp \
     ../src/sphere.cpp \
     ../src/white.cpp \
+    ../src/task.cpp \
+    ../src/deepzoom.cpp \
+    zoom.cpp \
+    brdfplan.cpp \
+    imagecropper.cpp \
+    processqueue.cpp \
     alignframe.cpp \
     alignpicking.cpp \
     alignrow.cpp \
@@ -102,33 +114,22 @@ SOURCES += main.cpp \
     flowlayout.cpp \
     imagegrid.cpp \
     lightsframe.cpp \
-    ../src/lp.cpp \
     directionsview.cpp \
     spheredialog.cpp \
     verifyview.cpp \
     verifydialog.cpp \
     helpbutton.cpp \
     cropframe.cpp \
-    ../src/rti/rtitask.cpp \
-    ../src/task.cpp \
     queueitem.cpp \
     queueframe.cpp \
-    ../src/network/httpserver.cpp \
     normalsframe.cpp \
-    ../src/normals/normalstask.cpp \
-    ../src/normals/bni_normal_integration.cpp \
-    ../src/normals/normals_parameters.cpp \
     scaleframe.cpp \
     planrow.cpp \
     normalsplan.cpp \
     brdfframe.cpp \
     metadataframe.cpp \
-    ../src/normals/fft_normal_integration.cpp \
-    ../src/deepzoom.cpp \
     sphereframe.cpp \
-    ../src/brdf/brdftask.cpp \
     convertdialog.cpp
-    ../src/crop.cpp
 
 RESOURCES += \
     res.qrc
@@ -221,7 +222,10 @@ HEADERS += \
     ../src/deepzoom.h \
     sphereframe.h \
     ../src/brdf/brdftask.h \
-    convertdialog.h
+    convertdialog.h \
+    ../src/taskparameters.h \
+    ../src/rti/rtiparameters.h \
+    ../src/brdf/brdfparameters.h
 
 FORMS +=
 

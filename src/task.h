@@ -3,6 +3,7 @@
 
 #include <QThread>
 #include <QMutex>
+#include <QJsonObject>
 
 
 class Task: public QThread {
@@ -29,6 +30,7 @@ public:
 	virtual void pause();
 	virtual void resume();
 	virtual void setStatus(Status s);
+	virtual QJsonObject info() const;
 
 
 	void runPythonScript(QString script, QStringList arguments, QString workingdir = QString());

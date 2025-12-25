@@ -71,7 +71,7 @@ public:
 	void cleanHidden(std::vector<Image> &images);
 
 	void setCrop(int _left, int _top, int _right, int _bottom);
-	void setCrop(Crop &crop);
+	void setCrop(const Crop &crop);
 	void setCrop(Crop &crop, const std::vector<QPointF> &offsets);
 	void rotateLights(float angle);
 

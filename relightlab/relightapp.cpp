@@ -208,6 +208,7 @@ void RelightApp::run() {
 void RelightApp::setProject(Project *_project) {
 	//cleanup interface and stop (and remove) project related tasks.
 	mainwindow->clear();
+	ProcessQueue::instance().clearHistory();
 
 	delete m_project;
 

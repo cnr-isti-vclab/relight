@@ -157,6 +157,7 @@ set (RELIGHTLAB_SOURCES
     rtirecents.cpp
     rtiplan.cpp
     ../src/rti/rtitask.cpp
+    ../src/rti/rtiparameters.cpp
     ../src/cli/rtibuilder.cpp
     ../src/cli/convert_rti.cpp
     ../src/deepzoom.cpp
@@ -179,6 +180,7 @@ set (RELIGHTLAB_SOURCES
     imagecropper.cpp
     brdfframe.cpp
     ../src/brdf/brdftask.cpp
+    ../src/brdf/brdfparameters.cpp
     brdfplan.cpp
     convertdialog.cpp
 )

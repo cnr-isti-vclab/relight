@@ -48,6 +48,7 @@ SOURCES += main.cpp \
 	../external/assm/algorithms/ScreenRemeshing.cpp \
 	../external/assm/algorithms/Triangulation.cpp \
     ../src/brdf/brdftask.cpp \
+    ../src/brdf/brdfparameters.cpp \
     ../src/dome.cpp \
     ../src/getopt.cpp \
     ../src/imageset.cpp \
@@ -80,7 +81,8 @@ HEADERS += \
 	../external/assm/algorithms/ScreenMeshing.h \
 	../external/assm/algorithms/ScreenRemeshing.h \
 	../external/assm/algorithms/Triangulation.h \
-	../src/brdf/brdftask.h \
+    ../src/brdf/brdftask.h \
+    ../src/brdf/brdfparameters.h \
     ../src/dome.h \
     ../src/getopt.h \
     ../src/imageset.h \

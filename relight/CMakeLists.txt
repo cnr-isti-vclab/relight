@@ -112,6 +112,7 @@ set (RELIGHT_SOURCES
 	task.cpp
 	script.cpp
 	rtitask.cpp
+	../src/rti/rtiparameters.cpp
 	normalstask.cpp
 	domecalibration.cpp
 	../src/dome.cpp

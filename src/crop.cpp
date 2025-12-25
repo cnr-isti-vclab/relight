@@ -37,7 +37,7 @@ QPointF Crop::cropToImg(QPointF p, QSize img_size) {
 	return q;
 }
 
-QRect Crop::boundingRect(QSize img_size) {
+QRect Crop::boundingRect(QSize img_size) const {
 	QSize center = img_size/2;
 
 	QTransform rot;

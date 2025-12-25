@@ -14,36 +14,26 @@ class QueueFrame: public QFrame {
 	Q_OBJECT
 public:
 	QueueFrame(QWidget *parent = nullptr);
-
-	void setToolsStatus();
 	void removeTask(Task *task);
 
 public slots:
-	void selectionChanged(const QItemSelection & selected, const QItemSelection & deselected);
 	void update();
-
-	void start();
-	void pause();
-	void stop();
-
-	void sendToTop();
-	void sendToBottom();
-	void remove();
+	void startQueue();
+	void pauseQueue();
+	void stopQueue();
 
 private:
-	QToolBar *toolbar;
-	QAction *actionStart;
-	QAction *actionPause;
-	QAction *actionStop;
-	QAction *actionToTop;
-	QAction *actionToBottom;
-	QAction *actionRemove;
-	QAction *actionOpenFolder;
-	QAction *actionInfo;
+	void rebuildActiveList(const QList<Task *> &tasks);
+	void rebuildHistoryList(const QList<Task *> &tasks);
 
 	QWidget *centralwidget;
 	QGridLayout *gridLayout;
-	QListWidget *list;
+	QListWidget *activeList;
+	QListWidget *historyList;
+	QToolBar *toolbar = nullptr;
+	QAction *actionStart = nullptr;
+	QAction *actionPause = nullptr;
+	QAction *actionStop = nullptr;
 
 };
 

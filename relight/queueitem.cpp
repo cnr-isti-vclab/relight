@@ -74,30 +74,32 @@ void QueueItem::progress(QString text, int percent) {
 }
 
 void QueueItem::update() {
-	switch(task->status) {
-	case Task::PAUSED:
-		status->setText("Paused");
-	case Task::ON_QUEUE:
-		status->setText("On queue");
-	case Task::RUNNING:
-		break;
-	case Task::DONE:
-		status->setText("Done");
-		progressbar->setValue(100);
-		{
-			QFileInfo info(task->output);
-			if(info.isDir())
-				cast->setEnabled(true);
-		}
-		break;
-	case Task::STOPPED:
-		status->setText("Stopped");
-		break;
-	case Task::FAILED:
-		status->setText(task->error);
-		progressbar->setValue(0);
-	}
-	widget->setStyleSheet(style[task->status]);
+    switch(task->status) {
+    case Task::PAUSED:
+        status->setText("Paused");
+        break;
+    case Task::ON_QUEUE:
+        status->setText("On queue");
+        break;
+    case Task::RUNNING:
+        status->setText("Running");
+        break;
+    case Task::DONE:
+        status->setText("Done");
+        progressbar->setValue(100);
+        QFileInfo info(task->output);
+        if(info.isDir())
+            cast->setEnabled(true);
+        break;
+    case Task::STOPPED:
+        status->setText("Stopped");
+        break;
+    case Task::FAILED:
+        status->setText(task->error);
+        progressbar->setValue(0);
+        break;
+    }
+    widget->setStyleSheet(style[task->status]);
 }
 
 void QueueItem::setSelected(bool selected) {

@@ -3,13 +3,13 @@
 
 #include "../task.h"
 #include "../project.h"
-#include "../rti.h"
-#include "../colorprofile.h"
 #include <QMutex>
 
-class RtiBuilder;
+#include "rtiparameters.h"
 
-class RtiParameters {
+class RtiBuilder;
+/*
+class RtiParameters : public TaskParameters {
 public:
 
 	enum Format { RTI = 0, WEB = 1, IIP = 2 };
@@ -28,18 +28,16 @@ public:
 	bool iiif_manifest = false;  //TODO
 	bool openlime = true; //include openlime viewer //TODO: might want different interfaces.
 
-	int quality = 95;
 	ColorProfileMode colorProfileMode = COLOR_PROFILE_PRESERVE;
-	QString path;
 
-	QString summary();
-};
+	QString summary() const override;
+	QJsonObject toJson() const override;
+};*/
 
 class RtiTask: public Task {
 	Q_OBJECT
 public:
 	RtiParameters parameters;
-	Crop crop;
 	//QSize img_size;
 
 	RtiTask();
@@ -49,6 +47,7 @@ public:
 	void setParameters(RtiParameters &p);
 	void rotatedCrop(QString output);
 	virtual void run() override;
+	virtual QJsonObject info() const override;
 
 
 public slots:

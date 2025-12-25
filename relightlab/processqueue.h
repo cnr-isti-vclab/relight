@@ -40,6 +40,7 @@ public:
 	void pushFront(int id);
 	void pushBack(int id);
 	void clear();
+	void clearHistory();
 
 	void start(); //start the queue if not start
 	void pause(); //pause current process.

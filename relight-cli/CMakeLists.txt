@@ -32,6 +32,7 @@ SET(HEADERS
 	../src/lens.h
 	../src/crop.h
 	../src/brdf/brdftask.h 
+	../src/brdf/brdfparameters.h
 	../external/assm/algorithms/DifferentialGeometry.h
 	../external/assm/algorithms/Integration.h
 	../external/assm/algorithms/PhotometricRemeshing.h
@@ -69,6 +70,7 @@ SET(SOURCES
 	../src/crop.cpp
 	../src/cli/convert_rti.cpp
 	../src/brdf/brdftask.cpp
+	../src/brdf/brdfparameters.cpp
 	../external/assm/SurfaceMesh.cpp
 	../external/assm/algorithms/DifferentialGeometry.cpp
 	../external/assm/algorithms/Rasterizer.cpp

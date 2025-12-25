@@ -5,14 +5,12 @@
 #include "relightapp.h"
 
 
-#include <QMessageBox>
 #include <QVBoxLayout>
 #include <QListWidget>
-#include <QAction>
+#include <QLabel>
+#include <QMutexLocker>
 #include <QToolBar>
-
-#include <iostream>
-using namespace std;
+#include <QAction>
 
 
 
@@ -20,35 +18,38 @@ QueueFrame::QueueFrame(QWidget *parent): QFrame(parent) {
 
 	QVBoxLayout *vbox = new QVBoxLayout(this);
 
-
-	toolbar = new QToolBar;
+	toolbar = new QToolBar(this);
 	vbox->addWidget(toolbar);
 
-	toolbar->addAction(actionStart = qRelightApp->addAction("queue_start", "Start", "play", ""));
-	toolbar->addAction(actionPause = qRelightApp->addAction("queue_pause", "Pause", "pause", ""));
-	toolbar->addAction(actionStop = qRelightApp->addAction("queue_stop", "Stop", "stop", ""));
-	toolbar->addAction(actionToBottom = qRelightApp->addAction("queue_bottom", "Send to bottom", "chevrons-down", ""));
-	toolbar->addAction(actionToTop = qRelightApp->addAction("queue_top", "Send to top", "chevrons-up", ""));
-	toolbar->addAction(actionRemove = qRelightApp->addAction("queue_remove", "Remove", "trash-2", ""));
-	toolbar->addAction(actionOpenFolder = qRelightApp->addAction("queue_open", "Open folder", "folder", ""));
-	toolbar->addAction(actionInfo = qRelightApp->addAction("queue_info", "Info", "info", ""));
+	actionStart = qRelightApp->addAction("queue_toolbar_start", tr("Start"), "play", "");
+	actionPause = qRelightApp->addAction("queue_toolbar_pause", tr("Pause"), "pause", "");
+	actionStop = qRelightApp->addAction("queue_toolbar_stop", tr("Stop"), "stop", "");
 
+	toolbar->addAction(actionStart);
+	toolbar->addAction(actionPause);
+	toolbar->addAction(actionStop);
 
+	connect(actionStart, &QAction::triggered, this, &QueueFrame::startQueue);
+	connect(actionPause, &QAction::triggered, this, &QueueFrame::pauseQueue);
+	connect(actionStop, &QAction::triggered, this, &QueueFrame::stopQueue);
 
-	list = new QListWidget;
-	vbox->addWidget(list);
+	QLabel *activeLabel = new QLabel(tr("Active Queue"));
+	activeLabel->setObjectName("queueActiveLabel");
+	vbox->addWidget(activeLabel);
 
-	list->setSelectionMode(QAbstractItemView::ExtendedSelection);
-	connect(list->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-			this, SLOT(selectionChanged(QItemSelection, QItemSelection)));
-	setToolsStatus();
+	activeList = new QListWidget;
+	activeList->setObjectName("queueActiveList");
+	activeList->setSelectionMode(QAbstractItemView::NoSelection);
+	vbox->addWidget(activeList);
 
-	connect(actionStart,          SIGNAL(triggered(bool)), this, SLOT(start()));
-	connect(actionPause,          SIGNAL(triggered(bool)), this, SLOT(pause()));
-	connect(actionStop,           SIGNAL(triggered(bool)), this, SLOT(stop()));
-	connect(actionToBottom, SIGNAL(triggered(bool)), this, SLOT(sendToTop()));
-	connect(actionToTop,    SIGNAL(triggered(bool)), this, SLOT(sendToBottom()));
-	connect(actionRemove,         SIGNAL(triggered(bool)), this, SLOT(remove()));
+	QLabel *historyLabel = new QLabel(tr("History"));
+	historyLabel->setObjectName("queueHistoryLabel");
+	vbox->addWidget(historyLabel);
+
+	historyList = new QListWidget;
+	historyList->setObjectName("queueHistoryList");
+	historyList->setSelectionMode(QAbstractItemView::NoSelection);
+	vbox->addWidget(historyList);
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	connect(&queue, SIGNAL(update()), this, SLOT(update()));
@@ -56,135 +57,66 @@ QueueFrame::QueueFrame(QWidget *parent): QFrame(parent) {
 	update();
 }
 
-
-void QueueFrame::setToolsStatus() {
-	ProcessQueue &queue = ProcessQueue::instance();
-	actionStart->setEnabled(queue.stopped == true);
-	actionPause->setEnabled(queue.stopped == false);
-	actionStop->setEnabled(queue.stopped == false || queue.task != nullptr);
-
-
-	bool empty_selection = list->selectedItems().size() == 0;
-	actionToBottom->setDisabled(empty_selection);
-	actionToTop->setDisabled(empty_selection);
-	actionRemove->setDisabled(empty_selection);
-	actionInfo->setDisabled(empty_selection);
-	//actionOpenFolder->setDisabled(empty_selection);
-}
-
-
-void QueueFrame::start() {
-	ProcessQueue &queue = ProcessQueue::instance();
-	queue.start();
-	setToolsStatus();
-
-}
-void QueueFrame::pause() {
-	ProcessQueue &queue = ProcessQueue::instance();
-	queue.pause();
-	setToolsStatus();
-
-}
-void QueueFrame::stop() {
-	ProcessQueue &queue = ProcessQueue::instance();
-	queue.stop();
-	setToolsStatus();
-}
-
-void QueueFrame::sendToTop() {
-
-}
-
-void QueueFrame::sendToBottom() {
-
-}
-
-void QueueFrame::remove() {
-	QStringList tasks;
-	for(QModelIndex index: list->selectionModel()->selectedRows()) {
-		QueueItem *item = (QueueItem *)list->item(index.row());
-		QString label = item->task->label;
-		if(item->task->status == Task::PAUSED)
-			label += " (PAUSED)";
-		if(item->task->status == Task::RUNNING)
-			label += " (RUNNING)";
-		tasks.push_back(item->task->label);
-	}
-	int answer = QMessageBox::question(this, "Removing tasks",
-									   QString("Are you sure you want to remove this task:?\n") + tasks.join("\n"),
-									   QMessageBox::Cancel, QMessageBox::Ok);
-	if(answer == QMessageBox::No)
-		return;
-	ProcessQueue &queue = ProcessQueue::instance();
-
-	QModelIndexList selection = list->selectionModel()->selection().indexes();
-	std::sort(selection.begin(), selection.end(),
-		  [](const QModelIndex &a, const QModelIndex &b) -> bool { return a.row() < b.row(); });
-
-	while(!selection.isEmpty()) {
-		QModelIndex i = selection.takeLast();
-		QueueItem *item = (QueueItem *)list->item(i.row());
-		if(item->task->status == Task::PAUSED ||item->task->status == Task::RUNNING) {
-			queue.stop();
-		}
-		queue.removeTask(item->id);
-		list->takeItem(i.row());
-		delete item;
-	}
-}
-
 void QueueFrame::removeTask(Task *task) {
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.removeTask(task->id);
-	for(int i = 0; i < list->count(); i++) {
-		QueueItem *item = dynamic_cast<QueueItem *>(list->item(i));
-		if(item->id == task->id) {
-			list->removeItemWidget(item);
-			//should remove task from queue?
-		}
-	}
+	update();
+}
+void QueueFrame::startQueue() {
+	ProcessQueue::instance().start();
 }
 
-void QueueFrame::selectionChanged(const QItemSelection & selected, const QItemSelection & deselected) {
-	for(QModelIndex index: deselected.indexes()) {
-		int row = index.row();
-		QueueItem *item = (QueueItem *)list->item(row);
-		item->setSelected(false);
-	}
-	for(QModelIndex index: selected.indexes()) {
-		int row = index.row();
-		QueueItem *item = (QueueItem *)list->item(row);
-		item->setSelected(true);
-	}
-	setToolsStatus();
+void QueueFrame::pauseQueue() {
+	ProcessQueue::instance().pause();
 }
 
-
+void QueueFrame::stopQueue() {
+	ProcessQueue::instance().stop();
+}
 void QueueFrame::update() {
 	ProcessQueue &queue = ProcessQueue::instance();
 
-	QSet<int> tasks;
-	//check status of each widget
-	for(int i = 0; i < list->count(); i++) {
-		QueueItem *item = (QueueItem *)list->item(i);
-		//check for deleted tasks
-		if(!queue.contains(item->task)) {
-			throw QString("Delete task!");
+	QList<Task *> activeTasks;
+	QList<Task *> historyTasks;
+
+	{
+		QMutexLocker lock(&queue.lock);
+		if(queue.task && queue.task->visible)
+			activeTasks.append(queue.task);
+		for(Task *task: queue.queue) {
+			if(task->visible)
+				activeTasks.append(task);
 		}
-		item->update();
-		tasks.insert(item->id);
+		for(Task *task: queue.past) {
+			if(task->visible)
+				historyTasks.append(task);
+		}
 	}
 
-	QMutexLocker lock(&queue.lock);
-	//add all task not already present.
-	for(Task *task: queue.queue) {
-		if(!tasks.contains(task->id) && task->visible) {
-			QueueItem *item = new QueueItem(task, list);
-			list->addItem(item);
-		}
+	rebuildActiveList(activeTasks);
+	rebuildHistoryList(historyTasks);
+
+	if(actionStart)
+		actionStart->setEnabled(queue.stopped || !queue.hasTasks());
+	if(actionPause)
+		actionPause->setEnabled(!queue.stopped);
+	if(actionStop)
+		actionStop->setEnabled(queue.task != nullptr);
+
+}
+
+void QueueFrame::rebuildActiveList(const QList<Task *> &tasks) {
+	activeList->clear();
+	for(Task *task: tasks) {
+		QueueItem *item = new QueueItem(task, activeList, false);
+		activeList->addItem(item);
 	}
-	/*if(queue.task && !tasks.contains(queue.task->id) && queue.task->visible) {
-		QueueItem *item = new QueueItem(queue.task, list);
-		list->addItem(item);
-	} */
+}
+
+void QueueFrame::rebuildHistoryList(const QList<Task *> &tasks) {
+	historyList->clear();
+	for(Task *task: tasks) {
+		QueueItem *item = new QueueItem(task, historyList, true);
+		historyList->addItem(item);
+	}
 }
