@@ -129,7 +129,8 @@ SOURCES += main.cpp \
     brdfframe.cpp \
     metadataframe.cpp \
     sphereframe.cpp \
-    convertdialog.cpp
+    convertdialog.cpp \
+    historytask.cpp
 
 RESOURCES += \
     ../src/icc_profiles.qrc \
@@ -226,7 +227,8 @@ HEADERS += \
     convertdialog.h \
     ../src/taskparameters.h \
     ../src/rti/rtiparameters.h \
-    ../src/brdf/brdfparameters.h
+    ../src/brdf/brdfparameters.h \
+    historytask.h
 
 FORMS +=
 

@@ -13,6 +13,8 @@
 #include <QRect>
 #include <QSysInfo>
 #include <QDateTime>
+#include <QList>
+#include <QJsonObject>
 
 class QJsonObject;
 class Sphere;
@@ -51,6 +53,7 @@ public:
 	QDateTime created;
 	QDateTime lastUpdated;
 	bool needs_saving;
+	QList<QJsonObject> taskHistoryEntries;
 
 	Project() {
 		version = RELIGHT_STRINGIFY(RELIGHT_VERSION);
@@ -67,6 +70,10 @@ public:
 	void saveLP(QString filename, std::vector<Eigen::Vector3f> &directions);
 	void cleanAlignCache();
 	void cleanSphereCache();
+	void addCompletedTask(const QJsonObject &info);
+	void removeTaskFromHistory(const QString &historyId);
+	const QList<QJsonObject> &taskHistory() const { return taskHistoryEntries; }
+	void clearTaskHistory();
 
 	void computeOffsets(); //from aligns
 	void computeDirections(); //obsolete

@@ -16,6 +16,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QUuid>
 
 #include <QPen>
 #include <QImageReader>
@@ -55,6 +56,7 @@ void Project::clear() {
 	icc_profile_description = "No profile";
 	icc_profile_is_srgb = false;
 	icc_profile_is_display_p3 = false;
+	taskHistoryEntries.clear();
 }
 
 bool Project::setDir(QDir folder) {
@@ -392,6 +394,13 @@ void Project::load(QString filename) {
 			whites.push_back(_white);
 		}
 	}
+
+	taskHistoryEntries.clear();
+	if(obj.contains("taskHistory")) {
+		for(const auto &entry: obj["taskHistory"].toArray()) {
+			taskHistoryEntries.append(entry.toObject());
+		}
+	}
 	needs_saving = false;
 }
 
@@ -527,6 +536,11 @@ void Project::save(QString filename) {
 		jwhites.append(white->toJson());
 	project.insert("whitess", jwhites);
 
+	QJsonArray jhistory;
+	for(const QJsonObject &entry: taskHistoryEntries)
+		jhistory.append(entry);
+	project.insert("taskHistory", jhistory);
+
 	if(length != 0)
 		project.insert("scale", length/pixels);
 
@@ -588,6 +602,31 @@ void Project::cleanSphereCache() {
 		if(!filenames.contains(file))
 			QFile::remove(dir.filePath(file));
 	}
+}
+
+void Project::addCompletedTask(const QJsonObject &info) {
+	taskHistoryEntries.push_front(info);
+	needs_saving = true;
+}
+
+void Project::removeTaskFromHistory(const QString &uuid) {
+	for(int i = 0; i < taskHistoryEntries.size(); ++i) {
+		const QJsonObject &entry = taskHistoryEntries[i];
+		const QString entryUuid = entry.value("uuid").toString();
+		const bool matchesUuid = !entryUuid.isEmpty() && entryUuid == uuid;
+		if(matchesUuid) {
+			taskHistoryEntries.removeAt(i);
+			needs_saving = true;
+			return;
+		}
+	}
+}
+
+void Project::clearTaskHistory() {
+	if(taskHistoryEntries.isEmpty())
+		return;
+	taskHistoryEntries.clear();
+	needs_saving = true;
 }
 
 Measure *Project::newMeasure() {

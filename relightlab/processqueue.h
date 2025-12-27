@@ -8,6 +8,7 @@
 #include <QThread>
 #include <QMutex>
 #include <QTemporaryFile>
+#include <QJsonObject>
 
 #include "../src/task.h"
 
@@ -49,6 +50,7 @@ public:
 public slots:
 
 signals:
+	void finished(Task *task);
 	void finished(QString title, QString msg);
 	void update(); //a task was added, or started, or finished.
 

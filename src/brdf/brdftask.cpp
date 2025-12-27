@@ -40,6 +40,8 @@ void BrdfTask::setParameters(BrdfParameters &param) {
 
 void BrdfTask::run() {
 	status = RUNNING;
+	startedAt = QDateTime::currentDateTimeUtc();
+	
 	label = parameters.summary();
 
 	function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
@@ -118,7 +120,6 @@ void BrdfTask::run() {
 
 QJsonObject BrdfTask::info() const {
 	QJsonObject obj = Task::info();
-	obj["taskType"] = "BRDF";
 	obj["parameters"] = parameters.toJson();
 	return obj;
 }

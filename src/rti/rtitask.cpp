@@ -90,6 +90,7 @@ void RtiTask::setParameters(RtiParameters &p) {
 void RtiTask::run() {
 
 	status = RUNNING;
+	startedAt = QDateTime::currentDateTimeUtc();
 	std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
 	QString output = parameters.path; //masking Task::output.
@@ -149,7 +150,6 @@ void RtiTask::run() {
 
 QJsonObject RtiTask::info() const {
 	QJsonObject obj = Task::info();
-	obj["taskType"] = "RTI";
 	obj["parameters"] = parameters.toJson();
 	return obj;
 }

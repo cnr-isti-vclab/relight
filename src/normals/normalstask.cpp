@@ -78,8 +78,11 @@ void invertZ(vector<float> &z) {
 	}
 }
 
+
 void NormalsTask::run() {
 	status = RUNNING;
+	startedAt = QDateTime::currentDateTimeUtc();
+	
 	label = parameters.summary();
 
 	QDir destination(parameters.path);
@@ -314,7 +317,6 @@ void NormalsTask::fixNormal(Eigen::Vector3f &n) {
 
 QJsonObject NormalsTask::info() const {
 	QJsonObject obj = Task::info();
-	obj["taskType"] = "NORMALS";
 	obj["parameters"] = parameters.toJson();
 	return obj;
 }

@@ -93,6 +93,7 @@ set (RELIGHT_HEADERS
     ../src/network/httpserver.h
     queueframe.h
     queueitem.h
+    historytask.h
     normalsframe.h
     ../src/normals/normalstask.h
     normalsplan.h
@@ -157,7 +158,6 @@ set (RELIGHTLAB_SOURCES
     rtirecents.cpp
     rtiplan.cpp
     ../src/rti/rtitask.cpp
-    ../src/rti/rtiparameters.cpp
     ../src/cli/rtibuilder.cpp
     ../src/cli/convert_rti.cpp
     ../src/deepzoom.cpp
@@ -172,6 +172,7 @@ set (RELIGHTLAB_SOURCES
     ../src/network/httpserver.cpp
     queueframe.cpp
     queueitem.cpp
+    historytask.cpp
     normalsframe.cpp
     ../src/normals/normalstask.cpp
     normalsplan.cpp
@@ -180,7 +181,6 @@ set (RELIGHTLAB_SOURCES
     imagecropper.cpp
     brdfframe.cpp
     ../src/brdf/brdftask.cpp
-    ../src/brdf/brdfparameters.cpp
     brdfplan.cpp
     convertdialog.cpp
 )

@@ -163,6 +163,7 @@ void MainWindow::init() {
 	rti_frame->init();
 	normals_frame->init();
 	brdf_frame->init();
+	queue_frame->init();
 
 	tabs->setTabsEnabled(true);
 }

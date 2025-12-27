@@ -3,6 +3,7 @@
 #include "processqueue.h"
 #include "queueitem.h"
 #include "relightapp.h"
+#include "historytask.h"
 
 
 #include <QVBoxLayout>
@@ -11,6 +12,7 @@
 #include <QMutexLocker>
 #include <QToolBar>
 #include <QAction>
+#include <QJsonObject>
 
 
 
@@ -21,9 +23,9 @@ QueueFrame::QueueFrame(QWidget *parent): QFrame(parent) {
 	toolbar = new QToolBar(this);
 	vbox->addWidget(toolbar);
 
-	actionStart = qRelightApp->addAction("queue_toolbar_start", tr("Start"), "play", "");
-	actionPause = qRelightApp->addAction("queue_toolbar_pause", tr("Pause"), "pause", "");
-	actionStop = qRelightApp->addAction("queue_toolbar_stop", tr("Stop"), "stop", "");
+	actionStart = qRelightApp->addAction("queue_toolbar_start", "Start", "play", "");
+	actionPause = qRelightApp->addAction("queue_toolbar_pause", "Pause", "pause", "");
+	actionStop = qRelightApp->addAction("queue_toolbar_stop", "Stop", "square", "");
 
 	toolbar->addAction(actionStart);
 	toolbar->addAction(actionPause);
@@ -33,34 +35,35 @@ QueueFrame::QueueFrame(QWidget *parent): QFrame(parent) {
 	connect(actionPause, &QAction::triggered, this, &QueueFrame::pauseQueue);
 	connect(actionStop, &QAction::triggered, this, &QueueFrame::stopQueue);
 
-	QLabel *activeLabel = new QLabel(tr("Active Queue"));
-	activeLabel->setObjectName("queueActiveLabel");
+	QLabel *activeLabel = new QLabel("Active Queue");
 	vbox->addWidget(activeLabel);
 
 	activeList = new QListWidget;
-	activeList->setObjectName("queueActiveList");
 	activeList->setSelectionMode(QAbstractItemView::NoSelection);
+	activeList->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+	activeList->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	vbox->addWidget(activeList);
 
-	QLabel *historyLabel = new QLabel(tr("History"));
-	historyLabel->setObjectName("queueHistoryLabel");
+	QLabel *historyLabel = new QLabel("History");
 	vbox->addWidget(historyLabel);
 
 	historyList = new QListWidget;
-	historyList->setObjectName("queueHistoryList");
 	historyList->setSelectionMode(QAbstractItemView::NoSelection);
+	historyList->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+	historyList->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	vbox->addWidget(historyList);
 
 	ProcessQueue &queue = ProcessQueue::instance();
-	connect(&queue, SIGNAL(update()), this, SLOT(update()));
+	connect(&queue, SIGNAL(update()), this, SLOT(updateLists()));
+	connect(&queue, SIGNAL(finished(Task *)), this, SLOT(taskFinished(Task *)));
 
-	update();
+	updateLists();
 }
 
 void QueueFrame::removeTask(Task *task) {
 	ProcessQueue &queue = ProcessQueue::instance();
 	queue.removeTask(task->id);
-	update();
+	updateLists();
 }
 void QueueFrame::startQueue() {
 	ProcessQueue::instance().start();
@@ -73,29 +76,24 @@ void QueueFrame::pauseQueue() {
 void QueueFrame::stopQueue() {
 	ProcessQueue::instance().stop();
 }
-void QueueFrame::update() {
+
+void QueueFrame::taskFinished(Task *task) {
+	if(!task->visible)
+		return;
+
+	QJsonObject entry = task->info();
+	entry.insert("log", task->log);
+	entry.insert("error", task->error);
+
+	qRelightApp->project().addCompletedTask(entry);
+}
+
+void QueueFrame::updateLists() {
+
+	rebuildActiveList();
+	rebuildHistoryList();
+
 	ProcessQueue &queue = ProcessQueue::instance();
-
-	QList<Task *> activeTasks;
-	QList<Task *> historyTasks;
-
-	{
-		QMutexLocker lock(&queue.lock);
-		if(queue.task && queue.task->visible)
-			activeTasks.append(queue.task);
-		for(Task *task: queue.queue) {
-			if(task->visible)
-				activeTasks.append(task);
-		}
-		for(Task *task: queue.past) {
-			if(task->visible)
-				historyTasks.append(task);
-		}
-	}
-
-	rebuildActiveList(activeTasks);
-	rebuildHistoryList(historyTasks);
-
 	if(actionStart)
 		actionStart->setEnabled(queue.stopped || !queue.hasTasks());
 	if(actionPause)
@@ -105,18 +103,36 @@ void QueueFrame::update() {
 
 }
 
-void QueueFrame::rebuildActiveList(const QList<Task *> &tasks) {
+void QueueFrame::rebuildActiveList() {
+	ProcessQueue &queue = ProcessQueue::instance();
+	QList<Task *> activeTasks;
+
+	{
+		QMutexLocker lock(&queue.lock);
+		if(queue.task && queue.task->visible)
+			activeTasks.append(queue.task);
+		for(Task *task: queue.queue) {
+			if(task->visible)
+				activeTasks.append(task);
+		}
+	}
+
 	activeList->clear();
-	for(Task *task: tasks) {
+	for(Task *task: activeTasks) {
 		QueueItem *item = new QueueItem(task, activeList, false);
 		activeList->addItem(item);
 	}
 }
 
-void QueueFrame::rebuildHistoryList(const QList<Task *> &tasks) {
+void QueueFrame::rebuildHistoryList() {
 	historyList->clear();
-	for(Task *task: tasks) {
+	historyEntries.clear();
+	Project *project = qRelightApp->m_project;
+	const QList<QJsonObject> &entries = project->taskHistory();
+	for(const QJsonObject &entry: entries) {
+		HistoryTask *task = new HistoryTask(entry);
 		QueueItem *item = new QueueItem(task, historyList, true);
 		historyList->addItem(item);
+		historyEntries.push_back(task);
 	}
 }

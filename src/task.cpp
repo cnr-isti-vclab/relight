@@ -7,6 +7,8 @@
 #include <QProcess>
 #include <QDebug>
 #include <QJsonObject>
+#include <QJsonValue>
+#include <QDateTime>
 
 #include <iostream>
 using namespace std;
@@ -139,9 +141,38 @@ bool Task::progressed(QString s, int percent) {
 
 QJsonObject Task::info() const {
 	QJsonObject obj;
-	obj["id"] = id;
+	obj["uuid"] = uuid.toString();
 	obj["label"] = label;
 	obj["status"] = static_cast<int>(status);
 	obj["output"] = output;
+	obj["mime"] = mimeToString(mime);
+	obj["startedAt"] = startedAt.isValid() ? QJsonValue(startedAt.toString(Qt::ISODateWithMs)) : QJsonValue();
 	return obj;
+}
+
+QString Task::mimeToString(Mime value) {
+	switch(value) {
+	case UNKNOWN: return QStringLiteral("UNKNOWN");
+	case IMAGE:   return QStringLiteral("IMAGE");
+	case RELIGHT: return QStringLiteral("RELIGHT");
+	case RTI:     return QStringLiteral("RTI");
+	case PTM:     return QStringLiteral("PTM");
+	case MESH:    return QStringLiteral("MESH");
+	}
+	return QStringLiteral("UNKNOWN");
+}
+
+Task::Mime Task::mimeFromString(const QString &name) {
+	const QString key = name.trimmed().toUpper();
+	if(key == "IMAGE")
+		return IMAGE;
+	if(key == "RELIGHT")
+		return RELIGHT;
+	if(key == "RTI")
+		return RTI;
+	if(key == "PTM")
+		return PTM;
+	if(key == "MESH")
+		return MESH;
+	return UNKNOWN;
 }

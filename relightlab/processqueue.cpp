@@ -1,9 +1,11 @@
 #include "processqueue.h"
 #include "relightapp.h"
+#include "historytask.h"
 
 #include <QProcess>
 #include <QDir>
 #include <QSettings>
+#include <QDateTime>
 
 #include <iostream>
 using namespace std;
@@ -47,6 +49,7 @@ void ProcessQueue::run() {
 			if(task->visible) {
 				QString msg = task->status == Task::DONE ? "Done" : task->error;
 				msg = task->output + "\n" + msg;
+				emit finished(task);
 				emit finished(task->label, msg);
 			}
 			if(!task->owned)
@@ -161,9 +164,15 @@ void ProcessQueue::clear() {
 }
 
 void ProcessQueue::clearHistory() {
+	QList<Task *> old;
 	{
 		QMutexLocker locker(&lock);
+		old = past;
 		past.clear();
+	}
+	for(Task *task: old) {
+		if(!task->owned)
+			delete task;
 	}
 	emit update();
 }
@@ -194,9 +203,12 @@ void ProcessQueue::stop() {
 	{
 		QMutexLocker locker(&lock);
 		stopped = true;
-		if(task)
+		if(task) {
 			task->stop();
+			emit finished(task);
+		}
 	}
+	task = nullptr;
 	emit update();
 }
 

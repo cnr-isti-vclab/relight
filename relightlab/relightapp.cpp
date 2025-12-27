@@ -171,7 +171,6 @@ void RelightApp::notify(const QString &title, const QString &msg, int ms) {
 	systemTray->setVisible(true);
 	systemTray->showMessage(title, msg, icon, ms);
 	systemTray->setVisible(false);
-
 }
 
 inline bool isDarkMode() {
