@@ -44,8 +44,25 @@ set (RELIGHT_HEADERS
     ../src/white.h
     ../src/normals/bni_normal_integration.h
     ../src/normals/fft_normal_integration.h
+    ../src/normals/normalstask.h
     ../src/normals/normals_parameters.h
     ../src/crop.h
+    ../src/rti/rtitask.h
+    ../src/rti/rtiparameters.h
+    ../src/cli/rtibuilder.h
+    ../src/task.h 
+    ../src/deepzoom.h
+    ../src/rti.h
+    ../src/legacy_rti.h
+    ../src/imageset.h
+    ../src/colorprofile.h
+    ../src/jpeg_decoder.h
+    ../src/jpeg_encoder.h
+    ../src/icc_profiles.h
+    ../src/normals/flatnormals.h
+    ../src/network/httpserver.h
+    ../src/brdf/brdftask.h
+    ../src/brdf/brdfparameters.h
     alignrow.h
     alignframe.h
     alignframe.h
@@ -72,36 +89,22 @@ set (RELIGHT_HEADERS
     sphereframe.h 
     spherepicking.h 
     spheredialog.h 
-    ../src/task.h 
     verifyview.h 
     verifydialog.h 
     helpbutton.h 
     cropframe.h 
     rtiframe.h
-    ../src/rti/rtitask.h
-    ../src/cli/rtibuilder.h
-    zoom.h  
-    ../src/deepzoom.h
-    ../src/rti.h
-    ../src/legacy_rti.h
-    ../src/imageset.h
-    ../src/colorprofile.h
-    ../src/jpeg_decoder.h
-    ../src/jpeg_encoder.h
-    ../src/icc_profiles.h
-    ../src/normals/flatnormals.h
-    ../src/network/httpserver.h
+    zoom.h
     queueframe.h
     queueitem.h
     historytask.h
     normalsframe.h
-    ../src/normals/normalstask.h
     normalsplan.h
     planrow.h
     scaleframe.h
     imagecropper.h
     brdfframe.h
-    ../src/brdf/brdftask.h
+
     brdfplan.h
     convertdialog.h
 )
@@ -120,10 +123,28 @@ set (RELIGHTLAB_SOURCES
     ../src/project.cpp 
     ../src/sphere.cpp 
     ../src/white.cpp 
+    ../src/normals/flatnormals.cpp
     ../src/normals/bni_normal_integration.cpp
     ../src/normals/fft_normal_integration.cpp
     ../src/normals/normals_parameters.cpp
+    ../src/normals/normalstask.cpp
+    ../src/task.cpp 
     ../src/crop.cpp
+    ../src/rti/rtitask.cpp
+    ../src/rti/rtiparameters.cpp
+    ../src/cli/rtibuilder.cpp
+    ../src/cli/convert_rti.cpp
+    ../src/deepzoom.cpp
+    ../src/rti.cpp
+    ../src/legacy_rti.cpp
+    ../src/imageset.cpp
+    ../src/colorprofile.cpp
+    ../src/jpeg_decoder.cpp
+    ../src/jpeg_encoder.cpp
+    ../src/icc_profiles.cpp
+    ../src/network/httpserver.cpp
+    ../src/brdf/brdftask.cpp
+    ../src/brdf/brdfparameters.cpp
     alignframe.cpp
     alignpicking.cpp
     alignrow.cpp
@@ -149,7 +170,6 @@ set (RELIGHTLAB_SOURCES
     sphereframe.cpp 
     spherepicking.cpp 
     spheredialog.cpp 
-    ../src/task.cpp 
     verifyview.cpp 
     verifydialog.cpp 
     helpbutton.cpp 
@@ -157,30 +177,15 @@ set (RELIGHTLAB_SOURCES
     rtiframe.cpp
     rtirecents.cpp
     rtiplan.cpp
-    ../src/rti/rtitask.cpp
-    ../src/cli/rtibuilder.cpp
-    ../src/cli/convert_rti.cpp
-    ../src/deepzoom.cpp
-    ../src/rti.cpp
-    ../src/legacy_rti.cpp
-    ../src/imageset.cpp
-    ../src/colorprofile.cpp
-    ../src/jpeg_decoder.cpp
-    ../src/jpeg_encoder.cpp
-    ../src/icc_profiles.cpp
-    ../src/normals/flatnormals.cpp
-    ../src/network/httpserver.cpp
     queueframe.cpp
     queueitem.cpp
     historytask.cpp
     normalsframe.cpp
-    ../src/normals/normalstask.cpp
     normalsplan.cpp
     planrow.cpp
     scaleframe.cpp
     imagecropper.cpp
     brdfframe.cpp
-    ../src/brdf/brdftask.cpp
     brdfplan.cpp
     convertdialog.cpp
 )
