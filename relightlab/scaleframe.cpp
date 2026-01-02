@@ -55,7 +55,8 @@ ScaleFrame::ScaleFrame(QWidget *parent): QFrame(parent) {
 	text = new QGraphicsTextItem();
 	QPen pen;
 	pen.setColor(Qt::yellow);
-	pen.setWidth(1);
+	pen.setWidth(2);
+	pen.setCosmetic(true);
 
 	first->setPen(pen);
 	second->setPen(pen);
