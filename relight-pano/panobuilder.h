@@ -71,12 +71,12 @@ public:
 	void tarama();
 	void malt_mec();
 	void c3dc();
+	void loadOrthoPlanes();
 	void tawny();
 	void depthmap();
 	void malt_ortho();
 	void jpg();
 	void updateJson();
-
 
 signals:
 private:

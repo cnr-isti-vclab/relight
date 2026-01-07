@@ -11,6 +11,7 @@
 #include "orixml.h"
 #include "orthodepthmap.h"
 #include "depthmap.h"
+#include "ortholoader.h"
 //#define TESTING_PLANE_0
 using namespace std;
 
@@ -351,7 +352,7 @@ void PanoBuilder::process(Steps starting_step, bool stop){
 		runWithTiming("MALT_ORTHO", [this]() { malt_ortho(); });
 		if (stop) break;
 	case TAWNY:
-		runWithTiming("TAWNY", [this]() { tawny(); });
+		runWithTiming("TAWNY", [this]() { loadOrthoPlanes(); tawny(); });
 		if (stop) break;
 	case JPG:
 		runWithTiming("JPG", [this]() { jpg(); });
@@ -977,8 +978,85 @@ void PanoBuilder::malt_ortho() {
 // rti fa l img media non la deve fare l rti si crea in tif, sposta rti dopo il malt mec e si fa direttamente l'img media
 
 // trova i coefficienti del tawny per vedere le sovrapposizioni degli ortho
-void PanoBuilder::tawny() {
+
+void PanoBuilder::loadOrthoPlanes()
+{
 	QDir currentDir = cd("photogrammetry");
+
+	QStringList planeDirs = currentDir.entryList(
+		QStringList() << "Ortho_plane_*",
+		QDir::Dirs | QDir::NoDotAndDotDot
+		);
+
+	for (const QString &planeDirName : planeDirs) {
+
+		QDir orthoDir(currentDir.filePath(planeDirName));
+
+		OrthoLoader loader;
+		QString error;
+
+		if (!loader.loadFromDirectory(orthoDir.absolutePath(), &error)) {
+			throw QString("OrthoLoader failed for %1: %2")
+				.arg(planeDirName, error);
+		}
+
+		if (loader.empty()) {
+			throw QString("No ortho tiles loaded in %1").arg(planeDirName);
+		}
+
+		cout << "Loaded " << loader.tiles().size()
+			 << " tiles for " << qPrintable(planeDirName) << endl;
+
+		cout << "Canvas size: "
+			 << loader.canvasSize().width() << " x "
+			 << loader.canvasSize().height() << endl;
+
+		cout << "Pixel size: "
+			 << loader.pixelWidth() << " x "
+			 << loader.pixelHeight() << endl;
+
+	}
+}
+
+void PanoBuilder::tawny()
+{
+	QDir currentDir = cd("photogrammetry");
+
+	loadOrthoPlanes();
+
+	QStringList planeDirs = currentDir.entryList(QStringList() << "Ortho_plane_*", QDir::Dirs | QDir::NoDotAndDotDot);
+
+	for (const QString &planeDirName : planeDirs) {
+
+		QDir orthoDir(currentDir.filePath(planeDirName));
+		QString plane = planeDirName.split("_").last();
+
+		if (!orthoDir.exists()) {
+			throw QString("Directory %1 does not exist").arg(orthoDir.absolutePath());
+		}
+
+		QString program = mm3d_path;
+		QStringList arguments;
+		arguments << "Tawny"
+				  << planeDirName
+				  << "DEq=0"
+				  << "RadiomEgal=0"
+				  << "DegRap=0"
+				  << QString("Out=plane_%1.tif").arg(plane);
+
+		try {
+			executeProcess(program, arguments);
+		} catch (QString &e) {
+			cout << "Error during Tawny: " << qPrintable(e) << endl;
+			cout << "Command Line: " << qPrintable(arguments.join(" ")) << endl;
+		}
+	}
+}
+
+/*void PanoBuilder::tawny() {
+
+	QDir currentDir = cd("photogrammetry");
+	loadOrthoPlanes();
 
 	//int n_planes = findNPlanes(currentDir);
 	QStringList planeDirs  = currentDir.entryList(QStringList() << "Ortho_plane_*", QDir::Dirs);
@@ -1006,7 +1084,7 @@ void PanoBuilder::tawny() {
 			cout << "Command Line: " << qPrintable(arguments.join(" ")) << endl;
 		}
 	}
-}
+}*/
 // <<"DEq=3" << "DegRap=2" << "SzV=5"
 //<< "CorThr=0.2"<< "NbPerIm=5e4"
 /*1.	DEq: Determina il grado del polinomio per equalizzare le singole immagini. Più alto è il valore, più complessa sarà l’equalizzazione.
