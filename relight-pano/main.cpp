@@ -5,6 +5,7 @@
 #include <QCommandLineOption>
 #include <iostream>
 #include <QtXml>
+#include <QImageReader>
 #include "panobuilder.h"
 
 using namespace std;
@@ -24,6 +25,8 @@ int main(int argc, char *argv[])
 	QCoreApplication app(argc, argv);
 	QCoreApplication::setApplicationName("relight-pano");
 
+	QImageReader::setAllocationLimit(4096);
+
 	QCommandLineParser parser;
 	parser.setApplicationDescription("relight-pano: builds an RTI panorama");
 	parser.addHelpOption();
@@ -34,17 +37,21 @@ int main(int argc, char *argv[])
 	QCommandLineOption mergeOption(QStringList()       << "G" << "relight-merge",   "Relight-merge path",   "mergebin", "/home/erika/relight/relight-merge/relight-merge");
 	QCommandLineOption normalsOption(QStringList()     << "N" << "relight-normals", "Relight-normals path", "normalsbin", "/home/erika/relight/relight-normals/relight-normals");
 
+
 	QCommandLineOption interactiveOption(QStringList() << "i" << "interactive",  "Open users interface");
 	QCommandLineOption verboseOption(QStringList()     << "v" << "verbose",      "Enable verbose output");
 	QCommandLineOption debugOption(QStringList()       << "d" << "debug",        "Enable debug output");
 	QCommandLineOption stepOption(QStringList()        << "s" << "step",
 								  "Starting step (means, tapioca, schnaps, tapas, apericloud, orthoplane, tarama, malt_mec, c3dc, rti, depthmap, malt_ortho, jpg)", "step");
 	QCommandLineOption stopOption(QStringList()        << "S" << "stop",         "Stop after first step");
+	QCommandLineOption retawnyOption(QStringList()     << "R" << "retawny","Retawny executable path", "retawnybin", "/home/erika/relight-diverged/retawny/build/retawny");
+
 
 	parser.addOption(micmacOption);
 	parser.addOption(cliOption);
 	parser.addOption(mergeOption);
 	parser.addOption(normalsOption);
+	parser.addOption(retawnyOption);
 
 	parser.addOption(interactiveOption);
 	parser.addOption(verboseOption);

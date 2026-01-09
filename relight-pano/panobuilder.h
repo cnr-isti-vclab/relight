@@ -39,6 +39,9 @@ public:
 	QString mm3d_path;
 	QString relight_cli_path;
 	QString relight_merge_path;
+	QString retawny_path;
+	void setRetawny(const QString &path) { retawny_path = path; }
+
 
 	QFile log;
 	//use DefCor and Regul in malt_mec function, set with default value

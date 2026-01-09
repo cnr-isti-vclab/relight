@@ -12,9 +12,9 @@
 #include "orthodepthmap.h"
 #include "depthmap.h"
 #include "ortholoader.h"
+
 //#define TESTING_PLANE_0
 using namespace std;
-
 
 
 //TODO: fix the mean directory. Ex. command line: /usr/your/testFace
@@ -984,9 +984,7 @@ void PanoBuilder::loadOrthoPlanes()
 	QDir currentDir = cd("photogrammetry");
 
 	QStringList planeDirs = currentDir.entryList(
-		QStringList() << "Ortho_plane_*",
-		QDir::Dirs | QDir::NoDotAndDotDot
-		);
+		QStringList() << "Ortho_plane_*", QDir::Dirs | QDir::NoDotAndDotDot);
 
 	for (const QString &planeDirName : planeDirs) {
 
@@ -996,8 +994,7 @@ void PanoBuilder::loadOrthoPlanes()
 		QString error;
 
 		if (!loader.loadFromDirectory(orthoDir.absolutePath(), &error)) {
-			throw QString("OrthoLoader failed for %1: %2")
-				.arg(planeDirName, error);
+			throw QString("OrthoLoader failed for %1: %2").arg(planeDirName, error);
 		}
 
 		if (loader.empty()) {
@@ -1018,11 +1015,10 @@ void PanoBuilder::loadOrthoPlanes()
 	}
 }
 
+
 void PanoBuilder::tawny()
 {
 	QDir currentDir = cd("photogrammetry");
-
-	loadOrthoPlanes();
 
 	QStringList planeDirs = currentDir.entryList(QStringList() << "Ortho_plane_*", QDir::Dirs | QDir::NoDotAndDotDot);
 
@@ -1035,23 +1031,24 @@ void PanoBuilder::tawny()
 			throw QString("Directory %1 does not exist").arg(orthoDir.absolutePath());
 		}
 
-		QString program = mm3d_path;
+		//retawny project
+		QString program = retawny_path;
+
+		QString outputFile = currentDir.absoluteFilePath(QString("plane_%1.tif").arg(plane));
+
 		QStringList arguments;
-		arguments << "Tawny"
-				  << planeDirName
-				  << "DEq=0"
-				  << "RadiomEgal=0"
-				  << "DegRap=0"
-				  << QString("Out=plane_%1.tif").arg(plane);
+		arguments << orthoDir.absolutePath() << outputFile;
 
 		try {
 			executeProcess(program, arguments);
 		} catch (QString &e) {
-			cout << "Error during Tawny: " << qPrintable(e) << endl;
-			cout << "Command Line: " << qPrintable(arguments.join(" ")) << endl;
+			cout << "Error during retawny: " << qPrintable(e) << endl;
+			cout << "Command Line: " << qPrintable(program + " " + arguments.join(" ")) << endl;
 		}
 	}
 }
+
+
 
 /*void PanoBuilder::tawny() {
 
