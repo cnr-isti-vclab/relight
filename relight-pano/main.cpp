@@ -131,6 +131,7 @@ int main(int argc, char *argv[])
 			builder.setMm3d(parser.value(micmacOption));
 			builder.setRelightCli(parser.value(cliOption));
 			builder.setRelightMerge(parser.value(mergeOption));
+			builder.setRetawny(parser.value(retawnyOption));
 
 			//builder.setMm3d("/home/erika/micmac/bin/mm3d");
 			// builder.setRelightCli("/home/erika/relight/relight-cli/relight-cli");
