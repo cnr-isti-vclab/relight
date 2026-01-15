@@ -1100,47 +1100,64 @@ void PanoBuilder::tawny()
 	•	NbPerIm=5e4: Di default, si campionano circa 50.000 punti per immagine. Potrebbe essere utile aumentarli a NbPerIm=1e5.*/
 
 
-void PanoBuilder::jpg() {
-	//prende l'input dalla sottodirectory Ortho Plane. plane_0.tif
-	QDir currentDir = cd("photogrammetry");
-	QStringList planeDirs = currentDir.entryList(QStringList() << "Ortho_plane_*", QDir::Dirs);
-	rmdir("Panorama");
-	currentDir.mkdir("Panorama");
-	QDir panoramaDir("Panorama");
-	//	for (int plane = 0; plane < n_planes; ++plane) {
-	for (const QString& planeDirName : planeDirs) {
-		//QString planeDirName = QString("Ortho_plane_%1").arg(plane);
+void PanoBuilder::jpg()
+{
+	QDir photogrammetryDir = cd("photogrammetry");
 
-		QDir orthoDir(currentDir.filePath(planeDirName));
-		if (!orthoDir.exists()) {
-			throw QString("Directory %1 does not exist").arg(orthoDir.absolutePath());
-		}
-		QStringList tifFiles = orthoDir.entryList(QStringList() << "plane_*.tif", QDir::Files);
-		if (tifFiles.isEmpty()) {
-			throw QString("No plane_*.tif files in " + orthoDir.absolutePath());
-		}
+	if (!photogrammetryDir.exists()) {
+		throw QString("photogrammetry directory does not exist");
+	}
 
-		QString tifFile = tifFiles.first();
-		QString tifFilePath = orthoDir.filePath(tifFile);
+	// Rimuovi Panorama se esiste
+	if (photogrammetryDir.exists("Panorama")) {
+		QDir panoToRemove(photogrammetryDir.filePath("Panorama"));
+		panoToRemove.removeRecursively();
+	}
 
-		QString baseName = tifFile.split(".").first();
+	// Crea Panorama
+	if (!photogrammetryDir.mkdir("Panorama")) {
+		throw QString("Failed to create Panorama directory");
+	}
+
+	QDir panoramaDir(photogrammetryDir.filePath("Panorama"));
+
+	// Prendi tutti i plane_*.tif direttamente in photogrammetry
+	QStringList tifFiles = photogrammetryDir.entryList(QStringList() << "plane_*.tif", QDir::Files);
+
+	if (tifFiles.isEmpty()) {
+		throw QString("No plane_*.tif files found in " + photogrammetryDir.absolutePath());
+	}
+
+	// Imposta limite alto per immagini grandi (in MB)
+	QImageReader::setAllocationLimit(8000); // 8 GB
+
+	for (const QString &tifFile : tifFiles) {
+
+		QString tifFilePath = photogrammetryDir.filePath(tifFile);
+
 		QImageReader reader(tifFilePath);
-		QImageReader::setAllocationLimit(8000);
-
 		QImage img = reader.read();
+
 		if (img.isNull()) {
-			throw QString("Failed to load image: %1 error: %2").arg(tifFilePath).arg(reader.errorString());
+			throw QString("Failed to load image: %1 | error: %2")
+			.arg(tifFilePath)
+				.arg(reader.errorString());
 		}
-		QString jpgFileName = QString("%1.jpg").arg(baseName);
+
+		QString baseName = QFileInfo(tifFile).completeBaseName();
+		QString jpgFileName = baseName + ".jpg";
 		QString jpgFilePath = panoramaDir.filePath(jpgFileName);
 
-		if (!img.save(jpgFilePath, "jpg", 98)) {
-			throw QString("Failed to save image: ").arg(jpgFilePath);
-		} else {
-			cout << "Saved image as: " << qPrintable(jpgFilePath) << endl;
+		if (!img.save(jpgFilePath, "JPG", 98)) {
+			throw QString("Failed to save image: " + jpgFilePath);
 		}
+
+		cout << "Saved: " << qPrintable(jpgFilePath) << endl;
 	}
+
+	cout << "All planes converted to JPG in Panorama folder." << endl;
 }
+
 
 void PanoBuilder::updateJson(){
 	QDir currentDir = cd("photogrammetry");
