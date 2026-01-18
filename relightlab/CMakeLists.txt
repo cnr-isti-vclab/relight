@@ -6,7 +6,7 @@ set(CMAKE_FIND_FRAMEWORK LAST)
 
 find_package(
 	${RELIGHT_QT}
-	COMPONENTS Core Gui Widgets Concurrent Xml
+	COMPONENTS Core Gui Widgets Concurrent Xml Svg
 	REQUIRED)
 find_package(OpenMP)
 
@@ -229,6 +229,7 @@ target_link_libraries(
 		${RELIGHT_QT}::Widgets
 		${RELIGHT_QT}::Concurrent
         ${RELIGHT_QT}::Xml
+        ${RELIGHT_QT}::Svg
         ${LCMS2_LIBRARIES}
 )
 

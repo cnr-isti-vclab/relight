@@ -126,6 +126,10 @@ void QueueFrame::rebuildActiveList() {
 
 void QueueFrame::rebuildHistoryList() {
 	historyList->clear();
+	// Delete old HistoryTask objects to avoid memory leak
+	for(HistoryTask *task : historyEntries) {
+		delete task;
+	}
 	historyEntries.clear();
 	Project *project = qRelightApp->m_project;
 	const QList<QJsonObject> &entries = project->taskHistory();

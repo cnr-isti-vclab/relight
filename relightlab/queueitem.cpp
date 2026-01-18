@@ -375,8 +375,10 @@ void QueueItem::refreshActions() {
 
 	QFileInfo info(task->output);
 	const bool hasOutput = info.exists();
+	folderButton->setVisible(true);
 	folderButton->setEnabled(hasOutput);
 	bool canCast = hasOutput;
+	castButton->setVisible(true);
 	castButton->setEnabled(hasOutput && (isDone || historyEntry));
 	castButton->setToolTip(hasOutput ? "Cast result" : "Casting available once processing finishes");
 	infoButton->setVisible(true);

@@ -164,8 +164,8 @@ void RtiFrame::exportRti() {
 
 	RtiTask *rti_task = new RtiTask();
 	try {
-		rti_task->setProject(project);
 		rti_task->setParameters(parameters);
+		rti_task->setProject(project);
 		rti_task->output = parameters.path;
 		project.dome.lightConfiguration = previous;
 
