@@ -29,6 +29,8 @@ public slots:
 private:
 	void rebuildActiveList();
 	void rebuildHistoryList();
+	void updateToolbarState();
+	void applyActionStyle(QAction *action, const QString &color, bool highlight);
 
 	QWidget *centralwidget;
 	QGridLayout *gridLayout;

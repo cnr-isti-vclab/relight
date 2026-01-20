@@ -13,6 +13,7 @@
 #include <QToolBar>
 #include <QAction>
 #include <QJsonObject>
+#include <QToolButton>
 
 
 
@@ -80,6 +81,8 @@ void QueueFrame::stopQueue() {
 void QueueFrame::taskFinished(Task *task) {
 	if(!task->visible)
 		return;
+	if(task->status == Task::STOPPED)
+		return;
 
 	QJsonObject entry = task->info();
 	entry.insert("log", task->log);
@@ -94,12 +97,15 @@ void QueueFrame::updateLists() {
 	rebuildHistoryList();
 
 	ProcessQueue &queue = ProcessQueue::instance();
+	ProcessQueue::State queueState = queue.state;
 	if(actionStart)
-		actionStart->setEnabled(queue.stopped || !queue.hasTasks());
+		actionStart->setEnabled(queueState != ProcessQueue::RUNNING || !queue.hasTasks());
 	if(actionPause)
-		actionPause->setEnabled(!queue.stopped);
+		actionPause->setEnabled(queueState == ProcessQueue::RUNNING);
 	if(actionStop)
-		actionStop->setEnabled(queue.task != nullptr);
+		actionStop->setEnabled(queueState == ProcessQueue::RUNNING || queue.task != nullptr);
+
+	updateToolbarState();
 
 }
 
@@ -121,6 +127,29 @@ void QueueFrame::rebuildActiveList() {
 	for(Task *task: activeTasks) {
 		QueueItem *item = new QueueItem(task, activeList, false);
 		activeList->addItem(item);
+	}
+}
+
+void QueueFrame::updateToolbarState() {
+	ProcessQueue &queue = ProcessQueue::instance();
+	ProcessQueue::State queueState = ProcessQueue::STOPPED;
+	{
+		QMutexLocker lock(&queue.lock);
+		queueState = queue.state;
+	}
+	applyActionStyle(actionStart, "#328232", queueState == ProcessQueue::RUNNING);
+	applyActionStyle(actionPause, "#828232", queueState == ProcessQueue::PAUSED);
+	applyActionStyle(actionStop, "#823232", queueState == ProcessQueue::STOPPED);
+}
+
+void QueueFrame::applyActionStyle(QAction *action, const QString &color, bool highlight) {
+	if(!toolbar || !action)
+		return;
+	if(QToolButton *button = qobject_cast<QToolButton *>(toolbar->widgetForAction(action))) {
+		if(highlight)
+			button->setStyleSheet(QString("background-color:%1; color:#b1b1b1; border-radius:4px;").arg(color));
+		else
+			button->setStyleSheet(QString());
 	}
 }
 

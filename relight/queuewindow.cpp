@@ -41,9 +41,10 @@ QueueWindow::~QueueWindow() {
 
 void QueueWindow::setToolsStatus() {
 	ProcessQueue &queue = ProcessQueue::instance();
-	ui->actionStart->setEnabled(queue.stopped == true);
-	ui->actionPause->setEnabled(queue.stopped == false);
-	ui->actionStop->setEnabled(queue.stopped == false || queue.task != nullptr);
+	ProcessQueue::State queueState = queue.state;
+	ui->actionStart->setEnabled(queueState != ProcessQueue::RUNNING);
+	ui->actionPause->setEnabled(queueState == ProcessQueue::RUNNING);
+	ui->actionStop->setEnabled(queueState == ProcessQueue::RUNNING || queue.task != nullptr);
 
 
 	bool empty_selection = ui->list->selectedItems().size() == 0;

@@ -12,51 +12,55 @@ using namespace std;
 
 
 ProcessQueue::~ProcessQueue() {
-	if(!isRunning())
-		return;
+	Task *current = nullptr;
 	{
 		QMutexLocker locker(&lock);
-		stopped = true;
+		quitting = true;
+		state = STOPPED;
+		current = task;
 	}
-
-	wait();
+	if(current)
+		current->stop();
+	if(isRunning())
+		wait();
 }
 
 void ProcessQueue::run() {
-	while(1) {
-		lock.lock();
-		if(stopped) {
-			lock.unlock();
-			break;
+	while(true) {
+		Task *currentTask = nullptr;
+		{
+			QMutexLocker locker(&lock);
+			if(quitting)
+				break;
+			if(!task && state == RUNNING && !queue.isEmpty())
+				startNewProcess();
 		}
-
 
 		if(!task) {
-			if(queue.size() == 0) {
-				lock.unlock();
-				sleep(1);
-			} else {
-				startNewProcess();
-				lock.unlock();
-			}
+			msleep(50);
 			continue;
 		}
-		lock.unlock();
 
 		task->wait(100);
 
-		if(task->isFinished()) {
-			if(task->visible) {
-				QString msg = task->status == Task::DONE ? "Done" : task->error;
-				msg = task->output + "\n" + msg;
-				emit finished(task);
-				emit finished(task->label, msg);
-			}
-			if(!task->owned)
-				past.push_back(task);
-			task = nullptr;
-			emit update();
+		if(!task->isFinished())
+			continue;
+
+		if(task->visible) {
+			QString msg = task->status == Task::DONE ? "Done" : task->error;
+			msg = task->output + "\n" + msg;
+			emit finished(task);
+			emit finished(task->label, msg);
 		}
+
+		{
+			QMutexLocker locker(&lock);
+			if(!task->owned) {
+				delete task;
+			}
+			task = nullptr;
+		}
+		emit update();
 	}
 
 }
@@ -67,9 +71,7 @@ void ProcessQueue::startNewProcess() {
 	task = queue.front();
 	queue.pop_front();
 
-	//task->mutex.lock();
 	task->status = Task::RUNNING;
-	//task->mutex.unlock();
 
 	task->start();
 	emit update();
@@ -122,9 +124,6 @@ void ProcessQueue::removeTask(int id) {
 			return;
 
 		queue.takeAt(index);
-		//processqueue is never the owner!
-		if(!task->owned)
-			delete task;
 	}
 	emit update();
 }
@@ -178,21 +177,23 @@ void ProcessQueue::clearHistory() {
 }
 
 void ProcessQueue::start() {
+	bool shouldStartThread = false;
 	{
 		QMutexLocker locker(&lock);
-		stopped = false;
+		state = RUNNING;
 		if(task)
 			task->resume();
-		if(!isRunning())
-			QThread::start();
+		shouldStartThread = !isRunning();
 	}
+	if(shouldStartThread)
+		QThread::start();
 	emit update();
 }
 
 void ProcessQueue::pause() {
 	{
 		QMutexLocker locker(&lock);
-		stopped = true;
+		state = PAUSED;
 		if(task)
 			task->pause();
 	}
@@ -200,15 +201,14 @@ void ProcessQueue::pause() {
 }
 
 void ProcessQueue::stop() {
+	Task *current = nullptr;
 	{
 		QMutexLocker locker(&lock);
-		stopped = true;
-		if(task) {
-			task->stop();
-			emit finished(task);
-		}
+		state = STOPPED;
+		current = task;
 	}
-	task = nullptr;
+	if(current)
+		current->stop();
 	emit update();
 }
 

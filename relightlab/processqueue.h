@@ -19,10 +19,12 @@ using namespace std;
 class ProcessQueue: public QThread {
 	Q_OBJECT
 public:
+	enum State { RUNNING = 0, PAUSED = 1, STOPPED = 2 };
 	~ProcessQueue();
 
 	Task *task = nullptr; //task is removed from the queue when executing.
-	bool stopped = false;
+	State state = RUNNING;
+	bool quitting = false;
 
 	QList<Task *> queue;
 	QList<Task *> past;
