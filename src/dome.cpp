@@ -66,17 +66,9 @@ void Dome::recomputePositions() {
 			
 		direction.normalize();
 		
-		// Assuming origin at image center (0, 0, 0) for directions from .lp files
-		Vector3f origin(0, 0, 0);
-		
-		float radius = (domeDiameter/2.0f)/imageWidth;
-		Vector3f center(0, 0, verticalOffset/imageWidth);
-		float distance = lineSphereDistance(origin, direction, center, radius);
-		Vector3f position = origin + direction*distance;
-		positions3d[i] = positionsSphere[i] = position*imageWidth;
-
+		float radius = (domeDiameter/2.0f);
+		positions3d[i] = positionsSphere[i] = direction*radius + Eigen::Vector3f(0, 0, verticalOffset);
 	}
-
 }
 
 QJsonArray toJson(std::vector<Vector3f> &values) {
@@ -358,9 +350,7 @@ void Dome::fromJson(const QJsonObject &obj) {
 		if(index >= 0)
 			lightSource = LightSource(index);
 	} else {
-		// For old projects without lightSource field, set to UNKNOWN
-		// The Project::load() will set it properly based on whether spheres exist
-		lightSource = UNKNOWN;
+		lightSource = FROM_LP;
 	}
 	::fromJson(obj["directions"].toArray(), directions);
 	::fromJson(obj["positionsSphere"].toArray(), positionsSphere);

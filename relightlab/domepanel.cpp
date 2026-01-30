@@ -294,7 +294,9 @@ void DomePanel::loadDome(QString path) {
 	//preserve image width if we actually have a measurement.
 	if(imageWidth != 0 && qRelightApp->project().measures.size() != 0)
 		dome.imageWidth = imageWidth;
-	dome.recomputePositions();
+
+	if(dome.lightSource == Dome::FROM_LP)
+		dome.recomputePositions();
 
 	updateDomeList(path);
 	setSphereSelected();  // Update highlighting after loading dome

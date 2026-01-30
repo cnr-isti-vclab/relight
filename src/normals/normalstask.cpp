@@ -488,7 +488,7 @@ void NormalsWorker::solveL2()
 
 		mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
 		mNormals.col(0).normalize();
-		// Task-level validation will handle NaN/z-threshold checks; write the normalized normal
+		// Task-level validation will handle NaN/z-threshold checks
 		m_Normals[normalIdx] = Eigen::Vector3f(float(mNormals.col(0)[0]), float(mNormals.col(0)[1]), float(mNormals.col(0)[2]));
 
 		normalIdx += 1;

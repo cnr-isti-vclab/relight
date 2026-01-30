@@ -340,8 +340,8 @@ void ImageSet::decode(size_t img, unsigned char *buffer) {
 Vector3f ImageSet::relativeLight(const Vector3f &light3d, int x, int y){
 	Vector3f l = light3d;
 	//relative position to the center in mm
-	float dx = pixel_size*(x - image_width/2.0f);
-	float dy = pixel_size*(y - image_height/2.0f);
+	float dx = 0.5*pixel_size*(float(x) - image_width/2.0f);
+	float dy = 0.5*pixel_size*(float(y) - image_height/2.0f);
 	l[0]  -= dx;
 	l[1]  -= dy;
 
@@ -353,6 +353,21 @@ Vector3f ImageSet::relativeLight(const Vector3f &light3d, int x, int y){
 		l[1] = y;
 	}
 	return l;
+}
+
+void ImageSet::compensateIntensity(PixelArray &pixels) {
+	assert(pixel_size != 0.0f);
+	assert(lights1.size() == size_t(images.size()));
+	assert(lights1.size() == pixels.nlights);
+	for(Pixel &pixel: pixels) {
+		for(size_t i = 0; i < pixel.size(); i++) {
+			Vector3f l = relativeLight(lights1[i], pixel.x, pixel.y);
+			float f = l.squaredNorm() / idealLightDistance2;
+			pixel[i].r *= f;
+			pixel[i].g *= f;
+			pixel[i].b *= f;
+		}
+	}
 }
 
 void ImageSet::readLine(PixelArray &pixels) {
@@ -457,22 +472,6 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 		offset += samplexrow;
 	}
 	return nsamples;
-}
-
-void ImageSet::compensateIntensity(PixelArray &pixels) {
-	assert(pixel_size != 0.0f);
-	assert(lights1.size() == size_t(images.size()));
-	assert(lights1.size() == pixels.nlights);
-	for(Pixel &pixel: pixels) {
-		for(size_t i = 0; i < pixel.size(); i++) {
-			Vector3f l = relativeLight(lights1[i], pixel.x, pixel.y);
-			float f = l.squaredNorm() / idealLightDistance2;
-			pixel[i].r *= f;
-			pixel[i].g *= f;
-			pixel[i].b *= f;
-		}
-	}
-
 }
 
 void ImageSet::applyColorTransform(uint8_t *data, size_t pixel_count) {

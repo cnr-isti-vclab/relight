@@ -295,6 +295,7 @@ void RelightApp::newProject() {
 			}
 		} catch(QString error) {
 			// Silently fail if we can't check/load the default dome
+			throw QString("Could not load dome: %1").arg(error);
 		}
 	}
 
