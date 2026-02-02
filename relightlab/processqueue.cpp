@@ -49,7 +49,7 @@ void ProcessQueue::run() {
 		if(task->visible) {
 			QString msg = task->status == Task::DONE ? "Done" : task->error;
 			msg = task->output + "\n" + msg;
-			emit finished(task);
+			emit finished(task->info());
 			emit finished(task->label, msg);
 		}
 

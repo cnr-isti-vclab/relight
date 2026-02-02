@@ -254,8 +254,12 @@ void DomePanel::exportDome() {
 void DomePanel::loadLP(QString path) {
 	std::vector<QString> filenames;
 	std::vector<Eigen::Vector3f> directions;
-
-	parseLP(path, directions, filenames);
+	try {
+		parseLP(path, directions, filenames);
+	} catch(QString error) {
+		QMessageBox::critical(this, "Could not load this dome:", error);
+		return;
+	}
 	if(qRelightApp->project().size() != directions.size())
 		QMessageBox::warning(this, "Wrong number of lights (or images)",
 			"The number of lights must be the same as the number of checked images.");

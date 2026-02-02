@@ -14,6 +14,7 @@
 #include <QAction>
 #include <QJsonObject>
 #include <QToolButton>
+#include <QSize>
 
 
 
@@ -22,6 +23,7 @@ QueueFrame::QueueFrame(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *vbox = new QVBoxLayout(this);
 
 	toolbar = new QToolBar(this);
+	toolbar->setIconSize(QSize(18, 18));
 	vbox->addWidget(toolbar);
 
 	actionStart = qRelightApp->addAction("queue_toolbar_start", "Start", "play", "");
@@ -56,7 +58,7 @@ QueueFrame::QueueFrame(QWidget *parent): QFrame(parent) {
 
 	ProcessQueue &queue = ProcessQueue::instance();
 	connect(&queue, SIGNAL(update()), this, SLOT(updateLists()));
-	connect(&queue, SIGNAL(finished(Task *)), this, SLOT(taskFinished(Task *)));
+	connect(&queue, SIGNAL(finished(QJsonObject)), this, SLOT(taskFinished(QJsonObject)));
 
 	updateLists();
 }
@@ -78,17 +80,11 @@ void QueueFrame::stopQueue() {
 	ProcessQueue::instance().stop();
 }
 
-void QueueFrame::taskFinished(Task *task) {
-	if(!task->visible)
+void QueueFrame::taskFinished(QJsonObject task) {
+	int status = task.value("status").toInt();
+	if(status == Task::STOPPED)
 		return;
-	if(task->status == Task::STOPPED)
-		return;
-
-	QJsonObject entry = task->info();
-	entry.insert("log", task->log);
-	entry.insert("error", task->error);
-
-	qRelightApp->project().addCompletedTask(entry);
+	qRelightApp->project().addCompletedTask(task);
 }
 
 void QueueFrame::updateLists() {
@@ -146,10 +142,12 @@ void QueueFrame::applyActionStyle(QAction *action, const QString &color, bool hi
 	if(!toolbar || !action)
 		return;
 	if(QToolButton *button = qobject_cast<QToolButton *>(toolbar->widgetForAction(action))) {
+		const QString baseStyle = QStringLiteral("QToolButton { padding:4px 10px; border-radius:4px; }");
+		QString highlightStyle;
 		if(highlight)
-			button->setStyleSheet(QString("background-color:%1; color:#b1b1b1; border-radius:4px;").arg(color));
-		else
-			button->setStyleSheet(QString());
+			highlightStyle = QString("QToolButton { background-color:%1; color:#b1b1b1; }").arg(color);
+		button->setStyleSheet(baseStyle + highlightStyle);
+		button->setIconSize(QSize(18, 18));
 	}
 }
 

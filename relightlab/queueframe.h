@@ -3,6 +3,8 @@
 
 #include <QFrame>
 #include <QVector>
+#include <QJsonObject>
+
 #include <memory>
 
 class QItemSelection;
@@ -21,7 +23,7 @@ public:
 	void init() { updateLists(); }
 public slots:
 	void updateLists();
-	void taskFinished(Task *task);
+	void taskFinished(QJsonObject task);
 	void startQueue();
 	void pauseQueue();
 	void stopQueue();

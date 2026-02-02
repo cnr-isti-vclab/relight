@@ -162,7 +162,7 @@ QueueItem::QueueItem(Task *_task, QListWidget *parent, bool history): QObject(pa
 	grid->setColumnStretch(1, 1);
 	grid->setColumnStretch(2, 0);
 
-	title = new QLabel(QStringLiteral("<b>%1</b> %2").arg(task->label, task->output));
+	title = new QLabel(QStringLiteral("<b>%1</b>").arg(task->label));
 	title->setTextInteractionFlags(Qt::TextSelectableByMouse);
 	grid->addWidget(title, 0, 0, 1, 2);
 

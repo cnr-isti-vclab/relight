@@ -145,6 +145,8 @@ QJsonObject Task::info() const {
 	obj["label"] = label;
 	obj["status"] = static_cast<int>(status);
 	obj["output"] = output;
+	obj["log"] = log;
+	obj["error"] = error;
 	obj["mime"] = mimeToString(mime);
 	obj["startedAt"] = startedAt.isValid() ? QJsonValue(startedAt.toString(Qt::ISODateWithMs)) : QJsonValue();
 	return obj;
