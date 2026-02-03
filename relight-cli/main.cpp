@@ -32,7 +32,7 @@ void help() {
 	cout << "\t  -p <int>  : number of planes (default: 9)\n";
 	cout << "\t  -q <int>  : jpeg quality (default: 95)\n";
 	cout << "\t  -y <int>  : number of Y planes in YCC\n\n";
-	cout << "\t  -3 <radius[:offset]>: 3d light positions processing, ratio diameter_dome/image_width\n               and optionally vertical offset of the center of the sphere to the surface.\n";
+	cout << "\t  -3 <radius[:offset]>: 3d light positions processing, ratio radiud dome/image width\n               and optionally vertical offset of the center of the sphere to the surface.\n";
 
 	cout << "\t  -P <pixel size in MM>: this number is saved in .json output and within image metadata\n";
 	cout << "\t  -n        : extract normals\n";
