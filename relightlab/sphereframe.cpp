@@ -60,6 +60,8 @@ void SphereFrame::clear() {
 }
 
 void SphereFrame::init() {
+	stack->setCurrentIndex(0);
+	marker_dialog->clear();
 	for(Sphere *sphere: qRelightApp->project().spheres) {
 		sphere->fit();
 		SphereRow * row = addSphere(sphere);
@@ -102,6 +104,7 @@ void SphereFrame::newSphere() {
 	stack->setCurrentIndex(1);
 	provisional_sphere = new Sphere(qRelightApp->project().images.size());
 	marker_dialog->setSphere(provisional_sphere);
+
 }
 
 

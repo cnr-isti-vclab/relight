@@ -37,6 +37,8 @@ void ImageView::showImage(int id) {
 		return;
 	}
 	imagePixmap->setPixmap(QPixmap::fromImage(img));
+	setSceneRect(scene.itemsBoundingRect());
+
 	current_image = id;
 }
 

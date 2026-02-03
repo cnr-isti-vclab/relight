@@ -1,6 +1,5 @@
 #include "sphererow.h"
 #include "relightapp.h"
-#include "spheredialog.h"
 #include "verifydialog.h"
 #include "reflectionview.h"
 #include "../src/project.h"

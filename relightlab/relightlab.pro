@@ -115,7 +115,6 @@ SOURCES += main.cpp \
     imagegrid.cpp \
     lightsframe.cpp \
     directionsview.cpp \
-    spheredialog.cpp \
     verifyview.cpp \
     verifydialog.cpp \
     helpbutton.cpp \
@@ -198,7 +197,6 @@ HEADERS += \
     ../src/lp.h \
     domepanel.h \
     directionsview.h \
-    spheredialog.h \
     verifyview.h \
     verifydialog.h \
     helpbutton.h \

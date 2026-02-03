@@ -88,7 +88,6 @@ set (RELIGHT_HEADERS
     directionsview.h 
     sphereframe.h 
     spherepicking.h 
-    spheredialog.h 
     verifyview.h 
     verifydialog.h 
     helpbutton.h 
@@ -169,7 +168,6 @@ set (RELIGHTLAB_SOURCES
     directionsview.cpp 
     sphereframe.cpp 
     spherepicking.cpp 
-    spheredialog.cpp 
     verifyview.cpp 
     verifydialog.cpp 
     helpbutton.cpp 
