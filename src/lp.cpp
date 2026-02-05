@@ -42,7 +42,7 @@ void parseLP(QString sphere_path, std::vector<Vector3f> &lights, std::vector<QSt
 		double norm = light.norm();
 		if(norm < 0.0001)
 			throw QString("Light direction too close to the origin! " + line);
-
+		light /= norm;
 		lights.push_back(light);
 		filenames.push_back(filename);
 	}
