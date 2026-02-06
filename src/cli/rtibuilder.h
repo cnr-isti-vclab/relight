@@ -60,7 +60,7 @@ protected:
 	Resamplemap resamplemap;
 
 	//grid of resamplemaps to be interpolated.
-	int resample_width = 9, resample_height = 9;
+	int resample_width = 15, resample_height = 15;
 	std::vector<Resamplemap> resamplemaps;  //for per pixel direction light interpolation
 	std::vector<MaterialBuilder> materialbuilders;
 

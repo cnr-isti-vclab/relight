@@ -482,7 +482,6 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 		compensateVignetting(sample);
 
 		if(light3d) {
-
 			compensateIntensity(sample);
 		}
 

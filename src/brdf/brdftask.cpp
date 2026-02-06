@@ -92,6 +92,8 @@ void BrdfTask::run() {
 			if(!proceed)
 				return;
 		}
+		pool.finish();
+
 
 		vector<uint8_t> albedomap(width * height * 3);
 		for(size_t i = 0; i < albedo.size(); i++) {

@@ -547,13 +547,6 @@ MaterialBuilder RtiBuilder::pickBase(PixelArray &sample, std::vector<Vector3f> &
 	case H:        builder = pickBaseHSH(directions, type); break;
 	default: cerr << "Unknown basis" << endl; exit(0);
 	}
-	/*
-	uint32_t dim = sample.components()*3;
-	for(uint32_t p = 0; p < nplanes; p += 3) {
-		for(uint32_t k = 0; k < lights.size(); k ++) {
-			proj[k*3+0 + (p+0)*dim] = proj[k*3+1 + (p+1)*dim] = proj[k*3+2 + (p+2)*dim] = iA(p/3, k);
-		}
-	} */
 
 	return builder;
 }

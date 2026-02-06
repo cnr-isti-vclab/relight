@@ -110,6 +110,11 @@ void Lens::readExif(Exif &exif) {
 	double originalWidth = exif[Exif::PixelXDimension].toDouble();
 	double originalHeight = exif[Exif::PixelYDimension].toDouble();
 
+	if(!originalWidth) {
+		originalWidth = width;
+		originalHeight = height;
+	}
+
 	// 2. Get Focal Plane details
 	double focalPlaneXRes = exif[Exif::FocalPlaneXResolution].toDouble();
 	double focalPlaneYRes = exif[Exif::FocalPlaneYResolution].toDouble();
