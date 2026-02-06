@@ -342,15 +342,6 @@ void Rti::render(float lx, float ly, uint8_t *buffer, int stride, uint32_t rende
 				if(colorspace == MYCC)
 					c = c.toRgb();
 
-				if(gammaFix) {
-					c.r /= sqrt(255.0f);
-					c.g /= sqrt(255.0f);
-					c.b /= sqrt(255.0f);
-					c.r *= c.r;
-					c.g *= c.g;
-					c.b *= c.b;
-				}
-
 				buffer[(x + y*width)*stride + 0] = std::max(0, std::min(255, (int)c.r));
 				buffer[(x + y*width)*stride + 1] = std::max(0, std::min(255, (int)c.g));
 				buffer[(x + y*width)*stride + 2] = std::max(0, std::min(255, (int)c.b));

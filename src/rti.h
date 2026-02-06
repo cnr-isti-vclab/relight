@@ -38,7 +38,6 @@ public:
 	float sigma = 0.125; //rbf interpolation parameter default for ~100 images
 	float regularization = 0.1f; //bilinear regularization coeff.
 	bool chromasubsampling = false;
-	bool gammaFix = false;
 	uint32_t quality = 95; //if loaded from relight format can be used as default
 
 	std::vector<std::vector<uint8_t>> planes;

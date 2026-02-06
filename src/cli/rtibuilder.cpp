@@ -1828,15 +1828,9 @@ void RtiBuilder::resamplePixel(Pixel &sample, Pixel &pixel) { //pos in pixels.
 			pixel[i] = sample[i];
 	}
 
-	for(uint32_t i = 0; i < ndimensions; i++) {
-		if(colorspace == MYCC)
+	if(colorspace == MYCC) {
+		for(uint32_t i = 0; i < ndimensions; i++) {
 			pixel[i] = pixel[i].toYcc();
-		else {
-			if(gammaFix) {
-				pixel[i].r = sqrt(pixel[i].r)*sqrt(255.0f);
-				pixel[i].g = sqrt(pixel[i].g)*sqrt(255.0f);
-				pixel[i].b = sqrt(pixel[i].b)*sqrt(255.0f);
-			}
 		}
 	}
 }

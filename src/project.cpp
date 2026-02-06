@@ -115,6 +115,8 @@ bool Project::scanDir() {
 	QVector<Lens> alllens;
 	QVector<double> focals;
 	count.clear();
+	bool is_exif_srgb = false;
+
 	for(Image &image: images) {
 		Lens image_lens;
 		image_lens.width = lens.width;
@@ -129,6 +131,9 @@ bool Project::scanDir() {
 #endif
 			image.readExif(exif);
 			image_lens.readExif(exif);
+			is_exif_srgb = true; //assume it's srgb anyway.
+			//exif.value(Exif::ColorSpace, QString()).toString() == "sRGB";
+
 		} catch(QString err) {
 			//qMessageBox()
 			cout << qPrintable(err) << endl;
@@ -173,6 +178,12 @@ bool Project::scanDir() {
 					icc_profile_description = ColorProfile::getProfileDescription(profile_data, is_rgb);
 					icc_profile_is_srgb = ColorProfile::isSRGBProfile(profile_data);
 					icc_profile_is_display_p3 = ColorProfile::isDisplayP3Profile(profile_data);
+				} else { //assume sRGB
+					if(is_exif_srgb) {
+						icc_profile_description = "sRGB";
+						icc_profile_is_srgb = true;
+						icc_profile_is_display_p3 = false;
+					}
 				}
 				break; // Only check first valid image
 			}

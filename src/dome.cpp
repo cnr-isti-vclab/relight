@@ -18,7 +18,7 @@ using namespace Eigen;
 //estimate light positions using parallax (image width is the unit).
 void computeParallaxPositions(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Eigen::Vector3f> &positions);
 
-
+//compute the distance of the
 static float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, const Vector3f &center, float radius) {
 	float a = direction.norm();
 	float b = direction.dot(origin - center)*2.0f;
@@ -29,6 +29,21 @@ static float lineSphereDistance(const Vector3f &origin, const Vector3f &directio
 		return 0;
 	float d = (-b + sqrt(det))/(2.0f*a);
 	return d;
+}
+
+Eigen::Vector3f findIntersection(const Eigen::Vector3f& origin,
+								 const Eigen::Vector3f& direction,
+								 const Eigen::Vector3f& center,
+								 double radius) {
+	Eigen::Vector3f L = origin - center;
+	Eigen::Vector3f d = direction.normalized();
+
+	float b = 2.0 * L.dot(d);
+	float c = L.squaredNorm() - (radius * radius);
+	float discriminant = b * b - 4.0 * c;
+
+	float t = (-b + std::sqrt(discriminant)) / 2.0;
+	return origin + t * d;
 }
 
 Dome::Dome() {}
@@ -152,6 +167,8 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 
 	if(domeDiameter && imageWidth) {
 		for(auto sphere: spheres) {
+			if(sphere->reflections.size() == 0)
+				sphere->computeDirections(lens);
 			//find intersection between reflection directions and sphere.
 			//we are working in normalized coordinates where imageWidth is 1.0
 			size_t count = 0;
@@ -172,10 +189,16 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 
 					float radius = (domeDiameter/2.0f)/imageWidth;
 					//Here a small error could hide, because of the z of the sphere is not on the plane of the object.
+					//even worse: the starting point should the the reflection point.
+
 					Vector3f center(0, 0, verticalOffset/imageWidth);
-					float distance = lineSphereDistance(origin, direction, center, radius);
-					Vector3f position = origin + direction*distance;
-					direction = (position - Vector3f(0, 0, verticalOffset/imageWidth))/radius;
+					Vector3f reflection = sphere->reflections[i] - Vector3f(lens.width/2.0f, lens.height/2.0f, 0);
+					reflection /= lens.width;
+
+					Vector3f position = findIntersection(origin, direction, center, radius);
+					//float distance = lineSphereDistance(reflection, direction, center, radius);
+					//Vector3f position = origin + direction*distance;
+					//direction = (position - Vector3f(0, 0, verticalOffset/imageWidth))/radius;
 					positionsSphere[count] += position*imageWidth;
 				}
 				count++;

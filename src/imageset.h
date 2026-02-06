@@ -3,6 +3,7 @@
 
 #include "relight_vector.h"
 #include "dome.h"
+#include "lens.h"
 #include "colorprofile.h"
 #include <vector>
 #include <string>
@@ -39,6 +40,7 @@ public:
 	float sin_a = 0.0f;
 
 	float pixel_size = 0;
+	Lens lens;
 
 	bool light3d = false;
 	float idealLightDistance2 = 0.0f; //squared, used when rescaling intensity
@@ -111,6 +113,7 @@ protected:
 	ColorProfileMode color_profile_mode = COLOR_PROFILE_PRESERVE;
 
 private:
+	void compensateVignetting(PixelArray &pixels);
 
 	void compensateIntensity(PixelArray &pixels);
 	void applyColorTransform(uint8_t *data, size_t pixel_count);

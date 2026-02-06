@@ -28,7 +28,9 @@ public:
 	double focal35();
 
 	//return vector from eye to pixel (z < 0)
+	float viewAngle(float x, float y);
 	Eigen::Vector3f viewDirection(float x, float y);
+	Eigen::Vector3f viewPosition(); //return view position in pixel units (0, 0, d)
 	//rotate a normal computed on a plane perpendicular to the view direction on the image plane
 	Eigen::Vector3f rotateNormal(Eigen::Vector3f n, float x, float y);
 

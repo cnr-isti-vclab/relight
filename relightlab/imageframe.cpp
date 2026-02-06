@@ -136,7 +136,7 @@ void ImageFrame::updateSkipped(int n) {
 		}
 		for(Sphere *sphere: project.spheres) {
 			sphere->findHighlight(image, n, img.skip);
-			sphere->computeDirections(project.lens);
+			sphere->computeDirections(project.lens);			
 		}
 	}
 	if(project.dome.lightSource == Dome::FROM_SPHERES) {

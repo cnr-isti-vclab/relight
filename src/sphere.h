@@ -46,6 +46,7 @@ public:
 	std::vector<QPointF> border;        //2d pixels sampled on the border of the sphere.
 	std::vector<QPointF> lights;       //2d pixel of the light spot for this sphere.
 	std::vector<Eigen::Vector3f> directions;  //of the light relative to the center of the sphere.
+	std::vector<Eigen::Vector3f> reflections; //xyz corrected in pixel coords. (0 is top left, y points down)
 
 
 	Sphere(int n_lights = 0);
@@ -56,6 +57,8 @@ public:
 
 	//compute lights directions relative to the center of the sphere.
 	void computeDirections(Lens &lens);
+	void computeDirections_deprecated(Lens &lens);
+
 	Line toLine(Eigen::Vector3f dir, Lens &lens);
 	static Eigen::Vector3f intersection(std::vector<Line> &lines);
 

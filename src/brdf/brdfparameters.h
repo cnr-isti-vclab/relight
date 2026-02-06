@@ -10,7 +10,7 @@ public:
     AlbedoMethod albedo = MEDIAN;
     float median_percentage = 66;
 
-    QString albedo_path;
+	QString albedo_path = "albedo";
 
     QString summary() const override;
     QJsonObject toJson() const override;

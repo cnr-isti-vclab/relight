@@ -20,6 +20,9 @@ void DirectionsView::initFromDome(Dome &dome) {
 	scene.addLine(0, -scale, 0, scale, pen);
 	scene.addLine(-scale, 0, scale, 0, pen);
 
+	float r = scale*cos(45*3.1415/180);
+	scene.addEllipse(-r, -r, 2*r, 2*r, pen);
+
 
 	int count = 0;
 	std::vector<Vector3f> dirs;

@@ -322,8 +322,112 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 	lights[n] = bari;
 }
 
-//compute light directions relative to the sphere center from the highlights.
+float cosHalfAngle(Eigen::Vector3f a, Eigen::Vector3f b) {
+	// Assuming Eigen::Vector3d a, b;
+	a = a.normalized();
+	b = b.normalized();
+
+	float cos_theta = a.dot(b);
+
+	return std::sqrt(std::max(0.0, (1.0 + cos_theta) * 0.5));
+}
+
 void Sphere::computeDirections(Lens &lens) {
+	Eigen::Vector2f radial; //direction from center of the image to the center of the sphere.
+	radial = { center.x() - lens.width/2.0f, center.y() - lens.height/2.0f};
+	radial.normalize();
+
+	//find true radius (in pixels) (the focal hides part of the sphere just above the equator
+	Eigen::Vector3f traversal(radial[1], -radial[0], 0);
+	Eigen::Vector3f A = traversal * radius + Eigen::Vector3f(center.x(), center.y(), 0);
+	Eigen::Vector3f B = -traversal * radius + Eigen::Vector3f(center.x(), center.y(), 0);
+
+	//viewpoint in pixel units
+	Eigen::Vector3f V = lens.viewPosition();
+
+	//Find angle of the sphere from the viewpoint and the radius is smaller of the apparent diameter
+	float realRadius = ellipse ? eWidth: radius;
+	realRadius *= cosHalfAngle(V - A, V - B);
+
+	directions.resize(lights.size());
+	reflections.resize(lights.size());
+	for(size_t i = 0; i < lights.size(); i++) {
+		if(lights[i].isNull()) {
+			directions[i] = Vector3f(0, 0, 0);
+			continue;
+		}
+
+		float x = lights[i].x();
+		float y = lights[i].y();
+
+		//view direction (compute before correcting the x, and y perspective)
+		Eigen::Vector3f v((x - lens.width/2), (y - lens.height/2), -V[2]); //remember y inversion
+		v.normalize();
+
+		float dx = x;
+		float dy = y;
+
+		if(ellipse) {
+			Eigen::Vector2f diff = { dx - center.x(), dy - center.y() };
+			Eigen::Vector2f cradial = radial*diff.dot(radial); //find radial component;
+			diff -= cradial; //orthogonal component;
+			cradial *= eHeight/eWidth;
+			diff += cradial;
+			//diff /= eWidth;
+			dx = diff.x();
+			dy = diff.y(); //accursed y inversion
+		} else {
+			dx  =  (dx - center.x());
+			dy  = (dy - center.y()); //accursed y inversion
+		}
+		//now we can estimate the z and find the real reflection position in 3d.
+		float z = realRadius*realRadius - dx*dx - dy*dy;
+		z = std::max(0.0f, z);
+		z = sqrt(z);
+		//correct x and y from the perspective (they are closer!)
+		x = (x - lens.width/2.0f)*(V[2] - z)/V[2] + lens.width/2;
+		y = (y - lens.height/2.0f)*(V[2] - z)/V[2] + lens.height/2;
+		reflections[i] = Vector3f(x, y, z);
+		dx = x;
+		dy = y;
+
+		//recompute dx, dy
+		if(ellipse) {
+			Eigen::Vector2f diff = { dx - center.x(), dy - center.y() };
+			Eigen::Vector2f cradial = radial*diff.dot(radial); //find radial component;
+			diff -= cradial; //orthogonal component;
+			cradial *= eHeight/eWidth;
+			diff += cradial;
+			//diff /= eWidth;
+			dx = diff.x();
+			dy = diff.y(); //accursed y inversion
+		} else {
+			dx  =  (dx - center.x());
+			dy  = (dy - center.y()); //accursed y inversion
+		}
+
+
+		//scale to sphere
+		dx /= realRadius;
+		dy /= realRadius;
+
+		dx = std::min(max(dx, -1.0f), 1.0f);
+		dy = std::min(max(dy, -1.0f), 1.0f);
+		float dz = sqrt(1 - dx*dx - dy*dy);
+
+		Eigen::Vector3f n(dx, dy, dz);
+		//reflect view direction along the tangent plane to the sphere.
+		Eigen::Vector3f light = v - 2.0f*(v.dot(n))*n;
+		light[1] *= -1.0f; //lights coordinate have y up.
+		directions[i] = light;
+	}
+}
+
+
+//compute light directions relative to the sphere center from the highlights.
+void Sphere::computeDirections_deprecated(Lens &lens) {
+	//computeDirections1(lens);
+	//return;
 
 	Eigen::Vector2f radial;
 	if(ellipse) {

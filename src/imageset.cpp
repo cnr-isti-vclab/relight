@@ -67,7 +67,7 @@ bool ImageSet::initFromProject(Project &project) {
 			images.push_back(img.filename);
 		}
 	}
-
+	lens = project.lens;
 	initImages(project.dir.absolutePath().toStdString().c_str());
 	initFromDome(project.dome);
 	if(lights1.size() != visibles.size()) {
@@ -122,6 +122,8 @@ bool ImageSet::initFromProject(QJsonObject &obj, const QString &filename) {
 		setCrop(crop);
 		//TODO should take int account align values!!!!
 	}
+
+	lens.fromJson(obj["lens"].toObject());
 	return true;
 }
 
@@ -131,14 +133,14 @@ void ImageSet::initFromDome(Dome &dome) {
 	assert(image_width != 0);
 	pixel_size = dome.imageWidth / image_width;
 	switch(dome.lightConfiguration) {
-		case Dome::DIRECTIONAL:
-			setLights(dome.directions, dome.lightConfiguration);
+	case Dome::DIRECTIONAL:
+		setLights(dome.directions, dome.lightConfiguration);
 		break;
-		case Dome::SPHERICAL:			
-			setLights(dome.positionsSphere, dome.lightConfiguration);
+	case Dome::SPHERICAL:
+		setLights(dome.positionsSphere, dome.lightConfiguration);
 		break;
-		case Dome::LIGHTS3D:
-			setLights(dome.positions3d, dome.lightConfiguration);
+	case Dome::LIGHTS3D:
+		setLights(dome.positions3d, dome.lightConfiguration);
 		break;
 	}
 }
@@ -237,6 +239,7 @@ bool ImageSet::initImages(const char *_path) {
 
 		Exif exif;
 		exif.parse(filepath);
+		lens.readExif(exif);
 
 		if(first) {
 			has_profile = dec->hasICCProfile();
@@ -253,7 +256,7 @@ bool ImageSet::initImages(const char *_path) {
 		if(dec->hasICCProfile()) {
 			if(!has_profile || icc_profile_data != dec->getICCProfile()) {
 				throw QString("Input images use different ICC profiles. Mismatch detected in %1")
-					.arg(filepath);
+						.arg(filepath);
 			}
 		} else {
 			if(has_profile)
@@ -340,6 +343,7 @@ void ImageSet::decode(size_t img, unsigned char *buffer) {
 Vector3f ImageSet::relativeLight(const Vector3f &light3d, int x, int y){
 	Vector3f l = light3d;
 	//relative position to the center in mm
+
 	float dx = 0.5*pixel_size*(float(x) - image_width/2.0f);
 	float dy = 0.5*pixel_size*(float(y) - image_height/2.0f);
 	l[0]  -= dx;
@@ -353,6 +357,17 @@ Vector3f ImageSet::relativeLight(const Vector3f &light3d, int x, int y){
 		l[1] = y;
 	}
 	return l;
+}
+void ImageSet::compensateVignetting(PixelArray &pixels) {
+	for(Pixel &pixel: pixels) {
+		float angle = lens.viewAngle(pixel.x, pixel.y);
+		float f = 1/pow(cos(angle), 4);
+		for(size_t i = 0; i < pixel.size(); i++) {
+			pixel[i].r *= f;
+			pixel[i].g *= f;
+			pixel[i].b *= f;
+		}
+	}
 }
 
 void ImageSet::compensateIntensity(PixelArray &pixels) {
@@ -394,6 +409,7 @@ void ImageSet::readLine(PixelArray &pixels) {
 			pixels[x - left][i].b = row[(x + x_offset)*3 + 2];
 		}
 	}
+	compensateVignetting(pixels);
 	if(light3d) {
 		compensateIntensity(pixels);
 	}
@@ -451,18 +467,22 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 				pixel.r = row[(k+left)*3 + 0];
 				pixel.g = row[(k+left)*3 + 1];
 				pixel.b = row[(k+left)*3 + 2];
+
 				x++;
 			}
 		}
-
-		if(light3d) {
-
+		{
 			uint32_t x = 0;
 			for(int k: selection) {
 				sample[x].x = k + left;
 				sample[x].y = image_height - 1 - y;
 				x++;
 			}
+		}
+		compensateVignetting(sample);
+
+		if(light3d) {
+
 			compensateIntensity(sample);
 		}
 

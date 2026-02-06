@@ -110,6 +110,7 @@ void BrdfTask::run() {
 		}
 		bool saved = img.save(destination.filePath(parameters.albedo_path), "jpg", parameters.quality);
 		if(!saved) {
+			error = "Could not save the image: " + destination.filePath(parameters.albedo_path);
 			status = FAILED;
 			return;
 		}

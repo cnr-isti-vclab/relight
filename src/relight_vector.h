@@ -149,7 +149,6 @@ typedef Color3<double>  Color3d;
 class Pixel: public std::vector<Color3f> {
 public:
 	int x, y;
-	float intensity;
 };
 
 class PixelArray: public std::vector<Pixel> {

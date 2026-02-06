@@ -16,6 +16,28 @@ double Lens::focal35() {
 	}
 }
 
+float Lens::viewAngle(float x, float y) {
+	double cx = (width - 1.0) / 2.0;
+	double cy = (height - 1.0) / 2.0;
+
+	double dx = (x - cx) * pixelSizeX;
+	double dy = (y - cy) * pixelSizeY;
+	double r = std::sqrt(dx * dx + dy * dy);
+
+	return std::atan2(r, focalLength);
+}
+Vector3f Lens::viewPosition() {
+	if(!focalLength)
+		return Vector3f(0, 0, 1);
+	float focal = focalLength;
+	if(focal35equivalent) { //focal length assume a diagonal of 43.27
+		double w = pixelSizeX * width;
+		double h = pixelSizeY * height;
+		double diag = sqrt(w*w + h*h);
+		focal  = focalLength * diag / 43.27;
+	}
+	return Vector3f(0, 0, focal/pixelSizeX);
+}
 //return vector from eye to pixel (z < 0)
 Vector3f Lens::viewDirection(float x, float y) {
 	if(!focalLength)
@@ -81,6 +103,46 @@ void Lens::fromJson(const QJsonObject &obj) {
 void Lens::readExif(Exif &exif) {
 	focal35equivalent = true;
 
+	// 1. Get the physical focal length
+	focalLength = exif[Exif::FocalLength].toDouble();
+
+	// 1. Get original dimensions from EXIF, not the current image size (it might have been scaled)
+	double originalWidth = exif[Exif::PixelXDimension].toDouble();
+	double originalHeight = exif[Exif::PixelYDimension].toDouble();
+
+	// 2. Get Focal Plane details
+	double focalPlaneXRes = exif[Exif::FocalPlaneXResolution].toDouble();
+	double focalPlaneYRes = exif[Exif::FocalPlaneYResolution].toDouble();
+	double focalPlaneResUnit = exif[Exif::FocalPlaneResolutionUnit].toDouble();
+
+	double unitToMm = (focalPlaneResUnit == 3) ? 10.0 : 25.4;
+
+	if(focalPlaneXRes > 0 && originalWidth > 0) {
+		// Calculate the TRUE physical size of the sensor hardware
+		double sensorWidth = (originalWidth / focalPlaneXRes) * unitToMm;
+		double sensorHeight = (originalHeight / focalPlaneYRes) * unitToMm;
+		double sensorDiag = sqrt(sensorWidth * sensorWidth + sensorHeight * sensorHeight);
+
+		// 3. Calculate 35mm Equivalent Focal Length
+		// This is a property of the lens/sensor combo and does NOT change with resizing
+		focalLength = exif[Exif::FocalLength].toDouble();
+		double cropFactor = 43.27 / sensorDiag;
+		focalLength *= cropFactor;
+
+		// 4. Calculate Pixel Size for the CURRENT (resized) image
+		// We use the current 'width' and 'height' of your resized buffer
+		// and map them to the virtual 35mm sensor (43.27mm diagonal)
+		double currentDiag = sqrt((double)width * width + (double)height * height);
+		pixelSizeX = pixelSizeY = 43.27 / currentDiag;
+
+	} else {
+		// Fallback: If EXIF resolution is missing, assume Full Frame
+		focalLength = exif[Exif::FocalLength].toDouble();
+		double currentDiag = sqrt((double)width * width + (double)height * height);
+		pixelSizeX = pixelSizeY = 43.27 / currentDiag;
+	}
+}
+/*
 	
 	// Use 35mm equivalent from EXIF if available
 	double focalLength35 = exif[Exif::FocalLengthIn35mmFilm].toDouble();
@@ -100,7 +162,7 @@ void Lens::readExif(Exif &exif) {
 	double focalPlaneResUnit = exif[Exif::FocalPlaneResolutionUnit].toDouble();
 	
 	// Convert resolution unit to mm
-	double unitToMm = 25.4; // inches to mm
+	double unitToMm = 25.4; // inches to mm (focalPlaneResUnit is 2)
 	if(focalPlaneResUnit == 3)
 		unitToMm = 10.0; // cm to mm
 	
@@ -123,4 +185,4 @@ void Lens::readExif(Exif &exif) {
 		double diag = sqrt((double)width * width + (double)height * height);
 		pixelSizeX = pixelSizeY = 43.27 / diag;
 	}
-}
+} */
