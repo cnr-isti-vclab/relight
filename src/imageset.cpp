@@ -344,8 +344,8 @@ Vector3f ImageSet::relativeLight(const Vector3f &light3d, int x, int y){
 	Vector3f l = light3d;
 	//relative position to the center in mm
 
-	float dx = 0.5*pixel_size*(float(x) - image_width/2.0f);
-	float dy = 0.5*pixel_size*(float(y) - image_height/2.0f);
+	float dx = pixel_size*(float(x) - image_width/2.0f);
+	float dy = pixel_size*(float(y) - image_height/2.0f);
 	l[0]  -= dx;
 	l[1]  -= dy;
 

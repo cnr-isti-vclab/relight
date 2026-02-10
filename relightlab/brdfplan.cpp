@@ -64,10 +64,6 @@ void BrdfExportRow::verifyPath() {
 		QMessageBox::warning(this, "Invalid output path", "The specified path is not valid");
 		return;
 	}
-	if(!path.endsWith(".jpg") && !path.endsWith(".png")) {
-		path += ".jpg";
-		path_edit->setText(path);
-	}
 	parameters.path = path;
 }
 
