@@ -359,6 +359,8 @@ Vector3f ImageSet::relativeLight(const Vector3f &light3d, int x, int y){
 	return l;
 }
 void ImageSet::compensateVignetting(PixelArray &pixels) {
+	if(!lens.focalLength) //this should not really happens.
+		return;
 	for(Pixel &pixel: pixels) {
 		float angle = lens.viewAngle(pixel.x, pixel.y);
 		float f = 1/pow(cos(angle), 4);

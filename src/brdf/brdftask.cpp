@@ -68,7 +68,6 @@ void BrdfTask::run() {
 		PixelArray line;
 		imageset.setCallback(nullptr);
 		pool.start(QThread::idealThreadCount());
-
 		for (int i = 0; i < imageset.height; i++) {
 			// Read a line
 			imageset.readLine(line);
@@ -110,7 +109,8 @@ void BrdfTask::run() {
 			img.setDotsPerMeterX(dotsPerMeter);
 			img.setDotsPerMeterY(dotsPerMeter);
 		}
-		bool saved = img.save(destination.filePath(parameters.albedo_path), "jpg", parameters.quality);
+
+		bool saved = img.save(destination.filePath(parameters.albedo_path + ".jpg"), "jpg", parameters.quality);
 		if(!saved) {
 			error = "Could not save the image: " + destination.filePath(parameters.albedo_path);
 			status = FAILED;

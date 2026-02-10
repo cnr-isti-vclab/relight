@@ -6,6 +6,8 @@
 #include "ScreenMeshing.h"
 #include "ScreenRemeshing.h"
 #include "../Grid.h"
+#include <QString>
+#include <functional>
 
 template <typename Projection = pmp::Orthographic>
 class PhotometricRemeshing
@@ -66,23 +68,27 @@ public:
 		triangulator.triangulate(pmp::Triangulation::Objective::MAX_ANGLE); // Objective doesn't matter in the particular case
 	}
 
-	void remesh(pmp::Scalar l_min, pmp::Scalar l_max, pmp::Scalar approx_error, int iterations = 10, bool delaunay = true)
+	void remesh(pmp::Scalar l_min, pmp::Scalar l_max, pmp::Scalar approx_error, int iterations = 10, bool delaunay = true,
+				std::function<bool(QString stage, int percent)> *callback = nullptr)
 	{
 		// Start remeshing
 		pmp::ScreenRemeshing<Projection> remesher(mesh_, normals_, mask_, projection_);
 
 		for (int i = 0; i != iterations; ++i)
 		{
+			if(callback && !(*callback)("Remeshing", 100*i/iterations))
+				return;
 			remesher.adaptive_remeshing(l_min, l_max, approx_error, 1, delaunay);
 		}
 	}
 
-	void run(pmp::Scalar l_min, pmp::Scalar l_max, pmp::Scalar approx_error, int iterations = 10, bool delaunay = true)
+	void run(pmp::Scalar l_min, pmp::Scalar l_max, pmp::Scalar approx_error, int iterations = 10, bool delaunay = true,
+			 std::function<bool(QString stage, int percent)> *callback = nullptr)
 	{
 		// smoothen_normals(l_min);
 		create_domain();
 		triangulate();
-		remesh(l_min, l_max, approx_error, iterations, delaunay);
+		remesh(l_min, l_max, approx_error, iterations, delaunay, callback);
 
 		std::cout << "Remeshing: " << n_pixels() << " Pixels -> " << n_vertices() << " Vertices\n";
 	}

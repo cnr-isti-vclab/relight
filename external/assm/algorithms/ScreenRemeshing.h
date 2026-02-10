@@ -5,7 +5,6 @@
 #include "ScreenDifferentialGeometry.h"
 
 #include <memory>
-
 namespace pmp 
 {
 

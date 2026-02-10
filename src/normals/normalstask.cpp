@@ -251,7 +251,7 @@ void NormalsTask::run() {
 		//TODO move to saveply
 		QString filename = destination.filePath(parameters.basename + ".ply");
 
-	assm(filename, normals, width, height, parameters.assm_error);
+	assm(filename, normals, width, height, parameters.assm_error, &callback);
 
 	} else if(parameters.surface_integration == SURFACE_BNI || parameters.surface_integration == SURFACE_FFT) {
 		QString type = parameters.surface_integration == SURFACE_BNI ? "Bilateral" : "Fourier";
@@ -405,7 +405,8 @@ bool saveObj(const char *filename, pmp::SurfaceMesh &mesh) {
 	return true;
 }
 
-void NormalsTask::assm(QString filename, std::vector<Eigen::Vector3f> &_normals, int width, int height, float approx_error) {
+void NormalsTask::assm(QString filename, std::vector<Eigen::Vector3f> &_normals, int width, int height, float approx_error,
+					   std::function<bool(QString stage, int percent)> *callback) {
 	Grid<Eigen::Vector3f> normals(width, height, Eigen::Vector3f(0.0f, 0.0f, 0.0f));
 	for(int y = 0; y < height; y++)
 		for(int x = 0; x < width; x++) {
@@ -419,11 +420,13 @@ void NormalsTask::assm(QString filename, std::vector<Eigen::Vector3f> &_normals,
 	float l_min = 1;
 	float l_max = 100;
 
+	if(callback && !(*callback)("Remeshing", 0))
+		return;
 	PhotometricRemeshing<pmp::Orthographic> remesher(normals, mask);
-	remesher.run(l_min, l_max, approx_error);
+	remesher.run(l_min, l_max, approx_error, 10, true, callback);
 
 	pmp::Integration<double, pmp::Orthographic> integrator(remesher.mesh(), normals, mask);
-	integrator.run();
+	integrator.run(callback);
 	//flip y and z.
 	auto &mesh = remesher.mesh();
 

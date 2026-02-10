@@ -9,8 +9,13 @@
 #include <QJsonObject>
 #include <QMutex>
 #include <QRect>
-#include <Eigen/Core>
 #include <QRunnable>
+#include <QString>
+
+#include <Eigen/Core>
+
+#include <functional>
+
 
 class NormalsTask :  public Task {
 public:
@@ -27,7 +32,8 @@ public:
 	void initFromProject(Project &project);
 	void initFromFolder(const char *folder, Dome &dome, const Crop &crop);
 
-	void assm(QString filename, std::vector<Eigen::Vector3f> &normals, int width, int height, float precision);
+	void assm(QString filename, std::vector<Eigen::Vector3f> &normals, int width, int height, float precision,
+			  std::function<bool(QString, int)> *_callback);
 	void fixNormal(Eigen::Vector3f &n); //check for nan, and z< threshold
 };
 

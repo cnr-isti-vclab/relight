@@ -9,7 +9,8 @@
 #include <stdexcept>
 
 #include "DifferentialGeometry.h"
-
+#include <functional>
+#include <QString>
 
 namespace pmp 
 {

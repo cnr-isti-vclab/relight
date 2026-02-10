@@ -4,6 +4,8 @@
 #include "ScreenDifferentialGeometry.h"
 #include <Eigen/Sparse>
 #include <Eigen/Core>
+#include <QString>
+#include <functional>
 
 namespace pmp
 {
@@ -65,7 +67,7 @@ public:
 
 	}
 
-	T run()
+	T run(std::function<bool(QString stage, int percent)> *callback = nullptr)
 	{
 		mesh_.garbage_collection();
 		geo_.update();
@@ -93,8 +95,19 @@ public:
 
 		Vector<T, 3> r0, r1, r2, normal, dr;
 
+		if(callback && !(*callback)("Solving linear system", 0))
+			return 0;
+
+		size_t ei = 0;
+		size_t etot = std::max(size_t(2), mesh_.n_edges());
+		size_t estep = std::max(size_t(2), etot/100);
+
 		for (auto e : mesh_.edges())
 		{
+			if((ei % estep) == 0) {
+				if(callback && !(*callback)("Initializing edges", 100*ei/etot))
+					return 0;
+			}
 			h0 = mesh_.halfedge(e, 0);
 			h1 = mesh_.halfedge(e, 1);
 
@@ -170,22 +183,33 @@ public:
 
 		L.diagonal().array() += reg;
 		b.array() += reg;
+		if(callback && !(*callback)("Initializing linear system", 0))
+			return 0;
 
 		Eigen::ConjugateGradient<Eigen::SparseMatrix<T>> cg;
 		cg.compute(L);
 		//Eigen::Vector<T, -1> depth = cg.solve(b);
+		if(callback && !(*callback)("Solving linear system", 0))
+			return 0;
 		Eigen::Matrix<T, -1, 1> depth = cg.solve(b);
 
 		depth.array() -= depth.mean();
 
 		IntegrationPostProcessor<Camera> processor;
+		size_t i = 0;
+		size_t tot = std::max(size_t(2), mesh_.n_vertices());
+		size_t step = std::max(size_t(2), tot/100);
 
-		for (auto v : mesh_.vertices())
-		{
+		for(auto v: mesh_.vertices()) {
+			if((i % step) == 0) {
+				if(callback && !(*callback)("Ingegrating", 100*i/tot))
+					return 0;
+			}
 			mesh_.position(v)[2] = processor(depth(v.idx()));
+			i++;
 		}
 
-		std::cout << "Integration: Residual is " << cg.error() << " after " << cg.iterations() << " iterations\n";
+		//std::cout << "Integration: Residual is " << cg.error() << " after " << cg.iterations() << " iterations\n";
 
 		return cg.error();
 	}
