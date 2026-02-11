@@ -801,8 +801,15 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality, QString color_profile) {
 	//save info.json
 	QFile info(dir.filePath("info.json"));
 	info.open(QFile::WriteOnly);
+	int w = width;
+	int h = height;
+	if(imageset.crop.angle) {
+		QSize s = imageset.crop.rect().size();
+		w = s.width();
+		h = s.height();
+	}
 	QTextStream stream(&info);
-	stream << "{\n\"width\": " << width << ", \"height\": " << height << ",\n"
+	stream << "{\n\"width\": " << w << ", \"height\": " << h << ",\n"
 		   << "\"format\": \"jpg\",\n";
 	if(imageset.pixel_size > 0)
 		stream << "\"pixelSizeInMM\": " << imageset.pixel_size << ",\n";

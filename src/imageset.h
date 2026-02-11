@@ -4,6 +4,7 @@
 #include "relight_vector.h"
 #include "dome.h"
 #include "lens.h"
+#include "crop.h"
 #include "colorprofile.h"
 #include <vector>
 #include <string>
@@ -35,6 +36,7 @@ public:
 	//current crop: left, top is pixel [0, 0];
 	int width = 0, height = 0;
 	int left = 0, top = 0, right = 0, bottom = 0;
+	Crop crop;                  //this is the final crop including rotation (left top right bottom are computed from this before rotation)
 	float angle = 0.0f; //
 	float cos_a = 1.0f;
 	float sin_a = 0.0f;

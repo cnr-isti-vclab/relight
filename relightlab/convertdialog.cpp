@@ -225,9 +225,9 @@ void ConvertDialog::relightToRti(QString input) {
 	int quality = 95;
 	try {		
 		QString output = output_path->text();
-		QDir output_dir(output);
-		if(output_dir.exists()) {
-			auto answer = QMessageBox::question(this, "Folder already exists", "Folder '" + output + "' already exists, overwrite?");
+		QFileInfo output_file(output);
+		if(output_file.exists()) {
+			auto answer = QMessageBox::question(this, "File already exists", output + "' already exists, overwrite?");
 			if(answer == QMessageBox::No) {
 				return;
 			}
@@ -238,7 +238,7 @@ void ConvertDialog::relightToRti(QString input) {
 			QMessageBox::critical(this, "Conversion failed", msg);
 		} else if(status == 1)
 			QMessageBox::warning(this, "Warning: ", msg);
-		QMessageBox::information(this, "Conversion successful", "Successfully converted to .rti format.");
+		QMessageBox::information(this, "Conversion successful", "Converted to .rti/.ptm format.");
 		
 	} catch (QString e) {
 		QMessageBox::critical(this, "Error", QString("An error occurred: %1").arg(e));
@@ -270,7 +270,7 @@ void ConvertDialog::rtiToRelight(QString input) {
 			QMessageBox::critical(this, "Conversion failed", "Failed to convert to .relight format.");
 			return;
 		}
-		QMessageBox::information(this, "Conversion successful", "Successfully converted to .relight format.");
+		QMessageBox::information(this, "Conversion successful", "Converted to .relight format.");
 		// apply the conversion to deepzoom, tarzoom, itarzoom if applicable
 		
 		std::function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return true; };

@@ -284,6 +284,7 @@ void ImageSet::setColorProfileMode(ColorProfileMode mode) {
 
 
 void ImageSet::setCrop(int _left, int _top, int _width, int _height) {
+	crop.setRect(QPoint(_left, _top), QSize(_width, _height));
 	left = _left;
 	top = _top;
 	if(_width > 0) {
@@ -510,14 +511,16 @@ void ImageSet::restart() {
 	current_line = 0;
 }
 
-void ImageSet::setCrop(const Crop &crop) {
-	QRect r = crop.boundingRect(imageSize());
+void ImageSet::setCrop(const Crop &_crop) {
+
+	QRect r = _crop.boundingRect(imageSize());
 	setCrop(r.left(), r.top(), r.width(), r.height());
-	rotateLights(-crop.angle);
+	rotateLights(-_crop.angle);
+	crop = _crop; //setCrop overwrites this.crop
 }
 
-void ImageSet::setCrop(Crop &crop, const std::vector<QPointF> &_offsets) {
-	QRect c = crop.boundingRect(imageSize());
+void ImageSet::setCrop(Crop &_crop, const std::vector<QPointF> &_offsets) {
+	QRect c = _crop.boundingRect(imageSize());
 
 	std::vector<QPoint> int_offsets;
 	for(const QPointF &p: _offsets)
@@ -544,7 +547,8 @@ void ImageSet::setCrop(Crop &crop, const std::vector<QPointF> &_offsets) {
 	setCrop(c.left(), c.top(), c.width(), c.height());
 	offsets = int_offsets;
 
-	rotateLights(-crop.angle);
+	rotateLights(-_crop.angle);
+	crop = _crop;
 }
 
 void ImageSet::rotateLights(float a) {

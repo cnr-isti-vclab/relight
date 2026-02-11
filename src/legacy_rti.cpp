@@ -828,7 +828,7 @@ bool LRti::decodeJPEGfromFile(size_t size, unsigned char *buffer, unsigned int p
 	int w, h;
 	JpegDecoder dec;
 	if(!dec.decode(buffer, size, img, w, h) || w != width || h != height) {
-		cerr << "Failed decoding jpeg or different size." << endl;
+		error = "Failed decoding jpeg or inconsistent json/image size.";
 		return false;
 	}
 	plane0 = invorder[plane0];

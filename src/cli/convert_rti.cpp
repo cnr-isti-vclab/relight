@@ -118,24 +118,24 @@ int convertToRTI(const char *filename, const char *output, int quality, QString 
 		lrti.scale.resize(6);
 		lrti.bias.resize(6);
 		if(colorspace == "rgb") {
-			lrti.type = LRti::PTM_RGB;
-			if(nplanes != 18)
-				throw QString("Wrong number of planes (%1) was expecting 18.").arg(nplanes);
+			if(nplanes == 18) {
+				lrti.type = LRti::PTM_RGB;
+				if(nplanes != 18)
 
-			for(uint i = 0; i < 6; i++) {
-				lrti.scale[order[i]] = float(scale[i*3].toDouble());
-				lrti.bias[order[i]] = float(bias[i*3].toDouble());
-			}
+				for(uint i = 0; i < 6; i++) {
+					lrti.scale[order[i]] = float(scale[i*3].toDouble());
+					lrti.bias[order[i]] = float(bias[i*3].toDouble());
+				}
 
-		} else if(colorspace == "lrgb") {
-			lrti.type = LRti::PTM_LRGB;
-			if(nplanes != 9)
-				throw QString("Wrong number of planes (%1) was expecting 9.").arg(nplanes);
+			} else if(nplanes == 9) {
+				lrti.type = LRti::PTM_LRGB;
 
-			for(uint i = 0; i < 6; i++) {
-				lrti.scale[order[i]] = float(scale[i+3].toDouble());
-				lrti.bias[order[i]] = float(bias[i+3].toDouble());
-			}
+				for(uint i = 0; i < 6; i++) {
+					lrti.scale[order[i]] = float(scale[i+3].toDouble());
+					lrti.bias[order[i]] = float(bias[i+3].toDouble());
+				}
+			} else
+				throw QString("Wrong number of planes (%1) was expecting 9 or 18.").arg(nplanes);
 
 		} else {
 			throw QString("Cannot convert PTM relight with colorspace: %1").arg(colorspace);
