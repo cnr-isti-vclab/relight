@@ -28,12 +28,9 @@ void ImageView::showImage(int id) {
 	if(project.images.size() <= size_t(id))
 		return;
 
-	QString filename = project.images[id].filename;
-
-	QImage img;
-	img.load(filename, "JPG");
+	QImage img = project.readImage(id);
 	if(img.isNull()) {
-		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + filename);
+		QMessageBox::critical(this, "Houston we have a problem!", "Could not load image " + project.images[id].filename);
 		return;
 	}
 	imagePixmap->setPixmap(QPixmap::fromImage(img));

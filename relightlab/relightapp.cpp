@@ -428,8 +428,8 @@ void RelightApp::loadThumbnails() {
 	for(size_t i = 0; i < m_project->images.size(); i++) {
 		Image &image = m_project->images[i];
 		if(i == 0) {
-			QImage img;
-			img.load(image.filename, "JPG");
+
+			QImage img = m_project->readImage(i);
 			if(img.isNull()) {
 				img = QImage(256, 256, QImage::Format_ARGB32);
 				img.fill(Qt::black);

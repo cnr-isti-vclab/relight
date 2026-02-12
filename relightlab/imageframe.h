@@ -35,10 +35,10 @@ public:
 	void init();
 	int currentImage();
 	void showImage(int id); //new project loaded.
-	void rotateImage(int id, bool clockwise);
+	void rotate(bool clockwise);
 
 public slots:
-	void rotateLeft();
+	void rotateLeft(); //rotate counterclockwise selected images
 	void rotateRight();
 	void previousImage();
 	void nextImage();

@@ -7,6 +7,7 @@
 #include "lp.h"
 #include "colorprofile.h"
 #include "jpeg_decoder.h"
+#include "jpeg_encoder.h"
 
 #include <QFile>
 #include <QTextStream>
@@ -20,10 +21,12 @@
 
 #include <QPen>
 #include <QImageReader>
+#include <QByteArray>
 
 #include <Eigen/Dense>
 
 #include <iostream>
+#include <cstring>
 
 using namespace std;
 using namespace Eigen;
@@ -80,6 +83,7 @@ bool Project::scanDir() {
 		Image image(s);
 
 		QImageReader reader(s);
+		reader.setAutoTransform(false);
 		image.size = reader.size();
 
 		int index = resolutions.indexOf(image.size);
@@ -193,7 +197,6 @@ bool Project::scanDir() {
 	needs_saving = true;
 	return resolutions.size() == 1 && focals.size() == 1;
 }
-
 double mutualInfo(QImage &a, QImage &b) {
 	uint32_t histogram[256*256];
 	memset(histogram, 0, 256*256*4);
@@ -236,18 +239,94 @@ double mutualInfo(QImage &a, QImage &b) {
 	return m;
 }
 
-void Project::rotateImages(bool clockwise) {
-	QTransform rotate;
-	rotate.rotate(clockwise ? 90 : -90);
-	for(Image &image: images) {
-		QImage source(image.filename);
-		QImage rotated = source.transformed(rotate);
-		rotated.save(image.filename, "jpg", 100);
+QImage Project::readImage(int i) {
+	assert(i >= 0 && i < images.size());
+	QImageReader reader(images[i].filename, "JPG");
+	reader.setAutoTransform(false);
+	return reader.read();
+}
+
+bool Project::rotateImage(Image &image, bool clockwise) {
+	QByteArray exif_payload;
+	uint16_t new_orientation = 1;
+	bool has_exif = false;
+	try {
+		Exif exif;
+		exif.parse(image.filename);
+		uint16_t old_orientation = uint16_t(exif.value(Exif::Orientation, 1).toUInt());
+		new_orientation = Exif::rotateOrientation(old_orientation, clockwise);
+		has_exif = Exif::extractApp1Payload(image.filename, exif_payload);
+		if(has_exif)
+			Exif::patchOrientation(exif_payload, new_orientation);
+	} catch(QString &) {
+		has_exif = false;
 	}
+
+	JpegDecoder decoder;
+	int width = 0;
+	int height = 0;
+	if(!decoder.init(image.filename.toStdString().c_str(), width, height))
+		return false;
+
+	decoder.setColorSpace(JCS_RGB);
+
+	const int channels = 3;
+	uint8_t *source = new uint8_t[width * height * channels];
+	if(decoder.readRows(height, source) != (size_t)height) {
+		delete[] source;
+		return false;
+	}
+
+	const int rotated_width = height;
+	const int rotated_height = width;
+	std::vector<uint8_t> rotated(rotated_width * rotated_height * channels);
+
+	for(int y = 0; y < height; y++) {
+		for(int x = 0; x < width; x++) {
+			const int src_index = (y * width + x) * channels;
+
+			int dst_x = 0;
+			int dst_y = 0;
+			if(clockwise) {
+				dst_x = height - 1 - y;
+				dst_y = x;
+			} else {
+				dst_x = y;
+				dst_y = width - 1 - x;
+			}
+
+			const int dst_index = (dst_y * rotated_width + dst_x) * channels;
+			rotated[dst_index + 0] = source[src_index + 0];
+			rotated[dst_index + 1] = source[src_index + 1];
+			rotated[dst_index + 2] = source[src_index + 2];
+		}
+	}
+
+	JpegEncoder encoder;
+	encoder.setColorSpace(JCS_RGB, 3);
+	encoder.setJpegColorSpace(JCS_YCbCr);
+	encoder.setQuality(100);
+	encoder.setOptimize(true);
+	encoder.setChromaSubsampling(decoder.chromaSubsampled());
+	if(decoder.hasICCProfile())
+		encoder.setICCProfile(decoder.getICCProfile());
+
+	const bool saved = encoder.encode(rotated.data(), rotated_width, rotated_height, image.filename.toStdString().c_str());
+	if(saved && has_exif)
+		Exif::injectApp1Payload(image.filename, exif_payload);
+	delete[] source;
+	return saved;
+}
+
+void Project::rotateImages(bool clockwise) {
+	for(Image &image: images)
+		rotateImage(image, clockwise);
 	needs_saving = true;
 }
 
 void Project::rotateImages() {
+	//TODO this does not preserve exif.
+
 	//find first image non rotated.
 	QString target_filename;
 	for(Image &image: images) {
@@ -275,11 +354,9 @@ void Project::rotateImages() {
 
 		double right_mutual = mutualInfo(target, right);
 		double left_mutual = mutualInfo(target, left);
-
-		QTransform final = right_mutual > left_mutual ? rot_left : rot_right;
-		//TODO should be libjpeg to rotate.
-		QImage rotated = source.transformed(final);
-		rotated.save(image.filename, "jpg", 100);
+		bool clockwise = right_mutual <= left_mutual;
+		if(!rotateImage(image, clockwise))
+			continue;
 
 		image.size = imgsize;
 		image.valid = true;

@@ -420,7 +420,7 @@ void NormalsTask::assm(QString filename, std::vector<Eigen::Vector3f> &_normals,
 	float l_min = 1;
 	float l_max = 100;
 
-	if(callback && !(*callback)("Remeshing", 0))
+	if(callback && !(*callback)("Remeshing...", 0))
 		return;
 	PhotometricRemeshing<pmp::Orthographic> remesher(normals, mask);
 	remesher.run(l_min, l_max, approx_error, 10, true, callback);

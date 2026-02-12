@@ -13,6 +13,7 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QMessageBox>
+#include <QImageReader>
 
 FindAlignment::FindAlignment(Align *_align, bool update) {
 	align = _align;
@@ -43,15 +44,10 @@ void FindAlignment::run() {
 
 	Project &project = qRelightApp->project();
 	for(size_t i = 0; i < project.images.size(); i++) {
-
-		Image &image = project.images[i];
-		if(image.skip) continue;
-
-		QImage img;
-		img.load(image.filename, "JPG");
+		QImage img = project.readImage(i);
 		if(img.isNull()) {
 			setStatus(FAILED);
-			progressed(QString("Failed loading image: %1").arg(image.filename), 100);
+			progressed(QString("Failed loading image: %1").arg(project.images[i].filename), 100);
 			return;
 		}
 		align->readThumb(img, i);

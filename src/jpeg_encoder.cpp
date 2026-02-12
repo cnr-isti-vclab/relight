@@ -118,11 +118,6 @@ bool JpegEncoder::encode(uint8_t* img, int width, int height) {
 	writeICCProfile();
 
 	writeRows(img, height);
-/*	int rowSize = info.image_width * info.input_components;
-	while (info.next_scanline < info.image_height) {
-		JSAMPROW row = img + info.next_scanline * rowSize;
-		jpeg_write_scanlines(&info, &row, 1);
-	} */
 
 	jpeg_finish_compress(&info);
 	return true;

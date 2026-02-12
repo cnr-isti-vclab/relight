@@ -5,6 +5,7 @@
 #include <QString>
 #include <QVariant>
 #include <QVector>
+#include <QByteArray>
 class IfdHeader {
 public:
 	enum Type {
@@ -288,6 +289,11 @@ public:
 	} */
 
 	void parse(const QString &filename);
+
+	static quint16 rotateOrientation(quint16 orientation, bool clockwise);
+	static bool extractApp1Payload(const QString &filename, QByteArray &payload);
+	static bool patchOrientation(QByteArray &payload, quint16 newOrientation);
+	static bool injectApp1Payload(const QString &filename, const QByteArray &payload);
 
 private:
 	void readHeaders(QDataStream &stream, quint32 startPos);

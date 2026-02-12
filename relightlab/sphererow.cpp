@@ -44,11 +44,8 @@ void DetectHighlights::run() {
 
 	Project &project = qRelightApp->project();
 	for(size_t i = 0; i < project.images.size(); i++) {
-
-		Image &image = project.images[i];
-
-		QImage img;
-		img.load(image.filename, "JPG");
+		Image image = project.images[i];
+		QImage img = project.readImage(i);
 		if(img.isNull()) {
 			setStatus(FAILED);
 			progressed(QString("Failed loading image: %1").arg(image.filename), 100);

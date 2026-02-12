@@ -128,8 +128,8 @@ void ImageFrame::updateSkipped(int n) {
 			sphere->directions[n] = Eigen::Vector3f(0, 0, 0);
 		}
 	} else {
-		QImage image;
-		image.load(img.filename, "JPG");
+		QImage image = project.readImage(n);
+
 		if(image.isNull()) {
 			QMessageBox::critical(this, "Could not find an image", "Could not load image: " + img.filename + "!");
 			return;
@@ -150,40 +150,25 @@ int ImageFrame::currentImage() {
 	return image_list->currentRow();
 }
 
-void ImageFrame::rotateLeft() {
+void ImageFrame::rotate(bool clockwise) {
 	QList<QListWidgetItem*> selectedItems = image_list->selectedItems();
 	for(QListWidgetItem *item: selectedItems) {
 		int id = item->data(Qt::UserRole).toInt();
-		rotateImage(id, false);
+		Project &project = qRelightApp->project();
+		project.rotateImage(project.images[id], clockwise);
 	}
 	showImage(image_list->currentRow());
+	qRelightApp->loadThumbnails();
+
+}
+void ImageFrame::rotateLeft() {
+	rotate(false);
 }
 
 void ImageFrame::rotateRight() {
-	QList<QListWidgetItem*> selectedItems = image_list->selectedItems();
-	for(QListWidgetItem *item: selectedItems) {
-		int id = item->data(Qt::UserRole).toInt();
-		rotateImage(id, true);
-	}
-	showImage(image_list->currentRow());
+	rotate(true);
 }
 
-void ImageFrame::rotateImage(int id, bool clockwise) {
-	QTransform rotate;
-	rotate.rotate(clockwise ? 90 : -90);
-
-	Project &project = qRelightApp->project();
-
-	assert(id >= 0 && id < project.images.size());
-
-	Image &image = project.images[id];
-	QImage source;
-	source.load(image.filename, "JPG");
-	QImage rotated = source.transformed(rotate);
-	rotated.save(image.filename, "jpg", 100);
-	//thumbs needs to be rotated!!!
-	qRelightApp->loadThumbnails();
-}
 
 void ImageFrame::showImage(int id) {
 

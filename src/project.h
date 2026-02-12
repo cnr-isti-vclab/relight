@@ -87,6 +87,8 @@ public:
 	//set image folder
 	bool setDir(QDir folder);
 	bool scanDir(); //load images from project.dir, and return false if some problems with resolution.
+	QImage readImage(int i);
+	bool rotateImage(Image &image, bool clockwise);
 	void rotateImages();
 	void rotateImages(bool clockwise);
 	bool hasDirections() { return dome.directions.size() > 0; }
@@ -124,7 +126,6 @@ public:
 		return -1;
 	}
 	void validateDome(size_t n_lights); //throw an error in case the number of lights is not consistent.
-
 };
 
 #endif // PROJECT_H
