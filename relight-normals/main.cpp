@@ -175,7 +175,7 @@ bool parseArgs(int argc, char *argv[], CLINormalsParameters &config) {
 			break;
 		case 1001: // --flat-fourier
 			config.flatMethod = FLAT_FOURIER;
-			config.flatPercentage = QString(optarg).toDouble();
+			config.fourierPercentage = QString(optarg).toDouble();
 			break;
 		case 1002: // --flat-blur
 			config.flatMethod = FLAT_BLUR;
