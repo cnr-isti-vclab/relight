@@ -464,7 +464,7 @@ int main(int argc, char *argv[]) {
 
 				normals.initFromFolder(input.c_str(), dome, crop);
 				normals.parameters.path = folder;
-				normals.parameters.basename = normals_filename.mid(0, -4);
+				normals.parameters.normalsname = normals_filename.mid(0, -4);
 				normals.run();
 			}
 

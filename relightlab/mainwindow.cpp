@@ -23,6 +23,7 @@
 #include <QMessageBox>
 #include <QScrollArea>
 #include <QVBoxLayout>
+#include <QCloseEvent>
 
 #include <iostream>
 using namespace std;
@@ -176,4 +177,11 @@ void MainWindow::showHelp() {
 void MainWindow::showAbout() {
 	HelpDialog &dialog = HelpDialog::instance();
 	dialog.showPage("about");
+}
+
+void MainWindow::closeEvent(QCloseEvent *event) {
+	if(qRelightApp->canClose())
+		event->accept();
+	else
+		event->ignore();
 }

@@ -151,6 +151,7 @@ public:
 		QSettings().setValue("DefaultDome", path);
 	}
 
+	bool canClose();
 	bool needsSavingProceed();
 
 	QStringList domes();

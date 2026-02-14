@@ -67,6 +67,6 @@ QJsonObject NormalsParameters::toJson() const {
 	obj["assmError"] = assm_error;
 	obj["surfaceWidth"] = surface_width;
 	obj["surfaceHeight"] = surface_height;
-	obj["basename"] = basename;
+	obj["normalsname"] = normalsname;
 	return obj;
 }

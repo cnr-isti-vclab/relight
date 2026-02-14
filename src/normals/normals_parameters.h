@@ -28,7 +28,7 @@ public:
 	int surface_width = 0;
 	int surface_height = 0;
 
-	QString basename = "normals"; //filename for normals  img.
+	QString normalsname = "normals"; //filename for normals  img.
 
 	QString summary() const override;
 	QJsonObject toJson() const override;

@@ -496,18 +496,26 @@ void RelightApp::openPreferences() {
 	preferences->show();
 }
 
-void RelightApp::close() {
+bool RelightApp::canClose() {
 	if(!needsSavingProceed())
-			return;
+		return false;
+
 	auto &q = ProcessQueue::instance();
 	if(q.hasTasks()) {
 		auto answer = QMessageBox::critical(mainwindow, "Process queue", "There are some processes in the queue, do you want to terminate them?");
 		if(answer != QMessageBox::Yes)
-			return;
+			return false;
+		q.stop();
+		q.wait();
 	}
-	q.stop();
-	q.wait();
-	exit(0);
+
+	return true;
+}
+
+void RelightApp::close() {
+	if(!canClose())
+		return;
+	quit();
 }
 
 

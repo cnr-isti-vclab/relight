@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+class QCloseEvent;
 
 #include "normalsframe.h"
 class QStackedWidget;
@@ -40,6 +41,7 @@ public slots:
 
 
 protected:
+	void closeEvent(QCloseEvent *event) override;
 
 	TabWidget *tabs = nullptr;
 	HomeFrame *home_frame = nullptr;

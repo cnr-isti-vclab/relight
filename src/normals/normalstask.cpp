@@ -217,8 +217,8 @@ void NormalsTask::run() {
 			float dotsPerMeter = 1000.0f / imageset.pixel_size;
 			encoder.setDotsPerMeter(dotsPerMeter);
 		}
-		
-		QString filename = destination.filePath(parameters.basename + ".jpg");
+		//TODO png could be another format!
+		QString filename = destination.filePath(parameters.normalsname + ".jpg");
 		if(!encoder.encode(normalmap.data(), width, height, filename.toStdString().c_str())) {
 			error = "Failed to save normal map JPEG: " + filename;
 			status = FAILED;
@@ -251,7 +251,7 @@ void NormalsTask::run() {
 		if(!proceed)
 			return;
 		//TODO move to saveply
-		QString filename = destination.filePath(parameters.basename + ".ply");
+		QString filename = destination.filePath("3D_surface.ply");
 
 		assm(filename, normals, width, height, parameters.assm_error, &callback);
 
@@ -283,20 +283,20 @@ void NormalsTask::run() {
 		//TODO remove extension properly
 
 		progressed("Saving surface...", 99);
-		QString filename = destination.filePath(parameters.basename + ".ply");
+		QString filename = destination.filePath("3D_surface.ply");
 		if(!savePly(filename, width, height, z, downsampling)) {
 			error = "Failed to save .ply to: " + filename;
 			status = FAILED;
 			return;
 		}
 		invertZ(z);
-		filename = destination.filePath(parameters.basename + ".tiff");
+		filename = destination.filePath("heightmap.tiff");
 		if(!saveTiff(filename, width, height, z)) {
 			error = "Failed to save depth map to: " + filename;
 			status = FAILED;
 			return;
 		}
-		filename = destination.filePath(parameters.basename + "_normalized.tiff");
+		filename = destination.filePath("heightmap_normalized.tiff");
 		if(!saveTiff(filename, width, height, z, true)) {
 			error = "Failed to save depth map to: " + filename;
 			status = FAILED;
