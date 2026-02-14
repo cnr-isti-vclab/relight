@@ -59,6 +59,7 @@ SOURCES += main.cpp \
     ../src/lens.cpp \
     ../src/normals/bni_normal_integration.cpp \
     ../src/normals/fft_normal_integration.cpp \
+    ../src/normals/fast_gaussian_blur.cpp \
     ../src/normals/flatnormals.cpp \
     ../src/normals/normals_parameters.cpp \
     ../src/normals/normalstask.cpp \
@@ -94,6 +95,7 @@ HEADERS += \
     ../src/material.h \
     ../src/normals/bni_normal_integration.h \
     ../src/normals/fft_normal_integration.h \
+    ../src/normals/fast_gaussian_blur.h \
     ../src/normals/flatnormals.h \
     ../src/normals/normals_parameters.h \
     ../src/normals/normalstask.h \
