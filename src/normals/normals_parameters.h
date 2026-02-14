@@ -18,7 +18,7 @@ public:
 	NormalSolver solver = NORMALS_L2;
 
 	FlatMethod flatMethod = FLAT_NONE;
-	double flatPercentage = 20;
+	double fourierPercentage = 20;
 	double blurPercentage = 10;
 
 	SurfaceIntegration surface_integration = SURFACE_NONE;

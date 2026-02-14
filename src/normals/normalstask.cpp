@@ -180,7 +180,7 @@ void NormalsTask::run() {
 			case FLAT_FOURIER:
 				try {
 					//convert radius to frequencies
-					double sigma = width*parameters.flatPercentage/100.0;
+					double sigma = width*parameters.fourierPercentage/100.0;
 					flattenFourierNormals(width, height, normals, 0.2, sigma);
 				} catch(std::length_error e) {
 					return;

@@ -107,7 +107,7 @@ NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *par
 		max_frequency->setKeyboardTracking(false);
 		max_frequency->setRange(0, 100);
 		max_frequency->setDecimals(4);
-		max_frequency->setValue(parameters.flatPercentage);
+		max_frequency->setValue(parameters.fourierPercentage);
 
 		planLayout->addWidget(frequency_frame);
 	}
@@ -133,9 +133,10 @@ NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *par
 
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-	connect(max_frequency, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.flatPercentage = v; });
+	connect(max_frequency, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.fourierPercentage = v; });
+	connect(blur_percentage, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.blurPercentage = v; });
 #else
-	connect(max_frequency, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.flatPercentage = v; });
+	connect(max_frequency, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.fourierPercentage = v; });
 	connect(blur_percentage, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.blurPercentage = v; });
 
 #endif
@@ -163,7 +164,7 @@ void NormalsFlattenRow::setFlattenMethod(FlatMethod method) {
 }
 
 void NormalsFlattenRow::setFourierFrequency(double f) {
-	parameters.flatPercentage = f;
+	parameters.fourierPercentage = f;
 	max_frequency->setValue(f);
 }
 

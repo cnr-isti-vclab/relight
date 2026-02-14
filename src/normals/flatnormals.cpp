@@ -1,4 +1,5 @@
 #include "flatnormals.h"
+#include "fast_gaussian_blur.h"
 #include <assm/Grid.h>
 
 #include <QFile>
@@ -210,28 +211,29 @@ void flattenRadialHeights(int w, int h, std::vector<float> &heights, double binS
 
 
 void flattenBlurNormals(int w, int h, std::vector<Eigen::Vector3f> &normals, double sigma) {
-	Grid<Eigen::Vector2f> img(w, h, Eigen::Vector2f(0, 0));
-	for(size_t i = 0; i < normals.size(); i++) {
-		img[i] = Eigen::Vector2f(normals[i][0], normals[i][1]);
-	}
-	//resize img properly.
-	Grid<Eigen::Vector2f> blurred;
+	std::vector<Eigen::Vector3f> blurred = normals;
 
-	int nw = round(2.0f * w / sigma);
-	int nh = round(2.0f * h / sigma);
-	if(nw >= w || nh >= h) {
-		blurred = img.gaussianBlur((int)(round(sigma)*6+1), sigma);
-	} else {
-		Grid<Eigen::Vector2f> small = img.downscale(nw, nh);
-		sigma = 2.0f;
-		Grid<Eigen::Vector2f> small_blurred = small.gaussianBlur((int)(round(sigma)*6+1), sigma);
-		blurred = small_blurred.upscale(w, h);
+	for(int k = 0; k < 3; k++) {
+		std::vector<float> v;
+		v.reserve(normals.size());
+		for(Eigen::Vector3f n: blurred) {
+			v.push_back(n[k]);
+		}
+		fast_gaussian_blur(v, w, h, sigma);
+
+		for(size_t i = 0; i < blurred.size(); i++)
+			blurred[i][k] = v[i];
 	}
-	for(size_t i = 0; i < blurred.size(); i++) {
-		Eigen::Vector2f v = img[i] - blurred[i];
-		normals[i][0] = v[0];
-		normals[i][1] = v[1];
-		normals[i][2] = sqrt(1 - v[0]*v[0] + v[1]*v[1]);
+	for(auto &n: blurred)
+		n.normalize();
+
+	for(size_t i = 0; i < normals.size(); i++) {
+		auto &n = normals[i];
+		n[0] -= blurred[i][0];
+		n[1] -= blurred[i][1];
+		n[0] = std::max(-0.99f, std::min(0.99f, n[0]));
+		n[1] = std::max(-0.99f, std::min(0.99f, n[1]));
+		n[2] = sqrt(1 - n[0]*n[0] + n[1]*n[1]);
 	}
 }
 

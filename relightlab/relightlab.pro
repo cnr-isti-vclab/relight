@@ -61,6 +61,7 @@ SOURCES += main.cpp \
     ../src/normals/bni_normal_integration.cpp \
     ../src/normals/normals_parameters.cpp \
     ../src/normals/fft_normal_integration.cpp \
+    ../src/normals/fast_gaussian_blur.cpp \
     ../src/rti/rtiparameters.cpp \
     ../src/rti/rtitask.cpp \
     ../src/crop.cpp \
@@ -218,6 +219,7 @@ HEADERS += \
     brdfframe.h \
     metadataframe.h \
     ../src/normals/fft_normal_integration.h \
+    ../src/normals/fast_gaussian_blur.h \
     ../src/normals/pocketfft.h \
     ../src/deepzoom.h \
     sphereframe.h \
@@ -226,7 +228,7 @@ HEADERS += \
     ../src/taskparameters.h \
     ../src/rti/rtiparameters.h \
     ../src/brdf/brdfparameters.h \
-    historytask.h
+    historytask.h 
 
 FORMS +=
 

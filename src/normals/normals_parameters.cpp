@@ -60,7 +60,7 @@ QJsonObject NormalsParameters::toJson() const {
 	obj["inputPath"] = input_path;
 	obj["solver"] = solverToString(solver);
 	obj["flatMethod"] = flatMethodToString(flatMethod);
-	obj["flatPercentage"] = flatPercentage;
+	obj["flatPercentage"] = fourierPercentage;
 	obj["blurPercentage"] = blurPercentage;
 	obj["surfaceIntegration"] = surfaceIntegrationToString(surface_integration);
 	obj["bniK"] = bni_k;
