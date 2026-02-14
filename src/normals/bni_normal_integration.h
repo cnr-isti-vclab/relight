@@ -27,7 +27,7 @@ std::vector<float> bni_pyramid(std::function<bool(QString s, int n)> progressed,
 								  int max_solver_iterations = 500,
 								  int scale = 0);
 
-bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z);
+bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z, float downsampling = 1.0f);
 bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &z, bool normalize = false);
 bool saveDepthMap(const QString &filename, size_t w, size_t h, std::vector<float> &z);
 

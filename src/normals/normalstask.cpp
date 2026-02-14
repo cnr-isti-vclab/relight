@@ -226,6 +226,7 @@ void NormalsTask::run() {
 		}
 	}
 
+	float downsampling = 1.0;
 	if(parameters.surface_width != 0 &&
 		(parameters.surface_width != imageset.width || parameters.surface_height != imageset.height)) {
 		//scale normals.
@@ -241,6 +242,7 @@ void NormalsTask::run() {
 
 		width = parameters.surface_width;
 		height = parameters.surface_height;
+		downsampling = float(imageset.width)/parameters.surface_width;
 	}
 
 	if(parameters.surface_integration == SURFACE_ASSM) {
@@ -251,7 +253,7 @@ void NormalsTask::run() {
 		//TODO move to saveply
 		QString filename = destination.filePath(parameters.basename + ".ply");
 
-	assm(filename, normals, width, height, parameters.assm_error, &callback);
+		assm(filename, normals, width, height, parameters.assm_error, &callback);
 
 	} else if(parameters.surface_integration == SURFACE_BNI || parameters.surface_integration == SURFACE_FFT) {
 		QString type = parameters.surface_integration == SURFACE_BNI ? "Bilateral" : "Fourier";
@@ -282,7 +284,7 @@ void NormalsTask::run() {
 
 		progressed("Saving surface...", 99);
 		QString filename = destination.filePath(parameters.basename + ".ply");
-		if(!savePly(filename, width, height, z)) {
+		if(!savePly(filename, width, height, z, downsampling)) {
 			error = "Failed to save .ply to: " + filename;
 			status = FAILED;
 			return;

@@ -43,7 +43,7 @@ bool saveNormalMap(const QString &filename, size_t w, size_t h, std::vector<Eige
 	return true;
 }
 
-bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z) {
+bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z, float downsampling) {
 	QFile file(filename);
 	bool success = file.open(QFile::WriteOnly);
 	if(!success)
@@ -67,9 +67,9 @@ bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z)
 		for(size_t x = 0; x < w; x++) {
 			size_t pos = x + y*w;
 			float *start = &vertices[3*pos];
-			start[0] = x;
-			start[1] = h - y -1;
-			start[2] = -z[pos];
+			start[0] = x*downsampling;
+			start[1] = (h - y -1)*downsampling;
+			start[2] = -z[pos]*downsampling;
 			assert(!isnan(start[2]));
 		}
 	}
