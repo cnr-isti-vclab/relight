@@ -25,7 +25,7 @@ public:
 	float bni_k = 2.0;
 	float assm_error = 0.1;
 
-	int surface_width = 0;
+	int surface_width = 0;  //3d surface grid width after downsampling.
 	int surface_height = 0;
 
 	QString normalsname = "normals"; //filename for normals  img.

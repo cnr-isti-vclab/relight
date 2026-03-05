@@ -12,6 +12,7 @@ class QDoubleSpinBox;
 class QGridLayout;
 
 class NormalsPlanRow: public PlanRow {
+	Q_OBJECT
 public:
 	NormalsPlanRow(NormalsParameters &_parameters, QFrame *parent = nullptr);
 
@@ -28,8 +29,12 @@ public:
 
 	void setComputeSource(bool compute);
 	void setSourcePath(QString path);
+	void updateSize();
 public slots:
 	void selectOutput();
+
+signals:
+	void sourceSizeChanged(int w, int h);
 
 protected:
 	QLabelButton *compute = nullptr;
@@ -63,11 +68,10 @@ class NormalsSurfaceRow: public NormalsPlanRow {
 public:
 	NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *parent = nullptr);
 	void setSurfaceMethod(SurfaceIntegration surface);
-	void init();
 
 public slots:
+	void updateDimensions(int w, int h);
 	void setDownsample(float down, int w, int h);
-	void setCrop(Crop crop);
 
 private:
 	QLabelButton *none = nullptr;
@@ -84,6 +88,9 @@ private:
 	QFrame *downsample_frame = nullptr;
 	QFrame *bni_frame = nullptr;
 	QFrame *assm_frame = nullptr;
+
+	int base_width = 1;
+	int base_height = 1;
 };
 
 

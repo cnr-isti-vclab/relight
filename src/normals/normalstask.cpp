@@ -106,23 +106,23 @@ void NormalsTask::run() {
 		width = imageset.width;
 		height = imageset.height;
 
-	normals.resize(width * height);
+		normals.resize(width * height);
 		RelightThreadPool pool;
 		PixelArray line;
 		imageset.setCallback(nullptr);
 		pool.start(QThread::idealThreadCount());
 
-		for (int i = 0; i < imageset.height; i++) {
+		for (int i = 0; i < height; i++) {
 			// Read a line
 			imageset.readLine(line);
 
 			// Create the normal task and get the run lambda
-			uint32_t idx = i * imageset.width;
+			uint32_t idx = i * width;
 			Eigen::Vector3f* data = &normals[idx];
 
 			NormalsWorker *task = new NormalsWorker(parameters.solver, i, line, data, imageset); //, lens);
 
-			std::function<void(void)> run = [this, task](void)->void {
+			std::function<void(void)> run = [task](void)->void {
 				task->run();
 				delete task;
 			};
@@ -194,6 +194,8 @@ void NormalsTask::run() {
 		}
 	}
 
+	float downsampling = 1.0;
+
 	if(parameters.compute) {
 		// Save the normals
 
@@ -226,9 +228,8 @@ void NormalsTask::run() {
 		}
 	}
 
-	float downsampling = 1.0;
 	if(parameters.surface_width != 0 &&
-		(parameters.surface_width != imageset.width || parameters.surface_height != imageset.height)) {
+		(parameters.surface_width != width || parameters.surface_height != height)) {
 		//scale normals.
 		std::vector<Eigen::Vector3f> tmp(parameters.surface_width*parameters.surface_height);
 
@@ -242,7 +243,7 @@ void NormalsTask::run() {
 
 		width = parameters.surface_width;
 		height = parameters.surface_height;
-		downsampling = float(imageset.width)/parameters.surface_width;
+		downsampling = float(width)/parameters.surface_width;
 	}
 
 	if(parameters.surface_integration == SURFACE_ASSM) {
