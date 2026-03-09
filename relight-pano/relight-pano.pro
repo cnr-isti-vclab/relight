@@ -21,8 +21,7 @@ SOURCES += \
     ../depthmap/depthmap.cpp \
     ../depthmap/gaussiangrid.cpp \
     ../depthmap/orthodepthmap.cpp \
-    ../src/bni_normal_integration.cpp \
-    ../retawny/ortholoader.cpp
+    ../src/bni_normal_integration.cpp
 
 HEADERS += \
     exiftransplant.h \
@@ -33,13 +32,10 @@ HEADERS += \
     ../depthmap/depthmap.h \
     ../depthmap/gaussiangrid.h \
     ../depthmap/orthodepthmap.h \
-    ../src/bni_normal_integration.h \
-    ../retawny/ortholoader.h
-
+    ../src/bni_normal_integration.h
 
 mac:INCLUDEPATH += /opt/homebrew/include/eigen3 /opt/homebrew/Cellar/libtiff/4.7.0/include /opt/homebrew/Cellar/eigen/3.4.0_1/include ../depthmap
-../retawny
-unix:INCLUDEPATH += ../external/eigen-3.3.9 ../depthmap ../retawny
+unix:INCLUDEPATH += ../external/eigen-3.3.9 ../depthmap
 
 
 

@@ -39,8 +39,8 @@ public:
 	QString mm3d_path;
 	QString relight_cli_path;
 	QString relight_merge_path;
-	QString retawny_path;
-	void setRetawny(const QString &path) { retawny_path = path; }
+	QString relight_seam_path;
+	void setSeam(const QString &path) { relight_seam_path = path; }
 
 
 	QFile log;

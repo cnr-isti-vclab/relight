@@ -11,7 +11,6 @@
 #include "orixml.h"
 #include "orthodepthmap.h"
 #include "depthmap.h"
-#include "ortholoader.h"
 
 //#define TESTING_PLANE_0
 using namespace std;
@@ -302,9 +301,13 @@ int PanoBuilder::findNPlanes(QDir& dir){
  * datasets
  *		face_A
  *		face_B
+ *
  * rti
  *		face_A
  *		face_B
+ *
+ * additional
+ *
  * photogrammetry
  *		Malt
  *		Ori-Rel
@@ -352,7 +355,7 @@ void PanoBuilder::process(Steps starting_step, bool stop){
 		runWithTiming("MALT_ORTHO", [this]() { malt_ortho(); });
 		if (stop) break;
 	case TAWNY:
-		runWithTiming("TAWNY", [this]() { loadOrthoPlanes(); tawny(); });
+		runWithTiming("TAWNY", [this]() { tawny(); });
 		if (stop) break;
 	case JPG:
 		runWithTiming("JPG", [this]() { jpg(); });
@@ -974,48 +977,6 @@ void PanoBuilder::malt_ortho() {
 	}
 	exportMeans();*/
 
-//sistema di coordinate: capire dove sta il 3d del punto dell'ori rel. trasformazione del punto con formule
-// rti fa l img media non la deve fare l rti si crea in tif, sposta rti dopo il malt mec e si fa direttamente l'img media
-
-// trova i coefficienti del tawny per vedere le sovrapposizioni degli ortho
-
-void PanoBuilder::loadOrthoPlanes()
-{
-	QDir currentDir = cd("photogrammetry");
-
-	QStringList planeDirs = currentDir.entryList(
-		QStringList() << "Ortho_plane_*", QDir::Dirs | QDir::NoDotAndDotDot);
-
-	for (const QString &planeDirName : planeDirs) {
-
-		QDir orthoDir(currentDir.filePath(planeDirName));
-
-		OrthoLoader loader;
-		QString error;
-
-		if (!loader.loadFromDirectory(orthoDir.absolutePath(), &error)) {
-			throw QString("OrthoLoader failed for %1: %2").arg(planeDirName, error);
-		}
-
-		if (loader.empty()) {
-			throw QString("No ortho tiles loaded in %1").arg(planeDirName);
-		}
-
-		cout << "Loaded " << loader.tiles().size()
-			 << " tiles for " << qPrintable(planeDirName) << endl;
-
-		cout << "Canvas size: "
-			 << loader.canvasSize().width() << " x "
-			 << loader.canvasSize().height() << endl;
-
-		cout << "Pixel size: "
-			 << loader.pixelWidth() << " x "
-			 << loader.pixelHeight() << endl;
-
-	}
-}
-
-
 void PanoBuilder::tawny()
 {
 	QDir currentDir = cd("photogrammetry");
@@ -1031,8 +992,7 @@ void PanoBuilder::tawny()
 			throw QString("Directory %1 does not exist").arg(orthoDir.absolutePath());
 		}
 
-		//retawny project
-		QString program = retawny_path;
+		QString program = relight_seam_path;
 
 		QString outputFile = currentDir.absoluteFilePath(QString("plane_%1.tif").arg(plane));
 
@@ -1042,7 +1002,7 @@ void PanoBuilder::tawny()
 		try {
 			executeProcess(program, arguments);
 		} catch (QString &e) {
-			cout << "Error during retawny: " << qPrintable(e) << endl;
+			cout << "Error during relight-seam: " << qPrintable(e) << endl;
 			cout << "Command Line: " << qPrintable(program + " " + arguments.join(" ")) << endl;
 		}
 	}

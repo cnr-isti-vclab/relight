@@ -32,10 +32,10 @@ int main(int argc, char *argv[])
 	parser.addHelpOption();
 	parser.addPositionalArgument("folder", "path folder containing rti datasets");
 
-	QCommandLineOption micmacOption(QStringList()      << "M" << "micmac",          "Micmac mm3d path",     "micbin", "/home/erika/micmac/bin/mm3d");
-	QCommandLineOption cliOption(QStringList()         << "C" << "relight-cli",     "Relight-cli path",     "clibin", "/home/erika/relight/relight-cli/relight-cli");
-	QCommandLineOption mergeOption(QStringList()       << "G" << "relight-merge",   "Relight-merge path",   "mergebin", "/home/erika/relight/relight-merge/relight-merge");
-	QCommandLineOption normalsOption(QStringList()     << "N" << "relight-normals", "Relight-normals path", "normalsbin", "/home/erika/relight/relight-normals/relight-normals");
+	QCommandLineOption micmacOption(QStringList()      << "M" << "micmac",          "Micmac mm3d path",     "micbin", "mm3d");
+	QCommandLineOption cliOption(QStringList()         << "C" << "relight-cli",     "Relight-cli path",     "clibin", "relight-cli");
+	QCommandLineOption mergeOption(QStringList()       << "G" << "relight-merge",   "Relight-merge path",   "mergebin", "relight-merge");
+	QCommandLineOption normalsOption(QStringList()     << "N" << "relight-normals", "Relight-normals path", "normalsbin", "relight-normals");
 
 
 	QCommandLineOption interactiveOption(QStringList() << "i" << "interactive",  "Open users interface");
@@ -44,14 +44,14 @@ int main(int argc, char *argv[])
 	QCommandLineOption stepOption(QStringList()        << "s" << "step",
 								  "Starting step (means, tapioca, schnaps, tapas, apericloud, orthoplane, tarama, malt_mec, c3dc, rti, depthmap, malt_ortho, jpg)", "step");
 	QCommandLineOption stopOption(QStringList()        << "S" << "stop",         "Stop after first step");
-	QCommandLineOption retawnyOption(QStringList()     << "R" << "retawny","Retawny executable path", "retawnybin", "/home/erika/relight-diverged/retawny/build/retawny");
+	QCommandLineOption seamOption(QStringList()        << "R" << "seam", "Relight-seam executable path", "seambin", "relight-seam");
 
 
 	parser.addOption(micmacOption);
 	parser.addOption(cliOption);
 	parser.addOption(mergeOption);
 	parser.addOption(normalsOption);
-	parser.addOption(retawnyOption);
+	parser.addOption(seamOption);
 
 	parser.addOption(interactiveOption);
 	parser.addOption(verboseOption);
@@ -131,11 +131,7 @@ int main(int argc, char *argv[])
 			builder.setMm3d(parser.value(micmacOption));
 			builder.setRelightCli(parser.value(cliOption));
 			builder.setRelightMerge(parser.value(mergeOption));
-			builder.setRetawny(parser.value(retawnyOption));
-
-			//builder.setMm3d("/home/erika/micmac/bin/mm3d");
-			// builder.setRelightCli("/home/erika/relight/relight-cli/relight-cli");
-			// builder.setRelightMerge("/home/erika/relight/relight-merge/relight-merge");
+			builder.setSeam(parser.value(seamOption));
 
 			PanoBuilder::Steps  startingStep = PanoBuilder::MEANS;
 			if(steps) {
