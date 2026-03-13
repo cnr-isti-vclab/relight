@@ -35,6 +35,7 @@ public:
 	QStringList steps = {"means", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc","rti", "depthmap", "malt_ortho", "tawny", "jpg", "updateJson"};
 	QDir base_dir;
 	QDir datasets_dir;
+	QDir additional_dir;
 	QDir photogrammetry_dir;
 	QString mm3d_path;
 	QString relight_cli_path;
@@ -60,7 +61,8 @@ public:
 	int findStep(QString step);
 	int findNPlanes(QDir& dir);
 	void exportMeans();
-	void exifTransplant();
+	void exportAdditional();
+	void transplantExif();
 	void executeProcess(QString& process, QStringList& arguments);
 	void process(Steps starting_step = RTI, bool stop = false);
 	void means();
@@ -84,6 +86,7 @@ public:
 signals:
 private:
 	void ensureExecutable(QString path);
+	void transplantExif(const QString &src, const QString &dest);
 	QDir cd(QString path, bool create = false);
 	void rmdir(QString path);
 
