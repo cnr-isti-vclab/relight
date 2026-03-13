@@ -24,6 +24,7 @@ public:
 		MALT_MEC,
 		C3DC,
 		RTI,
+		NORMALS,
 		DEPTHMAP,
 		MALT_ORTHO, //copy orientation xml and exif + ortho per image
 		TAWNY,
@@ -32,7 +33,7 @@ public:
 	};
 
 
-	QStringList steps = {"means", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc","rti", "depthmap", "malt_ortho", "tawny", "jpg", "updateJson"};
+	QStringList steps = {"means", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc", "rti", "normals", "depthmap", "malt_ortho", "tawny", "jpg", "updateJson"};
 	QDir base_dir;
 	QDir datasets_dir;
 	QDir additional_dir;
@@ -41,7 +42,9 @@ public:
 	QString relight_cli_path;
 	QString relight_merge_path;
 	QString relight_seam_path;
+	QString relight_normals_path;
 	void setSeam(const QString &path) { relight_seam_path = path; }
+	void setRelightNormals(QString path);
 
 
 	QFile log;
@@ -78,6 +81,7 @@ public:
 	void c3dc();
 	void loadOrthoPlanes();
 	void tawny();
+	void normals();
 	void depthmap();
 	void malt_ortho();
 	void jpg();

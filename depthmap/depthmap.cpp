@@ -52,11 +52,14 @@ bool Depthmap::loadTiff(const char *tiff, vector<float> &values, uint32_t &w, ui
 	}
 
 	uint16_t sampleFormat = SAMPLEFORMAT_IEEEFP; // Floating-point data
-	//TIFFGetField(inTiff, TIFFTAG_SAMPLEFORMAT, &sampleFormat);
-	if (!TIFFGetField(inTiff, TIFFTAG_SAMPLEFORMAT, &sampleFormat)) {
-		cerr << "Failed to retrieve SAMPLEFORMAT tag." << endl;
-		TIFFClose(inTiff);
-		return false;
+	// SAMPLEFORMAT tag is optional for 1-bit masks (e.g. MicMac CCITT G4 output);
+	// only require it for 32-bit float depth maps.
+	if (bitsPerSample == 32) {
+		if (!TIFFGetField(inTiff, TIFFTAG_SAMPLEFORMAT, &sampleFormat)) {
+			cerr << "Failed to retrieve SAMPLEFORMAT tag." << endl;
+			TIFFClose(inTiff);
+			return false;
+		}
 	}
 
 
@@ -72,7 +75,6 @@ bool Depthmap::loadTiff(const char *tiff, vector<float> &values, uint32_t &w, ui
 	}
 
 	return true;
-
 }
 //TODO: controllare che sia effettivamenet floating point 32 bit
 
@@ -249,6 +251,8 @@ bool Depthmap::loadMask(const char *tifPath){
 
 
 bool Depthmap::loadNormals(const char *normals_path){
+	std::cerr << "NEVER USE THIS!" << std::endl;
+	exit(0);
 
 	QImage normalmap(normals_path);
 	if (normalmap.isNull()) {
@@ -295,8 +299,9 @@ void Depthmap::saveTiff(const char *mask_path,const vector<float> &values, uint3
 		TIFFSetField(maskTiff, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
 	} else if (bitsPerSample == 1) {
 		TIFFSetField(maskTiff, TIFFTAG_BITSPERSAMPLE, 1);
-		TIFFSetField(maskTiff, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT);
-		TIFFSetField(maskTiff, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
+		TIFFSetField(maskTiff, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+		TIFFSetField(maskTiff, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
+		TIFFSetField(maskTiff, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4);
 	}
 
 

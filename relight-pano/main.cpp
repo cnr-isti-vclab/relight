@@ -131,6 +131,7 @@ int main(int argc, char *argv[])
 			builder.setMm3d(parser.value(micmacOption));
 			builder.setRelightCli(parser.value(cliOption));
 			builder.setRelightMerge(parser.value(mergeOption));
+			builder.setRelightNormals(parser.value(normalsOption));
 			builder.setSeam(parser.value(seamOption));
 
 			PanoBuilder::Steps  startingStep = PanoBuilder::MEANS;

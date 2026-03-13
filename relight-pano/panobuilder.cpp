@@ -62,6 +62,10 @@ void PanoBuilder::setRelightMerge(QString path){
 	ensureExecutable(path);
 	relight_merge_path = path;
 }
+void PanoBuilder::setRelightNormals(QString path){
+	ensureExecutable(path);
+	relight_normals_path = path;
+}
 
 void PanoBuilder::ensureExecutable(QString path){
 	QString resolved = QStandardPaths::findExecutable(path);
@@ -350,6 +354,9 @@ void PanoBuilder::process(Steps starting_step, bool stop){
 		if (stop) break;
 	case RTI:
 		runWithTiming("RTI", [this]() { rti(); });
+		if (stop) break;
+	case NORMALS:
+		runWithTiming("NORMALS", [this]() { normals(); });
 		if (stop) break;
 	case DEPTHMAP:
 		runWithTiming("DEPTHMAP", [this]() { depthmap(); });
@@ -662,18 +669,15 @@ void PanoBuilder::malt_mec(){
 
 	// Backup XML + TFW (stessa regola nome + "_backup" + estensione)
 	QString depthXml = depthmapPath + ".xml";
-	if (QFile::exists(depthXml)) {
-		QString depthXmlBackup = depthXml + "_backup.xml";
-		QFile::remove(depthXmlBackup);
-		QFile::copy(depthXml, depthXmlBackup);
-	}
+	QString depthXmlBackup = depthXml + "_backup.xml";
+	QFile::remove(depthXmlBackup);
+	QFile::copy(depthXml, depthXmlBackup);
+
 
 	QString depthTfw = depthmapPath.left(depthmapPath.size() - 4) + ".tfw";
-	if (QFile::exists(depthTfw)) {
-		QString depthTfwBackup = depthTfw + "_backup.tfw";
-		QFile::remove(depthTfwBackup);
-		QFile::copy(depthTfw, depthTfwBackup);
-	}
+	QString depthTfwBackup = depthTfw + "_backup.tfw";
+	QFile::remove(depthTfwBackup);
+	QFile::copy(depthTfw, depthTfwBackup);
 }
 
 // Creates dense 3D point cloud using C3DC (MicMac) - currently disabled.
@@ -742,6 +746,44 @@ void PanoBuilder::rti(){
 
 }
 
+// Runs relight-normals on each dataset subdirectory to produce per-camera depth TIFF files.
+// Outputs are saved to base_dir/depthmaps/<subDirName>.tiff.
+void PanoBuilder::normals(){
+	QDir depthmapsDir(base_dir.filePath("depthmaps"));
+	if (!depthmapsDir.exists()) {
+		if (!base_dir.mkdir("depthmaps"))
+			throw QString("Could not create 'depthmaps' directory");
+		depthmapsDir = QDir(base_dir.filePath("depthmaps"));
+	}
+
+	QStringList subDirs = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+	if (subDirs.isEmpty())
+		throw QString("No subdirectories found in datasets directory");
+
+	for (const QString &subDirName : subDirs) {
+		QString inputPath  = datasets_dir.absoluteFilePath(subDirName);
+		QString outputPath = depthmapsDir.absoluteFilePath(subDirName);
+
+		QStringList arguments;
+		arguments << inputPath << "-i" << "bni" << "--bni-k" << "0" << "--scale-down" << "4" << "-o" << outputPath;
+		if (!light3d.isEmpty())
+			arguments << "-3" << light3d;
+
+		executeProcess(relight_normals_path, arguments);
+
+		// relight-normals creates a directory at outputPath containing normals.tiff.
+		// Move that file out and name it <subDirName>.tiff.
+		QString innerTiff = depthmapsDir.absoluteFilePath(subDirName + "/normals.tiff");
+		QString finalTiff = depthmapsDir.absoluteFilePath(subDirName + ".tiff");
+		if (!QFile::exists(innerTiff))
+			throw QString("Expected output not found: ") + innerTiff;
+		QFile::remove(finalTiff);
+		if (!QFile::rename(innerTiff, finalTiff))
+			throw QString("Failed to move %1 to %2").arg(innerTiff, finalTiff);
+		QDir(depthmapsDir.absoluteFilePath(subDirName)).removeRecursively();
+	}
+}
+
 // Integrates camera-specific depth information into the global orthographic depth map.
 // Processes RTI depth maps from each camera view and updates the master depth map.
 void PanoBuilder::depthmap(){
@@ -767,15 +809,15 @@ void PanoBuilder::depthmap(){
 		return;
 	}
 
-	QDir datasetsDir(base_dir.filePath("datasets"));
+	QDir depthmapDir(base_dir.filePath("depthmaps"));
 	QDir xmlDir(base_dir.filePath("photogrammetry/Ori-Relative"));
 
 	QStringList extensions = {".tiff", ".tif", ".jpg", ".jpeg"};
 	QStringList tiffFilters = {"*.tiff"};
 
-	QFileInfoList tiffFiles = datasetsDir.entryInfoList(tiffFilters, QDir::Files);
+	QFileInfoList tiffFiles = depthmapDir.entryInfoList(tiffFilters, QDir::Files);
 	if (tiffFiles.isEmpty()) {
-		cerr << "No .tiff file find in " << datasetsDir.absolutePath().toStdString() << endl;
+		cerr << "No .tiff file find in " << depthmapDir.absolutePath().toStdString() << endl;
 		return;
 	}
 
@@ -926,8 +968,11 @@ void PanoBuilder::malt_ortho() {
 
 		QString program = mm3d_path;
 		QStringList arguments;
-		arguments << "Malt" << "Ortho" << "plane_.*" + format << "Relative" << "ZoomF=4" << "DirMEC=Malt" << "DirTA=TA" << "DoMEC=0"
-				  << "DoOrtho=1" << "Purge=false" << "ImOrtho=plane_.*" + format << "DirOF=" +orthoPlaneDirName;
+		// Use the same main image pattern as malt_mec (.*format, all images) so MicMac
+		// computes the working-plane extent and resolution identically to the MEC step,
+		// keeping depth and mask consistent.  Only ImOrtho is restricted to plane_ images.
+		arguments << "Malt" << "Ortho" << ".*" + format << "Relative" << "ZoomF=4" << "DirMEC=Malt" << "DirTA=TA" << "DoMEC=0"
+				  << "DoOrtho=1" << "Purge=false" << "ImOrtho=plane_.*" + format << "DirOF=" + orthoPlaneDirName;
 
 		try {
 			executeProcess(program, arguments);
@@ -935,6 +980,7 @@ void PanoBuilder::malt_ortho() {
 			cout << "Error during Malt Ortho for plane " << plane << ": "
 				 << qPrintable(e) << endl;
 			cout << "Command Line: " << qPrintable(arguments.join(" ")) << endl;
+			exit(1);
 		}
 
 		// Cancella i file temporanei

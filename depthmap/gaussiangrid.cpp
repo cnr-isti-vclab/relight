@@ -333,9 +333,9 @@ float GaussianGrid::corrected(float x, float y, float z) {
 void GaussianGrid::computeGaussianWeightedGrid(std::vector<Eigen::Vector3f> &differences) {
 
 
-	if (values.size() != size_t(width*height) || weights.size() != size_t(width*height)) {
-		qCritical() << "Grid size mismatch!";
-	}
+//	if (values.size() != size_t(width*height) || weights.size() != size_t(width*height)) {
+//		throw std::string("Grid size mismatch!");
+//	}
 
 	float x_min = 0;
 	float x_max = 1;

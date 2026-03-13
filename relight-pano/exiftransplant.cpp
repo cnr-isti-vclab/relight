@@ -70,8 +70,12 @@ unsigned char *ExifTransplant::getExif(FILE *fp, unsigned int &exif_size) {
 
 		if(marker[1] == 0xE0 || marker[1] == 0xE1) {
 			exif_end = pos + marker_size;
-		} else
+		} else if(marker[1] == 0xFE || (marker[1] >= 0xE2 && marker[1] <= 0xEF)) {
+			// skip other APP markers and comment markers, keep scanning
+		} else {
+			// hit a non-header marker (SOF, DHT, SOS, …): stop
 			break;
+		}
 
 		pos += marker_size;
 		fseek(fp, pos, SEEK_SET);
