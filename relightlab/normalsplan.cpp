@@ -11,6 +11,7 @@
 #include <QDoubleSpinBox>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QImageReader>
 
 NormalsPlanRow::NormalsPlanRow(NormalsParameters &_parameters, QFrame *parent):
 	PlanRow(parent), parameters(_parameters) {
@@ -59,8 +60,27 @@ void NormalsSourceRow::setComputeSource(bool build) {
 	compute->setChecked(build);
 
 	input_frame->setVisible(!build);
+	updateSize();
 }
 
+void NormalsSourceRow::updateSize() {
+	int w = 0, h = 0;
+	if (parameters.compute) {
+		Project &p = qRelightApp->project();
+		w = p.crop.width();
+		h = p.crop.height();
+	} else {
+		QImageReader reader(parameters.input_path);
+		QSize size = reader.size();
+		if (size.isValid()) {
+			w = size.width();
+			h = size.height();
+		}
+	}
+	if(w > 0 && h > 0) {
+		emit sourceSizeChanged(w, h);
+	}
+}
 
 void NormalsSourceRow::selectOutput() {
 	//get folder if not legacy.
@@ -77,6 +97,7 @@ void NormalsSourceRow::selectOutput() {
 void NormalsSourceRow::setSourcePath(QString path) {
 	parameters.input_path = path;
 	input_path->setText(path);
+	updateSize();
 }
 
 
@@ -248,26 +269,17 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 
 	connect(downsample, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double v) {
 		float d = downsample->value();
-
-		Project &p = qRelightApp->project();
-		Crop &crop = p.crop;
-		setDownsample(d, crop.width()/d, crop.height()/d);
+		setDownsample(d, base_width/d, base_height/d);
 	});
 
 	connect(width, qOverload<int>(&QSpinBox::valueChanged), this, [this](int w) {
-		//TODO basic validation?
-		Project &p = qRelightApp->project();
-		Crop &crop = p.crop;
-		float d = crop.width()/(float)w;
-		setDownsample(d, w, crop.height()/d);
+		float d = base_width/(float)w;
+		setDownsample(d, w, base_height/d);
 	});
 
 	connect(height, qOverload<int>(&QSpinBox::valueChanged), this, [this](int h) {
-		//TODO basic validation?
-		Project &p = qRelightApp->project();
-		Crop &crop = p.crop;
-		float d = crop.height()/(float)h;
-		setDownsample(d, crop.width()/d, h);
+		float d = base_height/(float)h;
+		setDownsample(d, base_width/d, h);
 	});
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -287,13 +299,6 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 	setSurfaceMethod(parameters.surface_integration);
 }
 
-void NormalsSurfaceRow::init() {
-	Project &p = qRelightApp->project();
-	Crop &crop = p.crop;
-	setDownsample(1.0f, crop.width(), crop.height());
-}
-
-
 void NormalsSurfaceRow::setSurfaceMethod(SurfaceIntegration surface) {
 	parameters.surface_integration = surface;
 	none->setChecked(surface == SURFACE_NONE);
@@ -303,6 +308,13 @@ void NormalsSurfaceRow::setSurfaceMethod(SurfaceIntegration surface) {
 	downsample_frame->setVisible(surface == SURFACE_BNI || surface == SURFACE_FFT);
 	bni_frame->setVisible(surface == SURFACE_BNI);
 	assm_frame->setVisible(surface == SURFACE_ASSM);
+}
+
+void NormalsSurfaceRow::updateDimensions(int w, int h) {
+	base_width = w;
+	base_height = h;
+	float down = downsample->value();
+	setDownsample(down, w / down, h / down);
 }
 
 void NormalsSurfaceRow::setDownsample(float down, int w, int h) {
@@ -320,14 +332,6 @@ void NormalsSurfaceRow::setDownsample(float down, int w, int h) {
 
 	parameters.surface_width = w;
 	parameters.surface_height = h;
-}
-
-void NormalsSurfaceRow::setCrop(Crop crop) {
-
-	float down = downsample->value();
-	QSize size = crop.size();
-
-	setDownsample(down, size.width()/down, size.height()/down);
 }
 
 NormalsExportRow::NormalsExportRow(NormalsParameters &parameters, QFrame *parent): NormalsPlanRow(parameters, parent) {

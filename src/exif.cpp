@@ -14,13 +14,16 @@ void IfdHeader::parse(QDataStream &stream, quint32 startPos) {
 	stream >> count;
 
 	quint32 pos = stream.device()->pos() + 4;
-	uint32_t needsOffset = 1;
-	if(tag != Exif::ExifIfdPointer && tag != Exif::GpsInfoIfdPointer) {
-		if(type == Ascii || type == Undefined || type == Byte)
-			needsOffset = 4;
-		else if(type == Short)
-			needsOffset = 2;
-		if(count >= needsOffset) {
+	uint32_t needsOffset = count;
+	if(tag != Exif::ExifIfdPointer && tag != Exif::GpsInfoIfdPointer) {\
+		if(type == Short)
+			needsOffset *= 2;
+		else if(type == Long || type == SignedLong)
+			needsOffset *= 4;
+		else if(type == Rational || type == Undefined)
+			needsOffset *= 8;
+
+		if(needsOffset > 4) {
 			quint32 offset;
 			stream >> offset;
 			stream.device()->seek(startPos + offset);

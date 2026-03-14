@@ -29,6 +29,8 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 	content->addWidget(surface_row = new NormalsSurfaceRow(parameters, this));
 	content->addWidget(export_row = new NormalsExportRow(parameters, this));
 
+	connect(source_row, &NormalsSourceRow::sourceSizeChanged, surface_row, &NormalsSurfaceRow::updateDimensions);
+
 
 	{
 		QHBoxLayout *save_row = new QHBoxLayout;
@@ -77,7 +79,7 @@ void NormalsFrame::init() {
 	export_row->suggestPath();
 	zoom_view->init();
 	zoom_view->setCrop(qRelightApp->project().crop);
-	surface_row->init();
+	source_row->updateSize();
 }
 
 void NormalsFrame::save() {
@@ -128,5 +130,5 @@ void NormalsFrame::save() {
 
 void NormalsFrame::updateCrop(Crop crop) {
 	zoom_view->setCrop(crop);
-	surface_row->setCrop(crop);
+	source_row->updateSize();
 }

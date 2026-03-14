@@ -19,16 +19,12 @@ public:
 		SignedRational = 10
 	};
 
-
-
-
 	quint16 tag;
 	quint16 type;
 	quint32 count;
 	QVariant value;
 
 	void parse(QDataStream &stream, quint32 startPos);
-
 };
 
 class Exif: public QMap<quint16, QVariant> {
