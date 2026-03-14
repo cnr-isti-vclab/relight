@@ -234,8 +234,10 @@ bool ImageSet::initImages(const char *_path) {
 			throw QString("Inconsistent image size for " + filepath);
 		}
 
-		right = image_width = width = w;
-		bottom = image_height = height = h;
+
+
+		lens.width = right = image_width = width = w;
+		lens.height = bottom = image_height = height = h;
 
 		Exif exif;
 		exif.parse(filepath);
