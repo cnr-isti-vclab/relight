@@ -59,7 +59,7 @@ void BrdfTask::run() {
 		}
 	}
 
-	if(parameters.albedo == BrdfParameters::MEDIAN) {
+	if(parameters.albedo != BrdfParameters::NONE) {
 		width = imageset.width;
 		height = imageset.height;
 
