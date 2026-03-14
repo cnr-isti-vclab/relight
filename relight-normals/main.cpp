@@ -296,6 +296,8 @@ int main(int argc, char *argv[]) {
 
 			Dome dome;
 			if (config.use_3d_lights) {
+				dome.lightConfiguration = Dome::SPHERICAL;
+				dome.imageWidth = 1.0;
 				dome.domeDiameter = config.dome_radius * 2.0;  // diameter from radius
 				if (config.dome_offset != 0.0) {
 					dome.verticalOffset = config.dome_offset;
