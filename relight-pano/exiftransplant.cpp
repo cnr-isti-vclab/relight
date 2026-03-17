@@ -44,7 +44,8 @@ unsigned char *ExifTransplant::getExif(FILE *fp, unsigned int &exif_size) {
 		error =  "Source is not a JPEG file";
 		return NULL;
 	}
-	unsigned int exif_end = 2;
+	unsigned int exif_start = 0; // position of the first FF E1 (APP1) marker
+	unsigned int exif_end = 0;
 	while(1) {
 
 		unsigned char marker[2];
@@ -58,7 +59,7 @@ unsigned char *ExifTransplant::getExif(FILE *fp, unsigned int &exif_size) {
 			error  = "Exif not found";
 			return NULL;
 		}
-		int pos = ftell(fp);
+		int pos = ftell(fp); // points to the size field (right after the 2 marker bytes)
 
 		unsigned short marker_size;
 		readed = fread(&marker_size, 2, 1, fp);
@@ -68,9 +69,15 @@ unsigned char *ExifTransplant::getExif(FILE *fp, unsigned int &exif_size) {
 		}
 		swap16(marker_size);
 
-		if(marker[1] == 0xE0 || marker[1] == 0xE1) {
+		if(marker[1] == 0xE1) {
+			// Only collect APP1 (EXIF/XMP). Skip APP0 (JFIF, 0xE0): it carries
+			// an implicit YCbCr declaration that conflicts with RGB-encoded
+			// destination files (e.g. MicMac plane images with an Adobe APP14
+			// Color Transform = 0/Unknown = RGB).
+			if (exif_start == 0)
+				exif_start = (unsigned int)(pos - 2); // back up to the FF E1 bytes
 			exif_end = pos + marker_size;
-		} else if(marker[1] == 0xFE || (marker[1] >= 0xE2 && marker[1] <= 0xEF)) {
+		} else if(marker[1] == 0xE0 || marker[1] == 0xFE || (marker[1] >= 0xE2 && marker[1] <= 0xEF)) {
 			// skip other APP markers and comment markers, keep scanning
 		} else {
 			// hit a non-header marker (SOF, DHT, SOS, …): stop
@@ -80,12 +87,12 @@ unsigned char *ExifTransplant::getExif(FILE *fp, unsigned int &exif_size) {
 		pos += marker_size;
 		fseek(fp, pos, SEEK_SET);
 	}
-	if(exif_end == 2)
+	if(exif_start == 0)
 		return NULL;
-	exif_size = exif_end -2;
+	exif_size = exif_end - exif_start;
 	//found exif
 	unsigned char *exif = new unsigned char[exif_size];
-	fseek(fp, 2, SEEK_SET);
+	fseek(fp, exif_start, SEEK_SET);
 	unsigned int readed = fread(exif, 1, exif_size, fp);
 	if(readed != exif_size) {
 		error = "Could not read source file";
@@ -137,7 +144,7 @@ unsigned int ExifTransplant::insertExif(FILE *fp, unsigned int exif_size, unsign
 		fseek(fp, pos, SEEK_SET);
 
 		if(marker[1] == 0xE0 || marker[1] == 0xE1)
-			remainder_start = pos;
+			remainder_start = pos; // strip both APP0 and APP1 from destination
 		else
 			break;
 	}

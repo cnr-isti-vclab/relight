@@ -156,9 +156,11 @@ void PanoBuilder::exportAdditional(){
 		QDir::Files);
 
 	for (const QString &fileName : imageFiles) {
-		QString destPath = photogrammetry_dir.filePath(fileName);
+		QFileInfo fi(fileName);
+		QString normalizedName = fi.completeBaseName() + "." + fi.suffix().toLower();
+		QString destPath = photogrammetry_dir.filePath(normalizedName);
 		if (QFile::exists(destPath)) {
-			cout << "Skipping additional (already present): " << qPrintable(fileName) << endl;
+			cout << "Skipping additional (already present): " << qPrintable(normalizedName) << endl;
 			continue;
 		}
 		if (!QFile::copy(additional_dir.filePath(fileName), destPath))
@@ -467,7 +469,7 @@ void PanoBuilder::tapioca(){
 
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Tapioca" <<"All" << ".*" + format << "1500" << "@SFS";
+	arguments << "Tapioca" <<"All" << ".*" + format << "1500" << "@SFS" << "Detect=Digeo";
 
 	executeProcess(program, arguments);
 }
@@ -528,7 +530,7 @@ void PanoBuilder::tapas(){
 	}
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Tapas" << "RadialBasic" << ".*" + format << "Out=Relative";
+	arguments << "Tapas" << "RadialBasic" << ".*" + format << "Out=Relative" << "SH=_mini";
 
 	executeProcess(program, arguments);
 }
@@ -700,6 +702,8 @@ void PanoBuilder::c3dc(){
 // Generates RTI (Reflectance Transformation Imaging) files for each dataset.
 // Uses relight-cli to create PTM files, then merges them using relight-merge.
 void PanoBuilder::rti(){
+	QDir::setCurrent(base_dir.absolutePath());
+
 	QDir rtiDir(base_dir.filePath("rti"));
 	if (!rtiDir.exists()) {
 		if (!base_dir.mkdir("rti")) {
@@ -727,7 +731,9 @@ void PanoBuilder::rti(){
 		//arguments << subDir.absoluteFilePath(relightFile) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18" << "-m"
 		//<<"-3" << "2.5:0.21";
 
-		arguments << datasets_dir.filePath(subDirName) << rtiDir.filePath(subDir.dirName()) <<"-b" << "ptm" << "-p" << "18";
+		QString baseName = (base == PTM) ? "ptm" : "hsh";
+		int nPlanes = (base == PTM) ? 18 : 27;
+		arguments << datasets_dir.filePath(subDirName) << rtiDir.filePath(subDir.dirName()) << "-b" << baseName << "-p" << QString::number(nPlanes);
 			// <<"-3" << "2.5:0.21" 3 1.6:0.04 ;
 		if(!light3d.isEmpty())
 			arguments << "-3" << light3d;
@@ -740,8 +746,11 @@ void PanoBuilder::rti(){
 		arguments_merge << rtiDir.filePath(subDirName);
 	}
 
-	arguments_merge << "merge";
-	rmdir("merge");
+	QString mergePath = base_dir.absoluteFilePath("merge");
+	arguments_merge << mergePath;
+	QDir mergeDir(mergePath);
+	if (mergeDir.exists())
+		mergeDir.removeRecursively();
 	executeProcess(relight_merge_path, arguments_merge);
 
 }
@@ -773,7 +782,7 @@ void PanoBuilder::normals(){
 
 		// relight-normals creates a directory at outputPath containing normals.tiff.
 		// Move that file out and name it <subDirName>.tiff.
-		QString innerTiff = depthmapsDir.absoluteFilePath(subDirName + "/normals.tiff");
+		QString innerTiff = depthmapsDir.absoluteFilePath(subDirName + "/heightmap.tiff");
 		QString finalTiff = depthmapsDir.absoluteFilePath(subDirName + ".tiff");
 		if (!QFile::exists(innerTiff))
 			throw QString("Expected output not found: ") + innerTiff;
@@ -1184,17 +1193,17 @@ void PanoBuilder::jpg()
 void PanoBuilder::updateJson(){
 	QDir currentDir = cd("photogrammetry");
 
-	QDir rtiDir(base_dir.filePath("rti"));
-	if (!rtiDir.exists()) {
-		throw QString("rti directory does not exist: ") + rtiDir.absolutePath();
+	QDir mergeDir(base_dir.filePath("merge"));
+	if (!mergeDir.exists()) {
+		throw QString("merge directory does not exist: ") + mergeDir.absolutePath();
 	}
-	QStringList subDirs = rtiDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+	QStringList subDirs = mergeDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 	if (subDirs.isEmpty()) {
 		throw QString("No subdirectories found in 'rti' directory.");
 	}
 
 	QString subDirName = subDirs[0];
-	QDir subDir(rtiDir.filePath(subDirName));
+	QDir subDir(mergeDir.filePath(subDirName));
 
 	QString jsonFilePath = subDir.filePath("info.json");
 	if (!QFile::exists(jsonFilePath)) {

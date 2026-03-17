@@ -12,6 +12,11 @@ class PanoBuilder : public QObject
 	Q_OBJECT
 public:
 
+	enum Base {
+		PTM,
+		HSH
+	};
+
 	enum Steps{
 
 		MEANS = 0, //rti e merge e medie
@@ -55,6 +60,7 @@ public:
 	bool debug = false;
 	QString format = "jpg";
 	QString light3d;
+	Base base = HSH;
 
 
 	PanoBuilder(QString path);

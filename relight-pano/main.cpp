@@ -75,6 +75,9 @@ int main(int argc, char *argv[])
 	QCommandLineOption light3dOption(QStringList()     << "L" << "Light3d", "Sets the regularization parameter", "lights");
 	parser.addOption(light3dOption);
 
+	QCommandLineOption baseOption(QStringList()        << "b" << "base", "RTI basis: ptm or hsh (default: hsh)", "base", "hsh");
+	parser.addOption(baseOption);
+
 	// Process the actual command line arguments given by the user
 	parser.process(app);
 
@@ -133,6 +136,18 @@ int main(int argc, char *argv[])
 			builder.setRelightMerge(parser.value(mergeOption));
 			builder.setRelightNormals(parser.value(normalsOption));
 			builder.setSeam(parser.value(seamOption));
+
+			{
+				QString baseVal = parser.value(baseOption).toLower();
+				if (baseVal == "ptm")
+					builder.base = PanoBuilder::PTM;
+				else if (baseVal == "hsh")
+					builder.base = PanoBuilder::HSH;
+				else {
+					cerr << "Error: unknown base '" << qPrintable(baseVal) << "'. Use ptm or hsh." << endl;
+					return -1;
+				}
+			}
 
 			PanoBuilder::Steps  startingStep = PanoBuilder::MEANS;
 			if(steps) {
