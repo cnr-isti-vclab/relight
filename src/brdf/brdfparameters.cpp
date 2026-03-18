@@ -28,5 +28,6 @@ QJsonObject BrdfParameters::toJson() const {
     obj["albedoMethod"] = albedoMethodToString(albedo);
     obj["medianPercentage"] = median_percentage;
     obj["albedoPath"] = albedo_path;
+    obj["compute_brdf"] = compute_brdf;
     return obj;
 }

@@ -144,7 +144,9 @@ set (RELIGHTLAB_SOURCES
     ../src/jpeg_encoder.cpp
     ../src/icc_profiles.cpp
     ../src/network/httpserver.cpp
-    ../src/brdf/brdftask.cpp
+	../src/brdf/brdftask.cpp
+	../src/brdf/brdf_math.cpp
+	../src/brdf/brdf_optimizer.cpp
     ../src/brdf/brdfparameters.cpp
     alignframe.cpp
     alignpicking.cpp
@@ -218,8 +220,11 @@ else()
 	target_include_directories(relightlab PUBLIC ${EIGEN3_INCLUDE_DIR})
 endif()
 
+find_package(Ceres REQUIRED)
+
 target_link_libraries(
 	relightlab PUBLIC
+		Ceres::ceres
 		${JPEG_LIBRARIES}
 		TIFF::TIFF
 		OpenMP::OpenMP_CXX
