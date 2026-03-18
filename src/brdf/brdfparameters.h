@@ -12,6 +12,11 @@ public:
 
 	QString albedo_path = "albedo";
 
+    bool compute_brdf = true;
+    QString normals_path = "normals";
+    QString roughness_path = "roughness";
+    QString f0_path = "f0";
+
     QString summary() const override;
     QJsonObject toJson() const override;
 };

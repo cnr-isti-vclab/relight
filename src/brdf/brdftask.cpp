@@ -59,11 +59,19 @@ void BrdfTask::run() {
 		}
 	}
 
-	if(parameters.albedo != BrdfParameters::NONE) {
+	if((parameters.albedo != BrdfParameters::NONE) || parameters.compute_brdf) {
 		width = imageset.width;
 		height = imageset.height;
 
 		albedo.resize(width * height * 3);
+        vector<float> normals, roughness, f0;
+        
+        if(parameters.compute_brdf) {
+            normals.resize(width * height * 3);
+            roughness.resize(width * height);
+            f0.resize(width * height * 3);
+        }
+
 		RelightThreadPool pool;
 		PixelArray line;
 		imageset.setCallback(nullptr);
@@ -74,49 +82,76 @@ void BrdfTask::run() {
 
 			// Create the normal task and get the run lambda
 			uint32_t idx = i * 3 * imageset.width;
-			float* data = &albedo[idx];
+            
+            std::function<void(void)> run;
 
-			AlbedoWorker *task = new AlbedoWorker(parameters, i, line, data, imageset, lens);
-
-			std::function<void(void)> run = [this, task](void)->void {
-				task->run();
-				delete task;
-			};
+            if (parameters.compute_brdf) {
+                float* _a = &albedo[idx];
+                float* _n = &normals[idx];
+                float* _f = &f0[idx];
+                float* _r = &roughness[i * imageset.width];
+                
+                BrdfWorker *task = new BrdfWorker(parameters, i, line, _n, _a, _r, _f, imageset, lens);
+                run = [this, task](void)->void {
+                    task->run();
+                    delete task;
+                };
+            } else {
+                float* data = &albedo[idx];
+                AlbedoWorker *task = new AlbedoWorker(parameters, i, line, data, imageset, lens);
+                run = [this, task](void)->void {
+                    task->run();
+                    delete task;
+                };
+            }
 
 			// Launch the task
 			pool.queue(run);
 			pool.waitForSpace();
 
-			bool proceed = progressed("Computing albedo...", ((float)i / imageset.height) * 100);
+			bool proceed = progressed("Computing...", ((float)i / imageset.height) * 100);
 			if(!proceed)
 				return;
 		}
 		pool.finish();
 
+        // Save Maps lambda
+        auto saveMap = [&](vector<float>& mapData, QString path, int channels) {
+            if (mapData.empty()) return;
+            vector<uint8_t> u8_map(width * height * channels);
+            for(size_t i = 0; i < mapData.size(); i++) {
+                u8_map[i] = std::min(std::max(int(mapData[i]), 0), 255);
+            }
+            
+            QImage::Format fmt = (channels == 3) ? QImage::Format_RGB888 : QImage::Format_Grayscale8;
+            QImage img(u8_map.data(), width, height, width * channels, fmt);
+            
+            if(parameters.crop.angle != 0.0f)
+                img = parameters.crop.cropBoundingImage(img);
 
-		vector<uint8_t> albedomap(width * height * 3);
-		for(size_t i = 0; i < albedo.size(); i++) {
-				albedomap[i] = std::min(std::max(int(albedo[i]), 0), 255);
-		}
+            if( imageset.pixel_size > 0 ) {
+                int dotsPerMeter = round(1000.0/imageset.pixel_size);
+                img.setDotsPerMeterX(dotsPerMeter);
+                img.setDotsPerMeterY(dotsPerMeter);
+            }
 
-		QImage img(albedomap.data(), width, height, width*3, QImage::Format_RGB888);
-		if(parameters.crop.angle != 0.0f)
-			img = parameters.crop.cropBoundingImage(img);
+            bool saved = img.save(destination.filePath(path + ".jpg"), "jpg", parameters.quality);
+            if(!saved) {
+                error = "Could not save the image: " + destination.filePath(path);
+                status = FAILED;
+            }
+        };
 
-		// Set spatial resolution if known. Need to convert as pixelSize stored in mm/pixel whereas QImage requires pixels/m
-		if( imageset.pixel_size > 0 ) {
-			int dotsPerMeter = round(1000.0/imageset.pixel_size);
-			img.setDotsPerMeterX(dotsPerMeter);
-			img.setDotsPerMeterY(dotsPerMeter);
-		}
-
-		bool saved = img.save(destination.filePath(parameters.albedo_path + ".jpg"), "jpg", parameters.quality);
-		if(!saved) {
-			error = "Could not save the image: " + destination.filePath(parameters.albedo_path);
-			status = FAILED;
-			return;
-		}
-		progressed("Albedo done", 100);
+        if (parameters.compute_brdf) {
+            saveMap(albedo, parameters.albedo_path, 3);
+            saveMap(normals, parameters.normals_path, 3);
+            saveMap(roughness, parameters.roughness_path, 1);
+            saveMap(f0, parameters.f0_path, 3);
+            progressed("BRDF maps done", 100);
+        } else {
+            saveMap(albedo, parameters.albedo_path, 3);
+            progressed("Albedo done", 100);
+        }
 	}
 	status = DONE;
 }
