@@ -405,8 +405,9 @@ void ImageSet::readLine(PixelArray &pixels) {
 
 	for(size_t i = 0; i < decoders.size(); i++) {
 		decoders[i]->readRows(1, row.data());
-		applyColorTransform(row.data(), width);
+
 		int x_offset = offsets.size() ? offsets[i].x() : 0;
+		applyColorTransform(row.data() + (left + x_offset)*3, width);
 
 		for(int x = left; x < right; x++) {
 			pixels[x - left][i].r = row[(x + x_offset)*3 + 0];
@@ -464,7 +465,8 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 		for(uint32_t i = 0; i < decoders.size(); i++) {
 			JpegDecoder *dec = decoders[i];
 			dec->readRows(1, row.data());
-			applyColorTransform(row.data(), image_width);
+
+			applyColorTransform(row.data() + left*3, width);
 			uint32_t x = 0;
 			for(int k: selection) {
 				Color3f &pixel = sample[x][i];

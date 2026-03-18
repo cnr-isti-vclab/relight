@@ -221,6 +221,7 @@ else()
 endif()
 
 find_package(Ceres REQUIRED)
+find_package(METIS QUIET)
 
 target_link_libraries(
 	relightlab PUBLIC
@@ -237,6 +238,11 @@ target_link_libraries(
         ${RELIGHT_QT}::Svg
         ${LCMS2_LIBRARIES}
 )
+
+#if(METIS_FOUND)
+#	target_link_libraries(relightlab PUBLIC ${METIS_LIBRARIES})
+#	target_include_directories(relightlab PRIVATE ${METIS_INCLUDE_DIRS})
+#endif()
 
 target_include_directories(relightlab PRIVATE ${LCMS2_INCLUDE_DIRS})
 target_compile_definitions(relightlab PUBLIC HAVE_LCMS2)
