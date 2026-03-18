@@ -26,6 +26,37 @@ std::vector<uint8_t> createSRGBProfileData() {
 	return data;
 }
 
+std::vector<uint8_t> createLinearRGBProfileData() {
+	cmsHPROFILE profile = cmsCreate_sRGBProfile();
+	
+	// Replace the tone curve of sRGB with a linear one
+	cmsToneCurve* linearCurve = cmsBuildGamma(nullptr, 1.0);
+	cmsToneCurve* curves[3] = { linearCurve, linearCurve, linearCurve };
+	
+	// Create a new profile with the same white point and primaries as sRGB but linear tone curve
+	cmsCIExyY whitePoint;
+	cmsWhitePointFromTemp(&whitePoint, 6504); // D65
+	
+	cmsCIExyYTRIPLE primaries = {
+		{0.6400, 0.3300, 1.0}, // Red
+		{0.3000, 0.6000, 1.0}, // Green
+		{0.1500, 0.0600, 1.0}  // Blue
+	};
+	
+	cmsHPROFILE linearProfile = cmsCreateRGBProfile(&whitePoint, &primaries, curves);
+	
+	cmsUInt32Number size = 0;
+	cmsSaveProfileToMem(linearProfile, nullptr, &size);
+	std::vector<uint8_t> data(size);
+	cmsSaveProfileToMem(linearProfile, data.data(), &size);
+	
+	cmsCloseProfile(linearProfile);
+	cmsCloseProfile(profile);
+	cmsFreeToneCurve(linearCurve);
+	
+	return data;
+}
+
 }
 
 const std::vector<uint8_t> &ICCProfiles::displayP3Data() {
@@ -43,4 +74,16 @@ cmsHPROFILE ICCProfiles::openDisplayP3Profile() {
 const std::vector<uint8_t> &ICCProfiles::sRGBData() {
 	static std::vector<uint8_t> data = createSRGBProfileData();
 	return data;
+}
+
+const std::vector<uint8_t> &ICCProfiles::linearRGBData() {
+	static std::vector<uint8_t> data = createLinearRGBProfileData();
+	return data;
+}
+
+cmsHPROFILE ICCProfiles::openLinearRGBProfile() {
+	const auto &data = linearRGBData();
+	if(data.empty())
+		return nullptr;
+	return cmsOpenProfileFromMem(data.data(), data.size());
 }

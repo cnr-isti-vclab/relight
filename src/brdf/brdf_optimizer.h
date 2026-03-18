@@ -8,10 +8,10 @@
 namespace brdf {
 
 struct BrdfFitResult {
-    Eigen::Vector3f normal;
-    float roughness;
-    Eigen::Vector3f f0;
-    Eigen::Vector3f albedo; // Passed through, but stored for convenience
+	Eigen::Vector3f normal;
+	float roughness;
+	Eigen::Vector3f specular;
+	Eigen::Vector3f albedo; // Passed through, but stored for convenience
 };
 
 // Optimizes the microfacet BRDF model for a single pixel using Ceres.
@@ -22,15 +22,19 @@ struct BrdfFitResult {
 // initial_albedo: Precalculated albedo (fixed during optimization)
 // initial_roughness: The starting roughness guess
 // light_intensity: Master scalar intensity of lights
+// optimize_normal: If true, optimize the normal; otherwise keep it fixed
+// optimize_albedo: If true, optimize the albedo; otherwise keep it fixed
 // 
 // Returns the fitted parameters.
 BrdfFitResult optimize_brdf_pixel(
-    const Pixel& I, 
-    const std::vector<Eigen::Vector3f>& L, 
-    const Eigen::Vector3f& initial_normal,
-    const Eigen::Vector3f& initial_albedo,
-    float initial_roughness,
-    float light_intensity = 3.0f);
+		const Pixel& I,
+		const std::vector<Eigen::Vector3f>& L,
+		const Eigen::Vector3f& initial_normal,
+		const Eigen::Vector3f& initial_albedo,
+		float initial_roughness,
+		float light_intensity = 1.0f,
+		bool optimize_normal = true,
+		bool optimize_albedo = true);
 
 } // namespace brdf
 
