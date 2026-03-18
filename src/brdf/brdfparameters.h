@@ -15,7 +15,7 @@ public:
     bool compute_brdf = true;
     QString normals_path = "normals";
     QString roughness_path = "roughness";
-    QString f0_path = "f0";
+    QString specular_path = "specular";
 
     QString summary() const override;
     QJsonObject toJson() const override;

@@ -47,23 +47,29 @@ bool ColorProfile::isDisplayP3Profile(const std::vector<uint8_t> &profile_data) 
 }
 
 cmsHTRANSFORM ColorProfile::createColorTransform(const std::vector<uint8_t> &profile_data,
-		ColorProfileMode mode) {
-	cmsHPROFILE input;
+		ColorProfileMode mode,
+		cmsHPROFILE &input_profile_handle) {
 	if(profile_data.empty()) {
-		input = cmsCreate_sRGBProfile();
+		if(mode == COLOR_PROFILE_LINEAR_RGB) {
+			// Assume sRGB when converting to linear and no profile is embedded
+			if(input_profile_handle)
+				cmsCloseProfile(input_profile_handle);
+			input_profile_handle = cmsCreate_sRGBProfile();
+		} else {
+			throw QString("Color profile conversion requested but input images lack an embedded ICC profile.");
+		}
 	} else {
-		input = cmsOpenProfileFromMem(profile_data.data(), profile_data.size());
-		if(!input)
+		if(input_profile_handle)
+			cmsCloseProfile(input_profile_handle);
+		input_profile_handle = cmsOpenProfileFromMem(profile_data.data(), profile_data.size());
+		if(!input_profile_handle)
 			throw QString("Failed opening source ICC profile for color conversion.");
 	}
-	cmsHPROFILE output = createOutputProfile(mode);
-	if(!output) {
-		cmsCloseProfile(input);
+	cmsHPROFILE output_profile = createOutputProfile(mode);
+	if(!output_profile)
 		throw QString("Failed creating target ICC profile for color conversion.");
-	}
-	cmsHTRANSFORM transform = cmsCreateTransform(input, TYPE_RGB_8, output, TYPE_RGB_8, INTENT_PERCEPTUAL, cmsFLAGS_COPY_ALPHA);
-	cmsCloseProfile(input);
-	cmsCloseProfile(output);
+	cmsHTRANSFORM transform = cmsCreateTransform(input_profile_handle, TYPE_RGB_8, output_profile, TYPE_RGB_8, INTENT_PERCEPTUAL, cmsFLAGS_COPY_ALPHA);
+	cmsCloseProfile(output_profile);
 	if(!transform)
 		throw QString("Failed creating ICC color transform for the requested profile.");
 	return transform;
@@ -77,6 +83,9 @@ cmsHPROFILE ColorProfile::createOutputProfile(ColorProfileMode mode) {
 		return cmsCreate_sRGBProfile();
 	case COLOR_PROFILE_DISPLAY_P3:
 		return ICCProfiles::openDisplayP3Profile();
+	case COLOR_PROFILE_LINEAR_RGB:
+		return ICCProfiles::openLinearRGBProfile();
+	case COLOR_PROFILE_PRESERVE:
 	default:
 		return ICCProfiles::openLinearRGBProfile();
 	}
