@@ -19,13 +19,13 @@ win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
 unix:QMAKE_CXXFLAGS = -fopenmp
 unix:INCLUDEPATH += ../external/eigen-3.3.9/ /usr/include/eigen3
-unix:LIBS += -ljpeg -ltiff -llcms2
+unix:LIBS += -ljpeg -ltiff -llcms2 -lceres -lglog -lgflags -lspqr -lcholmod -lccolamd -lcamd -lcolamd -lamd -lsuitesparseconfig -llapack -lblas
 unix:LIBS += -fopenmp
 
 mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/3.1.0/include \
     /usr/local/include \
     /usr/local/include/eigen3
-mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/3.1.0/lib/ -ljpeg -llcms2
+mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/3.1.0/lib/ -ljpeg -llcms2 -lceres -lglog -lgflags -lspqr -lcholmod -lccolamd -lcamd -lcolamd -lamd -lsuitesparseconfig -llapack -lblas
 mac:LIBS += -framework Accelerate
 mac:QMAKE_CXXFLAGS += -Xpreprocessor -I/usr/local/include
 mac:LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
@@ -48,6 +48,8 @@ SOURCES += main.cpp \
 	../external/assm/algorithms/ScreenRemeshing.cpp \
 	../external/assm/algorithms/Triangulation.cpp \
     ../src/brdf/brdftask.cpp \
+    ../src/brdf/brdf_math.cpp \
+    ../src/brdf/brdf_optimizer.cpp \
     ../src/brdf/brdfparameters.cpp \
     ../src/dome.cpp \
     ../src/getopt.cpp \
@@ -84,6 +86,9 @@ HEADERS += \
 	../external/assm/algorithms/ScreenRemeshing.h \
 	../external/assm/algorithms/Triangulation.h \
     ../src/brdf/brdftask.h \
+    ../src/brdf/brdf_math.h \
+    ../src/brdf/brdf_optimizer.h \
+    ../src/brdf/brdf_ceres.h \
     ../src/brdf/brdfparameters.h \
     ../src/dome.h \
     ../src/getopt.h \

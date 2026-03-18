@@ -72,6 +72,8 @@ SET(SOURCES
 	../src/crop.cpp
 	../src/cli/convert_rti.cpp
 	../src/brdf/brdftask.cpp
+	../src/brdf/brdf_math.cpp
+	../src/brdf/brdf_optimizer.cpp
 	../src/brdf/brdfparameters.cpp
 	../external/assm/SurfaceMesh.cpp
 	../external/assm/algorithms/DifferentialGeometry.cpp
@@ -106,8 +108,11 @@ else()
 endif()
 
 
+find_package(Ceres REQUIRED)
+
 target_link_libraries(
 	relight-cli PUBLIC
+		Ceres::ceres
 		${JPEG_LIBRARIES}
 		TIFF::TIFF
 		OpenMP::OpenMP_CXX

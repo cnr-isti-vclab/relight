@@ -17,7 +17,7 @@ unix::QMAKE_CXXFLAGS = -fopenmp
 unix:INCLUDEPATH += ../external/eigen-3.3.9/ 
 #opencv not needed for the moment
 #unix:INCLUDEPATH += /usr/include/opencv4
-unix:LIBS += -ljpeg -ltiff -llcms2
+unix:LIBS += -ljpeg -ltiff -llcms2 -lceres -lglog -lgflags -lspqr -lcholmod -lccolamd -lcamd -lcolamd -lamd -lsuitesparseconfig -llapack -lblas
 #opencv not needed for the moment
 #unix:LIBS += -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_video
 unix::LIBS += -fopenmp #-lgomp
@@ -25,7 +25,7 @@ unix::LIBS += -fopenmp #-lgomp
 mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/3.1.0/include \
     /usr/local/include \
     /usr/local/include/eigen3
-mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/3.1.0/lib/ -ljpeg -llcms2
+mac:LIBS += -L/usr/local/Cellar/jpeg-turbo/3.1.0/lib/ -ljpeg -llcms2 -lceres -lglog -lgflags -lspqr -lcholmod -lccolamd -lcamd -lcolamd -lamd -lsuitesparseconfig
 mac:LIBS += -framework Accelerate
 mac:QMAKE_CXXFLAGS += -Xpreprocessor -I/usr/local/include #fopenmp -lomp
 # mac:QMAKE_LFLAGS += -lomp
@@ -52,6 +52,8 @@ SOURCES += main.cpp \
     ../external/assm/algorithms/ScreenRemeshing.cpp \
     ../external/assm/algorithms/Triangulation.cpp \
     ../src/brdf/brdftask.cpp \
+    ../src/brdf/brdf_math.cpp \
+    ../src/brdf/brdf_optimizer.cpp \
     ../src/brdf/brdfparameters.cpp \
     ../src/cli/convert_rti.cpp \
     ../src/cli/rtibuilder.cpp \
@@ -226,6 +228,9 @@ HEADERS += \
     ../src/deepzoom.h \
     sphereframe.h \
     ../src/brdf/brdftask.h \
+    ../src/brdf/brdf_math.h \
+    ../src/brdf/brdf_optimizer.h \
+    ../src/brdf/brdf_ceres.h \
     convertdialog.h \
     ../src/taskparameters.h \
     ../src/rti/rtiparameters.h \
