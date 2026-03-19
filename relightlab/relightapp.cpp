@@ -408,7 +408,13 @@ void RelightApp::saveProjectAs() {
 		filename += ".relight";
 	project_filename = filename;
 
-	m_project->save(project_filename);
+    try {
+        m_project->save(project_filename);
+    } catch(QString error) {
+        QMessageBox::critical(nullptr, "Could not save the project.", error);
+        return;
+    }
+
 	QFileInfo info(project_filename);
 	mainwindow->setWindowTitle("Relight - " + info.fileName());
 	addRecentProject(project_filename);
