@@ -372,6 +372,9 @@ void Project::load(QString filename) {
 
 
 	QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    if(doc.isNull() || doc.isEmpty()) {
+        throw QString("Could not load the project: empty or malformed.");
+    }
 	QJsonObject obj = doc.object();
 
 	if(obj.contains("version"))
