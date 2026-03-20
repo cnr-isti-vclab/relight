@@ -14,7 +14,9 @@ enum class PyramidFormat {
 	DeepZoom,
 	Google,
 	Zoomify,
-	TiledTiff
+	TiledTiff,
+	Tzb,
+	Tzi
 };
 
 struct TileRowConfig {
@@ -25,6 +27,7 @@ struct TileRowConfig {
 	int level = 0;         // layout level identifier used in filenames
 	int tilesX = 0;        // number of tiles along X for this level (used by zoomify indexing)
 	int tileStartIndex = 0;// cumulative tile offset for zoomify groups
+	int tzbLevelStart = 0; // cumulative tile offset for tzb indexing
 };
 
 class Tile {
@@ -32,6 +35,7 @@ public:
 	int width;
 	JpegEncoder *encoder = nullptr;
 	std::vector<uint8_t> line;
+	std::vector<uint8_t> jpeg_data; //encoded jpeg for in-memory encoding (tzb)
 };
 
 class TileRow: public std::vector<Tile> {
@@ -51,6 +55,8 @@ public:
 	std::vector<uint8_t> lastLine;                 //keep previous line for scaling
 	std::vector<std::vector<uint8_t>> overlapping; //overlapped regions is kept, to be inserted in the new row
 
+
+	std::vector<std::vector<uint8_t>> *tzbTiles = nullptr; //pointer to DeepZoom's tile buffer for tzb
 
 	TileRow() {}
 	TileRow(int _tileside, int _overlap, const TileRowConfig &config, int width, int height, int quality = 95);
@@ -104,6 +110,8 @@ private:
 	std::vector<int> tilesX;
 	std::vector<int> tilesY;
 	std::vector<int> zoomifyOffsets;
+	std::vector<size_t> tzbOffsets; //position of the tile in the file for tzb
+	std::vector<std::vector<uint8_t>> tzbTiles; //buffered encoded tiles for tzb
 
 	int nLevels();
 	void initRows();

@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
 		cerr << endl;
 		cerr << "Usage: " << argv[0] << " <input.jpg> <output> [format] [tileSize] [overlap] [quality]" << endl;
 		cerr << endl;
-		cerr << "  format    deepzoom (default), google, zoomify, or tiff" << endl;
+		cerr << "  format    deepzoom (default), google, zoomify, tiff, tzb, tzi" << endl;
 		cerr << "  tileSize  tile dimension in pixels (default: 256, must be multiple of 16 for tiff)" << endl;
 		cerr << "  overlap   pixel overlap between tiles (default: 1, not used for tiff)" << endl;
 		cerr << "  quality   JPEG quality 1-100 (default: 95)" << endl;

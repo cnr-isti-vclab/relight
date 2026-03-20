@@ -132,6 +132,14 @@ bool JpegEncoder::init(const char* path, int width, int height) {
 	return init(width, height);
 }
 
+bool JpegEncoder::init(std::vector<uint8_t> &output, int width, int height) {
+	mem_output = &output;
+	mem_buffer = nullptr;
+	mem_size = 0;
+	jpeg_mem_dest(&info, &mem_buffer, &mem_size);
+	return init(width, height);
+}
+
 bool JpegEncoder::init(int width, int height) {
 	info.image_width = width;
 	info.image_height = height;
@@ -179,9 +187,17 @@ bool JpegEncoder::writeRows(uint8_t *rows, int n) {
 size_t JpegEncoder::finish() {
 	jpeg_finish_compress(&info);
 	size_t size = 0;
-	if(file) {
+	if(mem_output) { //saving to memory.
+		mem_output->assign(mem_buffer, mem_buffer + mem_size);
+		size = mem_size;
+		free(mem_buffer);
+		mem_buffer = nullptr;
+		mem_size = 0;
+		mem_output = nullptr;
+	} else if(file) {
 		size = ftell(file);
 		fclose(file);
+		file = nullptr;
 	}
 	return size;
 }

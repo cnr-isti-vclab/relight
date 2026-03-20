@@ -37,6 +37,7 @@ public:
 	bool encode(uint8_t *img, int width, int height, uint8_t *&buffer, int &length);
 
 	bool init(const char* path, int width, int height);
+	bool init(std::vector<uint8_t> &output, int width, int height);
 	bool writeRows(uint8_t *rows, int n);
 	size_t finish(); //return size
 
@@ -48,6 +49,9 @@ private:
 	static void onMessage(j_common_ptr cinfo);
 
 	FILE * file = nullptr;
+	std::vector<uint8_t> *mem_output = nullptr;
+	unsigned char *mem_buffer = nullptr;
+	unsigned long mem_size = 0;
 	jpeg_compress_struct info;
 	jpeg_error_mgr errMgr;
 

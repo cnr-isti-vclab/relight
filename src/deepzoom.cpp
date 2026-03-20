@@ -254,6 +254,18 @@ QString TileRow::tileFilePath(int col) const {
 }
 
 void TileRow::finishRow() {
+	if(layout.format == PyramidFormat::Tzb && tzbTiles) {
+		int col = 0;
+		for(Tile &tile: *this) {
+			tile.encoder->finish();
+			int globalIndex = layout.tzbLevelStart + current_row * layout.tilesX + col;
+			(*tzbTiles)[globalIndex] = std::move(tile.jpeg_data);
+			delete tile.encoder;
+			col++;
+		}
+		clear();
+		return;
+	}
 	for(Tile &tile: *this) {
 		tile.encoder->finish();
 		delete tile.encoder;
@@ -277,10 +289,14 @@ void TileRow::nextRow() {
 		tile.encoder = new JpegEncoder();
 		tile.encoder->setQuality(quality);
 		tile.encoder->setColorSpace(JCS_RGB, 3);
-		QString filepath = tileFilePath(col);
-		QFileInfo info(filepath);
-		QDir().mkpath(info.path());
-		tile.encoder->init(filepath.toStdString().c_str(), tile.width, h);
+		if(layout.format == PyramidFormat::Tzb) {
+			tile.encoder->init(tile.jpeg_data, tile.width, h);
+		} else {
+			QString filepath = tileFilePath(col);
+			QFileInfo info(filepath);
+			QDir().mkpath(info.path());
+			tile.encoder->init(filepath.toStdString().c_str(), tile.width, h);
+		}
 		push_back(tile);
 
 		col++;
@@ -327,11 +343,14 @@ bool DeepZoom::buildTiledImages(QString input) {
 	case PyramidFormat::Zoomify:
 		layoutRoot = output + "_zoomify";
 		break;
+	case PyramidFormat::Tzb:
+		break;
 	default:
 		layoutRoot = output;
 		break;
 	}
-	QDir().mkpath(layoutRoot);
+	if(layoutFormat != PyramidFormat::Tzb)
+		QDir().mkpath(layoutRoot);
 
 	initRows();
 
@@ -398,6 +417,18 @@ void DeepZoom::initRows() {
 		cumulative += tilesX[level] * tilesY[level];
 	}
 
+	// Compute TZB level start indices (levels ordered 0=smallest to nLevels-1=largest)
+	std::vector<int> tzbLevelStart(levels);
+	int tzbCumulative = 0;
+	for(int level = 0; level < levels; ++level) {
+		tzbLevelStart[level] = tzbCumulative;
+		tzbCumulative += tilesX[level] * tilesY[level];
+	}
+	if(layoutFormat == PyramidFormat::Tzb) {
+		tzbTiles.clear();
+		tzbTiles.resize(tzbCumulative);
+	}
+
 	w = width;
 	h = height;
 	for(int level = levels - 1; level >= 0; --level) {
@@ -407,13 +438,18 @@ void DeepZoom::initRows() {
 		config.tilesX = tilesX[level];
 		config.tileStartIndex = zoomifyOffsets[level];
 		config.suffix = tileSuffix;
+		config.tzbLevelStart = tzbLevelStart[level];
 		if(layoutFormat == PyramidFormat::Zoomify) {
 			config.basePath = layoutRoot;
+		} else if(layoutFormat == PyramidFormat::Tzb) {
+			// no directories needed for tzb
 		} else {
 			config.levelPath = layoutRoot + "/" + QString::number(level);
 			QDir().mkpath(config.levelPath);
 		}
 		rows.emplace_back(tileside, overlap, config, w, h, quality);
+		if(layoutFormat == PyramidFormat::Tzb)
+			rows.back().tzbTiles = &tzbTiles;
 		w = std::max(1, w >> 1);
 		h = std::max(1, h >> 1);
 	}
@@ -461,6 +497,38 @@ void DeepZoom::finalizeMetadata() {
 		out << "<IMAGE_PROPERTIES WIDTH=\"" << width << "\" HEIGHT=\"" << height << "\" ";
 		out << "NUMTILES=\"" << totalTiles << "\" NUMIMAGES=\"1\" ";
 		out << "VERSION=\"1.8\" TILESIZE=\"" << tileside << "\"/>\n";
+		out.close();
+	} else if(layoutFormat == PyramidFormat::Tzb) {
+		// Write .tzb file: tiles in order (level 0 = smallest first)
+		FILE *tzbFile = fopen((output.toStdString() + ".tzb").c_str(), "wb");
+		if(!tzbFile) return;
+		tzbOffsets.clear();
+		tzbOffsets.push_back(0);
+		size_t offset = 0;
+		for(auto &tile : tzbTiles) {
+			fwrite(tile.data(), 1, tile.size(), tzbFile);
+			offset += tile.size();
+			tzbOffsets.push_back(offset);
+			// free memory as we go
+			std::vector<uint8_t>().swap(tile);
+		}
+		fclose(tzbFile);
+		tzbTiles.clear();
+
+		// Write .tzi index file
+		std::ofstream out(output.toStdString() + ".tzi");
+		out << "{\"tilesize\":" << tileside
+		    << ",\"overlap\":" << overlap
+		    << ",\"format\":\"jpg\""
+		    << ",\"width\":" << width
+		    << ",\"height\":" << height
+		    << ",\"nlevels\":" << nLevels()
+		    << ",\"offsets\":[";
+		for(size_t i = 0; i < tzbOffsets.size(); ++i) {
+			if(i > 0) out << ",";
+			out << tzbOffsets[i];
+		}
+		out << "]}";
 		out.close();
 	}
 }
