@@ -1,6 +1,9 @@
 #include "brdf_optimizer.h"
 #include "brdf_ceres.h"
 #include <ceres/ceres.h>
+#include <algorithm>
+#include <iomanip>
+#include <sstream>
 
 namespace brdf {
 
@@ -19,9 +22,8 @@ BrdfFitResult optimize_brdf_pixel(
 	double roughness[1] = { static_cast<double>(initial_roughness) };
 	double albedo[3] = { static_cast<double>(initial_albedo.x()), static_cast<double>(initial_albedo.y()), static_cast<double>(initial_albedo.z()) };
 
-	// Specular color is typical initialized to dielectric default (0.04) or using specular heuristics
-	// python script used: 0.04 + 0.4 * spec_mask
-	double specular[3] = { 0.08, 0.08, 0.08 };
+	// Metallic starts at 0 (dielectric). The optimizer will push it toward 1 for metallic surfaces.
+	double metallic[1] = { 0.0 };
 
 	//TODO this is not entirely true!
 	// View direction (Orthographic assumed from Dome, looking down Z)
@@ -29,17 +31,13 @@ BrdfFitResult optimize_brdf_pixel(
 
 	ceres::Problem problem;
 
-	for (size_t k = 0; k < I.size(); ++k) {
+	for(size_t k = 0; k < I.size(); ++k) {
 		Eigen::Vector3f observed_color(I[k].r, I[k].g, I[k].b);
 
-		ceres::CostFunction* cost_function =
-				GgxResidual::Create(L[k], V, observed_color, light_intensity);
+        //ceres::CostFunction* cost_function = GgxResidual::Create(L[k], V, observed_color, light_intensity);
+        ceres::CostFunction* cost_function = GltfResidual::Create(L[k], V, observed_color, Eigen::Vector3f(light_intensity, light_intensity, light_intensity));
 
-		// Add the residual block
-		// We use a Huber loss (SoftL1) function for robustness against highlights/shadows
-		ceres::LossFunction* loss_function = new ceres::HuberLoss(0.1);
-
-		problem.AddResidualBlock(cost_function, loss_function, normal, roughness, specular, albedo);
+		problem.AddResidualBlock(cost_function, nullptr, normal, roughness, metallic, albedo);
 	}
 
 	// Make normal constant if not optimizing it
@@ -57,13 +55,9 @@ BrdfFitResult optimize_brdf_pixel(
 	problem.SetParameterLowerBound(roughness, 0, 0.02);
 	problem.SetParameterUpperBound(roughness, 0, 1.0);
 
-	// Specular color bounds
-	problem.SetParameterLowerBound(specular, 0, 0.0);
-	problem.SetParameterUpperBound(specular, 0, 1.0);
-	problem.SetParameterLowerBound(specular, 1, 0.0);
-	problem.SetParameterUpperBound(specular, 1, 1.0);
-	problem.SetParameterLowerBound(specular, 2, 0.0);
-	problem.SetParameterUpperBound(specular, 2, 1.0);
+	// Metallic bounds [0, 1]
+	problem.SetParameterLowerBound(metallic, 0, 0.0);
+	problem.SetParameterUpperBound(metallic, 0, 1.0);
 
 	// Albedo bounds (only set if optimizing)
 	if (optimize_albedo) {
@@ -96,10 +90,143 @@ BrdfFitResult optimize_brdf_pixel(
 
 	result.normal = optimized_normal;
 	result.roughness = roughness[0];
-	result.specular = Eigen::Vector3f(specular[0], specular[1], specular[2]);
+	result.metallic = metallic[0];
 	result.albedo = Eigen::Vector3f(albedo[0], albedo[1], albedo[2]);
 
 	return result;
+}
+
+namespace {
+
+// Compute sum-of-squared-errors between BRDF prediction and observed pixel across all lights.
+float compute_pixel_sse(
+		const Pixel& I,
+		const std::vector<Eigen::Vector3f>& L,
+		const Eigen::Vector3f& N,
+		const Eigen::Vector3f& albedo,
+		float roughness,
+        float metallic,
+		float light_intensity)
+{
+	static const Eigen::Vector3f V(0.0f, 0.0f, 1.0f);
+	float sse = 0.0f;
+	for(size_t k = 0; k < I.size(); ++k) {
+        //Eigen::Vector3f pred = eval_ggx(N, L[k], V, albedo, roughness, specular, light_intensity);
+        Eigen::Vector3f light(light_intensity, light_intensity, light_intensity);
+        Eigen::Vector3f pred = eval_gltf(N, L[k], V, albedo, metallic, roughness, light);
+		float dr = pred.x() - I[k].r;
+		float dg = pred.y() - I[k].g;
+		float db = pred.z() - I[k].b;
+		sse += dr*dr + dg*dg + db*db;
+	}
+	return sse;
+}
+
+} // anonymous namespace
+
+void brdf_bruteforce_compare(
+		const Pixel& I,
+		const std::vector<Eigen::Vector3f>& L,
+		const BrdfFitResult& ceres_result,
+		float light_intensity,
+		int pixel_x, int pixel_y,
+		std::ostream& out,
+		float step,
+		bool bruteforce_normal,
+		bool bruteforce_albedo)
+{
+	struct Candidate {
+		float sse;
+		Eigen::Vector3f normal;
+		Eigen::Vector3f albedo;
+		float roughness;
+        float metallic;
+	};
+
+	int nsteps = (int)std::round(1.0f / step);
+
+	// Build the list of normals to try (upper hemisphere, Cartesian grid)
+	std::vector<Eigen::Vector3f> normals_to_try;
+	if(bruteforce_normal) {
+		for(int nxi = -nsteps; nxi <= nsteps; ++nxi) {
+			for(int nyi = -nsteps; nyi <= nsteps; ++nyi) {
+				float nx = nxi * step;
+				float ny = nyi * step;
+				float nz2 = 1.0f - nx*nx - ny*ny;
+				if(nz2 <= 0.0f) continue;
+				normals_to_try.push_back(Eigen::Vector3f(nx, ny, std::sqrt(nz2)));
+			}
+		}
+	} else {
+		normals_to_try.push_back(ceres_result.normal);
+	}
+
+	// Build the list of albedos to try (full RGB, 3D)
+	std::vector<Eigen::Vector3f> albedos_to_try;
+	if(bruteforce_albedo) {
+		for(int ar = 0; ar <= nsteps; ++ar)
+			for(int ag = 0; ag <= nsteps; ++ag)
+				for(int ab = 0; ab <= nsteps; ++ab)
+					albedos_to_try.push_back(Eigen::Vector3f(ar * step, ag * step, ab * step));
+	} else {
+		albedos_to_try.push_back(ceres_result.albedo);
+	}
+
+	// Max-heap keeping the 10 smallest SSE candidates (largest at heap.front()).
+	std::vector<Candidate> heap;
+	heap.reserve(11);
+	auto cmp = [](const Candidate& a, const Candidate& b) { return a.sse < b.sse; };
+
+	for(const auto& N_ : normals_to_try) {
+		for(const auto& A_ : albedos_to_try) {
+			for(int ri = 1; ri <= nsteps; ++ri) {
+				float r = ri * step;
+                for(int mm = 0; mm <= nsteps; ++mm) {
+                    float m = mm * step;
+                    float sse = compute_pixel_sse(I, L, N_, A_, r, m, light_intensity);
+                    Candidate c{sse, N_, A_, r, m};
+					if((int)heap.size() < 10) {
+						heap.push_back(c);
+						if((int)heap.size() == 10)
+							std::make_heap(heap.begin(), heap.end(), cmp);
+					} else if(sse < heap.front().sse) {
+						std::pop_heap(heap.begin(), heap.end(), cmp);
+						heap.back() = c;
+						std::push_heap(heap.begin(), heap.end(), cmp);
+					}
+				}
+			}
+		}
+	}
+
+	std::sort(heap.begin(), heap.end(),
+		[](const Candidate& a, const Candidate& b) { return a.sse < b.sse; });
+
+	float ceres_sse = compute_pixel_sse(I, L, ceres_result.normal, ceres_result.albedo,
+        ceres_result.roughness, ceres_result.metallic, light_intensity);
+
+	out << std::fixed << std::setprecision(4);
+	out << "=== Pixel (" << pixel_x << ", " << pixel_y << ")  nlights=" << I.size() << " ===\n";
+	out << "\tCeres  : normal=[" << ceres_result.normal.x() << ", " << ceres_result.normal.y() << ", " << ceres_result.normal.z() << "]"
+		<< "  albedo=[" << ceres_result.albedo.x() << ", " << ceres_result.albedo.y() << ", " << ceres_result.albedo.z() << "]"
+		<< "  rough=" << ceres_result.roughness
+		<< "  metallic=" << ceres_result.metallic
+		<< "  SSE=" << ceres_sse << "\n";
+    out << "\tBrute-force top-10 (step=" << step << ", roughness x metallic"
+		<< (bruteforce_normal ? " x normal" : "")
+		<< (bruteforce_albedo ? " x albedo_rgb" : "")
+		<< "):\n";
+	for(int k = 0; k < (int)heap.size(); ++k) {
+		out << "\t\t" << (k+1) << ". ";
+		if(bruteforce_normal)
+			out << "normal=[" << heap[k].normal.x() << ", " << heap[k].normal.y() << ", " << heap[k].normal.z() << "]  ";
+		if(bruteforce_albedo)
+			out << "albedo=[" << heap[k].albedo.x() << ", " << heap[k].albedo.y() << ", " << heap[k].albedo.z() << "]  ";
+		out << "rough=" << heap[k].roughness
+            << "  metalilc=" << heap[k].metallic
+			<< "  SSE=" << heap[k].sse << "\n";
+	}
+	out << "\n";
 }
 
 } // namespace brdf

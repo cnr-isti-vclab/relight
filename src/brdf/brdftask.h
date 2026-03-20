@@ -8,6 +8,7 @@
 #include "brdfparameters.h"
 #include "brdf_optimizer.h"
 #include "brdf_math.h"
+#include <fstream>
 
 //TODO: this is the same as normalstask!
 class BrdfTask :  public Task {
@@ -58,8 +59,10 @@ private:
 class BrdfWorker
 {
 public:
-	BrdfWorker(BrdfParameters _parameters, int _row, const PixelArray& toProcess, float* _normals, float* _albedo, float* _roughness, float* _specular, ImageSet &imageset, Lens &_lens) :
-		parameters(_parameters), row(_row), m_Row(toProcess), normals(_normals), albedo(_albedo), roughness(_roughness), specular(_specular), m_Imageset(imageset) {
+	BrdfWorker(BrdfParameters _parameters, int _row, const PixelArray& toProcess, float* _normals, float* _albedo, float* _roughness, float* _specular, ImageSet &imageset, Lens &_lens,
+			std::ofstream* _brute_out = nullptr, QMutex* _brute_mutex = nullptr, QString _plot_dir = QString()) :
+		parameters(_parameters), row(_row), m_Row(toProcess), normals(_normals), albedo(_albedo), roughness(_roughness), specular(_specular), m_Imageset(imageset),
+		brute_out(_brute_out), brute_mutex(_brute_mutex), plot_dir(_plot_dir) {
 		m_Row.resize(toProcess.npixels(), toProcess.nlights);
 		for(size_t i = 0; i < m_Row.size(); i++)
 			m_Row[i] = toProcess[i];
@@ -76,7 +79,10 @@ private:
 	float* albedo = nullptr;
 	float* roughness = nullptr;
 	float* specular = nullptr;
-	
+
+	std::ofstream* brute_out = nullptr;
+	QMutex* brute_mutex = nullptr;
+	QString plot_dir;
 	ImageSet &m_Imageset;
 };
 

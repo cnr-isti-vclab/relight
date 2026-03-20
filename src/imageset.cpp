@@ -367,6 +367,23 @@ void ImageSet::decode(size_t img, unsigned char *buffer) {
 	applyColorTransform(buffer, size_t(width)*size_t(height));
 }
 
+QImage ImageSet::readImageCropped(size_t img) {
+	decoders[img]->restart();
+	std::vector<uint8_t> row(image_width * 3);
+	int y_offset = offsets.size() ? offsets[img].y() : 0;
+	int x_offset = offsets.size() ? offsets[img].x() : 0;
+	for(int y = 0; y < top + y_offset; y++)
+		decoders[img]->readRows(1, row.data());
+	QImage result(width, height, QImage::Format_RGB888);
+	for(int y = 0; y < height; y++) {
+		decoders[img]->readRows(1, row.data());
+		uint8_t *src = row.data() + (left + x_offset) * 3;
+		applyColorTransform(src, width);
+		memcpy(result.scanLine(y), src, size_t(width) * 3);
+	}
+	return result;
+}
+
 
 //adjust light for pixel,light is mm coords, return light again in mm. //y is expected with UP axis.
 Vector3f ImageSet::relativeLight(const Vector3f &light3d, int x, int y){
