@@ -61,7 +61,7 @@ static void plot_reflectance(
 		Eigen::Vector3f H = std::cos(theta_h) * N_fit + std::sin(theta_h) * T;
 		H.normalize();
 		Eigen::Vector3f Ls = 2.0f * H.dot(V) * H - V; // reflect V about H
-		if (Ls.z() <= 0.0f) break;                      // light below horizon — stop
+		if (Ls.z() <= 0.0f) continue;                      // light below horizon — stop
 		Eigen::Matrix<float,3,1> lc(light_intensity, light_intensity, light_intensity);
 		Eigen::Vector3f pred = brdf::eval_gltf(N_fit, Ls, V, baseColor, result.metallic, result.roughness, lc);
 		float grey = 0.2126f * pred.x() + 0.7152f * pred.y() + 0.0722f * pred.z();
@@ -447,15 +447,16 @@ void BrdfWorker::run() {
 		//TODO fit all three components at once instead of computing biological luminance.
 		// Initialize normal: use the light direction of the brightest sample (max luminance).
 		// (Old approach: Lambertian photometric stereo — left for reference)
-		//Eigen::VectorXf I_lum(p.size());
-		//Eigen::MatrixXf L_mat(p.size(), 3);
-		//for (size_t j = 0; j < p.size(); j++) {
-		//	I_lum(j) = 0.2126f * p[j].r + 0.7152f * p[j].g + 0.0722f * p[j].b;
-		//	L_mat.row(j) = L[j];
-		//}
-		//Eigen::Vector3f init_normal = brdf::simple_lambertian_photometric_stereo(I_lum, L_mat);
-		//init_normal.normalize();
-
+//#define LAMBERTIAN 1
+#ifdef LAMBERTIAN
+		Eigen::VectorXf I_lum(p.size());
+		Eigen::MatrixXf L_mat(p.size(), 3);
+		for (size_t j = 0; j < p.size(); j++) {
+			I_lum(j) = 0.2126f * p[j].r + 0.7152f * p[j].g + 0.0722f * p[j].b;
+			L_mat.row(j) = L[j];
+		}
+		Eigen::Vector3f init_normal = brdf::simple_lambertian_photometric_stereo(I_lum, L_mat);
+#else
 		size_t max_idx = 0;
 		float max_lum = -1.0f;
 		for (size_t j = 0; j < p.size(); j++) {
@@ -463,11 +464,12 @@ void BrdfWorker::run() {
 			if (lum > max_lum) { max_lum = lum; max_idx = j; }
 		}
 		Eigen::Vector3f init_normal = (L[max_idx] + Eigen::Vector3f(0.0f, 0.0f, 1.0f)).normalized();
-		
+#endif
 		// Handle invalid or negative backward-facing normals
 		if (std::isnan(init_normal.x()) || init_normal.z() < 0) {
 			init_normal = Eigen::Vector3f(0.0f, 0.0f, 1.0f);
 		}
+		init_normal.normalize();
 
 		// Optimize
 		brdf::BrdfFitResult result = brdf::optimize_brdf_pixel(
