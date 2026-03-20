@@ -13,9 +13,9 @@ struct GgxResidual {
 	GgxResidual(const Eigen::Vector3f& light_dir,
 				const Eigen::Vector3f& view_dir,
 				const Eigen::Vector3f& observed_color,
-				float light_intensity)
+                float light_intensity)
 		: L_(light_dir), V_(view_dir), observed_color_(observed_color),
-		  light_intensity_(light_intensity) {}
+          light_intensity_(light_intensity) {}
 
 	template <typename T>
 	bool operator()(const T* const normal,
@@ -38,10 +38,10 @@ struct GgxResidual {
 		// Evaluate the BRDF mathematically
 		Eigen::Matrix<T, 3, 1> pred_color = eval_ggx(N, L, V, albedo_vec, roughness[0], specular_vec, intensity);
 
-		// Compute residuals for RGB
-		residual[0] = pred_color(0) - T(observed_color_.x());
-		residual[1] = pred_color(1) - T(observed_color_.y());
-		residual[2] = pred_color(2) - T(observed_color_.z());
+
+        residual[0] = (pred_color(0) - T(observed_color_.x()));
+        residual[1] = (pred_color(1) - T(observed_color_.y()));
+        residual[2] = (pred_color(2) - T(observed_color_.z()));
 
 		return true;
 	}
@@ -50,9 +50,9 @@ struct GgxResidual {
 	static ceres::CostFunction* Create(const Eigen::Vector3f& light_dir,
 									   const Eigen::Vector3f& view_dir,
 									   const Eigen::Vector3f& observed_color,
-									   float light_intensity) {
+                                       float light_intensity) {
 		return (new ceres::AutoDiffCostFunction<GgxResidual, 3, 3, 1, 3, 3>(
-					new GgxResidual(light_dir, view_dir, observed_color, light_intensity)));
+                    new GgxResidual(light_dir, view_dir, observed_color, light_intensity)));
 	}
 
 private:
@@ -60,6 +60,57 @@ private:
 	Eigen::Vector3f V_;
 	Eigen::Vector3f observed_color_;
 	float light_intensity_;
+	float intensity_weight_;
+};
+
+// Cost functor for the glTF reference PBR BRDF (metallic/roughness workflow, no IBL).
+// Optimized parameters: normal (3), roughness (1), metallic (1), baseColor (3).
+// light_color encodes per-channel light intensity.
+struct GltfResidual {
+	GltfResidual(const Eigen::Vector3f& light_dir,
+				 const Eigen::Vector3f& view_dir,
+				 const Eigen::Vector3f& observed_color,
+				 const Eigen::Vector3f& light_color)
+		: L_(light_dir), V_(view_dir), observed_color_(observed_color), light_color_(light_color) {}
+
+	template <typename T>
+	bool operator()(const T* const normal,
+					const T* const roughness,
+					const T* const metallic,
+					const T* const base_color,
+					T* residual) const {
+
+		Eigen::Matrix<T, 3, 1> N(normal[0], normal[1], normal[2]);
+		N.normalize();
+
+		Eigen::Matrix<T, 3, 1> L(T(L_.x()), T(L_.y()), T(L_.z()));
+		Eigen::Matrix<T, 3, 1> V(T(V_.x()), T(V_.y()), T(V_.z()));
+		Eigen::Matrix<T, 3, 1> baseColor(base_color[0], base_color[1], base_color[2]);
+		Eigen::Matrix<T, 3, 1> lightColor(T(light_color_.x()), T(light_color_.y()), T(light_color_.z()));
+
+		Eigen::Matrix<T, 3, 1> pred_color = eval_gltf(N, L, V, baseColor, metallic[0], roughness[0], lightColor);
+
+		residual[0] = pred_color(0) - T(observed_color_.x());
+		residual[1] = pred_color(1) - T(observed_color_.y());
+		residual[2] = pred_color(2) - T(observed_color_.z());
+
+		return true;
+	}
+
+	// normal(3), roughness(1), metallic(1), base_color(3)
+	static ceres::CostFunction* Create(const Eigen::Vector3f& light_dir,
+									   const Eigen::Vector3f& view_dir,
+									   const Eigen::Vector3f& observed_color,
+									   const Eigen::Vector3f& light_color) {
+		return (new ceres::AutoDiffCostFunction<GltfResidual, 3, 3, 1, 1, 3>(
+					new GltfResidual(light_dir, view_dir, observed_color, light_color)));
+	}
+
+private:
+	Eigen::Vector3f L_;
+	Eigen::Vector3f V_;
+	Eigen::Vector3f observed_color_;
+	Eigen::Vector3f light_color_;
 };
 
 } // namespace brdf

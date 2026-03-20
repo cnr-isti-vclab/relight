@@ -99,6 +99,8 @@ public:
 	//call AFTER initImages and BEFORE breadline, decode or sample.
 
 	void decode(size_t img, unsigned char *buffer);
+	// Read one image (by index), apply crop and current color transform, return as QImage
+	QImage readImageCropped(size_t img);
 	void readLine(PixelArray &line);
 	uint32_t sample(PixelArray &sample, uint32_t ndimensions, std::function<void(Pixel &, Pixel &)> resampler, uint32_t samplingrate);
 	void restart();

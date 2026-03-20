@@ -508,7 +508,7 @@ bool RelightApp::canClose() {
 
 	auto &q = ProcessQueue::instance();
 	if(q.hasTasks()) {
-		auto answer = QMessageBox::critical(mainwindow, "Process queue", "There are some processes in the queue, do you want to terminate them?");
+        auto answer = QMessageBox::question(mainwindow, "Process queue", "There are some processes in the queue, do you want to terminate them?");
 		if(answer != QMessageBox::Yes)
 			return false;
 		q.stop();
