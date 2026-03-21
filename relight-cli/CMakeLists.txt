@@ -74,6 +74,7 @@ SET(SOURCES
 	../src/brdf/brdf_math.cpp
 	../src/brdf/brdf_optimizer.cpp
 	../src/brdf/brdfparameters.cpp
+	../src/brdf/init_normals.cpp
 	../external/assm/SurfaceMesh.cpp
 	../external/assm/algorithms/DifferentialGeometry.cpp
 	../external/assm/algorithms/Rasterizer.cpp
