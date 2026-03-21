@@ -137,9 +137,9 @@ Eigen::Matrix<T, 3, 1> eval_gltf(
 
 	Eigen::Matrix<T, 3, 1> shade = NdotL * light_color.cwiseProduct(diffContrib + specContrib);
 
-	shade(0) = shade(0) < T(0) ? T(0) : shade(0);
-	shade(1) = shade(1) < T(0) ? T(0) : shade(1);
-	shade(2) = shade(2) < T(0) ? T(0) : shade(2);
+    shade(0) = std::clamp(shade(0), T(0), T(1));
+    shade(1) = std::clamp(shade(1), T(0), T(1));
+    shade(2) = std::clamp(shade(2), T(0), T(1));
 
 	return shade;
 }

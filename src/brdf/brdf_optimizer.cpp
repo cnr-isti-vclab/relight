@@ -13,6 +13,7 @@ BrdfFitResult optimize_brdf_pixel(
 		const Eigen::Vector3f& initial_normal,
 		const Eigen::Vector3f& initial_albedo,
 		float initial_roughness,
+        float initial_metallic,
 		float light_intensity,
 		bool optimize_normal,
 		bool optimize_albedo)
@@ -23,7 +24,7 @@ BrdfFitResult optimize_brdf_pixel(
 	double albedo[3] = { static_cast<double>(initial_albedo.x()), static_cast<double>(initial_albedo.y()), static_cast<double>(initial_albedo.z()) };
 
 	// Metallic starts at 0 (dielectric). The optimizer will push it toward 1 for metallic surfaces.
-	double metallic[1] = { 0.0 };
+    double metallic[1] = { initial_metallic };
 
 	//TODO this is not entirely true!
 	// View direction (Orthographic assumed from Dome, looking down Z)

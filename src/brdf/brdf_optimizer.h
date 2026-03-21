@@ -27,15 +27,14 @@ struct BrdfFitResult {
 // optimize_albedo: If true, optimize the albedo; otherwise keep it fixed
 // 
 // Returns the fitted parameters.
-BrdfFitResult optimize_brdf_pixel(
-		const Pixel& I,
-		const std::vector<Eigen::Vector3f>& L,
-		const Eigen::Vector3f& initial_normal,
-		const Eigen::Vector3f& initial_albedo,
-		float initial_roughness,
-		float light_intensity = 1.0f,
-		bool optimize_normal = true,
-		bool optimize_albedo = true);
+BrdfFitResult optimize_brdf_pixel(const Pixel& I,
+                                  const std::vector<Eigen::Vector3f>& L,
+                                  const Eigen::Vector3f& initial_normal,
+                                  const Eigen::Vector3f& initial_albedo,
+                                  float initial_roughness, float initial_metallic,
+                                  float light_intensity = 1.0f,
+                                  bool optimize_normal = true,
+                                  bool optimize_albedo = true);
 
 // Brute-forces BRDF parameters with the given step size and writes the 10 best
 // candidates vs the Ceres solution to 'out'.

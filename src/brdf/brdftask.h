@@ -60,9 +60,13 @@ class BrdfWorker
 {
 public:
 	BrdfWorker(BrdfParameters _parameters, int _row, const PixelArray& toProcess, float* _normals, float* _albedo, float* _roughness, float* _specular, ImageSet &imageset, Lens &_lens,
-			std::ofstream* _brute_out = nullptr, QMutex* _brute_mutex = nullptr, QString _plot_dir = QString()) :
+			std::ofstream* _brute_out = nullptr, QMutex* _brute_mutex = nullptr, QString _plot_dir = QString(),
+			float* _metallic_mask = nullptr, float* _highlight_frac = nullptr,
+			float* _peak_ratio_data = nullptr, uint8_t* _shadow_data = nullptr, int _nlights_count = 0) :
 		parameters(_parameters), row(_row), m_Row(toProcess), normals(_normals), albedo(_albedo), roughness(_roughness), specular(_specular), m_Imageset(imageset),
-		brute_out(_brute_out), brute_mutex(_brute_mutex), plot_dir(_plot_dir) {
+		brute_out(_brute_out), brute_mutex(_brute_mutex), plot_dir(_plot_dir),
+		metallic_mask(_metallic_mask), highlight_frac(_highlight_frac),
+		peak_ratio_data(_peak_ratio_data), shadow_data(_shadow_data), nlights_count(_nlights_count) {
 		m_Row.resize(toProcess.npixels(), toProcess.nlights);
 		for(size_t i = 0; i < m_Row.size(); i++)
 			m_Row[i] = toProcess[i];
@@ -83,6 +87,13 @@ private:
 	std::ofstream* brute_out = nullptr;
 	QMutex* brute_mutex = nullptr;
 	QString plot_dir;
+
+	float* metallic_mask = nullptr;
+	float* highlight_frac = nullptr;
+	float* peak_ratio_data = nullptr;
+	uint8_t* shadow_data = nullptr;
+	int nlights_count = 0;
+
 	ImageSet &m_Imageset;
 };
 
