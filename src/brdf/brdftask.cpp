@@ -2,12 +2,14 @@
 #include "../src/relight_threadpool.h"
 #include "../src/icc_profiles.h"
 #include "brdf_math.h"
+#include "init_normals.h"
 
 #include <QImage>
 #include <QDir>
 #include <QMutexLocker>
 #include <QPainter>
 #include <QPen>
+#include <QBuffer>
 #include <cmath>
 #include <vector>
 #include <sstream>
@@ -133,6 +135,231 @@ static void plot_reflectance(
 	img.save(output_path, "jpg", 90);
 }
 
+// Writes a self-contained HTML page with an interactive Rusinkiewicz-space explorer.
+// The user can drag the fitted normal (Nx, Ny) and watch samples move in (θ_h, θ_d) space.
+// Samples are drawn with their actual RGB color. The reflectance plot JPEG is embedded.
+static void write_rusinkiewicz_html(
+		const Pixel& I,
+		const std::vector<Eigen::Vector3f>& L,
+		const brdf::BrdfFitResult& result,
+		float light_intensity,
+		const QString& plot_jpg_path,
+		const QString& html_path)
+{
+	// Encode the plot image as base64 for inline embedding
+	QImage plot_img(plot_jpg_path);
+	QByteArray plot_bytes;
+	{
+		QBuffer buf(&plot_bytes);
+		buf.open(QIODevice::WriteOnly);
+		plot_img.save(&buf, "JPEG", 90);
+	}
+	QString plot_b64 = QString::fromLatin1(plot_bytes.toBase64());
+
+	// Build JSON arrays: lights [ [lx, ly, lz], ... ] and colors [ [r, g, b], ... ]
+	// Colors are in [0,1] (already normalized before this function is called).
+	std::ostringstream lights_json, colors_json;
+	lights_json << "[";
+	colors_json << "[";
+	for (size_t k = 0; k < I.size(); ++k) {
+		if (k) { lights_json << ","; colors_json << ","; }
+		lights_json << "[" << L[k].x() << "," << L[k].y() << "," << L[k].z() << "]";
+		// Clamp colors to [0,1] for display
+		float r = std::clamp(I[k].r, 0.0f, 1.0f);
+		float g = std::clamp(I[k].g, 0.0f, 1.0f);
+		float b = std::clamp(I[k].b, 0.0f, 1.0f);
+		colors_json << "[" << r << "," << g << "," << b << "]";
+	}
+	lights_json << "]";
+	colors_json << "]";
+
+	// Fitted normal, parameters
+	auto& N = result.normal;
+
+	QFile file(html_path);
+	if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+		return;
+	QTextStream out(&file);
+
+	out << R"HTML(<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Rusinkiewicz Space Explorer</title>
+<style>
+body { font-family: sans-serif; margin: 20px; background: #f5f5f5; }
+.container { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+canvas { border: 1px solid #999; background: #fff; cursor: crosshair; }
+.panel { background: #fff; padding: 15px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+h3 { margin: 0 0 8px 0; }
+#info { font-size: 13px; color: #444; margin-top: 6px; white-space: pre; }
+img.plot { max-width: 640px; border: 1px solid #ccc; }
+</style></head><body>
+<h2>Rusinkiewicz Space Explorer</h2>
+<div class="container">
+  <div class="panel">
+    <h3>&theta;<sub>h</sub> vs &theta;<sub>d</sub> (drag normal below)</h3>
+    <canvas id="rusiCanvas" width="500" height="500"></canvas>
+    <div id="info"></div>
+  </div>
+  <div class="panel">
+    <h3>Normal control (drag the dot)</h3>
+    <canvas id="normalCanvas" width="250" height="250"></canvas>
+  </div>
+</div>
+<div class="panel" style="margin-top:20px">
+  <h3>Reflectance plot (half-angle)</h3>
+  <img class="plot" src="data:image/jpeg;base64,)HTML";
+	out << plot_b64;
+	out << R"HTML(" />
+</div>
+<script>
+"use strict";
+const lights = )HTML";
+	out << QString::fromStdString(lights_json.str());
+	out << R"HTML(;
+const colors = )HTML";
+	out << QString::fromStdString(colors_json.str());
+	out << R"HTML(;
+const fitN = [)HTML" << N.x() << "," << N.y() << "," << N.z() << R"HTML(];
+const fitRoughness = )HTML" << result.roughness << R"HTML(;
+const fitMetallic = )HTML" << result.metallic << R"HTML(;
+const fitAlbedo = [)HTML" << result.albedo.x() << "," << result.albedo.y() << "," << result.albedo.z() << R"HTML(];
+
+let nx = fitN[0], ny = fitN[1];
+
+function normalize(v) {
+    const l = Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+    return l > 1e-9 ? [v[0]/l, v[1]/l, v[2]/l] : [0,0,1];
+}
+function dot(a,b) { return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]; }
+function add(a,b) { return [a[0]+b[0],a[1]+b[1],a[2]+b[2]]; }
+function scale(s,v) { return [s*v[0],s*v[1],s*v[2]]; }
+
+// Compute Rusinkiewicz half/diff angles for a given L, V=[0,0,1], N
+function rusinkiewicz(L, N) {
+    const V = [0,0,1];
+    const H = normalize(add(L, V));
+    const cosThH = Math.max(-1, Math.min(1, dot(H, N)));
+    const thetaH = Math.acos(cosThH);
+    // θ_d = angle between L and H
+    const cosThD = Math.max(-1, Math.min(1, dot(L, H)));
+    const thetaD = Math.acos(cosThD);
+    return { thetaH: thetaH * 180/Math.PI, thetaD: thetaD * 180/Math.PI };
+}
+
+function currentNormal() {
+    const nz2 = 1 - nx*nx - ny*ny;
+    const nz = nz2 > 0 ? Math.sqrt(nz2) : 0;
+    return normalize([nx, ny, nz]);
+}
+
+// ---- Rusinkiewicz scatter plot ----
+const rc = document.getElementById("rusiCanvas");
+const rctx = rc.getContext("2d");
+const W = rc.width, Ht = rc.height;
+const PAD = 50;
+const PW = W - 2*PAD, PH = Ht - 2*PAD;
+
+function drawRusi() {
+    const N = currentNormal();
+    rctx.clearRect(0, 0, W, Ht);
+    // Grid
+    rctx.strokeStyle = "#eee"; rctx.lineWidth = 1;
+    for (let i = 0; i <= 9; i++) {
+        const x = PAD + i*PW/9, y = PAD + i*PH/9;
+        rctx.beginPath(); rctx.moveTo(x, PAD); rctx.lineTo(x, PAD+PH); rctx.stroke();
+        rctx.beginPath(); rctx.moveTo(PAD, y); rctx.lineTo(PAD+PW, y); rctx.stroke();
+    }
+    // Axes
+    rctx.strokeStyle = "#000"; rctx.lineWidth = 2;
+    rctx.strokeRect(PAD, PAD, PW, PH);
+    // Labels
+    rctx.fillStyle = "#000"; rctx.font = "12px sans-serif"; rctx.textAlign = "center";
+    for (let i = 0; i <= 9; i++) {
+        rctx.fillText(i*10, PAD + i*PW/9, PAD+PH+18);
+        rctx.save(); rctx.textAlign = "right";
+        rctx.fillText(i*10, PAD-6, PAD+PH - i*PH/9 + 4);
+        rctx.restore();
+    }
+    rctx.fillText("θ_h (deg)", PAD+PW/2, PAD+PH+38);
+    rctx.save(); rctx.translate(14, PAD+PH/2); rctx.rotate(-Math.PI/2);
+    rctx.fillText("θ_d (deg)", 0, 0); rctx.restore();
+
+    // Samples
+    for (let k = 0; k < lights.length; k++) {
+        const r = rusinkiewicz(lights[k], N);
+        const sx = PAD + r.thetaH / 90 * PW;
+        const sy = PAD + PH - r.thetaD / 90 * PH;
+        const c = colors[k];
+        // Make color visible: use actual RGB, boosted slightly for dark samples
+        const mx = Math.max(c[0],c[1],c[2],0.01);
+        const boost = Math.min(1.0/mx, 3.0);
+        const cr = Math.min(255, Math.round(c[0]*boost*255));
+        const cg = Math.min(255, Math.round(c[1]*boost*255));
+        const cb = Math.min(255, Math.round(c[2]*boost*255));
+        rctx.fillStyle = `rgb(${cr},${cg},${cb})`;
+        rctx.strokeStyle = "rgba(0,0,0,0.4)"; rctx.lineWidth = 0.5;
+        rctx.beginPath(); rctx.arc(sx, sy, 5, 0, 2*Math.PI); rctx.fill(); rctx.stroke();
+    }
+}
+
+// ---- Normal control pad ----
+const nc = document.getElementById("normalCanvas");
+const nctx = nc.getContext("2d");
+const NW = nc.width, NH = nc.height;
+const NR = Math.min(NW,NH)/2 - 20; // radius of unit circle
+
+function drawNormal() {
+    nctx.clearRect(0, 0, NW, NH);
+    const cx = NW/2, cy = NH/2;
+    // Unit circle
+    nctx.strokeStyle = "#ccc"; nctx.lineWidth = 1;
+    nctx.beginPath(); nctx.arc(cx, cy, NR, 0, 2*Math.PI); nctx.stroke();
+    // Cross
+    nctx.beginPath(); nctx.moveTo(cx-NR,cy); nctx.lineTo(cx+NR,cy); nctx.stroke();
+    nctx.beginPath(); nctx.moveTo(cx,cy-NR); nctx.lineTo(cx,cy+NR); nctx.stroke();
+    // Labels
+    nctx.fillStyle = "#888"; nctx.font = "11px sans-serif"; nctx.textAlign = "center";
+    nctx.fillText("Nx", cx+NR+12, cy+4);
+    nctx.fillText("Ny", cx, cy-NR-8);
+    // Fitted (ghost)
+    nctx.fillStyle = "rgba(100,100,255,0.3)";
+    nctx.beginPath(); nctx.arc(cx+fitN[0]*NR, cy-fitN[1]*NR, 6, 0, 2*Math.PI); nctx.fill();
+    // Current
+    nctx.fillStyle = "#d33";
+    nctx.beginPath(); nctx.arc(cx+nx*NR, cy-ny*NR, 8, 0, 2*Math.PI); nctx.fill();
+    nctx.fillStyle = "#fff"; nctx.font = "bold 10px sans-serif";
+    nctx.fillText("N", cx+nx*NR, cy-ny*NR+3);
+    // Info
+    const N = currentNormal();
+    document.getElementById("info").textContent =
+        `N = [${N[0].toFixed(3)}, ${N[1].toFixed(3)}, ${N[2].toFixed(3)}]\n` +
+        `Fitted: roughness=${fitRoughness.toFixed(3)}  metallic=${fitMetallic.toFixed(3)}\n` +
+        `Albedo: [${fitAlbedo[0].toFixed(3)}, ${fitAlbedo[1].toFixed(3)}, ${fitAlbedo[2].toFixed(3)}]`;
+}
+
+function redraw() { drawRusi(); drawNormal(); }
+
+// Dragging on the normal canvas
+let dragging = false;
+nc.addEventListener("mousedown", e => { dragging = true; updateN(e); });
+nc.addEventListener("mousemove", e => { if (dragging) updateN(e); });
+window.addEventListener("mouseup", () => dragging = false);
+function updateN(e) {
+    const rect = nc.getBoundingClientRect();
+    const mx = e.clientX - rect.left - NW/2;
+    const my = -(e.clientY - rect.top - NH/2);
+    let r = Math.sqrt(mx*mx+my*my) / NR;
+    if (r > 0.99) r = 0.99;
+    nx = (mx/NR); ny = (my/NR);
+    const len = Math.sqrt(nx*nx+ny*ny);
+    if (len > 0.99) { nx *= 0.99/len; ny *= 0.99/len; }
+    redraw();
+}
+
+redraw();
+</script></body></html>)HTML";
+	file.close();
+}
+
 void BrdfTask::initFromProject(Project &project) {
 	lens = project.lens;
 	imageset.width = imageset.image_width = project.lens.width;
@@ -193,11 +420,18 @@ void BrdfTask::run() {
 
 		albedo.resize(width * height * 3);
 		vector<float> normals, roughness, specular;
+		size_t nlights = imageset.lights().size();
+		vector<float> metallic_mask_data, highlight_frac_data, peak_ratio_data;
+		vector<uint8_t> shadow_data;
 
 		if(parameters.compute_brdf) {
 			normals.resize(width * height * 3);
 			roughness.resize(width * height);
 			specular.resize(width * height * 3);
+			metallic_mask_data.resize(width * height, 0.0f);
+			highlight_frac_data.resize(width * height, 0.0f);
+			peak_ratio_data.resize(width * height, 0.0f);
+			shadow_data.resize((size_t)width * height * nlights, 0);
 		}
 
 		RelightThreadPool pool;
@@ -229,9 +463,15 @@ void BrdfTask::run() {
 				float* _n = &normals[idx];
 				float* _s = &specular[idx];
 				float* _r = &roughness[i * imageset.width];
+				size_t diag_idx = (size_t)i * imageset.width;
+				uint8_t* _shad = shadow_data.data() + diag_idx * nlights;
 
 				BrdfWorker *task = new BrdfWorker(parameters, i, line, _n, _a, _r, _s, imageset, lens,
-						&brute_file, &brute_mutex, plot_dir);
+						&brute_file, &brute_mutex, plot_dir,
+						metallic_mask_data.data() + diag_idx,
+						highlight_frac_data.data() + diag_idx,
+						peak_ratio_data.data() + diag_idx,
+						_shad, (int)nlights);
 				run = [task](void)->void {
 					task->run();
 					delete task;
@@ -379,6 +619,29 @@ void BrdfTask::run() {
 				cmsDeleteTransform(linear_to_srgb);
 
 			progressed("Test renders done", 100);
+
+			// Save diagnostics: metallic mask, highlight fraction, peak ratio, per-light shadow masks
+			{
+				QString diagFolder = destination.filePath("diagnostics");
+				QDir().mkpath(diagFolder);
+				saveMap(metallic_mask_data,  "diagnostics/metallic_mask",        1);
+				saveMap(highlight_frac_data, "diagnostics/highlight_fraction",   1);
+				saveMap(peak_ratio_data,     "diagnostics/peak_ratio",           1);
+
+				QString shadowFolder = diagFolder + "/shadows";
+				QDir().mkpath(shadowFolder);
+				for (size_t j = 0; j < nlights; j++) {
+					vector<uint8_t> light_shadow((size_t)width * height);
+					for (int px = 0; px < width * height; px++)
+						light_shadow[px] = shadow_data[(size_t)px * nlights + j];
+					QImage simg(light_shadow.data(), width, height, width, QImage::Format_Grayscale8);
+					if (parameters.crop.angle != 0.0f)
+						simg = parameters.crop.cropBoundingImage(simg);
+					simg.save(QDir(shadowFolder).filePath(
+						QString("shadow_%1.jpg").arg(j, 3, 10, QChar('0'))), "jpg", parameters.quality);
+				}
+				progressed("Diagnostics saved", 100);
+			}
 		} else {
 			saveMap(albedo, parameters.albedo_path, 3);
 			progressed("Albedo done", 100);
@@ -445,38 +708,26 @@ void BrdfWorker::run() {
 			p[j] = p[j] / 255.0f;
 		}
 		//TODO fit all three components at once instead of computing biological luminance.
-		// Initialize normal: use the light direction of the brightest sample (max luminance).
-		// (Old approach: Lambertian photometric stereo — left for reference)
-//#define LAMBERTIAN 1
-#ifdef LAMBERTIAN
-		Eigen::VectorXf I_lum(p.size());
-		Eigen::MatrixXf L_mat(p.size(), 3);
-		for (size_t j = 0; j < p.size(); j++) {
-			I_lum(j) = 0.2126f * p[j].r + 0.7152f * p[j].g + 0.0722f * p[j].b;
-			L_mat.row(j) = L[j];
+		brdf::InitNormalResult init_result = brdf::init_normal(p, L);
+		Eigen::Vector3f init_normal = init_result.normal;
+        float init_metallic = init_result.is_metallic ? 0.5 : 0;
+
+		// Write diagnostic init-normal data (row-local: pointer already offset to this row)
+		if (metallic_mask)    metallic_mask[i]    = init_result.is_metallic ? 255.0f : 0.0f;
+		if (highlight_frac)   highlight_frac[i]   = init_result.highlight_fraction * 255.0f;
+		if (peak_ratio_data)  peak_ratio_data[i]  = std::clamp(init_result.peak_ratio / 10.0f, 0.0f, 1.0f) * 255.0f;
+		if (shadow_data && nlights_count > 0) {
+			for (int j = 0; j < nlights_count && j < (int)init_result.shadow_probability.size(); j++)
+				shadow_data[i * nlights_count + j] =
+					(uint8_t)std::clamp((int)(init_result.shadow_probability[j] * 255.0f + 0.5f), 0, 255);
 		}
-		Eigen::Vector3f init_normal = brdf::simple_lambertian_photometric_stereo(I_lum, L_mat);
-#else
-		size_t max_idx = 0;
-		float max_lum = -1.0f;
-		for (size_t j = 0; j < p.size(); j++) {
-			float lum = 0.2126f * p[j].r + 0.7152f * p[j].g + 0.0722f * p[j].b;
-			if (lum > max_lum) { max_lum = lum; max_idx = j; }
-		}
-		Eigen::Vector3f init_normal = (L[max_idx] + Eigen::Vector3f(0.0f, 0.0f, 1.0f)).normalized();
-#endif
-		// Handle invalid or negative backward-facing normals
-		if (std::isnan(init_normal.x()) || init_normal.z() < 0) {
-			init_normal = Eigen::Vector3f(0.0f, 0.0f, 1.0f);
-		}
-		init_normal.normalize();
 
 		// Optimize
 		brdf::BrdfFitResult result = brdf::optimize_brdf_pixel(
-                    p, L, init_normal, init_albedo_vec, 0.3f, 4.0f, false, true); // default rough=0.3, light_intensity=1.0
+                    p, L, init_normal, init_albedo_vec, 0.3f, init_metallic, 4.0f, true, true); // default rough=0.3, light_intensity=1.0
 
 		// Brute-force comparison for 1 in every 100 pixels
-        if (brute_out && brute_mutex) {
+        if (0 && brute_out && brute_mutex) {
 			int global_idx = row * (int)m_Row.size() + (int)i;
 			if (global_idx % 100 == 0) {
 				std::ostringstream oss;
@@ -486,6 +737,10 @@ void BrdfWorker::run() {
 						.arg(m_Row[i].y, 5, 10, QChar('0'))
 						.arg(m_Row[i].x, 5, 10, QChar('0'));
 					plot_reflectance(p, L, result, 4.0f, plot_path);
+					QString html_path = plot_dir + QString("/rusi_%1_%2.html")
+						.arg(m_Row[i].y, 5, 10, QChar('0'))
+						.arg(m_Row[i].x, 5, 10, QChar('0'));
+					write_rusinkiewicz_html(p, L, result, 4.0f, plot_path, html_path);
 				}
 				QMutexLocker lk(brute_mutex);
 				*brute_out << oss.str();

@@ -148,6 +148,7 @@ set (RELIGHTLAB_SOURCES
 	../src/brdf/brdf_math.cpp
 	../src/brdf/brdf_optimizer.cpp
     ../src/brdf/brdfparameters.cpp
+    ../src/brdf/init_normals.cpp
     alignframe.cpp
     alignpicking.cpp
     alignrow.cpp

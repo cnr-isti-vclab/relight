@@ -17,8 +17,9 @@ unix::QMAKE_CXXFLAGS = -fopenmp
 unix:INCLUDEPATH += ../external/eigen-3.3.9/ 
 #opencv not needed for the moment
 #unix:INCLUDEPATH += /usr/include/opencv4
+#do not remove this variable.
 ABSLLIBS = -Wl,--start-group -labsl_random_seed_sequences -labsl_status -labsl_flags_program_name -labsl_crc_cord_state -labsl_utf8_for_code_point -labsl_poison -labsl_random_internal_pool_urbg -labsl_demangle_rust -labsl_symbolize -labsl_civil_time -labsl_string_view -labsl_flags_parse -labsl_log_internal_conditions -labsl_strerror -labsl_strings_internal -labsl_cordz_info -labsl_stacktrace -labsl_scoped_set_env -labsl_kernel_timeout_internal -labsl_raw_logging_internal -labsl_die_if_null -labsl_log_internal_structured_proto -labsl_log_initialize -labsl_flags_private_handle_accessor -labsl_random_distributions -labsl_raw_hash_set -labsl_cordz_sample_token -labsl_log_sink -labsl_random_internal_platform -labsl_tracing_internal -labsl_log_entry -labsl_demangle_internal -labsl_cord -labsl_crc_cpu_detect -labsl_leak_check -labsl_exponential_biased -labsl_random_internal_seed_material -labsl_statusor -labsl_random_internal_distribution_test_util -labsl_flags_config -labsl_random_internal_randen_slow -labsl_flags_commandlineflag -labsl_log_severity -labsl_flags_usage_internal -labsl_examine_stack -labsl_flags_internal -labsl_spinlock_wait -labsl_flags_marshalling -labsl_crc32c -labsl_periodic_sampler -labsl_strings -labsl_low_level_hash -labsl_graphcycles_internal -labsl_log_flags -labsl_str_format_internal -labsl_hashtablez_sampler -labsl_hash -labsl_cordz_handle -labsl_flags_usage -labsl_random_internal_randen -labsl_log_globals -labsl_log_internal_log_sink_set -labsl_flags_reflection -labsl_bad_variant_access -labsl_log_internal_format -labsl_crc_internal -labsl_log_internal_check_op -labsl_random_internal_randen_hwaes -labsl_bad_optional_access -labsl_random_seed_gen_exception -labsl_vlog_config_internal -labsl_random_internal_randen_hwaes_impl -labsl_malloc_internal -labsl_int128 -labsl_log_internal_proto -labsl_cord_internal -labsl_bad_any_cast_impl -labsl_city -labsl_throw_delegate -labsl_decode_rust_punycode -labsl_debugging_internal -labsl_flags_commandlineflag_internal -labsl_log_internal_nullguard -labsl_log_internal_message -labsl_log_internal_fnmatch -labsl_cordz_functions -labsl_log_internal_globals -labsl_time_zone -labsl_base -labsl_failure_signal_handler -labsl_time -labsl_synchronization -Wl,--end-group
-
+ABSLLIBS = 
 unix:LIBS += -ljpeg -ltiff -llcms2 -lceres $$ABSLLIBS -lglog -lgflags -lspqr -lcholmod -lccolamd -lcamd -lcolamd -lamd -lmetis -lsuitesparseconfig -llapack -lblas
 #opencv not needed for the moment
 #unix:LIBS += -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_video
@@ -53,56 +54,74 @@ SOURCES += main.cpp \
     ../external/assm/algorithms/Rasterizer.cpp \
     ../external/assm/algorithms/ScreenRemeshing.cpp \
     ../external/assm/algorithms/Triangulation.cpp \
-    ../src/brdf/brdftask.cpp \
+    ../src/align.cpp \
     ../src/brdf/brdf_math.cpp \
     ../src/brdf/brdf_optimizer.cpp \
     ../src/brdf/brdfparameters.cpp \
+    ../src/brdf/brdftask.cpp \
+    ../src/brdf/init_normals.cpp \
     ../src/cli/convert_rti.cpp \
     ../src/cli/rtibuilder.cpp \
-    ../src/network/httpserver.cpp \
-    ../src/normals/flatnormals.cpp \
-    ../src/normals/normalstask.cpp \
-    ../src/normals/bni_normal_integration.cpp \
-    ../src/normals/normals_parameters.cpp \
-    ../src/normals/fft_normal_integration.cpp \
-    ../src/normals/fast_gaussian_blur.cpp \
-    ../src/rti/rtiparameters.cpp \
-    ../src/rti/rtitask.cpp \
+    ../src/colorprofile.cpp \
     ../src/crop.cpp \
-    ../src/align.cpp \
+    ../src/deepzoom.cpp \
     ../src/dome.cpp \
     ../src/exif.cpp \
-    ../src/lp.cpp \
+    ../src/icc_profiles.cpp \
     ../src/image.cpp \
     ../src/imageset.cpp \
-    ../src/colorprofile.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/jpeg_encoder.cpp \
-    ../src/icc_profiles.cpp \
     ../src/legacy_rti.cpp \
     ../src/lens.cpp \
+    ../src/lp.cpp \
     ../src/measure.cpp \
+    ../src/network/httpserver.cpp \
+    ../src/normals/bni_normal_integration.cpp \
+    ../src/normals/fast_gaussian_blur.cpp \
+    ../src/normals/fft_normal_integration.cpp \
+    ../src/normals/flatnormals.cpp \
+    ../src/normals/normals_parameters.cpp \
+    ../src/normals/normalstask.cpp \
     ../src/project.cpp \
     ../src/rti.cpp \
+    ../src/rti/rtiparameters.cpp \
+    ../src/rti/rtitask.cpp \
     ../src/sphere.cpp \
-    ../src/white.cpp \
     ../src/task.cpp \
-    ../src/deepzoom.cpp \
-    zoom.cpp \
-    brdfplan.cpp \
-    imagecropper.cpp \
-    processqueue.cpp \
+    ../src/white.cpp \
     alignframe.cpp \
     alignpicking.cpp \
     alignrow.cpp \
+    brdfframe.cpp \
+    brdfplan.cpp \
     canvas.cpp \
+    convertdialog.cpp \
+    cropframe.cpp \
+    directionsview.cpp \
     domepanel.cpp \
+    flowlayout.cpp \
+    helpbutton.cpp \
+    historytask.cpp \
+    homeframe.cpp \
+    imagecropper.cpp \
+    imageframe.cpp \
+    imagegrid.cpp \
+    imagelist.cpp \
     imageview.cpp \
     lightgeometry.cpp \
+    lightsframe.cpp \
     mainwindow.cpp \
     markerdialog.cpp \
+    metadataframe.cpp \
+    normalsframe.cpp \
+    normalsplan.cpp \
+    planrow.cpp \
     preferences.cpp \
+    processqueue.cpp \
     qlabelbutton.cpp \
+    queueframe.cpp \
+    queueitem.cpp \
     recentprojects.cpp \
     reflectionview.cpp \
     relightapp.cpp \
@@ -110,31 +129,14 @@ SOURCES += main.cpp \
     rtiplan.cpp \
     rtirecents.cpp \
     rtirow.cpp \
+    scaleframe.cpp \
+    sphereframe.cpp \
     spherepicking.cpp \
     sphererow.cpp \
     tabwidget.cpp \
-    imageframe.cpp \
-    homeframe.cpp \
-    imagelist.cpp \
-    flowlayout.cpp \
-    imagegrid.cpp \
-    lightsframe.cpp \
-    directionsview.cpp \
-    verifyview.cpp \
     verifydialog.cpp \
-    helpbutton.cpp \
-    cropframe.cpp \
-    queueitem.cpp \
-    queueframe.cpp \
-    normalsframe.cpp \
-    scaleframe.cpp \
-    planrow.cpp \
-    normalsplan.cpp \
-    brdfframe.cpp \
-    metadataframe.cpp \
-    sphereframe.cpp \
-    convertdialog.cpp \
-    historytask.cpp
+    verifyview.cpp \
+    zoom.cpp
 
 RESOURCES += \
     ../src/icc_profiles.qrc \
@@ -150,39 +152,77 @@ HEADERS += \
     ../external/assm/algorithms/ScreenMeshing.h \
     ../external/assm/algorithms/ScreenRemeshing.h \
     ../external/assm/algorithms/Triangulation.h \
-    ../src/cli/rtibuilder.h \
-    ../src/crop.h \
-    ../src/normals/flatnormals.h \
-    brdfplan.h \
-    imagecropper.h \
-    processqueue.h \
     ../src/align.h \
+    ../src/brdf/brdf_ceres.h \
+    ../src/brdf/brdf_math.h \
+    ../src/brdf/brdf_optimizer.h \
+    ../src/brdf/brdfparameters.h \
+    ../src/brdf/brdftask.h \
+    ../src/brdf/init_normals.h \
+    ../src/cli/rtibuilder.h \
+    ../src/colorprofile.h \
+    ../src/crop.h \
+    ../src/deepzoom.h \
     ../src/dome.h \
     ../src/exif.h \
+    ../src/icc_profiles.h \
     ../src/image.h \
     ../src/imageset.h \
-    ../src/colorprofile.h \
     ../src/jpeg_decoder.h \
     ../src/jpeg_encoder.h \
-    ../src/icc_profiles.h \
     ../src/legacy_rti.h \
     ../src/lens.h \
+    ../src/lp.h \
     ../src/measure.h \
+    ../src/network/httplib.h \
+    ../src/network/httpserver.h \
+    ../src/normals/bni_normal_integration.h \
+    ../src/normals/fast_gaussian_blur.h \
+    ../src/normals/fft_normal_integration.h \
+    ../src/normals/flatnormals.h \
+    ../src/normals/normals_parameters.h \
+    ../src/normals/normalstask.h \
+    ../src/normals/pocketfft.h \
     ../src/project.h \
     ../src/rti.h \
+    ../src/rti/rtiparameters.h \
+    ../src/rti/rtitask.h \
     ../src/sphere.h \
+    ../src/task.h \
+    ../src/taskparameters.h \
     ../src/white.h \
     alignframe.h \
     alignpicking.h \
     alignrow.h \
+    brdfframe.h \
+    brdfplan.h \
     canvas.h \
+    convertdialog.h \
+    cropframe.h \
+    directionsview.h \
+    domepanel.h \
+    flowlayout.h \
+    helpbutton.h \
+    historytask.h \
+    homeframe.h \
+    imagecropper.h \
+    imageframe.h \
+    imagegrid.h \
+    imagelist.h \
     imageview.h \
     lightgeometry.h \
-    mainwindow.h \
+    lightsframe.h \
     mainwindow.h \
     markerdialog.h \
+    metadataframe.h \
+    normalsframe.h \
+    normalsplan.h \
+    planrow.h \
     preferences.h \
+    processqueue.h \
     qlabelbutton.h \
+    queueframe.h \
+    queueitem.h \
     recentprojects.h \
     reflectionview.h \
     relightapp.h \
@@ -190,52 +230,13 @@ HEADERS += \
     rtiplan.h \
     rtirecents.h \
     rtirow.h \
+    scaleframe.h \
+    sphereframe.h \
     spherepicking.h \
     sphererow.h \
     tabwidget.h \
-    imageframe.h \
-    homeframe.h \
-    imagelist.h \
-    flowlayout.h \
-    imagegrid.h \
-    lightsframe.h \
-    ../src/lp.h \
-    domepanel.h \
-    directionsview.h \
-    verifyview.h \
     verifydialog.h \
-    helpbutton.h \
-    cropframe.h \
-    ../src/rti/rtitask.h \
-    ../src/task.h \
-    queueitem.h \
-    queueframe.h \
-    ../src/network/httpserver.h \
-    ../src/network/httplib.h \
-    normalsframe.h \
-    ../src/normals/normalstask.h \
-    ../src/normals/bni_normal_integration.h \
-    ../src/normals/normals_parameters.h \
-    scaleframe.h \
-    ../src/normals/flatnormals.h \
-    planrow.h \
-    normalsplan.h \
-    brdfframe.h \
-    metadataframe.h \
-    ../src/normals/fft_normal_integration.h \
-    ../src/normals/fast_gaussian_blur.h \
-    ../src/normals/pocketfft.h \
-    ../src/deepzoom.h \
-    sphereframe.h \
-    ../src/brdf/brdftask.h \
-    ../src/brdf/brdf_math.h \
-    ../src/brdf/brdf_optimizer.h \
-    ../src/brdf/brdf_ceres.h \
-    convertdialog.h \
-    ../src/taskparameters.h \
-    ../src/rti/rtiparameters.h \
-    ../src/brdf/brdfparameters.h \
-    historytask.h 
+    verifyview.h
 
 FORMS +=
 
