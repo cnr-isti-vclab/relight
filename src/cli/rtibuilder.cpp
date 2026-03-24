@@ -2055,7 +2055,9 @@ std::vector<float> RtiBuilder::toPrincipal(Pixel &pixel, MaterialBuilder &materi
 		float weight = 0;
 		for(uint32_t i = 0; i < ndimensions; i++) {
 			Color3f &c = pixel[i];
-			float w = 0.25 - pow(asin(imageset.lights()[i][2])/(M_PI/2) - 0.5, 2);
+			Eigen::Vector3f light = imageset.lights()[i];
+			light.normalize();
+			float w = 0.25 - pow(asin(light[2])/(M_PI/2) - 0.5, 2);
 			mean += c*w;
 			weight += w;
 		}
