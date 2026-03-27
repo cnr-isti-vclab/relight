@@ -3082,7 +3082,6 @@
     	draw(transform, viewport) {
     		//exception for layout image where we still do not know the image size
     		//how linear or srgb should be specified here.
-    		//		gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
     		if (this.status != 'ready')// || this.tiles.size == 0)
     			return true;
 
@@ -5583,8 +5582,10 @@
     			// For float textures in WebGL2, use R8 as internal format
     			internalFormat = gl.R8;
     		} else {
+    			//cant' use srgb internal format because mipmap is not supported
     			internalFormat = glFormat === gl.RGB ? gl.RGB : gl.RGBA;
     		}
+
     		gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, glFormat, gl.UNSIGNED_BYTE, img);
 
 
@@ -15267,6 +15268,285 @@ vec4 data() {
     }
 
     /**
+     * @typedef {Object} Minimap~Options
+     * @property {Layer|Object} [layer]             - Layer instance or layer options object
+     * @property {string} [thumbnailUrl]            - URL to thumbnail image
+     * @property {BoundingBox} [viewport]           - Viewport bounds (defaults to first layer's bbox)
+     * @property {string} [position='bottom-right'] - Position: 'top-left'|'top-right'|'bottom-left'|'bottom-right'
+     * @property {number} [width=200] 
+     * @property {number} [height=150]
+     * @property {number} [padding=10]
+     */
+
+    /**
+     * Minimap overlay showing current view area over the full dataset
+     */
+    class Minimap {
+        constructor(viewer, options) {
+            Object.assign(this, {
+                viewer: viewer,
+                layer: null,
+                thumbnailUrl: null,
+                viewport: null,
+                position: 'bottom-right',
+                width: 200,
+                height: 150,
+                padding: 10,
+                interactive: true,
+                viewportStyle: {
+                    stroke: 'rgba(255, 255, 255, 0.8)',
+                    strokeWidth: 2,
+                    fill: 'rgba(255, 255, 255, 0.1)',
+                    vector_effect: 'non-scaling-stroke'
+                } 
+            });
+
+            // Apply options, but merge viewportStyle instead of replacing it
+            if (options) {
+                const { viewportStyle, ...otherOptions } = options;
+                Object.assign(this, otherOptions);
+                if (viewportStyle) {
+                    Object.assign(this.viewportStyle, viewportStyle);
+                }
+            }
+
+            this.element = null;
+            this.minimapViewer = null;
+            this.viewportRect = null;
+            
+            this.init();
+        }
+
+        init() {
+            this.createMinimapDOM();
+            this.setupMinimapCanvas();
+            this.setupViewportIndicator();
+            this.setupEventListeners();
+        }
+
+        createMinimapDOM() {
+            // Create minimap container
+            this.element = document.createElement('div');
+            this.element.classList.add('openlime-minimap');
+            this.element.classList.add(`openlime-minimap-${this.position}`);
+            
+            // Apply positioning
+            this.element.style.position = 'absolute';
+            this.element.style.pointerEvents = 'auto';
+            const [vPos, hPos] = this.position.split('-');
+            this.element.style[vPos] = `${this.padding}px`;
+            this.element.style[hPos] = `${this.padding}px`;
+            this.element.style.width = `${this.width}px`;
+            this.element.style.height = `${this.height}px`;
+            
+            this.viewer.containerElement.appendChild(this.element);
+        }
+
+        setupMinimapCanvas() {
+            // Create a Viewer instance for the minimap
+            this.minimapViewer = new Viewer(this.element, { background: 'black', autofit: true });
+
+            
+            // Set minimap canvas size
+            this.minimapViewer.canvasElement.width = this.width;
+            this.minimapViewer.canvasElement.height = this.height;
+            
+            // If thumbnailUrl is provided, create a simple image layer
+            if (this.thumbnailUrl) {
+                this.createThumbnailLayer();
+            } else if (this.layer) {
+                // Create layer from options object or use existing layer instance
+                this.createMinimapLayer();
+            }
+            
+            // Set up minimap camera to show full viewport
+            if (this.viewport) {
+                //this.minimapViewer.camera.viewport = this.viewport;
+                this.minimapViewer.camera.fitCameraBox(0);
+            } else {
+                // Use first layer's bounding box
+                const firstLayer = Object.values(this.viewer.canvas.layers)[0];
+                if (firstLayer) {
+                    this.viewport = firstLayer.boundingBox();
+                    //this.minimapViewer.camera.viewport = this.viewport;
+                    this.minimapViewer.camera.fitCameraBox(0);
+                }
+            }
+        }
+
+        createThumbnailLayer() {
+            // Create a simple image layer from thumbnail URL
+            const layer = new Layer({
+                type: 'image',
+                url: this.thumbnailUrl,
+                layout: 'image'
+            });
+            
+            this.minimapViewer.addLayer('minimap-thumbnail', layer);
+            
+            // Wait for layer to be ready and set viewport
+            layer.addEvent('ready', () => {
+                if (!this.viewport && layer.boundingBox) {
+                    //this.viewport = layer.boundingBox;
+                    //this.minimapViewer.camera.viewport = this.viewport;
+                    this.minimapViewer.camera.fitCameraBox(0);
+                }
+            });
+        }
+
+        createMinimapLayer() {
+            // Check if layer is an options object or a Layer instance
+            let minimapLayer;
+            
+            if (this.layer.constructor && this.layer.constructor.name === 'Object') {
+                // It's an options object, create a new Layer
+                minimapLayer = new Layer(this.layer);
+            } else {
+                // It's a Layer instance - for now, just log that cloning is not supported
+                console.warn('Minimap: Layer cloning not yet supported. Please provide layer options object instead.');
+                return;
+            }
+            
+            this.minimapViewer.addLayer('minimap-layer', minimapLayer);
+            
+            // Wait for layer to be ready and set viewport
+            minimapLayer.addEvent('ready', () => {
+                if (!this.viewport && minimapLayer.boundingBox) {
+                    this.minimapViewer.camera.fitCameraBox(0);
+                }
+            });
+        }
+
+        setupViewportIndicator() {
+            // Create SVG overlay for viewport rectangle
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.classList.add('openlime-minimap-viewport');
+            svg.style.position = 'absolute';
+            svg.style.top = '0';
+            svg.style.left = '0';
+            svg.style.width = '100%';
+            svg.style.height = '100%';
+            svg.style.pointerEvents = 'none';
+            
+            // Create viewport polygon to show actual rotated shape
+            this.viewportRect = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            this.viewportRect.setAttribute('stroke',        this.viewportStyle.stroke);
+            this.viewportRect.setAttribute('stroke-width',  this.viewportStyle.strokeWidth);
+            this.viewportRect.setAttribute('fill',          this.viewportStyle.fill);
+            this.viewportRect.setAttribute('vector-effect', this.viewportStyle.vector_effect);
+            
+            svg.appendChild(this.viewportRect);
+            this.element.appendChild(svg);
+            
+            // Initial update
+            this.updateViewport();
+        }
+
+        setupEventListeners() {
+            // Listen to camera changes
+            this.viewer.camera.addEvent('update', () => this.updateViewport());
+            
+            // Handle clicks for navigation
+            if (this.interactive) {
+                this.element.addEventListener('click', (e) => this.onMinimapClick(e));
+            }
+        }
+
+        updateViewport() {
+            if (!this.viewportRect || !this.viewport) return;
+            
+            const mainCamera = this.viewer.camera;
+            const minimapCamera = this.minimapViewer.camera;
+            
+            // Use the target transform instead of getCurrentTransform to avoid animation delay
+            const transform = mainCamera.target;
+            const viewport = mainCamera.viewport;
+            
+            // Calculate the four corners of the viewport in scene coordinates
+            const hw = viewport.dx / (2 * transform.z);
+            const hh = viewport.dy / (2 * transform.z);
+            
+            // Get corners relative to camera position (before rotation)
+            const relativeCorners = [
+                { x: -hw, y: -hh }, // bottom-left
+                { x:  hw, y: -hh }, // bottom-right
+                { x:  hw, y:  hh }, // top-right
+                { x: -hw, y:  hh }  // top-left
+            ];
+            
+            // Rotate corners around camera center and translate to scene space
+            const cos = Math.cos(transform.a);
+            const sin = Math.sin(transform.a);
+            
+            const sceneCorners = relativeCorners.map(corner => {
+                return {
+                    x: -transform.x / transform.z + corner.x * cos - corner.y * sin,
+                    y: -transform.y / transform.z + corner.x * sin + corner.y * cos
+                };
+            });
+            
+            // Transform corners from scene space to minimap viewport pixel space
+            const minimapTransform = minimapCamera.target;
+            const minimapViewport = minimapCamera.viewport;
+
+            if(!minimapViewport)
+                return;
+            
+            const pixelCorners = sceneCorners.map(corner => {
+                // Use Transform's sceneToViewportCoords method
+                const viewportCoords = minimapTransform.sceneToViewportCoords(minimapViewport, [corner.x, corner.y]);
+                return { x: viewportCoords[0], y: viewportCoords[1] };
+            });
+            
+            // Set polygon points
+            const points = pixelCorners.map(p => `${p.x},${p.y}`).join(' ');
+            this.viewportRect.setAttribute('points', points);
+        }
+
+        onMinimapClick(e) {
+            // Navigate main viewer to clicked location
+            const rect = this.element.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Convert minimap pixel coords to scene coords
+            const sceneCoords = this.minimapViewer.camera.viewportToSceneCoords(x, y);
+            
+            // Pan main viewer to clicked location
+            this.viewer.camera.setPosition(0, sceneCoords.x, sceneCoords.y);
+        }
+
+        show() {
+            this.element.style.display = 'block';
+        }
+
+        hide() {
+            this.element.style.display = 'none';
+        }
+
+        destroy() {
+            // Remove event listeners
+            this.viewer.camera.removeEvent('update', this.updateViewport);
+            
+            if (this.interactive) {
+                this.element.removeEventListener('click', this.onMinimapClick);
+            }
+            
+            // Cleanup minimap viewer
+            if (this.minimapViewer) ;
+            
+            // Remove DOM element
+            this.element.remove();
+            
+            this.element = null;
+            this.minimapViewer = null;
+            this.viewportRect = null;
+        }
+    }
+
+    addSignals(Minimap, 'update');
+
+    /**
      * @typedef {Object} UIAction
      * Action configuration for toolbar buttons
      * @property {string} title - Display title for the action
@@ -15305,6 +15585,7 @@ vec4 data() {
      * - Keyboard shortcuts
      * - Scale bar
      * - Measurement tools
+     * - Minimap overlay
      * 
      * Built-in Actions:
      * - home: Reset camera view
@@ -15383,7 +15664,18 @@ vec4 data() {
     	 *     // Add measurement support
     	 *     pixelSize: 0.1,
     	 *     // Add attribution
-    	 *     attribution: "© Example Source"
+    	 *     attribution: "© Example Source",
+    	 *    // Minimap configuration
+    	 *    minimapOptions: {
+    	 *        position: 'top-right',
+    	 *        width: 150,
+    	 *        height: 100,
+    	 *        layer: {
+    	 *            layout: 'deepzoom',
+    	 *            type: 'rti',
+    	 *            url: 'assets/rti/hsh/info.json'
+    	 *        }
+    	 *	  }
     	 * });
     	 * ```
     	 */
@@ -15417,7 +15709,9 @@ vec4 data() {
     			showLightDirections: false,
     			enableTooltip: true,
     			controlZoomMessage: null, //"Use Ctrl + Wheel to zoom instead of scrolling" ,
-    			menu: []
+    			menu: [],
+    			minimap: null,
+    			minimapOptions: null
     		});
 
     		Object.assign(this, options);
@@ -15690,6 +15984,10 @@ vec4 data() {
     				this.toggleLightController();
     			if (this.actions.layers && this.actions.layers.active)
     				this.toggleLayers();
+
+    			if (this.minimapOptions) {
+    				this.createMinimap();
+    			}
 
     			this.postInit();
 
@@ -16096,6 +16394,24 @@ vec4 data() {
     	updateMenu() {
     		for (let entry of this.menu)
     			this.updateEntry(entry);
+    	}
+
+    	createMinimap() {
+    		// Auto-configure viewport from first layer if not specified
+    		if (!this.minimapOptions.viewport) {
+    			const firstLayer = Object.values(this.viewer.canvas.layers)[0];
+    			if (firstLayer && firstLayer.boundingBox) {
+    				this.minimapOptions.viewport = firstLayer.boundingBox;
+    			}
+    		}
+    		
+    		this.minimap = new Minimap(this.viewer, this.minimapOptions);
+    	}
+
+    	toggleMinimap(on) {
+    		if (!this.minimap) return;
+    		if (on === undefined) on = this.minimap.element.style.display === 'none';
+    		this.minimap[on ? 'show' : 'hide']();
     	}
 
     	/**
@@ -17380,9 +17696,15 @@ const int ny0 = ${this.yccplanes[0]};
 const int ny1 = ${this.yccplanes[1]};
 `;
 
+    str += `
+vec4 texsample(sampler2D sampler, vec2 coord) {
+	return srgb2linear(texture(sampler, coord));
+}
+`;
+
     		switch (this.colorspace) {
     			case 'lrgb': str += LRGB.render(this.njpegs); break;
-    			case 'rgb': str += RGB.render(this.njpegs); break;
+    			case 'rgb':  str += RGB .render(this.njpegs); break;
     			case 'mrgb': str += MRGB.render(this.njpegs); break;
     			case 'mycc': str += MYCC.render(this.njpegs, this.yccplanes[0]); break;
     		}
@@ -17402,9 +17724,9 @@ vec4 data() {
 `;
     			if (this.normals)
     				str += `
-	vec3 normal = texture(normals, v_texcoord).xyz * 2.0 - 1.0;
+	vec3 normal = texsample(normals, v_texcoord).xyz * 2.0 - 1.0;
 	normal = normalize(normal);		
-	//vec3 normal = (texture(normals, v_texcoord).zyx *2.0) - 1.0;
+	//vec3 normal = (texsample(normals, v_texcoord).zyx *2.0) - 1.0;
 	//normal.z = sqrt(1.0 - normal.x*normal.x - normal.y*normal.y);
 `;
     			else
@@ -17425,7 +17747,7 @@ vec4 data() {
     				case 'diffuse':
     					if (this.colorspace == 'lrgb' || this.colorspace == 'rgb')
     						str += `
-vec4 diffuse = texture(plane0, v_texcoord);
+vec4 diffuse = texsample(plane0, v_texcoord);
 float s = dot(light, normal);
 color = vec4(s * diffuse.xyz, 1);
 `;
@@ -17466,7 +17788,7 @@ vec4 render(vec3 base[np1]) {
     		for (let j = 1, k = 0; j < njpegs; j++, k += 3) {
     			str += `
 	{
-		vec4 c = texture(plane${j}, v_texcoord);
+		vec4 c = texsample(plane${j}, v_texcoord);
 		l += base[${k}].x*(c.x - bias[${j}].x)*scale[${j}].x;
 		l += base[${k + 1}].x*(c.y - bias[${j}].y)*scale[${j}].y;
 		l += base[${k + 2}].x*(c.z - bias[${j}].z)*scale[${j}].z;
@@ -17474,8 +17796,8 @@ vec4 render(vec3 base[np1]) {
 `;
     		}
     		str += `
-	vec3 basecolor = (texture(plane0, v_texcoord).xyz - bias[0])*scale[0];
-
+	vec3 basecolor = (texsample(plane0, v_texcoord).xyz - bias[0])*scale[0];
+	
 	return l*vec4(basecolor, 1);
 }
 `;
@@ -17493,7 +17815,7 @@ vec4 render(vec3 base[np1]) {
     		for (let j = 0; j < njpegs; j++) {
     			str += `
 	{
-		vec4 c = texture(plane${j}, v_texcoord);
+		vec4 c = texsample(plane${j}, v_texcoord);
 		rgb.x += base[${j}].x*(c.x - bias[${j}].x)*scale[${j}].x;
 		rgb.y += base[${j}].y*(c.y - bias[${j}].y)*scale[${j}].y;
 		rgb.z += base[${j}].z*(c.z - bias[${j}].z)*scale[${j}].z;
@@ -17518,7 +17840,7 @@ vec4 render(vec3 base[np1]) {
 `;
     		for (let j = 0; j < njpegs; j++) {
     			str +=
-    				`	c = texture(plane${j}, v_texcoord);
+    				`	c = texsample(plane${j}, v_texcoord);
 	r = (c.xyz - bias[${j}])* scale[${j}];
 
 	rgb += base[${j}*3+1]*r.x;
@@ -17554,7 +17876,7 @@ vec4 render(vec3 base[np1]) {
     		for (let j = 0; j < njpegs; j++) {
     			str += `
 
-	c = texture(plane${j}, v_texcoord);
+	c = texsample(plane${j}, v_texcoord);
 
 	r = (c.xyz - bias[${j}])* scale[${j}];
 `;
