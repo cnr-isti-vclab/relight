@@ -24,7 +24,6 @@ public:
 	void setParameters(BrdfParameters &param);
 	void initFromProject(Project &project);
 	void initFromFolder(const char *folder, Dome &dome, const Crop &crop);
-
 };
 
 class AlbedoWorker
