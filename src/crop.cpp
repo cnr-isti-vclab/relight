@@ -76,38 +76,37 @@ QImage Crop::cropBoundingImage(QImage src) {
 }
 
 
-void bilinearSample(float *n, const std::vector<float>& img, int width, int height, float x, float y) {
-	int x0 = int(std::floor(x));
-	int y0 = int(std::floor(y));
+Eigen::Vector3f bilinearSample(const std::vector<Eigen::Vector3f>& img, int width, int height, float x, float y) {
+	Eigen::Vector3f n(0.0f, 0.0f, 0.0f);
+	int x0 = std::min(width-1, std::max(0, int(std::floor(x))));
+	int y0 = std::min(height-1, std::max(0, int(std::floor(y))));
+	/*
 	for(int k = 0; k < 3; k++) {
 		n[k] = img[(y0*width + x0)*3 + k];
 	}
-	return;
-	int x1 = x0 + 1;
-	int y1 = y0 + 1;
+	return n; */
 
-	if (x0 < 0 || x1 >= width || y0 < 0 || y1 >= height) {
-		n[0] = n[1] = n[2] = 0.0f;
-		return;
-	}
+	int x1 = std::min(width  - 1, x0 + 1);
+	int y1 = std::min(height - 1, y0 + 1);
 
 	float fx = x - x0;
 	float fy = y - y0;
 
 	for(int k = 0; k < 3; k++) {
-		float c00 = img[(y0 * width + x0)*3 + k];
-		float c10 = img[(y0 * width + x1)*3 + k];
-		float c01 = img[(y1 * width + x0)*3 + k];
-		float c11 = img[(y1 * width + x1)*3 + k];
+		float c00 = img[(y0 * width + x0)][k];
+		float c10 = img[(y0 * width + x1)][k];
+		float c01 = img[(y1 * width + x0)][k];
+		float c11 = img[(y1 * width + x1)][k];
 
 		float c0 = c00 * (1 - fx) + c10 * fx;
 		float c1 = c01 * (1 - fx) + c11 * fx;
 		n[k] = c0 * (1 - fy) + c1 * fy;
 	}
+	return n;
 }
 
-std::vector<float> Crop::cropBoundingNormals(
-		const std::vector<float>& input,
+std::vector<Eigen::Vector3f> Crop::cropBoundingNormals(
+	const std::vector<Eigen::Vector3f>& input,
 		int &width, int &height) {
 
 	QTransform rotToAlignCrop;
@@ -117,16 +116,16 @@ std::vector<float> Crop::cropBoundingNormals(
 
 	QSize targetSize = rect().size();
 	QPoint center = QRect(QPoint(0, 0), rotatedSize.size()).center();
-	QRect cropRect(center.x() - targetSize.width() / 2,
-				   center.y() - targetSize.height() / 2,
-				   targetSize.width(), targetSize.height());
+	int rx = std::max(0, center.x() - targetSize.width()  / 2);
+	int ry = std::max(0, center.y() - targetSize.height() / 2);
+
 	int old_w = width;
 	int old_h = height;
 
-	width = cropRect.width();
-	height = cropRect.height();
+	width = targetSize.width();
+	height = targetSize.height();
 
-	std::vector<float> cropped(3*cropRect.width() * cropRect.height());
+	std::vector<Eigen::Vector3f> cropped(width * height);
 
 	float cx = old_w / 2.0f;
 	float cy = old_h / 2.0f;
@@ -135,13 +134,13 @@ std::vector<float> Crop::cropBoundingNormals(
 	float cosA = std::cos(angleRad);
 	float sinA = std::sin(angleRad);
 
-	for (int y = 0; y < cropRect.height(); ++y) {
-		for (int x = 0; x < cropRect.width(); ++x) {
+	for (int y = 0; y < height; ++y) {
+		for (int x = 0; x < width; ++x) {
 			//xy are the position on the final imagee.
 			//they come from a crop of the rotated normals.
 			//add crop topleft to get the coords in the rotated normals
-			int dstX = cropRect.x() + x;
-			int dstY = cropRect.y() + y;
+			int dstX = rx + x;
+			int dstY = ry + y;
 
 			//We will rotate around the center of the rotated normals
 			//first place the zero in the center of the
@@ -151,37 +150,10 @@ std::vector<float> Crop::cropBoundingNormals(
 			//nor rotate return to coordinates top left of the initial image
 			float srcX = cx + dx * cosA + dy * sinA;
 			float srcY = cy - dx * sinA + dy * cosA;
-
-
-			float *n = &cropped[(y * cropRect.width() + x)*3];
-			bilinearSample(n, input, old_w, old_h, srcX, srcY);
+			//assert(srcX < old_w && srcY < old_h);
+			cropped[y * width + x] = bilinearSample(input, old_w, old_h, srcX, srcY);
 		}
 	}
 
 	return cropped;
-}
-
-std::vector<Eigen::Vector3f> Crop::cropBoundingNormals(
-		const std::vector<Eigen::Vector3f> &input,
-		int &width, int &height) {
-	// Convert Eigen vectors to flat float buffer, call existing implementation and convert back
-	std::vector<float> flat(input.size()*3);
-	for(size_t i = 0; i < input.size(); i++) {
-		flat[3*i + 0] = input[i][0];
-		flat[3*i + 1] = input[i][1];
-		flat[3*i + 2] = input[i][2];
-	}
-	int w = width;
-	int h = height;
-	std::vector<float> cropped = cropBoundingNormals(flat, w, h);
-	// convert back
-	std::vector<Eigen::Vector3f> out(w*h);
-	for(int i = 0; i < w*h; i++) {
-		out[i][0] = cropped[3*i + 0];
-		out[i][1] = cropped[3*i + 1];
-		out[i][2] = cropped[3*i + 2];
-	}
-	width = w;
-	height = h;
-	return out;
 }

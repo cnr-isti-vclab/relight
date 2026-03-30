@@ -211,35 +211,31 @@ void flattenRadialHeights(int w, int h, std::vector<float> &heights, double binS
 
 
 void flattenBlurNormals(int w, int h, std::vector<Eigen::Vector3f> &normals, double sigma) {
-	std::vector<Eigen::Vector3f> blurred = normals;
-
-	for(int k = 0; k < 3; k++) {
-		std::vector<float> v;
+	std::vector<float> b[2];
+	for(int k = 0; k < 2; k++) {
+		std::vector<float> &v = b[k];
 		v.reserve(normals.size());
-		for(Eigen::Vector3f n: blurred) {
+		for(Eigen::Vector3f n: normals) {
+			n[k] = n[k]/n[2];
 			v.push_back(n[k]);
 		}
 		fast_gaussian_blur(v, w, h, sigma);
-
-		for(size_t i = 0; i < blurred.size(); i++)
-			blurred[i][k] = v[i];
 	}
-	for(auto &n: blurred)
-		n.normalize();
-
 	for(size_t i = 0; i < normals.size(); i++) {
 		auto &n = normals[i];
-		n[0] -= blurred[i][0];
-		n[1] -= blurred[i][1];
-		n[0] = std::max(-0.99f, std::min(0.99f, n[0]));
-		n[1] = std::max(-0.99f, std::min(0.99f, n[1]));
-		n[2] = sqrt(1 - n[0]*n[0] + n[1]*n[1]);
+		n[0] -= b[0][i];
+		n[1] -= b[1][i];
+
+		float d = 1/sqrt(n[0]*n[0] + n[1]*n[1] + 1);
+		n[0] *= d;
+		n[1] *= d;
+		n[2] = d;
 	}
 }
 
 void flattenFourierNormals(int w, int h, std::vector<Eigen::Vector3f> &normals, float padding, double sigma, bool exponential) {
 
-	int padding_amount = round(padding* std::min(w, h));
+	int padding_amount = round(padding*std::min(w, h));
 	unsigned int W = w + padding_amount*2;
 	unsigned int H = h + padding_amount*2;
 

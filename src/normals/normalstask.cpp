@@ -139,8 +139,8 @@ void NormalsTask::run() {
 		// Wait for the end of all the threads
 		pool.finish();
 		if(parameters.crop.angle != 0.0f) {
-		//rotate and crop the normals.
-		normals = parameters.crop.cropBoundingNormals(normals, width, height);
+			//rotate and crop the normals.
+			normals = parameters.crop.cropBoundingNormals(normals, width, height);
 		}
 		//check no normals with z == 0.
 		for(Eigen::Vector3f &n: normals) {
