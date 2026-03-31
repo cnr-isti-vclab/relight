@@ -42,7 +42,7 @@ InitNormalResult init_normal(const Pixel& p, const std::vector<Eigen::Vector3f>&
         float diff = lum[j] - pred[j];
         residual_sum += diff * diff;
     }
-    result.lambertian_variance = residual_sum / std::max(K, (size_t)1);
+	result.lambertian_variance = sqrt(residual_sum / std::max(K, (size_t)1));
 
     // --- Step 3: Detect metallic (specular-dominated) pixels ---
     // Metallic surfaces have very few lights with intensity well above the
