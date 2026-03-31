@@ -4,6 +4,10 @@
 #include "../src/brdf/init_normals.h"
 #include "../src/brdf/brdf_optimizer.h"
 #include "../relightlab/canvas.h"
+#include "diagnosticpanel.h"
+#include "normalspherewidget.h"
+#include "reflectanceview.h"
+#include "rusinview.h"
 
 #include <QtConcurrent>
 #include <QFutureWatcher>
@@ -29,6 +33,7 @@
 #include <QVBoxLayout>
 
 #include <vector>
+#include <Eigen/Core>
 
 // ---------------------------------------------------------------------------
 // Placeholder panel widgets — replaced in later phases with real implementations
@@ -46,6 +51,7 @@ public:
         scene  = new QGraphicsScene(this);
         canvas->setScene(scene);
         canvas->setMinimumWidth(320);
+        canvas->setCursor(Qt::CrossCursor);
         layout->addWidget(canvas, 1);
         
         infoLabel = new QLabel("No dataset loaded", this);
@@ -153,14 +159,21 @@ public:
 };
 
 class ResultsPanel : public QTabWidget {
+    Q_OBJECT
 public:
     explicit ResultsPanel(QWidget *parent = nullptr) : QTabWidget(parent) {
         addTab(makePlaceholder("Maps\n(albedo · normal · roughness · metallic · init maps)"), "Maps");
-        addTab(makePlaceholder("Diagnostics\n(highlight fraction · peak ratio · Lambertian variance)"), "Diagnostics");
+        diagnosticPanel = new DiagnosticPanel(this);
+        addTab(diagnosticPanel, "Diagnostics");
         addTab(makePlaceholder("Per-light render\n(original vs. BRDF re-render)"), "Per-light");
-        addTab(makePlaceholder("Reflectance plot\n(half-angle θ_h)"), "Reflectance");
-        addTab(makePlaceholder("Rusinkiewicz space\n(θ_h vs θ_d scatter)"), "Rusinkiewicz");
+        reflectanceView = new ReflectanceView(this);
+        addTab(reflectanceView, "Reflectance");
+        rusinView = new RusinkiewiczView(this);
+        addTab(rusinView, "Rusinkiewicz");
     }
+    DiagnosticPanel    *diagnosticPanel    = nullptr;
+    ReflectanceView    *reflectanceView    = nullptr;
+    RusinkiewiczView   *rusinView          = nullptr;
 private:
     static QWidget *makePlaceholder(const QString &text) {
         auto *w = new QWidget;
@@ -410,7 +423,21 @@ void MainWindow::createPanels() {
     
     pixelInfoCard = new PixelInfoCard(rightPanel);
     rightLayout->addWidget(pixelInfoCard);
-    
+
+    normalSphereWidget = new NormalSphereWidget(rightPanel);
+    rightLayout->addWidget(normalSphereWidget);
+    connect(normalSphereWidget, &NormalSphereWidget::normalChanged,
+            this, [this](const Eigen::Vector3f &n) {
+                if (resultsPanel && resultsPanel->diagnosticPanel)
+                    resultsPanel->diagnosticPanel->setNormal(n);
+                if (resultsPanel && resultsPanel->rusinView)
+                    resultsPanel->rusinView->setNormal(n);
+            });
+    connect(resultsPanel->rusinView, &RusinkiewiczView::lightSelected,
+            this, [this](int idx) { datasetPanel->showImage(idx); });
+    connect(resultsPanel->diagnosticPanel, &DiagnosticPanel::lightSelected,
+            this, [this](int idx) { datasetPanel->showImage(idx); });
+
     // Scroll area wrapping the params panel so it doesn't crush on small screens
     paramsPanel = new ParamsPanel(rightPanel);
     auto *scroll = new QScrollArea(rightPanel);
@@ -474,6 +501,25 @@ void MainWindow::onPixelClicked(int x, int y) {
     if (n == 0 || lights.empty())
         return;
     
+    // Calculate luminosities and colors for each light
+    std::vector<float> luminosities(n);
+	std::vector<Eigen::Vector3f> colors(n);
+    for (int j = 0; j < n; j++) {
+        QImage img = imageset.readImageCropped(size_t(j));
+        QRgb rgb = img.pixel(x, y);
+        Eigen::Vector3f col(qRed(rgb) / 255.0f, qGreen(rgb) / 255.0f, qBlue(rgb) / 255.0f);
+        colors[size_t(j)] = col;
+        luminosities[j] = 0.299f * col.x() + 0.587f * col.y() + 0.114f * col.z();
+    }
+    if (resultsPanel && resultsPanel->diagnosticPanel)
+        resultsPanel->diagnosticPanel->update(luminosities, lights);
+    if (resultsPanel && resultsPanel->rusinView)
+        resultsPanel->rusinView->setData(colors, lights);
+    if (resultsPanel && resultsPanel->reflectanceView)
+        resultsPanel->reflectanceView->setData(colors, lights);
+    if (normalSphereWidget)
+        normalSphereWidget->clear();
+    
     // Cancel and wait for any running computation before starting a new one.
     cancelCompute.store(true);
     if (computeWatcher && computeWatcher->isRunning())
@@ -490,7 +536,10 @@ void MainWindow::onPixelClicked(int x, int y) {
     clickedY = y;
     statusState->setText("Computing…");
     
-    PixelInfoCard *card = pixelInfoCard;
+    PixelInfoCard      *card      = pixelInfoCard;
+    NormalSphereWidget *sphere    = normalSphereWidget;
+    DiagnosticPanel    *diagPanel = resultsPanel ? resultsPanel->diagnosticPanel : nullptr;
+    RusinkiewiczView   *rusinView = resultsPanel ? resultsPanel->rusinView       : nullptr;
     QLabel *stateLabel   = statusState;
     std::atomic<bool> *cancel = &cancelCompute;
     
@@ -513,11 +562,17 @@ void MainWindow::onPixelClicked(int x, int y) {
         // --- Fast heuristic: init_normal ---
         brdf::InitNormalResult init = brdf::init_normal(p, lights);
 
-        QMetaObject::invokeMethod(card, [card, init]{
+        QMetaObject::invokeMethod(card, [card, sphere, diagPanel, rusinView, init]{
             card->setInitResults(
                 init.is_metallic, init.highlight_fraction, init.peak_ratio,
                 init.lambertian_variance,
                 init.normal.x(), init.normal.y(), init.normal.z());
+            if (sphere)
+                sphere->setNormal(init.normal);
+            if (diagPanel)
+                diagPanel->setNormal(init.normal);
+            if (rusinView)
+                rusinView->setNormal(init.normal);
         }, Qt::QueuedConnection);
         
         if (cancel->load()) return;

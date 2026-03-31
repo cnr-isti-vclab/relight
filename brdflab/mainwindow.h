@@ -18,6 +18,9 @@ class QAction;
 class DatasetPanel;
 class ResultsPanel;
 class ParamsPanel;
+class NormalSphereWidget;
+class ReflectanceView;
+class RusinkiewiczView;
 
 // ---- PixelInfoCard -----------------------------------------------------------
 // Compact card shown in the right panel as soon as a pixel is clicked.
@@ -94,6 +97,7 @@ private:
 	QWidget      *rightPanel    = nullptr;  // right (params + info card)
 	ParamsPanel  *paramsPanel   = nullptr;
 	PixelInfoCard *pixelInfoCard = nullptr;
+	NormalSphereWidget *normalSphereWidget = nullptr;
 
 	// ---- Status bar widgets ----
 	QLabel *statusFolder = nullptr;
