@@ -5,7 +5,7 @@
 #include <Eigen/Core>
 #include <vector>
 
-// 2-D scatter in Rusinkiewicz space:  x = θ_h (0–90°),  y = φ_d (−180–180°).
+// 2-D scatter in Rusinkiewicz space:  x = θ_h (0–90°),  y = θ_d (0–90°).
 // Each light is rendered as a dot coloured by its actual RGB reflectance value.
 class RusinkiewiczView : public QWidget {
     Q_OBJECT
@@ -40,7 +40,7 @@ private:
     bool                         m_hasData = false;
 
     std::vector<float> m_thetaH;  // degrees, one per light
-    std::vector<float> m_phiD;    // degrees, one per light
+    std::vector<float> m_thetaD;  // degrees, one per light
 };
 
 #endif // RUSINVIEW_H

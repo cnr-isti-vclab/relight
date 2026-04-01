@@ -31,7 +31,7 @@ void RusinkiewiczView::clear() {
     m_colors.clear();
     m_lights.clear();
     m_thetaH.clear();
-    m_phiD.clear();
+    m_thetaD.clear();
     m_hasData = false;
     update();
 }
@@ -39,7 +39,7 @@ void RusinkiewiczView::clear() {
 void RusinkiewiczView::recomputeAngles() {
     const size_t n = m_colors.size();
     m_thetaH.resize(n);
-    m_phiD.resize(n);
+    m_thetaD.resize(n);
 
     const Eigen::Vector3f nN = m_normal.normalized();
     const Eigen::Vector3f v(0.f, 0.f, 1.f);
@@ -51,18 +51,8 @@ void RusinkiewiczView::recomputeAngles() {
         // θ_h: angle between half-vector and surface normal
         m_thetaH[i] = std::acos(std::clamp(h.dot(nN), -1.f, 1.f)) * 180.f / float(M_PI);
 
-        // φ_d: azimuthal difference angle around h
-        Eigen::Vector3f th = (std::abs(h.x()) < 0.9f)
-                                 ? h.cross(Eigen::Vector3f(1, 0, 0)).normalized()
-                                 : h.cross(Eigen::Vector3f(0, 1, 0)).normalized();
-        Eigen::Vector3f bh = h.cross(th);
-        Eigen::Vector3f l_perp = l - l.dot(h) * h;
-        if (l_perp.norm() < 1e-6f) {
-            m_phiD[i] = 0.f;
-        } else {
-            l_perp.normalize();
-            m_phiD[i] = std::atan2(l_perp.dot(bh), l_perp.dot(th)) * 180.f / float(M_PI);
-        }
+        // θ_d: angle between light and half-vector
+        m_thetaD[i] = std::acos(std::clamp(l.dot(h), -1.f, 1.f)) * 180.f / float(M_PI);
     }
 }
 
@@ -82,7 +72,7 @@ void RusinkiewiczView::paintEvent(QPaintEvent *) {
 
     // ---- Grid / axis lines ------------------------------------------------
     const int xTicks[] = {0, 15, 30, 45, 60, 75, 90};
-    const int yTicks[] = {-180, -120, -60, 0, 60, 120, 180};
+    const int yTicks[] = {0, 15, 30, 45, 60, 75, 90};
 
     p.setPen(QPen(QColor(255, 255, 255, 28), 0.7));
     for (int v : xTicks) {
@@ -90,7 +80,7 @@ void RusinkiewiczView::paintEvent(QPaintEvent *) {
         p.drawLine(QPointF(x, plot.top()), QPointF(x, plot.bottom()));
     }
     for (int v : yTicks) {
-        double y = plot.top() + plot.height() * (v + 180) / 360.0;
+        double y = plot.top() + plot.height() * v / 90.0;
         p.drawLine(QPointF(plot.left(), y), QPointF(plot.right(), y));
     }
 
@@ -106,7 +96,7 @@ void RusinkiewiczView::paintEvent(QPaintEvent *) {
                    Qt::AlignHCenter | Qt::AlignTop, QString::number(v) + "°");
     }
     for (int v : yTicks) {
-        double y = plot.top() + plot.height() * (v + 180) / 360.0;
+        double y = plot.top() + plot.height() * v / 90.0;
         p.drawText(QRectF(2, y - 8, marginL - 6, 16),
                    Qt::AlignRight | Qt::AlignVCenter, QString::number(v) + "°");
     }
@@ -145,7 +135,7 @@ void RusinkiewiczView::paintEvent(QPaintEvent *) {
     const size_t n = m_colors.size();
     for (size_t i = 0; i < n; ++i) {
         double px = plot.left() + plot.width()  * m_thetaH[i] / 90.0;
-        double py = plot.top()  + plot.height() * (m_phiD[i] + 180.0) / 360.0;
+        double py = plot.top()  + plot.height() * m_thetaD[i] / 90.0;
 
         float scale = 1.f / maxLum;
         QColor c(std::clamp(int(m_colors[i].x() * scale * 255.f), 0, 255),
@@ -178,7 +168,7 @@ void RusinkiewiczView::mousePressEvent(QMouseEvent *event) {
     double bestDist2 = hitR2;
     for (int i = 0; i < int(m_thetaH.size()); ++i) {
         double px = plot.left() + plot.width()  * m_thetaH[i] / 90.0;
-        double py = plot.top()  + plot.height() * (m_phiD[i] + 180.0) / 360.0;
+        double py = plot.top()  + plot.height() * m_thetaD[i] / 90.0;
         double dx = pos.x() - px, dy = pos.y() - py;
         double d2 = dx*dx + dy*dy;
         if (d2 < bestDist2) { bestDist2 = d2; best = i; }
