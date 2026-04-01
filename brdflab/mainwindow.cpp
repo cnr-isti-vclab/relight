@@ -4,10 +4,10 @@
 #include "../src/brdf/init_normals.h"
 #include "../src/brdf/brdf_optimizer.h"
 #include "../relightlab/canvas.h"
+#include "rusinview.h"
+#include "reflectanceview.h"
 #include "diagnosticpanel.h"
 #include "normalspherewidget.h"
-#include "reflectanceview.h"
-#include "rusinview.h"
 
 #include <QtConcurrent>
 #include <QFutureWatcher>
@@ -18,6 +18,7 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QGraphicsItem>
+#include <QGraphicsRectItem>
 #include <QGraphicsScene>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -53,7 +54,16 @@ public:
         canvas->setMinimumWidth(320);
         canvas->setCursor(Qt::CrossCursor);
         layout->addWidget(canvas, 1);
-        
+
+        markerItem = new QGraphicsRectItem();
+        QPen markerPen(Qt::red);
+        markerPen.setCosmetic(true);
+        markerItem->setPen(markerPen);
+        markerItem->setBrush(Qt::NoBrush);
+        markerItem->setVisible(false);
+        markerItem->setZValue(1);
+        scene->addItem(markerItem);
+
         infoLabel = new QLabel("No dataset loaded", this);
         infoLabel->setAlignment(Qt::AlignCenter);
         infoLabel->setStyleSheet("color: #888; font-size: 11px; padding: 2px;");
@@ -65,6 +75,8 @@ public:
             QPointF sp = canvas->mapToScene(vp_pt);
             int x = qBound(0, qRound(sp.x()), imageset.image_width  - 1);
             int y = qBound(0, qRound(sp.y()), imageset.image_height - 1);
+            markerItem->setRect(QRectF(x, y, 1, 1));
+            markerItem->setVisible(true);
             emit pixelClicked(x, y);
         });
     }
@@ -92,10 +104,10 @@ public:
         imageset.setColorProfileMode(COLOR_PROFILE_LINEAR_RGB);
 
         current_idx = 0;
-        showImage(0);
+		showImage(0, true);
     }
     
-    void showImage(int idx) {
+	void showImage(int idx, bool fitView = false) {
         if (imageset.images.isEmpty())
             return;
         current_idx = qBound(0, idx, int(imageset.images.size()) - 1);
@@ -124,7 +136,8 @@ public:
         }
         infoLabel->setText(info);
         emit lightIndexChanged(current_idx);
-        canvas->fitInView(scene->sceneRect(), Qt::KeepAspectRatio);
+        if (fitView)
+            canvas->fitInView(scene->sceneRect(), Qt::KeepAspectRatio);
     }
     
     void prev() {
@@ -155,6 +168,7 @@ public:
     Canvas *canvas             = nullptr;
     QGraphicsScene *scene      = nullptr;
     QGraphicsPixmapItem *pixmapItem = nullptr;
+    QGraphicsRectItem   *markerItem  = nullptr;
     QLabel *infoLabel          = nullptr;
 };
 
