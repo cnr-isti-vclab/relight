@@ -36,6 +36,23 @@ BrdfFitResult optimize_brdf_pixel(const Pixel& I,
                                   bool optimize_normal = true,
                                   bool optimize_albedo = true);
 
+// Fit a single shared material (roughness, metallic, albedo) to a pool of
+// pixels that may have different surface normals.  Normals are fixed inputs
+// (not optimized), allowing observations from a whole patch to constrain
+// one consistent 'macro-pixel' material estimate.
+//
+// pixels  : one Pixel per patch position (K observations each)
+// normals : per-pixel surface normal (size must equal pixels.size())
+// L       : K light directions (shared across all pixels)
+BrdfFitResult optimize_brdf_patch_material(
+        const std::vector<Pixel>&           pixels,
+        const std::vector<Eigen::Vector3f>& normals,
+        const std::vector<Eigen::Vector3f>& L,
+        const Eigen::Vector3f& initial_albedo,
+        float initial_roughness,
+        float initial_metallic,
+        float light_intensity = 1.0f);
+
 // Brute-forces BRDF parameters with the given step size and writes the 10 best
 // candidates vs the Ceres solution to 'out'.
 // Specular is treated as grey (1D) in the search space. Normal (upper-hemisphere

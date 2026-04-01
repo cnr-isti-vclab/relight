@@ -5,6 +5,8 @@
 #include <QSettings>
 #include <QFutureWatcher>
 #include <atomic>
+#include <vector>
+#include <Eigen/Core>
 
 class QSplitter;
 class QLabel;
@@ -41,10 +43,22 @@ public:
 	                    float peak_ratio, float lambertian_variance,
 	                    float nx, float ny, float nz);
 
-	// Called after Ceres optimization completes (slow)
-	void setFitResults(float nx, float ny, float nz,
+	// Called after Ceres optimization completes (slow).
+	// wi = flat row-major index within the fitting window.
+	void setFitResults(int wi,
+	                   float nx, float ny, float nz,
 	                   float roughness, float metallic,
 	                   float albedo_r, float albedo_g, float albedo_b);
+
+	// Called after optimize_brdf_patch_material completes.
+	// Updates the shared-material summary row (albedo swatch, roughness, metallic).
+	void setPatchMaterialResult(float roughness, float metallic,
+	                            float albedo_r, float albedo_g, float albedo_b);
+
+	// Supply per-light colors for the whole window patch; shows light 0.
+	void setWindowData(const std::vector<std::vector<Eigen::Vector3f>>& per_light_colors);
+	// Switch the raw patch display to a different light.
+	void showWindowLight(int light_idx);
 
 private:
 	QLabel *coords_label;
@@ -56,11 +70,20 @@ private:
 	QLabel *init_var_label;
 	QLabel *init_normal_swatch; // colour square encoded as normal direction
 
-	// Fit results
-	QLabel *fit_normal_swatch;
-	QLabel *fit_roughness_label;
-	QLabel *fit_metallic_label;
-	QLabel *fit_albedo_swatch;
+	// Fit results — one QLabel cell per window pixel (row-major)
+	std::vector<QLabel*> fit_normal_cells;
+	std::vector<QLabel*> fit_albedo_cells;
+	std::vector<QLabel*> fit_roughness_cells;
+	std::vector<QLabel*> fit_metallic_cells;
+	// Shared material (patch) summary row
+	QLabel *patch_albedo_swatch  = nullptr;
+	QLabel *fit_roughness_label  = nullptr;
+	QLabel *fit_metallic_label   = nullptr;
+
+	// Raw patch preview — one cell per window pixel, updated per selected light
+	QLabel                                   *raw_patch_light_label = nullptr;
+	std::vector<QLabel*>                      raw_patch_cells;
+	std::vector<std::vector<Eigen::Vector3f>> m_window_colors; // [light][pixel]
 
 	static QPixmap normalSwatch(float nx, float ny, float nz, int size = 40);
 	static QPixmap colorSwatch(float r, float g, float b, int size = 40);
