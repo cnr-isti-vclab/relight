@@ -30,6 +30,7 @@ set(BRDFLAB_HEADERS
     ../src/brdf/brdfparameters.h
     ../src/brdf/brdftask.h
     ../src/brdf/init_normals.h
+    ../src/brdf/init_normals_patch.h
     ../relightlab/canvas.h
     ../relightlab/imageview.h
 )
@@ -43,6 +44,7 @@ set(BRDFLAB_SOURCES
     ../src/brdf/brdfparameters.cpp
     ../src/brdf/brdftask.cpp
     ../src/brdf/init_normals.cpp
+    ../src/brdf/init_normals_patch.cpp
     ../src/colorprofile.cpp
     ../src/crop.cpp
     ../src/deepzoom.cpp

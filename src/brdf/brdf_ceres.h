@@ -113,6 +113,58 @@ private:
 	Eigen::Vector3f light_color_;
 };
 
+// Cost functor for pooled multi-pixel material fitting.
+// The surface normal is FIXED (baked in at construction time) — only the
+// shared material parameters roughness(1), metallic(1), base_color(3) are
+// optimized.  This allows observations from several pixels with different
+// normals to constrain a single 'macro-pixel' material.
+struct GltfResidualFixedNormal {
+	GltfResidualFixedNormal(const Eigen::Vector3f& normal,
+	                        const Eigen::Vector3f& light_dir,
+	                        const Eigen::Vector3f& view_dir,
+	                        const Eigen::Vector3f& observed_color,
+	                        const Eigen::Vector3f& light_color)
+		: N_(normal.normalized()), L_(light_dir), V_(view_dir),
+		  observed_color_(observed_color), light_color_(light_color) {}
+
+	template <typename T>
+	bool operator()(const T* const roughness,
+	                const T* const metallic,
+	                const T* const base_color,
+	                T* residual) const {
+
+		Eigen::Matrix<T, 3, 1> N(T(N_.x()), T(N_.y()), T(N_.z()));
+		Eigen::Matrix<T, 3, 1> L(T(L_.x()), T(L_.y()), T(L_.z()));
+		Eigen::Matrix<T, 3, 1> V(T(V_.x()), T(V_.y()), T(V_.z()));
+		Eigen::Matrix<T, 3, 1> baseColor(base_color[0], base_color[1], base_color[2]);
+		Eigen::Matrix<T, 3, 1> lightColor(T(light_color_.x()), T(light_color_.y()), T(light_color_.z()));
+
+		Eigen::Matrix<T, 3, 1> pred = eval_gltf(N, L, V, baseColor, metallic[0], roughness[0], lightColor);
+
+		residual[0] = pred(0) - T(observed_color_.x());
+		residual[1] = pred(1) - T(observed_color_.y());
+		residual[2] = pred(2) - T(observed_color_.z());
+		return true;
+	}
+
+	// roughness(1), metallic(1), base_color(3)
+	static ceres::CostFunction* Create(const Eigen::Vector3f& normal,
+	                                   const Eigen::Vector3f& light_dir,
+	                                   const Eigen::Vector3f& view_dir,
+	                                   const Eigen::Vector3f& observed_color,
+	                                   const Eigen::Vector3f& light_color) {
+		return new ceres::AutoDiffCostFunction<GltfResidualFixedNormal, 3, 1, 1, 3>(
+				new GltfResidualFixedNormal(normal, light_dir, view_dir, observed_color, light_color));
+	}
+
+private:
+	Eigen::Vector3f N_;
+	Eigen::Vector3f L_;
+	Eigen::Vector3f V_;
+	Eigen::Vector3f observed_color_;
+	Eigen::Vector3f light_color_;
+};
+
 } // namespace brdf
 
 #endif // BRDF_CERES_H

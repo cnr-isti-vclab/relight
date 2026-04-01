@@ -97,7 +97,64 @@ BrdfFitResult optimize_brdf_pixel(
 	return result;
 }
 
-namespace {
+BrdfFitResult optimize_brdf_patch_material(
+        const std::vector<Pixel>&           pixels,
+        const std::vector<Eigen::Vector3f>& normals,
+        const std::vector<Eigen::Vector3f>& L,
+        const Eigen::Vector3f& initial_albedo,
+        float initial_roughness,
+        float initial_metallic,
+        float light_intensity)
+{
+	const Eigen::Vector3f V(0.0f, 0.0f, 1.0f);
+	const Eigen::Vector3f lightColor(light_intensity, light_intensity, light_intensity);
+
+	double roughness[1] = { double(initial_roughness) };
+	double metallic[1]  = { double(initial_metallic)  };
+	double albedo[3]    = { double(initial_albedo.x()),
+	                        double(initial_albedo.y()),
+	                        double(initial_albedo.z()) };
+
+	ceres::Problem problem;
+
+	const int P = int(pixels.size());
+	for (int p = 0; p < P; ++p) {
+		const Pixel& px       = pixels[p];
+		const Eigen::Vector3f& N = (p < int(normals.size())) ? normals[p] : Eigen::Vector3f(0, 0, 1);
+		for (int k = 0; k < int(px.size()) && k < int(L.size()); ++k) {
+			Eigen::Vector3f obs(px[k].r, px[k].g, px[k].b);
+			problem.AddResidualBlock(
+				GltfResidualFixedNormal::Create(N, L[k], V, obs, lightColor),
+				nullptr,
+				roughness, metallic, albedo);
+		}
+	}
+
+	problem.SetParameterLowerBound(roughness, 0, 0.02);
+	problem.SetParameterUpperBound(roughness, 0, 1.0);
+	problem.SetParameterLowerBound(metallic,  0, 0.0);
+	problem.SetParameterUpperBound(metallic,  0, 1.0);
+	for (int c = 0; c < 3; ++c) {
+		problem.SetParameterLowerBound(albedo, c, 0.0);
+		problem.SetParameterUpperBound(albedo, c, 1.0);
+	}
+
+	ceres::Solver::Options options;
+	options.max_num_iterations          = 200;
+	options.linear_solver_type          = ceres::DENSE_QR;
+	options.minimizer_progress_to_stdout = false;
+
+	ceres::Solver::Summary summary;
+	ceres::Solve(options, &problem, &summary);
+
+	// Return a zero normal — caller already owns the per-pixel normals.
+	BrdfFitResult result;
+	result.normal    = Eigen::Vector3f(0.0f, 0.0f, 1.0f);
+	result.roughness = float(roughness[0]);
+	result.metallic  = float(metallic[0]);
+	result.albedo    = Eigen::Vector3f(float(albedo[0]), float(albedo[1]), float(albedo[2]));
+	return result;
+}
 
 // Compute sum-of-squared-errors between BRDF prediction and observed pixel across all lights.
 float compute_pixel_sse(
@@ -123,7 +180,6 @@ float compute_pixel_sse(
 	return sse;
 }
 
-} // anonymous namespace
 
 void brdf_bruteforce_compare(
 		const Pixel& I,
@@ -229,5 +285,7 @@ void brdf_bruteforce_compare(
 	}
 	out << "\n";
 }
+
+
 
 } // namespace brdf

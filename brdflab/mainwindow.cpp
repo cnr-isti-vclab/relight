@@ -2,6 +2,7 @@
 
 #include "../src/imageset.h"
 #include "../src/brdf/init_normals.h"
+#include "../src/brdf/init_normals_patch.h"
 #include "../src/brdf/brdf_optimizer.h"
 #include "../relightlab/canvas.h"
 #include "rusinview.h"
@@ -37,6 +38,13 @@
 #include <Eigen/Core>
 
 // ---------------------------------------------------------------------------
+// Window size for BRDF fitting (must be odd; controls the NxN pixel patch
+// fitted around the clicked pixel — boundary clamping ensures the full patch
+// always fits inside the image).
+static constexpr int kBrdfWindowSize = 5;
+static constexpr int kBrdfWindowHalf = kBrdfWindowSize / 2;
+
+// ---------------------------------------------------------------------------
 // Placeholder panel widgets — replaced in later phases with real implementations
 // ---------------------------------------------------------------------------
 
@@ -53,6 +61,7 @@ public:
         canvas->setScene(scene);
         canvas->setMinimumWidth(320);
         canvas->setCursor(Qt::CrossCursor);
+        canvas->max_scale = 64.0;
         layout->addWidget(canvas, 1);
 
         markerItem = new QGraphicsRectItem();
@@ -73,9 +82,14 @@ public:
             if (!pixmapItem)
                 return;
             QPointF sp = canvas->mapToScene(vp_pt);
-            int x = qBound(0, qRound(sp.x()), imageset.image_width  - 1);
-            int y = qBound(0, qRound(sp.y()), imageset.image_height - 1);
-            markerItem->setRect(QRectF(x, y, 1, 1));
+            // Clamp so the full kBrdfWindowSize patch always lies inside the image
+            int x = qBound(kBrdfWindowHalf, qRound(sp.x()),
+                           imageset.image_width  - 1 - kBrdfWindowHalf);
+            int y = qBound(kBrdfWindowHalf, qRound(sp.y()),
+                           imageset.image_height - 1 - kBrdfWindowHalf);
+            markerItem->setRect(QRectF(x - kBrdfWindowHalf,
+                                       y - kBrdfWindowHalf,
+                                       kBrdfWindowSize, kBrdfWindowSize));
             markerItem->setVisible(true);
             emit pixelClicked(x, y);
         });
@@ -256,30 +270,106 @@ PixelInfoCard::PixelInfoCard(QWidget *parent) : QWidget(parent) {
     root->addWidget(initBox);
     
     // ---- Fit section ----
-    auto *fitBox = new QGroupBox("Ceres fit result", this);
-    auto *fg = new QGridLayout(fitBox);
-    fg->setColumnStretch(1, 1);
-    fg->setSpacing(3);
-    
-    fit_normal_swatch   = new QLabel(fitBox);
-    fit_normal_swatch->setFixedSize(40, 40);
-    fit_albedo_swatch   = new QLabel(fitBox);
-    fit_albedo_swatch->setFixedSize(40, 40);
-    fg->addWidget(fit_normal_swatch,  0, 0, 2, 1);
-    fg->addWidget(fit_albedo_swatch,  0, 2, 2, 1);
-    
-    fit_roughness_label = new QLabel("roughness: —", fitBox);
-    fit_metallic_label  = new QLabel("metallic: —", fitBox);
-    fg->addWidget(fit_roughness_label, 0, 1);
-    fg->addWidget(fit_metallic_label,  1, 1);
+    auto *fitBox = new QGroupBox("Fit results", this);
+    auto *fg = new QVBoxLayout(fitBox);
+    fg->setSpacing(4);
+
+    // Build a labeled 5x5 grid of color swatches for one map.
+    const int cellSz = 26;
+    auto makeGrid = [&](std::vector<QLabel*> &cells, const QString &label) -> QWidget* {
+        auto *w  = new QWidget(fitBox);
+        auto *vl = new QVBoxLayout(w);
+        vl->setContentsMargins(0, 0, 0, 0);
+        vl->setSpacing(1);
+        auto *lbl = new QLabel(label, w);
+        lbl->setStyleSheet("font-size: 10px; color: #aaa; font-weight: bold;");
+        vl->addWidget(lbl);
+        auto *gridW = new QWidget(w);
+        auto *gl = new QGridLayout(gridW);
+        gl->setSpacing(1);
+        gl->setContentsMargins(0, 0, 0, 0);
+        const int count = kBrdfWindowSize * kBrdfWindowSize;
+        cells.resize(size_t(count));
+        for (int i = 0; i < count; ++i) {
+            cells[size_t(i)] = new QLabel(gridW);
+            cells[size_t(i)]->setFixedSize(cellSz, cellSz);
+            cells[size_t(i)]->setPixmap(colorSwatch(0.3f, 0.3f, 0.3f, cellSz));
+            gl->addWidget(cells[size_t(i)], i / kBrdfWindowSize, i % kBrdfWindowSize);
+        }
+        vl->addWidget(gridW);
+        return w;
+    };
+
+    // 2×2 arrangement: Normal | Albedo / Roughness | Metallic
+    auto *mapsW = new QWidget(fitBox);
+    auto *mapsLayout = new QGridLayout(mapsW);
+    mapsLayout->setSpacing(8);
+    mapsLayout->setContentsMargins(0, 0, 0, 0);
+    mapsLayout->addWidget(makeGrid(fit_normal_cells,    "Normal"),    0, 0);
+    mapsLayout->addWidget(makeGrid(fit_albedo_cells,    "Albedo"),    0, 1);
+    mapsLayout->addWidget(makeGrid(fit_roughness_cells, "Roughness"), 1, 0);
+    mapsLayout->addWidget(makeGrid(fit_metallic_cells,  "Metallic"),  1, 1);
+    fg->addWidget(mapsW);
+
+    // Shared material (patch) summary — updated by setPatchMaterialResult
+    auto *patchHdr = new QLabel("Shared material (patch):", fitBox);
+    patchHdr->setStyleSheet("font-size: 10px; color: #aaa; font-weight: bold; margin-top: 4px;");
+    fg->addWidget(patchHdr);
+
+    auto *sharedRow = new QWidget(fitBox);
+    auto *sharedH   = new QHBoxLayout(sharedRow);
+    sharedH->setContentsMargins(0, 0, 0, 0);
+    sharedH->setSpacing(6);
+
+    patch_albedo_swatch = new QLabel(sharedRow);
+    patch_albedo_swatch->setFixedSize(40, 40);
+    patch_albedo_swatch->setPixmap(colorSwatch(0.3f, 0.3f, 0.3f, 40));
+    sharedH->addWidget(patch_albedo_swatch);
+
+    auto *sharedTxtW = new QWidget(sharedRow);
+    auto *sharedTxtV = new QVBoxLayout(sharedTxtW);
+    sharedTxtV->setContentsMargins(0, 0, 0, 0);
+    sharedTxtV->setSpacing(1);
+    fit_roughness_label = new QLabel("roughness: —", sharedTxtW);
+    fit_metallic_label  = new QLabel("metallic: —",  sharedTxtW);
+    sharedTxtV->addWidget(fit_roughness_label);
+    sharedTxtV->addWidget(fit_metallic_label);
+    sharedH->addWidget(sharedTxtW);
+    sharedH->addStretch();
+    fg->addWidget(sharedRow);
     root->addWidget(fitBox);
-    
+
+    // ---- Raw patch section ----
+    auto *rawBox = new QGroupBox("Raw observed patch", this);
+    auto *rl = new QVBoxLayout(rawBox);
+    rl->setSpacing(2);
+    raw_patch_light_label = new QLabel("Light: —", rawBox);
+    raw_patch_light_label->setStyleSheet("font-size: 10px; color: #aaa;");
+    rl->addWidget(raw_patch_light_label);
+    auto *rawGridW = new QWidget(rawBox);
+    auto *rgl = new QGridLayout(rawGridW);
+    rgl->setSpacing(1);
+    rgl->setContentsMargins(0, 0, 0, 0);
+    const int rawCount = kBrdfWindowSize * kBrdfWindowSize;
+    raw_patch_cells.resize(rawCount);
+    for (int i = 0; i < rawCount; ++i) {
+        raw_patch_cells[i] = new QLabel(rawGridW);
+        raw_patch_cells[i]->setFixedSize(26, 26);
+        raw_patch_cells[i]->setPixmap(colorSwatch(0.1f, 0.1f, 0.1f, 26));
+        rgl->addWidget(raw_patch_cells[i], i / kBrdfWindowSize, i % kBrdfWindowSize);
+    }
+    rl->addWidget(rawGridW);
+    root->addWidget(rawBox);
+
     clearInitResults();
     clearFitResults();
 }
 
 void PixelInfoCard::setCoords(int x, int y) {
     coords_label->setText(QString("Pixel (%1, %2)").arg(x).arg(y));
+    m_window_colors.clear();
+    raw_patch_light_label->setText("Light: —");
+    for (auto *c : raw_patch_cells) c->setPixmap(colorSwatch(0.1f, 0.1f, 0.1f, 26));
     setVisible(true);
 }
 
@@ -294,8 +384,32 @@ void PixelInfoCard::clearInitResults() {
 void PixelInfoCard::clearFitResults() {
     fit_roughness_label->setText("roughness: —");
     fit_metallic_label->setText("metallic: —");
-    fit_normal_swatch->setPixmap(colorSwatch(0.3f, 0.3f, 0.3f));
-    fit_albedo_swatch->setPixmap(colorSwatch(0.3f, 0.3f, 0.3f));
+    patch_albedo_swatch->setPixmap(colorSwatch(0.3f, 0.3f, 0.3f, 40));
+    const int sz = 26;
+    for (auto *c : fit_normal_cells)    c->setPixmap(colorSwatch(0.3f, 0.3f, 0.3f, sz));
+    for (auto *c : fit_albedo_cells)    c->setPixmap(colorSwatch(0.3f, 0.3f, 0.3f, sz));
+    for (auto *c : fit_roughness_cells) c->setPixmap(colorSwatch(0.3f, 0.3f, 0.3f, sz));
+    for (auto *c : fit_metallic_cells)  c->setPixmap(colorSwatch(0.3f, 0.3f, 0.3f, sz));
+}
+
+void PixelInfoCard::setWindowData(
+        const std::vector<std::vector<Eigen::Vector3f>>& per_light_colors) {
+    m_window_colors = per_light_colors;
+    if (!m_window_colors.empty())
+        showWindowLight(0);
+}
+
+void PixelInfoCard::showWindowLight(int light_idx) {
+    if (m_window_colors.empty() ||
+        light_idx < 0 ||
+        light_idx >= int(m_window_colors.size()))
+        return;
+    raw_patch_light_label->setText(QString("Light: %1").arg(light_idx));
+    const auto& colors = m_window_colors[light_idx];
+    for (int wi = 0; wi < int(raw_patch_cells.size()) && wi < int(colors.size()); ++wi) {
+        const Eigen::Vector3f& c = colors[wi];
+        raw_patch_cells[wi]->setPixmap(colorSwatch(c.x(), c.y(), c.z(), 26));
+    }
 }
 
 void PixelInfoCard::setInitResults(bool is_metallic, float highlight_fraction,
@@ -314,15 +428,29 @@ void PixelInfoCard::setInitResults(bool is_metallic, float highlight_fraction,
     init_normal_swatch->setPixmap(normalSwatch(nx, ny, nz));
 }
 
-void PixelInfoCard::setFitResults(float nx, float ny, float nz,
+void PixelInfoCard::setFitResults(int wi,
+                                  float nx, float ny, float nz,
                                   float roughness, float metallic,
                                   float albedo_r, float albedo_g, float albedo_b) {
+    const int sz = 26;
+    if (wi >= 0 && wi < int(fit_normal_cells.size()))
+        fit_normal_cells[size_t(wi)]->setPixmap(normalSwatch(nx, ny, nz, sz));
+    if (wi >= 0 && wi < int(fit_albedo_cells.size()))
+        fit_albedo_cells[size_t(wi)]->setPixmap(colorSwatch(albedo_r, albedo_g, albedo_b, sz));
+    if (wi >= 0 && wi < int(fit_roughness_cells.size()))
+        fit_roughness_cells[size_t(wi)]->setPixmap(colorSwatch(roughness, roughness, roughness, sz));
+    if (wi >= 0 && wi < int(fit_metallic_cells.size()))
+        fit_metallic_cells[size_t(wi)]->setPixmap(colorSwatch(metallic, metallic, metallic, sz));
+}
+
+void PixelInfoCard::setPatchMaterialResult(
+        float roughness, float metallic,
+        float albedo_r, float albedo_g, float albedo_b) {
     fit_roughness_label->setText(
         QString("roughness: %1").arg(double(roughness), 0, 'f', 3));
     fit_metallic_label->setText(
         QString("metallic: %1").arg(double(metallic), 0, 'f', 3));
-    fit_normal_swatch->setPixmap(normalSwatch(nx, ny, nz));
-    fit_albedo_swatch->setPixmap(colorSwatch(albedo_r, albedo_g, albedo_b));
+    patch_albedo_swatch->setPixmap(colorSwatch(albedo_r, albedo_g, albedo_b, 40));
 }
 
 QPixmap PixelInfoCard::normalSwatch(float nx, float ny, float nz, int size) {
@@ -448,9 +576,15 @@ void MainWindow::createPanels() {
                     resultsPanel->rusinView->setNormal(n);
             });
     connect(resultsPanel->rusinView, &RusinkiewiczView::lightSelected,
-            this, [this](int idx) { datasetPanel->showImage(idx); });
+            this, [this](int idx) {
+                datasetPanel->showImage(idx);
+                pixelInfoCard->showWindowLight(idx);
+            });
     connect(resultsPanel->diagnosticPanel, &DiagnosticPanel::lightSelected,
-            this, [this](int idx) { datasetPanel->showImage(idx); });
+            this, [this](int idx) {
+                datasetPanel->showImage(idx);
+                pixelInfoCard->showWindowLight(idx);
+            });
 
     // Scroll area wrapping the params panel so it doesn't crush on small screens
     paramsPanel = new ParamsPanel(rightPanel);
@@ -558,66 +692,138 @@ void MainWindow::onPixelClicked(int x, int y) {
     std::atomic<bool> *cancel = &cancelCompute;
     
     QFuture<void> future = QtConcurrent::run([=, &imageset]() {
-        // --- Build Pixel: read each image and sample the clicked position ---
-        Pixel p;
-        p.x = x;
-        p.y = y;
-        p.resize(size_t(n));
+        const int wsize    = kBrdfWindowSize;
+        const int half     = kBrdfWindowHalf;
+        const int wcount   = wsize * wsize;
+        const int centerIdx = half * wsize + half;  // flat index of center pixel
+
+        // --- Build Pixel structs for every position in the window ---
+		std::vector<Pixel> windowPixels(wcount);
+        for (int wi = 0; wi < wcount; ++wi) {
+            windowPixels[size_t(wi)].x = x - half + (wi % wsize);
+            windowPixels[size_t(wi)].y = y - half + (wi / wsize);
+            windowPixels[size_t(wi)].resize(size_t(n));
+        }
+
+        // --- Read each image once and fill all window pixels ---
+        std::vector<std::vector<Eigen::Vector3f>> perLightColors(n);
         for (int j = 0; j < n; j++) {
             if (cancel->load()) return;
             QImage img = imageset.readImageCropped(size_t(j));
-            QRgb rgb = img.pixel(x, y);
-            p[size_t(j)] = Color3f(qRed(rgb)   / 255.0f,
-                                   qGreen(rgb) / 255.0f,
-                                   qBlue(rgb)  / 255.0f);
+            perLightColors[j].resize(wcount);
+            for (int wi = 0; wi < wcount; ++wi) {
+                QRgb rgb = img.pixel(windowPixels[size_t(wi)].x,
+                                     windowPixels[size_t(wi)].y);
+                float r = qRed(rgb)   / 255.0f;
+                float g = qGreen(rgb) / 255.0f;
+                float b = qBlue(rgb)  / 255.0f;
+                windowPixels[size_t(wi)][size_t(j)] = Color3f(r, g, b);
+                perLightColors[j][wi] = Eigen::Vector3f(r, g, b);
+            }
         }
+        QMetaObject::invokeMethod(card, [card, perLightColors]{
+            card->setWindowData(perLightColors);
+        }, Qt::QueuedConnection);
         if (cancel->load()) return;
-        
-        // --- Fast heuristic: init_normal ---
-        brdf::InitNormalResult init = brdf::init_normal(p, lights);
 
-        QMetaObject::invokeMethod(card, [card, sphere, diagPanel, rusinView, init]{
+        // --- Joint patch normal initializer (shared GGX material) ---
+        brdf::PatchInitResult patchInit =
+			brdf::init_normal_patch(windowPixels, std::vector<Eigen::Vector3f>(lights.begin(), lights.end()));
+
+        // Use the center-pixel seed result to drive the diagnostic/sphere UI
+        const brdf::InitNormalResult& init = patchInit.success
+            ? patchInit.seed_results[size_t(centerIdx)]
+            : brdf::init_normal(windowPixels[size_t(centerIdx)], lights);
+        const Eigen::Vector3f centerNormal = patchInit.success
+            ? patchInit.normals[size_t(centerIdx)]
+            : init.normal;
+
+        QMetaObject::invokeMethod(card, [card, sphere, diagPanel, rusinView, init, centerNormal]{
             card->setInitResults(
                 init.is_metallic, init.highlight_fraction, init.peak_ratio,
                 init.lambertian_variance,
-                init.normal.x(), init.normal.y(), init.normal.z());
+                centerNormal.x(), centerNormal.y(), centerNormal.z());
             if (sphere)
-                sphere->setNormal(init.normal);
+                sphere->setNormal(centerNormal);
             if (diagPanel)
-                diagPanel->setNormal(init.normal);
+                diagPanel->setNormal(centerNormal);
             if (rusinView)
-                rusinView->setNormal(init.normal);
+                rusinView->setNormal(centerNormal);
         }, Qt::QueuedConnection);
-        
-        if (cancel->load()) return;
-        
-        // --- Albedo estimate (median across lights) ---
-        Eigen::Vector3f albedo = {0.1f, 0.1f, 0.1f};
-        for (int k = 0; k < 3; k++) {
-            std::vector<float> channel(static_cast<size_t>(n));
-            for (int j = 0; j < n; j++)
-                channel[j] = p[j][k];
-            std::nth_element(channel.begin(), channel.begin() + n / 2, channel.end());
-            albedo[k] = std::max(channel[size_t(n / 2)], 0.001f);
+
+        // --- Fit every pixel in the window ---
+        // Pre-build the normals vector used for each window pixel so we can
+        // pass them to optimize_brdf_patch_material after the per-pixel loop.
+        std::vector<Eigen::Vector3f> patchNormals(wcount);
+        for (int wi = 0; wi < wcount; ++wi)
+            patchNormals[wi] = patchInit.success
+                ? patchInit.normals[size_t(wi)]
+                : patchInit.seed_results[size_t(wi)].normal;
+
+        // Center-pixel albedo seed for the shared material fit
+        Eigen::Vector3f centerAlbedo(0.1f, 0.1f, 0.1f);
+        {
+            Pixel &cp = windowPixels[size_t(centerIdx)];
+            for (int k = 0; k < 3; k++) {
+                std::vector<float> ch(n);
+                for (int j = 0; j < n; j++) ch[j] = cp[j][k];
+                std::nth_element(ch.begin(), ch.begin() + n / 2, ch.end());
+                centerAlbedo[k] = std::max(ch[n / 2], 0.001f);
+            }
         }
-        
-        if (cancel->load()) return;
-        
-        // --- Slow Ceres fit: optimize_brdf_pixel ---
-        float init_metallic = init.is_metallic ? 0.5f : 0.0f;
-        brdf::BrdfFitResult fit = brdf::optimize_brdf_pixel(
-            p, lights,
-            init.normal, albedo,
-            0.3f, init_metallic,
-            4.0f, /*optimize_normal=*/true, /*optimize_albedo=*/true);
-        
-        if (cancel->load()) return;
-        QMetaObject::invokeMethod(card, [card, fit]{
-            card->setFitResults(
-                fit.normal.x(), fit.normal.y(), fit.normal.z(),
-                fit.roughness, fit.metallic,
-                fit.albedo.x(), fit.albedo.y(), fit.albedo.z());
-        }, Qt::QueuedConnection);
+        float centerMetallic = (patchInit.seed_results.size() > size_t(centerIdx))
+            ? (patchInit.seed_results[size_t(centerIdx)].is_metallic ? 0.5f : 0.0f)
+            : (init.is_metallic ? 0.5f : 0.0f);
+
+        for (int wi = 0; wi < wcount; ++wi) {
+            if (cancel->load()) return;
+            Pixel &wp = windowPixels[size_t(wi)];
+
+            // Albedo estimate: median per channel across lights
+            Eigen::Vector3f walbedo = {0.1f, 0.1f, 0.1f};
+            for (int k = 0; k < 3; k++) {
+                std::vector<float> ch(n);
+                for (int j = 0; j < n; j++) ch[size_t(j)] = wp[size_t(j)][k];
+                std::nth_element(ch.begin(), ch.begin() + n / 2, ch.end());
+                walbedo[k] = std::max(ch[size_t(n / 2)], 0.001f);
+            }
+
+            // Use patch-refined normal as warm-start (falls back to seed if patch failed)
+            Eigen::Vector3f winormal = patchInit.success
+                ? patchInit.normals[size_t(wi)]
+                : patchInit.seed_results[size_t(wi)].normal;
+            const brdf::InitNormalResult& wseed = patchInit.seed_results.size() > size_t(wi)
+                ? patchInit.seed_results[size_t(wi)]
+                : init;
+            float winit_metallic = wseed.is_metallic ? 0.5f : 0.0f;
+
+            brdf::BrdfFitResult wfit = brdf::optimize_brdf_pixel(
+                wp, lights,
+                winormal, walbedo,
+                0.3f, winit_metallic,
+                4.0f, /*optimize_normal=*/false, /*optimize_albedo=*/true);
+
+            // Update the grid cell for this window pixel
+            QMetaObject::invokeMethod(card, [card, wi, wfit]{
+                card->setFitResults(
+                    wi,
+                    wfit.normal.x(), wfit.normal.y(), wfit.normal.z(),
+                    wfit.roughness, wfit.metallic,
+                    wfit.albedo.x(), wfit.albedo.y(), wfit.albedo.z());
+            }, Qt::QueuedConnection);
+        }
+
+        // --- Shared material fit across the whole patch ---
+        if (!cancel->load()) {
+            brdf::BrdfFitResult patchFit = brdf::optimize_brdf_patch_material(
+                windowPixels, patchNormals, lights,
+                centerAlbedo, 0.3f, centerMetallic, 4.0f);
+            QMetaObject::invokeMethod(card, [card, patchFit]{
+                card->setPatchMaterialResult(
+                    patchFit.roughness, patchFit.metallic,
+                    patchFit.albedo.x(), patchFit.albedo.y(), patchFit.albedo.z());
+            }, Qt::QueuedConnection);
+        }
     });
     
     computeWatcher->setFuture(future);
