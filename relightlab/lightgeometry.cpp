@@ -3,6 +3,7 @@
 #include "helpbutton.h"
 #include "directionsview.h"
 #include "../src/sphere.h"
+#include "../src/exif.h"
 
 #include <QVBoxLayout>
 #include <QFrame>
@@ -113,6 +114,44 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	directions_view->setMinimumSize(200, 200);
 
 	page->addSpacing(30);
+
+	// ---- Lens panel ----
+	auto *lensFrame = new QFrame;
+	lensFrame->setFrameShape(QFrame::StyledPanel);
+	page->addWidget(lensFrame);
+
+	auto *lensLayout = new QGridLayout(lensFrame);
+	lensLayout->setColumnStretch(1, 1);
+
+	auto *lensTitle = new QLabel("<b>Lens</b>");
+	lensLayout->addWidget(lensTitle, 0, 0, 1, 3);
+
+	QLabel *focal_label = new QLabel("Focal length (35mm equivalent):");
+	focal_label->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+	focal_label->setMaximumSize(300, 300);
+	focal_label->setMinimumSize(300, 300);
+
+	lensLayout->addWidget(focal_label, 1, 0);
+	focal_length = new QDoubleSpinBox;
+	focal_length->setKeyboardTracking(false);
+	focal_length->setRange(0, 2000);
+	focal_length->setDecimals(2);
+	focal_length->setSuffix(" mm");
+	focal_length->setSpecialValueText("Unknown");
+	focal_length->setMinimumWidth(120);
+	lensLayout->addWidget(focal_length, 1, 1);
+
+	auto *readBtn = new QPushButton("Read from images");
+	lensLayout->addWidget(readBtn, 1, 2);
+
+	connect(focal_length, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) {
+		qRelightApp->project().lens.focalLength = v;
+		qRelightApp->project().lens.focal35equivalent = true;
+		qRelightApp->project().needs_saving = true;
+	});
+	connect(readBtn, &QPushButton::clicked, this, &LightsGeometry::readFocalLength);
+
+	page->addStretch();
 }
 
 void LightsGeometry::setSpherical(QAbstractButton *button) {
@@ -161,6 +200,12 @@ void LightsGeometry::init() {
 	vertical_offset->blockSignals(false);
 
 	directions_view->initFromDome(dome);
+
+	if (focal_length) {
+		focal_length->blockSignals(true);
+		focal_length->setValue(qRelightApp->project().lens.focal35());
+		focal_length->blockSignals(false);
+	}
 }
 
 
@@ -186,6 +231,45 @@ void LightsGeometry::exportDome() {
 	Dome &dome = qRelightApp->project().dome;
 	dome.save(filename);
 	qRelightApp->addDome(filename);
+}
+
+void LightsGeometry::readFocalLength() {
+	Project &project = qRelightApp->project();
+
+	// Find the first valid image
+	const Image *first = nullptr;
+	for (const Image &image : project.images)
+		if (image.valid) { first = &image; break; }
+
+	if (!first) {
+		QMessageBox::warning(this, "No images", "No valid images in the project.");
+		return;
+	}
+
+	QString path = project.dir.filePath(first->filename);
+	try {
+		Exif exif;
+		exif.parse(path);
+		project.lens.readExif(exif);
+	} catch (QString &) {
+		QMessageBox::warning(this, "EXIF error",
+			QString("Could not read EXIF data from:\n%1").arg(path));
+		return;
+	}
+
+	if (project.lens.focalLength == 0) {
+		QMessageBox::warning(this, "No focal length",
+			QString("The image does not contain focal length information:\n%1").arg(path));
+		return;
+	}
+
+
+	project.needs_saving = true;
+
+	focal_length->blockSignals(true);
+	focal_length->setValue(project.lens.focal35());
+	focal_length->blockSignals(false);
+	recomputeGeometry();
 }
 
 void LightsGeometry::recomputeGeometry() {
