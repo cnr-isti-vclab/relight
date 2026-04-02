@@ -60,7 +60,6 @@ public:
 	void computeDirections(Lens &lens);
 	void computeDirections_deprecated(Lens &lens);
 
-	Line toLine(Eigen::Vector3f dir, Lens &lens);
 	static Eigen::Vector3f intersection(std::vector<Line> &lines);
 
 	void resetHighlight(size_t n); //reset light and direction of the detected highlight, of image n.

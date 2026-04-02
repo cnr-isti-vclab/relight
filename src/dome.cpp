@@ -214,9 +214,10 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 
 	if(spheres.size() > 1) {
 		computeParallaxPositions(images, spheres, lens, positions3d);
-		float factor = imageWidth ? imageWidth*2.0f : 1.0f;
-		for(Vector3f &p: positions3d)
-			p *= factor;
+		//convert from pixel to mm coords
+		for(auto &p: positions3d)
+			p *= imageWidth/lens.width;
+
 		assert(positions3d.size() == directions.size());
 	}
 }
@@ -272,7 +273,11 @@ void computeParallaxPositions(std::vector<Image> &images, std::vector<Sphere *> 
 		std::vector<Line> lines;
 		for(Sphere *sphere: spheres) {
 			if(sphere->directions[i].isZero()) continue;
-			lines.push_back(sphere->toLine(sphere->directions[i], lens));
+			Line line;
+			line.origin = sphere->reflections[i];
+			line.origin[1] *= -1; //y curse.
+			line.direction = sphere->directions[i];
+			lines.push_back(line);
 		}
 		Vector3f position = intersection(lines);
 
