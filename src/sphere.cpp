@@ -416,37 +416,6 @@ void Sphere::computeDirections(Lens &lens) {
 		Eigen::Vector3f light = v3d - 2.0f * (v3d.dot(n3d)) * n3d;
 		light[1] *= -1.0f; // lights coordinate have y up (image y is down)
 		directions[i] = light;
-
-		/* --- Previous 2D approximation (kept for reference) ---
-		//recompute dx, dy
-		if(ellipse) {
-			Eigen::Vector2f diff = { x - cx, y - cy };
-			Eigen::Vector2f cradial = radial*diff.dot(radial); //find radial component;
-			diff -= cradial; //orthogonal component;
-			cradial *= eHeight/eWidth;
-			diff += cradial;
-			//diff /= eWidth;
-			dx = diff.x();
-			dy = diff.y(); //accursed y inversion
-		} else {
-			dx = x - cx;
-			dy = y - cy; //accursed y inversion
-		}
-
-		//scale to sphere
-		dx /= realRadius;
-		dy /= realRadius;
-
-		dx = std::min(max(dx, -1.0f), 1.0f);
-		dy = std::min(max(dy, -1.0f), 1.0f);
-		float dz = sqrt(1 - dx*dx - dy*dy);
-
-		Eigen::Vector3f n(dx, dy, dz);
-		//reflect view direction along the tangent plane to the sphere.
-		Eigen::Vector3f light = v - 2.0f*(v.dot(n))*n;
-		light[1] *= -1.0f; //lights coordinate have y up.
-		directions[i] = light;
-		--- end previous approximation --- */
 	}
 }
 
@@ -527,95 +496,16 @@ void Sphere::computeDirections_deprecated(Lens &lens) {
 	}
 
 }
+/*
 //this is in normalized (image width is 1) coords
 Line Sphere::toLine(Vector3f dir, Lens &lens) {
 	Line line;
+	line.origin = reflections[i]
 	line.origin[0] = (center.x() - lens.width/2.0f)/lens.width;
 	line.origin[1] = -(center.y() - lens.height/2.0f)/lens.width;
 	line.origin[2] = 0;
 	line.direction = dir;
 	return line;
-}
-
-/*
-
-// debug for parallax
-static inline float pointLineDistance(const Line& line, const Eigen::Vector3f& p) {
-	Eigen::Vector3f o(line.origin[0], line.origin[1], line.origin[2]);
-	Eigen::Vector3f u(line.direction[0], line.direction[1], line.direction[2]);
-
-	float n = u.norm();
-	if (n < 1e-12f) {
-		// Degenerate line: treat it as a point at 'o'
-		return (p - o).norm();
-	}
-	u /= n;
-
-	Eigen::Vector3f r = p - o;
-	Eigen::Vector3f perp = r - u * r.dot(u); // (I - uu^T) r
-	return perp.norm();
-}
-
-static inline float distanceSum(std::vector<Line> &lines, const Eigen::Vector3f& p) {
-	float d = 0;
-	for(Line &line: lines) {
-		float r = pointLineDistance(line, p);
-		d += r*r;
-	}
-	return sqrt(d/lines.size());
-}
-
-void verify(std::vector<Line> &lines, Vector3f pos) {
-	Vector3f best;
-	float best_dist = 1e20;
-	for(float x = -1; x <= 1; x += 0.1) {
-		for(float y = -1; y <= 1; y += 0.1) {
-			for(float z = -1; z <= 1; z+= 0.1) {
-				Vector3f p(x, y, z);
-				float d = distanceSum(lines, p);
-				cout << "D: " << d << " pos: " << p[0] << " " << p[1] << " " << p[2] << endl;
-
-				if(d < best_dist) {
-					best_dist = d;
-					best = p;
-				}
-			}
-		}
-	}
-	cout << "Distance: " << best_dist << " pos: " << best[0] << " " << best[1] << " " << best[2] << endl;
-
-	cout << "Vs: " << distanceSum(lines, pos) << endl;
-}
-*/
-
-/*
-//estimate light directions relative to the center of the image.
-void computeDirections(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Vector3f> &directions) {
-
-	if(spheres.size() == 0)
-		return;
-
-	directions.clear();
-
-	//when a light is not in the center of the image we get a bias in the distribution of the lights on the sphere
-	//if more than one light from this we can estimate an approximate radius, if not just get the directions.
-	for(Sphere *sphere: spheres) {
-		sphere->computeDirections(lens);
-	}
-	//for each sphere compute the directions relative to the center of the image and average them.
-	//compute just average direction
-	for(size_t i = 0; i < spheres[0]->lights.size(); i++) {
-		if(images[i].skip)
-			continue;
-
-		Vector3f dir(0, 0, 0);
-		for(Sphere *sphere: spheres) {
-			if(sphere->directions[i].isZero()) continue;
-			dir += sphere->directions[i];
-		}
-		dir.normalize();
-		directions.push_back(dir);
-	}
 }*/
 
 QJsonObject Sphere::toJson() {
