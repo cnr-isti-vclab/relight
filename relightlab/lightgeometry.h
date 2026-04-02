@@ -35,6 +35,8 @@ public:
 	QDoubleSpinBox *radius;
 	DirectionsView *directions_view;
 
+	QDoubleSpinBox *focal_length = nullptr;
+
 	QButtonGroup *group = nullptr;
 
 	LightsGeometry(QWidget *parent = nullptr);
@@ -46,5 +48,6 @@ public slots:
 	void setSpherical(QAbstractButton *button);
 	void exportDome();
 	void recomputeGeometry();           //recompute positions when geometry parameters change
+	void readFocalLength();             //re-read focal length from image EXIF metadata
 };
 #endif // LIGHTGEOMETRY_H

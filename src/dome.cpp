@@ -192,7 +192,7 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 					//even worse: the starting point should the the reflection point.
 
 					Vector3f center(0, 0, verticalOffset/imageWidth);
-					Vector3f reflection = sphere->reflections[i] - Vector3f(lens.width/2.0f, lens.height/2.0f, 0);
+					Vector3f reflection = sphere->reflections[i];
 					reflection /= lens.width;
 
 					Vector3f position = findIntersection(origin, direction, center, radius);

@@ -33,6 +33,7 @@ public:
 
 	/* Ellipse parameters */
 	bool ellipse = false;
+	//height is the smallest axis size of the ellipse (radius, not diameter
 	float eWidth = 0.0f, eHeight = 0.0f, eAngle = 0.0f;
 	float eFocal; //estimated focal
 
@@ -46,7 +47,7 @@ public:
 	std::vector<QPointF> border;        //2d pixels sampled on the border of the sphere.
 	std::vector<QPointF> lights;       //2d pixel of the light spot for this sphere.
 	std::vector<Eigen::Vector3f> directions;  //of the light relative to the center of the sphere.
-	std::vector<Eigen::Vector3f> reflections; //xyz corrected in pixel coords. (0 is top left, y points down)
+	std::vector<Eigen::Vector3f> reflections; //xyz corrected in pixel coords. (0 the center of the image)
 
 
 	Sphere(int n_lights = 0);

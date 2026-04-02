@@ -37,6 +37,7 @@ void Image::fromJson(const QJsonObject &obj) {
 }
 
 void Image::readExif(Exif &exif) {
+	/* TODO: Unusued values, but it would be nice to show these values on the images somewhere */
 	exposureTime = exif.value(Exif::ExposureTime, 0.0).toDouble();
 	isoSpeedRatings = exif.value(Exif::ISOSpeedRatings, 0.0).toDouble();
 	colorSpace = exif.value(Exif::ColorSpace, QString()).toString();

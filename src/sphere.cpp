@@ -123,7 +123,7 @@ bool Sphere::fit() {
 			eWidth = eHeight = radius;
 			eAngle = 0.0f;
 		} else {
-			radius = eWidth;
+			radius = eHeight;
 			assert(eWidth >= eHeight);
 		}
 	}
@@ -160,7 +160,7 @@ bool Sphere::fit() {
 		double r = sqrt(c + a*a + b*b);
 
 		center = QPointF(a, b);
-		radius = r;
+		eWidth = eHeight = radius = r;
 
 	}
 	float max_angle = (50.0/180.0)*M_PI; //slightly over 45. hoping not to spot reflexes
@@ -333,21 +333,40 @@ float cosHalfAngle(Eigen::Vector3f a, Eigen::Vector3f b) {
 }
 
 void Sphere::computeDirections(Lens &lens) {
-	Eigen::Vector2f radial; //direction from center of the image to the center of the sphere.
-	radial = { center.x() - lens.width/2.0f, center.y() - lens.height/2.0f};
-	radial.normalize();
-
-	//find true radius (in pixels) (the focal hides part of the sphere just above the equator
-	Eigen::Vector3f traversal(radial[1], -radial[0], 0);
-	Eigen::Vector3f A = traversal * radius + Eigen::Vector3f(center.x(), center.y(), 0);
-	Eigen::Vector3f B = -traversal * radius + Eigen::Vector3f(center.x(), center.y(), 0);
-
-	//viewpoint in pixel units
+	// All geometry below is in centred image pixel coordinates
+	Eigen::Vector3f C(center.x() - lens.width / 2.0f, center.y() - lens.height / 2.0f, 0);
 	Eigen::Vector3f V = lens.viewPosition();
 
-	//Find angle of the sphere from the viewpoint and the radius is smaller of the apparent diameter
-	float realRadius = ellipse ? eWidth: radius;
-	realRadius *= cosHalfAngle(V - A, V - B);
+	float realRadius = radius;
+	bool usingHalfSphere = false;
+
+	if(usingHalfSphere) {
+	} else {
+
+		//direction from center of the image to the center of the sphere.
+		Eigen::Vector3f radial(C.x(), C.y(), 0);
+		radial.normalize();
+
+		//find true radius (in pixels) (we only see the projection of the sphere on the
+		Eigen::Vector3f traversal(radial[1], -radial[0], 0);
+		Eigen::Vector3f A = C + radial*eWidth;
+		Eigen::Vector3f B = C - radial*eWidth;
+
+		// The true sphere radius is the incircle radius of triangle A-B-V:
+		// r = Area / semi-perimeter
+		float s  = ((B - A).norm() + (V - A).norm() + (V - B).norm());
+		float area = (B - A).cross(V - A).norm();
+		realRadius = area / s;
+
+		// The projected sphere center lies on the bisector of angle AVB at V.
+		Eigen::Vector3f bisector = (A - V).normalized() + (B - V).normalized();
+		float t_bis = -V[2] / bisector[2];
+		C = V + t_bis * bisector;
+	}
+	//move the center of the sphere to
+	float centerElevation = usingHalfSphere? 0 : realRadius;
+	C += centerElevation*(V - C)/V[2];
+	
 
 	directions.resize(lights.size());
 	reflections.resize(lights.size());
@@ -357,43 +376,51 @@ void Sphere::computeDirections(Lens &lens) {
 			continue;
 		}
 
-		float x = lights[i].x();
-		float y = lights[i].y();
+		float x = lights[i].x()- lens.width / 2.0f;
+		float y = lights[i].y() - lens.height / 2.0f;
 
-		//view direction (compute before correcting the x, and y perspective)
-		Eigen::Vector3f v((x - lens.width/2), (y - lens.height/2), -V[2]); //remember y inversion
-		v.normalize();
+		// Ray from camera (V) through the image-plane projection of the highlight.
+		Eigen::Vector3f rayDir(x , y , -V[2]);
+		rayDir.normalize();
 
-		float dx = x;
-		float dy = y;
 
-		if(ellipse) {
-			Eigen::Vector2f diff = { dx - center.x(), dy - center.y() };
-			Eigen::Vector2f cradial = radial*diff.dot(radial); //find radial component;
-			diff -= cradial; //orthogonal component;
-			cradial *= eHeight/eWidth;
-			diff += cradial;
-			//diff /= eWidth;
-			dx = diff.x();
-			dy = diff.y(); //accursed y inversion
-		} else {
-			dx  =  (dx - center.x());
-			dy  = (dy - center.y()); //accursed y inversion
+		// Ray–sphere intersection:  |V + t*rayDir – C|² = realRadius²
+		// Expanding and using the half-b substitution (bh = oc·rayDir):
+		Eigen::Vector3f oc = V - C;
+		float bh   = oc.dot(rayDir);
+		float disc = bh * bh - (oc.dot(oc) - realRadius * realRadius);
+
+		if (disc < 0.0f) {
+			// Highlight lies outside the sphere silhouette — skip.
+			directions[i] = Vector3f(0, 0, 0);
+			continue;
 		}
-		//now we can estimate the z and find the real reflection position in 3d.
-		float z = realRadius*realRadius - dx*dx - dy*dy;
-		z = std::max(0.0f, z);
-		z = sqrt(z);
-		//correct x and y from the perspective (they are closer!)
-		x = (x - lens.width/2.0f)*(V[2] - z)/V[2] + lens.width/2;
-		y = (y - lens.height/2.0f)*(V[2] - z)/V[2] + lens.height/2;
-		reflections[i] = Vector3f(x, y, z);
-		dx = x;
-		dy = y;
 
+		// Front (camera-facing) surface: smaller t.
+		float t = -bh - sqrt(disc);
+		if (t < 0.0f) t = -bh + sqrt(disc); // back face fallback
+
+		// Reflection point in centred coords.
+		Eigen::Vector3f P = V + t * rayDir;
+
+		//this is needed for projecting reflection in the dome sphere as the source.
+		reflections[i] = P;
+
+		// Surface normal: outward direction from sphere center to reflection point.
+		Eigen::Vector3f n3d = (P - C).normalized();
+
+		// View direction: from viewpoint toward the reflection point.
+		Eigen::Vector3f v3d = (P - V).normalized();
+
+		// Reflect the view ray about the surface normal to get the incoming light direction.
+		Eigen::Vector3f light = v3d - 2.0f * (v3d.dot(n3d)) * n3d;
+		light[1] *= -1.0f; // lights coordinate have y up (image y is down)
+		directions[i] = light;
+
+		/* --- Previous 2D approximation (kept for reference) ---
 		//recompute dx, dy
 		if(ellipse) {
-			Eigen::Vector2f diff = { dx - center.x(), dy - center.y() };
+			Eigen::Vector2f diff = { x - cx, y - cy };
 			Eigen::Vector2f cradial = radial*diff.dot(radial); //find radial component;
 			diff -= cradial; //orthogonal component;
 			cradial *= eHeight/eWidth;
@@ -402,10 +429,9 @@ void Sphere::computeDirections(Lens &lens) {
 			dx = diff.x();
 			dy = diff.y(); //accursed y inversion
 		} else {
-			dx  =  (dx - center.x());
-			dy  = (dy - center.y()); //accursed y inversion
+			dx = x - cx;
+			dy = y - cy; //accursed y inversion
 		}
-
 
 		//scale to sphere
 		dx /= realRadius;
@@ -420,6 +446,7 @@ void Sphere::computeDirections(Lens &lens) {
 		Eigen::Vector3f light = v - 2.0f*(v.dot(n))*n;
 		light[1] *= -1.0f; //lights coordinate have y up.
 		directions[i] = light;
+		--- end previous approximation --- */
 	}
 }
 
@@ -469,7 +496,7 @@ void Sphere::computeDirections_deprecated(Lens &lens) {
 			diff -= cradial; //orthogonal component;
 			cradial *= eHeight/eWidth;
 			diff += cradial;
-			diff /= eWidth;
+			diff /= eHeight;
 			x = diff.x();
 			y = -diff.y();
 		} else {
