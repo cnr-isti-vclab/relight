@@ -17698,7 +17698,8 @@ const int ny1 = ${this.yccplanes[1]};
 
     str += `
 vec4 texsample(sampler2D sampler, vec2 coord) {
-	return srgb2linear(texture(sampler, coord));
+	return texture(sampler, coord);
+	//return srgb2linear(texture(sampler, coord));
 }
 `;
 
@@ -17772,6 +17773,7 @@ color = vec4(vec3(dot(light, normal)), 1);
     		}
 
     		str += `
+		//color = linear2srgb(color);
 		return color;
 }`;
     		return str;
