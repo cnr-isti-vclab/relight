@@ -160,7 +160,7 @@ bool Sphere::fit() {
 		double r = sqrt(c + a*a + b*b);
 
 		center = QPointF(a, b);
-		radius = r;
+		eWidth = eHeight = radius = r;
 
 	}
 	float max_angle = (50.0/180.0)*M_PI; //slightly over 45. hoping not to spot reflexes
@@ -333,30 +333,38 @@ float cosHalfAngle(Eigen::Vector3f a, Eigen::Vector3f b) {
 }
 
 void Sphere::computeDirections(Lens &lens) {
-	Eigen::Vector2f radial; //direction from center of the image to the center of the sphere.
-	radial = { center.x() - lens.width/2.0f, center.y() - lens.height/2.0f};
-	radial.normalize();
-
-	//find true radius (in pixels) (the focal hides part of the sphere just above the equator
-	Eigen::Vector3f traversal(radial[1], -radial[0], 0);
-	Eigen::Vector3f A = traversal * radius + Eigen::Vector3f(center.x(), center.y(), 0);
-	Eigen::Vector3f B = -traversal * radius + Eigen::Vector3f(center.x(), center.y(), 0);
-
-	//viewpoint in pixel units
+	// All geometry below is in centred image pixel coordinates
+	Eigen::Vector3f C(center.x() - lens.width / 2.0f, center.y() - lens.height / 2.0f, 0);
 	Eigen::Vector3f V = lens.viewPosition();
 
-	//Find angle of the sphere from the viewpoint and the radius is smaller of the apparent diameter
-	float realRadius = ellipse ? eHeight: radius;
-	realRadius *= cosHalfAngle(V - A, V - B);
-
-
-	// All geometry below is in centred image coordinates
-	// (origin at image centre, z up toward camera).
-
+	float realRadius = radius;
 	bool usingHalfSphere = false;
-	float centerElevation = usingHalfSphere? 0 : realRadius;
 
-	Eigen::Vector3f C(center.x() - lens.width / 2.0f, center.y() - lens.height / 2.0f, 0);
+	if(usingHalfSphere) {
+	} else {
+
+		//direction from center of the image to the center of the sphere.
+		Eigen::Vector3f radial(C.x(), C.y(), 0);
+		radial.normalize();
+
+		//find true radius (in pixels) (we only see the projection of the sphere on the
+		Eigen::Vector3f traversal(radial[1], -radial[0], 0);
+		Eigen::Vector3f A = C + radial*eWidth;
+		Eigen::Vector3f B = C - radial*eWidth;
+
+		// The true sphere radius is the incircle radius of triangle A-B-V:
+		// r = Area / semi-perimeter
+		float s  = ((B - A).norm() + (V - A).norm() + (V - B).norm());
+		float area = (B - A).cross(V - A).norm();
+		realRadius = area / s;
+
+		// The projected sphere center lies on the bisector of angle AVB at V.
+		Eigen::Vector3f bisector = (A - V).normalized() + (B - V).normalized();
+		float t_bis = -V[2] / bisector[2];
+		C = V + t_bis * bisector;
+	}
+	//move the center of the sphere to
+	float centerElevation = usingHalfSphere? 0 : realRadius;
 	C += centerElevation*(V - C)/V[2];
 	
 
