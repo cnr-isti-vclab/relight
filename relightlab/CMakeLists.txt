@@ -46,6 +46,7 @@ set (RELIGHT_HEADERS
     ../src/normals/fft_normal_integration.h
     ../src/normals/fast_gaussian_blur.cpp
     ../src/normals/normalstask.h
+    ../src/normals/normalsworker.h
     ../src/normals/normals_parameters.h
     ../src/crop.h
     ../src/rti/rtitask.h
@@ -129,6 +130,7 @@ set (RELIGHTLAB_SOURCES
     ../src/normals/fast_gaussian_blur.cpp
     ../src/normals/normals_parameters.cpp
     ../src/normals/normalstask.cpp
+    ../src/normals/normalsworker.cpp
     ../src/task.cpp 
     ../src/crop.cpp
     ../src/rti/rtitask.cpp

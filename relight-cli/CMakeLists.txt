@@ -48,6 +48,7 @@ SET(HEADERS
 	../src/normals/flatnormals.h
 	../src/normals/normals_parameters.h
 	../src/normals/normalstask.h
+	../src/normals/normalsworker.h
 	../src/task.h
 )
 
@@ -83,6 +84,7 @@ SET(SOURCES
 	../src/normals/flatnormals.cpp
 	../src/normals/normals_parameters.cpp
 	../src/normals/normalstask.cpp
+	../src/normals/normalsworker.cpp
 	../src/task.cpp
 )
 

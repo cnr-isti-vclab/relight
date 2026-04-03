@@ -17,6 +17,7 @@ SOURCES += \
         ../src/normals/flatnormals.cpp \
         ../src/normals/normals_parameters.cpp \
         ../src/normals/normalstask.cpp \
+        ../src/normals/normalsworker.cpp \
         ../src/cli/rtibuilder.cpp \
         ../src/getopt.cpp \
         ../src/imageset.cpp \
@@ -52,6 +53,7 @@ HEADERS += \
     ../src/normals/fft_normal_integration.h \
     ../src/normals/flatnormals.h \
     ../src/normals/normalstask.h \
+    ../src/normals/normalsworker.h \
     ../src/normals/pocketfft.h \
     ../src/normals/normals_parameters.h \
     ../src/task.h \

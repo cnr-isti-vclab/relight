@@ -7,6 +7,7 @@ QString solverToString(NormalSolver solver) {
 	case NORMALS_L2: return QStringLiteral("NORMALS_L2");
 	case NORMALS_SBL: return QStringLiteral("NORMALS_SBL");
 	case NORMALS_RPCA: return QStringLiteral("NORMALS_RPCA");
+	case NORMALS_ROBUST: return QStringLiteral("NORMALS_ROBUST");
 	default:
 		return QStringLiteral("UNKNOWN");
 	}
@@ -59,6 +60,8 @@ QJsonObject NormalsParameters::toJson() const {
 	obj["compute"] = compute;
 	obj["inputPath"] = input_path;
 	obj["solver"] = solverToString(solver);
+	obj["robustThresholdHigh"] = robust_threshold_high;
+	obj["robustThresholdLow"]  = robust_threshold_low;
 	obj["flatMethod"] = flatMethodToString(flatMethod);
 	obj["flatPercentage"] = fourierPercentage;
 	obj["blurPercentage"] = blurPercentage;

@@ -1,4 +1,5 @@
 #include "normalstask.h"
+#include "normalsworker.h"
 #include "../jpeg_decoder.h"
 #include "../jpeg_encoder.h"
 #include "../imageset.h"
@@ -120,7 +121,8 @@ void NormalsTask::run() {
 			uint32_t idx = i * width;
 			Eigen::Vector3f* data = &normals[idx];
 
-			NormalsWorker *task = new NormalsWorker(parameters.solver, i, line, data, imageset); //, lens);
+			NormalsWorker *task = new NormalsWorker(parameters.solver, i, line, data, imageset,
+				parameters.robust_threshold_high, parameters.robust_threshold_low);
 
 			std::function<void(void)> run = [task](void)->void {
 				task->run();
@@ -442,71 +444,5 @@ void NormalsTask::assm(QString filename, std::vector<Eigen::Vector3f> &_normals,
 }
 
 
-void NormalsWorker::run() {
-	switch (solver)
-	{
-	case NORMALS_L2:
-		solveL2();
-		break;
-	case NORMALS_SBL:
-		solveSBL();
-		break;
-	case NORMALS_RPCA:
-		solveRPCA();
-		break;
-	}
 
-}
-
-
-void NormalsWorker::solveL2()
-{
-	vector<Vector3f> &m_Lights = m_Imageset.lights();
-
-	// Pixel data
-	Eigen::MatrixXd mLights(m_Lights.size(), 3);
-	Eigen::MatrixXd mPixel(m_Lights.size(), 1);
-	Eigen::MatrixXd mNormals;
-
-	unsigned int normalIdx = 0;
-
-
-	// Fill the lights matrix
-	for (size_t i = 0; i < m_Lights.size(); i++)
-		for (int j = 0; j < 3; j++)
-			mLights(i, j) = m_Lights[i][j];
-
-	// For each pixel in the line solve the system
-	//TODO do it in a single large matrix, it should be  faster.
-	for (size_t p = 0; p < m_Row.size(); p++) {
-		// Fill the pixel vector
-		for (size_t m = 0; m < m_Lights.size(); m++)
-			mPixel(m, 0) = m_Row[p][m].mean();
-
-		if(m_Imageset.light3d) {
-			for(size_t i = 0; i < m_Lights.size(); i++) {
-				Vector3f light = m_Imageset.relativeLight(m_Lights[i], p, m_Imageset.height - row);
-				light.normalize();
-				for (int j = 0; j < 3; j++)
-					mLights(i, j) = light[j];
-			}
-		}
-
-		mNormals = (mLights.transpose() * mLights).ldlt().solve(mLights.transpose() * mPixel);
-		//float albedo = mNormals.col(0).norm();
-		mNormals.col(0).normalize();
-		// Task-level validation will handle NaN/z-threshold checks
-		m_Normals[normalIdx] = Eigen::Vector3f(float(mNormals.col(0)[0]), float(mNormals.col(0)[1]), float(mNormals.col(0)[2]));
-
-		normalIdx += 1;
-	}
-}
-
-void NormalsWorker::solveSBL()
-{
-}
-
-void NormalsWorker::solveRPCA()
-{
-}
 

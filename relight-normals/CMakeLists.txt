@@ -21,6 +21,7 @@ SET(HEADERS
 	../src/normals/pocketfft.h
 	../src/normals/normals_parameters.h
 	../src/normals/normalstask.h
+	../src/normals/normalsworker.h
 	../src/task.h
 	../src/relight_threadpool.h
 	../src/cli/rtibuilder.h
@@ -62,6 +63,7 @@ SET(SOURCES
 	../src/normals/flatnormals.cpp
 	../src/normals/normals_parameters.cpp
 	../src/normals/normalstask.cpp
+	../src/normals/normalsworker.cpp
 	../src/task.cpp
 	../src/threadpool.cpp
 	../src/cli/rtibuilder.cpp

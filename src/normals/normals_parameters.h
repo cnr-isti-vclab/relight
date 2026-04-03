@@ -5,7 +5,7 @@
 
 #include "../taskparameters.h"
 
-enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA };
+enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA, NORMALS_ROBUST };
 enum FlatMethod { FLAT_NONE, FLAT_RADIAL, FLAT_FOURIER, FLAT_BLUR };
 enum SurfaceIntegration { SURFACE_NONE, SURFACE_BNI, SURFACE_ASSM, SURFACE_FFT };
 
@@ -15,14 +15,20 @@ public:
 	bool compute = true;
 	QString input_path;
 
-	NormalSolver solver = NORMALS_L2;
+	NormalSolver solver =  NORMALS_ROBUST; //NORMALS_L2;
+
+	// Robust solver thresholds (pixel intensity in [0, 255]).
+	// Values above high_threshold are treated as specular highlights and excluded.
+	// Values below low_threshold are treated as shadows and excluded.
+	float robust_threshold_high = 255.0f;
+	float robust_threshold_low  =   5.0f;
 
 	FlatMethod flatMethod = FLAT_NONE;
 	double fourierPercentage = 20;
 	double blurPercentage = 10;
 
 	SurfaceIntegration surface_integration = SURFACE_NONE;
-	float bni_k = 2.0;
+	float bni_k = 0.0;
 	float assm_error = 0.1;
 
 	int surface_width = 0;  //3d surface grid width after downsampling.

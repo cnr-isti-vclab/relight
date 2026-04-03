@@ -63,6 +63,7 @@ SOURCES += main.cpp \
     ../src/normals/flatnormals.cpp \
     ../src/normals/normals_parameters.cpp \
     ../src/normals/normalstask.cpp \
+    ../src/normals/normalsworker.cpp \
     ../src/rti.cpp \
     ../src/legacy_rti.cpp \
 	../src/sphere.cpp \
@@ -99,6 +100,7 @@ HEADERS += \
     ../src/normals/flatnormals.h \
     ../src/normals/normals_parameters.h \
     ../src/normals/normalstask.h \
+    ../src/normals/normalsworker.h \
     ../src/normals/pocketfft.h \
     ../src/task.h \
     ../src/vector.h \

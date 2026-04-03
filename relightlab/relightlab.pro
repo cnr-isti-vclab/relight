@@ -58,6 +58,7 @@ SOURCES += main.cpp \
     ../src/network/httpserver.cpp \
     ../src/normals/flatnormals.cpp \
     ../src/normals/normalstask.cpp \
+    ../src/normals/normalsworker.cpp \
     ../src/normals/bni_normal_integration.cpp \
     ../src/normals/normals_parameters.cpp \
     ../src/normals/fft_normal_integration.cpp \
@@ -210,6 +211,7 @@ HEADERS += \
     ../src/network/httplib.h \
     normalsframe.h \
     ../src/normals/normalstask.h \
+    ../src/normals/normalsworker.h \
     ../src/normals/bni_normal_integration.h \
     ../src/normals/normals_parameters.h \
     scaleframe.h \
