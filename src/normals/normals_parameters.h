@@ -4,8 +4,9 @@
 #include <QString>
 
 #include "../taskparameters.h"
+#include "near_ps.h"
 
-enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA, NORMALS_ROBUST };
+enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA, NORMALS_ROBUST, NORMALS_NEAR_PS };
 enum FlatMethod { FLAT_NONE, FLAT_RADIAL, FLAT_FOURIER, FLAT_BLUR };
 enum SurfaceIntegration { SURFACE_NONE, SURFACE_BNI, SURFACE_ASSM, SURFACE_FFT };
 
@@ -15,7 +16,7 @@ public:
 	bool compute = true;
 	QString input_path;
 
-	NormalSolver solver =  NORMALS_ROBUST; //NORMALS_L2;
+	NormalSolver solver = NORMALS_ROBUST; //NORMALS_L2;
 
 	// Robust solver thresholds (pixel intensity in [0, 255]).
 	// Values above high_threshold are treated as specular highlights and excluded.
@@ -35,6 +36,9 @@ public:
 	int surface_height = 0;
 
 	QString normalsname = "normals"; //filename for normals  img.
+
+	// Parameters for the Near-light PS solver (used when solver == NORMALS_NEAR_PS)
+	NearPSParams near_ps_params;
 
 	QString summary() const override;
 	QJsonObject toJson() const override;

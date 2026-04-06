@@ -18,6 +18,7 @@ SET(HEADERS
 	../src/normals/fft_normal_integration.h
 	../src/normals/fast_gaussian_blur.h
 	../src/normals/flatnormals.h
+	../src/normals/near_ps.h
 	../src/normals/pocketfft.h
 	../src/normals/normals_parameters.h
 	../src/normals/normalstask.h
@@ -61,6 +62,7 @@ SET(SOURCES
 	../src/normals/fft_normal_integration.cpp
 	../src/normals/fast_gaussian_blur.cpp
 	../src/normals/flatnormals.cpp
+	../src/normals/near_ps.cpp
 	../src/normals/normals_parameters.cpp
 	../src/normals/normalstask.cpp
 	../src/normals/normalsworker.cpp

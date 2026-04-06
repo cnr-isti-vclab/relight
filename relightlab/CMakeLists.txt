@@ -45,6 +45,7 @@ set (RELIGHT_HEADERS
     ../src/normals/bni_normal_integration.h
     ../src/normals/fft_normal_integration.h
     ../src/normals/fast_gaussian_blur.cpp
+    ../src/normals/near_ps.h
     ../src/normals/normalstask.h
     ../src/normals/normalsworker.h
     ../src/normals/normals_parameters.h
@@ -128,6 +129,7 @@ set (RELIGHTLAB_SOURCES
     ../src/normals/bni_normal_integration.cpp
     ../src/normals/fft_normal_integration.cpp
     ../src/normals/fast_gaussian_blur.cpp
+    ../src/normals/near_ps.cpp
     ../src/normals/normals_parameters.cpp
     ../src/normals/normalstask.cpp
     ../src/normals/normalsworker.cpp

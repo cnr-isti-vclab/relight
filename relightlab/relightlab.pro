@@ -57,6 +57,7 @@ SOURCES += main.cpp \
     ../src/cli/rtibuilder.cpp \
     ../src/network/httpserver.cpp \
     ../src/normals/flatnormals.cpp \
+    ../src/normals/near_ps.cpp \
     ../src/normals/normalstask.cpp \
     ../src/normals/normalsworker.cpp \
     ../src/normals/bni_normal_integration.cpp \
@@ -150,6 +151,7 @@ HEADERS += \
     ../src/cli/rtibuilder.h \
     ../src/crop.h \
     ../src/normals/flatnormals.h \
+    ../src/normals/near_ps.h \
     brdfplan.h \
     imagecropper.h \
     processqueue.h \

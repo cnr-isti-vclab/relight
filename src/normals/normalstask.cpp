@@ -1,5 +1,6 @@
 #include "normalstask.h"
 #include "normalsworker.h"
+#include "near_ps.h"
 #include "../jpeg_decoder.h"
 #include "../jpeg_encoder.h"
 #include "../imageset.h"
@@ -108,38 +109,140 @@ void NormalsTask::run() {
 		height = imageset.height;
 
 		normals.resize(width * height);
-		RelightThreadPool pool;
-		PixelArray line;
-		imageset.setCallback(nullptr);
-		pool.start(QThread::idealThreadCount());
 
-		for (int i = 0; i < height; i++) {
-			// Read a line
-			imageset.readLine(line);
-
-			// Create the normal task and get the run lambda
-			uint32_t idx = i * width;
-			Eigen::Vector3f* data = &normals[idx];
-
-			NormalsWorker *task = new NormalsWorker(parameters.solver, i, line, data, imageset,
-				parameters.robust_threshold_high, parameters.robust_threshold_low);
-
-			std::function<void(void)> run = [task](void)->void {
-				task->run();
-				delete task;
-			};
-
-			// Launch the task
-			pool.queue(run);
-			pool.waitForSpace();
-
-			bool proceed = progressed("Computing normals...", ((float)i / imageset.height) * 100);
-			if(!proceed)
+		if (parameters.solver == NORMALS_NEAR_PS) {
+			// ---- Near-light Photometric Stereo: read all images at once ----
+			if (!imageset.light3d) {
+				error = "Near-light PS requires 3D light positions. "
+				        "Set dome configuration to SPHERICAL or LIGHTS3D.";
+				status = FAILED;
 				return;
-		}
+			}
 
-		// Wait for the end of all the threads
-		pool.finish();
+			int nimgs = (int)imageset.size();
+
+			// Read all images (grayscale), layout: I[img * height * width + r * width + c]
+			NearPSData psdata;
+			psdata.nrows     = height;
+			psdata.ncols     = width;
+			psdata.nimgs     = nimgs;
+			psdata.nchannels = 1;
+			psdata.I.assign((size_t)nimgs * height * width, 0.0);
+
+			PixelArray line;
+			imageset.setCallback(nullptr);
+			imageset.restart();
+			for (int r = 0; r < height; r++) {
+				imageset.readLine(line);
+				for (int c = 0; c < (int)line.size(); c++) {
+					for (int img = 0; img < nimgs; img++)
+						psdata.I[img * height * width + r * width + c] = (double)line[c][img].mean();
+				}
+				if (!progressed("Reading images for Near PS...", int(50.0 * r / height)))
+					return;
+			}
+
+			// 3D light positions (mm)
+			const auto &lts = imageset.lights();
+			NearPSCalib calib;
+			calib.S.resize(nimgs, 3);
+			for (int i = 0; i < nimgs; i++) {
+				calib.S(i, 0) = (double)lts[i][0];
+				calib.S(i, 1) = (double)lts[i][1];
+				calib.S(i, 2) = (double)lts[i][2];
+			}
+
+			// Focal length in pixels.
+			// Depth z and light positions S are both in mm; fx converts pixel offsets to the same unit.
+			// pixel_size (mm/pixel) comes from dome.imageWidth; lens.focalLength is in mm (or 35mm equiv).
+			double px_size = imageset.pixel_size;
+			const Lens &l  = imageset.lens;
+			double fx_px;
+			if (l.focalLength > 0.0 && px_size > 0.0) {
+				double fl_mm = l.focalLength;
+				if (l.focal35equivalent && l.pixelSizeX > 0.0) {
+					double w   = l.pixelSizeX * l.width;
+					double h   = l.pixelSizeY * l.height;
+					double diag = std::sqrt(w * w + h * h);
+					fl_mm = l.focalLength * diag / 43.27;
+				}
+				fx_px = fl_mm / px_size;
+			} else if (l.pixelSizeX > 0.0 && l.focalLength > 0.0) {
+				fx_px = l.focalLength / l.pixelSizeX;
+			} else {
+				// No calibration: assume a ~50 mm lens on a 35 mm sensor as fallback
+				fx_px = width * (50.0 / 36.0);
+			}
+
+			// Principal point in 1-indexed pixel coordinates (near_ps.cpp convention)
+			double cx = (width  + 1) / 2.0;
+			double cy = (height + 1) / 2.0;
+			calib.K = Eigen::Matrix3d::Zero();
+			calib.K(0, 0) = fx_px;
+			calib.K(1, 1) = fx_px;
+			calib.K(0, 2) = cx;
+			calib.K(1, 2) = cy;
+			calib.K(2, 2) = 1.0;
+
+			// Isotropic point lights (defaults; user can extend these later)
+			calib.Phi = Eigen::MatrixXd::Ones(nimgs, 1);
+			calib.mu  = Eigen::VectorXd::Zero(nimgs);
+			calib.Dir = Eigen::MatrixXd::Zero(nimgs, 3);
+			calib.Dir.col(2).setOnes();
+
+			// Forward solver progress to 50-100% of the task progress
+			std::function<bool(std::string, int)> ps_cb =
+				[this](std::string s, int p) -> bool {
+					return progressed(QString::fromStdString(s), 50 + p / 2);
+				};
+
+			NearPSResult result = near_ps(psdata, calib, parameters.near_ps_params, ps_cb);
+			if (result.N.empty()) {
+				error = "Near PS solver failed";
+				status = FAILED;
+				return;
+			}
+
+			for (int i = 0; i < height * width; i++)
+				normals[i] = Eigen::Vector3f(
+					(float)result.N[i][0],
+					(float)result.N[i][1],
+					(float)result.N[i][2]);
+
+		} else {
+			RelightThreadPool pool;
+			PixelArray line;
+			imageset.setCallback(nullptr);
+			pool.start(QThread::idealThreadCount());
+
+			for (int i = 0; i < height; i++) {
+				// Read a line
+				imageset.readLine(line);
+
+				// Create the normal task and get the run lambda
+				uint32_t idx = i * width;
+				Eigen::Vector3f* data = &normals[idx];
+
+				NormalsWorker *task = new NormalsWorker(parameters.solver, i, line, data, imageset,
+					parameters.robust_threshold_high, parameters.robust_threshold_low);
+
+				std::function<void(void)> run = [task](void)->void {
+					task->run();
+					delete task;
+				};
+
+				// Launch the task
+				pool.queue(run);
+				pool.waitForSpace();
+
+				bool proceed = progressed("Computing normals...", ((float)i / imageset.height) * 100);
+				if(!proceed)
+					return;
+			}
+
+			// Wait for the end of all the threads
+			pool.finish();
+		}
 		if(parameters.crop.angle != 0.0f) {
 			//rotate and crop the normals.
 			normals = parameters.crop.cropBoundingNormals(normals, width, height);
