@@ -67,8 +67,10 @@ bool ImageSet::initFromProject(Project &project) {
 			images.push_back(img.filename);
 		}
 	}
-	lens = project.lens;
+	//The code is a bit messy: initImages will read the focal length, but we need to use the project.
 	initImages(project.dir.absolutePath().toStdString().c_str());
+	lens = project.lens;
+
 	initFromDome(project.dome);
 	if(lights1.size() != visibles.size()) {
 		throw QString("Number of lights in dome needs to be equal to the number of images");

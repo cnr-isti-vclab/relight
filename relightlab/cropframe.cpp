@@ -167,7 +167,7 @@ void CropFrame::init() {
 	}
 	auto *model = qobject_cast<QStandardItemModel*>(units->model());
 	auto *item = model->item(1);
-	item->setEnabled(project.pixelSize != 0.0f);
+	item->setEnabled(project.pixelSize() != 0.0f);
 
 	cropper->showImage(0);
 	cropper->setCrop(project.crop);
@@ -178,9 +178,9 @@ void CropFrame::scaleChanged() {
 	Project &project = qRelightApp->project();
 	auto *model = qobject_cast<QStandardItemModel*>(units->model());
 	auto *item = model->item(1);
-	item->setEnabled(project.pixelSize != 0.0f);
+	item->setEnabled(project.pixelSize() != 0.0f);
 
-	if(project.pixelSize == 0.0f &&  units->currentIndex() == 1) {
+	if(project.pixelSize() == 0.0f &&  units->currentIndex() == 1) {
 		units->setCurrentIndex(0);
 	}
 	setCrop(project.crop);
@@ -204,7 +204,7 @@ void CropFrame::setCrop(Crop crop) {
 	pixelSize = 1.0f;
 	int d = 0;
 	if(units->currentIndex() == 1)  {
-		pixelSize = qRelightApp->project().pixelSize;
+		pixelSize = qRelightApp->project().pixelSize();
 		d = 1;
 	}
 	crop_top   ->setDecimals(d);

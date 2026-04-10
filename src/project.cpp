@@ -391,8 +391,8 @@ void Project::load(QString filename) {
 	imgsize.setHeight(obj["height"].toInt());
 	if(!imgsize.isValid())
 		throw QString("Missing or invalid width and/or height in project.");
-	if(obj.contains("pixelSize"))
-		pixelSize = obj["pixelSize"].toDouble();
+	/*f(obj.contains("pixelSize"))
+		pixelSize = obj["pixelSize"].toDouble(); */
 
 	// Load ICC profile information
 	if(obj.contains("iccProfileDescription"))
@@ -544,7 +544,7 @@ void Project::save(QString filename) {
 
 	project.insert("width", imgsize.width());
 	project.insert("height", imgsize.height());
-	project.insert("pixelSize", pixelSize);
+	project.insert("pixelSize", pixelSize());
 
 	// Save ICC profile information
 	if(icc_profile_description != "No profile") {
@@ -727,7 +727,7 @@ Measure *Project::newMeasure() {
 	return m;
 }
 void Project::computePixelSize() {
-	pixelSize = 0;
+	float pixelSize = 0;
 	float count = 0;
 	for(Measure *m: measures)
 		if(m->isValid()) {

@@ -178,7 +178,7 @@ void ScaleFrame::setLengthLabel(double length) {
 		scene.addItem(text);
 
 	scale->setValue(length);
-	pixelSize->setText(QString("Pixel size in mm: %1").arg(qRelightApp->project().pixelSize));
+	pixelSize->setText(QString("Pixel size in mm: %1").arg(qRelightApp->project().pixelSize()));
 
 }
 
@@ -205,7 +205,7 @@ void ScaleFrame::setLength(double length) {
 	measure->length = scale->value();
 	project.measures.push_back(measure);
 	project.computePixelSize();
-	pixelSize->setText(QString("Pixel size in mm: %1").arg(qRelightApp->project().pixelSize));
+	pixelSize->setText(QString("Pixel size in mm: %1").arg(qRelightApp->project().pixelSize()));
 	emit pixelSizeChanged();
 }
 

@@ -40,7 +40,7 @@ public:
 	std::vector<White *> whites;
 	Crop crop;
 	std::vector<QPointF> offsets;
-	float pixelSize = 0.0f; //if computed from measures in mm
+	float pixelSize() { return dome.imageWidth / lens.width; } //if computed from measures in mm
 
 	// ICC color profile information (detected from images)
 	QString icc_profile_description;

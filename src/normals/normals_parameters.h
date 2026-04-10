@@ -15,7 +15,7 @@ public:
 	bool compute = true;
 	QString input_path;
 
-	NormalSolver solver =  NORMALS_ROBUST; //NORMALS_L2;
+	NormalSolver solver =  NORMALS_ROBUST;
 
 	// Robust solver thresholds (pixel intensity in [0, 255]).
 	// Values above high_threshold are treated as specular highlights and excluded.

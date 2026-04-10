@@ -19,7 +19,7 @@ void BrdfTask::initFromProject(Project &project) {
 	imageset.setCrop(parameters.crop, project.offsets);
 	imageset.rotateLights(-parameters.crop.angle);
 
-	imageset.pixel_size = project.pixelSize;
+	imageset.pixel_size = project.pixelSize();
 }
 
 

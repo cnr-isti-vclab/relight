@@ -76,7 +76,7 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	connect(image_width, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double v) {
 		auto &project = qRelightApp->project();
 		project.dome.imageWidth = v;
-		project.pixelSize = project.dome.imageWidth/project.imgsize.width();
+		//project.pixelSize = project.dome.imageWidth/project.imgsize.width();
 		qRelightApp->project().needs_saving = true;
 		recomputeGeometry();
 	});

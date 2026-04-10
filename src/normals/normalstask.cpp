@@ -50,7 +50,7 @@ void NormalsTask::initFromProject(Project &project) {
 	imageset.setCrop(parameters.crop, project.offsets);
 	imageset.rotateLights(-parameters.crop.angle);
 
-	imageset.pixel_size = project.pixelSize;
+	imageset.pixel_size = project.pixelSize();
 }
 
 void NormalsTask::initFromFolder(const char *folder, Dome &dome, const Crop &folderCrop) {

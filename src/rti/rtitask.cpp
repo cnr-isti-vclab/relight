@@ -30,7 +30,7 @@ RtiTask::RtiTask(): Task() {
 }
 
 void RtiTask::setProject(Project &project) {
-	builder->imageset.pixel_size = project.pixelSize;
+	builder->imageset.pixel_size = project.pixelSize();
 
 	builder->nworkers = qRelightApp->nThreads();
 	builder->samplingram = qRelightApp->samplingRam();
@@ -42,7 +42,7 @@ void RtiTask::setProject(Project &project) {
 
 	imageset.setCrop(parameters.crop, project.offsets);
 	imageset.rotateLights(-parameters.crop.angle);
-	imageset.pixel_size = project.pixelSize;
+	imageset.pixel_size = project.pixelSize();
 	builder->sigma = 0.125*100/imageset.images.size();
 
 	builder->crop[0] = imageset.left;
