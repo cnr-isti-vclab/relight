@@ -32,6 +32,8 @@ ImageSet::ImageSet(const char *path) {
 ImageSet::~ImageSet() {
 	if(color_transform)
 		cmsDeleteTransform(color_transform);
+	if(output_color_transform)
+		cmsDeleteTransform(output_color_transform);
 	if(input_profile)
 		cmsCloseProfile(input_profile);
 
@@ -70,6 +72,18 @@ bool ImageSet::initFromProject(Project &project) {
 	//The code is a bit messy: initImages will read the focal length, but we need to use the project.
 	initImages(project.dir.absolutePath().toStdString().c_str());
 	lens = project.lens;
+
+	// Apply forced input colorspace override: replace whatever ICC data initImages
+	// detected with the profile the user explicitly chose. This is primarily for
+	// synthetic images (e.g. Blender renders) that carry no embedded ICC profile.
+	if(project.forced_input_colorspace == Project::FORCE_LINEAR) {
+		icc_profile_data = ICCProfiles::linearRGBData();
+		// Invalidate any cached read transform so it is rebuilt with the new profile.
+		if(color_transform) { cmsDeleteTransform(color_transform); color_transform = nullptr; }
+	} else if(project.forced_input_colorspace == Project::FORCE_SRGB) {
+		icc_profile_data = ICCProfiles::sRGBData();
+		if(color_transform) { cmsDeleteTransform(color_transform); color_transform = nullptr; }
+	}
 
 	initFromDome(project.dome);
 	if(lights1.size() != visibles.size()) {
@@ -280,9 +294,11 @@ void ImageSet::setColorProfileMode(ColorProfileMode mode) {
 	if(color_profile_mode == mode)
 		return;
 	color_profile_mode = mode;
-	if(color_transform) {
-		cmsDeleteTransform(color_transform);
-		color_transform = nullptr;
+	// Only invalidate the output transform; the read transform always targets
+	// linear RGB and is independent of the output colorspace setting.
+	if(output_color_transform) {
+		cmsDeleteTransform(output_color_transform);
+		output_color_transform = nullptr;
 	}
 }
 
@@ -407,8 +423,9 @@ void ImageSet::readLine(PixelArray &pixels) {
 
 	for(size_t i = 0; i < decoders.size(); i++) {
 		decoders[i]->readRows(1, row.data());
-		applyColorTransform(row.data(), width);
+
 		int x_offset = offsets.size() ? offsets[i].x() : 0;
+		applyColorTransform(row.data() + (left + x_offset)*3, width);
 
 		for(int x = left; x < right; x++) {
 			pixels[x - left][i].r = row[(x + x_offset)*3 + 0];
@@ -466,7 +483,8 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 		for(uint32_t i = 0; i < decoders.size(); i++) {
 			JpegDecoder *dec = decoders[i];
 			dec->readRows(1, row.data());
-			applyColorTransform(row.data(), image_width);
+
+			applyColorTransform(row.data() + left*3, width);
 			uint32_t x = 0;
 			for(int k: selection) {
 				Color3f &pixel = sample[x][i];
@@ -500,12 +518,54 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 	return nsamples;
 }
 
+// Read path: always convert input JPEG data to linear RGB.
+// When no ICC profile is embedded, sRGB is assumed (standard JPEG default).
 void ImageSet::applyColorTransform(uint8_t *data, size_t pixel_count) {
-	if(color_profile_mode == COLOR_PROFILE_PRESERVE)
-		return;
 	if(!color_transform)
-		color_transform = ColorProfile::createColorTransform(icc_profile_data, color_profile_mode, input_profile);
+		color_transform = ColorProfile::createColorTransform(icc_profile_data, COLOR_PROFILE_LINEAR_RGB, input_profile);
 	cmsDoTransform(color_transform, data, data, pixel_count);
+}
+
+const std::vector<uint8_t> ImageSet::getOutputICCProfile() const {
+	switch(color_profile_mode) {
+	case COLOR_PROFILE_LINEAR_RGB:
+		return ICCProfiles::linearRGBData();
+	case COLOR_PROFILE_SRGB:
+		return ICCProfiles::sRGBData();
+	case COLOR_PROFILE_DISPLAY_P3:
+		return ICCProfiles::displayP3Data();
+	case COLOR_PROFILE_PRESERVE:
+	default:
+		return icc_profile_data; // original input ICC; may be empty (no tag)
+	}
+}
+
+// Write path: convert linear RGB data to the selected output colorspace.
+// No-op only for LINEAR_RGB (data is already in linear RGB and is stored as-is).
+// PRESERVE rebuilds the original input colorspace so the output file looks
+// identical in colour to the source JPEGs.
+void ImageSet::applyOutputColorTransform(uint8_t *data, size_t pixel_count) {
+	if(color_profile_mode == COLOR_PROFILE_LINEAR_RGB)
+		return;
+	if(!output_color_transform) {
+		cmsHPROFILE linear_src = ICCProfiles::openLinearRGBProfile();
+		cmsHPROFILE dst = nullptr;
+		if(color_profile_mode == COLOR_PROFILE_PRESERVE) {
+			// Restore the original input colorspace.
+			if(!icc_profile_data.empty())
+				dst = cmsOpenProfileFromMem(icc_profile_data.data(), icc_profile_data.size());
+			else
+				dst = cmsCreate_sRGBProfile(); // fallback: assume sRGB
+		} else {
+			dst = ColorProfile::createOutputProfile(color_profile_mode);
+		}
+		output_color_transform = cmsCreateTransform(linear_src, TYPE_RGB_8,
+													 dst, TYPE_RGB_8,
+													 INTENT_PERCEPTUAL, 0);
+		cmsCloseProfile(linear_src);
+		cmsCloseProfile(dst);
+	}
+	cmsDoTransform(output_color_transform, data, data, pixel_count);
 }
 
 void ImageSet::restart() {

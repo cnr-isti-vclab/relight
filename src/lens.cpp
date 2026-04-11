@@ -9,10 +9,11 @@ using namespace Eigen;
 double Lens::focal35() {
 	if(focal35equivalent) return focalLength;
 	else {
+		assert("Unused focal not 35 equivalent" && 0); //this path should never happen!
 		double w = pixelSizeX * width;
 		double h = pixelSizeY * height;
 		double diag = sqrt(w*w + h*h);
-		return focalLength * diag / 43.27;
+		return focalLength * w / 36.0;
 	}
 }
 
@@ -33,8 +34,12 @@ Vector3f Lens::viewPosition() {
 	if(focal35equivalent) { //focal length assume a diagonal of 43.27
 		double w = pixelSizeX * width;
 		double h = pixelSizeY * height;
+#ifdef USING_DIAGONAL
 		double diag = sqrt(w*w + h*h);
 		focal  = focalLength * diag / 43.27;
+#else
+		focal = focalLength * w / 36.0;
+#endif
 	}
 	return Vector3f(0, 0, focal/pixelSizeX);
 }
@@ -46,8 +51,12 @@ Vector3f Lens::viewDirection(float x, float y) {
 	if(focal35equivalent) { //focal length assume a diagonal of 43.27
 		double w = pixelSizeX * width;
 		double h = pixelSizeY * height;
+#ifdef USING_DIAGONAL
 		double diag = sqrt(w*w + h*h);
 		focal  = focalLength * diag / 43.27;
+#else
+		focal = focalLength * w / 36.0;
+#endif
 	}
 	x -= width/2;
 	y -= height/2;
@@ -131,63 +140,33 @@ void Lens::readExif(Exif &exif) {
 		// 3. Calculate 35mm Equivalent Focal Length
 		// This is a property of the lens/sensor combo and does NOT change with resizing
 		focalLength = exif[Exif::FocalLength].toDouble();
+#ifdef USING_DIAGONAL
 		double cropFactor = 43.27 / sensorDiag;
+#else
+		double cropFactor = 36.0 / sensorWidth;
+#endif
 		focalLength *= cropFactor;
 
+#ifdef USING_DIAGONAL
 		// 4. Calculate Pixel Size for the CURRENT (resized) image
 		// We use the current 'width' and 'height' of your resized buffer
 		// and map them to the virtual 35mm sensor (43.27mm diagonal)
 		double currentDiag = sqrt((double)width * width + (double)height * height);
 		pixelSizeX = pixelSizeY = 43.27 / currentDiag;
+#else
+		pixelSizeY = pixelSizeX = 36.0 / (double)width;
+#endif
 
 	} else {
+#ifdef USING_DIAGONAL
 		// Fallback: If EXIF resolution is missing, assume Full Frame
 		focalLength = exif[Exif::FocalLength].toDouble();
 		double currentDiag = sqrt((double)width * width + (double)height * height);
 		pixelSizeX = pixelSizeY = 43.27 / currentDiag;
+#else
+	double focalLength = exif[Exif::FocalLengthIn35mmFilm].toDouble();
+
+	pixelSizeY = pixelSizeX = 36.0 / (double)width;
+#endif
 	}
 }
-/*
-	
-	// Use 35mm equivalent from EXIF if available
-	double focalLength35 = exif[Exif::FocalLengthIn35mmFilm].toDouble();
-	if(focalLength35) {
-		focalLength = focalLength35;
-		double diag = sqrt((double)width * width + (double)height * height);
-		pixelSizeX = pixelSizeY = 43.27 / diag;
-		return;
-	}
-
-	focalLength = exif[Exif::FocalLength].toDouble();
-	if(!focalLength)
-		return;
-	
-	double focalPlaneXRes = exif[Exif::FocalPlaneXResolution].toDouble();
-	double focalPlaneYRes = exif[Exif::FocalPlaneYResolution].toDouble();
-	double focalPlaneResUnit = exif[Exif::FocalPlaneResolutionUnit].toDouble();
-	
-	// Convert resolution unit to mm
-	double unitToMm = 25.4; // inches to mm (focalPlaneResUnit is 2)
-	if(focalPlaneResUnit == 3)
-		unitToMm = 10.0; // cm to mm
-	
-	// If we have focal plane resolution, calculate actual pixel size
-	if(focalPlaneXRes > 0 && focalPlaneYRes > 0 && focalLength > 0) {
-		pixelSizeX = unitToMm / focalPlaneXRes;
-		pixelSizeY = unitToMm / focalPlaneYRes;
-		
-		// Calculate 35mm equivalent focal length for reference
-		double sensorWidth = pixelSizeX * width;
-		double sensorHeight = pixelSizeY * height;
-		double sensorDiag = sqrt(sensorWidth * sensorWidth + sensorHeight * sensorHeight);
-		focalLength *= 43.27 / sensorDiag;
-
-		double diag = sqrt((double)width * width + (double)height * height);
-		pixelSizeX = pixelSizeY = 43.27 / diag;
-		
-	} else {
-		// Last resort: assume full frame sensor
-		double diag = sqrt((double)width * width + (double)height * height);
-		pixelSizeX = pixelSizeY = 43.27 / diag;
-	}
-} */

@@ -2,6 +2,7 @@
 #define LIGHTGEOMETRY_H
 
 #include "../src/dome.h"
+#include "../src/project.h"
 #include <QFrame>
 
 class QDoubleSpinBox;
@@ -10,6 +11,8 @@ class QSpinBox;
 class QTextEdit;
 class QLineEdit;
 class QAbstractButton;
+class QLabel;
+class QRadioButton;
 class HelpRadio;
 class DirectionsView;
 
@@ -22,7 +25,7 @@ class DirectionsView;
 
 class LightsGeometry: public QFrame {
 	Q_OBJECT
-public:	
+public:
 	QSpinBox *images_number;
 	QTextEdit *notes;
 	QLineEdit *filename;
@@ -36,6 +39,12 @@ public:
 	DirectionsView *directions_view;
 
 	QDoubleSpinBox *focal_length = nullptr;
+
+	// ICC / colorspace section
+	QLabel         *icc_label    = nullptr;  // shows detected profile name
+	QButtonGroup   *cs_group     = nullptr;  // forced input colorspace radios
+	QRadioButton   *cs_linear    = nullptr;
+	QRadioButton   *cs_srgb      = nullptr;
 
 	QButtonGroup *group = nullptr;
 

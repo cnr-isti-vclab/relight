@@ -4,8 +4,10 @@
 #include "directionsview.h"
 #include "../src/sphere.h"
 #include "../src/exif.h"
+#include "../src/icc_profiles.h"
 
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QFrame>
 #include <QGridLayout>
 #include <QLabel>
@@ -126,10 +128,8 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 	auto *lensTitle = new QLabel("<b>Lens</b>");
 	lensLayout->addWidget(lensTitle, 0, 0, 1, 3);
 
-	QLabel *focal_label = new QLabel("Focal length (35mm equivalent):");
+	auto *focal_label = new HelpLabel("Focal length (35mm equivalent):", "interface/lights#focal");
 	focal_label->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	focal_label->setMaximumSize(300, 300);
-	focal_label->setMinimumSize(300, 300);
 
 	lensLayout->addWidget(focal_label, 1, 0);
 	focal_length = new QDoubleSpinBox;
@@ -150,6 +150,37 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 		qRelightApp->project().needs_saving = true;
 	});
 	connect(readBtn, &QPushButton::clicked, this, &LightsGeometry::readFocalLength);
+
+	// ---- Detected colorspace ----
+	icc_label = new QLabel;
+	icc_label->setWordWrap(true);
+	lensLayout->addWidget(new QLabel("Input colorspace:"),  2, 0);
+	lensLayout->addWidget(icc_label,                         2, 1, 1, 2);
+
+	// Override controls — only relevant when no ICC profile is embedded.
+	lensLayout->addWidget(new HelpLabel("Force input as:", "interface/lights#colorspace"), 3, 0);
+	cs_linear = new QRadioButton("Linear RGB");
+	cs_srgb   = new QRadioButton("sRGB");
+
+	cs_group = new QButtonGroup(this);
+	cs_group->addButton(cs_linear, Project::FORCE_LINEAR);
+	cs_group->addButton(cs_srgb,   Project::FORCE_SRGB);
+
+	auto *csBox = new QWidget;
+	auto *csRow = new QHBoxLayout(csBox);
+	csRow->setContentsMargins(0,0,0,0);
+	csRow->addWidget(cs_linear);
+	csRow->addWidget(cs_srgb);
+	csRow->addStretch();
+	lensLayout->addWidget(csBox, 3, 1, 1, 2);
+
+	connect(cs_group, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked),
+		[this](QAbstractButton *) {
+			Project &project = qRelightApp->project();
+			project.forced_input_colorspace =
+				static_cast<Project::ForcedInputColorspace>(cs_group->checkedId());
+			project.needs_saving = true;
+		});
 
 	page->addStretch();
 }
@@ -205,6 +236,30 @@ void LightsGeometry::init() {
 		focal_length->blockSignals(true);
 		focal_length->setValue(qRelightApp->project().lens.focal35());
 		focal_length->blockSignals(false);
+	}
+
+	// Update detected colorspace label
+	Project &project = qRelightApp->project();
+	if(icc_label) {
+		bool no_profile = (project.icc_profile_description == "No profile" ||
+						   project.icc_profile_description.isEmpty());
+		if(no_profile)
+			icc_label->setText("<i>No embedded ICC profile</i>");
+		else
+			icc_label->setText(project.icc_profile_description);
+
+		// Override controls are only meaningful when there is no embedded ICC profile.
+		cs_linear->setEnabled(no_profile);
+		cs_srgb->setEnabled(no_profile);
+
+		cs_group->blockSignals(true);
+		if(no_profile) {
+			// FORCE_NONE is not valid without a real profile; treat as FORCE_SRGB (the default).
+			if(project.forced_input_colorspace == Project::FORCE_NONE)
+				project.forced_input_colorspace = Project::FORCE_SRGB;
+			cs_group->button(project.forced_input_colorspace)->setChecked(true);
+		}
+		cs_group->blockSignals(false);
 	}
 }
 

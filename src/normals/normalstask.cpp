@@ -208,10 +208,11 @@ void NormalsTask::run() {
 			normalmap[i*3 + 2] = std::min(std::max(round(((normals[i][2] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
 		}
 
-		// Use JpegEncoder to save with proper colorspace handling
+		// Normal maps encode XYZ direction vectors (remapped to [0,255]).
+		// This is geometry data, NOT color: do NOT apply any color transform.
 		JpegEncoder encoder;
 		encoder.setColorSpace(JCS_RGB, 3);
-		encoder.setJpegColorSpace(JCS_RGB); // Keep RGB colorspace to preserve normal map values
+		encoder.setJpegColorSpace(JCS_RGB);
 		encoder.setQuality(100);
 		encoder.setOptimize(true);
 		encoder.setChromaSubsampling(false); // No chroma subsampling for normal maps

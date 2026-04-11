@@ -47,6 +47,11 @@ public:
 	bool icc_profile_is_srgb = false;
 	bool icc_profile_is_display_p3 = false;
 
+	// When the images carry no ICC profile (e.g. synthetic / Blender renders)
+	// the user can force relight to treat the input as a specific known colorspace.
+	enum ForcedInputColorspace { FORCE_NONE, FORCE_LINEAR, FORCE_SRGB };
+	ForcedInputColorspace forced_input_colorspace = FORCE_NONE;
+
 	QString name;
 	std::vector<QString> authors;
 	QString platform;

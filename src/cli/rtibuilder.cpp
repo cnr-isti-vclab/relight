@@ -860,6 +860,12 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality, QString color_profile) {
 
 	if(!color_profile.isEmpty())
 		stream << "\"colorProfile\": \"" << color_profile << "\",\n";
+
+	// Signal to OpenLime that these tiles were built from linear-RGB input data.
+	// The reconstructed polynomial value is in linear RGB; OpenLime must apply
+	// the inverse of the tile colorspace transform (e.g. sRGB linearisation)
+	// before evaluating the basis and then re-encode for display.
+	stream << "\"linearInput\": true,\n";
 		
 	if(type == RBF || type == BILINEAR) {
 		stream << "\"basis\": [\n";
@@ -1390,7 +1396,12 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	switch(colorProfileMode) {
 	case COLOR_PROFILE_PRESERVE:
 	default:
-		output_icc_profile = preserved_icc;
+		// Tiles are converted back to the original input colorspace.
+		output_icc_profile = preserved_icc; // may be empty → no ICC tag embedded
+		break;
+	case COLOR_PROFILE_LINEAR_RGB:
+		// Tiles stay in linear RGB; embed the linear RGB profile.
+		output_icc_profile = ICCProfiles::linearRGBData();
 		break;
 	case COLOR_PROFILE_SRGB:
 		output_icc_profile = ICCProfiles::sRGBData();
@@ -1581,8 +1592,12 @@ size_t RtiBuilder::save(const string &output, int quality) {
 				if(savemedians)
 					medians.setPixel(x, y- nworkers, qRgb(doneworker->medians[x*3], doneworker->medians[x*3+1], doneworker->medians[x*3+2]));
 			}
-			for(size_t j = 0; j < encoders.size(); j++)
+			for(size_t j = 0; j < encoders.size(); j++) {
+				// Convert each plane row from linear RGB to the output colorspace
+				// before JPEG encoding. OpenLime will linearise on load.
+				imageset.applyOutputColorTransform(doneworker->line[j].data(), width);
 				encoders[j]->writeRows(doneworker->line[j].data(), 1);
+			}
 			if(y < height)
 				workers[y] = doneworker;
 			else

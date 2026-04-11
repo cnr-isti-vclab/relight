@@ -1,5 +1,7 @@
 #include "brdftask.h"
 #include "../src/relight_threadpool.h"
+#include "../src/jpeg_encoder.h"
+#include "../src/icc_profiles.h"
 
 #include <QImage>
 #include <vector>
@@ -20,6 +22,7 @@ void BrdfTask::initFromProject(Project &project) {
 	imageset.rotateLights(-parameters.crop.angle);
 
 	imageset.pixel_size = project.pixelSize();
+	imageset.setColorProfileMode(COLOR_PROFILE_LINEAR_RGB);
 }
 
 
@@ -30,6 +33,7 @@ void BrdfTask::initFromFolder(const char *folder, Dome &dome, const Crop &folder
 	if(folderCrop.width() > 0)
 		imageset.setCrop(folderCrop);
 	imageset.rotateLights(-folderCrop.angle);
+	imageset.setColorProfileMode(COLOR_PROFILE_LINEAR_RGB);
 }
 
 void BrdfTask::setParameters(BrdfParameters &param) {
@@ -95,24 +99,39 @@ void BrdfTask::run() {
 
 
 		vector<uint8_t> albedomap(width * height * 3);
-		for(size_t i = 0; i < albedo.size(); i++) {
-				albedomap[i] = std::min(std::max(int(albedo[i]), 0), 255);
+		for(size_t i = 0; i < albedo.size(); i++)
+			albedomap[i] = std::min(std::max(int(albedo[i]), 0), 255);
+
+		// Output colorspace: convert from linear RGB to the user-selected space.
+		imageset.applyOutputColorTransform(albedomap.data(), width * height);
+
+		// Handle optional rotated crop via QImage, then encode with JpegEncoder
+		// so we can embed the correct output ICC profile.
+		uint8_t *pixels = albedomap.data();
+		int out_w = width, out_h = height;
+		QImage rotated; // kept alive until encode
+		if(parameters.crop.angle != 0.0f) {
+			QImage tmp(albedomap.data(), width, height, width*3, QImage::Format_RGB888);
+			rotated = parameters.crop.cropBoundingImage(tmp).convertToFormat(QImage::Format_RGB888);
+			pixels = rotated.bits();
+			out_w  = rotated.width();
+			out_h  = rotated.height();
 		}
 
-		QImage img(albedomap.data(), width, height, width*3, QImage::Format_RGB888);
-		if(parameters.crop.angle != 0.0f)
-			img = parameters.crop.cropBoundingImage(img);
+		JpegEncoder encoder;
+		encoder.setColorSpace(JCS_RGB, 3);
+		encoder.setJpegColorSpace(JCS_RGB);
+		encoder.setQuality(parameters.quality);
+		encoder.setChromaSubsampling(false);
+		if(imageset.pixel_size > 0)
+			encoder.setDotsPerMeter(round(1000.0 / imageset.pixel_size));
+		const auto icc = imageset.getOutputICCProfile();
+		if(!icc.empty())
+			encoder.setICCProfile(icc);
 
-		// Set spatial resolution if known. Need to convert as pixelSize stored in mm/pixel whereas QImage requires pixels/m
-		if( imageset.pixel_size > 0 ) {
-			int dotsPerMeter = round(1000.0/imageset.pixel_size);
-			img.setDotsPerMeterX(dotsPerMeter);
-			img.setDotsPerMeterY(dotsPerMeter);
-		}
-
-		bool saved = img.save(destination.filePath(parameters.albedo_path + ".jpg"), "jpg", parameters.quality);
-		if(!saved) {
-			error = "Could not save the image: " + destination.filePath(parameters.albedo_path);
+		QString albedoPath = destination.filePath(parameters.albedo_path + ".jpg");
+		if(!encoder.encode(pixels, out_w, out_h, albedoPath.toStdString().c_str())) {
+			error = "Could not save the image: " + albedoPath;
 			status = FAILED;
 			return;
 		}

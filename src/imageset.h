@@ -84,8 +84,19 @@ public:
 	void setLights(const std::vector<Eigen::Vector3f> &lights, const Dome::LightConfiguration configuration);
 	std::vector<Eigen::Vector3f> &lights() { return lights1; }
 
+	// color_profile_mode controls the OUTPUT colorspace only.
+	// Input JPEGs are always converted to linear RGB regardless of this setting.
 	void setColorProfileMode(ColorProfileMode mode);
 	ColorProfileMode getColorProfileMode() const { return color_profile_mode; }
+
+	// Apply the output colorspace transform (linear RGB → color_profile_mode target).
+	// Call this on pixel data just before writing to an output file.
+	// No-op only for LINEAR_RGB (data stays in linear).
+	void applyOutputColorTransform(uint8_t *data, size_t pixel_count);
+
+	// Returns the ICC profile data that matches the current output colorspace.
+	// Embed this in output JPEG files so readers can interpret the pixels correctly.
+	const std::vector<uint8_t> getOutputICCProfile() const;
 
 	size_t size() { return size_t(images.size()); }
 
@@ -111,7 +122,8 @@ protected:
 	std::vector<JpegDecoder *> decoders;
 	std::vector<uint8_t> icc_profile_data;
 	cmsHPROFILE input_profile = nullptr;
-	cmsHTRANSFORM color_transform = nullptr;
+	cmsHTRANSFORM color_transform = nullptr;        // read path: input ICC → linear RGB
+	cmsHTRANSFORM output_color_transform = nullptr; // write path: linear RGB → color_profile_mode
 	ColorProfileMode color_profile_mode = COLOR_PROFILE_PRESERVE;
 
 private:

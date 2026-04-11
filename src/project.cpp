@@ -59,6 +59,7 @@ void Project::clear() {
 	icc_profile_description = "No profile";
 	icc_profile_is_srgb = false;
 	icc_profile_is_display_p3 = false;
+	forced_input_colorspace = FORCE_NONE;
 	taskHistoryEntries.clear();
 }
 
@@ -135,8 +136,9 @@ bool Project::scanDir() {
 #endif
 			image.readExif(exif);
 			image_lens.readExif(exif);
-			is_exif_srgb = true; //assume it's srgb anyway.
-			//exif.value(Exif::ColorSpace, QString()).toString() == "sRGB";
+			// ColorSpace tag: 1 = sRGB, 0xFFFF = uncalibrated/unspecified
+			if(exif.value(Exif::ColorSpace, 0xFFFF).toUInt() == 1)
+				is_exif_srgb = true;
 
 		} catch(QString err) {
 			//qMessageBox()
@@ -169,6 +171,8 @@ bool Project::scanDir() {
 	icc_profile_description = "No profile";
 	icc_profile_is_srgb = false;
 	icc_profile_is_display_p3 = false;
+	// Note: forced_input_colorspace is intentionally NOT reset here;
+	// the user's override should survive a project reload.
 	
 	for(const Image &image: images) {
 		if(!image.skip) {
@@ -182,11 +186,16 @@ bool Project::scanDir() {
 					icc_profile_description = ColorProfile::getProfileDescription(profile_data, is_rgb);
 					icc_profile_is_srgb = ColorProfile::isSRGBProfile(profile_data);
 					icc_profile_is_display_p3 = ColorProfile::isDisplayP3Profile(profile_data);
-				} else { //assume sRGB
+				} else {
 					if(is_exif_srgb) {
 						icc_profile_description = "sRGB";
 						icc_profile_is_srgb = true;
 						icc_profile_is_display_p3 = false;
+					} else {
+						// No ICC profile and no EXIF colorspace tag: default to sRGB interpretation.
+						// icc_profile_description stays "No profile" so the UI informs the user.
+						// The user can switch to FORCE_LINEAR for synthetic (e.g. Blender) renders.
+						forced_input_colorspace = FORCE_SRGB;
 					}
 				}
 				break; // Only check first valid image
@@ -410,6 +419,15 @@ void Project::load(QString filename) {
 	else
 		icc_profile_is_display_p3 = false;
 
+	if(obj.contains("forcedInputColorspace")) {
+		QString forced = obj["forcedInputColorspace"].toString();
+		if(forced == "linear")      forced_input_colorspace = FORCE_LINEAR;
+		else if(forced == "srgb")   forced_input_colorspace = FORCE_SRGB;
+		else                         forced_input_colorspace = FORCE_NONE;
+	} else {
+		forced_input_colorspace = FORCE_NONE;
+	}
+
 	QFileInfo info(filename);
 	QDir folder = info.dir();
 	folder.cd(obj["folder"].toString());
@@ -551,6 +569,10 @@ void Project::save(QString filename) {
 		project.insert("iccProfileDescription", icc_profile_description);
 		project.insert("iccProfileIsSRGB", icc_profile_is_srgb);
 		project.insert("iccProfileIsDisplayP3", icc_profile_is_display_p3);
+	}
+	if(forced_input_colorspace != FORCE_NONE) {
+		project.insert("forcedInputColorspace",
+			forced_input_colorspace == FORCE_LINEAR ? "linear" : "srgb");
 	}
 
 	//as a folder for images compute the relative path to the saving file location!

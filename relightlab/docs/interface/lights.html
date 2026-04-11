@@ -11,3 +11,24 @@ instead of using reflective spheres.
 You can use an <a href="formats/lp.html">.lp file</a> (see formats/lp.md</p>
 <p>Alternatively use a shiny-ball capture and process the image set to generate a .dome file
   you can reuse as long as the camera and lights do not change.</p>
+
+<h3 id="focal">Focal length (35mm equivalent)</h3>
+<p>The focal length is expressed as its <strong>35mm equivalent</strong> — i.e. normalised to a full-frame
+(36&nbsp;&times;&nbsp;24&nbsp;mm) sensor. This is needed to convert pixel coordinates to physical angles
+and to compute per-pixel light directions when using 3D light positions.</p>
+<p>If the value is missing, import it with the <em>Read from images</em> button, which reads the
+EXIF metadata of the first valid image. You can also type it manually.</p>
+
+<h3 id="colorspace">Input colorspace</h3>
+<p>RelightLab always converts images to <strong>linear RGB</strong> before processing, because RTI and
+normal-map mathematics require a physically linear light response.</p>
+<p>When an embedded ICC profile is present in the JPEG files, the correct conversion is performed
+automatically and no action is needed.</p>
+<p>When <em>no ICC profile</em> is found, RelightLab cannot determine the colorspace of the images:
+<ul>
+  <li><strong>sRGB</strong> — choose this for photographs taken with a standard camera or processed
+      in a photo editor that writes sRGB output. This is the default.</li>
+  <li><strong>Linear RGB</strong> — choose this for synthetic renders (e.g. Blender) that output raw
+      linear values without gamma encoding.</li>
+</ul>
+Choosing the wrong option will produce incorrect normals and RTI relighting.</p>
