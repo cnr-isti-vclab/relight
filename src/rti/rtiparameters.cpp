@@ -52,11 +52,10 @@ QString webLayoutToString(RtiParameters::WebLayout layout) {
 
 QString colorProfileModeToString(ColorProfileMode mode) {
     switch(mode) {
-    case COLOR_PROFILE_PRESERVE: return QStringLiteral("COLOR_PROFILE_PRESERVE");
-    case COLOR_PROFILE_SRGB: return QStringLiteral("COLOR_PROFILE_SRGB");
+    case COLOR_PROFILE_LINEAR_RGB: return QStringLiteral("COLOR_PROFILE_LINEAR_RGB");
+    case COLOR_PROFILE_SRGB:       return QStringLiteral("COLOR_PROFILE_SRGB");
     case COLOR_PROFILE_DISPLAY_P3: return QStringLiteral("COLOR_PROFILE_DISPLAY_P3");
-    default:
-        return QStringLiteral("UNKNOWN");
+    default:                       return QStringLiteral("UNKNOWN");
     }
 }
 

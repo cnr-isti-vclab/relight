@@ -23,7 +23,7 @@ public:
     bool iiif_manifest = false;
     bool openlime = true;
 
-    ColorProfileMode colorProfileMode = COLOR_PROFILE_PRESERVE;
+	ColorProfileMode colorProfileMode = COLOR_PROFILE_SRGB;
 
     QString summary() const override;
     QJsonObject toJson() const override;

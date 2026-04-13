@@ -299,14 +299,14 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'I': {
 			string mode = optarg;
-			if(mode == "preserve") {
-				builder.colorProfileMode = COLOR_PROFILE_PRESERVE;
+			if(mode == "linear") {
+				builder.colorProfileMode = COLOR_PROFILE_LINEAR_RGB;
 			} else if(mode == "srgb") {
 				builder.colorProfileMode = COLOR_PROFILE_SRGB;
 			} else if(mode == "displayp3") {
 				builder.colorProfileMode = COLOR_PROFILE_DISPLAY_P3;
 			} else {
-				cerr << "Invalid color profile mode: " << optarg << " (use 'preserve', 'srgb', or 'displayp3')\n" << endl;
+				cerr << "Invalid color profile mode: " << optarg << " (use 'linear', 'srgb', or 'displayp3')\n" << endl;
 				return 1;
 			}
 			break;

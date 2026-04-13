@@ -85,8 +85,9 @@ bool RtiBuilder::setupFromFolder(const string &folder, Dome &dome) {
 			imageset.images.removeAt(skip_image);
 			dome.directions.erase(dome.directions.begin() + skip_image);
 		}
-		imageset.setColorProfileMode(colorProfileMode);
 		imageset.initImages(folder.c_str());
+		imageset.setColorProfileMode(colorProfileMode);
+		imageset.createOutputColorTransform();
 		imageset.initFromDome(dome);
 
 	} catch(QString e) {
@@ -115,8 +116,9 @@ bool RtiBuilder::setupFromProject(const std::string &_filename) {
 			imageset.pixel_size = obj["pixelSizeInMM"].toDouble();
 
 
-		imageset.setColorProfileMode(colorProfileMode);
 		imageset.initFromProject(obj, filename);
+		imageset.setColorProfileMode(colorProfileMode);
+		imageset.createOutputColorTransform();
 		//overwrite project crop if specified in builder.
 		if(crop[2] != 0) //some width specified
 			imageset.setCrop(crop[0], crop[1], crop[2], crop[3]);
@@ -859,13 +861,7 @@ bool RtiBuilder::saveJSON(QDir &dir, int quality, QString color_profile) {
 	stream << "\"quality\": " << quality << ",\n";
 
 	if(!color_profile.isEmpty())
-		stream << "\"colorProfile\": \"" << color_profile << "\",\n";
-
-	// Signal to OpenLime that these tiles were built from linear-RGB input data.
-	// The reconstructed polynomial value is in linear RGB; OpenLime must apply
-	// the inverse of the tile colorspace transform (e.g. sRGB linearisation)
-	// before evaluating the basis and then re-encode for display.
-	stream << "\"linearInput\": true,\n";
+		stream << "\"colorprofile\": \"" << color_profile << "\",\n";
 		
 	if(type == RBF || type == BILINEAR) {
 		stream << "\"basis\": [\n";
@@ -1388,33 +1384,14 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	}
 
 
-	std::vector<uint8_t> preserved_icc;
-	if(imageset.hasICCProfile())
-		preserved_icc = imageset.getICCProfile();
+	std::vector<uint8_t> output_icc_profile = imageset.getOutputICCProfile();
+	QString color_profile;
+	switch(imageset.color_profile_mode) {
+	case COLOR_PROFILE_LINEAR_RGB: color_profile = "RGB"; break;
+	case COLOR_PROFILE_SRGB: color_profile = "sRGB"; break;
+	case COLOR_PROFILE_DISPLAY_P3: color_profile = "P3"; break;
+	};
 
-	std::vector<uint8_t> output_icc_profile;
-	switch(colorProfileMode) {
-	case COLOR_PROFILE_PRESERVE:
-	default:
-		// Tiles are converted back to the original input colorspace.
-		output_icc_profile = preserved_icc; // may be empty → no ICC tag embedded
-		break;
-	case COLOR_PROFILE_LINEAR_RGB:
-		// Tiles stay in linear RGB; embed the linear RGB profile.
-		output_icc_profile = ICCProfiles::linearRGBData();
-		break;
-	case COLOR_PROFILE_SRGB:
-		output_icc_profile = ICCProfiles::sRGBData();
-		break;
-	case COLOR_PROFILE_DISPLAY_P3:
-		output_icc_profile = ICCProfiles::displayP3Data();
-		break;
-	}
-	QString color_profile = ColorProfile::getProfileDescription(output_icc_profile);
-	color_profile.replace(QRegularExpression("\\s+"), " ");
-	color_profile.replace(QRegularExpression("[^a-zA-Z0-9 _-]"), "");
-	color_profile.replace(QRegularExpression(" +"), " ");
-	
 	//TODO error control
 	bool ok = saveJSON(dir, quality, color_profile);
 	if(!ok) return 0;

@@ -8,10 +8,9 @@
 
 // ICC color profile handling mode
 enum ColorProfileMode {
-	COLOR_PROFILE_PRESERVE,  // Pass through input ICC profile
-	COLOR_PROFILE_SRGB,      // Convert to sRGB (requires LittleCMS2)
+	COLOR_PROFILE_LINEAR_RGB, // Convert to Linear RGB for physically based lighting
+	COLOR_PROFILE_SRGB,       // Convert to sRGB (requires LittleCMS2)
 	COLOR_PROFILE_DISPLAY_P3, // Convert to Display P3 (requires LittleCMS2)
-	COLOR_PROFILE_LINEAR_RGB // Convert to Linear RGB for physically based lighting
 };
 
 class ColorProfile {
@@ -25,8 +24,7 @@ public:
 	static QString getProfileDescription(const std::vector<uint8_t> &profile_data);
 
 	static cmsHTRANSFORM createColorTransform(const std::vector<uint8_t> &profile_data,
-		ColorProfileMode mode,
-		cmsHPROFILE &input_profile_handle);
+		ColorProfileMode mode);
 	static cmsHPROFILE createOutputProfile(ColorProfileMode mode);
 };
 

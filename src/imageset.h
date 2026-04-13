@@ -49,6 +49,12 @@ public:
 
 	int current_line = 0;
 	std::vector<QPoint> offsets; //align offsets
+
+	ColorProfileMode color_profile_mode = COLOR_PROFILE_LINEAR_RGB;
+	std::vector<uint8_t> icc_profile_data;
+	cmsHTRANSFORM color_transform = nullptr;        // read path: input ICC → linear RGB
+	cmsHTRANSFORM output_color_transform = nullptr; // write path: linear RGB → color_profile_mode
+
 	
 	ImageSet(const char *path = nullptr);
 	~ImageSet();
@@ -69,7 +75,7 @@ public:
 	bool initFromProject(Project &project);
 
 	//open images and starts the decoders
-	bool initImages(const char *path); //path points to the dir of the images.
+	bool initImages(const char *path, bool force_input_as_linear = false); //path points to the dir of the images.
 
 	//remove not visible images and relative lights.
 	void cleanHidden(std::vector<Image> &images);
@@ -89,9 +95,16 @@ public:
 	void setColorProfileMode(ColorProfileMode mode);
 	ColorProfileMode getColorProfileMode() const { return color_profile_mode; }
 
+	// Build the input transform (input ICC → linear RGB). Call after initImages/initFromProject.
+	// Linear-to-linear input is detected and results in a null transform (no-op).
+	void createColorTransform();
+
+	// Build the output transform (linear RGB → color_profile_mode target). Call after
+	// setColorProfileMode and before processing. Linear output is a null transform (no-op).
+	void createOutputColorTransform();
+
 	// Apply the output colorspace transform (linear RGB → color_profile_mode target).
 	// Call this on pixel data just before writing to an output file.
-	// No-op only for LINEAR_RGB (data stays in linear).
 	void applyOutputColorTransform(uint8_t *data, size_t pixel_count);
 
 	// Returns the ICC profile data that matches the current output colorspace.
@@ -120,11 +133,7 @@ public:
 protected:
 	std::function<bool(QString stage, int percent)> *callback;
 	std::vector<JpegDecoder *> decoders;
-	std::vector<uint8_t> icc_profile_data;
-	cmsHPROFILE input_profile = nullptr;
-	cmsHTRANSFORM color_transform = nullptr;        // read path: input ICC → linear RGB
-	cmsHTRANSFORM output_color_transform = nullptr; // write path: linear RGB → color_profile_mode
-	ColorProfileMode color_profile_mode = COLOR_PROFILE_PRESERVE;
+
 
 private:
 	void compensateVignetting(PixelArray &pixels);

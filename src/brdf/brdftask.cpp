@@ -23,6 +23,7 @@ void BrdfTask::initFromProject(Project &project) {
 
 	imageset.pixel_size = project.pixelSize();
 	imageset.setColorProfileMode(COLOR_PROFILE_LINEAR_RGB);
+	imageset.createOutputColorTransform();
 }
 
 
@@ -34,6 +35,7 @@ void BrdfTask::initFromFolder(const char *folder, Dome &dome, const Crop &folder
 		imageset.setCrop(folderCrop);
 	imageset.rotateLights(-folderCrop.angle);
 	imageset.setColorProfileMode(COLOR_PROFILE_LINEAR_RGB);
+	imageset.createOutputColorTransform();
 }
 
 void BrdfTask::setParameters(BrdfParameters &param) {

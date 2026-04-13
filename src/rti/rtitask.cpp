@@ -15,6 +15,7 @@
 #include "../src/rti.h"
 #include "../src/cli/rtibuilder.h"
 #include "../src/deepzoom.h"
+#include "../src/icc_profiles.h"
 
 
 #include <iostream>
@@ -55,6 +56,7 @@ void RtiTask::setProject(Project &project) {
 
 	// Apply color profile mode from parameters
 	imageset.setColorProfileMode(parameters.colorProfileMode);
+	imageset.createOutputColorTransform();
 }
 
 RtiTask::~RtiTask() {

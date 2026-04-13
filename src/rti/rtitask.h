@@ -28,7 +28,7 @@ public:
 	bool iiif_manifest = false;  //TODO
 	bool openlime = true; //include openlime viewer //TODO: might want different interfaces.
 
-	ColorProfileMode colorProfileMode = COLOR_PROFILE_PRESERVE;
+	ColorProfileMode colorProfileMode = COLOR_PROFILE_LINEAR_RGB;
 
 	QString summary() const override;
 	QJsonObject toJson() const override;

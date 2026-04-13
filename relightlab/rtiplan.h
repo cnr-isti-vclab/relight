@@ -95,7 +95,7 @@ public:
 private:
 	QCheckBox *losslessbox;
 	QSpinBox *qualitybox;
-	QLabelButton *preserve, *srgb, *displayp3;
+	QLabelButton *linear, *srgb, *displayp3;
 
 signals:
 	void qualityChanged();

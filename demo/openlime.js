@@ -5457,7 +5457,8 @@
     	constructor(options) {
 
     		Object.assign(this, {
-    			format: 'vec3'
+    			format: 'vec3',
+    			raw: false      //disallow webgl color profile conversion.
     		});
 
     		this._texture = null;
@@ -5585,9 +5586,10 @@
     			//cant' use srgb internal format because mipmap is not supported
     			internalFormat = glFormat === gl.RGB ? gl.RGB : gl.RGBA;
     		}
-
+    		if(this.raw)
+    			gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
     		gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, glFormat, gl.UNSIGNED_BYTE, img);
-
+    		
 
     		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     		//build mipmap for large images.
@@ -17480,6 +17482,7 @@ vec4 data() {
     			mode: 'normal',
     			type: ['ptm', 'hsh', 'sh', 'rbf', 'bln'],
     			colorspaces: ['lrgb', 'rgb', 'mrgb', 'mycc'],
+    			colorprofile: 'sRGB',
 
     			nplanes: null,     //number of coefficient planes
     			yccplanes: null,     //number of luminance planes for mycc color space
@@ -17488,6 +17491,7 @@ vec4 data() {
     			lights: null,      //light directions (needed for rbf interpolation)
     			sigma: null,       //rbf interpolation parameter
     			ndimensions: null, //PCA dimension space (for rbf and bln)
+    			linearInput: false,    //whether to linearize input textures
 
     			scale: null,      //factor and bias are used to dequantize coefficient planes.
     			bias: null,
@@ -17617,6 +17621,8 @@ vec4 data() {
     		};
 
     		this.lightWeights([0, 0, 1], 'base');
+    		this.isSrgbSimplified = false;
+    		this.isLinear = this.colorprofile == 'sRGB';
     	}
 
     	/**
@@ -17665,7 +17671,6 @@ vec4 data() {
     	}
 
     	fragShaderSrc(gl) {
-
     		let basetype = 'vec3'; //(this.colorspace == 'mrgb' || this.colorspace == 'mycc')?'vec3':'float';
     		let str = `
 
@@ -17698,8 +17703,7 @@ const int ny1 = ${this.yccplanes[1]};
 
     str += `
 vec4 texsample(sampler2D sampler, vec2 coord) {
-	return texture(sampler, coord);
-	//return srgb2linear(texture(sampler, coord));
+${this.isLinear? 'return srgb2linear(texture(sampler, coord));' : 'return texture(sampler, coord);'}
 }
 `;
 
@@ -17771,10 +17775,8 @@ color = vec4(vec3(dot(light, normal)), 1);
     					break;
     			}
     		}
-
     		str += `
-		//color = linear2srgb(color);
-		return color;
+		return color;	
 }`;
     		return str;
     	}
@@ -17914,7 +17916,7 @@ vec4 render(vec3 base[np1]) {
     	static lightWeights(v) {
     		let b = [1.0, v[0], v[1], v[0] * v[0], v[0] * v[1], v[1] * v[1]];
     		let base = new Float32Array(18);
-    		for (let i = 0; i < 18; i++)
+    		for (let i = 0; i < 6; i++)
     			base[3 * i] = base[3 * i + 1] = base[3 * i + 2] = b[i];
     		return base;
     	}
@@ -18266,13 +18268,13 @@ vec4 render(vec3 base[np1]) {
     			for (let p = 0; p < this.shader.njpegs; p++) {
     				let imageUrl = this.layout.imageUrl(url, 'plane_' + p);
     				urls.push(imageUrl);
-    				let raster = new Raster({ format: 'vec3', isLinear: true });
+    				let raster = new Raster({ format: 'vec3', isLinear: true, raw: true });
     				this.rasters.push(raster);
     			}
     			if (this.normals) { // ITARZOOM must include normals and currently has a limitation: loads the entire tile
     				let imageUrl = this.layout.imageUrl(url, 'normals');
     				urls.push(imageUrl);
-    				let raster = new Raster({ format: 'vec3', isLinear: true });
+    				let raster = new Raster({ format: 'vec3', isLinear: true, raw: true });
     				this.rasters.push(raster);
     			}
     			this.layout.setUrls(urls);

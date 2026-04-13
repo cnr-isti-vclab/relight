@@ -150,7 +150,7 @@ void RtiPlanesRow::forceNPlanes(QList<int> n_planes) {
 	Q_ASSERT(model != nullptr);
 	for(int i = 0; i < model->rowCount(); i++) {
 		QStandardItem *item = model->item(i);
-		bool disabled = !n_planes.contains(nplanes[i]);
+		bool disabled = !n_planes.contains(nplanes[i]) && !n_planes.contains(-1);
 		item->setFlags(disabled ? item->flags() & ~Qt::ItemIsEnabled
 								: item->flags() | Qt::ItemIsEnabled);
 		if(!disabled)
@@ -262,20 +262,17 @@ RtiQualityRow::RtiQualityRow(RtiParameters &parameters, QFrame *parent): RtiPlan
 	
 	buttons->addSpacing(20);
 	
-	// Color profile controls (show current profile in the Preserve button)
-	buttons->addWidget(preserve = new QLabelButton("Preserve", "Keep input color profile"));
+	// Color profile controls for RTI output
+	buttons->addWidget(linear = new QLabelButton("Linear", "Output in linear RGB"));
 	buttons->addWidget(srgb = new QLabelButton("sRGB", "Convert to sRGB color space"));
 	buttons->addWidget(displayp3 = new QLabelButton("Display P3", "Convert to Display P3 color space"));
-	preserve->setVisible(false);
-	srgb->setVisible(false);
-	displayp3->setVisible(false);
 	
-	connect(preserve, &QAbstractButton::clicked, this, [this](){ setColorProfileMode(COLOR_PROFILE_PRESERVE, true); });
+	connect(linear, &QAbstractButton::clicked, this, [this](){ setColorProfileMode(COLOR_PROFILE_LINEAR_RGB, true); });
 	connect(srgb, &QAbstractButton::clicked, this, [this](){ setColorProfileMode(COLOR_PROFILE_SRGB, true); });
 	connect(displayp3, &QAbstractButton::clicked, this, [this](){ setColorProfileMode(COLOR_PROFILE_DISPLAY_P3, true); });
 	
 	QButtonGroup *group = new QButtonGroup(this);
-	group->addButton(preserve);
+	group->addButton(linear);
 	group->addButton(srgb);
 	group->addButton(displayp3);
 	
@@ -305,51 +302,19 @@ void RtiQualityRow::setColorProfileMode(ColorProfileMode mode, bool emitting) {
 	}
 
 	switch(mode) {
-	case COLOR_PROFILE_PRESERVE: preserve->setChecked(true); break;
-	case COLOR_PROFILE_SRGB: srgb->setChecked(true); break;
+	case COLOR_PROFILE_LINEAR_RGB: linear->setChecked(true); break;
+	case COLOR_PROFILE_SRGB:       srgb->setChecked(true); break;
 	case COLOR_PROFILE_DISPLAY_P3: displayp3->setChecked(true); break;
 	}
 }
 
 void RtiQualityRow::updateProfileInfo(const QString &profileDesc, bool isSRGB, bool isDisplayP3) {
-	// Show current profile in the Preserve button and adjust convert buttons
-	bool hasProfile = (profileDesc != "No profile");
-	preserve->setVisible(hasProfile);
-	if(hasProfile) {
-		preserve->setText(profileDesc);
-	} else {
-		preserve->setText("Preserve");
-	}
-
-	// show convert options only when a profile exists and they would change it
-	srgb->setVisible(hasProfile && !isSRGB);
-	displayp3->setVisible(hasProfile && !isDisplayP3);
-	bool allowSRGB = hasProfile && !isSRGB;
-	bool allowP3 = hasProfile && !isDisplayP3;
-	if(!hasProfile) {
-		setColorProfileMode(COLOR_PROFILE_PRESERVE, false);
-		preserve->setChecked(true);
-		return;
-	}
-
-	switch(parameters.colorProfileMode) {
-	case COLOR_PROFILE_SRGB:
-		if(!allowSRGB) {
-			setColorProfileMode(COLOR_PROFILE_PRESERVE, false);
-			preserve->setChecked(true);
-		}
-		break;
-	case COLOR_PROFILE_DISPLAY_P3:
-		if(!allowP3) {
-			setColorProfileMode(COLOR_PROFILE_PRESERVE, false);
-			preserve->setChecked(true);
-		}
-		break;
-	case COLOR_PROFILE_PRESERVE:
-	default:
-		preserve->setChecked(true);
-		break;
-	}
+	(void)profileDesc; (void)isSRGB; (void)isDisplayP3;
+	// All three explicit output options are always available.
+	linear->setVisible(true);
+	srgb->setVisible(true);
+	displayp3->setVisible(true);
+	setColorProfileMode(parameters.colorProfileMode, false);
 }
 
 RtiWebLayoutRow::RtiWebLayoutRow(RtiParameters &parameters, QFrame *parent):
