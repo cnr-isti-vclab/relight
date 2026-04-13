@@ -51,7 +51,8 @@ public:
 	bool saveJSON(QDir &dir, int quality, QString color_profile);
 
 	void processLine(PixelArray &sample, PixelArray &resample, std::vector<std::vector<uint8_t>> &line,
-					 std::vector<uchar> &normal, std::vector<uchar> &mean, std::vector<uchar> &median);
+					 std::vector<uchar> &normal, std::vector<uchar> &mean, std::vector<uchar> &median,
+					 cmsHTRANSFORM output_color_transform_float = nullptr);
 
 protected:
 	MaterialBuilder materialbuilder;

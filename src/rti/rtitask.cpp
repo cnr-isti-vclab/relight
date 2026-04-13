@@ -57,6 +57,11 @@ void RtiTask::setProject(Project &project) {
 	// Apply color profile mode from parameters
 	imageset.setColorProfileMode(parameters.colorProfileMode);
 	imageset.createOutputColorTransform();
+	if(parameters.format == RtiParameters::RTI) {
+			//imageset.icc_profile_data == ICCProfiles::sRGBData() && parameters.colorProfileMode == COLOR_PROFILE_SRGB) {
+		imageset.color_transform = nullptr;
+		imageset.output_color_transform = nullptr;
+	}
 }
 
 RtiTask::~RtiTask() {

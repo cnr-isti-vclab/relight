@@ -34,6 +34,8 @@ ImageSet::~ImageSet() {
 		cmsDeleteTransform(color_transform);
 	if(output_color_transform)
 		cmsDeleteTransform(output_color_transform);
+	if(output_color_transform_float)
+		cmsDeleteTransform(output_color_transform_float);
 
 	//TODO decoders should take care to properly finish
 	for(JpegDecoder *dec: decoders)
@@ -297,6 +299,10 @@ void ImageSet::setColorProfileMode(ColorProfileMode mode) {
 		cmsDeleteTransform(output_color_transform);
 		output_color_transform = nullptr;
 	}
+	if(output_color_transform_float) {
+		cmsDeleteTransform(output_color_transform_float);
+		output_color_transform_float = nullptr;
+	}
 }
 
 
@@ -554,6 +560,10 @@ void ImageSet::createOutputColorTransform() {
 		cmsDeleteTransform(output_color_transform);
 		output_color_transform = nullptr;
 	}
+	if(output_color_transform_float) {
+		cmsDeleteTransform(output_color_transform_float);
+		output_color_transform_float = nullptr;
+	}
 	static const char *modeNames[] = { "linear RGB", "sRGB", "Display P3" };
 	if(color_profile_mode == COLOR_PROFILE_LINEAR_RGB) {
 		std::cout << "Output color transform: linear RGB -> linear RGB (no-op)" << std::endl;
@@ -565,6 +575,9 @@ void ImageSet::createOutputColorTransform() {
 	output_color_transform = cmsCreateTransform(linear_src, TYPE_RGB_8,
 												 dst, TYPE_RGB_8,
 												 INTENT_PERCEPTUAL, 0);
+	output_color_transform_float = cmsCreateTransform(linear_src, TYPE_RGB_FLT,
+													  dst, TYPE_RGB_8,
+													  INTENT_PERCEPTUAL, 0);
 	cmsCloseProfile(linear_src);
 	cmsCloseProfile(dst);
 }
@@ -572,6 +585,11 @@ void ImageSet::createOutputColorTransform() {
 void ImageSet::applyOutputColorTransform(uint8_t *data, size_t pixel_count) {
 	if(output_color_transform)
 		cmsDoTransform(output_color_transform, data, data, pixel_count);
+}
+
+void ImageSet::applyOutputColorTransformFloat(float *in01, uint8_t *out, size_t pixel_count) {
+	if(output_color_transform_float)
+		cmsDoTransform(output_color_transform_float, in01, out, pixel_count);
 }
 
 void ImageSet::restart() {

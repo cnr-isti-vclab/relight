@@ -52,8 +52,6 @@ void BrdfTask::run() {
 
 	function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
-	vector<float> albedo;
-
 	int width = 0, height = 0;
 
 	QDir destination(parameters.path);
@@ -69,7 +67,7 @@ void BrdfTask::run() {
 		width = imageset.width;
 		height = imageset.height;
 
-		albedo.resize(width * height * 3);
+		vector<uint8_t> albedomap(width * height * 3);
 		RelightThreadPool pool;
 		PixelArray line;
 		imageset.setCallback(nullptr);
@@ -80,9 +78,10 @@ void BrdfTask::run() {
 
 			// Create the normal task and get the run lambda
 			uint32_t idx = i * 3 * imageset.width;
-			float* data = &albedo[idx];
+			uint8_t* data = &albedomap[idx];
 
-			AlbedoWorker *task = new AlbedoWorker(parameters, i, line, data, imageset, lens);
+			AlbedoWorker *task = new AlbedoWorker(parameters, i, line,
+			                                      imageset.output_color_transform_float, data, imageset, lens);
 
 			std::function<void(void)> run = [this, task](void)->void {
 				task->run();
@@ -98,14 +97,6 @@ void BrdfTask::run() {
 				return;
 		}
 		pool.finish();
-
-
-		vector<uint8_t> albedomap(width * height * 3);
-		for(size_t i = 0; i < albedo.size(); i++)
-			albedomap[i] = std::min(std::max(int(albedo[i]), 0), 255);
-
-		// Output colorspace: convert from linear RGB to the user-selected space.
-		imageset.applyOutputColorTransform(albedomap.data(), width * height);
 
 		// Handle optional rotated crop via QImage, then encode with JpegEncoder
 		// so we can embed the correct output ICC profile.

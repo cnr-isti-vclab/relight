@@ -53,7 +53,8 @@ public:
 	ColorProfileMode color_profile_mode = COLOR_PROFILE_LINEAR_RGB;
 	std::vector<uint8_t> icc_profile_data;
 	cmsHTRANSFORM color_transform = nullptr;        // read path: input ICC → linear RGB
-	cmsHTRANSFORM output_color_transform = nullptr; // write path: linear RGB → color_profile_mode
+	cmsHTRANSFORM output_color_transform = nullptr;       // write path: linear RGB (uint8) → color_profile_mode (uint8)
+	cmsHTRANSFORM output_color_transform_float = nullptr; // write path: linear RGB (float [0,1]) → color_profile_mode (uint8)
 
 	
 	ImageSet(const char *path = nullptr);
@@ -106,6 +107,10 @@ public:
 	// Apply the output colorspace transform (linear RGB → color_profile_mode target).
 	// Call this on pixel data just before writing to an output file.
 	void applyOutputColorTransform(uint8_t *data, size_t pixel_count);
+
+	// Apply the output colorspace transform using float [0,1] input for higher precision.
+	// in01 must be normalized to [0.0, 1.0]. Writes result as uint8 to out.
+	void applyOutputColorTransformFloat(float *in01, uint8_t *out, size_t pixel_count);
 
 	// Returns the ICC profile data that matches the current output colorspace.
 	// Embed this in output JPEG files so readers can interpret the pixels correctly.
