@@ -318,7 +318,7 @@ void RtiQualityRow::updateProfileInfo(const QString &profileDesc, bool isSRGB, b
 	// All three explicit output options are always available.
 	linear->setVisible(true);
 	srgb->setVisible(true);
-	displayp3->setVisible(true);
+//	displayp3->setVisible(true);
 	setColorProfileMode(parameters.colorProfileMode, false);
 }
 
