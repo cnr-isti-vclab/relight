@@ -288,20 +288,20 @@ void NormalsTask::run() {
 
 		progressed("Saving surface...", 99);
 		QString filename = destination.filePath("3D_surface.ply");
-		if(!savePly(filename, width, height, z, downsampling)) {
+		if(!savePly(filename, width, height, z, downsampling, imageset.pixel_size)) {
 			error = "Failed to save .ply to: " + filename;
 			status = FAILED;
 			return;
 		}
 		invertZ(z);
 		filename = destination.filePath("heightmap.tiff");
-		if(!saveTiff(filename, width, height, z)) {
+		if(!saveTiff(filename, width, height, z, false, imageset.pixel_size)) {
 			error = "Failed to save depth map to: " + filename;
 			status = FAILED;
 			return;
 		}
 		filename = destination.filePath("heightmap_normalized.tiff");
-		if(!saveTiff(filename, width, height, z, true)) {
+		if(!saveTiff(filename, width, height, z, true, imageset.pixel_size)) {
 			error = "Failed to save depth map to: " + filename;
 			status = FAILED;
 			return;
@@ -327,20 +327,26 @@ QJsonObject NormalsTask::info() const {
 	return obj;
 }
 
-bool savePly(const char *filename, pmp::SurfaceMesh &mesh) {
+bool savePly(const char *filename, pmp::SurfaceMesh &mesh, int width, int height, float pixel_size) {
 	QFile file(filename);
 	bool success = file.open(QFile::WriteOnly);
 	if(!success)
 		return false;
 
+	float scale = (pixel_size > 0) ? pixel_size : 1.0f;
+	float cx = (width  - 1) * 0.5f;
+	float cy = (height - 1) * 0.5f;
 
 	std::vector<float> vertices;
 	for(auto vertex: mesh.vertices()) {
 		auto p = mesh.position(vertex);
-		assert(vertex.idx() == vertices.size()/3);
-		vertices.push_back(p[0]);
-		vertices.push_back(p[1]);
-		vertices.push_back(p[2]);
+		float u = p[0] / (width  - 1);
+		float v = p[1] / (height - 1);
+		vertices.push_back((p[0] - cx) * scale);
+		vertices.push_back((p[1] - cy) * scale);
+		vertices.push_back(p[2] * scale);
+		vertices.push_back(u);
+		vertices.push_back(v);
 	}
 	std::vector<uint8_t> indices;
 
@@ -369,10 +375,12 @@ bool savePly(const char *filename, pmp::SurfaceMesh &mesh) {
 
 		stream << "ply\n";
 		stream << "format binary_little_endian 1.0\n";
-		stream << "element vertex " << vertices.size()/3 << "\n";
+		stream << "element vertex " << vertices.size()/5 << "\n";
 		stream << "property float x\n";
 		stream << "property float y\n";
 		stream << "property float z\n";
+		stream << "property float s\n";
+		stream << "property float t\n";
 		stream << "element face " << indices.size()/13 << "\n";
 		stream << "property list uchar int vertex_index\n";
 		stream << "end_header\n";
@@ -385,27 +393,42 @@ bool savePly(const char *filename, pmp::SurfaceMesh &mesh) {
 	return true;
 }
 
-bool saveObj(const char *filename, pmp::SurfaceMesh &mesh) {
+bool saveObj(const char *filename, pmp::SurfaceMesh &mesh, int width, int height, float pixel_size) {
 	FILE *fp = fopen(filename, "wb");
 	if(!fp) {
 //		cerr << "Could not open file: " << filename << endl;
 		return false;
 	}
+	float scale = (pixel_size > 0) ? pixel_size : 1.0f;
+	float cx = (width  - 1) * 0.5f;
+	float cy = (height - 1) * 0.5f;
+
 	int nvertices = 0;
 	for(auto vertex: mesh.vertices()) {
 		auto p = mesh.position(vertex);
-		fprintf(fp, "v %f %f %f\n", p[0], p[1], p[2]);
+		fprintf(fp, "v %f %f %f\n",
+			(p[0] - cx) * scale,
+			(p[1] - cy) * scale,
+			p[2] * scale);
 		nvertices++;
+	}
+	for(auto vertex: mesh.vertices()) {
+		auto p = mesh.position(vertex);
+		fprintf(fp, "vt %f %f\n",
+			p[0] / (width  - 1),
+			p[1] / (height - 1));
 	}
 	for (auto face : mesh.faces()) {
 		int indexes[3];
-		int count =0 ;
+		int count = 0;
 		for (auto vertex : mesh.vertices(face)) {
-			auto p = mesh.position(vertex);
 			int v = indexes[count++] = vertex.idx() + 1;
 			assert(v > 0 && v <= nvertices);
 		}
-		fprintf(fp, "f %d %d %d\n", indexes[0], indexes[1], indexes[2]);
+		fprintf(fp, "f %d/%d %d/%d %d/%d\n",
+			indexes[0], indexes[0],
+			indexes[1], indexes[1],
+			indexes[2], indexes[2]);
 	}
 	fclose(fp);
 	return true;
@@ -441,7 +464,7 @@ void NormalsTask::assm(QString filename, std::vector<Eigen::Vector3f> &_normals,
 		p[1] = height -p[1] -1;
 		p[2] *= -1;
 	}
-	savePly(filename.toStdString().c_str(), mesh);
+	savePly(filename.toStdString().c_str(), mesh, width, height, imageset.pixel_size);
 }
 
 
