@@ -89,6 +89,7 @@ public:
 	RtiQualityRow(RtiParameters &parameters, QFrame *parent = nullptr);
 	void setQuality(int quality, bool emitting = false); //0 stands for lossless.
 	void allowLossless(bool allow);
+	void allowColorProfileChange(bool allow);
 	void setColorProfileMode(ColorProfileMode mode, bool emitting = false);
 	void updateProfileInfo(const QString &profileDesc, bool isSRGB, bool isDisplayP3);
 

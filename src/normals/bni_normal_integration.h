@@ -27,8 +27,8 @@ std::vector<float> bni_pyramid(std::function<bool(QString s, int n)> progressed,
 								  int max_solver_iterations = 500,
 								  int scale = 0);
 
-bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z, float downsampling = 1.0f);
-bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &z, bool normalize = false);
+bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z, float downsampling = 1.0f, float pixel_size = 0.0f);
+bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &z, bool normalize = false, float pixel_size = 0.0f);
 bool saveDepthMap(const QString &filename, size_t w, size_t h, std::vector<float> &z);
 
 void bilinear_interpolation3f(Eigen::Vector3f *data, uint32_t input_width,

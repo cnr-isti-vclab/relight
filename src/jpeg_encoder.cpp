@@ -11,6 +11,7 @@ JpegEncoder::JpegEncoder() {
 }
 
 JpegEncoder::~JpegEncoder() {
+	finish();
 	jpeg_destroy_compress(&info);
 }
 
@@ -88,34 +89,7 @@ bool JpegEncoder::encode(uint8_t* img, int width, int height, uint8_t *&buffer, 
 }
 
 bool JpegEncoder::encode(uint8_t* img, int width, int height) {
-	info.image_width = width;
-	info.image_height = height;
-	info.in_color_space = colorSpace;
-	info.input_components = numComponents;
-
-	jpeg_set_defaults(&info);
-	jpeg_set_colorspace(&info, jpegColorSpace);
-	jpeg_set_quality(&info, quality, (boolean)true);
-	info.optimize_coding = (boolean)optimize;
-
-	// Set our output resolution if provided in pixels/cm
-	if(dotsPerCM > 0) {
-		info.X_density = dotsPerCM;
-		info.Y_density = dotsPerCM;
-		info.density_unit = 2;   // 2 = pixels per cm
-	}
-
-	if(jpegColorSpace == JCS_YCbCr && subsample == false) {
-		for(int i = 0; i < numComponents; i++) {
-			info.comp_info[i].h_samp_factor = 1;
-			info.comp_info[i].v_samp_factor = 1;
-		}
-	}
-
-	jpeg_start_compress(&info, (boolean)true);
-
-	// Write ICC profile if present
-	writeICCProfile();
+	init(width, height);
 
 	writeRows(img, height);
 
@@ -152,10 +126,11 @@ bool JpegEncoder::init(int width, int height) {
 	info.optimize_coding = (boolean)optimize;
 
 	// Set our output resolution if provided in pixels/cm
-	if(dotsPerCM>0) {
-	        info.X_density = dotsPerCM;
+	if(dotsPerCM > 0) {
+		info.X_density = dotsPerCM;
 		info.Y_density = dotsPerCM;
 		info.density_unit = 2;   // 2 = pixels per cm
+		info.write_JFIF_header = TRUE; // force JFIF header so density is actually written (JCS_RGB suppresses it otherwise)
 	}
 
 	if(jpegColorSpace == JCS_YCbCr && subsample == false)
@@ -185,6 +160,8 @@ bool JpegEncoder::writeRows(uint8_t *rows, int n) {
 }
 
 size_t JpegEncoder::finish() {
+	if(!file && !mem_output)
+		return 0;
 	jpeg_finish_compress(&info);
 	size_t size = 0;
 	if(mem_output) { //saving to memory.

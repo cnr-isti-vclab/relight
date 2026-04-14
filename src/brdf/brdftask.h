@@ -27,8 +27,13 @@ public:
 class AlbedoWorker
 {
 public:
-	AlbedoWorker(BrdfParameters _parameters, int _row, const PixelArray& toProcess, float* _albedo, ImageSet &imageset, Lens &_lens) :
-		parameters(_parameters), row(_row), m_Row(toProcess), albedo(_albedo), m_Imageset(imageset) {
+	AlbedoWorker(BrdfParameters _parameters, int _row, const PixelArray& toProcess,
+	             cmsHTRANSFORM _output_color_transform_float, uint8_t* _albedo_out,
+	             ImageSet &imageset, Lens &_lens) :
+		parameters(_parameters), row(_row), m_Row(toProcess),
+		output_color_transform_float(_output_color_transform_float),
+		albedo_out(_albedo_out), m_Imageset(imageset) {
+
 		m_Row.resize(toProcess.npixels(), toProcess.nlights);
 		for(size_t i = 0; i < m_Row.size(); i++)
 			m_Row[i] = toProcess[i];
@@ -39,34 +44,44 @@ public:
 		assert(nth >= 0 && nth < m_Row.nlights);
 		for(size_t i = 0; i < m_Row.size(); i++) {
 			Pixel &p = m_Row[i];
+			float rgb[3] = {0.0f, 0.0f, 0.0f};
 			if(parameters.albedo == BrdfParameters::MEDIAN) {
-				//separate components
 				std::vector<float> c(p.size());
 				for(int k = 0; k < 3; k++) {
-					for(size_t j = 0; j < p.size(); j++) {
+					for(size_t j = 0; j < p.size(); j++)
 						c[j] = p[j][k];
-					}
 					std::nth_element(c.begin(), c.begin() + nth, c.end());
-					albedo[i*3 + k] =  c[nth];
+					rgb[k] = c[nth];
 				}
 			} else if(parameters.albedo == BrdfParameters::MEAN) {
 				for(int k = 0; k < 3; k++) {
-					albedo[i*3 + k] = 0.0f;
-					for(size_t j = 0; j < p.size(); j++) {
-						albedo[i*3 + k] += p[j][k];
-					}
-					albedo[i*3 + k] /= p.size();
+					for(size_t j = 0; j < p.size(); j++)
+						rgb[k] += p[j][k];
+					rgb[k] /= p.size();
 				}
+			}
+
+			if(output_color_transform_float) {
+				float norm[3] = {
+					std::max(0.0f, std::min(1.0f, rgb[0] / 255.0f)),
+					std::max(0.0f, std::min(1.0f, rgb[1] / 255.0f)),
+					std::max(0.0f, std::min(1.0f, rgb[2] / 255.0f))
+				};
+				cmsDoTransform(output_color_transform_float, norm, &albedo_out[i*3], 1);
+			} else {
+				for(int k = 0; k < 3; k++)
+					albedo_out[i*3 + k] = (uint8_t)std::min(std::max(int(rgb[k]), 0), 255);
 			}
 		}
 	}
 
 private:
 	BrdfParameters parameters;
-	int row; //unused at the moment but miht be used at a later time.
+	int row;
 	PixelArray m_Row;
 
-	float *albedo = nullptr;
+	cmsHTRANSFORM output_color_transform_float = nullptr;
+	uint8_t *albedo_out = nullptr;
 	ImageSet &m_Imageset;
 	QMutex m_Mutex;
 };

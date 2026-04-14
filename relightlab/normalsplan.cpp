@@ -15,6 +15,7 @@
 
 NormalsPlanRow::NormalsPlanRow(NormalsParameters &_parameters, QFrame *parent):
 	PlanRow(parent), parameters(_parameters) {
+
 }
 
 
@@ -23,7 +24,7 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 	label->label->setText("Source:");
 	label->help->setId("normals/normalmap");
 
-	compute = new QLabelButton("Compute", "Compute normals");
+	compute = new QLabelButton("Compute", "Compute normals from images");
 	buttons->addWidget(compute, 0, Qt::AlignCenter);
 
 	file = new QLabelButton("Normalmap", "Load a normalmap image.");

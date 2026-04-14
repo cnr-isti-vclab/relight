@@ -87,7 +87,6 @@ bool RtiBuilder::setupFromFolder(const string &folder, Dome &dome) {
 		}
 		imageset.initImages(folder.c_str());
 		imageset.setColorProfileMode(colorProfileMode);
-		imageset.createOutputColorTransform();
 		imageset.initFromDome(dome);
 
 	} catch(QString e) {
@@ -118,7 +117,6 @@ bool RtiBuilder::setupFromProject(const std::string &_filename) {
 
 		imageset.initFromProject(obj, filename);
 		imageset.setColorProfileMode(colorProfileMode);
-		imageset.createOutputColorTransform();
 		//overwrite project crop if specified in builder.
 		if(crop[2] != 0) //some width specified
 			imageset.setCrop(crop[0], crop[1], crop[2], crop[3]);
@@ -1004,6 +1002,7 @@ Vector3f RtiBuilder::getNormalThreeLights(vector<float> &pri) {
 class Worker {
 public:
 	RtiBuilder &b;
+	cmsHTRANSFORM output_color_transform_float = nullptr;
 	vector<vector<uint8_t>> line;
 	vector<uchar> normals;
 	vector<uchar> means;
@@ -1026,7 +1025,7 @@ public:
 	}
 
 	void run() {
-		b.processLine(sample, resample, line, normals, means, medians);
+		b.processLine(sample, resample, line, normals, means, medians, output_color_transform_float);
 	}
 };
 
@@ -1216,7 +1215,6 @@ size_t RtiBuilder::savePTM(const std::string &output) {
 			enc.setQuality(quality);
 			enc.setColorSpace(JCS_GRAYSCALE, 1);
 			enc.setJpegColorSpace(JCS_GRAYSCALE);
-
 			enc.encode(planes[i].data(), write_width, height, buffers[i], sizes[i]);
 		}
 
@@ -1542,6 +1540,7 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	vector<Worker *> workers(height, nullptr);
 	for(size_t i = 0; i < nworkers; i++) {
 		workers[i] = new Worker(*this);
+		workers[i]->output_color_transform_float = imageset.output_color_transform_float;
 	}
 	vector<QFuture<void>> futures(height);
 
@@ -1570,9 +1569,6 @@ size_t RtiBuilder::save(const string &output, int quality) {
 					medians.setPixel(x, y- nworkers, qRgb(doneworker->medians[x*3], doneworker->medians[x*3+1], doneworker->medians[x*3+2]));
 			}
 			for(size_t j = 0; j < encoders.size(); j++) {
-				// Convert each plane row from linear RGB to the output colorspace
-				// before JPEG encoding. OpenLime will linearise on load.
-				imageset.applyOutputColorTransform(doneworker->line[j].data(), width);
 				encoders[j]->writeRows(doneworker->line[j].data(), 1);
 			}
 			if(y < height)
@@ -1612,7 +1608,8 @@ size_t RtiBuilder::save(const string &output, int quality) {
 }
 
 void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vector<std::vector<uint8_t>> &line,
-							 std::vector<uchar> &normals, std::vector<uchar> &means, std::vector<uchar> &medians) {
+							 std::vector<uchar> &normals, std::vector<uchar> &means, std::vector<uchar> &medians,
+							 cmsHTRANSFORM output_color_transform_float) {
 
 	for(uint32_t x = 0; x < width; x++)
 		resamplePixel(sample[x], resample[x]);
@@ -1661,20 +1658,43 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 
 		if(colorspace == LRGB){
 			for(uint32_t j = 0; j < nplanes/3; j++) {
-				for(uint32_t c = 0; c < 3; c++) {
-					uint32_t p = j*3 + c;
-					if(j >= 1)
-						pri[p] = material.planes[p].quantize(pri[p]);
-					line[j][x*3 + c] = pri[p];
+				if(output_color_transform_float) {
+					float rgb[3];
+					for(uint32_t c = 0; c < 3; c++) {
+						uint32_t p = j*3 + c;
+						Material::Plane &plane = material.planes[p];
+
+						float norm = pri[p] / (255.0f * plane.scale) + plane.bias;
+						rgb[c] = std::max(0.0f, std::min(1.0f, norm));
+					}
+					cmsDoTransform(output_color_transform_float, rgb, &line[j][x*3], 1);
+				} else {
+					for(uint32_t c = 0; c < 3; c++) {
+						uint32_t p = j*3 + c;
+						if(j >= 1)
+							pri[p] = material.planes[p].quantize(pri[p]);
+						line[j][x*3 + c] = pri[p];
+					}
 				}
 			}
 
 		} else {
 
 			for(uint32_t j = 0; j < nplanes/3; j++) {
-				for(uint32_t c = 0; c < 3; c++) {
-					uint32_t p = j*3 + c;
-					line[j][x*3 + c] = material.planes[p].quantize(pri[p]);
+				if(output_color_transform_float) {
+					float rgb[3];
+					for(uint32_t c = 0; c < 3; c++) {
+						uint32_t p = j*3 + c;
+						Material::Plane &plane = material.planes[p];
+						float norm = pri[p] / (255.0f * plane.scale) + plane.bias;
+						rgb[c] = std::max(0.0f, std::min(1.0f, norm));
+					}
+					cmsDoTransform(output_color_transform_float, rgb, &line[j][x*3], 1);
+				} else {
+					for(uint32_t c = 0; c < 3; c++) {
+						uint32_t p = j*3 + c;
+						line[j][x*3 + c] = material.planes[p].quantize(pri[p]);
+					}
 				}
 			}
 		}

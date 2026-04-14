@@ -34,6 +34,8 @@ ImageSet::~ImageSet() {
 		cmsDeleteTransform(color_transform);
 	if(output_color_transform)
 		cmsDeleteTransform(output_color_transform);
+	if(output_color_transform_float)
+		cmsDeleteTransform(output_color_transform_float);
 
 	//TODO decoders should take care to properly finish
 	for(JpegDecoder *dec: decoders)
@@ -293,9 +295,18 @@ void ImageSet::setColorProfileMode(ColorProfileMode mode) {
 	if(color_profile_mode == mode)
 		return;
 	color_profile_mode = mode;
+
+	// Rebuild input transform to target the new working space.
+	if(!icc_profile_data.empty())
+		createColorTransform();
+
 	if(output_color_transform) {
 		cmsDeleteTransform(output_color_transform);
 		output_color_transform = nullptr;
+	}
+	if(output_color_transform_float) {
+		cmsDeleteTransform(output_color_transform_float);
+		output_color_transform_float = nullptr;
 	}
 }
 
@@ -520,10 +531,18 @@ void ImageSet::createColorTransform() {
 		cmsDeleteTransform(color_transform);
 		color_transform = nullptr;
 	}
-	if(icc_profile_data == ICCProfiles::linearRGBData()) {
+
+	// Detect identity transforms (input == target) and skip.
+	if(color_profile_mode == COLOR_PROFILE_LINEAR_RGB && icc_profile_data == ICCProfiles::linearRGBData()) {
 		std::cout << "Color transform: linear RGB -> linear RGB (no-op)" << std::endl;
 		return;
 	}
+	if(color_profile_mode == COLOR_PROFILE_SRGB && icc_profile_data == ICCProfiles::sRGBData()) {
+		std::cout << "Color transform: sRGB -> sRGB (no-op)" << std::endl;
+		return;
+	}
+
+	static const char *modeNames[] = { "linear RGB", "sRGB", "Display P3" };
 	std::string src;
 	if(icc_profile_data.empty()) {
 		src = "sRGB (assumed, no embedded profile)";
@@ -531,8 +550,8 @@ void ImageSet::createColorTransform() {
 		src = ColorProfile::getProfileDescription(icc_profile_data).toStdString();
 		if(src.empty()) src = "embedded ICC";
 	}
-	std::cout << "Color transform: " << src << " -> linear RGB" << std::endl;
-	color_transform = ColorProfile::createColorTransform(icc_profile_data, COLOR_PROFILE_LINEAR_RGB);
+	std::cout << "Color transform: " << src << " -> " << modeNames[color_profile_mode] << std::endl;
+	color_transform = ColorProfile::createColorTransform(icc_profile_data, color_profile_mode);
 }
 
 void ImageSet::applyColorTransform(uint8_t *data, size_t pixel_count) {
@@ -541,7 +560,11 @@ void ImageSet::applyColorTransform(uint8_t *data, size_t pixel_count) {
 }
 
 const std::vector<uint8_t> ImageSet::getOutputICCProfile() const {
-	switch(color_profile_mode) {
+	return getOutputICCProfile(color_profile_mode);
+}
+
+const std::vector<uint8_t> ImageSet::getOutputICCProfile(ColorProfileMode mode) const {
+	switch(mode) {
 	case COLOR_PROFILE_LINEAR_RGB: return ICCProfiles::linearRGBData();
 	case COLOR_PROFILE_SRGB:       return ICCProfiles::sRGBData();
 	case COLOR_PROFILE_DISPLAY_P3: return ICCProfiles::displayP3Data();
@@ -550,28 +573,44 @@ const std::vector<uint8_t> ImageSet::getOutputICCProfile() const {
 }
 
 void ImageSet::createOutputColorTransform() {
+	createOutputColorTransform(color_profile_mode);
+}
+
+void ImageSet::createOutputColorTransform(ColorProfileMode target) {
 	if(output_color_transform) {
 		cmsDeleteTransform(output_color_transform);
 		output_color_transform = nullptr;
 	}
+	if(output_color_transform_float) {
+		cmsDeleteTransform(output_color_transform_float);
+		output_color_transform_float = nullptr;
+	}
 	static const char *modeNames[] = { "linear RGB", "sRGB", "Display P3" };
-	if(color_profile_mode == COLOR_PROFILE_LINEAR_RGB) {
-		std::cout << "Output color transform: linear RGB -> linear RGB (no-op)" << std::endl;
+	if(target == color_profile_mode) {
+		std::cout << "Output color transform: " << modeNames[color_profile_mode] << " -> " << modeNames[target] << " (no-op)" << std::endl;
 		return;
 	}
-	std::cout << "Output color transform: linear RGB -> " << modeNames[color_profile_mode] << std::endl;
-	cmsHPROFILE linear_src = ICCProfiles::openLinearRGBProfile();
-	cmsHPROFILE dst = ColorProfile::createOutputProfile(color_profile_mode);
-	output_color_transform = cmsCreateTransform(linear_src, TYPE_RGB_8,
+	std::cout << "Output color transform: " << modeNames[color_profile_mode] << " -> " << modeNames[target] << std::endl;
+	cmsHPROFILE src = ColorProfile::createOutputProfile(color_profile_mode);
+	cmsHPROFILE dst = ColorProfile::createOutputProfile(target);
+	output_color_transform = cmsCreateTransform(src, TYPE_RGB_8,
 												 dst, TYPE_RGB_8,
 												 INTENT_PERCEPTUAL, 0);
-	cmsCloseProfile(linear_src);
+	output_color_transform_float = cmsCreateTransform(src, TYPE_RGB_FLT,
+													  dst, TYPE_RGB_8,
+													  INTENT_PERCEPTUAL, 0);
+	cmsCloseProfile(src);
 	cmsCloseProfile(dst);
 }
 
 void ImageSet::applyOutputColorTransform(uint8_t *data, size_t pixel_count) {
 	if(output_color_transform)
 		cmsDoTransform(output_color_transform, data, data, pixel_count);
+}
+
+void ImageSet::applyOutputColorTransformFloat(float *in01, uint8_t *out, size_t pixel_count) {
+	if(output_color_transform_float)
+		cmsDoTransform(output_color_transform_float, in01, out, pixel_count);
 }
 
 void ImageSet::restart() {

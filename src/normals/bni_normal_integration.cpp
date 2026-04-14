@@ -43,7 +43,7 @@ bool saveNormalMap(const QString &filename, size_t w, size_t h, std::vector<Eige
 	return true;
 }
 
-bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z, float downsampling) {
+bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z, float downsampling, float pixel_size) {
 	QFile file(filename);
 	bool success = file.open(QFile::WriteOnly);
 	if(!success)
@@ -57,19 +57,28 @@ bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z,
 		stream << "property float x\n";
 		stream << "property float y\n";
 		stream << "property float z\n";
+		stream << "property float s\n";
+		stream << "property float t\n";
 		stream << "element face " << 2*(w-1)*(h-1) << "\n";
 		stream << "property list uchar int vertex_index\n";
 		stream << "end_header\n";
 	}
 
-	std::vector<float> vertices(w*h*3);
+	float scale = (pixel_size > 0) ? downsampling * pixel_size : downsampling;
+	float cx = (w - 1) * 0.5f;
+	float cy = (h - 1) * 0.5f;
+
+	std::vector<float> vertices(w*h*5);
 	for(size_t y = 0; y < h; y++) {
 		for(size_t x = 0; x < w; x++) {
 			size_t pos = x + y*w;
-			float *start = &vertices[3*pos];
-			start[0] = x*downsampling;
-			start[1] = (h - y -1)*downsampling;
-			start[2] = -z[pos]*downsampling;
+			float *start = &vertices[5*pos];
+			float mesh_y = float(h - 1 - y);
+			start[0] = (float(x) - cx) * scale;
+			start[1] = (mesh_y - cy) * scale;
+			start[2] = -z[pos] * scale;
+			start[3] = float(x) / float(w - 1);  // s
+			start[4] = mesh_y / float(h - 1);    // t
 			assert(!isnan(start[2]));
 		}
 	}
@@ -99,7 +108,7 @@ bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z,
 	return true;
 }
 
-bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &depthmap, bool normalize) {
+bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &depthmap, bool normalize, float pixel_size) {
 	float min = 1e20;
 	float max = -1e20;
 	for(float h: depthmap) {
@@ -125,6 +134,13 @@ bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &d
 	TIFFSetField(outTiff, TIFFTAG_TILEWIDTH, tileWidth);
 	TIFFSetField(outTiff, TIFFTAG_TILELENGTH, tileLength);
 	TIFFSetField(outTiff, TIFFTAG_COMPRESSION, COMPRESSION_NONE); // No compression
+
+	if(pixel_size > 0) {
+		float pixelsPerCm = 10.0f / pixel_size;
+		TIFFSetField(outTiff, TIFFTAG_RESOLUTIONUNIT, RESUNIT_CENTIMETER);
+		TIFFSetField(outTiff, TIFFTAG_XRESOLUTION, pixelsPerCm);
+		TIFFSetField(outTiff, TIFFTAG_YRESOLUTION, pixelsPerCm);
+	}
 
 	uint32_t numTilesX = (w + tileWidth - 1) / tileWidth;
 	uint32_t numTilesY = (h + tileLength - 1) / tileLength;
