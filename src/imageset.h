@@ -52,9 +52,9 @@ public:
 
 	ColorProfileMode color_profile_mode = COLOR_PROFILE_LINEAR_RGB;
 	std::vector<uint8_t> icc_profile_data;
-	cmsHTRANSFORM color_transform = nullptr;        // read path: input ICC → linear RGB
-	cmsHTRANSFORM output_color_transform = nullptr;       // write path: linear RGB (uint8) → color_profile_mode (uint8)
-	cmsHTRANSFORM output_color_transform_float = nullptr; // write path: linear RGB (float [0,1]) → color_profile_mode (uint8)
+	cmsHTRANSFORM color_transform = nullptr;               // read path: input ICC → color_profile_mode (working space)
+	cmsHTRANSFORM output_color_transform = nullptr;       // write path: working space (uint8) → alternate output (uint8)
+	cmsHTRANSFORM output_color_transform_float = nullptr; // write path: working space (float [0,1]) → alternate output (uint8)
 
 	
 	ImageSet(const char *path = nullptr);
@@ -91,20 +91,24 @@ public:
 	void setLights(const std::vector<Eigen::Vector3f> &lights, const Dome::LightConfiguration configuration);
 	std::vector<Eigen::Vector3f> &lights() { return lights1; }
 
-	// color_profile_mode controls the OUTPUT colorspace only.
-	// Input JPEGs are always converted to linear RGB regardless of this setting.
+	// color_profile_mode controls the working colorspace.
+	// The input transform converts from input ICC to this space.
+	// Changing the mode rebuilds the input transform.
 	void setColorProfileMode(ColorProfileMode mode);
 	ColorProfileMode getColorProfileMode() const { return color_profile_mode; }
 
-	// Build the input transform (input ICC → linear RGB). Call after initImages/initFromProject.
-	// Linear-to-linear input is detected and results in a null transform (no-op).
+	// Build the input transform (input ICC → color_profile_mode working space).
+	// Call after initImages/initFromProject and setColorProfileMode.
+	// Identity transforms (e.g. sRGB→sRGB) are detected and result in a null transform (no-op).
 	void createColorTransform();
 
-	// Build the output transform (linear RGB → color_profile_mode target). Call after
-	// setColorProfileMode and before processing. Linear output is a null transform (no-op).
+	// Build the output transform (working space → target). If target is the same as
+	// the working space, both transforms are null (no-op).
+	// If target is not specified, defaults to color_profile_mode.
+	void createOutputColorTransform(ColorProfileMode target);
 	void createOutputColorTransform();
 
-	// Apply the output colorspace transform (linear RGB → color_profile_mode target).
+	// Apply the output colorspace transform (working space → target).
 	// Call this on pixel data just before writing to an output file.
 	void applyOutputColorTransform(uint8_t *data, size_t pixel_count);
 
@@ -112,9 +116,11 @@ public:
 	// in01 must be normalized to [0.0, 1.0]. Writes result as uint8 to out.
 	void applyOutputColorTransformFloat(float *in01, uint8_t *out, size_t pixel_count);
 
-	// Returns the ICC profile data that matches the current output colorspace.
+	// Returns the ICC profile data that matches the current working colorspace.
 	// Embed this in output JPEG files so readers can interpret the pixels correctly.
 	const std::vector<uint8_t> getOutputICCProfile() const;
+	// Returns the ICC profile data for a specific colorspace.
+	const std::vector<uint8_t> getOutputICCProfile(ColorProfileMode mode) const;
 
 	size_t size() { return size_t(images.size()); }
 

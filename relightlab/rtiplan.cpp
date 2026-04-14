@@ -266,6 +266,7 @@ RtiQualityRow::RtiQualityRow(RtiParameters &parameters, QFrame *parent): RtiPlan
 	buttons->addWidget(linear = new QLabelButton("Linear", "Output in linear RGB"));
 	buttons->addWidget(srgb = new QLabelButton("sRGB", "Convert to sRGB color space"));
 	buttons->addWidget(displayp3 = new QLabelButton("Display P3", "Convert to Display P3 color space"));
+	displayp3->hide();  // Display P3 support to be determined
 	
 	connect(linear, &QAbstractButton::clicked, this, [this](){ setColorProfileMode(COLOR_PROFILE_LINEAR_RGB, true); });
 	connect(srgb, &QAbstractButton::clicked, this, [this](){ setColorProfileMode(COLOR_PROFILE_SRGB, true); });
@@ -291,6 +292,10 @@ void RtiQualityRow::setQuality(int quality, bool emitting) {
 }
 void RtiQualityRow::allowLossless(bool allow) {
 	losslessbox->setEnabled(allow);
+}
+void RtiQualityRow::allowColorProfileChange(bool allow) {
+	//linear->setEnabled(allow);
+	//srgb->setEnabled(allow);
 }
 
 void RtiQualityRow::setColorProfileMode(ColorProfileMode mode, bool emitting) {

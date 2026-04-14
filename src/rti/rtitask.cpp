@@ -54,14 +54,14 @@ void RtiTask::setProject(Project &project) {
 	builder->width  = imageset.width;
 	builder->height = imageset.height;
 
-	// Apply color profile mode from parameters
-	imageset.setColorProfileMode(parameters.colorProfileMode);
-	imageset.createOutputColorTransform();
-	if(parameters.format == RtiParameters::RTI) {
-			//imageset.icc_profile_data == ICCProfiles::sRGBData() && parameters.colorProfileMode == COLOR_PROFILE_SRGB) {
-		imageset.color_transform = nullptr;
-		imageset.output_color_transform = nullptr;
-	}
+	// Set the working colorspace. The input transform (built in initFromProject)
+	// will be rebuilt to target this space directly. No output transform needed:
+	// RTI coefficients are computed and stored in the working space.
+	// Legacy format (PTM) only supports sRGB.
+	if(false && parameters.format == RtiParameters::RTI)
+		imageset.setColorProfileMode(COLOR_PROFILE_SRGB);
+	else
+		imageset.setColorProfileMode(parameters.colorProfileMode);
 }
 
 RtiTask::~RtiTask() {

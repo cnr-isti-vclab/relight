@@ -1,1 +1,49 @@
 <h2>RTI quality</h2>
+
+<h3>JPEG Quality</h3>
+<p>
+The JPEG quality setting controls the compression level of the image planes. Higher values (e.g., 95) preserve more detail but result in larger file sizes, 
+while lower values (e.g., 75) reduce file size at the cost of visible compression artifacts. For most applications, a quality of 95 is recommended to minimize 
+loss of fine details in the RTI fitting coefficients.
+</p>
+
+<h3>Output Colorspace</h3>
+<p>
+The output colorspace determines both the working space used during RTI computation and the colorspace in which the final RTI planes are stored and displayed.
+</p>
+
+<h4>sRGB (Default)</h4>
+<p>
+sRGB is the standard colorspace for most web displays and image viewers. When selected:
+</p>
+<ul>
+<li>Input images are converted to sRGB</li>
+<li>RTI coefficients are computed in sRGB space</li>
+<li>Planes are stored in sRGB</li>
+<li>Provides better detail in <strong>shadows and dark regions</strong> due to the gamma correction applied by the sRGB curve</li>
+<li>Least squares fitting error is weighted to emphasize darker values, improving shadow accuracy</li>
+</ul>
+
+<h4>Linear RGB</h4>
+<p>
+Linear RGB represents light intensity without gamma correction. When selected:
+</p>
+<ul>
+<li>Input images are converted to linear RGB</li>
+<li>RTI coefficients are computed in linear RGB space</li>
+<li>Planes are stored in linear RGB</li>
+<li>Provides more <strong>faithful representation of highlights</strong> with reduced posterization</li>
+<li>More accurate for applications requiring physical accuracy (e.g., normal maps, shape-from-shading)</li>
+<li>PTM planes computed in linear space are more suitable for deriving normals or surface shape</li>
+</ul>
+
+<h4>Choosing Between sRGB and Linear</h4>
+<p>
+The choice depends on your use case and subject matter:
+</p>
+<ul>
+<li><strong>Use sRGB</strong> for general archaeological or cultural heritage objects with significant shadow detail that is important for visual analysis</li>
+<li><strong>Use Linear</strong> for scientific applications, shape recovery, normal map generation, or objects where highlight detail is critical</li>
+<li>The gamma curve in sRGB (and its perceptual weighting) produces more visually pleasing results for typical viewing, but may lose subtle highlight gradations</li>
+<li>Linear space preserves physical accuracy but may show more banding in shadows unless sufficient JPEG quality is maintained</li>
+</ul>

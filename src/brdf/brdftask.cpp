@@ -23,7 +23,7 @@ void BrdfTask::initFromProject(Project &project) {
 
 	imageset.pixel_size = project.pixelSize();
 	imageset.setColorProfileMode(COLOR_PROFILE_LINEAR_RGB);
-	imageset.createOutputColorTransform();
+	imageset.createOutputColorTransform(COLOR_PROFILE_SRGB);
 }
 
 
@@ -35,7 +35,7 @@ void BrdfTask::initFromFolder(const char *folder, Dome &dome, const Crop &folder
 		imageset.setCrop(folderCrop);
 	imageset.rotateLights(-folderCrop.angle);
 	imageset.setColorProfileMode(COLOR_PROFILE_LINEAR_RGB);
-	imageset.createOutputColorTransform();
+	imageset.createOutputColorTransform(COLOR_PROFILE_SRGB);
 }
 
 void BrdfTask::setParameters(BrdfParameters &param) {
@@ -118,7 +118,7 @@ void BrdfTask::run() {
 		encoder.setChromaSubsampling(false);
 		if(imageset.pixel_size > 0)
 			encoder.setDotsPerMeter(round(1000.0 / imageset.pixel_size));
-		const auto icc = imageset.getOutputICCProfile();
+		const auto icc = imageset.getOutputICCProfile(COLOR_PROFILE_SRGB);
 		if(!icc.empty())
 			encoder.setICCProfile(icc);
 

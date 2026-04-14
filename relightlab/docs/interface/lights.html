@@ -19,12 +19,12 @@ and to compute per-pixel light directions when using 3D light positions.</p>
 <p>If the value is missing, import it with the <em>Read from images</em> button, which reads the
 EXIF metadata of the first valid image. You can also type it manually.</p>
 
-<h3 id="colorspace">Input colorspace</h3>
+<h3 id="colorspace">Input color profile</h3>
 <p>RelightLab always converts images to <strong>linear RGB</strong> before processing, because RTI and
 normal-map mathematics require a physically linear light response.</p>
 <p>When an embedded ICC profile is present in the JPEG files, the correct conversion is performed
 automatically and no action is needed.</p>
-<p>When <em>no ICC profile</em> is found, RelightLab cannot determine the colorspace of the images:
+<p>When <em>no ICC profile</em> is found, RelightLab cannot determine the color profile of the images:
 <ul>
   <li><strong>sRGB</strong> — choose this for photographs taken with a standard camera or processed
       in a photo editor that writes sRGB output. This is the default.</li>

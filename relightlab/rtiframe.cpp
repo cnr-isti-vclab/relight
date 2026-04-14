@@ -274,6 +274,11 @@ void RtiFrame::formatChanged() {
 	bool legacy = quality_row->parameters.format == RtiParameters::RTI;
 	//only RTI allows for lossless.
 	quality_row->allowLossless(legacy);
+	//legacy format only supports sRGB
+	quality_row->allowColorProfileChange(!legacy);
+	if(legacy) {
+		quality_row->setColorProfileMode(COLOR_PROFILE_SRGB, true);
+	}
 	layout_row->setEnabled(quality_row->parameters.format == RtiParameters::WEB);
 	export_row->suggestPath();
 }

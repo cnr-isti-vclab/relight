@@ -87,7 +87,6 @@ bool RtiBuilder::setupFromFolder(const string &folder, Dome &dome) {
 		}
 		imageset.initImages(folder.c_str());
 		imageset.setColorProfileMode(colorProfileMode);
-		imageset.createOutputColorTransform();
 		imageset.initFromDome(dome);
 
 	} catch(QString e) {
@@ -118,7 +117,6 @@ bool RtiBuilder::setupFromProject(const std::string &_filename) {
 
 		imageset.initFromProject(obj, filename);
 		imageset.setColorProfileMode(colorProfileMode);
-		imageset.createOutputColorTransform();
 		//overwrite project crop if specified in builder.
 		if(crop[2] != 0) //some width specified
 			imageset.setCrop(crop[0], crop[1], crop[2], crop[3]);
