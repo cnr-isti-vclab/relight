@@ -218,10 +218,10 @@ void NormalsTask::run() {
 		encoder.setChromaSubsampling(false); // No chroma subsampling for normal maps
 		
 		// Set spatial resolution if known
-		if(imageset.pixel_size > 0) {
+		/*if(imageset.pixel_size > 0) {
 			float dotsPerMeter = 1000.0f / imageset.pixel_size;
 			encoder.setDotsPerMeter(dotsPerMeter);
-		}
+		}*/
 		//TODO png could be another format!
 		QString filename = destination.filePath(parameters.normalsname + ".jpg");
 		if(!encoder.encode(normalmap.data(), width, height, filename.toStdString().c_str())) {

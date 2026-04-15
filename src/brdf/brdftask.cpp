@@ -116,8 +116,8 @@ void BrdfTask::run() {
 		encoder.setJpegColorSpace(JCS_RGB);
 		encoder.setQuality(parameters.quality);
 		encoder.setChromaSubsampling(false);
-		if(imageset.pixel_size > 0)
-			encoder.setDotsPerMeter(round(1000.0 / imageset.pixel_size));
+		//if(imageset.pixel_size > 0)
+		//	encoder.setDotsPerMeter(round(1000.0 / imageset.pixel_size));
 		const auto icc = imageset.getOutputICCProfile(COLOR_PROFILE_SRGB);
 		if(!icc.empty())
 			encoder.setICCProfile(icc);
