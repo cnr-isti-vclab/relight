@@ -5,7 +5,7 @@
 
 #include "../taskparameters.h"
 
-enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA, NORMALS_ROBUST };
+enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA, NORMALS_ROBUST, NORMALS_LAMBERTIAN };
 enum FlatMethod { FLAT_NONE, FLAT_RADIAL, FLAT_FOURIER, FLAT_BLUR };
 enum SurfaceIntegration { SURFACE_NONE, SURFACE_BNI, SURFACE_ASSM, SURFACE_FFT };
 
@@ -15,13 +15,13 @@ public:
 	bool compute = true;
 	QString input_path;
 
-	NormalSolver solver =  NORMALS_ROBUST;
+	NormalSolver solver =  NORMALS_LAMBERTIAN;
 
 	// Robust solver thresholds (pixel intensity in [0, 255]).
 	// Values above high_threshold are treated as specular highlights and excluded.
 	// Values below low_threshold are treated as shadows and excluded.
-	float robust_threshold_high = 255.0f;
-	float robust_threshold_low  =   5.0f;
+	float robust_threshold_high = 250.0f;
+	float robust_threshold_low  =   1.0f;
 
 	FlatMethod flatMethod = FLAT_NONE;
 	double fourierPercentage = 20;
@@ -35,6 +35,9 @@ public:
 	int surface_height = 0;
 
 	QString normalsname = "normals"; //filename for normals  img.
+
+	// Debug: save per-light side-by-side images (original | shadow mask).
+	bool debug_shadows = true;
 
 	QString summary() const override;
 	QJsonObject toJson() const override;

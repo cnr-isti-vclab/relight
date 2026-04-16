@@ -8,6 +8,8 @@
 #include "fft_normal_integration.h"
 #include "flatnormals.h"
 
+#include <QThread>
+
 #include <assm/Grid.h>
 #include <assm/algorithms/PhotometricRemeshing.h>
 #include <assm/algorithms/Integration.h>
@@ -107,11 +109,15 @@ void NormalsTask::run() {
 		width = imageset.width;
 		height = imageset.height;
 
-		normals.resize(width * height);
+	normals.resize(width * height);
 		RelightThreadPool pool;
 		PixelArray line;
 		imageset.setCallback(nullptr);
-		pool.start(QThread::idealThreadCount());
+		pool.start(parameters.debug_shadows ? 1 : QThread::idealThreadCount());
+
+		const int nLights = (int)imageset.lights().size();
+		if (parameters.debug_shadows)
+			initWeightsDebug(destination, width, height);
 
 		for (int i = 0; i < height; i++) {
 			// Read a line
@@ -124,13 +130,24 @@ void NormalsTask::run() {
 			NormalsWorker *task = new NormalsWorker(parameters.solver, i, line, data, imageset,
 				parameters.robust_threshold_high, parameters.robust_threshold_low);
 
-			std::function<void(void)> run = [task](void)->void {
-				task->run();
-				delete task;
-			};
-
-			// Launch the task
-			pool.queue(run);
+			if (parameters.debug_shadows) {
+				const int nP = std::min((int)line.size(), width);
+				auto wbuf = std::make_shared<std::vector<float>>(width * nLights, 0.0f);
+				auto lineCopy = std::make_shared<PixelArray>(line);
+				task->setWeightsOutput(wbuf->data());
+				std::function<void(void)> run = [task, this, wbuf, lineCopy, nP](void)->void {
+					task->run();
+					delete task;
+					writeWeightsDebugRow(wbuf->data(), *lineCopy, nP);
+				};
+				pool.queue(run);
+			} else {
+				std::function<void(void)> run = [task](void)->void {
+					task->run();
+					delete task;
+				};
+				pool.queue(run);
+			}
 			pool.waitForSpace();
 
 			bool proceed = progressed("Computing normals...", ((float)i / imageset.height) * 100);
@@ -140,6 +157,8 @@ void NormalsTask::run() {
 
 		// Wait for the end of all the threads
 		pool.finish();
+		if (parameters.debug_shadows)
+			finishWeightsDebug();
 		if(parameters.crop.angle != 0.0f) {
 			//rotate and crop the normals.
 			normals = parameters.crop.cropBoundingNormals(normals, width, height);
@@ -465,6 +484,210 @@ void NormalsTask::assm(QString filename, std::vector<Eigen::Vector3f> &_normals,
 		p[2] *= -1;
 	}
 	savePly(filename.toStdString().c_str(), mesh, width, height, imageset.pixel_size);
+}
+
+// ---- Weight debug output ------------------------------------------------
+
+void NormalsTask::initWeightsDebug(QDir &destination, int width, int height)
+{
+	m_wdNLights = (int)imageset.lights().size();
+	m_wdWidth   = width;
+	imageset.createOutputColorTransform(COLOR_PROFILE_SRGB);
+	const int outW = width * 2;
+	m_wdEncoders.resize(m_wdNLights);
+	for (int m = 0; m < m_wdNLights; m++) {
+		m_wdEncoders[m] = new JpegEncoder;
+		m_wdEncoders[m]->setColorSpace(JCS_RGB, 3);
+		m_wdEncoders[m]->setJpegColorSpace(JCS_RGB);
+		m_wdEncoders[m]->setQuality(95);
+		m_wdEncoders[m]->setChromaSubsampling(false);
+		QString filename = destination.filePath(
+		    QString("weight_%1.jpg").arg(m, 3, 10, QChar('0')));
+		m_wdEncoders[m]->init(filename.toStdString().c_str(), outW, height);
+	}
+	m_wdMeanEncoder = new JpegEncoder;
+	m_wdMeanEncoder->setColorSpace(JCS_RGB, 3);
+	m_wdMeanEncoder->setJpegColorSpace(JCS_RGB);
+	m_wdMeanEncoder->setQuality(95);
+	m_wdMeanEncoder->setChromaSubsampling(false);
+	m_wdMeanEncoder->init(
+	    destination.filePath("weight_mean.jpg").toStdString().c_str(), outW, height);
+}
+
+void NormalsTask::writeWeightsDebugRow(const float *weights, const PixelArray &line, int nP)
+{
+	// rowBuf: left half = original image (sRGB), right half = weight (grayscale mapped to RGB).
+	std::vector<uint8_t> rowBuf(m_wdWidth * 2 * 3);
+	std::vector<float>   linRow(nP * 3);
+
+	// Per-light weight images.
+	for (int m = 0; m < m_wdNLights; m++) {
+		// Left panel: original image for this light → sRGB.
+		for (int x = 0; x < nP; x++) {
+			const Color3f &c = line[x][m];
+			linRow[x*3 + 0] = c.r / 255.0f;
+			linRow[x*3 + 1] = c.g / 255.0f;
+			linRow[x*3 + 2] = c.b / 255.0f;
+		}
+		imageset.applyOutputColorTransformFloat(linRow.data(), rowBuf.data(), nP);
+
+		// Right panel: solver weight → grayscale RGB.
+		for (int x = 0; x < nP; x++) {
+			float w = weights[x * m_wdNLights + m];
+			uint8_t g = (uint8_t)std::min(255, std::max(0, (int)(w * 255.0f)));
+			rowBuf[(m_wdWidth + x)*3 + 0] = g;
+			rowBuf[(m_wdWidth + x)*3 + 1] = g;
+			rowBuf[(m_wdWidth + x)*3 + 2] = g;
+		}
+		m_wdEncoders[m]->writeRows(rowBuf.data(), 1);
+	}
+
+	// Mean weight image: same left panel using light 0 as representative original.
+	for (int x = 0; x < nP; x++) {
+		const Color3f &c = line[x][0];
+		linRow[x*3 + 0] = c.r / 255.0f;
+		linRow[x*3 + 1] = c.g / 255.0f;
+		linRow[x*3 + 2] = c.b / 255.0f;
+	}
+	imageset.applyOutputColorTransformFloat(linRow.data(), rowBuf.data(), nP);
+	for (int x = 0; x < nP; x++) {
+		float sum = 0.0f;
+		for (int m = 0; m < m_wdNLights; m++)
+			sum += weights[x * m_wdNLights + m];
+		uint8_t g = (uint8_t)std::min(255, std::max(0, (int)(sum / m_wdNLights * 255.0f)));
+		rowBuf[(m_wdWidth + x)*3 + 0] = g;
+		rowBuf[(m_wdWidth + x)*3 + 1] = g;
+		rowBuf[(m_wdWidth + x)*3 + 2] = g;
+	}
+	m_wdMeanEncoder->writeRows(rowBuf.data(), 1);
+}
+
+void NormalsTask::finishWeightsDebug()
+{
+	for (auto *enc : m_wdEncoders) {
+		enc->finish();
+		delete enc;
+	}
+	m_wdMeanEncoder->finish();
+	delete m_wdMeanEncoder;
+	m_wdMeanEncoder = nullptr;
+	m_wdEncoders.clear();
+	m_wdNLights = 0;
+}
+
+// ---- Shadow debug output ------------------------------------------------
+//
+// For each light saves a side-by-side PNG:
+//   left  half = original cropped image (colour)
+//   right half = shadow mask (black = Lambertian-consistent, white = shadow/highlight)
+//
+// The mask is computed with computeShadowMask(normal=(0,0,1)) so it works even
+// before normals are known.  Use it to visually verify the detector.
+
+void NormalsTask::saveShadowDebug(QDir &destination, int width, int height)
+{
+	std::vector<Eigen::Vector3f> lights = imageset.lights();
+	for (Eigen::Vector3f &l : lights)
+		l.normalize();
+	const int nL = (int)lights.size();
+	if (nL == 0 || width == 0 || height == 0) return;
+
+	progressed("Computing shadow masks...", 0);
+
+	// Set up linear→sRGB output transform so the left panel looks correct.
+	imageset.createOutputColorTransform(COLOR_PROFILE_SRGB);
+
+	// Build the KNN graph once; reuse it for every pixel in every row.
+	const LightKNN knn = NormalsWorker::buildLightKNN(lights);
+
+	// One encoder per light. Output image is width*2 wide (left=original, right=mask).
+	const int outW = width * 2;
+	std::vector<JpegEncoder> encoders(nL);
+	for (int m = 0; m < nL; m++) {
+		encoders[m].setColorSpace(JCS_RGB, 3);
+		encoders[m].setJpegColorSpace(JCS_RGB);
+		encoders[m].setQuality(95);
+		encoders[m].setChromaSubsampling(false);
+		QString filename = destination.filePath(
+		    QString("shadow_debug_%1.jpg").arg(m, 3, 10, QChar('0')));
+		encoders[m].init(filename.toStdString().c_str(), outW, height);
+	}
+
+	// Extra encoder for the per-pixel shadow-percentage image (mean prob over all lights).
+	JpegEncoder shadowPctEncoder;
+	{
+		shadowPctEncoder.setColorSpace(JCS_GRAYSCALE, 1);
+		shadowPctEncoder.setJpegColorSpace(JCS_GRAYSCALE);
+		shadowPctEncoder.setQuality(95);
+		shadowPctEncoder.setChromaSubsampling(false);
+		QString filename = destination.filePath("shadow_percentage.jpg");
+		shadowPctEncoder.init(filename.toStdString().c_str(), width, height);
+	}
+
+	// Per-light row buffer: 3 bytes per pixel × outW pixels.
+	std::vector<uint8_t> rowBuf(outW * 3);
+	// Grayscale row buffer for the shadow-percentage image.
+	std::vector<uint8_t> pctRowBuf(width);
+	// Float buffer for one row of one light, normalised to [0, 1].
+	std::vector<float> linRow(width * 3);
+
+	// Default normal used before any per-pixel normal is known.
+	const Eigen::Vector3f defaultNormal(0.0f, 0.0f, 1.0f);
+
+	imageset.restart();
+	PixelArray line;
+	for (int y = 0; y < height; y++) {
+		imageset.readLine(line);
+
+		// computeShadowMask never uses m_Normals so nullptr is safe.
+		NormalsWorker worker(parameters.solver, y, line, nullptr, imageset,
+		                     parameters.robust_threshold_high, parameters.robust_threshold_low);
+
+		int nP = std::min((int)line.size(), width);
+
+		// Collect per-pixel per-light shadow probabilities for this row.
+		// pixelMasks[x](m) = shadow probability for pixel x, light m.
+		std::vector<Eigen::VectorXf> pixelMasks(nP);
+		for (int x = 0; x < nP; x++)
+			pixelMasks[x] = worker.computeShadowMask(x, defaultNormal, lights, knn);
+
+		// Shadow-percentage row: mean shadow probability across all lights.
+		for (int x = 0; x < nP; x++) {
+			float mean = pixelMasks[x].sum() / float(nL);
+			pctRowBuf[x] = (uint8_t)std::min(255, std::max(0, (int)(mean * 255.0f)));
+		}
+		shadowPctEncoder.writeRows(pctRowBuf.data(), 1);
+
+		for (int m = 0; m < nL; m++) {
+			// Build normalised float row for this light and convert to sRGB uint8.
+			for (int x = 0; x < nP; x++) {
+				const Color3f &c = line[x][m];
+				linRow[x*3 + 0] = c.r / 255.0f;
+				linRow[x*3 + 1] = c.g / 255.0f;
+				linRow[x*3 + 2] = c.b / 255.0f;
+			}
+			// applyOutputColorTransformFloat writes sRGB uint8 into the left panel.
+			imageset.applyOutputColorTransformFloat(linRow.data(), rowBuf.data(), nP);
+
+			// Right panel – shadow probability → grayscale.
+			for (int x = 0; x < nP; x++) {
+				float prob = pixelMasks[x](m);
+				uint8_t g = (uint8_t)std::min(255, std::max(0, (int)(prob * 255.0f)));
+				rowBuf[(width + x)*3 + 0] = g;
+				rowBuf[(width + x)*3 + 1] = g;
+				rowBuf[(width + x)*3 + 2] = g;
+			}
+			encoders[m].writeRows(rowBuf.data(), 1);
+		}
+
+		progressed("Computing shadow masks...", (y * 100) / height);
+	}
+
+	for (int m = 0; m < nL; m++)
+		encoders[m].finish();
+	shadowPctEncoder.finish();
+
+	progressed("Shadow masks saved", 100);
 }
 
 

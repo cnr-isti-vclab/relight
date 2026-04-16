@@ -406,7 +406,7 @@ bool Exif::injectApp1Payload(const QString &filename, const QByteArray &payload)
 		bool skip_segment = false;
 		if(marker == 0xE1 && seg_len >= 8) {
 			const char *seg = jpeg.constData() + p + 2;
-			if(std::memcmp(seg, "Exif\0\0", 6) == 0)
+			if(p + 8 >= jpeg.size() || std::memcmp(seg, "Exif\0\0", 6) == 0)
 				skip_segment = true;
 		}
 
