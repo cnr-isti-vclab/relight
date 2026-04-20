@@ -55,7 +55,9 @@ void help() {
 	cout << "  <normalmap.png/jpg>   : Process existing normal map\n\n";
 	
 	cout << "Normal generation options (for folder/project input):\n";
-	cout << "  -s <solver>           : Normal solver: l2 (default), sbl*, rpca* (*not implemented yet)\n";
+	cout << "  -s <solver>           : Normal solver: l2, robust (default), lambertian\n";
+	cout << "  --threshold-high <f>  : Robust: exclude pixels above this intensity (default: 255)\n";
+	cout << "  --threshold-low <f>   : Robust: exclude pixels below this intensity (default: 5)\n";
 	cout << "  -3 <radius[:offset]>  : 3D light positions, dome radius and optional offset\n";
 	cout << "  -k <w>x<h>+<x>+<y>    : Crop to width x height at offset x,y\n\n";
 	
@@ -76,6 +78,7 @@ void help() {
 	cout << "  -q <int>              : JPEG quality (default: 95)\n\n";
 	
 	cout << "Other options:\n";
+	cout << "  --debug-shadows       : Save per-light side-by-side shadow-mask debug images\n";
 	cout << "  -h, --help            : Show this help\n";
 }
 
@@ -97,6 +100,9 @@ bool parseArgs(int argc, char *argv[], CLINormalsParameters &config) {
 		{(char*)"assm-error", required_argument, 0, 1006},
 		{(char*)"save-normals", required_argument, 0, 1007},
 		{(char*)"scale-down", required_argument, 0, 1009},
+		{(char*)"threshold-high", required_argument, 0, 1010},
+		{(char*)"threshold-low", required_argument, 0, 1011},
+		{(char*)"debug-shadows", no_argument, 0, 1012},
 		{(char*)"help", no_argument, 0, 'h'},
 		{0, 0, 0, 0}
 	};
@@ -112,16 +118,10 @@ bool parseArgs(int argc, char *argv[], CLINormalsParameters &config) {
 		case 's': {
 			QString solver_str = QString(optarg).toLower();
 			if (solver_str == "l2") config.solver = NORMALS_L2;
-			else if (solver_str == "sbl") {
-				cerr << "SBL solver is not implemented yet" << endl;
-				return false;
-			}
-			else if (solver_str == "rpca") {
-				cerr << "RPCA solver is not implemented yet" << endl;
-				return false;
-			}
+			else if (solver_str == "robust") config.solver = NORMALS_ROBUST;
+			else if (solver_str == "lambertian") config.solver = NORMALS_LAMBERTIAN;
 			else {
-				cerr << "Unknown solver: " << optarg << ". Available: l2" << endl;
+				cerr << "Unknown solver: " << optarg << ". Available: l2, robust, lambertian" << endl;
 				return false;
 			}
 			config.generate_normals = true;
@@ -193,6 +193,15 @@ bool parseArgs(int argc, char *argv[], CLINormalsParameters &config) {
 		case 1009: // --scale-down
 			config.scale_down = QString(optarg).toDouble();
 			break;
+		case 1010: // --threshold-high
+			config.robust_threshold_high = QString(optarg).toFloat();
+			break;
+		case 1011: // --threshold-low
+			config.robust_threshold_low = QString(optarg).toFloat();
+			break;
+		case 1012: // --debug-shadows
+			config.debug_shadows = true;
+			break;
 		case '?':
 			cerr << "Unknown option: " << char(optopt) << endl;
 			return false;
@@ -261,6 +270,7 @@ int main(int argc, char *argv[]) {
 	
 	try {
 		if (info.suffix().toLower() == "relight") {
+			QDir::setCurrent(info.absolutePath());
 			// Load from project file
 			Project project;
 			try {

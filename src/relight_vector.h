@@ -132,7 +132,7 @@ template <class T> struct Color3 {
     Color3 operator*(float v) {
 		return Color3(r * v, g * v, b * v);
     }
-	float mean() {
+	float mean() const {
 		return (r + g + b)/3;
 	}
 };
