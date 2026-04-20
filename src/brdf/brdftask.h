@@ -30,11 +30,8 @@ class AlbedoWorker
 {
 public:
 	AlbedoWorker(BrdfParameters _parameters, int _row, const PixelArray& toProcess,
-	             cmsHTRANSFORM _output_color_transform_float, uint8_t* _albedo_out,
-	             ImageSet &imageset, Lens &_lens) :
-		parameters(_parameters), row(_row), m_Row(toProcess),
-		output_color_transform_float(_output_color_transform_float),
-		albedo_out(_albedo_out), m_Imageset(imageset) {
+				 uint8_t* _albedo_out, ImageSet &imageset, Lens &_lens) :
+		parameters(_parameters), row(_row), m_Row(toProcess), albedo_out(_albedo_out), m_Imageset(imageset) {
 
 		m_Row.resize(toProcess.npixels(), toProcess.nlights);
 		for(size_t i = 0; i < m_Row.size(); i++)
@@ -59,9 +56,9 @@ class BrdfWorker
 {
 public:
 	BrdfWorker(BrdfParameters _parameters, int _row, const PixelArray& toProcess, float* _normals, float* _albedo, float* _roughness, float* _specular, ImageSet &imageset, Lens &_lens,
-			std::ofstream* _brute_out = nullptr, QMutex* _brute_mutex = nullptr, QString _plot_dir = QString(),
-			float* _metallic_mask = nullptr, float* _highlight_frac = nullptr,
-			float* _peak_ratio_data = nullptr, uint8_t* _shadow_data = nullptr, int _nlights_count = 0) :
+			   std::ofstream* _brute_out = nullptr, QMutex* _brute_mutex = nullptr, QString _plot_dir = QString(),
+			   float* _metallic_mask = nullptr, float* _highlight_frac = nullptr,
+			   float* _peak_ratio_data = nullptr, uint8_t* _shadow_data = nullptr, int _nlights_count = 0) :
 		parameters(_parameters), row(_row), m_Row(toProcess), normals(_normals), albedo(_albedo), roughness(_roughness), specular(_specular), m_Imageset(imageset),
 		brute_out(_brute_out), brute_mutex(_brute_mutex), plot_dir(_plot_dir),
 		metallic_mask(_metallic_mask), highlight_frac(_highlight_frac),

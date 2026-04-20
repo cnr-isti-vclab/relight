@@ -83,6 +83,7 @@ private:
 	void solveRPCA();
 	void solveRobust();
 	void solveLambertian();
+	void solveThree();
 
 	// Core weighted L2 solver.
 	// Builds the per-pixel linear system from lights and m_Row[p], optionally:
@@ -96,12 +97,14 @@ private:
 		const std::vector<Eigen::Vector3f> &lights,
 		const float *inWeights = nullptr) const;
 
-	// Core IRLS solver using Huber reweighting.
+	// Core IRLS solver with selectable robust M-estimator.
 	// Builds the per-pixel linear system from all lights and m_Row[p], then
-	// iteratively reweights using Huber loss to down-weight outliers.
+	// iteratively reweights to down-weight outliers.
 	// inWeights[m] ∈ [0, 1] seeds the initial weight vector for the first solve
 	// (nullptr = start from uniform weights). Subsequent iterations use pure
-	// Huber residual weights.
+	// residual weights from the chosen estimator.
+	// useTukey = false → Huber (quadratic core, linear tails, convex)
+	// useTukey = true  → Tukey bisquare (zero weight beyond cutoff, non-convex)
 	// Returns the unit surface normal, or (0, 0, 1) when too few lights remain.
 	Eigen::Vector3f solveRobustWeighted(
 		int p,

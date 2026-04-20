@@ -28,6 +28,9 @@ void NormalsWorker::run() {
 	case NORMALS_LAMBERTIAN:
 		solveLambertian();
 		break;
+	case NORMALS_THREE:
+		solveThree();
+		break;
 	}
 }
 
@@ -93,9 +96,9 @@ Eigen::Vector3f NormalsWorker::solveRobustWeighted(
 		b(m)    = m_Row[p][m].mean();
 	}
 
-	const int    maxIter   = 10;
-	const double epsilon   = 1e-6;
-	const double huberDelta = 5.0;
+	const int    maxIter    = 10;
+	const double epsilon    = 1e-6;
+	const double huberDelta = 5.0;    // Huber: linear beyond this residual
 
 	VectorXd weights(nL);
 	for (int m = 0; m < nL; m++)
@@ -106,11 +109,12 @@ Eigen::Vector3f NormalsWorker::solveRobustWeighted(
 		MatrixXd AtW = A.transpose() * weights.asDiagonal();
 		x = (AtW * A).ldlt().solve(AtW * b);
 
-		// Compute Huber-reweighted update (pure Huber — initial weights only seeded iter 0)
+		// Reweighted update — initial weights only seed iter 0
 		VectorXd residuals = b - A * x;
 		VectorXd newWeights(nL);
 		for (int m = 0; m < nL; m++) {
-			double r  = std::abs(residuals(m));
+			double r = std::abs(residuals(m));
+			// Huber: w(r) = 1 for |r|<δ, else δ/|r|
 			newWeights(m) = (r < huberDelta) ? 1.0 : (huberDelta / (r + epsilon));
 		}
 
@@ -465,6 +469,183 @@ void NormalsWorker::solveLambertian() {
 			float* w = m_WeightsOut + p * nLights;
 			for (int m = 0; m < nLights; m++)
 				w[m] = wf[m];
+		}
+	}
+}
+
+// Three-population solver: Shadow / Lambertian / Highlight.
+//
+// Model per light m:
+//   Shadow    – light is occluded or below the horizon or darker than expected
+//   Lambertian – I_obs ≈ ρ · max(0, l_m · n)
+//   Highlight  – I_obs ≈ ρ · (l_m · n)+ + A · max(0, h_m · n)^s  (Blinn-Phong)
+//     where h_m = normalize(l_m + v), v = (0,0,1) (camera along +Z)
+//
+// Fitting parameters: normal n, albedo ρ, specular amplitude A, lobe exponent s.
+//
+// Algorithm (EM-style, iterates up to 10 times):
+//   Init : n from trimmed L2; ρ from middle-60% Lambertian estimate; A=0, s=10.
+//   E-step: soft-assign w_lamb[m] and w_spec[m] per light using the current model.
+//   M-step: update n (weighted IRLS), ρ (weighted ratio), (A,s) (log-linear fit).
+void NormalsWorker::solveThree() {
+	float shadowThreshold = 0.4f;
+	float darkThreshold = 5.0f;
+
+	vector<Vector3f> lights = m_Imageset.lights();
+	for (Vector3f &l : lights) l.normalize();
+	const int nL = (int)lights.size();
+
+	// Camera points along +Z; view vector from surface toward camera.
+	const Vector3f viewDir(0.0f, 0.0f, 1.0f);
+
+	unsigned int normalIdx = 0;
+	for (size_t p = 0; p < m_Row.size(); p++) {
+
+		// Per-pixel light directions and half-vectors.
+		// When light3d is set each light has a unique direction per pixel;
+		// otherwise the pre-normalised global direction is used directly.
+		// Note: solveL2Trimmed / solveRobustWeighted apply relativeLight internally,
+		// so we still pass the original `lights` vector to those functions.
+		vector<Vector3f> pixLights(nL);
+		for (int m = 0; m < nL; m++) {
+			if (m_Imageset.light3d)
+				pixLights[m] = m_Imageset.relativeLight(lights[m], (int)p, m_Imageset.height - row).normalized();
+			else
+				pixLights[m] = lights[m];
+		}
+		vector<Vector3f> halfVec(nL);
+		for (int m = 0; m < nL; m++)
+			halfVec[m] = (pixLights[m] + viewDir).normalized();
+
+		// ---- Initialisation ----------------------------------------
+		Vector3f n = solveL2Trimmed((int)p, lights);
+
+		// Albedo: weighted mean of I_obs / cosL using the middle 60% of intensities.
+		float rho = 0.0f;
+		{
+			vector<pair<float, int>> byI(nL);
+			for (int m = 0; m < nL; m++) byI[m] = { m_Row[p][m].mean(), m };
+			sort(byI.begin(), byI.end());
+			const int lo = (int)(nL * 0.2f);
+			const int hi = nL - lo;
+			float num = 0.0f, den = 0.0f;
+			for (int k = lo; k < hi; k++) {
+				int m = byI[k].second;
+				float cosL = max(0.0f, pixLights[m].dot(n));
+				if (cosL < 0.05f) continue;
+				num += m_Row[p][m].mean();
+				den += cosL;
+			}
+			if (den > 1e-6f)
+				rho = num / den;
+		}
+
+		float A = 0.0f;   // Blinn-Phong amplitude (zero → pure Lambertian start)
+		float s = 10.0f;  // Blinn-Phong exponent
+
+		vector<float> w_lamb(nL, 1.0f);
+		vector<float> w_spec(nL, 0.0f);
+		vector<float> w_shadow(nL, 0.0f);
+
+		Vector3f prevN = n;
+		for (int iter = 0; iter < 10; iter++) {
+
+			// ---- E-step: soft-classify each light ------------------
+			for (int m = 0; m < nL; m++) {
+				const float I_obs  = m_Row[p][m].mean();
+				const float cosL   = pixLights[m].dot(n);
+				const float cosH   = max(0.0f, halfVec[m].dot(n));
+				const float I_lamb = rho * max(0.0f, cosL);
+				const float I_spec = A * pow(cosH, s);
+
+				// Shadow: observed intensity much lower than Lambertian prediction.
+				// sigmoid with threshold at ratio=0.4 (below 40% of prediction → mostly shadow).
+				float p_shadow;
+				if (cosL <= 0.0f || I_obs < darkThreshold) {
+					p_shadow = 1.0f;   // geometrically below horizon or below dark threshold
+				} else {
+					float ratio = I_obs / (I_lamb + 1.0f);
+					p_shadow = 1.0f / (1.0f + expf(10.0f * (ratio - shadowThreshold)));
+					p_shadow = std::clamp(p_shadow, 0.0f, 1.0f);
+				}
+				w_shadow[m] = p_shadow;
+
+				// Highlight: excess above Lambertian consistent with the specular lobe.
+				// Two factors: angular (cosH^(s/2) — how close to lobe peak) and
+				// magnitude (normalized excess relative to albedo).
+				float p_highlight = 0.0f;
+				const float excess = I_obs - I_lamb;
+				if (excess > 0.0f && cosH > 1e-3f) {
+					float angFactor  = pow(cosH, max(1.0f, s * 0.5f));
+					float magnFactor = std::clamp(excess / (rho + 1.0f), 0.0f, 1.0f);
+					p_highlight = angFactor * magnFactor * (1.0f - p_shadow);
+					p_highlight = std::clamp(p_highlight, 0.0f, 0.99f - p_shadow);
+				}
+
+				w_lamb[m] = std::clamp(1.0f - p_shadow - p_highlight, 0.0f, 1.0f);
+				w_spec[m] = p_highlight;
+			}
+
+			// M-step 1: update normal (weighted IRLS)
+			Vector3f n_new = solveRobustWeighted((int)p, lights, w_lamb.data(), true);
+			if (n_new.norm() > 0.5f) n = n_new;
+
+			// M-step 2: update albedo 
+			// ρ = Σ w_lamb * (I_obs - I_spec) / cosL  /  Σ w_lamb
+			{
+				float num = 0.0f, den = 0.0f;
+				for (int m = 0; m < nL; m++) {
+				const float cosL = max(0.0f, pixLights[m].dot(n));
+					if (cosL < 0.05f) continue;
+					const float cosH   = max(0.0f, halfVec[m].dot(n));
+					const float I_sub  = A * pow(cosH, s);
+					const float I_net  = max(0.0f, m_Row[p][m].mean() - I_sub);
+					num += w_lamb[m] * I_net;
+					den += w_lamb[m] * cosL;
+				}
+				if (den > 1e-6f) rho = num / den;
+			}
+
+			// M-step 3: update specular (A, s) 
+			// Model: excess = A * cosH^s  →  log(excess) = log(A) + s*log(cosH).
+			// Weighted linear regression in log-space over highlight lights.
+			{
+				double sw = 0, swx = 0, swxx = 0, swy = 0, swxy = 0;
+				int nSpec = 0;
+				for (int m = 0; m < nL; m++) {
+					if (w_spec[m] < 0.05f) continue;
+					const float cosH   = max(0.0f, halfVec[m].dot(n));
+					const float I_sub  = rho * max(0.0f, pixLights[m].dot(n));
+					const float excess = m_Row[p][m].mean() - I_sub;
+					if (cosH < 0.01f || excess < 1.0f) continue;
+					const double xk = log((double)cosH);
+					const double yk = log((double)excess);
+					const double wk = (double)w_spec[m];
+					sw += wk;  swx  += wk * xk;  swxx += wk * xk * xk;
+					swy += wk * yk; swxy += wk * xk * yk;
+					nSpec++;
+				}
+				if (nSpec >= 3) {
+					const double det = sw * swxx - swx * swx;
+					if (std::abs(det) > 1e-10) {
+						const double logA  = (swy * swxx - swxy * swx) / det;
+						const double s_new = (sw * swxy - swx * swy) / det;
+						A = max(0.0f, (float)exp(logA));
+						s = max(1.0f, (float)s_new);
+					}
+				}
+			}
+
+			// Convergence check on normal direction.
+			if ((n - prevN).norm() < 1e-4f) break;
+			prevN = n;
+		}
+
+		m_Normals[normalIdx++] = n;
+
+		if (m_WeightsOut) {
+			float* w = m_WeightsOut + p * nL;
+			for (int m = 0; m < nL; m++) w[m] = w_lamb[m];
 		}
 	}
 }

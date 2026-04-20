@@ -5,7 +5,7 @@
 
 #include "../taskparameters.h"
 
-enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA, NORMALS_ROBUST, NORMALS_LAMBERTIAN };
+enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA, NORMALS_ROBUST, NORMALS_LAMBERTIAN, NORMALS_THREE };
 enum FlatMethod { FLAT_NONE, FLAT_RADIAL, FLAT_FOURIER, FLAT_BLUR };
 enum SurfaceIntegration { SURFACE_NONE, SURFACE_BNI, SURFACE_ASSM, SURFACE_FFT };
 
@@ -15,7 +15,7 @@ public:
 	bool compute = true;
 	QString input_path;
 
-	NormalSolver solver =  NORMALS_LAMBERTIAN;
+	NormalSolver solver =  NORMALS_THREE;
 
 	// Robust solver thresholds (pixel intensity in [0, 255]).
 	// Values above high_threshold are treated as specular highlights and excluded.

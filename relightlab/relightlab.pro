@@ -83,6 +83,7 @@ SOURCES += main.cpp \
     ../src/normals/flatnormals.cpp \
     ../src/normals/normals_parameters.cpp \
     ../src/normals/normalstask.cpp \
+    ../src/normals/normalsworker.cpp \
     ../src/project.cpp \
     ../src/rti.cpp \
     ../src/rti/rtiparameters.cpp \
