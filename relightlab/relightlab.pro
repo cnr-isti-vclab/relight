@@ -172,7 +172,6 @@ HEADERS += \
     ../src/image_decoder.h \
     ../src/tiff_decoder.h \
     ../src/png_decoder.h \
-    ../src/miniz.c \
     ../src/exr_decoder.h \
     ../src/jpeg_encoder.h \
     ../src/icc_profiles.h \

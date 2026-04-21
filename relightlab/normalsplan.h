@@ -28,6 +28,7 @@ public:
 	NormalsSourceRow(NormalsParameters &_parameters, QFrame *parent = nullptr);
 
 	void setComputeSource(bool compute);
+	void setSolver(NormalSolver solver);
 	void setSourcePath(QString path);
 	void updateSize();
 public slots:
@@ -37,7 +38,8 @@ signals:
 	void sourceSizeChanged(int w, int h);
 
 protected:
-	QLabelButton *compute = nullptr;
+	QLabelButton *compute_l2 = nullptr;
+	QLabelButton *compute_robust = nullptr;
 	QLabelButton *file = nullptr;
 	QLineEdit *input_path = nullptr;
 	QPushButton *open = nullptr;

@@ -24,11 +24,13 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 	label->label->setText("Source:");
 	label->help->setId("normals/normalmap");
 
-	compute = new QLabelButton("Compute", "Compute normals from images");
-	buttons->addWidget(compute, 0, Qt::AlignCenter);
+	compute_l2     = new QLabelButton("Compute L2",     "Compute normals using standard least squares fitting.");
+	compute_robust = new QLabelButton("Compute Robust", "Compute normals using robust fitting, reducing artifacts from specular highlights and shadows.");
+	file           = new QLabelButton("Normalmap",      "Load an existing normalmap image.");
 
-	file = new QLabelButton("Normalmap", "Load a normalmap image.");
-	buttons->addWidget(file, 0, Qt::AlignCenter);
+	buttons->addWidget(compute_l2,     0, Qt::AlignCenter);
+	buttons->addWidget(compute_robust, 0, Qt::AlignCenter);
+	buttons->addWidget(file,           0, Qt::AlignCenter);
 
 	{
 		input_frame = new QFrame;
@@ -41,26 +43,32 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 		connect(open, &QPushButton::clicked, this, &NormalsSourceRow::selectOutput);
 	}
 
-	connect(compute, &QAbstractButton::clicked, this, [this](){ setComputeSource(true); });
-	connect(file, &QAbstractButton::clicked, this, [this](){ setComputeSource(false); });
-	//connect(rbf, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::RBF, true); });
-	//connect(bln, &QAbstractButton::clicked, this, [this](){ setBasis(Rti::BILINEAR, true); });
+	connect(compute_l2,     &QAbstractButton::clicked, this, [this](){ setComputeSource(true);  setSolver(NORMALS_L2); });
+	connect(compute_robust, &QAbstractButton::clicked, this, [this](){ setComputeSource(true);  setSolver(NORMALS_ROBUST); });
+	connect(file,           &QAbstractButton::clicked, this, [this](){ setComputeSource(false); });
 
 	QButtonGroup *group = new QButtonGroup(this);
-
-	group->addButton(compute);
+	group->addButton(compute_l2);
+	group->addButton(compute_robust);
 	group->addButton(file);
 
 	setComputeSource(parameters.compute);
+	setSolver(parameters.solver);
 }
 
 
 void NormalsSourceRow::setComputeSource(bool build) {
 	parameters.compute = build;
-	compute->setChecked(build);
 
 	input_frame->setVisible(!build);
 	updateSize();
+}
+
+void NormalsSourceRow::setSolver(NormalSolver solver) {
+	parameters.solver = solver;
+	compute_l2->setChecked(parameters.compute && solver == NORMALS_L2);
+	compute_robust->setChecked(parameters.compute && solver == NORMALS_ROBUST);
+	file->setChecked(!parameters.compute);
 }
 
 void NormalsSourceRow::updateSize() {
