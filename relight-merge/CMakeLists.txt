@@ -17,6 +17,7 @@ SET(HEADERS
 	../src/getopt.h
 	../src/rti.h
 	../src/jpeg_decoder.h
+	../src/image_decoder.h
 	../src/imageset.h
 	../src/exif.h
 	../src/colorprofile.h
@@ -35,6 +36,7 @@ SET(SOURCES
 	../src/getopt.cpp
 	../src/rti.cpp
 	../src/jpeg_decoder.cpp
+	../src/image_decoder.cpp
 	../src/imageset.cpp
 	../src/exif.cpp
 	../src/colorprofile.cpp

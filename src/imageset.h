@@ -19,7 +19,7 @@
 #include <QSize>
 
 class QJsonObject;
-class JpegDecoder;
+class ImageDecoder;
 class QImage;
 class QRect;
 class Image;
@@ -143,7 +143,7 @@ public:
 
 protected:
 	std::function<bool(QString stage, int percent)> *callback;
-	std::vector<JpegDecoder *> decoders;
+	std::vector<ImageDecoder *> decoders;
 
 
 private:

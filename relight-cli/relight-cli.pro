@@ -54,6 +54,7 @@ SOURCES += main.cpp \
     ../src/imageset.cpp \
     ../src/colorprofile.cpp \
     ../src/jpeg_decoder.cpp \
+    ../src/image_decoder.cpp \
     ../src/jpeg_encoder.cpp \
     ../src/icc_profiles.cpp \
     ../src/lens.cpp \
@@ -90,6 +91,7 @@ HEADERS += \
     ../src/imageset.h \
     ../src/colorprofile.h \
     ../src/jpeg_decoder.h \
+    ../src/image_decoder.h \
     ../src/jpeg_encoder.h \
     ../src/icc_profiles.h \
     ../src/lens.h \

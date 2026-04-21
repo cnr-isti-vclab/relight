@@ -1,6 +1,6 @@
 #include "imageset.h"
 #include "dome.h"
-#include "jpeg_decoder.h"
+#include "image_decoder.h"
 #include "project.h"
 #include "colorprofile.h"
 #include "icc_profiles.h"
@@ -38,7 +38,7 @@ ImageSet::~ImageSet() {
 		cmsDeleteTransform(output_color_transform_float);
 
 	//TODO decoders should take care to properly finish
-	for(JpegDecoder *dec: decoders)
+	for(ImageDecoder *dec: decoders)
 		delete dec;
 }
 
@@ -234,7 +234,7 @@ bool ImageSet::initImages(const char *_path, bool force_input_as_linear) {
 	for(int i = 0; i < images.size(); i++) {
 		QString filepath = dir.filePath(images[i]);
 		int w, h;
-		JpegDecoder *dec = new JpegDecoder;
+		ImageDecoder *dec = new ImageDecoder;
 		if(!dec->init(filepath.toStdString().c_str(), w, h))
 			throw QString("Failed decoding image: " + filepath);
 
@@ -345,7 +345,7 @@ QImage ImageSet::maxImage(std::function<bool(std::string stage, int percent)> *c
 		}
 		uint8_t *rowmax = image.scanLine(y);
 		for(uint32_t i = 0; i < decoders.size(); i++) {
-			JpegDecoder *dec = decoders[i];
+			ImageDecoder *dec = decoders[i];
 			dec->readRows(1, row);
 			applyColorTransform(row, w);
 			
@@ -489,7 +489,7 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 		auto &selection = sampler.result(samplexrow, width);
 
 		for(uint32_t i = 0; i < decoders.size(); i++) {
-			JpegDecoder *dec = decoders[i];
+			ImageDecoder *dec = decoders[i];
 			dec->readRows(1, row.data());
 
 			applyColorTransform(row.data() + left*3, width);

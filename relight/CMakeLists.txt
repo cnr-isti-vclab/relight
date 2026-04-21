@@ -31,6 +31,7 @@ set (RELIGHT_HEADERS
 	../src/legacy_rti.h
 	../src/imageset.h
 	../src/jpeg_decoder.h
+	../src/image_decoder.h
 	../src/jpeg_encoder.h
 	../src/icc_profiles.h
 	../src/exif.h
@@ -91,6 +92,7 @@ set (RELIGHT_SOURCES
 	../relight-cli/convert_rti.cpp
 	../src/imageset.cpp
 	../src/jpeg_decoder.cpp
+	../src/image_decoder.cpp
 	../src/jpeg_encoder.cpp
 	../src/icc_profiles.cpp
 	../src/rti.cpp

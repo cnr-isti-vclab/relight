@@ -29,7 +29,7 @@ public:
 	//file streaming reading support
 	bool init(const char* path, int &width, int &height);
 
-	size_t rowSize() { return decInfo.image_width * decInfo.num_components; }
+	size_t rowSize() const { return decInfo.image_width * decInfo.num_components; }
 
 	//buffer must have rows*rowSize() space at least!
 	size_t readRows(int rows, uint8_t *buffer); //return false on end.
