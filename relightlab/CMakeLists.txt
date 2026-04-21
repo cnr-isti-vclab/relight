@@ -61,6 +61,9 @@ set (RELIGHT_HEADERS
     ../src/jpeg_decoder.h
     ../src/image_decoder.h
     ../src/tiff_decoder.h
+    ../src/png_decoder.h
+    ../src/exr_decoder.h
+    ../src/miniz.h
     ../src/jpeg_encoder.h
     ../src/icc_profiles.h
     ../src/normals/flatnormals.h
@@ -147,6 +150,9 @@ set (RELIGHTLAB_SOURCES
     ../src/jpeg_decoder.cpp
     ../src/image_decoder.cpp
     ../src/tiff_decoder.cpp
+    ../src/png_decoder.cpp
+    ../src/exr_decoder.cpp
+    ../src/miniz.c
     ../src/jpeg_encoder.cpp
     ../src/icc_profiles.cpp
     ../src/network/httpserver.cpp
@@ -216,6 +222,7 @@ target_include_directories(
 		TIFF::TIFF
 #		${OpenCV_INCLUDE_DIRS}
 		../external
+		../src
 	)
 	
 if(Eigen3_FOUND)
@@ -228,6 +235,7 @@ target_link_libraries(
 	relightlab PUBLIC
 		${JPEG_LIBRARIES}
 		TIFF::TIFF
+		PNG::PNG
 		OpenMP::OpenMP_CXX
 #		${OPENCV_RELIGHT_LIBS}
 		${RELIGHT_QT}::Core

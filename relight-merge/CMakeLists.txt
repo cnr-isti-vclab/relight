@@ -19,6 +19,9 @@ SET(HEADERS
 	../src/jpeg_decoder.h
 	../src/image_decoder.h
 	../src/tiff_decoder.h
+	../src/png_decoder.h
+	../src/exr_decoder.h
+	../src/miniz.h
 	../src/imageset.h
 	../src/exif.h
 	../src/colorprofile.h
@@ -39,6 +42,9 @@ SET(SOURCES
 	../src/jpeg_decoder.cpp
 	../src/image_decoder.cpp
 	../src/tiff_decoder.cpp
+	../src/png_decoder.cpp
+	../src/exr_decoder.cpp
+	../src/miniz.c
 	../src/imageset.cpp
 	../src/exif.cpp
 	../src/colorprofile.cpp
@@ -60,7 +66,8 @@ add_executable(relight-merge ${HEADERS} ${SOURCES} ${RESOURCES})
 target_include_directories(
 	relight-merge PUBLIC 
 		${CMAKE_CURRENT_SOURCE_DIR}
-		${JPEG_INCLUDE_DIR})
+		${JPEG_INCLUDE_DIR}
+		../src)
 
 if(Eigen3_FOUND)
 	target_link_libraries(relight-merge PUBLIC Eigen3::Eigen)
@@ -72,6 +79,7 @@ target_link_libraries(
 	relight-merge PUBLIC
 		${JPEG_LIBRARIES}
 		TIFF::TIFF
+		PNG::PNG
 		OpenMP::OpenMP_CXX
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui

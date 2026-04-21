@@ -32,6 +32,9 @@ SET(HEADERS
 	../src/jpeg_decoder.h
 	../src/image_decoder.h
 	../src/tiff_decoder.h
+	../src/png_decoder.h
+	../src/exr_decoder.h
+	../src/miniz.h
 	../src/jpeg_encoder.h
 	../src/icc_profiles.h
 	../src/relight_vector.h
@@ -76,6 +79,9 @@ SET(SOURCES
 	../src/jpeg_decoder.cpp
 	../src/image_decoder.cpp
 	../src/tiff_decoder.cpp
+	../src/png_decoder.cpp
+	../src/exr_decoder.cpp
+	../src/miniz.c
 	../src/jpeg_encoder.cpp
 	../src/icc_profiles.cpp
 	../src/project.cpp
@@ -108,6 +114,7 @@ target_include_directories(relight-normals PUBLIC
 		${JPEG_INCLUDE_DIR}
 		TIFF::TIFF
 		../external
+		../src
 )
 
 if(Eigen3_FOUND)
@@ -120,6 +127,7 @@ target_link_libraries(
 	relight-normals PUBLIC
 		${JPEG_LIBRARIES}
 		TIFF::TIFF
+		PNG::PNG
 		OpenMP::OpenMP_CXX
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui

@@ -19,8 +19,8 @@ win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
     ../src/
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
-unix:INCLUDEPATH += /usr/include/eigen3
-unix:LIBS += -ljpeg -ltiff -llcms2 -lgomp #-liomp5
+unix:INCLUDEPATH += /usr/include/eigen3 ../src/
+unix:LIBS += -ljpeg -ltiff -lpng -llcms2 -lgomp #-liomp5
 unix:QMAKE_CXXFLAGS += -fopenmp
 
 
@@ -60,6 +60,9 @@ SOURCES += main.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/image_decoder.cpp \
     ../src/tiff_decoder.cpp \
+    ../src/png_decoder.cpp \
+    ../src/exr_decoder.cpp \
+    ../src/miniz.c \
     ../src/jpeg_encoder.cpp \
     ../src/icc_profiles.cpp \
     ../src/rti.cpp \
@@ -120,6 +123,9 @@ HEADERS += \
     ../src/jpeg_decoder.h \
     ../src/image_decoder.h \
     ../src/tiff_decoder.h \
+    ../src/png_decoder.h \
+    ../src/exr_decoder.h \
+    ../src/miniz.h \
     ../src/jpeg_encoder.h \
     ../src/icc_profiles.h \
     ../src/material.h \

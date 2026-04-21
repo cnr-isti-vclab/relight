@@ -2,10 +2,10 @@
 #include "jpeg_decoder.h"
 
 #include "tiff_decoder.h"
+#include "png_decoder.h"
+#include "exr_decoder.h"
 
 // Format-specific includes -- uncomment as each backend is implemented:
-// #include <png.h>
-// #include <OpenEXR/ImfRgbaFile.h>   or   #include "tinyexr.h"
 // #include <libraw/libraw.h>
 
 #include <algorithm>
@@ -118,64 +118,6 @@ struct JpegDecoderImpl : ImageDecoderImpl {
 	bool hasICCProfile() const override { return dec.hasICCProfile(); }
 	const std::vector<uint8_t>& getICCProfile() const override {
 		return dec.getICCProfile();
-	}
-};
-
-// ══════════════════════════════════════════════════════════════════════════════
-// PngDecoderImpl  — stub (TODO: implement with libpng)
-// Supports: UINT8 and UINT16, 1/2/3/4 channels, embedded ICC profile (iCCP).
-// ══════════════════════════════════════════════════════════════════════════════
-struct PngDecoderImpl : ImageDecoderImpl {
-	// TODO: png_structp png  = nullptr;
-	// TODO: png_infop   info = nullptr;
-	// TODO: FILE* file = nullptr;
-	// TODO: int width = 0, height = 0, channels = 0, bit_depth = 0;
-	// TODO: int current_row = 0;
-	// TODO: std::vector<uint8_t> icc_profile;
-
-	bool   open(const char*, int&, int&) override { return false; /* TODO */ }
-	size_t rowSize()             const override { return 0; }
-	size_t readRows(int, uint8_t*) override    { return 0; }
-	bool   finish()                    override { return false; }
-	bool   restart()                   override { return false; }
-	int       numChannels() const override { return 0; }
-	PixelType pixelType()   const override { return PixelType::UINT8; }
-	bool hasICCProfile() const override { return false; }
-	const std::vector<uint8_t>& getICCProfile() const override {
-		return ImageDecoder::empty_profile;
-	}
-};
-
-// ══════════════════════════════════════════════════════════════════════════════
-// ExrDecoderImpl  — stub (TODO: implement with OpenEXR or TinyEXR)
-// Always produces float data (FLOAT16 or FLOAT32 depending on channel type).
-// EXR is always scene-linear; no embedded ICC profile.
-// Override readRows(float*) to read natively; the uint8_t overload should
-// quantise from float when implemented.
-// ══════════════════════════════════════════════════════════════════════════════
-struct ExrDecoderImpl : ImageDecoderImpl {
-	// TODO: OpenEXR::InputFile or EXRImage (TinyEXR)
-	// TODO: int width = 0, height = 0, channels = 0;
-	// TODO: PixelType ptype = PixelType::FLOAT32;
-	// TODO: std::vector<float> internal_buf; // full image buffer for random access
-	// TODO: int current_row = 0;
-
-	bool   open(const char*, int&, int&) override { return false; /* TODO */ }
-	size_t rowSize()             const override { return 0; }
-
-	// uint8_t path: quantise from float (implement after float path is done)
-	size_t readRows(int, uint8_t*) override { return 0; }
-
-	// TODO: float path reads natively from EXR (override instead of converting)
-	size_t readRows(int, float*) override { return 0; }
-
-	bool   finish()  override { return false; }
-	bool   restart() override { return false; }
-	int       numChannels() const override { return 0; }
-	PixelType pixelType()   const override { return PixelType::FLOAT32; }
-	bool hasICCProfile() const override { return false; }
-	const std::vector<uint8_t>& getICCProfile() const override {
-		return ImageDecoder::empty_profile;
 	}
 };
 

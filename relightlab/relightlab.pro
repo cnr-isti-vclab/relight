@@ -6,6 +6,7 @@ DEFINES += _USE_MATH_DEFINES #WITH_OPENCV not needed now
 DEFINES += NOMINMAX
 DEFINES += HAVE_LCMS2
 
+
 INCLUDEPATH += ../external/
 
 win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
@@ -14,10 +15,10 @@ win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
 unix::QMAKE_CXXFLAGS = -fopenmp
-unix:INCLUDEPATH += ../external/eigen-3.3.9/ 
+unix:INCLUDEPATH += ../external/eigen-3.3.9/ ../src/
 #opencv not needed for the moment
 #unix:INCLUDEPATH += /usr/include/opencv4
-unix:LIBS += -ljpeg -ltiff -llcms2
+unix:LIBS += -ljpeg -ltiff -lpng -llcms2
 #opencv not needed for the moment
 #unix:LIBS += -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_video
 unix::LIBS += -fopenmp #-lgomp
@@ -55,6 +56,7 @@ SOURCES += main.cpp \
     ../src/brdf/brdfparameters.cpp \
     ../src/cli/convert_rti.cpp \
     ../src/cli/rtibuilder.cpp \
+    ../src/miniz.c \
     ../src/network/httpserver.cpp \
     ../src/normals/flatnormals.cpp \
     ../src/normals/normalstask.cpp \
@@ -76,6 +78,8 @@ SOURCES += main.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/image_decoder.cpp \
     ../src/tiff_decoder.cpp \
+    ../src/png_decoder.cpp \
+    ../src/exr_decoder.cpp \
     ../src/jpeg_encoder.cpp \
     ../src/icc_profiles.cpp \
     ../src/legacy_rti.cpp \
@@ -151,7 +155,10 @@ HEADERS += \
     ../external/assm/algorithms/Triangulation.h \
     ../src/cli/rtibuilder.h \
     ../src/crop.h \
+    ../src/exr_reader.hh \
     ../src/normals/flatnormals.h \
+    ../src/streamreader.hh \
+    ../src/tinyexr.h \
     brdfplan.h \
     imagecropper.h \
     processqueue.h \
@@ -164,6 +171,9 @@ HEADERS += \
     ../src/jpeg_decoder.h \
     ../src/image_decoder.h \
     ../src/tiff_decoder.h \
+    ../src/png_decoder.h \
+    ../src/miniz.c \
+    ../src/exr_decoder.h \
     ../src/jpeg_encoder.h \
     ../src/icc_profiles.h \
     ../src/legacy_rti.h \

@@ -68,6 +68,10 @@ else()
     message(STATUS "Using system TIFF library")
 endif()
 
+# PNG setup
+find_package(PNG REQUIRED)
+message(STATUS "Using PNG library: ${PNG_LIBRARIES}")
+
 # OpenCV setup, not needed for the moment,.
 #if(NOT APPLE)
 #    find_package(OpenCV REQUIRED)

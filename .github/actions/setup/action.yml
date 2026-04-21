@@ -32,20 +32,20 @@ runs:
         sudo apt-get install -y mesa-common-dev libglu1-mesa-dev 
         sudo apt-get install -y cmake ninja-build patchelf fuse libjpeg-dev libeigen3-dev
         sudo apt-get install -y libxcb-cursor0
-        sudo apt-get install -y liblcms2-dev
+        sudo apt-get install -y liblcms2-dev libpng-dev
 
     - name: Install macOS dependencies
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        brew install coreutils libomp eigen libjpeg 
+        brew install coreutils libomp eigen libjpeg libpng
         npm install -g appdmg
 
     - name: Install Windows dependencies
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        C:/vcpkg/vcpkg.exe install lcms:x64-windows
+        C:/vcpkg/vcpkg.exe install lcms:x64-windows libpng:x64-windows
         choco install nsis -y
 
 
