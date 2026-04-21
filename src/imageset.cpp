@@ -70,7 +70,7 @@ bool ImageSet::initFromProject(Project &project) {
 		}
 	}
 	//The code is a bit messy: initImages will read the focal length, but we need to use the project.
-	initImages(project.dir.absolutePath().toStdString().c_str(), project.forced_input_colorspace == Project::FORCE_LINEAR);
+	initImages(project.dir.absolutePath().toStdString().c_str(), project.forced_input_colorspace);
 	lens = project.lens;
 
 	initFromDome(project.dome);
@@ -108,13 +108,15 @@ bool ImageSet::initFromProject(QJsonObject &obj, const QString &filename) {
 
 		images.push_back(filename);
 	}
-	bool force_linear = false;
+	Project::ForcedInputColorspace force_colorspace = Project::FORCE_NONE;
 	if(obj.contains("forcedInputColorspace")) {
 		QString forced = obj["forcedInputColorspace"].toString();
 		if(forced == "linear")
-			force_linear = true;
+			force_colorspace = Project::FORCE_LINEAR;
+		else if(forced == "srgb")
+			force_colorspace = Project::FORCE_LINEAR;
 	}
-	bool ok = initImages(folder.path().toStdString().c_str(), force_linear);
+	bool ok = initImages(folder.path().toStdString().c_str(), force_colorspace);
 	if(!ok)
 		return false;
 
@@ -202,7 +204,7 @@ void ImageSet::initLights() {
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
-bool ImageSet::initImages(const char *_path, bool force_input_as_linear) {
+bool ImageSet::initImages(const char *_path,  Project::ForcedInputColorspace force_colorspace) {
 	int noFilesNeeded = images.size() + 50;
 #ifdef _WIN32
 	int maxfiles = _getmaxstdio();
@@ -247,18 +249,26 @@ bool ImageSet::initImages(const char *_path, bool force_input_as_linear) {
 
 		lens.width = right = image_width = width = w;
 		lens.height = bottom = image_height = height = h;
+		bool current_is_exif_srgb = false;
+		try {
+			Exif exif;
+			exif.parse(filepath);
+			lens.readExif(exif);
+			current_is_exif_srgb = exif.value(Exif::ColorSpace, QString()).toString() == "sRGB";
 
-		Exif exif;
-		exif.parse(filepath);
-		lens.readExif(exif);
+		} catch(QString error) {
+			cout << "Failed reading exif." << endl;
+		}
 
 		if(first) {
 			has_profile = dec->hasICCProfile();
 			if(has_profile) {
 				const auto &profile = dec->getICCProfile();
 				icc_profile_data = profile;
-			} else
-				is_exif_srgb = exif.value(Exif::ColorSpace, QString()).toString() == "sRGB";
+				current_is_exif_srgb = is_exif_srgb = false;
+			} else if(current_is_exif_srgb) {
+				icc_profile_data = ICCProfiles::sRGBData();
+			}
 			first = false;
 		}
 
@@ -272,18 +282,15 @@ bool ImageSet::initImages(const char *_path, bool force_input_as_linear) {
 		} else {
 			if(has_profile)
 				throw QString("Input images %1 lacks ICC profile while previous have one.").arg(filepath);
-			if(is_exif_srgb != (exif.value(Exif::ColorSpace, QString()).toString() == "sRGB"))
+			if(is_exif_srgb != current_is_exif_srgb)
 				throw QString("Input image %1 has a different exif colorspace.").arg(filepath);
 		}
 		decoders.push_back(dec);
 	}
-	if(is_exif_srgb) {
-		icc_profile_data = ICCProfiles::sRGBData();
-	}
 
-	if(force_input_as_linear) {
+	if(force_colorspace == Project::FORCE_LINEAR) {
 		icc_profile_data = ICCProfiles::linearRGBData();
-	} else {
+	} else if(force_colorspace == Project::FORCE_SRGB || icc_profile_data.empty()) {
 		icc_profile_data = ICCProfiles::sRGBData();
 	}
 

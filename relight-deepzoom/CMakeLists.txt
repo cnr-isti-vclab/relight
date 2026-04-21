@@ -17,6 +17,7 @@ SET(HEADERS
 	../src/deepzoom.h
 	../src/jpeg_decoder.h
 	../src/image_decoder.h
+	../src/tiff_decoder.h
 	../src/jpeg_encoder.h
 )
 
@@ -25,6 +26,7 @@ SET(SOURCES
 	../src/deepzoom.cpp
 	../src/jpeg_decoder.cpp
 	../src/image_decoder.cpp
+	../src/tiff_decoder.cpp
 	../src/jpeg_encoder.cpp
 )
 

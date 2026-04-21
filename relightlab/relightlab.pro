@@ -75,6 +75,7 @@ SOURCES += main.cpp \
     ../src/colorprofile.cpp \
     ../src/jpeg_decoder.cpp \
     ../src/image_decoder.cpp \
+    ../src/tiff_decoder.cpp \
     ../src/jpeg_encoder.cpp \
     ../src/icc_profiles.cpp \
     ../src/legacy_rti.cpp \
@@ -162,6 +163,7 @@ HEADERS += \
     ../src/colorprofile.h \
     ../src/jpeg_decoder.h \
     ../src/image_decoder.h \
+    ../src/tiff_decoder.h \
     ../src/jpeg_encoder.h \
     ../src/icc_profiles.h \
     ../src/legacy_rti.h \

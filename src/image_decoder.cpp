@@ -1,12 +1,14 @@
 #include "image_decoder.h"
 #include "jpeg_decoder.h"
 
+#include "tiff_decoder.h"
+
 // Format-specific includes -- uncomment as each backend is implemented:
 // #include <png.h>
-// #include <tiffio.h>
 // #include <OpenEXR/ImfRgbaFile.h>   or   #include "tinyexr.h"
 // #include <libraw/libraw.h>
 
+#include <algorithm>
 #include <cstring>
 #include <cctype>
 #include <cstdio>
@@ -145,31 +147,6 @@ struct PngDecoderImpl : ImageDecoderImpl {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
-// TiffDecoderImpl — stub (TODO: implement with libtiff)
-// Supports: UINT8, UINT16, FLOAT32; 1/3/4 channels; embedded ICC profile (tag 34675).
-// Scanline or strip-based reading depending on the file layout.
-// ══════════════════════════════════════════════════════════════════════════════
-struct TiffDecoderImpl : ImageDecoderImpl {
-	// TODO: TIFF* tif = nullptr;
-	// TODO: int width = 0, height = 0, channels = 0;
-	// TODO: int bits_per_sample = 8, sample_format = SAMPLEFORMAT_UINT;
-	// TODO: int current_row = 0;
-	// TODO: std::vector<uint8_t> icc_profile;
-
-	bool   open(const char*, int&, int&) override { return false; /* TODO */ }
-	size_t rowSize()             const override { return 0; }
-	size_t readRows(int, uint8_t*) override    { return 0; }
-	bool   finish()                    override { return false; }
-	bool   restart()                   override { return false; }
-	int       numChannels() const override { return 0; }
-	PixelType pixelType()   const override { return PixelType::UINT8; }
-	bool hasICCProfile() const override { return false; }
-	const std::vector<uint8_t>& getICCProfile() const override {
-		return ImageDecoder::empty_profile;
-	}
-};
-
-// ══════════════════════════════════════════════════════════════════════════════
 // ExrDecoderImpl  — stub (TODO: implement with OpenEXR or TinyEXR)
 // Always produces float data (FLOAT16 or FLOAT32 depending on channel type).
 // EXR is always scene-linear; no embedded ICC profile.
@@ -288,6 +265,23 @@ ImageFormat ImageDecoder::detectFormat(const char* path) {
 
 void ImageDecoder::setFormat(ImageFormat fmt) { format = fmt; }
 
+/*static*/
+const std::vector<std::string>& ImageDecoder::supportedExtensions() {
+	static const std::vector<std::string> exts = {
+		// JPEG
+		"jpg", "jpeg",
+		// PNG
+		"png",
+		// TIFF
+		"tif", "tiff",
+		// EXR
+		"exr",
+		// Camera RAW
+		"cr2", "cr3", "nef", "arw", "dng", "raf", "orf", "rw2"
+	};
+	return exts;
+}
+
 // ── Factory ───────────────────────────────────────────────────────────────────
 
 bool ImageDecoder::createImpl(const char* path) {
@@ -308,15 +302,32 @@ bool ImageDecoder::createImpl(const char* path) {
 
 bool ImageDecoder::init(const char* path, int& w, int& h) {
 	if (!createImpl(path)) return false;
-	return impl->open(path, w, h);
+	if (!impl->open(path, w, h)) return false;
+	img_width  = w;
+	img_height = h;
+	return true;
 }
 
+// Returns the number of samples per row: width × channels.
+// This is independent of the native bit depth; multiply by bytesPerChannel()
+// if you need the byte count for the native representation.
 size_t ImageDecoder::rowSize() const {
-	return impl ? impl->rowSize() : 0;
+	return size_t(img_width) * size_t(numChannels());
 }
 
 size_t ImageDecoder::readRows(int rows, uint8_t* buf) {
-	return impl ? impl->readRows(rows, buf) : 0;
+	if (!impl) return 0;
+	if (impl->pixelType() == PixelType::UINT8)
+		return impl->readRows(rows, buf);
+
+	// Non-UINT8: go through the float path and quantise each sample to [0, 255].
+	size_t outRowBytes = rowSize(); // w × ch (8-bit equivalent)
+	std::vector<float> fbuf(size_t(rows) * outRowBytes);
+	size_t read = impl->readRows(rows, fbuf.data());
+	size_t n = read * outRowBytes;
+	for (size_t i = 0; i < n; ++i)
+		buf[i] = uint8_t(std::min(std::max(fbuf[i], 0.0f), 1.0f) * 255.0f + 0.5f);
+	return read;
 }
 
 size_t ImageDecoder::readRows(int rows, float* buf) {

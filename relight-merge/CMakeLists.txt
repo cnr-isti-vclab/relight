@@ -18,6 +18,7 @@ SET(HEADERS
 	../src/rti.h
 	../src/jpeg_decoder.h
 	../src/image_decoder.h
+	../src/tiff_decoder.h
 	../src/imageset.h
 	../src/exif.h
 	../src/colorprofile.h
@@ -37,6 +38,7 @@ SET(SOURCES
 	../src/rti.cpp
 	../src/jpeg_decoder.cpp
 	../src/image_decoder.cpp
+	../src/tiff_decoder.cpp
 	../src/imageset.cpp
 	../src/exif.cpp
 	../src/colorprofile.cpp
@@ -69,6 +71,7 @@ endif()
 target_link_libraries(
 	relight-merge PUBLIC
 		${JPEG_LIBRARIES}
+		TIFF::TIFF
 		OpenMP::OpenMP_CXX
 		${RELIGHT_QT}::Core
 		${RELIGHT_QT}::Gui

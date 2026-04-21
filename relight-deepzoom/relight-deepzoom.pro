@@ -20,10 +20,12 @@ SOURCES += main.cpp \
     ../src/deepzoom.cpp \
     ../src/jpeg_encoder.cpp \
     ../src/jpeg_decoder.cpp \
-    ../src/image_decoder.cpp
+    ../src/image_decoder.cpp \
+    ../src/tiff_decoder.cpp
 
 HEADERS += \
     ../src/deepzoom.h \
     ../src/jpeg_encoder.h \
     ../src/jpeg_decoder.h \
-    ../src/image_decoder.h
+    ../src/image_decoder.h \
+    ../src/tiff_decoder.h

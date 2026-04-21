@@ -116,10 +116,16 @@ public:
 	// Shared empty profile returned by reference when no profile is present.
 	static const std::vector<uint8_t> empty_profile;
 
+	// Returns all lowercase file extensions this decoder can open.
+	// Suitable for building directory filters (e.g. "jpg", "tif", "png", …).
+	static const std::vector<std::string>& supportedExtensions();
+
 private:
 	bool createImpl(const char* path);
 
 	ImageFormat format = ImageFormat::UNKNOWN;
+	int img_width  = 0;   // stored on init(); used by rowSize()
+	int img_height = 0;
 	std::unique_ptr<ImageDecoderImpl> impl;
 };
 

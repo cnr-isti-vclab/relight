@@ -1,6 +1,7 @@
 #ifndef IMAGESET_H
 #define IMAGESET_H
 
+#include "project.h"
 #include "relight_vector.h"
 #include "dome.h"
 #include "lens.h"
@@ -76,7 +77,7 @@ public:
 	bool initFromProject(Project &project);
 
 	//open images and starts the decoders
-	bool initImages(const char *path, bool force_input_as_linear = false); //path points to the dir of the images.
+	bool initImages(const char *path, Project::ForcedInputColorspace force_colorspace = Project::FORCE_NONE); //path points to the dir of the images.
 
 	//remove not visible images and relative lights.
 	void cleanHidden(std::vector<Image> &images);

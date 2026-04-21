@@ -6,6 +6,7 @@
 #include "white.h"
 #include "lp.h"
 #include "colorprofile.h"
+#include "image_decoder.h"
 #include "jpeg_decoder.h"
 #include "jpeg_encoder.h"
 
@@ -27,6 +28,8 @@
 
 #include <iostream>
 #include <cstring>
+#include <map>
+#include <algorithm>
 
 using namespace std;
 using namespace Eigen;
@@ -74,26 +77,56 @@ bool Project::setDir(QDir folder) {
 }
 
 bool Project::scanDir() {
+	// Build a wildcard filter for every extension ImageDecoder supports,
+	// in both lower- and upper-case (for case-sensitive file systems).
 	QStringList img_ext;
-	//TODO add support for raw files (needs preprocessing?)
-	img_ext << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG"; // << "*.NEF" << "*.CR2";
+	for(const std::string &e: ImageDecoder::supportedExtensions()) {
+		QString qe = QString::fromStdString(e);
+		img_ext << "*." + qe << "*." + qe.toUpper();
+	}
 
-	QVector<QSize> resolutions;
-	vector<int> count;
-	for(QString &s: QDir(dir).entryList(img_ext)) {
+	// Scan all candidate files and group them by format so we can pick the
+	// dominant one (the format with the most images becomes the dataset;
+	// files of other formats are ignored).
+	struct CandidateImage {
+		Image      image;
+		ImageFormat fmt;
+	};
+	std::vector<CandidateImage> candidates;
+	for(const QString &s: QDir(dir).entryList(img_ext)) {
+		ImageFormat fmt = ImageDecoder::detectFormat(
+			dir.filePath(s).toStdString().c_str());
+		if(fmt == ImageFormat::UNKNOWN) continue;
 		Image image(s);
-
-		QImageReader reader(s);
+		QImageReader reader(dir.filePath(s));
 		reader.setAutoTransform(false);
 		image.size = reader.size();
+		candidates.push_back({image, fmt});
+	}
+	if(candidates.empty())
+		return false;
 
-		int index = resolutions.indexOf(image.size);
+	// Count images per format and pick the most frequent one.
+	std::map<ImageFormat, int> fmt_count;
+	for(const auto &c: candidates)
+		fmt_count[c.fmt]++;
+	ImageFormat dominant_fmt = candidates[0].fmt;
+	for(const auto &kv: fmt_count)
+		if(kv.second > fmt_count[dominant_fmt])
+			dominant_fmt = kv.first;
+
+	// Keep only images of the dominant format.
+	QVector<QSize> resolutions;
+	vector<int> count;
+	for(const auto &c: candidates) {
+		if(c.fmt != dominant_fmt) continue;
+		int index = resolutions.indexOf(c.image.size);
 		if(index == -1) {
-			resolutions.push_back(image.size);
+			resolutions.push_back(c.image.size);
 			count.push_back(1);
 		} else
 			count[index]++;
-		images.push_back(image);
+		images.push_back(c.image);
 	}
 	if(!images.size())
 		return false;
@@ -177,7 +210,7 @@ bool Project::scanDir() {
 	for(const Image &image: images) {
 		if(!image.skip) {
 			QString filepath = dir.filePath(image.filename);
-			JpegDecoder dec;
+			ImageDecoder dec;
 			int w, h;
 			if(dec.init(filepath.toStdString().c_str(), w, h)) {
 				if(dec.hasICCProfile()) {
@@ -250,9 +283,36 @@ double mutualInfo(QImage &a, QImage &b) {
 
 QImage Project::readImage(int i) {
 	assert(i >= 0 && i < images.size());
-	QImageReader reader(images[i].filename, "JPG");
+
+	// Try Qt's built-in reader first (JPEG, PNG, and any installed plugins).
+	// Drop the hardcoded "JPG" hint so Qt auto-detects the real format.
+	QImageReader reader(images[i].filename);
 	reader.setAutoTransform(false);
-	return reader.read();
+	QImage img = reader.read();
+	if(!img.isNull())
+		return img;
+
+	// Fallback: use ImageDecoder for formats Qt doesn't support natively
+	// (TIFF with unusual compression, EXR, camera RAW, …).
+	ImageDecoder dec;
+	int w = 0, h = 0;
+	if(!dec.init(images[i].filename.toStdString().c_str(), w, h))
+		return QImage();
+
+	// readRows(uint8_t*) quantises to 8-bit for all pixel depths (UINT16, FLOAT, …).
+	int ch = dec.numChannels();
+	size_t rowBytes = dec.rowSize();  // w × ch samples (1 byte each after quantisation)
+	std::vector<uint8_t> buf(size_t(h) * rowBytes);
+	dec.readRows(h, buf.data());
+	dec.finish();
+
+	QImage::Format fmt = (ch == 4) ? QImage::Format_RGBA8888 :
+	                     (ch == 1) ? QImage::Format_Grayscale8 :
+	                                 QImage::Format_RGB888;
+	QImage result(w, h, fmt);
+	for(int y = 0; y < h; ++y)
+		memcpy(result.scanLine(y), buf.data() + size_t(y) * rowBytes, rowBytes);
+	return result;
 }
 
 bool Project::rotateImage(Image &image, bool clockwise) {

@@ -31,6 +31,7 @@ SET(HEADERS
 	../src/image.h
 	../src/jpeg_decoder.h
 	../src/image_decoder.h
+	../src/tiff_decoder.h
 	../src/jpeg_encoder.h
 	../src/icc_profiles.h
 	../src/relight_vector.h
@@ -74,6 +75,7 @@ SET(SOURCES
 	../src/image.cpp
 	../src/jpeg_decoder.cpp
 	../src/image_decoder.cpp
+	../src/tiff_decoder.cpp
 	../src/jpeg_encoder.cpp
 	../src/icc_profiles.cpp
 	../src/project.cpp
