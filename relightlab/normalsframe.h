@@ -25,6 +25,7 @@ public:
 public slots:
 	void save();
 	void init();
+	void clear();
 	void updateCrop(Crop crop);
 
 signals:

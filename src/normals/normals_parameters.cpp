@@ -17,6 +17,7 @@ QString flatMethodToString(FlatMethod method) {
 	switch(method) {
 	case FLAT_NONE: return QStringLiteral("FLAT_NONE");
 	case FLAT_RADIAL: return QStringLiteral("FLAT_RADIAL");
+	case FLAT_PLANE: return QStringLiteral("FLAT_PLANE");
 	case FLAT_FOURIER: return QStringLiteral("FLAT_FOURIER");
 	case FLAT_BLUR: return QStringLiteral("FLAT_BLUR");
 	default:
@@ -41,6 +42,8 @@ QString NormalsParameters::summary() const {
 	QString ret = "Normals";
 	if(flatMethod == FLAT_RADIAL)
 		ret += " , radial flattning";
+	if(flatMethod == FLAT_PLANE)
+		ret += ", 4-point plane flattening";
 	if(flatMethod == FLAT_FOURIER)
 		ret += ", frequencies based flattening";
 

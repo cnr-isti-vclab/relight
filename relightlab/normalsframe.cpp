@@ -79,7 +79,12 @@ void NormalsFrame::init() {
 	export_row->suggestPath();
 	zoom_view->init();
 	zoom_view->setCrop(qRelightApp->project().crop);
+	flatten_row->init();
 	source_row->updateSize();
+}
+
+void NormalsFrame::clear() {
+	flatten_row->clear();
 }
 
 void NormalsFrame::save() {
@@ -106,6 +111,23 @@ void NormalsFrame::save() {
 		int answer = QMessageBox::question(this, parameters.path + " already exists.", "Do you wish to overwrite it?", QMessageBox::Yes, QMessageBox::No);
 		if(answer == QMessageBox::No)
 			return;
+	}
+
+	if(parameters.flatMethod == FlatMethod::FLAT_PLANE) {
+		const Crop &crop = qRelightApp->project().crop;
+		if(parameters.plane_points.size() < 4) {
+			QMessageBox::warning(this, "Plane flattening", "Please pick at least 4 reference points before processing.");
+			return;
+		}
+		for(const QPointF &fp : parameters.plane_points) {
+			if(!crop.contains(fp.toPoint())) {
+				QMessageBox::warning(this, "Plane flattening",
+					QString("Reference point (%1, %2) is outside the current crop region.\n"
+						"Please re-pick the points after adjusting the crop.")
+						.arg((int)fp.x()).arg((int)fp.y()));
+				return;
+			}
+		}
 	}
 
 	NormalsTask *task = new NormalsTask();

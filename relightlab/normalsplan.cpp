@@ -1,9 +1,12 @@
 #include "normalsplan.h"
+#include "planepicking.h"
+#include "reflectionview.h"
 #include "qlabelbutton.h"
 #include "helpbutton.h"
 #include "relightapp.h"
 
 #include <QButtonGroup>
+#include <QComboBox>
 #include <QPushButton>
 #include <QLineEdit>
 #include <QLabel>
@@ -12,6 +15,15 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QImageReader>
+#include <cmath>
+/*
+We are going to add a few functionalities to the normals tab.
+
+for the first row, we show additional options and parameterzs when compute or load button is selected similarly how parameters can be set in the Surface row (downsampline etc).
+
+we have a single compute vs load button.
+when compute is selected we can specify the algorithm (l2, robust) in a combo box
+when load is selected we can specify if it is opengl or directx format.*/
 
 NormalsPlanRow::NormalsPlanRow(NormalsParameters &_parameters, QFrame *parent):
 	PlanRow(parent), parameters(_parameters) {
@@ -24,51 +36,107 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 	label->label->setText("Source:");
 	label->help->setId("normals/normalmap");
 
-	compute_l2     = new QLabelButton("Compute L2",     "Compute normals using standard least squares fitting.");
-	compute_robust = new QLabelButton("Compute Robust", "Compute normals using robust fitting, reducing artifacts from specular highlights and shadows.");
-	file           = new QLabelButton("Normalmap",      "Load an existing normalmap image.");
+	compute = new QLabelButton("Compute", "Compute normals from the image set.");
+	load    = new QLabelButton("Load",    "Load an existing normalmap image.");
 
-	buttons->addWidget(compute_l2,     0, Qt::AlignCenter);
-	buttons->addWidget(compute_robust, 0, Qt::AlignCenter);
-	buttons->addWidget(file,           0, Qt::AlignCenter);
+	buttons->addWidget(compute, 0, Qt::AlignCenter);
+	buttons->addWidget(load,    0, Qt::AlignCenter);
 
 	{
-		input_frame = new QFrame;
-		QHBoxLayout *input_layout = new QHBoxLayout(input_frame);
-		input_layout->addWidget(new QLabel("File path:"));
-		input_layout->addWidget(input_path = new QLineEdit);
-		input_layout->addWidget(open = new QPushButton("..."));
-		planLayout->addWidget(input_frame);
+		compute_frame = new QFrame;
+		QHBoxLayout *compute_layout = new QHBoxLayout(compute_frame);
+		HelpLabel *algo_label = new HelpLabel("Algorithm:", "normals/normalmap#algorithm");
+		algo_label->setFixedWidth(200);
+		compute_layout->addWidget(algo_label);
+		compute_layout->addWidget(solver_combo = new QComboBox);
+		solver_combo->setFixedWidth(200);
+		solver_combo->setProperty("class", "large");
 
-		connect(open, &QPushButton::clicked, this, &NormalsSourceRow::selectOutput);
+		solver_combo->addItem("L2 (Least Squares)", QVariant(NORMALS_L2));
+		solver_combo->addItem("Robust",              QVariant(NORMALS_ROBUST));
+		compute_layout->addStretch(1);
+		planLayout->addWidget(compute_frame);
+
+		connect(solver_combo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int) {
+			setSolver((NormalSolver)solver_combo->currentData().toInt());
+		});
 	}
 
-	connect(compute_l2,     &QAbstractButton::clicked, this, [this](){ setComputeSource(true);  setSolver(NORMALS_L2); });
-	connect(compute_robust, &QAbstractButton::clicked, this, [this](){ setComputeSource(true);  setSolver(NORMALS_ROBUST); });
-	connect(file,           &QAbstractButton::clicked, this, [this](){ setComputeSource(false); });
+	{
+		load_frame = new QFrame;
+		QVBoxLayout *load_layout = new QVBoxLayout(load_frame);
+		load_layout->setContentsMargins(0, 0, 0, 0);
+
+		QHBoxLayout *path_layout = new QHBoxLayout;
+		HelpLabel *path_label = new HelpLabel("File path:", "normals/normalmap");
+		path_label->setFixedWidth(200);
+		path_layout->addWidget(path_label);
+		path_layout->addWidget(input_path = new QLineEdit);
+		path_layout->addWidget(open = new QPushButton("..."));
+		load_layout->addLayout(path_layout);
+
+		QHBoxLayout *format_layout = new QHBoxLayout;
+		HelpLabel *fmt_label = new HelpLabel("Format:", "normals/normalmap#format");
+		fmt_label->setFixedWidth(200);
+		format_layout->addWidget(fmt_label);
+		format_layout->addWidget(format_combo = new QComboBox);
+		format_combo->setFixedWidth(200);
+		format_combo->setProperty("class", "large");
+
+		format_combo->addItem("OpenGL",  QVariant(NORMAL_OPENGL));
+		format_combo->addItem("DirectX", QVariant(NORMAL_DIRECTX));
+		format_layout->addStretch(1);
+		load_layout->addLayout(format_layout);
+
+		planLayout->addWidget(load_frame);
+
+		connect(open, &QPushButton::clicked, this, &NormalsSourceRow::selectOutput);
+		connect(format_combo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int) {
+			setFormat((NormalFormat)format_combo->currentData().toInt());
+		});
+	}
+
+	connect(compute, &QAbstractButton::clicked, this, [this](){ setComputeSource(true); });
+	connect(load,    &QAbstractButton::clicked, this, [this](){ setComputeSource(false); });
 
 	QButtonGroup *group = new QButtonGroup(this);
-	group->addButton(compute_l2);
-	group->addButton(compute_robust);
-	group->addButton(file);
+	group->addButton(compute);
+	group->addButton(load);
 
 	setComputeSource(parameters.compute);
 	setSolver(parameters.solver);
+	setFormat(parameters.normalFormat);
 }
 
 
 void NormalsSourceRow::setComputeSource(bool build) {
 	parameters.compute = build;
+	compute->setChecked(build);
+	load->setChecked(!build);
 
-	input_frame->setVisible(!build);
+	compute_frame->setVisible(build);
+	load_frame->setVisible(!build);
 	updateSize();
 }
 
 void NormalsSourceRow::setSolver(NormalSolver solver) {
 	parameters.solver = solver;
-	compute_l2->setChecked(parameters.compute && solver == NORMALS_L2);
-	compute_robust->setChecked(parameters.compute && solver == NORMALS_ROBUST);
-	file->setChecked(!parameters.compute);
+	int idx = solver_combo->findData(QVariant(solver));
+	if(idx >= 0) {
+		solver_combo->blockSignals(true);
+		solver_combo->setCurrentIndex(idx);
+		solver_combo->blockSignals(false);
+	}
+}
+
+void NormalsSourceRow::setFormat(NormalFormat format) {
+	parameters.normalFormat = format;
+	int idx = format_combo->findData(QVariant(format));
+	if(idx >= 0) {
+		format_combo->blockSignals(true);
+		format_combo->setCurrentIndex(idx);
+		format_combo->blockSignals(false);
+	}
 }
 
 void NormalsSourceRow::updateSize() {
@@ -116,32 +184,39 @@ NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *par
 	label->label->setText("Flatten:");
 	label->help->setId("normals/flattening");
 
-	none = new QLabelButton("None", "Do not flatten the surface");
-	radial = new QLabelButton("Radial", "Polynomial radial fitting.");
-	fourier = new QLabelButton("Fourier", "Remove low frequencies");
-	gaussian = new QLabelButton("Blur", "Subtract gaussian blur");
+	none    = new QLabelButton("None",   "Do not flatten the surface.");
+	radial  = new QLabelButton("Radial", "Polynomial radial fitting.");
+	plane   = new QLabelButton("Plane",  "4-point plane flattening.");
+	gaussian = new QLabelButton("Blur",  "Subtract gaussian blur.");
 
-	buttons->addWidget(none, 1, Qt::AlignCenter);
-	buttons->addWidget(radial, 1, Qt::AlignCenter);
-	buttons->addWidget(fourier, 1, Qt::AlignCenter);
+	buttons->addWidget(none,     1, Qt::AlignCenter);
+	buttons->addWidget(radial,   1, Qt::AlignCenter);
+	buttons->addWidget(plane,    1, Qt::AlignCenter);
 	buttons->addWidget(gaussian, 1, Qt::AlignCenter);
 
-
+	// ── Plane flattening options ─────────────────────────────────────────────
 	{
-		frequency_frame = new QFrame;
-		QHBoxLayout *frequency_layout = new QHBoxLayout(frequency_frame);
+		plane_frame = new QFrame;
+		QHBoxLayout *plane_layout = new QHBoxLayout(plane_frame);
+		plane_layout->setContentsMargins(0, 0, 0, 0);
 
-		frequency_layout->addWidget(new HelpLabel("Fourier high pass frequency %", "normals/flattening#fourier"));
-		frequency_layout->addWidget(max_frequency = new QDoubleSpinBox);
-		max_frequency->setKeyboardTracking(false);
-		max_frequency->setRange(0, 100);
-		max_frequency->setDecimals(4);
-		max_frequency->setValue(parameters.fourierPercentage);
+		QPushButton *pick_btn = new QPushButton("Pick 4 points...");
+		pick_btn->setToolTip("Open the point-picking dialog to select 4 reference points on a flat surface.");
+		pick_btn->setProperty("class", "large");
+		pick_btn->setFixedWidth(200);
+		plane_layout->addWidget(pick_btn);
 
-		planLayout->addWidget(frequency_frame);
+		plane_overview = new PlaneOverview(80);
+		plane_overview->setPoints(parameters.plane_points);
+		plane_layout->addWidget(plane_overview);
+
+		plane_layout->addStretch(1);
+
+		planLayout->addWidget(plane_frame);
+		connect(pick_btn, &QPushButton::clicked, this, &NormalsFlattenRow::pickPlanePoints);
 	}
 
-
+	// ── Blur options ─────────────────────────────────────────────────────────
 	{
 		blur_frame = new QFrame;
 		QHBoxLayout *blur_layout = new QHBoxLayout(blur_frame);
@@ -154,47 +229,111 @@ NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *par
 		planLayout->addWidget(blur_frame);
 	}
 
-
-	connect(none, &QAbstractButton::clicked, this, [this](){ setFlattenMethod(FLAT_NONE); });
-	connect(radial, &QAbstractButton::clicked, this, [this](){ setFlattenMethod(FLAT_RADIAL); });
-	connect(fourier, &QAbstractButton::clicked, this, [this](){ setFlattenMethod(FLAT_FOURIER); });
+	connect(none,    &QAbstractButton::clicked, this, [this](){ setFlattenMethod(FLAT_NONE); });
+	connect(radial,  &QAbstractButton::clicked, this, [this](){ setFlattenMethod(FLAT_RADIAL); });
+	connect(plane,   &QAbstractButton::clicked, this, [this](){ setFlattenMethod(FLAT_PLANE); });
 	connect(gaussian, &QAbstractButton::clicked, this, [this](){ setFlattenMethod(FLAT_BLUR); });
 
-
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-	connect(max_frequency, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.fourierPercentage = v; });
 	connect(blur_percentage, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.blurPercentage = v; });
 #else
-	connect(max_frequency, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.fourierPercentage = v; });
 	connect(blur_percentage, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double v) { parameters.blurPercentage = v; });
-
 #endif
 
-
 	QButtonGroup *group = new QButtonGroup(this);
-
 	group->addButton(none);
 	group->addButton(radial);
-	group->addButton(fourier);
+	group->addButton(plane);
 	group->addButton(gaussian);
 
 	setFlattenMethod(parameters.flatMethod);
+}
+
+// Returns the RMS distance from the fitted circle divided by the circle radius.
+// A value close to 0 means the points are nearly co-circular (ill-conditioned for
+// sphere fitting).
+static double circleResidualFraction(const std::vector<QPointF> &pts)
+{
+	if(pts.size() < 3) return 1.0;
+
+	double n = pts.size();
+	double sx = 0, sy = 0, sxy = 0, sx2 = 0, sy2 = 0;
+	double sx3 = 0, sy3 = 0, sx2y = 0, sxy2 = 0;
+	for(const QPointF &p : pts) {
+		double x = p.x(), y = p.y();
+		sx += x;   sy += y;
+		sxy += x*y; sx2 += x*x; sy2 += y*y;
+		sx3 += x*x*x; sy3 += y*y*y;
+		sx2y += x*x*y; sxy2 += x*y*y;
+	}
+	double d11 = n*sxy  - sx*sy;
+	double d20 = n*sx2  - sx*sx;
+	double d02 = n*sy2  - sy*sy;
+	double denom = 2*(d20*d02 - d11*d11);
+	if(std::abs(denom) < 1e-10) return 1.0;
+	double d30 = n*sx3  - sx2*sx;
+	double d03 = n*sy3  - sy2*sy;
+	double d21 = n*sx2y - sx2*sy;
+	double d12 = n*sxy2 - sx*sy2;
+	double a = ((d30 + d12)*d02 - (d03 + d21)*d11) / denom;
+	double b = ((d03 + d21)*d20 - (d30 + d12)*d11) / denom;
+	double c = (sx2 + sy2 - 2*a*sx - 2*b*sy) / n;
+	double r  = std::sqrt(std::max(0.0, c + a*a + b*b));
+	if(r < 1e-6) return 1.0;
+
+	double rms = 0;
+	for(const QPointF &p : pts) {
+		double d = std::hypot(p.x() - a, p.y() - b) - r;
+		rms += d*d;
+	}
+	return std::sqrt(rms / n) / r;
+}
+
+void NormalsFlattenRow::pickPlanePoints()
+{
+	PlanePickingDialog dlg(this);
+	dlg.setCrop(qRelightApp->project().crop);
+	if(dlg.exec() != QDialog::Accepted)
+		return;
+
+	std::vector<QPointF> pts = dlg.getPoints();
+
+	// Warn if the points lie nearly on a circle: the sphere fit becomes ill-conditioned
+	// because the sphere centre can slide freely along the axis through the circle.
+	const double CIRCLE_THRESHOLD = 0.05; // 5% of fitted circle radius
+	if(circleResidualFraction(pts) < CIRCLE_THRESHOLD) {
+		QMessageBox::warning(this, "Poor point distribution",
+			"The selected points lie nearly on a circle.\n"
+			"This makes the sphere fitting ill-conditioned: the estimated curvature\n"
+			"will be unreliable.\n\n"
+			"Please re-pick the points so they are spread across the surface\n"
+			"rather than arranged in a ring.");
+	}
+
+	parameters.plane_points = pts;
+	plane_overview->setPoints(parameters.plane_points);
+}
+
+void NormalsFlattenRow::clear()
+{
+	parameters.plane_points.clear();
+	plane_overview->setPoints(parameters.plane_points);
+}
+
+void NormalsFlattenRow::init()
+{
+	plane_overview->init();
 }
 
 void NormalsFlattenRow::setFlattenMethod(FlatMethod method) {
 	parameters.flatMethod = method;
 	none->setChecked(method == FLAT_NONE);
 	radial->setChecked(method == FLAT_RADIAL);
-	fourier->setChecked(method == FLAT_FOURIER);
+	plane->setChecked(method == FLAT_PLANE);
 	gaussian->setChecked(method == FLAT_BLUR);
 
-	frequency_frame->setVisible(method == FLAT_FOURIER);
+	plane_frame->setVisible(method == FLAT_PLANE);
 	blur_frame->setVisible(method == FLAT_BLUR);
-}
-
-void NormalsFlattenRow::setFourierFrequency(double f) {
-	parameters.fourierPercentage = f;
-	max_frequency->setValue(f);
 }
 
 void NormalsFlattenRow::setBlurFrequency(double f) {

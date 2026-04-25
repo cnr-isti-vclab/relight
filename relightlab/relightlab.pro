@@ -133,6 +133,7 @@ SOURCES += main.cpp \
     scaleframe.cpp \
     planrow.cpp \
     normalsplan.cpp \
+    planepicking.cpp \
     brdfframe.cpp \
     metadataframe.cpp \
     sphereframe.cpp \
@@ -231,6 +232,7 @@ HEADERS += \
     ../src/normals/flatnormals.h \
     planrow.h \
     normalsplan.h \
+    planepicking.h \
     brdfframe.h \
     metadataframe.h \
     ../src/normals/fft_normal_integration.h \

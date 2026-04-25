@@ -7,9 +7,11 @@
 class QLabelButton;
 class QLineEdit;
 class QPushButton;
+class QComboBox;
 class QSpinBox;
 class QDoubleSpinBox;
 class QGridLayout;
+class PlaneOverview;
 
 class NormalsPlanRow: public PlanRow {
 	Q_OBJECT
@@ -29,6 +31,7 @@ public:
 
 	void setComputeSource(bool compute);
 	void setSolver(NormalSolver solver);
+	void setFormat(NormalFormat format);
 	void setSourcePath(QString path);
 	void updateSize();
 public slots:
@@ -38,31 +41,42 @@ signals:
 	void sourceSizeChanged(int w, int h);
 
 protected:
-	QLabelButton *compute_l2 = nullptr;
-	QLabelButton *compute_robust = nullptr;
-	QLabelButton *file = nullptr;
+	QLabelButton *compute = nullptr;
+	QLabelButton *load = nullptr;
+
+	QFrame *compute_frame = nullptr;
+	QComboBox *solver_combo = nullptr;
+
+	QFrame *load_frame = nullptr;
+	QComboBox *format_combo = nullptr;
 	QLineEdit *input_path = nullptr;
 	QPushButton *open = nullptr;
-	QFrame *input_frame = nullptr;
 };
 
 class NormalsFlattenRow: public NormalsPlanRow {
+	Q_OBJECT
 public:
 	NormalsFlattenRow(NormalsParameters &_parameters, QFrame *parent = nullptr);
+	void init();
+	void clear();
 	void setFlattenMethod(FlatMethod method);
-	void setFourierFrequency(double f);
 	void setBlurFrequency(double f);
 
 	QLabelButton *none = nullptr;
 	QLabelButton *radial = nullptr;
-	QLabelButton *fourier = nullptr;
+	QLabelButton *plane = nullptr;
 	QLabelButton *gaussian = nullptr;
 
-	QDoubleSpinBox *max_frequency = nullptr;
 	QDoubleSpinBox *blur_percentage = nullptr;
 
-	QFrame *frequency_frame = nullptr;
+	QFrame *plane_frame = nullptr;
 	QFrame *blur_frame = nullptr;
+
+private slots:
+	void pickPlanePoints();
+
+private:
+	class PlaneOverview *plane_overview = nullptr;
 };
 
 class NormalsSurfaceRow: public NormalsPlanRow {

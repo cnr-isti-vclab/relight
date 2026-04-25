@@ -92,4 +92,17 @@ public slots:
 	}
 };
 
+// Small thumbnail showing the 4 reference points for plane flattening.
+class PlaneOverview: public MarkerOverview {
+	Q_OBJECT
+public:
+	PlaneOverview(int height, QWidget *parent = nullptr);
+	void setPoints(const std::vector<QPointF> &pts);
+	virtual void update() override;
+
+private:
+	std::vector<QGraphicsEllipseItem *> dot_items;
+	std::vector<QPointF> points;
+};
+
 #endif // REFLECTIONVIEW_H

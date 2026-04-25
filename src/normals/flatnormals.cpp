@@ -403,3 +403,235 @@ void flattenFourierHeights(int w, int h, std::vector<float> &heights, float padd
 	for(size_t i = 0; i < heights.size(); i++)
 		heights[i] = heightmap[i];
 }
+
+// ─────────────────────────── 4-point plane flattening ────────────────────────
+// Define USE_PARABOLOID_FIT to use a paraboloid z = a*wx² + b*wy² + d*wx*wy + c
+// centred on the image origin instead of sphere fitting.
+#define USE_PARABOLOID_FIT
+
+static void fitSphereN(const std::vector<Eigen::Vector3d> &pts,
+                       double &cx, double &cy, double &cz, double &R2)
+{
+	// Constrained least-squares sphere fit: cx=cy=0 (axis through the image
+	// centre), only cz and R are free.
+	//   2*cz*zi + k = xi²+yi²+zi²   (k = R²-cz²)
+	int n = (int)pts.size();
+	Eigen::MatrixXd A(n, 2);
+	Eigen::VectorXd b(n);
+	for(int i = 0; i < n; i++) {
+		A(i,0) = 2*pts[i].z();
+		A(i,1) = 1.0;
+		b[i] = pts[i].squaredNorm();
+	}
+	Eigen::Vector2d p = A.colPivHouseholderQr().solve(b);
+	cx = 0; cy = 0; cz = p[0];
+	R2 = std::max(0.0, p[1] + cz*cz);
+}
+
+void flattenPlaneNormals(int w, int h, std::vector<Eigen::Vector3f> &normals,
+                         const std::vector<QPointF> &points,
+                         const QRect &crop, int image_width, int image_height)
+{
+	assert(points.size() >= 4);
+
+	std::vector<QPoint> pts;
+	for(const QPointF &fp : points) {
+		int nx = (int)std::round((fp.x() - crop.left()) * w / (float)crop.width());
+		int ny = (int)std::round((fp.y() - crop.top())  * h / (float)crop.height());
+		pts.push_back(QPoint(nx, ny));
+	}
+	QPointF center(
+		(image_width  / 2.0 - crop.left()) * w / (double)crop.width(),
+		(image_height / 2.0 - crop.top())  * h / (double)crop.height()
+	);
+	// Derive surface slope from each reference-point normal:
+	// normal n = (nx, ny, nz)  =>  slope_x = -nx/nz,  slope_y = -ny/nz.
+	//
+	// Fit a paraboloid slope field (centred on `center`, axis-aligned with
+	// the image centre) to all reference slopes:
+	//   slope_x(wx,wy) = 2a*wx + d*wy
+	//   slope_y(wx,wy) = 2b*wy + d*wx
+	// This is a linear system with unknowns (a, b, d).  The cross-term d
+	// handles any in-plane rotation of the principal curvature axes.
+	// Fitting to all N points gives noise-robust estimates.
+	int np = (int)pts.size();
+	Eigen::MatrixXd Ag(2*np, 3);
+	Eigen::VectorXd sg(2*np);
+
+	for(int i = 0; i < np; i++) {
+		int px = pts[i].x(), py = pts[i].y();
+		if(px < 0 || px >= w || py < 0 || py >= h)
+			return;
+		const Eigen::Vector3f &ni = normals[px + py*w];
+		if(std::abs(ni[2]) < 1e-6f)
+			return; // degenerate normal — skip
+		double wx = px - center.x();
+		double wy = center.y() - py;
+		double sx = -ni[0] / ni[2];
+		double sy = -ni[1] / ni[2];
+		Ag(2*i,   0) = 2*wx;  Ag(2*i,   1) = 0;     Ag(2*i,   2) = wy;
+		Ag(2*i+1, 0) = 0;     Ag(2*i+1, 1) = 2*wy;  Ag(2*i+1, 2) = wx;
+		sg[2*i]   = sx;
+		sg[2*i+1] = sy;
+	}
+
+	Eigen::Vector3d cf = Ag.colPivHouseholderQr().solve(sg);
+	double pa = cf[0], pb = cf[1], pd = cf[2];
+
+	// At each pixel compute the fitted surface normal and rotate the measured
+	// normal so that fitted normal maps to (0,0,1).
+	for(int y = 0; y < h; y++) {
+		for(int x = 0; x < w; x++) {
+			double wx = x - center.x();
+			double wy = center.y() - y;
+			double gx = 2*pa*wx + pd*wy; // dz/dwx
+			double gy = 2*pb*wy + pd*wx; // dz/dwy
+			Eigen::Vector3f n_fit(-(float)gx, -(float)gy, 1.0f);
+			n_fit.normalize();
+			Eigen::Vector3f axis = n_fit.cross(Eigen::Vector3f(0, 0, 1));
+			float sin_a = axis.norm();
+			if(sin_a < 1e-6f) continue;
+			axis /= sin_a;
+			float cos_a = n_fit[2]; // n_fit · (0,0,1)
+			Eigen::Matrix3f R = Eigen::AngleAxisf(std::atan2(sin_a, cos_a), axis).toRotationMatrix();
+			normals[x + y*w] = (R * normals[x + y*w]).normalized();
+		}
+	}
+}
+
+void applyParaboloidNormalCorrection(int w, int h, std::vector<Eigen::Vector3f> &normals,
+                                     double pa, double pb, double pd, QPointF center)
+{
+	for(int y = 0; y < h; y++) {
+		for(int x = 0; x < w; x++) {
+			double wx = x - center.x();
+			double wy = center.y() - y;
+			//derivatives
+			double gx = 2*pa*wx + pd*wy;
+			double gy = 2*pb*wy + pd*wx;
+			Eigen::Vector3f n_fit(-(float)gx, -(float)gy, 1.0f);
+			n_fit.normalize();
+			Eigen::Vector3f axis = n_fit.cross(Eigen::Vector3f(0, 0, 1));
+			float sin_a = axis.norm();
+			if(sin_a < 1e-6f) continue;
+			axis /= sin_a;
+			Eigen::Matrix3f R = Eigen::AngleAxisf(std::atan2(sin_a, n_fit[2]), axis).toRotationMatrix();
+			normals[x + y*w] = (R * normals[x + y*w]).normalized();
+		}
+	}
+}
+
+void flattenPlaneHeights(int w, int h, std::vector<float> &heights,
+                         const std::vector<QPointF> &points,
+                         const QRect &crop, int image_width, int image_height,
+                         std::vector<Eigen::Vector3f> *correct_normals,
+                         double *out_pa, double *out_pb, double *out_pd)
+{
+	assert(points.size() >= 4);
+	assert((int)heights.size() == w*h);
+
+	std::vector<QPoint> pts;
+	for(const QPointF &fp : points) {
+		int nx = (int)std::round((fp.x() - crop.left()) * w / (float)crop.width());
+		int ny = (int)std::round((fp.y() - crop.top())  * h / (float)crop.height());
+		pts.push_back(QPoint(nx, ny));
+	}
+	QPointF center(
+		(image_width  / 2.0 - crop.left()) * w / (double)crop.width(),
+		(image_height / 2.0 - crop.top())  * h / (double)crop.height()
+	);
+
+	// Build 3D positions of the N reference points in pixel-unit space.
+	std::vector<Eigen::Vector3d> xyz;
+	xyz.reserve(pts.size());
+	double mean_z = 0;
+	for(size_t i = 0; i < pts.size(); i++) {
+		int px = pts[i].x();
+		int py = pts[i].y();
+		if(px < 0 || px >= w || py < 0 || py >= h)
+			return;
+		double x = px - center.x();
+		double y = center.y() - py;
+		double z = heights[px + py*w];
+		xyz.push_back({x, y, z});
+		mean_z += z;
+	}
+	mean_z /= (double)xyz.size();
+
+#ifdef USE_PARABOLOID_FIT
+	// Fit z = a*wx² + b*wy² + d*wx*wy + c
+	// Axis at image centre; cross term d handles any in-plane rotation.
+	// No linear tilt terms: the function is symmetric around the image centre axis.
+	(void)mean_z;
+	{
+		int np = (int)xyz.size();
+		Eigen::MatrixXd Ap(np, 4);
+		Eigen::VectorXd bp(np);
+		for(int i = 0; i < np; i++) {
+			double wx = xyz[i].x(), wy = xyz[i].y();
+			Ap(i, 0) = wx*wx;
+			Ap(i, 1) = wy*wy;
+			Ap(i, 2) = wx*wy;
+			Ap(i, 3) = 1.0;
+			bp[i] = xyz[i].z();
+		}
+		Eigen::Vector4d cf = Ap.colPivHouseholderQr().solve(bp);
+		double pa = cf[0], pb = cf[1], pd = cf[2], pc = cf[3];
+		if(out_pa) *out_pa = pa;
+		if(out_pb) *out_pb = pb;
+		if(out_pd) *out_pd = pd;
+		for(int y = 0; y < h; y++) {
+			for(int x = 0; x < w; x++) {
+				double wx = x - center.x();
+				double wy = center.y() - y;
+				heights[x + y*w] -= (float)(pa*wx*wx + pb*wy*wy + pd*wx*wy + pc);
+			}
+		}
+		if(correct_normals)
+			applyParaboloidNormalCorrection(w, h, *correct_normals, pa, pb, pd, center);
+	}
+#else
+	double cx, cy, cz, R2;
+	fitSphereN(xyz, cx, cy, cz, R2);
+
+	double sign_val = (cz < mean_z) ? 1.0 : -1.0;
+
+	// Subtract the sphere surface from every height.
+	for(int y = 0; y < h; y++) {
+		for(int x = 0; x < w; x++) {
+			double wx = x - center.x();
+			double wy = center.y() - y;
+			double val_c = R2 - (wx-cx)*(wx-cx) - (wy-cy)*(wy-cy);
+			double z_sphere = (val_c >= 0.0) ? (cz + sign_val*std::sqrt(val_c)) : cz;
+			heights[x + y*w] -= (float)z_sphere;
+		}
+	}
+	if(correct_normals) {
+		for(int y = 0; y < h; y++) {
+			for(int x = 0; x < w; x++) {
+				double wx = x - center.x();
+				double wy = center.y() - y;
+				double val_c = R2 - wx*wx - wy*wy; // cx=cy=0
+				if(val_c < 1e-10) continue;
+				double sq = std::sqrt(val_c);
+				// outward normal of top/bottom hemisphere at (wx, wy)
+				Eigen::Vector3f n_fit((float)(sign_val*wx/sq), (float)(sign_val*wy/sq), 1.0f);
+				n_fit.normalize();
+				Eigen::Vector3f axis = n_fit.cross(Eigen::Vector3f(0, 0, 1));
+				float sin_a = axis.norm();
+				if(sin_a < 1e-6f) continue;
+				axis /= sin_a;
+				Eigen::Matrix3f R = Eigen::AngleAxisf(std::atan2(sin_a, n_fit[2]), axis).toRotationMatrix();
+				(*correct_normals)[x + y*w] = (R * (*correct_normals)[x + y*w]).normalized();
+			}
+		}
+	}
+#endif
+
+	// Re-centre so mean height is 0.
+	double sum = 0;
+	for(float v : heights) sum += v;
+	float mean_val = (float)(sum / heights.size());
+	for(float &v : heights) v -= mean_val;
+}
+

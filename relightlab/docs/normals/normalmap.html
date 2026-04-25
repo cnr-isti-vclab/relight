@@ -1,6 +1,54 @@
-#Normal maps
+<h2>Normal maps</h2>
 
-<!-- explain what they are, and what they can be used for,
-     different algorithms exist (we are only using the basic one and hsh at the moment) -->
-     
+<p>A normal map encodes the surface orientation at every pixel as an (X, Y, Z) direction vector,
+remapped from the range [&minus;1, 1] to the 8-bit range [0, 255].</p>
 
+<p>ReLight can either <b>compute</b> a normal map from your image set using photometric stereo,
+or <b>load</b> an existing normal map image for further processing (flattening, surface integration).</p>
+
+<h3 id="algorithm">Computation algorithm</h3>
+
+<dl>
+  <dt><b>L2 &mdash; Least Squares</b></dt>
+  <dd>Minimises the sum of squared residuals between the predicted and observed pixel intensities.
+  Fast and robust when lighting coverage is good and there are no strong specular highlights or
+  cast shadows. This is the recommended default for most datasets.</dd>
+
+  <dt><b>Robust</b></dt>
+  <dd>Uses an iteratively re-weighted scheme that down-weights outlier measurements, making it
+  less sensitive to specular highlights, inter-reflections, and a small number of badly-lit images.
+  Slower than L2 but produces cleaner normals on partially-shadowed surfaces.</dd>
+</dl>
+
+<h3 id="format">Normal map format</h3>
+
+<p>Two conventions exist for how the Y (green) channel of a normal map is oriented.
+Loading a map in the wrong format will invert the apparent height of surface features
+(bumps appear as dents and vice-versa) and will produce incorrect surface integration.</p>
+
+<dl>
+  <dt><b>OpenGL</b></dt>
+  <dd>The Y axis points <em>upward</em> in texture space (increasing V&nbsp;&rarr;&nbsp;up).
+  This is the convention used by most DCC tools (Blender, Substance, Houdini) and by ReLight itself
+  when it writes a computed normal map.</dd>
+
+  <dt><b>DirectX</b></dt>
+  <dd>The Y axis points <em>downward</em> in texture space (increasing V&nbsp;&rarr;&nbsp;down).
+  This convention is used by Unreal Engine and some game-oriented export pipelines.
+  When loading a DirectX normal map ReLight automatically flips the green channel before processing.</dd>
+</dl>
+
+<h3 id="precision">8-bit image vs. computed floating-point normals</h3>
+
+<p>When normals are <em>computed</em> from your image set, ReLight works internally with full
+32-bit floating-point precision throughout the photometric stereo solve, flattening, and
+surface integration steps. The normal map is only quantised to 8 bits when it is written to disk.</p>
+
+<p>When you <em>load</em> an existing normal map image (PNG or JPEG), the values are already
+quantised to 256 levels per channel. This introduces a small quantisation error in the direction
+vectors (&asymp;&nbsp;0.4&deg; at worst) which is generally invisible in shading but can produce
+visible staircase artefacts when the normals are integrated into a 3D surface &mdash; especially
+on gently curved areas where the height differences between adjacent pixels are very small.</p>
+
+<p>For best surface quality, always integrate directly from computed normals rather than
+re-loading a saved normal map image.</p>

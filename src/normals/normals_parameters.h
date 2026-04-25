@@ -2,11 +2,14 @@
 #define NORMALS_PARAMETERS_H
 
 #include <QString>
+#include <QPointF>
+#include <vector>
 
 #include "../taskparameters.h"
 
 enum NormalSolver { NORMALS_L2, NORMALS_SBL, NORMALS_RPCA, NORMALS_ROBUST };
-enum FlatMethod { FLAT_NONE, FLAT_RADIAL, FLAT_FOURIER, FLAT_BLUR };
+enum NormalFormat { NORMAL_OPENGL, NORMAL_DIRECTX };
+enum FlatMethod { FLAT_NONE, FLAT_RADIAL, FLAT_PLANE, FLAT_FOURIER, FLAT_BLUR };
 enum SurfaceIntegration { SURFACE_NONE, SURFACE_BNI, SURFACE_ASSM, SURFACE_FFT };
 
 class NormalsParameters : public TaskParameters {
@@ -15,7 +18,11 @@ public:
 	bool compute = true;
 	QString input_path;
 
-	NormalSolver solver =  NORMALS_ROBUST;
+	NormalSolver solver = NORMALS_ROBUST;
+	NormalFormat normalFormat = NORMAL_OPENGL;
+
+	// 4-point plane flattening: points in full-project-image pixel coords
+	std::vector<QPointF> plane_points;
 
 	// Robust solver thresholds (pixel intensity in [0, 255]).
 	// Values above high_threshold are treated as specular highlights and excluded.

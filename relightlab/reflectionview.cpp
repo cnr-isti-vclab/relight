@@ -180,4 +180,53 @@ void ZoomOverview::update() {
 	QGraphicsView::update();
 }
 
+// ── PlaneOverview ─────────────────────────────────────────────────────────────
 
+PlaneOverview::PlaneOverview(int height, QWidget *parent)
+	: MarkerOverview(height, parent)
+{
+}
+
+void PlaneOverview::setPoints(const std::vector<QPointF> &pts)
+{
+	points = pts;
+	update();
+}
+
+void PlaneOverview::update()
+{
+	// Remove old dots from scene.
+	for(QGraphicsEllipseItem *dot : dot_items) {
+		scene.removeItem(dot);
+		delete dot;
+	}
+	dot_items.clear();
+
+	if(points.empty())
+		return;
+
+	// Use the pixmap bounding rect (same as SphereOverview) so the scale is
+	// always relative to the actual loaded thumbnail, not the raw image size.
+	QSizeF pix_size = img_item->boundingRect().size();
+	if(pix_size.isEmpty())
+		return;
+
+	QSize img_size = qRelightApp->project().imgsize;
+	double scale_x = pix_size.width()  / std::max(1, img_size.width());
+	double scale_y = pix_size.height() / std::max(1, img_size.height());
+
+	QPen pen(Qt::green);
+	pen.setCosmetic(true);
+	pen.setWidth(2);
+
+	for(const QPointF &p : points) {
+		double sx = p.x() * scale_x;
+		double sy = p.y() * scale_y;
+		QGraphicsEllipseItem *dot = scene.addEllipse(sx - 4, sy - 4, 8, 8, pen, QBrush(QColor(0, 200, 0, 160)));
+		dot_items.push_back(dot);
+	}
+
+	// Fit the view to the image bounds (not the whole scene which includes dots).
+	fitInView(img_item->boundingRect(), Qt::KeepAspectRatio);
+	QGraphicsView::update();
+}

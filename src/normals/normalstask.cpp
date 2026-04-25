@@ -20,6 +20,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QImage>
+#include <QPoint>
 #include <QTextStream>
 #include <vector>
 #include <algorithm>
@@ -172,6 +173,16 @@ void NormalsTask::run() {
 		}
 	}
 
+	float downsampling = 1.0;
+
+	const bool will_integrate_plane =
+		parameters.flatMethod == FLAT_PLANE &&
+		(parameters.surface_integration == SURFACE_BNI ||
+		 parameters.surface_integration == SURFACE_FFT);
+	const int normals_width  = width;
+	const int normals_height = height;
+	std::vector<Eigen::Vector3f> full_normals = normals;
+
 	if(parameters.flatMethod != FLAT_NONE) {
 
 		switch(parameters.flatMethod) {
@@ -179,6 +190,14 @@ void NormalsTask::run() {
 			case FLAT_RADIAL:
 				flattenRadialNormals(width, height, normals, 100);
 				break;
+			case FLAT_PLANE:
+			{
+				assert(parameters.plane_points.size() >= 4);
+				if(!will_integrate_plane)
+					flattenPlaneNormals(width, height, normals, parameters.plane_points,
+						parameters.crop, imageset.image_width, imageset.image_height);
+				break;
+			}
 			case FLAT_FOURIER:
 				try {
 					//convert radius to frequencies
@@ -193,41 +212,6 @@ void NormalsTask::run() {
 				flattenBlurNormals(width, height, normals, sigma);
 			break;
 
-		}
-	}
-
-	float downsampling = 1.0;
-
-	if(parameters.compute) {
-		// Save the normals
-
-		vector<uint8_t> normalmap(width * height * 3);
-		for(size_t i = 0; i < normals.size(); i++) {
-			normalmap[i*3 + 0] = std::min(std::max(round(((normals[i][0] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
-			normalmap[i*3 + 1] = std::min(std::max(round(((normals[i][1] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
-			normalmap[i*3 + 2] = std::min(std::max(round(((normals[i][2] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
-		}
-
-		// Normal maps encode XYZ direction vectors (remapped to [0,255]).
-		// This is geometry data, NOT color: do NOT apply any color transform.
-		JpegEncoder encoder;
-		encoder.setColorSpace(JCS_RGB, 3);
-		encoder.setJpegColorSpace(JCS_RGB);
-		encoder.setQuality(100);
-		encoder.setOptimize(true);
-		encoder.setChromaSubsampling(false); // No chroma subsampling for normal maps
-		
-		// Set spatial resolution if known
-		/*if(imageset.pixel_size > 0) {
-			float dotsPerMeter = 1000.0f / imageset.pixel_size;
-			encoder.setDotsPerMeter(dotsPerMeter);
-		}*/
-		//TODO png could be another format!
-		QString filename = destination.filePath(parameters.normalsname + ".jpg");
-		if(!encoder.encode(normalmap.data(), width, height, filename.toStdString().c_str())) {
-			error = "Failed to save normal map JPEG: " + filename;
-			status = FAILED;
-			return;
 		}
 	}
 
@@ -284,7 +268,46 @@ void NormalsTask::run() {
 			status = FAILED;
 			return;
 		}
+
+		// 4-point plane height flattening.
+		if(parameters.flatMethod == FLAT_PLANE) {
+			bool proceed = progressed("Flattening surface (plane)...", 0);
+			if(!proceed) return;
+			double pa = 0, pb = 0, pd = 0;
+			flattenPlaneHeights(width, height, z, parameters.plane_points,
+				parameters.crop, imageset.image_width, imageset.image_height,
+				&normals, &pa, &pb, &pd);
+
+			// Apply the same correction to the full-res normals.
+			// Paraboloid coefficients are in downscaled-pixel units; re-express in
+			// full-res pixels: wx_down = wX / s => coefficient scales by 1/s².
+			double s = (double)normals_width / width;
+			QPointF center_full(
+				(imageset.image_width  / 2.0 - parameters.crop.left()) * normals_width  / (double)parameters.crop.width(),
+				(imageset.image_height / 2.0 - parameters.crop.top())  * normals_height / (double)parameters.crop.height()
+			);
+			applyParaboloidNormalCorrection(normals_width, normals_height, full_normals,
+				pa / (s*s), pb / (s*s), pd / (s*s), center_full);
+		}
 		//TODO remove extension properly
+		progressed("Saving normals...", 99);
+
+		// Save the corrected normals at original (full) resolution.
+		vector<uint8_t> normalmap(normals_width * normals_height * 3);
+		for(size_t i = 0; i < full_normals.size(); i++) {
+			normalmap[i*3 + 0] = std::min(std::max(round(((full_normals[i][0] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+			normalmap[i*3 + 1] = std::min(std::max(round(((full_normals[i][1] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+			normalmap[i*3 + 2] = std::min(std::max(round(((full_normals[i][2] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+		}
+		JpegEncoder enc2;
+		enc2.setColorSpace(JCS_RGB, 3);
+		enc2.setJpegColorSpace(JCS_RGB);
+		enc2.setQuality(100);
+		enc2.setOptimize(true);
+		enc2.setChromaSubsampling(false);
+		//TODO save resolution in exif.
+		QString nmfile = destination.filePath(parameters.normalsname + ".jpg");
+		enc2.encode(normalmap.data(), normals_width, normals_height, nmfile.toStdString().c_str());
 
 		progressed("Saving surface...", 99);
 		QString filename = destination.filePath("3D_surface.ply");

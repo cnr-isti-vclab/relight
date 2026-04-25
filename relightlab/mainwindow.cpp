@@ -151,6 +151,7 @@ void MainWindow::clear() {
 	sphere_frame->clear();
 	lights_frame->clear();
 	crop_frame->clear();
+	normals_frame->clear();
 }
 
 //this is only called when loading a project.

@@ -107,6 +107,7 @@ set (RELIGHT_HEADERS
     normalsframe.h
     normalsplan.h
     planrow.h
+    planepicking.h
     scaleframe.h
     imagecropper.h
     brdfframe.h
@@ -195,6 +196,7 @@ set (RELIGHTLAB_SOURCES
     normalsframe.cpp
     normalsplan.cpp
     planrow.cpp
+    planepicking.cpp
     scaleframe.cpp
     imagecropper.cpp
     brdfframe.cpp
