@@ -179,9 +179,7 @@ void NormalsTask::run() {
 		parameters.flatMethod == FLAT_PLANE &&
 		(parameters.surface_integration == SURFACE_BNI ||
 		 parameters.surface_integration == SURFACE_FFT);
-	const int normals_width  = width;
-	const int normals_height = height;
-	std::vector<Eigen::Vector3f> full_normals = normals;
+
 
 	if(parameters.flatMethod != FLAT_NONE) {
 
@@ -192,7 +190,6 @@ void NormalsTask::run() {
 				break;
 			case FLAT_PLANE:
 			{
-				assert(parameters.plane_points.size() >= 4);
 				if(!will_integrate_plane)
 					flattenPlaneNormals(width, height, normals, parameters.plane_points,
 						parameters.crop, imageset.image_width, imageset.image_height);
@@ -210,10 +207,13 @@ void NormalsTask::run() {
 			case FLAT_BLUR:
 				double sigma = width*parameters.blurPercentage/100.0;
 				flattenBlurNormals(width, height, normals, sigma);
-			break;
-
+				break;
 		}
 	}
+
+	const int normals_width  = width;
+	const int normals_height = height;
+	std::vector<Eigen::Vector3f> full_normals = normals;
 
 	if(parameters.surface_width != 0 &&
 		(parameters.surface_width != width || parameters.surface_height != height)) {
@@ -274,40 +274,20 @@ void NormalsTask::run() {
 			bool proceed = progressed("Flattening surface (plane)...", 0);
 			if(!proceed) return;
 			double pa = 0, pb = 0, pd = 0;
+			SurfaceCoeffs sc;
 			flattenPlaneHeights(width, height, z, parameters.plane_points,
 				parameters.crop, imageset.image_width, imageset.image_height,
-				&normals, &pa, &pb, &pd);
+				&normals, &sc);
 
 			// Apply the same correction to the full-res normals.
-			// Paraboloid coefficients are in downscaled-pixel units; re-express in
-			// full-res pixels: wx_down = wX / s => coefficient scales by 1/s².
+			// rescaled() adjusts 4th-order coefficients by 1/s⁴ and 2nd-order by 1/s².
 			double s = (double)normals_width / width;
-			QPointF center_full(
-				(imageset.image_width  / 2.0 - parameters.crop.left()) * normals_width  / (double)parameters.crop.width(),
-				(imageset.image_height / 2.0 - parameters.crop.top())  * normals_height / (double)parameters.crop.height()
-			);
-			applyParaboloidNormalCorrection(normals_width, normals_height, full_normals,
-				pa / (s*s), pb / (s*s), pd / (s*s), center_full);
+			applyNormalCorrection(normals_width, normals_height, full_normals, sc.rescaled(s));
 		}
 		//TODO remove extension properly
 		progressed("Saving normals...", 99);
 
-		// Save the corrected normals at original (full) resolution.
-		vector<uint8_t> normalmap(normals_width * normals_height * 3);
-		for(size_t i = 0; i < full_normals.size(); i++) {
-			normalmap[i*3 + 0] = std::min(std::max(round(((full_normals[i][0] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
-			normalmap[i*3 + 1] = std::min(std::max(round(((full_normals[i][1] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
-			normalmap[i*3 + 2] = std::min(std::max(round(((full_normals[i][2] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
-		}
-		JpegEncoder enc2;
-		enc2.setColorSpace(JCS_RGB, 3);
-		enc2.setJpegColorSpace(JCS_RGB);
-		enc2.setQuality(100);
-		enc2.setOptimize(true);
-		enc2.setChromaSubsampling(false);
-		//TODO save resolution in exif.
-		QString nmfile = destination.filePath(parameters.normalsname + ".jpg");
-		enc2.encode(normalmap.data(), normals_width, normals_height, nmfile.toStdString().c_str());
+
 
 		progressed("Saving surface...", 99);
 		QString filename = destination.filePath("3D_surface.ply");
@@ -330,6 +310,24 @@ void NormalsTask::run() {
 			return;
 		}
 	}
+
+	// Save the corrected normals at original (full) resolution.
+	vector<uint8_t> normalmap(normals_width * normals_height * 3);
+	for(size_t i = 0; i < full_normals.size(); i++) {
+		normalmap[i*3 + 0] = std::min(std::max(round(((full_normals[i][0] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+		normalmap[i*3 + 1] = std::min(std::max(round(((full_normals[i][1] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+		normalmap[i*3 + 2] = std::min(std::max(round(((full_normals[i][2] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+	}
+	JpegEncoder enc2;
+	enc2.setColorSpace(JCS_RGB, 3);
+	enc2.setJpegColorSpace(JCS_RGB);
+	enc2.setQuality(100);
+	enc2.setOptimize(true);
+	enc2.setChromaSubsampling(false);
+	//TODO save resolution in exif.
+	QString nmfile = destination.filePath(parameters.normalsname + ".jpg");
+	enc2.encode(normalmap.data(), normals_width, normals_height, nmfile.toStdString().c_str());
+
 	progressed("Done", 100);
 	status = DONE;
 }

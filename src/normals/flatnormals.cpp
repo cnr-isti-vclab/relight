@@ -444,19 +444,21 @@ void flattenPlaneNormals(int w, int h, std::vector<Eigen::Vector3f> &normals,
 		(image_width  / 2.0 - crop.left()) * w / (double)crop.width(),
 		(image_height / 2.0 - crop.top())  * h / (double)crop.height()
 	);
-	// Derive surface slope from each reference-point normal:
-	// normal n = (nx, ny, nz)  =>  slope_x = -nx/nz,  slope_y = -ny/nz.
+	// Fit surface slope field from reference normals.
+	// slope_x = -nx/nz,  slope_y = -ny/nz.
 	//
-	// Fit a paraboloid slope field (centred on `center`, axis-aligned with
-	// the image centre) to all reference slopes:
-	//   slope_x(wx,wy) = 2a*wx + d*wy
-	//   slope_y(wx,wy) = 2b*wy + d*wx
-	// This is a linear system with unknowns (a, b, d).  The cross-term d
-	// handles any in-plane rotation of the principal curvature axes.
-	// Fitting to all N points gives noise-robust estimates.
+	// np < 7: radially symmetric  z = A*r⁴ + B*r²  (constant omitted; no effect on slope)
+	//   slope_x = (4A r² + 2B) wx,   slope_y = (4A r² + 2B) wy
+	// np >= 7: general 6-param   z = a*x⁴+b*x²y²+c*y⁴+d*x²+e*xy+f*y²
+	//   slope_x = 4ax³ + 2bxy² + 2dx + ey
+	//   slope_y = 2bx²y + 4cy³ + ex  + 2fy
 	int np = (int)pts.size();
-	Eigen::MatrixXd Ag(2*np, 3);
+	const bool general  = (np >= 7);
+	const bool linear   = (np > 9);
+	const int ncols = linear ? 8 : (general ? 6 : 2);
+	Eigen::MatrixXd Ag(2*np, ncols);
 	Eigen::VectorXd sg(2*np);
+	Ag.setZero();
 
 	for(int i = 0; i < np; i++) {
 		int px = pts[i].x(), py = pts[i].y();
@@ -464,51 +466,58 @@ void flattenPlaneNormals(int w, int h, std::vector<Eigen::Vector3f> &normals,
 			return;
 		const Eigen::Vector3f &ni = normals[px + py*w];
 		if(std::abs(ni[2]) < 1e-6f)
-			return; // degenerate normal — skip
+			return;
 		double wx = px - center.x();
 		double wy = center.y() - py;
+		double r2 = wx*wx + wy*wy;
 		double sx = -ni[0] / ni[2];
 		double sy = -ni[1] / ni[2];
-		Ag(2*i,   0) = 2*wx;  Ag(2*i,   1) = 0;     Ag(2*i,   2) = wy;
-		Ag(2*i+1, 0) = 0;     Ag(2*i+1, 1) = 2*wy;  Ag(2*i+1, 2) = wx;
+		if(linear) {
+			// cols: a               b                c             d       e        f         h  k
+			Ag(2*i,   0) = 4*wx*wx*wx;  Ag(2*i,   1) = 2*wx*wy*wy;                              Ag(2*i,   3) = 2*wx;  Ag(2*i,   4) = wy;  Ag(2*i,   6) = 1;
+			                            Ag(2*i+1, 1) = 2*wx*wx*wy;  Ag(2*i+1, 2) = 4*wy*wy*wy;  Ag(2*i+1, 4) = wx;    Ag(2*i+1, 5) = 2*wy; Ag(2*i+1, 7) = 1;
+		} else if(general) {
+			// cols: a              b                             c             d       e       f
+			Ag(2*i,   0) = 4*wx*wx*wx;  Ag(2*i,   1) = 2*wx*wy*wy;                              Ag(2*i,   3) = 2*wx;  Ag(2*i,   4) = wy;
+			                            Ag(2*i+1, 1) = 2*wx*wx*wy;  Ag(2*i+1, 2) = 4*wy*wy*wy;  Ag(2*i+1, 4) = wx;    Ag(2*i+1, 5) = 2*wy;
+		} else {
+			// cols: A           B
+			Ag(2*i,   0) = 4*r2*wx;  Ag(2*i,   1) = 2*wx;
+			Ag(2*i+1, 0) = 4*r2*wy;  Ag(2*i+1, 1) = 2*wy;
+		}
 		sg[2*i]   = sx;
 		sg[2*i+1] = sy;
 	}
 
-	Eigen::Vector3d cf = Ag.colPivHouseholderQr().solve(sg);
-	double pa = cf[0], pb = cf[1], pd = cf[2];
+	Eigen::VectorXd cf = Ag.colPivHouseholderQr().solve(sg);
 
-	// At each pixel compute the fitted surface normal and rotate the measured
-	// normal so that fitted normal maps to (0,0,1).
-	for(int y = 0; y < h; y++) {
-		for(int x = 0; x < w; x++) {
-			double wx = x - center.x();
-			double wy = center.y() - y;
-			double gx = 2*pa*wx + pd*wy; // dz/dwx
-			double gy = 2*pb*wy + pd*wx; // dz/dwy
-			Eigen::Vector3f n_fit(-(float)gx, -(float)gy, 1.0f);
-			n_fit.normalize();
-			Eigen::Vector3f axis = n_fit.cross(Eigen::Vector3f(0, 0, 1));
-			float sin_a = axis.norm();
-			if(sin_a < 1e-6f) continue;
-			axis /= sin_a;
-			float cos_a = n_fit[2]; // n_fit · (0,0,1)
-			Eigen::Matrix3f R = Eigen::AngleAxisf(std::atan2(sin_a, cos_a), axis).toRotationMatrix();
-			normals[x + y*w] = (R * normals[x + y*w]).normalized();
-		}
+	SurfaceCoeffs sc;
+	sc.center = center;
+	if(linear) {
+		sc.nterms = 9;
+		sc.c[0] = cf[0]; sc.c[1] = cf[1]; sc.c[2] = cf[2];
+		sc.c[3] = cf[3]; sc.c[4] = cf[4]; sc.c[5] = cf[5];
+		sc.c[6] = cf[6]; sc.c[7] = cf[7]; sc.c[8] = 0;
+	} else if(general) {
+		sc.nterms = 7;
+		sc.c[0] = cf[0]; sc.c[1] = cf[1]; sc.c[2] = cf[2];
+		sc.c[3] = cf[3]; sc.c[4] = cf[4]; sc.c[5] = cf[5]; sc.c[6] = 0;
+	} else {
+		sc.nterms = 3;
+		sc.c[0] = cf[0]; sc.c[1] = cf[1]; sc.c[2] = 0;
 	}
+	applyNormalCorrection(w, h, normals, sc);
 }
 
-void applyParaboloidNormalCorrection(int w, int h, std::vector<Eigen::Vector3f> &normals,
-                                     double pa, double pb, double pd, QPointF center)
+void applyNormalCorrection(int w, int h, std::vector<Eigen::Vector3f> &normals,
+                           const SurfaceCoeffs &sc)
 {
 	for(int y = 0; y < h; y++) {
 		for(int x = 0; x < w; x++) {
-			double wx = x - center.x();
-			double wy = center.y() - y;
-			//derivatives
-			double gx = 2*pa*wx + pd*wy;
-			double gy = 2*pb*wy + pd*wx;
+			double wx = x - sc.center.x();
+			double wy = sc.center.y() - y;
+			double gx, gy;
+			sc.gradient(wx, wy, gx, gy);
 			Eigen::Vector3f n_fit(-(float)gx, -(float)gy, 1.0f);
 			n_fit.normalize();
 			Eigen::Vector3f axis = n_fit.cross(Eigen::Vector3f(0, 0, 1));
@@ -525,7 +534,7 @@ void flattenPlaneHeights(int w, int h, std::vector<float> &heights,
                          const std::vector<QPointF> &points,
                          const QRect &crop, int image_width, int image_height,
                          std::vector<Eigen::Vector3f> *correct_normals,
-                         double *out_pa, double *out_pb, double *out_pd)
+                         SurfaceCoeffs *out_sc)
 {
 	assert(points.size() >= 4);
 	assert((int)heights.size() == w*h);
@@ -559,36 +568,101 @@ void flattenPlaneHeights(int w, int h, std::vector<float> &heights,
 	mean_z /= (double)xyz.size();
 
 #ifdef USE_PARABOLOID_FIT
-	// Fit z = a*wx² + b*wy² + d*wx*wy + c
-	// Axis at image centre; cross term d handles any in-plane rotation.
-	// No linear tilt terms: the function is symmetric around the image centre axis.
-	(void)mean_z;
+	// np < 7:  RADIAL4   z = A*r⁴ + B*r² + C            (3 params)
+	// np 7..9: GENERAL4  z = a*x⁴+b*x²y²+c*y⁴+d*x²+e*xy+f*y²+g  (7 params)
+	// np > 9:  GENERAL4L same + h*x + k*y              (9 params)
+	const int np = (int)xyz.size();
+	const bool general = (np >= 7);
+	const bool linear  = (np > 9);
 	{
-		int np = (int)xyz.size();
-		Eigen::MatrixXd Ap(np, 4);
+		Eigen::MatrixXd Ap;
 		Eigen::VectorXd bp(np);
-		for(int i = 0; i < np; i++) {
-			double wx = xyz[i].x(), wy = xyz[i].y();
-			Ap(i, 0) = wx*wx;
-			Ap(i, 1) = wy*wy;
-			Ap(i, 2) = wx*wy;
-			Ap(i, 3) = 1.0;
+		for(int i = 0; i < np; i++)
 			bp[i] = xyz[i].z();
-		}
-		Eigen::Vector4d cf = Ap.colPivHouseholderQr().solve(bp);
-		double pa = cf[0], pb = cf[1], pd = cf[2], pc = cf[3];
-		if(out_pa) *out_pa = pa;
-		if(out_pb) *out_pb = pb;
-		if(out_pd) *out_pd = pd;
-		for(int y = 0; y < h; y++) {
-			for(int x = 0; x < w; x++) {
-				double wx = x - center.x();
-				double wy = center.y() - y;
-				heights[x + y*w] -= (float)(pa*wx*wx + pb*wy*wy + pd*wx*wy + pc);
+
+		if(!general) {
+			// Basis: [r⁴, r², 1]
+			Ap.resize(np, 3);
+			for(int i = 0; i < np; i++) {
+				double r2 = xyz[i].x()*xyz[i].x() + xyz[i].y()*xyz[i].y();
+				Ap(i, 0) = r2*r2;
+				Ap(i, 1) = r2;
+				Ap(i, 2) = 1.0;
+			}
+		} else if(!linear) {
+			// Basis: [x⁴, x²y², y⁴, x², xy, y², 1]
+			Ap.resize(np, 7);
+			for(int i = 0; i < np; i++) {
+				double wx = xyz[i].x(), wy = xyz[i].y();
+				Ap(i, 0) = wx*wx*wx*wx;
+				Ap(i, 1) = wx*wx*wy*wy;
+				Ap(i, 2) = wy*wy*wy*wy;
+				Ap(i, 3) = wx*wx;
+				Ap(i, 4) = wx*wy;
+				Ap(i, 5) = wy*wy;
+				Ap(i, 6) = 1.0;
+			}
+		} else {
+			// Basis: [x⁴, x²y², y⁴, x², xy, y², x, y, 1]
+			Ap.resize(np, 9);
+			for(int i = 0; i < np; i++) {
+				double wx = xyz[i].x(), wy = xyz[i].y();
+				Ap(i, 0) = wx*wx*wx*wx;
+				Ap(i, 1) = wx*wx*wy*wy;
+				Ap(i, 2) = wy*wy*wy*wy;
+				Ap(i, 3) = wx*wx;
+				Ap(i, 4) = wx*wy;
+				Ap(i, 5) = wy*wy;
+				Ap(i, 6) = wx;
+				Ap(i, 7) = wy;
+				Ap(i, 8) = 1.0;
 			}
 		}
+
+		Eigen::VectorXd cf = Ap.colPivHouseholderQr().solve(bp);
+
+		SurfaceCoeffs sc;
+		sc.center = center;
+		if(!general) {
+			sc.nterms = 3;
+			sc.c[0] = cf[0]; sc.c[1] = cf[1]; sc.c[2] = cf[2];
+			for(int y = 0; y < h; y++) {
+				for(int x = 0; x < w; x++) {
+					double wx = x - center.x();
+					double wy = center.y() - y;
+					double r2 = wx*wx + wy*wy;
+					heights[x + y*w] -= (float)(cf[0]*r2*r2 + cf[1]*r2 + cf[2]);
+				}
+			}
+		} else if(!linear) {
+			sc.nterms = 7;
+			for(int k = 0; k < 7; k++) sc.c[k] = cf[k];
+			for(int y = 0; y < h; y++) {
+				for(int x = 0; x < w; x++) {
+					double wx = x - center.x();
+					double wy = center.y() - y;
+					heights[x + y*w] -= (float)(
+						cf[0]*wx*wx*wx*wx + cf[1]*wx*wx*wy*wy + cf[2]*wy*wy*wy*wy +
+						cf[3]*wx*wx       + cf[4]*wx*wy       + cf[5]*wy*wy + cf[6]);
+				}
+			}
+		} else {
+			sc.nterms = 9;
+			for(int k = 0; k < 9; k++) sc.c[k] = cf[k];
+			for(int y = 0; y < h; y++) {
+				for(int x = 0; x < w; x++) {
+					double wx = x - center.x();
+					double wy = center.y() - y;
+					heights[x + y*w] -= (float)(
+						cf[0]*wx*wx*wx*wx + cf[1]*wx*wx*wy*wy + cf[2]*wy*wy*wy*wy +
+						cf[3]*wx*wx       + cf[4]*wx*wy       + cf[5]*wy*wy +
+						cf[6]*wx          + cf[7]*wy          + cf[8]);
+				}
+			}
+		}
+		if(out_sc) *out_sc = sc;
 		if(correct_normals)
-			applyParaboloidNormalCorrection(w, h, *correct_normals, pa, pb, pd, center);
+			applyNormalCorrection(w, h, *correct_normals, sc);
 	}
 #else
 	double cx, cy, cz, R2;

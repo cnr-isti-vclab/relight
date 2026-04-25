@@ -13,28 +13,84 @@ void flattenBlurNormals(int w, int h, std::vector<Eigen::Vector3f> &normals, dou
 void flattenRadialNormals(int w, int h, std::vector<Eigen::Vector3f> &normals, double binSize = 20.0);
 void flattenFourierNormals(int w, int h, std::vector<Eigen::Vector3f> &normals, float padding = 0.2, double sigma = 20, bool exponential = true);
 
-// - flattenPlaneNormals: fit a paraboloid slope field to the gradients measured
-//   at the reference points, then apply a per-pixel correction rotation so the
-//   fitted surface maps to (0,0,1).  Points are in full-image pixel coordinates.
-// - flattenPlaneHeights: fit a paraboloid/sphere through the corresponding 3D
-//   points and subtract the surface from the height field.
+// Polynomial surface model with no linear (x, y) terms so the extremum is
+// always at the image centre (wx=wy=0), unless np > 9 where linear terms are added.
+//
+// RADIAL4   (nterms=3):  z = c[0]*r⁴ + c[1]*r²  + c[2]
+//                            where r² = wx²+wy²
+// GENERAL4  (nterms=7):  z = c[0]*x⁴ + c[1]*x²y² + c[2]*y⁴
+//                          + c[3]*x²  + c[4]*x*y  + c[5]*y² + c[6]
+// GENERAL4L (nterms=9):  z = c[0]*x⁴ + c[1]*x²y² + c[2]*y⁴
+//                          + c[3]*x²  + c[4]*x*y  + c[5]*y²
+//                          + c[6]*x   + c[7]*y    + c[8]
+//
+// RADIAL4 when np < 7; GENERAL4 when 7 ≤ np ≤ 9; GENERAL4L when np > 9.
+struct SurfaceCoeffs {
+	int      nterms;  // 3, 7, or 9
+	double   c[9];
+	QPointF  center;  // image-centre in pixel coords of the image this was fitted to
+
+	// Gradient of z at (wx, wy)  [wx = x - center.x(), wy = center.y() - y]
+	void gradient(double wx, double wy, double &gx, double &gy) const {
+		if(nterms == 3) {
+			double r2 = wx*wx + wy*wy;
+			double f  = 4*c[0]*r2 + 2*c[1];
+			gx = f * wx;
+			gy = f * wy;
+		} else {
+			gx = 4*c[0]*wx*wx*wx + 2*c[1]*wx*wy*wy + 2*c[3]*wx + c[4]*wy;
+			gy = 2*c[1]*wx*wx*wy + 4*c[2]*wy*wy*wy + c[4]*wx  + 2*c[5]*wy;
+			if(nterms == 9) {
+				gx += c[6];
+				gy += c[7];
+			}
+		}
+	}
+
+	// Return coefficients re-expressed for a resolution scaled by s (new = s * old).
+	// 4th-order terms scale by 1/s⁴, 2nd-order by 1/s², 1st-order by 1/s, constant unchanged.
+	// Center scales by s.
+	SurfaceCoeffs rescaled(double s) const {
+		SurfaceCoeffs r = *this;
+		double s2 = s*s, s4 = s2*s2;
+		if(nterms == 3) {
+			r.c[0] = c[0] / s4;
+			r.c[1] = c[1] / s2;
+			// c[2] constant unchanged
+		} else {
+			r.c[0] = c[0] / s4;
+			r.c[1] = c[1] / s4;
+			r.c[2] = c[2] / s4;
+			r.c[3] = c[3] / s2;
+			r.c[4] = c[4] / s2;
+			r.c[5] = c[5] / s2;
+			if(nterms == 9) {
+				r.c[6] = c[6] / s;
+				r.c[7] = c[7] / s;
+				// c[8] constant unchanged
+			}
+		}
+		r.center = QPointF(center.x() * s, center.y() * s);
+		return r;
+	}
+};
+
+// Apply the surface gradient rotation to every normal in-place.
+void applyNormalCorrection(int w, int h, std::vector<Eigen::Vector3f> &normals,
+                           const SurfaceCoeffs &sc);
+
+// - flattenPlaneNormals: fit surface slope field from reference-point normals,
+//   then apply per-pixel correction. Points are in full-image pixel coordinates.
+// - flattenPlaneHeights: fit surface through 3D reference points, subtract from
+//   heights.  out_sc receives the fitted model for re-application at other resolutions.
 void flattenPlaneNormals(int w, int h, std::vector<Eigen::Vector3f> &normals,
                          const std::vector<QPointF> &points,
                          const QRect &crop, int image_width, int image_height);
-// normals: if non-null, also correct the normals using the fitted surface gradient.
-// out_pa, out_pb, out_pd: if non-null, receive the fitted paraboloid coefficients
-//   (z = pa*wx² + pb*wy² + pd*wx*wy) so the caller can re-apply to other resolutions.
 void flattenPlaneHeights(int w, int h, std::vector<float> &heights,
                          const std::vector<QPointF> &points,
                          const QRect &crop, int image_width, int image_height,
                          std::vector<Eigen::Vector3f> *normals = nullptr,
-                         double *out_pa = nullptr, double *out_pb = nullptr,
-                         double *out_pd = nullptr);
-
-// Apply the paraboloid gradient rotation to every normal in-place.
-// pa, pb, pd are the coefficients returned by flattenPlaneHeights.
-void applyParaboloidNormalCorrection(int w, int h, std::vector<Eigen::Vector3f> &normals,
-                                     double pa, double pb, double pd, QPointF center);
+                         SurfaceCoeffs *out_sc = nullptr);
 
 void flattenRadialHeights(int w, int h, std::vector<float> &heights, double binSize = 20.0);
 void flattenFourierHeights(int w, int h, std::vector<float> &heights, float padding = 0.2, double sigma = 20);
