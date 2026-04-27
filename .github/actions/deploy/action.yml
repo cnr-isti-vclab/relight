@@ -75,7 +75,7 @@ runs:
         MISSING=0
         for bin in "${APPDIR}/usr/bin/"relight*; do
             [ -x "$bin" ] || continue
-            missing=$(LD_LIBRARY_PATH="${APPDIR}/usr/lib:$LD_LIBRARY_PATH" ldd "$bin" 2>/dev/null | grep "not found")
+            missing=$(LD_LIBRARY_PATH="${APPDIR}/usr/lib:$LD_LIBRARY_PATH" ldd "$bin" 2>/dev/null | grep "not found" || true)
             if [ -n "$missing" ]; then
                 echo "MISSING in $(basename $bin): $missing"
                 MISSING=$((MISSING + 1))
@@ -193,9 +193,19 @@ runs:
         windeployqt "$INSTALL_PATH/relight-merge.exe"
         windeployqt "$INSTALL_PATH/relight-deepzoom.exe"
         
-        # Copy LCMS and libpng DLLs
+        # Copy LCMS, libpng, and zlib DLLs from vcpkg
         cp C:/vcpkg/installed/x64-windows/bin/lcms2-2.dll "$INSTALL_PATH/"
         cp C:/vcpkg/installed/x64-windows/bin/libpng16.dll "$INSTALL_PATH/"
+        cp C:/vcpkg/installed/x64-windows/bin/zlib1.dll "$INSTALL_PATH/"
+
+        # Copy OpenMP runtime DLL from VS redist
+        VCOMP=$(find "C:/Program Files/Microsoft Visual Studio" -name "vcomp140.dll" -path "*/x64/*" 2>/dev/null | head -n 1)
+        if [ -n "$VCOMP" ]; then
+            cp "$VCOMP" "$INSTALL_PATH/"
+        else
+            echo "WARNING: vcomp140.dll not found in VS install, trying System32"
+            cp "C:/Windows/System32/vcomp140.dll" "$INSTALL_PATH/" || echo "WARNING: vcomp140.dll not found"
+        fi
 
         echo "======= Verifying DLL Dependencies ======="
         SYSTEM_RE="^(kernel32|user32|gdi32|ole32|oleaut32|shell32|advapi32|ntdll|msvcrt|ws2_32|comctl32|comdlg32|shlwapi|winmm|imm32|version|winspool|ucrtbase|msvcp140|vcruntime140|vcruntime140_1|api-ms-win-.*)(\.dll)$"
