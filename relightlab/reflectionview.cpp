@@ -24,6 +24,14 @@ void MarkerOverview::init() {
 	setFixedSize(pix.width()*height/pix.height(), height);
 }
 
+void MarkerOverview::setImage(const QPixmap &pix) {
+	img_item->setPixmap(pix);
+	img_item->setTransform(QTransform());
+	setFixedSize(pix.width()*height/pix.height(), height);
+	fitInView(img_item->boundingRect(), Qt::KeepAspectRatio);
+	QGraphicsView::update();
+}
+
 void MarkerOverview::resizeEvent(QResizeEvent */*event*/) {
 	fitInView(scene.sceneRect(), Qt::KeepAspectRatio); //img_item);
 }
@@ -149,6 +157,8 @@ ZoomOverview::ZoomOverview(Crop _crop, int height, QWidget *parent):
 }
 
 void ZoomOverview::update() {
+	if(img_item->pixmap().isNull()) return;
+	item->setVisible(true);
 
 	QSize img_size = qRelightApp->project().imgsize;
 
@@ -178,6 +188,13 @@ void ZoomOverview::update() {
 	QRectF bound = img_item->mapToScene(img_item->boundingRect()).boundingRect();
 	fitInView(bound,  Qt::KeepAspectRatio);
 	QGraphicsView::update();
+}
+
+void ZoomOverview::showNormalmap(const QString &path) {
+	QPixmap pix(path);
+	if(pix.isNull()) return;
+	item->setVisible(false);
+	setImage(pix);
 }
 
 // ── PlaneOverview ─────────────────────────────────────────────────────────────

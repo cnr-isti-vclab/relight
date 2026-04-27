@@ -14,6 +14,7 @@
 #include <QDoubleSpinBox>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QImageReader>
 #include <cmath>
 /*
@@ -109,6 +110,13 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 }
 
 
+void NormalsSourceRow::setProjectLoaded(bool loaded) {
+	compute->setEnabled(loaded);
+	// If no project, force load mode so the user can still load a normalmap.
+	if(!loaded)
+		setComputeSource(false);
+}
+
 void NormalsSourceRow::setComputeSource(bool build) {
 	parameters.compute = build;
 	compute->setChecked(build);
@@ -116,6 +124,12 @@ void NormalsSourceRow::setComputeSource(bool build) {
 
 	compute_frame->setVisible(build);
 	load_frame->setVisible(!build);
+	if(build) {
+		// Suggest output based on project directory.
+		QDir input = qRelightApp->project().dir;
+		input.cdUp();
+		emit pathSuggestion(input.filePath("normals"));
+	}
 	updateSize();
 }
 
@@ -173,6 +187,12 @@ void NormalsSourceRow::selectOutput() {
 void NormalsSourceRow::setSourcePath(QString path) {
 	parameters.input_path = path;
 	input_path->setText(path);
+	// Suggest output: same directory as input, file named "normals".
+	if(!path.isEmpty()) {
+		QDir dir = QFileInfo(path).absoluteDir();
+		emit pathSuggestion(dir.filePath("normals"));
+		emit normalmapSelected(path);
+	}
 	updateSize();
 }
 

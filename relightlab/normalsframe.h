@@ -27,6 +27,7 @@ public slots:
 	void init();
 	void clear();
 	void updateCrop(Crop crop);
+	void setProjectLoaded(bool loaded);
 
 signals:
 	void processStarted();

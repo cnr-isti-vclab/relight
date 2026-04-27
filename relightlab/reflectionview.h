@@ -17,6 +17,7 @@ class MarkerOverview: public QGraphicsView {
 public:
 	MarkerOverview(int height, QWidget *parent = nullptr);
 	void init(); //load pixmaps and set size.
+	void setImage(const QPixmap &pix); //set an arbitrary image directly.
 	virtual void update() = 0;
 
 
@@ -90,6 +91,7 @@ public slots:
 		crop = _crop;
 		update();
 	}
+	void showNormalmap(const QString &path);
 };
 
 // Small thumbnail showing the 4 reference points for plane flattening.

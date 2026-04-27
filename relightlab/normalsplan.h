@@ -33,12 +33,15 @@ public:
 	void setSolver(NormalSolver solver);
 	void setFormat(NormalFormat format);
 	void setSourcePath(QString path);
+	void setProjectLoaded(bool loaded);
 	void updateSize();
 public slots:
 	void selectOutput();
 
 signals:
 	void sourceSizeChanged(int w, int h);
+	void pathSuggestion(QString path);
+	void normalmapSelected(QString path);
 
 protected:
 	QLabelButton *compute = nullptr;

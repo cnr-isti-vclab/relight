@@ -18,7 +18,7 @@ public:
 	bool compute = true;
 	QString input_path;
 
-	NormalSolver solver = NORMALS_ROBUST;
+	NormalSolver solver = NORMALS_L2;
 	NormalFormat normalFormat = NORMAL_OPENGL;
 
 	// 4-point plane flattening: points in full-project-image pixel coords

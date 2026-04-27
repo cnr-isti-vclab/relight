@@ -48,6 +48,11 @@ MainWindow::MainWindow() {
 	tabs->addTab(queue_frame = new QueueFrame, "Queue");
 
 	tabs->setTabsEnabled(false);
+	// Normals tab is usable without a project (load + integrate workflow).
+	// Keep it enabled but restrict to load-only mode.
+	tabs->setTabEnabled(9, true);
+	tabs->setTabEnabled(10, true);
+	normals_frame->setProjectLoaded(false);
 
 	connect(image_frame, SIGNAL(skipChanged()), lights_frame, SLOT(skipChanged()));
 	connect(image_frame, SIGNAL(skipChanged()), rti_frame, SLOT(skipChanged()));
@@ -164,6 +169,7 @@ void MainWindow::init() {
 	crop_frame->init();
 	rti_frame->init();
 	normals_frame->init();
+	normals_frame->setProjectLoaded(true);
 	brdf_frame->init();
 	queue_frame->init();
 

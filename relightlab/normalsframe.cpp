@@ -30,6 +30,8 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 	content->addWidget(export_row = new NormalsExportRow(parameters, this));
 
 	connect(source_row, &NormalsSourceRow::sourceSizeChanged, surface_row, &NormalsSurfaceRow::updateDimensions);
+	connect(source_row, &NormalsSourceRow::pathSuggestion, export_row, [this](const QString &path){ export_row->setPath(path); });
+	connect(source_row, &NormalsSourceRow::normalmapSelected, zoom_view, &ZoomOverview::showNormalmap);
 
 
 	{
@@ -83,6 +85,10 @@ void NormalsFrame::init() {
 	source_row->updateSize();
 }
 
+void NormalsFrame::setProjectLoaded(bool loaded) {
+	source_row->setProjectLoaded(loaded);
+}
+
 void NormalsFrame::clear() {
 	flatten_row->clear();
 }
@@ -97,7 +103,7 @@ void NormalsFrame::save() {
 		}
 	} else {
 		if(parameters.flatMethod == FlatMethod::FLAT_NONE && parameters.surface_integration == SurfaceIntegration::SURFACE_NONE) {
-			QMessageBox::warning(this, "Nothing to do.", "Using an existing normalmap ma no flattening or integration method specified");
+			QMessageBox::warning(this, "Nothing to do.", "Using an existing normalmap but no flattening or integration method specified");
 			return;
 		}
 
