@@ -269,6 +269,9 @@ void NormalsTask::run() {
 			return;
 		}
 
+		if(parameters.flatMethod == FLAT_RADIAL) {
+			flattenRadialHeights(width, height, z);
+		}
 		// 4-point plane height flattening.
 		if(parameters.flatMethod == FLAT_PLANE) {
 			bool proceed = progressed("Flattening surface (plane)...", 0);
@@ -277,11 +280,11 @@ void NormalsTask::run() {
 			SurfaceCoeffs sc;
 			flattenPlaneHeights(width, height, z, parameters.plane_points,
 				parameters.crop, imageset.image_width, imageset.image_height,
-				&normals, &sc);
+				nullptr, &sc);
 
 			// Apply the same correction to the full-res normals.
 			// rescaled() adjusts 4th-order coefficients by 1/s⁴ and 2nd-order by 1/s².
-			double s = (double)normals_width / width;
+			double s = (double)normals_width/width;
 			applyNormalCorrection(normals_width, normals_height, full_normals, sc.rescaled(s));
 		}
 		//TODO remove extension properly

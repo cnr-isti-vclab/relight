@@ -112,8 +112,10 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 
 void NormalsSourceRow::setProjectLoaded(bool loaded) {
 	compute->setEnabled(loaded);
-	// If no project, force load mode so the user can still load a normalmap.
-	if(!loaded)
+	if(loaded)
+		setComputeSource(true);
+	else
+		// If no project, force load mode so the user can still load a normalmap.
 		setComputeSource(false);
 }
 

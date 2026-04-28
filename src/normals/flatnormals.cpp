@@ -455,7 +455,7 @@ void flattenPlaneNormals(int w, int h, std::vector<Eigen::Vector3f> &normals,
 	int np = (int)pts.size();
 	const bool general  = (np >= 7);
 	const bool linear   = (np > 9);
-	const int ncols = linear ? 8 : (general ? 6 : 2);
+	const int ncols = linear ? 8 : (general ? 6 : 3);
 	Eigen::MatrixXd Ag(2*np, ncols);
 	Eigen::VectorXd sg(2*np);
 	Ag.setZero();
@@ -481,15 +481,26 @@ void flattenPlaneNormals(int w, int h, std::vector<Eigen::Vector3f> &normals,
 			Ag(2*i,   0) = 4*wx*wx*wx;  Ag(2*i,   1) = 2*wx*wy*wy;                              Ag(2*i,   3) = 2*wx;  Ag(2*i,   4) = wy;
 			                            Ag(2*i+1, 1) = 2*wx*wx*wy;  Ag(2*i+1, 2) = 4*wy*wy*wy;  Ag(2*i+1, 4) = wx;    Ag(2*i+1, 5) = 2*wy;
 		} else {
-			// cols: A           B
-			Ag(2*i,   0) = 4*r2*wx;  Ag(2*i,   1) = 2*wx;
-			Ag(2*i+1, 0) = 4*r2*wy;  Ag(2*i+1, 1) = 2*wy;
+			// cols: a        b        c   (z = a*wx² + b*wx*wy + c*wy²)
+			Ag(2*i,   0) = 2*wx;  Ag(2*i,   1) = wy;
+			Ag(2*i+1, 1) = wx;    Ag(2*i+1, 2) = 2*wy;
 		}
 		sg[2*i]   = sx;
 		sg[2*i+1] = sy;
 	}
 
 	Eigen::VectorXd cf = Ag.colPivHouseholderQr().solve(sg);
+
+	cout << "flattenPlaneNormals: fitted slope coefficients (" << np << " points)\n";
+	if(linear)
+		cout << "  GENERAL4L: a=" << cf[0] << " b=" << cf[1] << " c=" << cf[2]
+		     << " d=" << cf[3] << " e=" << cf[4] << " f=" << cf[5]
+		     << " h=" << cf[6] << " k=" << cf[7] << "\n";
+	else if(general)
+		cout << "  GENERAL4:  a=" << cf[0] << " b=" << cf[1] << " c=" << cf[2]
+		     << " d=" << cf[3] << " e=" << cf[4] << " f=" << cf[5] << "\n";
+	else
+		cout << "  QUADRATIC2: a=" << cf[0] << " b=" << cf[1] << " c=" << cf[2] << "\n";
 
 	SurfaceCoeffs sc;
 	sc.center = center;
@@ -503,8 +514,8 @@ void flattenPlaneNormals(int w, int h, std::vector<Eigen::Vector3f> &normals,
 		sc.c[0] = cf[0]; sc.c[1] = cf[1]; sc.c[2] = cf[2];
 		sc.c[3] = cf[3]; sc.c[4] = cf[4]; sc.c[5] = cf[5]; sc.c[6] = 0;
 	} else {
-		sc.nterms = 3;
-		sc.c[0] = cf[0]; sc.c[1] = cf[1]; sc.c[2] = 0;
+		sc.nterms = 4;
+		sc.c[0] = cf[0]; sc.c[1] = cf[1]; sc.c[2] = cf[2]; sc.c[3] = 0;
 	}
 	applyNormalCorrection(w, h, normals, sc);
 }
@@ -568,9 +579,9 @@ void flattenPlaneHeights(int w, int h, std::vector<float> &heights,
 	mean_z /= (double)xyz.size();
 
 #ifdef USE_PARABOLOID_FIT
-	// np < 7:  RADIAL4   z = A*r⁴ + B*r² + C            (3 params)
-	// np 7..9: GENERAL4  z = a*x⁴+b*x²y²+c*y⁴+d*x²+e*xy+f*y²+g  (7 params)
-	// np > 9:  GENERAL4L same + h*x + k*y              (9 params)
+	// np < 7:  QUADRATIC2 z = a*x²+b*xy+c*y²+d              (4 params)
+	// np 7..9: GENERAL4   z = a*x⁴+b*x²y²+c*y⁴+d*x²+e*xy+f*y²+g  (7 params)
+	// np > 9:  GENERAL4L  same + h*x + k*y                  (9 params)
 	const int np = (int)xyz.size();
 	const bool general = (np >= 7);
 	const bool linear  = (np > 9);
@@ -581,13 +592,14 @@ void flattenPlaneHeights(int w, int h, std::vector<float> &heights,
 			bp[i] = xyz[i].z();
 
 		if(!general) {
-			// Basis: [r⁴, r², 1]
-			Ap.resize(np, 3);
+			// Basis: [x², xy, y², 1]
+			Ap.resize(np, 4);
 			for(int i = 0; i < np; i++) {
-				double r2 = xyz[i].x()*xyz[i].x() + xyz[i].y()*xyz[i].y();
-				Ap(i, 0) = r2*r2;
-				Ap(i, 1) = r2;
-				Ap(i, 2) = 1.0;
+				double wx = xyz[i].x(), wy = xyz[i].y();
+				Ap(i, 0) = wx*wx;
+				Ap(i, 1) = wx*wy;
+				Ap(i, 2) = wy*wy;
+				Ap(i, 3) = 1.0;
 			}
 		} else if(!linear) {
 			// Basis: [x⁴, x²y², y⁴, x², xy, y², 1]
@@ -621,17 +633,27 @@ void flattenPlaneHeights(int w, int h, std::vector<float> &heights,
 
 		Eigen::VectorXd cf = Ap.colPivHouseholderQr().solve(bp);
 
+		cout << "flattenPlaneHeights: fitted surface coefficients (" << np << " points)\n";
+		if(!general)
+			cout << "  QUADRATIC2: a=" << cf[0] << " b=" << cf[1] << " c=" << cf[2] << " d=" << cf[3] << "\n";
+		else if(!linear)
+			cout << "  GENERAL4:  a=" << cf[0] << " b=" << cf[1] << " c=" << cf[2]
+			     << " d=" << cf[3] << " e=" << cf[4] << " f=" << cf[5] << " g=" << cf[6] << "\n";
+		else
+			cout << "  GENERAL4L: a=" << cf[0] << " b=" << cf[1] << " c=" << cf[2]
+			     << " d=" << cf[3] << " e=" << cf[4] << " f=" << cf[5]
+			     << " g=" << cf[6] << " h=" << cf[7] << " k=" << cf[8] << "\n";
+
 		SurfaceCoeffs sc;
 		sc.center = center;
 		if(!general) {
-			sc.nterms = 3;
-			sc.c[0] = cf[0]; sc.c[1] = cf[1]; sc.c[2] = cf[2];
+			sc.nterms = 4;
+			sc.c[0] = cf[0]; sc.c[1] = cf[1]; sc.c[2] = cf[2]; sc.c[3] = cf[3];
 			for(int y = 0; y < h; y++) {
 				for(int x = 0; x < w; x++) {
 					double wx = x - center.x();
 					double wy = center.y() - y;
-					double r2 = wx*wx + wy*wy;
-					heights[x + y*w] -= (float)(cf[0]*r2*r2 + cf[1]*r2 + cf[2]);
+					heights[x + y*w] -= (float)(cf[0]*wx*wx + cf[1]*wx*wy + cf[2]*wy*wy + cf[3]);
 				}
 			}
 		} else if(!linear) {
@@ -661,6 +683,7 @@ void flattenPlaneHeights(int w, int h, std::vector<float> &heights,
 			}
 		}
 		if(out_sc) *out_sc = sc;
+
 		if(correct_normals)
 			applyNormalCorrection(w, h, *correct_normals, sc);
 	}
