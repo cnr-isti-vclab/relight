@@ -190,7 +190,7 @@ runs:
         # Copy LCMS, libpng, and zlib DLLs from vcpkg
         cp C:/vcpkg/installed/x64-windows/bin/lcms2-2.dll "$INSTALL_PATH/"
         cp C:/vcpkg/installed/x64-windows/bin/libpng16.dll "$INSTALL_PATH/"
-        cp C:/vcpkg/packages/zlib_x64-windows/bin/zlib1.dll "$INSTALL_PATH/"
+        cp C:/vcpkg/packages/zlib_x64-windows/bin/z.dll "$INSTALL_PATH/"
 
         # Copy OpenMP runtime DLL from VS redist
         VCOMP=$(find "C:/Program Files/Microsoft Visual Studio" -name "vcomp140.dll" -path "*/x64/*" 2>/dev/null | head -n 1 || true)
