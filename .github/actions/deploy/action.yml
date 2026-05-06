@@ -203,7 +203,7 @@ runs:
         }
         copy_vcpkg_dll lcms2-2.dll
         copy_vcpkg_dll libpng16.dll
-        copy_vcpkg_dll zlib1.dll
+        copy_vcpkg_dll zlib.dll
 
         # Copy OpenMP runtime DLL from VS redist
         VCOMP=$(find "C:/Program Files/Microsoft Visual Studio" -name "vcomp140.dll" -path "*/x64/*" 2>/dev/null | head -n 1 || true)
