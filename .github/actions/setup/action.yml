@@ -50,7 +50,8 @@ runs:
     - name: Debug zlib output
       if: runner.os == 'Windows'
       shell: bash
-      run: find C:/vcpkg/packages/zlib_x64-windows -name '*.dll'
+      run: |
+        find C:/vcpkg/packages/zlib_x64-windows -name '*.dll'
         find C:/vcpkg/installed/x64-windows/bin -name 'zlib*' || echo "nothing in installed/bin"
         find C:/vcpkg/installed/x64-windows/lib -name 'zlib*' || echo "nothing in installed/lib"
 
