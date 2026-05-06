@@ -45,7 +45,7 @@ runs:
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        C:/vcpkg/vcpkg.exe install lcms:x64-windows libpng:x64-windows
+        C:/vcpkg/vcpkg.exe install lcms:x64-windows libpng:x64-windows zlib:x64-windows
         choco install nsis -y
 
 
