@@ -26,7 +26,8 @@ runs:
       if: runner.os == 'Linux'
       shell: bash
       run: |
-        INSTALL_PATH="${GITHUB_WORKSPACE}/install$( [ "${{ runner.os }}" = "Linux" ] && echo "/usr" || echo "")"
+        set -euo pipefail
+        INSTALL_PATH="${GITHUB_WORKSPACE}/install/usr"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
         DEPLOY_PATH="${GITHUB_WORKSPACE}/deploy"
         RESOURCES_PATH="${DEPLOY_PATH}/Linux"
@@ -44,24 +45,14 @@ runs:
         chmod +x "$INSTALL_PATH/bin/relight-normals"
         chmod +x "$INSTALL_PATH/bin/relight-deepzoom"
         
-        echo "======= Creating Portable Version ======="
-        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$INSTALL_PATH/lib"
-        
-        if "$RESOURCES_PATH/linuxdeploy" --appdir="${GITHUB_WORKSPACE}/install" --plugin qt; then
-            
-            echo "Portable version created successfully"
-        else
-            echo "linuxdeploy failed with error code $?. Script was not completed successfully."
-            exit 1
-        fi
+        echo "======= Creating AppImage ======="
+        export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:$INSTALL_PATH/lib"
 
-        #adding LD_LIBRARY_PATH configuration for the portable version
+        # Place custom AppRun (sets LD_LIBRARY_PATH) before linuxdeploy so it
+        # gets embedded in the AppImage rather than being overwritten.
         cp "$RESOURCES_PATH/AppRun" "${GITHUB_WORKSPACE}/install/AppRun"
         chmod +x "${GITHUB_WORKSPACE}/install/AppRun"
-        
-        echo "======= Creating AppImage ======="
-        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$INSTALL_PATH/lib"
-        
+
         "$RESOURCES_PATH/linuxdeploy" --appdir="${GITHUB_WORKSPACE}/install" \
           --plugin qt \
           --output appimage
@@ -75,7 +66,7 @@ runs:
         MISSING=0
         for bin in "${APPDIR}/usr/bin/"relight*; do
             [ -x "$bin" ] || continue
-            missing=$(LD_LIBRARY_PATH="${APPDIR}/usr/lib:$LD_LIBRARY_PATH" ldd "$bin" 2>/dev/null | grep "not found" || true)
+            missing=$(LD_LIBRARY_PATH="${APPDIR}/usr/lib:${LD_LIBRARY_PATH:-}" ldd "$bin" 2>/dev/null | grep "not found" || true)
             if [ -n "$missing" ]; then
                 echo "MISSING in $(basename $bin): $missing"
                 MISSING=$((MISSING + 1))
@@ -87,6 +78,7 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
+        set -euo pipefail
         INSTALL_PATH="${GITHUB_WORKSPACE}/install"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
         mkdir -p "$PACKAGES_PATH"
@@ -127,6 +119,7 @@ runs:
         if [ -n "${{ inputs.cert_id }}" ]; then
             echo "======= Signing AppBundle ======="
             codesign --options "runtime" --timestamp --force --deep --sign "${{ inputs.cert_id }}" "$INSTALL_PATH/$APPNAME"
+            codesign --verify --deep --strict "$INSTALL_PATH/$APPNAME"
             spctl -a -vvv "$INSTALL_PATH/$APPNAME"
         fi
         
@@ -178,6 +171,7 @@ runs:
       if: runner.os == 'Windows'
       shell: bash
       run: |
+        set -euo pipefail
         INSTALL_PATH="${GITHUB_WORKSPACE}/install"
         PACKAGES_PATH="${GITHUB_WORKSPACE}/packages"
         DEPLOY_PATH="${GITHUB_WORKSPACE}/deploy"
@@ -199,12 +193,12 @@ runs:
         cp C:/vcpkg/installed/x64-windows/bin/zlib1.dll "$INSTALL_PATH/"
 
         # Copy OpenMP runtime DLL from VS redist
-        VCOMP=$(find "C:/Program Files/Microsoft Visual Studio" -name "vcomp140.dll" -path "*/x64/*" 2>/dev/null | head -n 1)
+        VCOMP=$(find "C:/Program Files/Microsoft Visual Studio" -name "vcomp140.dll" -path "*/x64/*" 2>/dev/null | head -n 1 || true)
         if [ -n "$VCOMP" ]; then
             cp "$VCOMP" "$INSTALL_PATH/"
         else
             echo "WARNING: vcomp140.dll not found in VS install, trying System32"
-            cp "C:/Windows/System32/vcomp140.dll" "$INSTALL_PATH/" || echo "WARNING: vcomp140.dll not found"
+            cp "C:/Windows/System32/vcomp140.dll" "$INSTALL_PATH/" || echo "WARNING: vcomp140.dll not found — OpenMP may be unavailable"
         fi
 
         echo "======= Verifying DLL Dependencies ======="
@@ -222,6 +216,7 @@ runs:
         
         # Remove all .lib files
         find "$INSTALL_PATH" -name '*.lib' -delete
+        find "$INSTALL_PATH" -name '*.pdb' -delete
         
         # Download vc_redist if missing
         if [ ! -f "$INSTALL_PATH/vc_redist.x64.exe" ]; then
@@ -245,7 +240,7 @@ runs:
 
         INSTALLER_SRC=$(find "$INSTALL_PATH" -maxdepth 1 -name 'RelightLab*-windows.exe' | head -n 1)
         if [ -z "$INSTALLER_SRC" ]; then
-          echo "Failed to locate generated installer"
+          echo "ERROR: Generated installer not found"
           exit 1
         fi
         mv "$INSTALLER_SRC" "$PACKAGES_PATH/"
