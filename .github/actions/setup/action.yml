@@ -33,12 +33,13 @@ runs:
         sudo apt-get install -y cmake ninja-build patchelf fuse libjpeg-dev libeigen3-dev
         sudo apt-get install -y libxcb-cursor0
         sudo apt-get install -y liblcms2-dev libpng-dev
+        sudo apt-get install -y --no-install-recommends libopencv-dev
 
     - name: Install macOS dependencies
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        brew install coreutils libomp eigen libjpeg libpng
+        brew install coreutils libomp eigen libjpeg libpng opencv
         npm install -g appdmg
 
     - name: Install Windows dependencies
@@ -46,13 +47,8 @@ runs:
       shell: bash
       run: |
         C:/vcpkg/vcpkg.exe install lcms:x64-windows libpng:x64-windows zlib:x64-windows
+        vcpkg install opencv[core,calib3d]:x64-windows-static-md
         choco install nsis -y
-    - name: Debug zlib output
-      if: runner.os == 'Windows'
-      shell: bash
-      run: |
-        find C:/vcpkg/packages/zlib_x64-windows -name '*.dll'
-        find C:/vcpkg/installed/x64-windows/bin -name 'zlib*' || echo "nothing in installed/bin"
-        find C:/vcpkg/installed/x64-windows/lib -name 'zlib*' || echo "nothing in installed/lib"
+
 
 
