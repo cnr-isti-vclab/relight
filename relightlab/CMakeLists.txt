@@ -118,7 +118,6 @@ set (RELIGHT_HEADERS
     convertdialog.h
     calibration/calibrationdialog.h
     calibration/calimagesframe.h
-    calibration/calhistogramframe.h
     calibration/caldistortionframe.h
     calibration/calflatfieldframe.h
     calibration/callightsframe.h
@@ -214,7 +213,6 @@ set (RELIGHTLAB_SOURCES
     convertdialog.cpp
     calibration/calibrationdialog.cpp
     calibration/calimagesframe.cpp
-    calibration/calhistogramframe.cpp
     calibration/caldistortionframe.cpp
     calibration/calflatfieldframe.cpp
     calibration/callightsframe.cpp

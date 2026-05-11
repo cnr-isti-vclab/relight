@@ -10,7 +10,7 @@ inputs:
     description: 'vcpkg packages to install'
     required: false
     default: |
-      opencv[core,calib3d]:x64-windows
+      opencv[core,calib3d]:x64-windows-static-md
       lcms2:x64-windows
       libpng:x64-windows
       zlib:x64-windows
@@ -41,7 +41,7 @@ runs:
         sudo apt-get install -y mesa-common-dev libglu1-mesa-dev 
         sudo apt-get install -y cmake ninja-build patchelf fuse libjpeg-dev libeigen3-dev
         sudo apt-get install -y libxcb-cursor0
-        sudo apt-get install -y liblcms2-dev libpng-dev libraw
+        sudo apt-get install -y liblcms2-dev libpng-dev libraw-dev
         sudo apt-get install -y --no-install-recommends libopencv-dev
 
     - name: Install macOS dependencies

@@ -10,9 +10,6 @@
 
 /* CalibrationSession – data model for dome calibration.
  *
- * Implements ImageProvider so that standard display widgets (ImageFrame,
- * ImageView, ImageList, ImageGrid) work without code duplication.
- *
  * Holds:
  *   images       – list of source RAW / TIFF / JPEG paths
  *   dome         – dome geometry and light directions
@@ -26,9 +23,7 @@ public:
 	Dome                 dome;
 	LensCalibration      lens_calib;
 	FlatfieldCalibration flatfield;
-	double               white_point_percentile = 99.0;
 
-	// ---- ImageProvider interface ----------------------------------------
 	int          imageCount() const { return (int)images.size(); }
 	Image       &imageAt(int i) { return images[i]; }
 	const Image &imageAt(int i) const { return images[i]; }

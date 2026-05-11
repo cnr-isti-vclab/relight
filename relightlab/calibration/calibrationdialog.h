@@ -6,7 +6,6 @@
 
 class TabWidget;
 class CalImagesFrame;
-class CalHistogramFrame;
 class CalDistortionFrame;
 class CalFlatfieldFrame;
 class CalLightsFrame;
@@ -20,7 +19,6 @@ private:
 	CalibrationSession  session;
 	TabWidget          *tabs             = nullptr;
 	CalImagesFrame     *images_frame     = nullptr;
-	CalHistogramFrame  *histogram_frame  = nullptr;
 	CalDistortionFrame *distortion_frame = nullptr;
 	CalFlatfieldFrame  *flatfield_frame  = nullptr;
 	CalLightsFrame     *lights_frame     = nullptr;
