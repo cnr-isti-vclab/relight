@@ -55,6 +55,10 @@ HomeFrame::HomeFrame() {
 		HelpedButton *convert_rti = new HelpedButton(qRelightApp->action("convert_rti"), "interface/convert");
 		leftColumnLayout->addWidget(convert_rti);
 
+		HelpedButton *calibrate_dome = new HelpedButton(qRelightApp->action("calibrate_dome"), "interface/calibrate");
+		leftColumnLayout->addWidget(calibrate_dome);
+
+
 		QLabel *recentLabel = new QLabel("<h2>Recent projects:</h2>");
 		leftColumnLayout->addSpacing(20);
 		leftColumnLayout->addWidget(recentLabel);

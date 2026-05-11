@@ -34,21 +34,21 @@ public:
 	void clear();
 	void init();
 	int currentImage();
-	void showImage(int id); //new project loaded.
+	virtual void showImage(int id);
 	void rotate(bool clockwise);
 
 public slots:
 	void rotateLeft(); //rotate counterclockwise selected images
 	void rotateRight();
-	void previousImage();
-	void nextImage();
+	virtual void previousImage();
+	virtual void nextImage();
 	void showImageItem(QListWidgetItem *item);
 
 	void imageMode();
 	void listMode();
 	void gridMode();
 
-	void updateSkipped(int n);
+	virtual void updateSkipped(int n);
 
 signals:
 	void skipChanged();

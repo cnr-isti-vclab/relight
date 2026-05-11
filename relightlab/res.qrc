@@ -8,6 +8,7 @@
         <file>icons/dark/scalable/chevron-left.svg</file>
         <file>icons/dark/scalable/chevron-right.svg</file>
         <file>icons/dark/scalable/crop.svg</file>
+		<file>icons/dark/scalable/dome.svg</file>
         <file>icons/dark/scalable/download.svg</file>
         <file>icons/dark/scalable/edit.svg</file>
         <file>icons/dark/scalable/file.svg</file>
@@ -53,6 +54,7 @@
         <file>icons/light/scalable/chevron-left.svg</file>
         <file>icons/light/scalable/chevron-right.svg</file>
         <file>icons/light/scalable/crop.svg</file>
+		<file>icons/light/scalable/dome.svg</file>
         <file>icons/light/scalable/download.svg</file>
         <file>icons/light/scalable/edit.svg</file>
         <file>icons/light/scalable/file.svg</file>

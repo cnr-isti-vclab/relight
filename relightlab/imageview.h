@@ -6,7 +6,6 @@
 
 class Canvas;
 class QGraphicsPixmapItem;
-
 class QToolBar;
 
 
