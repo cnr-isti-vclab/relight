@@ -52,6 +52,7 @@ runs:
         npm install -g appdmg
 
     - name: Generate Version-Aware Cache Key
+      if: runner.os == 'Windows'
       id: set_key
       shell: bash
       run: |
@@ -61,7 +62,7 @@ runs:
         # 2. Get a unique hash from vcpkg for these specific dependencies
         # We look at the 'version' file in each port directory to create a combined hash
         VCPKG_ROOT_DIR="C:/vcpkg"
-        VERSION_HASH=$(echo "${{ inputs.windows_deps }}" | tr ',' '\n' | sed 's/\[.*\]//' | xargs -I {} sha256sum $VCPKG_ROOT_DIR/ports/{}/vcpkg.json | sha256sum | cut -d' ' -f1)
+        VERSION_HASH=$(echo "${{ inputs.windows_deps }}" | tr ',' '\n' | sed 's/[\[:].*//' | xargs -I {} sha256sum "$VCPKG_ROOT_DIR/ports/{}/vcpkg.json" | sha256sum | cut -d' ' -f1)
         
         echo "key=vcpkg-${{ runner.os }}-$CLEAN_NAME-$VERSION_HASH" >> $GITHUB_OUTPUT
 
