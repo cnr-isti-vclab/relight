@@ -47,26 +47,14 @@ runs:
         brew install coreutils libomp eigen libjpeg libpng libraw opencv
         npm install -g appdmg
 
-    - name: Generate Version-Aware Cache Key
-      if: runner.os == 'Windows'
-      id: set_key
-      shell: bash
-      run: |
-        # 1. Force forward slashes and remove any trailing backslashes
-        VCPKG_ROOT=$(echo "${VCPKG_INSTALLATION_ROOT}" | sed 's/\\/\//g')
-        
-        DEPS="${{ inputs.windows_deps }}"
-        
-        # 2. Sanitize for Cache Key
-        CLEAN_KEY=$(echo "$DEPS" | tr ' [],:' '-' | tr -s '-')
-        
-        # 3. Generate Version Hash
-        # We use a while loop instead of xargs to handle potential path/space issues more gracefully
-        VERSION_HASH=$(echo "$DEPS" | tr ' ' '\n' | sed 's/\[.*//; s/:.*//' | while read -r port; do
-          sha256sum "$VCPKG_ROOT/ports/$port/vcpkg.json"
-        done | sha256sum | cut -d' ' -f1)
-
-        echo "cache_key=vcpkg-Windows-$CLEAN_KEY-$VERSION_HASH" >> $GITHUB_OUTPUT
+    - name: Restore vcpkg Cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/vcpkg/installed
+        # Key changes only when the month changes or you change the dependency list string
+        key: vcpkg-Windows-${{ steps.date.outputs.month }}-${{ hashFiles('.github/workflows/*.yml') }}
+        restore-keys: |
+          vcpkg-Windows-${{ steps.date.outputs.month }}-
 
     - name: Cache vcpkg
       if: runner.os == 'Windows'
