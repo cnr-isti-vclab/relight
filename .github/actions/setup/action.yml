@@ -51,12 +51,26 @@ runs:
         brew install coreutils libomp eigen libjpeg libpng libraw opencv
         npm install -g appdmg
 
+    - name: Generate Version-Aware Cache Key
+      id: set_key
+      shell: bash
+      run: |
+        # 1. Sanitize the dependency list for the key name
+        CLEAN_NAME=$(echo '${{ inputs.windows_deps }}' | tr '[],' '-' | sed 's/--\+/-/g')
+        
+        # 2. Get a unique hash from vcpkg for these specific dependencies
+        # We look at the 'version' file in each port directory to create a combined hash
+        VCPKG_ROOT_DIR="C:/vcpkg"
+        VERSION_HASH=$(echo "${{ inputs.windows_deps }}" | tr ',' '\n' | sed 's/\[.*\]//' | xargs -I {} sha256sum $VCPKG_ROOT_DIR/ports/{}/vcpkg.json | sha256sum | cut -d' ' -f1)
+        
+        echo "key=vcpkg-${{ runner.os }}-$CLEAN_NAME-$VERSION_HASH" >> $GITHUB_OUTPUT
+
     - name: Cache vcpkg
       if: runner.os == 'Windows'
       uses: actions/cache@v4
       with:
         path: C:/vcpkg/installed
-        key: vcpkg-${{ runner.os }}-${{ hashFiles('') }}-${{ inputs.windows_deps }}
+        key: ${{ steps.set_key.outputs.key }}
 
     - name: Install Windows dependencies
       if: runner.os == 'Windows'
