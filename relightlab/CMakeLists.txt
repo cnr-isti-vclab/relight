@@ -258,9 +258,11 @@ target_link_libraries(
 		${RELIGHT_QT}::Gui
 		${RELIGHT_QT}::Widgets
 		${RELIGHT_QT}::Concurrent
-        ${RELIGHT_QT}::Xml
-        ${RELIGHT_QT}::Svg
-        ${LCMS2_LIBRARIES}
+		${RELIGHT_QT}::Xml
+		${RELIGHT_QT}::Svg
+		${LCMS2_LIBRARIES}
+		${OpenCV_LIBS}
+		libraw::libraw
 )
 
 target_include_directories(relightlab PRIVATE ${LCMS2_INCLUDE_DIRS})
