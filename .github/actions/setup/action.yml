@@ -9,7 +9,7 @@ inputs:
   windows_deps:
     description: 'vcpkg packages to install'
     required: false
-    default: "opencv[core,calib3d]:x64-windows-static-md lcms2:x64-windows libpng:x64-windows zlib:x64-windows"
+    default: "opencv[core,calib3d]:x64-windows-static-md lcms:x64-windows libpng:x64-windows zlib:x64-windows"
 
 runs:
   using: composite
@@ -46,6 +46,35 @@ runs:
       run: |
         brew install coreutils libomp eigen libjpeg libpng libraw opencv
         npm install -g appdmg
+
+    - name: Generate Version-Aware Cache Key
+      if: runner.os == 'Windows'
+      id: set_key
+      shell: bash
+      run: |
+        set -o pipefail
+        # 1. Force forward slashes and remove any trailing backslashes
+        VCPKG_ROOT=$(echo "${VCPKG_INSTALLATION_ROOT}" | sed 's/\\/\//g')
+        
+        DEPS="${{ inputs.windows_deps }}"
+        
+        # 2. Sanitize for Cache Key
+        CLEAN_KEY=$(echo "$DEPS" | tr ' [],:' '-' | tr -s '-')
+        
+        # 3. Generate Version Hash
+        # We use a while loop instead of xargs to handle potential path/space issues more gracefully
+        VERSION_HASH=$(echo "$DEPS" | tr ' ' '\n' | sed 's/\[.*//; s/:.*//' | while read -r port; do
+          sha256sum "$VCPKG_ROOT/ports/$port/vcpkg.json"
+        done | sha256sum | cut -d' ' -f1)
+
+        echo "cache_key=vcpkg-Windows-$CLEAN_KEY-$VERSION_HASH" >> $GITHUB_OUTPUT
+
+    - name: Cache vcpkg
+      if: runner.os == 'Windows'
+      uses: actions/cache@v4
+      with:
+        path: C:/vcpkg/installed
+        key: ${{ steps.set_key.outputs.cache_key }}
 
     - name: Install Windows dependencies
       if: runner.os == 'Windows'
