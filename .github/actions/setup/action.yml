@@ -47,6 +47,12 @@ runs:
         brew install coreutils libomp eigen libjpeg libpng libraw opencv
         npm install -g appdmg
 
+    - name: Get Current Month
+      id: date
+      shell: bash
+      # This creates a string like "2026-05"
+      run: echo "month=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
+
     - name: Restore vcpkg Cache
       uses: actions/cache@v4
       with:
