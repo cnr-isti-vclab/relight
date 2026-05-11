@@ -52,17 +52,19 @@ runs:
       id: set_key
       shell: bash
       run: |
-        # Use the pre-defined GitHub variable
-        VCPKG_ROOT="$VCPKG_INSTALLATION_ROOT"
+        # 1. Force forward slashes and remove any trailing backslashes
+        VCPKG_ROOT=$(echo "${VCPKG_INSTALLATION_ROOT}" | sed 's/\\/\//g')
         
         DEPS="${{ inputs.windows_deps }}"
         
-        # 1. Sanitize for Cache Key
+        # 2. Sanitize for Cache Key
         CLEAN_KEY=$(echo "$DEPS" | tr ' [],:' '-' | tr -s '-')
         
-        # 2. Generate Version Hash
-        # Using $VCPKG_ROOT dynamically ensures it finds the /ports folder
-        VERSION_HASH=$(echo "$DEPS" | tr ' ' '\n' | sed 's/[[#:].*//' | xargs -I {} sha256sum "$VCPKG_ROOT/ports/{}/vcpkg.json" | sha256sum | cut -d' ' -f1)
+        # 3. Generate Version Hash
+        # We use a while loop instead of xargs to handle potential path/space issues more gracefully
+        VERSION_HASH=$(echo "$DEPS" | tr ' ' '\n' | sed 's/\[.*//; s/:.*//' | while read -r port; do
+          sha256sum "$VCPKG_ROOT/ports/$port/vcpkg.json"
+        done | sha256sum | cut -d' ' -f1)
 
         echo "cache_key=vcpkg-Windows-$CLEAN_KEY-$VERSION_HASH" >> $GITHUB_OUTPUT
 
