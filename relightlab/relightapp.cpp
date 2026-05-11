@@ -5,6 +5,7 @@
 #include "mainwindow.h"
 #include "preferences.h"
 #include "convertdialog.h"
+#include "calibration/calibrationdialog.h"
 #include "../src/network/httpserver.h"
 
 #include <QMessageBox>
@@ -129,6 +130,7 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	addAction("save_project_as", "Save project as...", "save", "Shift-Ctrl+S", SLOT(saveProjectAs()));
 	addAction("convert_rti", "Convert RTI to Relight...", "repeat", "Ctrl+R", SLOT(convertRTI()));
 	addAction("view_rti", "View RTI in browser", "cast", "", SLOT(rtiView()));
+	addAction("calibrate_dome", "Dome calibration", "dome", "", SLOT(domeCalibration()));
 
 	addAction("preferences", "Preferences...", "", "Shift-Ctrl-P", SLOT(openPreferences()));
 	addAction("exit", "Exit", "", "Alt-F4", SLOT(close()));
@@ -493,6 +495,11 @@ void RelightApp::convertRTI() {
 	if(dialog.exec() == QDialog::Accepted) {
 		//add a task to the queue to convert the rti.
 	}
+}
+
+void RelightApp::domeCalibration() {
+	CalibrationDialog dialog(mainwindow);
+	dialog.exec();
 }
 
 

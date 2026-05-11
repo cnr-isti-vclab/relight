@@ -138,6 +138,13 @@ SOURCES += main.cpp \
     metadataframe.cpp \
     sphereframe.cpp \
     convertdialog.cpp \
+    calibration/calibrationdialog.cpp \
+    calibration/calimagesframe.cpp \
+    calibration/calhistogramframe.cpp \
+    calibration/caldistortionframe.cpp \
+    calibration/calflatfieldframe.cpp \
+    calibration/callightsframe.cpp \
+    ../src/calibration/calibration.cpp \
     historytask.cpp
 
 RESOURCES += \
@@ -242,9 +249,13 @@ HEADERS += \
     sphereframe.h \
     ../src/brdf/brdftask.h \
     convertdialog.h \
-    ../src/taskparameters.h \
-    ../src/rti/rtiparameters.h \
-    ../src/brdf/brdfparameters.h \
+    calibration/calibrationdialog.h \
+    calibration/calimagesframe.h \
+    calibration/calhistogramframe.h \
+    calibration/caldistortionframe.h \
+    calibration/calflatfieldframe.h \
+    calibration/callightsframe.h \
+    ../src/calibration/calibration.h \
     historytask.h 
 
 FORMS +=

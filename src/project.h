@@ -9,6 +9,7 @@
 #include "image.h"
 #include "crop.h"
 #include <QDir>
+#include <QImage>
 #include <QString>
 #include <QRect>
 #include <QSysInfo>

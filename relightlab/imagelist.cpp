@@ -24,7 +24,7 @@ void ImageList::init() {
 
 	Project &project = qRelightApp->project();
 	clear();
-	int count =0;
+	int count = 0;
 	setIconSize(QSize(icon_size, icon_size));
 
 	for(Image &img: project.images) {

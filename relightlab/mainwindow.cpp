@@ -104,6 +104,13 @@ void MainWindow::createMenu() {
 	menuFile->addSeparator();
 	menuFile->addAction(qRelightApp->action("exit"));
 
+	QMenu *menuTools = new QMenu(menubar);
+	menuTools->setTitle("Tools");
+	menuTools->addAction(qRelightApp->action("calibrate_dome"));
+	menuTools->addSeparator();
+	menuTools->addAction(qRelightApp->action("convert_rti"));
+	menubar->addAction(menuTools->menuAction());
+
 	QMenu *menuView= new QMenu(menubar);
 	menuView->setTitle("View");
 

@@ -114,6 +114,13 @@ set (RELIGHT_HEADERS
 
     brdfplan.h
     convertdialog.h
+    calibration/calibrationdialog.h
+    calibration/calimagesframe.h
+    calibration/calhistogramframe.h
+    calibration/caldistortionframe.h
+    calibration/calflatfieldframe.h
+    calibration/callightsframe.h
+    ../src/calibration/calibration.h
 )
 
 set (RELIGHTLAB_SOURCES
@@ -202,6 +209,13 @@ set (RELIGHTLAB_SOURCES
     brdfframe.cpp
     brdfplan.cpp
     convertdialog.cpp
+    calibration/calibrationdialog.cpp
+    calibration/calimagesframe.cpp
+    calibration/calhistogramframe.cpp
+    calibration/caldistortionframe.cpp
+    calibration/calflatfieldframe.cpp
+    calibration/callightsframe.cpp
+    ../src/calibration/calibration.cpp
 )
 
 

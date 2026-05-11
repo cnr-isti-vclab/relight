@@ -75,6 +75,7 @@ public slots:
 	void close();
 	void rtiView();
 	void convertRTI();
+	void domeCalibration();
 
 	void openPreferences();
 	void notify(const QString &title, const QString &msg, int ms = 4000);
