@@ -1,6 +1,5 @@
 #include "calibrationdialog.h"
 #include "calimagesframe.h"
-#include "calhistogramframe.h"
 #include "caldistortionframe.h"
 #include "calflatfieldframe.h"
 #include "callightsframe.h"
@@ -19,7 +18,6 @@ CalibrationDialog::CalibrationDialog(QWidget *parent): QDialog(parent) {
 
 	tabs = new TabWidget;
 	tabs->addTab(images_frame      = new CalImagesFrame(&session), "Images");
-	tabs->addTab(histogram_frame   = new CalHistogramFrame, "Histogram");
 	tabs->addTab(distortion_frame  = new CalDistortionFrame,"Distortion");
 	tabs->addTab(flatfield_frame   = new CalFlatfieldFrame, "Flatfield");
 	tabs->addTab(lights_frame      = new CalLightsFrame,    "Lights");
