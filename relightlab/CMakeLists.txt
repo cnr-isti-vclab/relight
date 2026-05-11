@@ -70,6 +70,8 @@ set (RELIGHT_HEADERS
     ../src/network/httpserver.h
     ../src/brdf/brdftask.h
     ../src/brdf/brdfparameters.h
+    ../src/calibration/calibration.h
+    ../src/calibration/calibrationsession.h
     alignrow.h
     alignframe.h
     alignframe.h
@@ -120,7 +122,6 @@ set (RELIGHT_HEADERS
     calibration/caldistortionframe.h
     calibration/calflatfieldframe.h
     calibration/callightsframe.h
-    ../src/calibration/calibration.h
 )
 
 set (RELIGHTLAB_SOURCES
@@ -166,6 +167,8 @@ set (RELIGHTLAB_SOURCES
     ../src/network/httpserver.cpp
     ../src/brdf/brdftask.cpp
     ../src/brdf/brdfparameters.cpp
+    ../src/calibration/calibration.cpp
+    ../src/calibration/calibrationsession.cpp
     alignframe.cpp
     alignpicking.cpp
     alignrow.cpp
@@ -215,7 +218,6 @@ set (RELIGHTLAB_SOURCES
     calibration/caldistortionframe.cpp
     calibration/calflatfieldframe.cpp
     calibration/callightsframe.cpp
-    ../src/calibration/calibration.cpp
 )
 
 
@@ -262,10 +264,15 @@ target_link_libraries(
 		${RELIGHT_QT}::Svg
 		${LCMS2_LIBRARIES}
 		${OpenCV_LIBS}
-		libraw::libraw
+		${LibRaw_LIBRARIES}
 )
 
-target_include_directories(relightlab PRIVATE ${LCMS2_INCLUDE_DIRS})
+target_include_directories(
+	relightlab PRIVATE 
+	${LCMS2_INCLUDE_DIRS}
+	${LibRaw_INCLUDES}
+)
+
 target_compile_definitions(relightlab PUBLIC HAVE_LCMS2)
 
 target_compile_definitions(relightlab PUBLIC _USE_MATH_DEFINES NOMINMAX)

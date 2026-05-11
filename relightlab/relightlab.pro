@@ -54,6 +54,7 @@ SOURCES += main.cpp \
     ../external/assm/algorithms/Triangulation.cpp \
     ../src/brdf/brdftask.cpp \
     ../src/brdf/brdfparameters.cpp \
+    ../src/calibration/calibrationsession.cpp \
     ../src/cli/convert_rti.cpp \
     ../src/cli/rtibuilder.cpp \
     ../src/miniz.c \
@@ -161,6 +162,7 @@ HEADERS += \
     ../external/assm/algorithms/ScreenMeshing.h \
     ../external/assm/algorithms/ScreenRemeshing.h \
     ../external/assm/algorithms/Triangulation.h \
+    ../src/calibration/calibrationsession.h \
     ../src/cli/rtibuilder.h \
     ../src/crop.h \
     ../src/exr_reader.hh \

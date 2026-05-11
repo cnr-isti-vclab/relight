@@ -5,6 +5,7 @@
 #include "../dome.h"
 #include "calibration.h"
 
+#include <QImage>
 #include <QStringList>
 
 /* CalibrationSession – data model for dome calibration.
