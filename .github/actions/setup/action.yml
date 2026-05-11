@@ -54,6 +54,7 @@ runs:
       run: echo "month=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
     - name: Restore vcpkg Cache
+      if: runner.os == 'Windows'
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/vcpkg/installed
@@ -61,13 +62,6 @@ runs:
         key: vcpkg-Windows-${{ steps.date.outputs.month }}-${{ hashFiles('.github/workflows/*.yml') }}
         restore-keys: |
           vcpkg-Windows-${{ steps.date.outputs.month }}-
-
-    - name: Cache vcpkg
-      if: runner.os == 'Windows'
-      uses: actions/cache@v4
-      with:
-        path: C:/vcpkg/installed
-        key: ${{ steps.set_key.outputs.cache_key }}
 
     - name: Install Windows dependencies
       if: runner.os == 'Windows'
