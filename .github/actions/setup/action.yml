@@ -56,15 +56,19 @@ runs:
       id: set_key
       shell: bash
       run: |
-        # 1. Sanitize the dependency list for the key name
-        CLEAN_NAME=$(echo '${{ inputs.windows_deps }}' | tr '[],' '-' | sed 's/--\+/-/g')
+        # 1. Flatten the multi-line input into a single comma-separated string
+        # This removes newlines and extra spaces
+        FLAT_DEPS=$(echo "${{ inputs.windows_deps }}" | tr '\n' ',' | tr -s ' ' | sed 's/,,/,/g' | sed 's/^,//;s/,$//')
+
+        # 2. Sanitize for the GitHub Cache Key name (No brackets, colons, or commas)
+        CLEAN_NAME=$(echo "$FLAT_DEPS" | tr '[],:' '-' | sed 's/--\+/ -/g' | sed 's/ //g')
         
-        # 2. Get a unique hash from vcpkg for these specific dependencies
-        # We look at the 'version' file in each port directory to create a combined hash
+        # 3. Hash the specific vcpkg versions
+        # We split by comma, strip features/triplets, and hash the port files
         VCPKG_ROOT_DIR="C:/vcpkg"
-        VERSION_HASH=$(echo "${{ inputs.windows_deps }}" | tr ',' '\n' | sed 's/[\[:].*//' | xargs -I {} sha256sum "$VCPKG_ROOT_DIR/ports/{}/vcpkg.json" | sha256sum | cut -d' ' -f1)
+        VERSION_HASH=$(echo "$FLAT_DEPS" | tr ',' '\n' | sed 's/[\[:].*//' | awk '{$1=$1;print}' | xargs -I {} sha256sum "$VCPKG_ROOT_DIR/ports/{}/vcpkg.json" | sha256sum | cut -d' ' -f1)
         
-        echo "key=vcpkg-${{ runner.os }}-$CLEAN_NAME-$VERSION_HASH" >> $GITHUB_OUTPUT
+        echo "key=vcpkg-Windows-$CLEAN_NAME-$VERSION_HASH" >> $GITHUB_OUTPUT
 
     - name: Cache vcpkg
       if: runner.os == 'Windows'
