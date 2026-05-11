@@ -9,11 +9,7 @@ inputs:
   windows_deps:
     description: 'vcpkg packages to install'
     required: false
-    default: |
-      opencv[core,calib3d]:x64-windows-static-md
-      lcms2:x64-windows
-      libpng:x64-windows
-      zlib:x64-windows
+    default: "opencv[core,calib3d]:x64-windows-static-md lcms2:x64-windows libpng:x64-windows zlib:x64-windows"
 
 runs:
   using: composite
@@ -56,32 +52,29 @@ runs:
       id: set_key
       shell: bash
       run: |
-        # 1. Flatten the multi-line input into a single comma-separated string
-        # This removes newlines and extra spaces
-        FLAT_DEPS=$(echo "${{ inputs.windows_deps }}" | tr '\n' ',' | tr -s ' ' | sed 's/,,/,/g' | sed 's/^,//;s/,$//')
+        DEPS="${{ inputs.windows_deps }}"
+    
+        # 1. Sanitize for Cache Key (Spaces/Brackets/Colons -> Hyphens)
+        CLEAN_KEY=$(echo "$DEPS" | tr ' [],:' '-' | sed 's/--\+/ -/g' | sed 's/ //g')
 
-        # 2. Sanitize for the GitHub Cache Key name (No brackets, colons, or commas)
-        CLEAN_NAME=$(echo "$FLAT_DEPS" | tr '[],:' '-' | sed 's/--\+/ -/g' | sed 's/ //g')
-        
-        # 3. Hash the specific vcpkg versions
-        # We split by comma, strip features/triplets, and hash the port files
-        VCPKG_ROOT_DIR="C:/vcpkg"
-        VERSION_HASH=$(echo "$FLAT_DEPS" | tr ',' '\n' | sed 's/[\[:].*//' | awk '{$1=$1;print}' | xargs -I {} sha256sum "$VCPKG_ROOT_DIR/ports/{}/vcpkg.json" | sha256sum | cut -d' ' -f1)
-        
-        echo "key=vcpkg-Windows-$CLEAN_NAME-$VERSION_HASH" >> $GITHUB_OUTPUT
+        # 2. Generate Version Hash (Strip features/triplets to find port folders)
+        VCPKG_ROOT="C:/vcpkg"
+        VERSION_HASH=$(echo "$DEPS" | tr ' ' '\n' | sed 's/[\[:].*//' | xargs -I {} sha256sum "$VCPKG_ROOT/ports/{}/vcpkg.json" | sha256sum | cut -d' ' -f1)
+
+        echo "cache_key=vcpkg-Windows-$CLEAN_KEY-$VERSION_HASH" >> $GITHUB_OUTPUT
 
     - name: Cache vcpkg
       if: runner.os == 'Windows'
       uses: actions/cache@v4
       with:
         path: C:/vcpkg/installed
-        key: ${{ steps.set_key.outputs.key }}
+        key: ${{ steps.set_key.outputs.cache_key }}
 
     - name: Install Windows dependencies
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        echo "${{ inputs.windows_deps }}" | xargs vcpkg install
+        vcpkg install ${{ inputs.windows_deps }}
         choco install nsis -y
 
 
