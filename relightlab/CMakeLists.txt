@@ -10,9 +10,9 @@ find_package(
 	REQUIRED)
 find_package(OpenMP)
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(LENSFUN REQUIRED lensfun)
+pkg_check_modules(LENSFUN REQUIRED IMPORTED_TARGET lensfun)
 find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs calib3d)
-pkg_check_modules(LibRaw REQUIRED libraw)
+pkg_check_modules(LibRaw REQUIRED IMPORTED_TARGET libraw)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -266,15 +266,13 @@ target_link_libraries(
 		${RELIGHT_QT}::Svg
 		${LCMS2_LIBRARIES}
 		${OpenCV_LIBS}
-		${LibRaw_LIBRARIES}
-		${LENSFUN_LIBRARIES}
+		PkgConfig::LibRaw
+		PkgConfig::LENSFUN
 )
 
 target_include_directories(
 	relightlab PRIVATE 
 	${LCMS2_INCLUDE_DIRS}
-	${LENSFUN_INCLUDE_DIRS}
-	${LibRaw_INCLUDE_DIRS}
 	${OpenCV_INCLUDE_DIRS}
 )
 
