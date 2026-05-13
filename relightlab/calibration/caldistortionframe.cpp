@@ -270,26 +270,46 @@ void CalDistortionFrame::detectFromExif() {
 		return;
 	}
 
-	Exif exif;
-	exif.parse(path);
+	QString make, model;
+	double focal35 = 0.0, focalRaw = 0.0;
 
-	if (exif.isEmpty()) {
-		exif_result->setText("<i>Could not read EXIF data from this file.</i>");
-		return;
+	if (isRawPath(path)) {
+		// LibRaw already parses EXIF for all RAW formats
+		LibRaw raw;
+		if (raw.open_file(path.toLocal8Bit().constData()) != LIBRAW_SUCCESS) {
+			exif_result->setText("<i>Could not open RAW file.</i>");
+			return;
+		}
+		make     = QString(raw.imgdata.idata.make).trimmed();
+		model    = QString(raw.imgdata.idata.model).trimmed();
+		focalRaw = raw.imgdata.other.focal_len;
+	} else {
+		Exif exif;
+		try {
+			exif.parse(path);
+		} catch (const QString &e) {
+			exif_result->setText("<i>Could not read EXIF: " + e.toHtmlEscaped() + "</i>");
+			return;
+		} catch (...) {
+			exif_result->setText("<i>Could not read EXIF data from this file.</i>");
+			return;
+		}
+		if (exif.isEmpty()) {
+			exif_result->setText("<i>Could not read EXIF data from this file.</i>");
+			return;
+		}
+		make     = exif.value(Exif::Make,  QString()).toString().trimmed();
+		model    = exif.value(Exif::Model, QString()).toString().trimmed();
+		focal35  = exif.value(Exif::FocalLengthIn35mmFilm, 0.0).toDouble();
+		focalRaw = exif.value(Exif::FocalLength, 0.0).toDouble();
 	}
-
-	// Camera make / model
-	QString make  = exif.value(Exif::Make,  QString()).toString().trimmed();
-	QString model = exif.value(Exif::Model, QString()).toString().trimmed();
 
 	// Remove the make prefix that many cameras duplicate inside Model
 	if (!make.isEmpty() && model.startsWith(make))
 		model = model.mid(make.size()).trimmed();
 
-	// Focal length: prefer the 35 mm equivalent when available
-	double focal35  = exif.value(Exif::FocalLengthIn35mmFilm, 0.0).toDouble();
-	double focalRaw = exif.value(Exif::FocalLength, 0.0).toDouble();
-	float  focal    = (focalRaw > 0) ? (float)focalRaw : (float)focal35;
+	// Focal length: prefer the native focal length for Lensfun lookup
+	float focal = (focalRaw > 0) ? (float)focalRaw : (float)focal35;
 
 	// ---- Lensfun lookup -------------------------------------------------
 	lfDatabase *ldb = new lfDatabase;

@@ -5,22 +5,59 @@
 #include <string>
 #include <array>
 
+#include <opencv2/core.hpp>
+
 /* -----------------------------------------------------------------------
  * LensCalibration
- * Brown-Conrady radial + tangential distortion model.
- * Intrinsic camera matrix: fx, fy (focal lengths), cx, cy (principal point).
+ * Stores the distortion model and coefficients needed to undistort an image.
+ * The model enum selects both the formula and which coefficient fields apply.
+ *
+ * BrownConrady  – OpenCV standard (computed from checkerboard calibration)
+ *   coefficients: k1, k2, k3 (radial), p1, p2 (tangential)
+ *   formula: r_d = r_u*(1 + k1*r_u^2 + k2*r_u^4 + k3*r_u^6)
+ *
+ * Poly3   – Lensfun one-parameter radial model
+ *   coefficients: k1
+ *   formula: r_d = r_u*(1 + k1*r_u^2)
+ *
+ * Poly5   – Lensfun two-parameter radial model
+ *   coefficients: k1, k2
+ *   formula: r_d = r_u*(1 + k1*r_u^2 + k2*r_u^4)
+ *
+ * PTLens  – Lensfun / Hugin PTLens model (stored in k1=a, k2=b, k3=c)
+ *   coefficients: k1 (a), k2 (b), k3 (c)
+ *   formula: r_d = r_u*(a*r_u^3 + b*r_u^2 + c*r_u + 1 - a - b - c)
+ *
+ * Intrinsic matrix (fx, fy, cx, cy) is required for BrownConrady and
+ * optional (set to 0) when the model is applied via Lensfun directly.
  * --------------------------------------------------------------------- */
 struct LensCalibration {
-	// intrinsic matrix
+	enum class Model {
+		None,
+		BrownConrady,  // OpenCV checkerboard result
+		Poly3,         // Lensfun 1-parameter
+		Poly5,         // Lensfun 2-parameter
+		PTLens,        // Lensfun PTLens / Hugin
+	};
+
+	Model model = Model::None;
+
+	// intrinsic matrix (pixels); required for BrownConrady
 	double fx = 0.0, fy = 0.0;
 	double cx = 0.0, cy = 0.0;
 
-	// distortion coefficients
-	double k1 = 0.0, k2 = 0.0, k3 = 0.0;  // radial
-	double p1 = 0.0, p2 = 0.0;             // tangential
+	// distortion coefficients — interpretation depends on model (see above)
+	double k1 = 0.0, k2 = 0.0, k3 = 0.0;
+	double p1 = 0.0, p2 = 0.0;  // tangential, BrownConrady only
 
-	bool isValid() const { return fx > 0.0 && fy > 0.0; }
+	// required for Lensfun models (Poly3/Poly5/PTLens); not used by BrownConrady
+	float focal_mm = 0.0f;
+
+	bool isValid() const { return model != Model::None; }
 	void reset() { *this = LensCalibration{}; }
+
+	// Undistort image in-place. Returns false if model is None or parameters invalid.
+	bool applyTo(cv::Mat &image) const;
 
 	bool loadJson(const std::string &path);
 	bool saveJson(const std::string &path) const;
