@@ -9,7 +9,7 @@ inputs:
   windows_deps:
     description: 'vcpkg packages to install'
     required: false
-    default: "opencv[core,calib3d]:x64-windows-static-md lcms:x64-windows libpng:x64-windows zlib:x64-windows"
+    default: "opencv[core,calib3d]:x64-windows-static-md lensfun:x64-windows libraw:x64-windows lcms:x64-windows libpng:x64-windows zlib:x64-windows"
 
 runs:
   using: composite
@@ -39,12 +39,13 @@ runs:
         sudo apt-get install -y libxcb-cursor0
         sudo apt-get install -y liblcms2-dev libpng-dev libraw-dev
         sudo apt-get install -y --no-install-recommends libopencv-dev
+        sudo apt-get install -y liblensfun-dev libglib2.0-dev
 
     - name: Install macOS dependencies
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        brew install coreutils libomp eigen libjpeg libpng libraw opencv
+        brew install coreutils libomp eigen libjpeg libpng libraw opencv lensfun
         npm install -g appdmg
 
     - name: Generate Version-Aware Cache Key

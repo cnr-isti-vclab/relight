@@ -18,9 +18,9 @@ unix::QMAKE_CXXFLAGS = -fopenmp
 unix:INCLUDEPATH += ../external/eigen-3.3.9/ ../src/
 #opencv not needed for the moment
 #unix:INCLUDEPATH += /usr/include/opencv4
-unix:LIBS += -ljpeg -ltiff -lpng -llcms2
-#opencv not needed for the moment
-#unix:LIBS += -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_video
+unix:LIBS += -ljpeg -ltiff -lpng -llcms2 -llensfun -lraw -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_calib3d
+unix:INCLUDEPATH += /usr/include/lensfun /usr/include/libraw /usr/include/opencv4
+#unix:LIBS += -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_video  # kept for reference
 unix::LIBS += -fopenmp #-lgomp
 
 mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/3.1.0/include \
@@ -140,7 +140,7 @@ SOURCES += main.cpp \
     sphereframe.cpp \
     convertdialog.cpp \
     calibration/calibrationdialog.cpp \
-    calibration/calimagesframe.cpp \
+    calibration/caldomeframe.cpp \
     calibration/caldistortionframe.cpp \
     calibration/calflatfieldframe.cpp \
     calibration/callightsframe.cpp \
@@ -251,7 +251,7 @@ HEADERS += \
     ../src/brdf/brdftask.h \
     convertdialog.h \
     calibration/calibrationdialog.h \
-    calibration/calimagesframe.h \
+    calibration/caldomeframe.h \
     calibration/caldistortionframe.h \
     calibration/calflatfieldframe.h \
     calibration/callightsframe.h \
