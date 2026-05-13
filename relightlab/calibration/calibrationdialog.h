@@ -5,7 +5,7 @@
 #include "../../src/calibration/calibrationsession.h"
 
 class TabWidget;
-class CalImagesFrame;
+class CalDomeFrame;
 class CalDistortionFrame;
 class CalFlatfieldFrame;
 class CalLightsFrame;
@@ -15,10 +15,13 @@ class CalibrationDialog: public QDialog {
 public:
 	explicit CalibrationDialog(QWidget *parent = nullptr);
 
+public slots:
+	void saveDome();
+
 private:
 	CalibrationSession  session;
 	TabWidget          *tabs             = nullptr;
-	CalImagesFrame     *images_frame     = nullptr;
+	CalDomeFrame       *dome_frame       = nullptr;
 	CalDistortionFrame *distortion_frame = nullptr;
 	CalFlatfieldFrame  *flatfield_frame  = nullptr;
 	CalLightsFrame     *lights_frame     = nullptr;

@@ -9,6 +9,10 @@ find_package(
 	COMPONENTS Core Gui Widgets Concurrent Xml Svg
 	REQUIRED)
 find_package(OpenMP)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LENSFUN REQUIRED lensfun)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs calib3d)
+pkg_check_modules(LibRaw REQUIRED libraw)
 
 
 set(CMAKE_AUTOMOC ON)
@@ -118,7 +122,7 @@ set (RELIGHT_HEADERS
     brdfplan.h
     convertdialog.h
     calibration/calibrationdialog.h
-    calibration/calimagesframe.h
+    calibration/caldomeframe.h
     calibration/caldistortionframe.h
     calibration/calflatfieldframe.h
     calibration/callightsframe.h
@@ -213,7 +217,7 @@ set (RELIGHTLAB_SOURCES
     brdfplan.cpp
     convertdialog.cpp
     calibration/calibrationdialog.cpp
-    calibration/calimagesframe.cpp
+    calibration/caldomeframe.cpp
     calibration/caldistortionframe.cpp
     calibration/calflatfieldframe.cpp
     calibration/callightsframe.cpp
@@ -265,12 +269,15 @@ target_link_libraries(
 	        project_exiv2
 		${OpenCV_LIBS}
 		${LibRaw_LIBRARIES}
+		${LENSFUN_LIBRARIES}
 )
 
 target_include_directories(
 	relightlab PRIVATE 
 	${LCMS2_INCLUDE_DIRS}
-	${LibRaw_INCLUDES}
+	${LENSFUN_INCLUDE_DIRS}
+	${LibRaw_INCLUDE_DIRS}
+	${OpenCV_INCLUDE_DIRS}
 )
 
 target_compile_definitions(relightlab PUBLIC HAVE_LCMS2)
