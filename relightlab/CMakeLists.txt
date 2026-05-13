@@ -9,9 +9,11 @@ find_package(
 	COMPONENTS Core Gui Widgets Concurrent Xml Svg
 	REQUIRED)
 find_package(OpenMP)
-find_package(Lensfun REQUIRED)
-find_package(LibRaw REQUIRED)
-find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs calib3d)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LENSFUN REQUIRED lensfun)
+#todo might want to check wchich opencv components are really needed.
+find_package(OpenCV REQUIRED COMPONENTS core calib3d)
+pkg_check_modules(LibRaw REQUIRED libraw)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
