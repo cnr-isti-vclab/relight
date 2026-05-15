@@ -133,6 +133,7 @@ set (RELIGHT_HEADERS
     calibration/caldistortionframe.h
     calibration/calflatfieldframe.h
     calibration/callightsframe.h
+    calibration/gridcalibview.h
 )
 
 set (RELIGHTLAB_SOURCES
@@ -228,6 +229,7 @@ set (RELIGHTLAB_SOURCES
     calibration/caldistortionframe.cpp
     calibration/calflatfieldframe.cpp
     calibration/callightsframe.cpp
+    calibration/gridcalibview.cpp
 )
 
 

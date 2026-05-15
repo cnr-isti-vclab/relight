@@ -92,6 +92,7 @@ SOURCES += main.cpp \
     ../src/white.cpp \
     ../src/task.cpp \
     ../src/deepzoom.cpp \
+    calibration/gridcalibview.cpp \
     zoom.cpp \
     brdfplan.cpp \
     imagecropper.cpp \
@@ -169,6 +170,7 @@ HEADERS += \
     ../src/streamreader.hh \
     ../src/tinyexr.h \
     brdfplan.h \
+    calibration/gridcalibview.h \
     imagecropper.h \
     processqueue.h \
     ../src/align.h \

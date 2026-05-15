@@ -9,7 +9,7 @@ inputs:
   windows_deps:
     description: 'vcpkg packages to install'
     required: false
-    default: "opencv[core,calib3d]:x64-windows-static-md lensfun:x64-windows libraw:x64-windows lcms:x64-windows libpng:x64-windows zlib:x64-windows"
+    default: "opencv[core,imgproc,calib3d]:x64-windows-static-md lensfun:x64-windows libraw:x64-windows lcms:x64-windows libpng:x64-windows zlib:x64-windows"
 
 runs:
   using: composite

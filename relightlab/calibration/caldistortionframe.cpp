@@ -20,11 +20,11 @@
 #include <QFileDialog>
 #include <QScrollArea>
 #include <QSpinBox>
-#include <QDir>
 #include <QFileInfo>
 
 // Forward declaration — defined at end of file
 static cv::Mat loadAsGrayCvMat(const QString &path);
+static double  focalLengthPixels(const QString &path, int imgWidth);
 
 CalDistortionFrame::CalDistortionFrame(QWidget *parent): QFrame(parent) {
 	QVBoxLayout *outer = new QVBoxLayout(this);
@@ -159,16 +159,16 @@ CalDistortionFrame::CalDistortionFrame(QWidget *parent): QFrame(parent) {
 		pl->setSpacing(8);
 
 		QLabel *hint = new QLabel(
-			"Provide a photo (or folder of photos) of a checkerboard / dot-grid target. "
+			"Provide a photo of a checkerboard / dot-grid target. "
 			"Corner detection and Zhang\u2019s method will be used to compute the "
 			"Brown-Conrady distortion coefficients.");
 		hint->setWordWrap(true);
 		pl->addWidget(hint);
 
 		QHBoxLayout *path_row = new QHBoxLayout;
-		path_row->addWidget(new QLabel("Image / folder:"));
+		path_row->addWidget(new QLabel("Image:"));
 		grid_path = new QLineEdit;
-		grid_path->setPlaceholderText("path/to/grid.jpg  or  path/to/grid-images/  (JPEG, TIFF, RAW…)");
+		grid_path->setPlaceholderText("path/to/grid.jpg  (JPEG, TIFF, RAW\u2026)");
 		path_row->addWidget(grid_path, 1);
 		QPushButton *browse = new QPushButton(QIcon::fromTheme("folder"), "");
 		connect(browse, &QPushButton::clicked, this, &CalDistortionFrame::browseGridPhoto);
@@ -195,14 +195,9 @@ CalDistortionFrame::CalDistortionFrame(QWidget *parent): QFrame(parent) {
 		board_row->addStretch();
 		pl->addLayout(board_row);
 
-		// Image preview
-		grid_preview = new QLabel;
-		grid_preview->setFixedHeight(240);
-		grid_preview->setAlignment(Qt::AlignCenter);
-		grid_preview->setStyleSheet(
-			"QLabel { background: palette(base); border: 1px solid palette(mid); "
-			"border-radius: 4px; }");
-		grid_preview->setText("<i>No image selected.</i>");
+		// Image preview (zoomable/pannable)
+		grid_preview = new GridCalibView;
+		grid_preview->setFixedHeight(280);
 		pl->addWidget(grid_preview);
 
 		QPushButton *run_btn = new QPushButton("Run calibration\u2026");
@@ -404,33 +399,19 @@ void CalDistortionFrame::detectFromExif() {
 }
 
 void CalDistortionFrame::browseGridPhoto() {
-	// Allow either a single file or a directory
-	QString path = QFileDialog::getExistingDirectory(
-		this, "Select folder of grid images", QString());
-	if (path.isEmpty())
-		path = QFileDialog::getOpenFileName(
-			this, "Select grid image", QString(),
-			"Images (*.jpg *.jpeg *.tiff *.tif *.png "
-			"*.cr2 *.cr3 *.nef *.nrw *.arw *.srf *.sr2 *.orf *.rw2 *.raf "
-			"*.dng *.pef *.ptx *.kdc *.dcr *.raw *.rwl *.mrw *.3fr *.fff "
-			"*.iiq *.x3f *.erf);;All files (*)");
+	QString path = QFileDialog::getOpenFileName(
+		this, "Select grid image", QString(),
+		"Images (*.jpg *.jpeg *.tiff *.tif *.png "
+		"*.cr2 *.cr3 *.nef *.nrw *.arw *.srf *.sr2 *.orf *.rw2 *.raf "
+		"*.dng *.pef *.ptx *.kdc *.dcr *.raw *.rwl *.mrw *.3fr *.fff "
+		"*.iiq *.x3f *.erf);;All files (*)");
 	if (!path.isEmpty()) {
 		grid_path->setText(path);
-		// Show preview for single file; for a directory pick the first image
-		QString previewFile = path;
-		if (QFileInfo(path).isDir()) {
-			static const QStringList exts = {
-				"*.jpg","*.jpeg","*.tiff","*.tif","*.png",
-				"*.cr2","*.cr3","*.nef","*.nrw","*.arw","*.srf","*.sr2",
-				"*.orf","*.rw2","*.raf","*.dng","*.pef","*.ptx","*.kdc",
-				"*.dcr","*.raw","*.rwl","*.mrw","*.3fr","*.fff","*.iiq",
-				"*.x3f","*.erf"
-			};
-			auto entries = QDir(path).entryInfoList(exts, QDir::Files);
-			if (!entries.isEmpty())
-				previewFile = entries.first().absoluteFilePath();
+		QPixmap pm = loadPreviewPixmap(path);
+		if (!pm.isNull()) {
+			grid_preview->setImage(pm);
+			grid_preview->fit();
 		}
-		updatePreview(previewFile, grid_preview);
 	}
 }
 
@@ -445,27 +426,11 @@ void CalDistortionFrame::runGridCalibration() {
 	int rows = grid_rows->value();
 	cv::Size board(cols, rows);
 
-	// Collect image files
-	static const QStringList imgFilters = {
-		"*.jpg","*.jpeg","*.tiff","*.tif","*.png",
-		"*.cr2","*.cr3","*.nef","*.nrw","*.arw","*.srf","*.sr2",
-		"*.orf","*.rw2","*.raf","*.dng","*.pef","*.ptx","*.kdc",
-		"*.dcr","*.raw","*.rwl","*.mrw","*.3fr","*.fff","*.iiq",
-		"*.x3f","*.erf"
-	};
-
-	QStringList files;
-	if (QFileInfo(path).isDir()) {
-		for (const auto &fi : QDir(path).entryInfoList(imgFilters, QDir::Files))
-			files << fi.absoluteFilePath();
-	} else {
-		files << path;
-	}
-
-	if (files.isEmpty()) {
-		grid_result->setText("<i>No image files found at the selected path.</i>");
+	if (!QFileInfo(path).isFile()) {
+		grid_result->setText("<i>Selected path is not a file.</i>");
 		return;
 	}
+	QStringList files = { path };
 
 	// 3D object points for one view (Z=0 plane, square side = 1 unit)
 	std::vector<cv::Point3f> objPt;
@@ -511,11 +476,42 @@ void CalDistortionFrame::runGridCalibration() {
 		return;
 	}
 
-	// Run calibration
-	cv::Mat K = cv::Mat::eye(3, 3, CV_64F);
-	cv::Mat dist;
+	// Estimate focal length in pixels from the first valid image's EXIF / RAW metadata.
+	// We fix it (along with the principal point at image centre) so that a single-view
+	// checkerboard session doesn't produce a degenerate fit.
+	double focal_px = 0;
+	for (const QString &fp : files) {
+		cv::Mat probe = loadAsGrayCvMat(fp);
+		if (!probe.empty()) {
+			focal_px = focalLengthPixels(fp, probe.cols);
+			break;
+		}
+	}
+
+	// Build the intrinsic guess (OpenCV convention: fx=fy, cx=W/2, cy=H/2).
+	// If we could not determine focal we let calibrateCamera estimate it freely.
+	bool focalFixed = (focal_px > 0);
+	if (!focalFixed)
+		focal_px = imgSize.width * 1.2; // rough starting guess
+
+	cv::Mat K = (cv::Mat_<double>(3, 3)
+		<< focal_px, 0,          imgSize.width  / 2.0,
+		   0,        focal_px,   imgSize.height / 2.0,
+		   0,        0,          1.0);
+	cv::Mat dist = cv::Mat::zeros(1, 5, CV_64F);
+
+	// Calibration flags:
+	//  - always provide an intrinsic guess
+	//  - fix focal & principal point when we read them from EXIF (prevents
+	//    degenerate solutions with single-plane data)
+	//  - always fix k3: a single planar view doesn't constrain it reliably
+	int flags = cv::CALIB_USE_INTRINSIC_GUESS | cv::CALIB_FIX_K3;
+	if (focalFixed)
+		flags |= cv::CALIB_FIX_FOCAL_LENGTH | cv::CALIB_FIX_PRINCIPAL_POINT;
+
 	std::vector<cv::Mat> rvecs, tvecs;
-	double rms = cv::calibrateCamera(objPoints, imgPoints, imgSize, K, dist, rvecs, tvecs);
+	double rms = cv::calibrateCamera(objPoints, imgPoints, imgSize,
+	                                 K, dist, rvecs, tvecs, flags);
 
 	// dist layout: [k1, k2, p1, p2, k3, k4, k5, k6, s1, s2, s3, s4, tx, ty]
 	auto D = [&](int i) -> double {
@@ -523,28 +519,36 @@ void CalDistortionFrame::runGridCalibration() {
 	};
 	double k1 = D(0), k2 = D(1), p1 = D(2), p2 = D(3), k3 = D(4);
 
-	// Update preview: draw detected corners on the last good image
+	// Update preview: show the last accepted image with corner dots overlaid
 	if (!lastGray.empty()) {
-		cv::Mat vis;
-		cv::cvtColor(lastGray, vis, cv::COLOR_GRAY2BGR);
-		cv::drawChessboardCorners(vis, board, lastCorners, true);
-		// Convert cv::Mat BGR to QImage RGB
-		QImage qi(vis.data, vis.cols, vis.rows, (int)vis.step, QImage::Format_BGR888);
-		QPixmap pm = QPixmap::fromImage(qi)
-			.scaled(grid_preview->width(), grid_preview->height(),
-			        Qt::KeepAspectRatio, Qt::SmoothTransformation);
-		grid_preview->setPixmap(pm);
+		// Convert greyscale → RGB QImage for display
+		cv::Mat rgb;
+		cv::cvtColor(lastGray, rgb, cv::COLOR_GRAY2RGB);
+		QImage qi(rgb.data, rgb.cols, rgb.rows, (int)rgb.step, QImage::Format_RGB888);
+		grid_preview->setImage(QPixmap::fromImage(qi.copy()));
+
+		// Convert cv::Point2f corners to QPointF and pass to the view
+		std::vector<QPointF> qpts;
+		qpts.reserve(lastCorners.size());
+		for (const auto &p : lastCorners)
+			qpts.push_back({(qreal)p.x, (qreal)p.y});
+		grid_preview->setCorners(qpts, cols);
+		grid_preview->fit();
 	}
+
+	QString focalInfo = focalFixed
+		? QString("Focal: <b>%1 px</b> (from EXIF)").arg(focal_px, 0, 'f', 1)
+		: QString("Focal: <b>%1 px</b> <span style='color:orange'>(estimated — EXIF not found)</span>")
+		  .arg(K.at<double>(0,0), 0, 'f', 1);
 
 	QString html = QString(
 		"<b>Calibration result</b> &mdash; "
 		"RMS reprojection error: <b>%1 px</b> &nbsp;|&nbsp; "
 		"%2 image(s) used"
-		"%3"
+		"%3<br>%4"
 		"<table cellspacing=\"4\" style='margin-top:6px'>"
-		"<tr><td><b>k1</b></td><td>%4</td></tr>"
-		"<tr><td><b>k2</b></td><td>%5</td></tr>"
-		"<tr><td><b>k3</b></td><td>%6</td></tr>"
+		"<tr><td><b>k1</b></td><td>%5</td></tr>"
+		"<tr><td><b>k2</b></td><td>%6</td></tr>"
 		"<tr><td><b>p1</b></td><td>%7</td></tr>"
 		"<tr><td><b>p2</b></td><td>%8</td></tr>"
 		"</table>")
@@ -553,7 +557,8 @@ void CalDistortionFrame::runGridCalibration() {
 		.arg(skipped > 0
 			? QString(" <span style='color:orange'>(%1 skipped)</span>").arg(skipped)
 			: QString())
-		.arg(k1, 0, 'g', 6).arg(k2, 0, 'g', 6).arg(k3, 0, 'g', 6)
+		.arg(focalInfo)
+		.arg(k1, 0, 'g', 6).arg(k2, 0, 'g', 6)
 		.arg(p1, 0, 'g', 6).arg(p2, 0, 'g', 6);
 
 	grid_result->setText(html);
@@ -624,6 +629,69 @@ void CalDistortionFrame::updatePreview(const QString &path, QLabel *target) {
 			target->width(), target->height(),
 			Qt::KeepAspectRatio, Qt::SmoothTransformation));
 	}
+}
+
+// ---------------------------------------------------------------------------
+// focalLengthPixels
+// Returns focal length in pixels estimated from EXIF / LibRaw metadata.
+// imgWidth is the decoded image width in pixels.
+// Returns 0 when the focal length cannot be reliably determined.
+// ---------------------------------------------------------------------------
+static double focalLengthPixels(const QString &path, int imgWidth) {
+	if (imgWidth <= 0) return 0;
+
+	double focal_mm = 0;
+	double focalPlaneXRes = 0;   // raw value from EXIF
+	int    focalPlaneUnit = 2;   // 2 = inch (EXIF default), 3 = cm
+	double focal35        = 0;
+
+	// --- 1. Try EXIF embedded in file (works for JPEG, TIFF, and most RAW) ---
+	Exif exif;
+	exif.parse(path);
+	if (!exif.isEmpty()) {
+		focal_mm       = exif.value(Exif::FocalLength,               0.0).toDouble();
+		focal35        = exif.value(Exif::FocalLengthIn35mmFilm,      0.0).toDouble();
+		focalPlaneXRes = exif.value(Exif::FocalPlaneXResolution,      0.0).toDouble();
+		focalPlaneUnit = exif.value(Exif::FocalPlaneResolutionUnit,     2).toInt();
+	}
+
+	// --- 2. Supplement with LibRaw metadata for RAW files ---
+	static const QSet<QString> rawExts = {
+		"cr2","cr3","nef","nrw","arw","srf","sr2","orf","rw2","raf",
+		"dng","pef","ptx","kdc","dcr","raw","rwl","mrw","3fr","fff",
+		"iiq","x3f","erf"
+	};
+	if (rawExts.contains(QFileInfo(path).suffix().toLower())) {
+		LibRaw raw;
+		if (raw.open_file(path.toLocal8Bit().constData()) == LIBRAW_SUCCESS
+		    && raw.adjust_sizes_info_only() == LIBRAW_SUCCESS)
+		{
+			if (focal_mm <= 0 && raw.imgdata.other.focal_len > 0)
+				focal_mm = raw.imgdata.other.focal_len;
+		}
+	}
+
+	if (focal_mm <= 0) return 0;
+
+	// --- Method A: FocalPlaneXResolution lets us convert mm → pixels directly ---
+	if (focalPlaneXRes > 0) {
+		double ppmm = focalPlaneXRes;
+		if      (focalPlaneUnit == 2) ppmm /= 25.4;   // pixels/inch  → pixels/mm
+		else if (focalPlaneUnit == 3) ppmm /= 10.0;   // pixels/cm   → pixels/mm
+		// unit == 1 means "no unit" — treat value as pixels/mm already
+		if (ppmm > 0)
+			return focal_mm * ppmm;
+	}
+
+	// --- Method B: 35 mm equivalent + sensor width from crop factor ---
+	// A full-frame sensor is 36 mm wide; crop_factor = focal35 / focal_mm.
+	if (focal35 > 0) {
+		double cropFactor    = focal35 / focal_mm;
+		double sensorWidth_mm = 36.0 / cropFactor;
+		return focal_mm * imgWidth / sensorWidth_mm;
+	}
+
+	return 0;
 }
 
 // Load an image as an 8-bit greyscale cv::Mat (handles RAW via LibRaw)
