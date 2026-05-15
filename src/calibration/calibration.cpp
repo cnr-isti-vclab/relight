@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include <lensfun/lensfun.h>
+#include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 
 #include <QFile>

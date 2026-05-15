@@ -4,6 +4,8 @@
 #include <QFrame>
 #include <QPixmap>
 
+#include "gridcalibview.h"
+
 class QRadioButton;
 class QStackedWidget;
 class QLineEdit;
@@ -46,7 +48,7 @@ private:
 
 	// grid-photo page
 	QLineEdit      *grid_path       = nullptr;
-	QLabel         *grid_preview    = nullptr;
+	GridCalibView  *grid_preview    = nullptr;
 	QSpinBox       *grid_cols       = nullptr;  // inner corners horizontally
 	QSpinBox       *grid_rows       = nullptr;  // inner corners vertically
 	QLabel         *grid_result     = nullptr;
