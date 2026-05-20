@@ -407,7 +407,19 @@ void CalDistortionFrame::browseGridPhoto() {
 		"*.iiq *.x3f *.erf);;All files (*)");
 	if (!path.isEmpty()) {
 		grid_path->setText(path);
-		QPixmap pm = loadPreviewPixmap(path);
+		cv::Mat gray = loadAsGrayCvMat(path);
+		QPixmap pm;
+		if (!gray.empty()) {
+			cv::Mat thresh;
+			cv::adaptiveThreshold(gray, thresh, 255,
+			                      cv::ADAPTIVE_THRESH_GAUSSIAN_C,
+			                      cv::THRESH_BINARY, 101, 2);
+			QImage qi(thresh.data, thresh.cols, thresh.rows,
+			          (int)thresh.step, QImage::Format_Grayscale8);
+			pm = QPixmap::fromImage(qi.copy());
+		}
+		if (pm.isNull())
+			pm = loadPreviewPixmap(path);
 		if (!pm.isNull()) {
 			grid_preview->setImage(pm);
 			grid_preview->fit();
