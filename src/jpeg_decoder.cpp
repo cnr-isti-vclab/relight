@@ -13,7 +13,7 @@ JpegDecoder::~JpegDecoder() {
 }
 
 void JpegDecoder::setColorSpace(J_COLOR_SPACE colorSpace) {
-	decInfo.out_color_space = colorSpace;
+	requested_out_color_space = colorSpace;
 }
 
 
@@ -85,9 +85,13 @@ bool JpegDecoder::init(int &width, int &height) {
 	
 	// Extract ICC profile if present
 	extractICCProfile();
-	
-	//decInfo.out_color_space = colorSpace;
-	//decInfo.jpeg_color_space = jpegColorSpace;
+
+	// Apply requested output color space (must happen after jpeg_read_header
+	// which resets out_color_space to the source's color space, and before
+	// jpeg_start_decompress which derives output_components from it).
+	if(requested_out_color_space != JCS_UNKNOWN)
+		decInfo.out_color_space = requested_out_color_space;
+
 	decInfo.raw_data_out = (boolean)false;
 	
 	if(decInfo.num_components > 1) 
@@ -141,7 +145,7 @@ size_t JpegDecoder::readRows(int nrows, uint8_t *buffer) { //return false on end
 	if(decInfo.output_scanline == decInfo.image_height)
 		restart();
 
-	size_t rowSize = decInfo.image_width * decInfo.num_components;
+	size_t rowSize = decInfo.image_width * decInfo.output_components;
 	JSAMPROW rows[1];
 	size_t offset = 0;
 	int readed = 0;

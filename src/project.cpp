@@ -332,12 +332,11 @@ bool Project::rotateImage(Image &image, bool clockwise) {
 	}
 
 	JpegDecoder decoder;
+	decoder.setColorSpace(JCS_RGB);
 	int width = 0;
 	int height = 0;
 	if(!decoder.init(image.filename.toStdString().c_str(), width, height))
 		return false;
-
-	decoder.setColorSpace(JCS_RGB);
 
 	const int channels = 3;
 	uint8_t *source = new uint8_t[width * height * channels];

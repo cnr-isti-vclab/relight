@@ -19,7 +19,7 @@ public:
 	 //JCS_GRAYSCALE, JCS_RGB, JCS_YCbCr, or JCS_CMYK.
 
 	J_COLOR_SPACE getColorSpace() const;
-	void setColorSpace(J_COLOR_SPACE space);
+	void setColorSpace(J_COLOR_SPACE space);  // must be called before init()
 	J_COLOR_SPACE getJpegColorSpace() const;
 
 	bool decode(uint8_t* buffer, size_t len, uint8_t*& img, int& width, int& height);
@@ -29,7 +29,7 @@ public:
 	//file streaming reading support
 	bool init(const char* path, int &width, int &height);
 
-	size_t rowSize() const { return decInfo.image_width * decInfo.num_components; }
+	size_t rowSize() const { return decInfo.image_width * decInfo.output_components; }
 
 	//buffer must have rows*rowSize() space at least!
 	size_t readRows(int rows, uint8_t *buffer); //return false on end.
@@ -52,6 +52,7 @@ private:
 
 	bool subsampled = false;
 	std::vector<uint8_t> icc_profile;
+	J_COLOR_SPACE requested_out_color_space = JCS_UNKNOWN;
 };
 
 #endif // JPEGDECODER_H_
