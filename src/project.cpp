@@ -389,6 +389,19 @@ bool Project::rotateImage(Image &image, bool clockwise) {
 void Project::rotateImages(bool clockwise) {
 	for(Image &image: images)
 		rotateImage(image, clockwise);
+
+	// The physical image dimensions have been swapped; keep all metadata consistent.
+	imgsize.transpose();              // swap width ↔ height
+	lens.width  = imgsize.width();
+	lens.height = imgsize.height();
+
+	// Each image's recorded size must reflect the new orientation.
+	for(Image &image: images)
+		image.size = QSize(image.size.height(), image.size.width());
+
+	// Reset the crop to cover the full new image size.
+	crop.setRect(QPoint(0, 0), imgsize);
+
 	needs_saving = true;
 }
 
