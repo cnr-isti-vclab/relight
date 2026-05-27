@@ -9,15 +9,11 @@ find_package(
 	COMPONENTS Core Gui Widgets Concurrent Xml Svg
 	REQUIRED)
 find_package(OpenMP)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LENSFUN REQUIRED IMPORTED_TARGET lensfun)
 if(WIN32)
-	find_package(lensfun CONFIG REQUIRED)
-	if(NOT TARGET lensfun::lensfun)
-		add_library(lensfun::lensfun ALIAS lensfun)
-	endif()
 	find_package(libraw CONFIG REQUIRED)
 else()
-	find_package(PkgConfig REQUIRED)
-	pkg_check_modules(LENSFUN REQUIRED IMPORTED_TARGET lensfun)
 	pkg_check_modules(LibRaw REQUIRED IMPORTED_TARGET libraw)
 endif()
 find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs calib3d)
@@ -279,7 +275,7 @@ target_link_libraries(
 	        project_exiv2
 		${OpenCV_LIBS}
 		$<IF:$<BOOL:${WIN32}>,libraw::libraw,PkgConfig::LibRaw>
-		$<IF:$<BOOL:${WIN32}>,lensfun::lensfun,PkgConfig::LENSFUN>
+		PkgConfig::LENSFUN
 )
 
 target_include_directories(
