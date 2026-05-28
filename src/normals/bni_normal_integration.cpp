@@ -393,13 +393,27 @@ Eigen::VectorXd bni_integrate_iterative(std::function<bool(QString s, int n)> pr
 	return z;
 }
 
-Eigen::VectorXd bni_integrate_direct(Eigen::SparseMatrix<double> &A, Eigen::VectorXd &b, Eigen::SparseMatrix<double> &W) {
-	Eigen::SparseMatrix<double> A_mat = A.transpose()*W*A;
-	Eigen::VectorXd b_vec = A.transpose()*W*b;
+// Define BNI_USE_LDLT to use SimplicialLDLT (exact, but single-threaded).
+// Default: ConjugateGradient (iterative, uses all cores via OpenMP).
+// Note: W == 0.5*I in the direct path (k==0); the factor cancels in the solve,
+// so both implementations work on A^T A z = A^T b directly.
+//#define BNI_USE_LDLT
 
-	Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> > solver;
+Eigen::VectorXd bni_integrate_direct(Eigen::SparseMatrix<double> &A, Eigen::VectorXd &b, Eigen::SparseMatrix<double> &/*W*/) {
+	Eigen::SparseMatrix<double> A_mat = A.transpose() * A;
+	Eigen::VectorXd b_vec = A.transpose() * b;
+
+#ifdef BNI_USE_LDLT
+	Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
 	solver.compute(A_mat);
 	return solver.solve(b_vec);
+#else
+	Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> solver;
+	solver.compute(A_mat);
+	Eigen::VectorXd z = solver.solve(b_vec);
+	cout << "CG direct: iterations=" << solver.iterations() << " error=" << solver.error() << endl;
+	return z;
+#endif
 }
 
 
