@@ -47,7 +47,9 @@ public:
 
 	void start(); //start the queue if not start
 	void pause(); //pause current process.
-	void stop(); //stop cuirrent process and pause the queue.
+	void stop(); //stop current process and pause the queue.
+	void stopAndWait(); //stop current task and block until its thread exits (does NOT exit the PQ thread).
+	void cancelCurrentTask(); //stop only the running task; queue state stays RUNNING so the next task starts automatically.
 
 public slots:
 

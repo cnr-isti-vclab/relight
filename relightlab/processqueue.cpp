@@ -23,6 +23,8 @@ ProcessQueue::~ProcessQueue() {
 		current->stop();
 	if(isRunning())
 		wait();
+	if(current)
+		current->wait();
 }
 
 void ProcessQueue::run() {
@@ -205,6 +207,39 @@ void ProcessQueue::stop() {
 	{
 		QMutexLocker locker(&lock);
 		state = STOPPED;
+		current = task;
+	}
+	if(current)
+		current->stop();
+	emit update();
+}
+
+void ProcessQueue::stopAndWait() {
+	Task *current = nullptr;
+	{
+		QMutexLocker locker(&lock);
+		state = STOPPED;
+		current = task;
+	}
+	if(current) {
+		current->stop();
+		current->wait(); // block until task thread exits
+		while(true) {
+			lock.lock();
+			bool cleared = (task != current);
+			lock.unlock();
+			if(cleared) break;
+			QThread::msleep(5);
+		}
+	}
+}
+
+void ProcessQueue::cancelCurrentTask() {
+	// Stop only the running task without touching state, so the thread
+	// automatically picks up the next queued item when this one finishes.
+	Task *current = nullptr;
+	{
+		QMutexLocker locker(&lock);
 		current = task;
 	}
 	if(current)

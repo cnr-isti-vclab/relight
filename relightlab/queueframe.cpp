@@ -15,6 +15,7 @@
 #include <QJsonObject>
 #include <QToolButton>
 #include <QSize>
+#include <QMessageBox>
 
 
 
@@ -77,7 +78,20 @@ void QueueFrame::pauseQueue() {
 }
 
 void QueueFrame::stopQueue() {
-	ProcessQueue::instance().stop();
+	ProcessQueue &queue = ProcessQueue::instance();
+	bool hasRunning = false;
+	{
+		QMutexLocker lk(&queue.lock);
+		hasRunning = (queue.task != nullptr);
+	}
+	if(hasRunning) {
+		auto answer = QMessageBox::question(this, "Stop queue",
+			"Stopping the queue will cancel the currently running job. Continue?",
+			QMessageBox::Yes | QMessageBox::No);
+		if(answer != QMessageBox::Yes)
+			return;
+	}
+	queue.stop();
 }
 
 void QueueFrame::taskFinished(QJsonObject task) {
@@ -93,13 +107,19 @@ void QueueFrame::updateLists() {
 	rebuildHistoryList();
 
 	ProcessQueue &queue = ProcessQueue::instance();
-	ProcessQueue::State queueState = queue.state;
+	ProcessQueue::State queueState;
+	bool hasRunningTask;
+	{
+		QMutexLocker lk(&queue.lock);
+		queueState     = queue.state;
+		hasRunningTask = (queue.task != nullptr);
+	}
 	if(actionStart)
 		actionStart->setEnabled(queueState != ProcessQueue::RUNNING || !queue.hasTasks());
 	if(actionPause)
 		actionPause->setEnabled(queueState == ProcessQueue::RUNNING);
 	if(actionStop)
-		actionStop->setEnabled(queueState == ProcessQueue::RUNNING || queue.task != nullptr);
+		actionStop->setEnabled(queueState == ProcessQueue::RUNNING || hasRunningTask);
 
 	updateToolbarState();
 
@@ -111,7 +131,8 @@ void QueueFrame::rebuildActiveList() {
 
 	{
 		QMutexLocker lock(&queue.lock);
-		if(queue.task && queue.task->visible)
+		if(queue.task && queue.task->visible &&
+				(queue.task->status == Task::RUNNING || queue.task->status == Task::PAUSED))
 			activeTasks.append(queue.task);
 		for(Task *task: queue.queue) {
 			if(task->visible)

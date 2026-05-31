@@ -341,8 +341,13 @@ void QueueItem::handleRemove() {
 		}
 	} else {
 		ProcessQueue &queue = ProcessQueue::instance();
-		if(queue.task == task)
-			queue.stop();
+		bool isRunning = false;
+		{
+			QMutexLocker lk(&queue.lock);
+			isRunning = (queue.task == task);
+		}
+		if(isRunning)
+			queue.cancelCurrentTask(); // stop task only; queue keeps running
 		else
 			queue.removeTask(task);
 	}

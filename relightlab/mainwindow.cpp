@@ -67,6 +67,7 @@ MainWindow::MainWindow() {
 	connect(normals_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
 
 	setCentralWidget(tabs);
+	setMinimumSize(1024, 800);
 }
 
 void MainWindow::showQueue() {
