@@ -97,6 +97,31 @@ void IfdHeader::parse(QDataStream &stream, quint32 startPos) {
 }
 
 void Exif::parse(const QString &filename) {
+
+	try {
+		Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open(filename.toStdString());
+
+		image->readMetadata();
+		exifData = image->exifData();
+
+	} catch (const Exiv2::Error& e) {
+	// This catches Exiv2-specific errors (Code 9 is usually "File not found")
+		throw QString(e.what());
+	}catch (const std::exception& e) {
+		throw QString(e.what());
+	}
+
+	//DEBUG!
+	// Fetch Focal Length using a safe lookup
+	{
+		auto it = exifData.findKey(Exiv2::ExifKey("Exif.Photo.FocalLength"));
+		if (it != exifData.end()) {
+			std::cout << "Focal Length: " << it->value() << "mm" << std::endl;
+		} else {
+			std::cout << "Focal Length: (not present)" << std::endl;
+		}
+	}
+
 	QFile file(filename);
 	if(!file.open(QIODevice::ReadOnly))
 		throw QString("Could not open file: " + filename);

@@ -18,7 +18,7 @@ unix::QMAKE_CXXFLAGS = -fopenmp
 unix:INCLUDEPATH += ../external/eigen-3.3.9/ ../src/
 #opencv not needed for the moment
 #unix:INCLUDEPATH += /usr/include/opencv4
-unix:LIBS += -ljpeg -ltiff -lpng -llcms2
+unix:LIBS += -ljpeg -ltiff -lpng -llcms2 -lexiv2
 #opencv not needed for the moment
 #unix:LIBS += -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_video
 unix::LIBS += -fopenmp #-lgomp

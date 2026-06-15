@@ -6,6 +6,9 @@
 #include <QVariant>
 #include <QVector>
 #include <QByteArray>
+
+#include <exiv2/exiv2.hpp>
+
 class IfdHeader {
 public:
 	enum Type {
@@ -27,8 +30,11 @@ public:
 	void parse(QDataStream &stream, quint32 startPos);
 };
 
+
 class Exif: public QMap<quint16, QVariant> {
 public:
+	Exiv2::ExifData exifData;
+
 	enum Tag {
 
 		ExifIfdPointer = 0x8769,
