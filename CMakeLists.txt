@@ -83,6 +83,29 @@ find_package(LCMS2 REQUIRED)
 message(STATUS "Using LittleCMS2 include dirs: ${LCMS2_INCLUDE_DIRS}")
 
 
+find_package(Exiv2 CONFIG QUIET)
+if(TARGET Exiv2::exiv2)
+    set(EXIV2_FOUND_TARGET Exiv2::exiv2)
+elseif(TARGET Exiv2::Exiv2)
+    set(EXIV2_FOUND_TARGET Exiv2::Exiv2)
+else()
+    # Fall back to pkg-config
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(EXIV2_PKG QUIET IMPORTED_TARGET exiv2)
+    
+    # FIX: Match the prefix 'EXIV2_PKG' used above
+    if(TARGET PkgConfig::EXIV2_PKG)
+        set(EXIV2_FOUND_TARGET PkgConfig::EXIV2_PKG)
+    else()
+        message(FATAL_ERROR "Exiv2 not found. Install Exiv2 or ensure pkg-config exposes 'exiv2'.")
+    endif()
+endif()
+
+# Create your global wrapper and link it to the found target
+add_library(project_exiv2 INTERFACE)
+target_link_libraries(project_exiv2 INTERFACE ${EXIV2_FOUND_TARGET})
+
+
 # Version information
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/RELIGHT_VERSION")
     # Version is read from RELIGHT_VERSION file

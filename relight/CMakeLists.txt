@@ -188,7 +188,8 @@ target_link_libraries(
 		${RELIGHT_QT}::Concurrent
 		${RELIGHT_QT}::Xml
 		${LCMS2_LIBRARIES}
-	)
+		project_exiv2
+		)
 
 target_include_directories(relight PRIVATE ${LCMS2_INCLUDE_DIRS})
 target_compile_definitions(relight PUBLIC HAVE_LCMS2)

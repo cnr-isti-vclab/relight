@@ -86,6 +86,8 @@ target_link_libraries(
 		${RELIGHT_QT}::Concurrent
 		${LCMS2_LIBRARIES})
 
+target_link_libraries(relight-merge PUBLIC project_exiv2)
+
 target_include_directories(relight-merge PRIVATE ${LCMS2_INCLUDE_DIRS})
 target_compile_definitions(relight-merge PUBLIC HAVE_LCMS2)
 
