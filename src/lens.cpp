@@ -112,11 +112,13 @@ void Lens::fromJson(const QJsonObject &obj) {
 void Lens::readExif(Exif &exif) {
 	focal35equivalent = true;
 
-	// 1. Get the physical focal length
 	focalLength = exif[Exif::FocalLength].toDouble();
+	assert(exif.getValue("Exif.Image.FocalLength", 0.0).toDouble() == focalLength);
 
 	// 1. Get original dimensions from EXIF, not the current image size (it might have been scaled)
+	//Exif.Photo.PixelXDimension
 	double originalWidth = exif[Exif::PixelXDimension].toDouble();
+	//Exif.Photo.PixelYDimension
 	double originalHeight = exif[Exif::PixelYDimension].toDouble();
 
 	if(!originalWidth) {
@@ -125,8 +127,11 @@ void Lens::readExif(Exif &exif) {
 	}
 
 	// 2. Get Focal Plane details
+	//Exif.Photo.FocalPlaneXResolution
 	double focalPlaneXRes = exif[Exif::FocalPlaneXResolution].toDouble();
+	//Exif.Photo.FocalPlaneYResolution
 	double focalPlaneYRes = exif[Exif::FocalPlaneYResolution].toDouble();
+	//Exif.Photo.FocalPlaneResolutionUnit
 	double focalPlaneResUnit = exif[Exif::FocalPlaneResolutionUnit].toDouble();
 
 	double unitToMm = (focalPlaneResUnit == 3) ? 10.0 : 25.4;
@@ -139,6 +144,7 @@ void Lens::readExif(Exif &exif) {
 
 		// 3. Calculate 35mm Equivalent Focal Length
 		// This is a property of the lens/sensor combo and does NOT change with resizing
+		//Exif.Image.FocalLength
 		focalLength = exif[Exif::FocalLength].toDouble();
 #ifdef USING_DIAGONAL
 		double cropFactor = 43.27 / sensorDiag;

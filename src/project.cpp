@@ -170,6 +170,7 @@ bool Project::scanDir() {
 			image.readExif(exif);
 			image_lens.readExif(exif);
 			// ColorSpace tag: 1 = sRGB, 0xFFFF = uncalibrated/unspecified
+			//Exif.Photo.ColorSpace
 			if(exif.value(Exif::ColorSpace, 0xFFFF).toUInt() == 1)
 				is_exif_srgb = true;
 
@@ -322,6 +323,7 @@ bool Project::rotateImage(Image &image, bool clockwise) {
 	try {
 		Exif exif;
 		exif.parse(image.filename);
+		//Exif.Image.Orientation
 		uint16_t old_orientation = uint16_t(exif.value(Exif::Orientation, 1).toUInt());
 		new_orientation = Exif::rotateOrientation(old_orientation, clockwise);
 		has_exif = Exif::extractApp1Payload(image.filename, exif_payload);

@@ -81,30 +81,34 @@ message(STATUS "Using PNG library: ${PNG_LIBRARIES}")
 # LittleCMS2 setup (mandatory)
 find_package(LCMS2 REQUIRED)
 message(STATUS "Using LittleCMS2 include dirs: ${LCMS2_INCLUDE_DIRS}")
-
-
-if(WIN32)
-    find_package(exiv2 CONFIG REQUIRED)
-else()
+# 1. Try to find the CMake config files (checks lowercase 'exiv2' then uppercase 'Exiv2')
+find_package(exiv2 CONFIG QUIET)
+if(NOT exiv2_FOUND)
     find_package(Exiv2 CONFIG QUIET)
 endif()
 
-if(TARGET Exiv2::exiv2)
+# 2. Map the targets based on what was found
+if(TARGET exiv2::exiv2)
+    set(EXIV2_FOUND_TARGET exiv2::exiv2)
+elseif(TARGET Exiv2::exiv2)
     set(EXIV2_FOUND_TARGET Exiv2::exiv2)
 elseif(TARGET Exiv2::Exiv2)
     set(EXIV2_FOUND_TARGET Exiv2::Exiv2)
+
+# 3. If NO CMake targets were found, fall back to pkg-config (Linux)
 else()
-    # Fall back to pkg-config
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(EXIV2_PKG QUIET IMPORTED_TARGET exiv2)
-    
-    # FIX: Match the prefix 'EXIV2_PKG' used above
-    if(TARGET PkgConfig::EXIV2_PKG)
-        set(EXIV2_FOUND_TARGET PkgConfig::EXIV2_PKG)
-    else()
-        message(FATAL_ERROR "Exiv2 not found. Install Exiv2 or ensure pkg-config exposes 'exiv2'.")
+    # Guard against Windows entering this fallback and throwing a confusing PkgConfig error
+    if(WIN32)
+        message(FATAL_ERROR "Exiv2 configuration files not found. Ensure it is installed via vcpkg.")
     endif()
+
+    message(STATUS "Exiv2 CMake config not found. Falling back to pkg-config...")
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(EXIV2_PKG REQUIRED IMPORTED_TARGET exiv2)
+    set(EXIV2_FOUND_TARGET PkgConfig::EXIV2_PKG)
 endif()
+
+message(STATUS "Selected Exiv2 Target: ${EXIV2_FOUND_TARGET}")
 
 # Create your global wrapper and link it to the found target
 add_library(project_exiv2 INTERFACE)
