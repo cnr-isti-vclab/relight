@@ -83,7 +83,12 @@ find_package(LCMS2 REQUIRED)
 message(STATUS "Using LittleCMS2 include dirs: ${LCMS2_INCLUDE_DIRS}")
 
 
-find_package(Exiv2 CONFIG QUIET)
+if(WIN32)
+    find_package(exiv2 CONFIG REQUIRED)
+else()
+    find_package(Exiv2 CONFIG QUIET)
+endif()
+
 if(TARGET Exiv2::exiv2)
     set(EXIV2_FOUND_TARGET Exiv2::exiv2)
 elseif(TARGET Exiv2::Exiv2)
