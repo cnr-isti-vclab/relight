@@ -99,7 +99,10 @@ void IfdHeader::parse(QDataStream &stream, quint32 startPos) {
 void Exif::parse(const QString &filename) {
 
 	try {
-		Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open(filename.toStdString());
+		auto image = Exiv2::ImageFactory::open(filename.toStdString());
+		if (!image.get()) {
+			throw QString("Could not open image: " + filename);
+		}
 
 		image->readMetadata();
 		exifData = image->exifData();
