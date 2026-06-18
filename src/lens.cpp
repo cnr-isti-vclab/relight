@@ -113,13 +113,16 @@ void Lens::readExif(Exif &exif) {
 	focal35equivalent = true;
 
 	focalLength = exif[Exif::FocalLength].toDouble();
-	assert(exif.getValue("Exif.Image.FocalLength", 0.0).toDouble() == focalLength);
+
+	double f = exif.getValue("Exif.Photo.FocalLength", 0.0).toDouble();
+	assert(f == focalLength);
 
 	// 1. Get original dimensions from EXIF, not the current image size (it might have been scaled)
-	//Exif.Photo.PixelXDimension
+	//
 	double originalWidth = exif[Exif::PixelXDimension].toDouble();
-	//Exif.Photo.PixelYDimension
+	assert(exif.getValue("Exif.Photo.PixelXDimension", 0.0).toDouble() == originalWidth);
 	double originalHeight = exif[Exif::PixelYDimension].toDouble();
+	assert(exif.getValue("Exif.Photo.PixelYDimension", 0.0).toDouble() == originalHeight);
 
 	if(!originalWidth) {
 		originalWidth = width;
@@ -127,12 +130,15 @@ void Lens::readExif(Exif &exif) {
 	}
 
 	// 2. Get Focal Plane details
-	//Exif.Photo.FocalPlaneXResolution
 	double focalPlaneXRes = exif[Exif::FocalPlaneXResolution].toDouble();
-	//Exif.Photo.FocalPlaneYResolution
+	assert(exif.getValue("Exif.Photo.FocalPlaneXResolution", 0.0).toDouble() == focalPlaneXRes);
+
 	double focalPlaneYRes = exif[Exif::FocalPlaneYResolution].toDouble();
-	//Exif.Photo.FocalPlaneResolutionUnit
+	assert(exif.getValue("Exif.Photo.FocalPlaneYResolution", 0.0).toDouble() == focalPlaneYRes);
+
 	double focalPlaneResUnit = exif[Exif::FocalPlaneResolutionUnit].toDouble();
+	assert(exif.getValue("Exif.Photo.FocalPlaneResolutionUnit", 0.0).toDouble() == focalPlaneResUnit);
+
 
 	double unitToMm = (focalPlaneResUnit == 3) ? 10.0 : 25.4;
 

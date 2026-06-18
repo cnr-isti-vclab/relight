@@ -397,27 +397,100 @@ Eigen::VectorXd bni_integrate_iterative(std::function<bool(QString s, int n)> pr
 // Default: ConjugateGradient (iterative, uses all cores via OpenMP).
 // Note: W == 0.5*I in the direct path (k==0); the factor cancels in the solve,
 // so both implementations work on A^T A z = A^T b directly.
-//#define BNI_USE_LDLT
+#define BNI_USE_LDLT
 
-Eigen::VectorXd bni_integrate_direct(Eigen::SparseMatrix<double> &A, Eigen::VectorXd &b, Eigen::SparseMatrix<double> &/*W*/) {
+bool bni_integrate_direct(std::function<bool(QString s, int n)> progressed, Eigen::SparseMatrix<double> &A, Eigen::VectorXd &b, Eigen::SparseMatrix<double> &/*W*/, Eigen::VectorXd &z) {
 	Eigen::SparseMatrix<double> A_mat = A.transpose() * A;
 	Eigen::VectorXd b_vec = A.transpose() * b;
+
 
 #ifdef BNI_USE_LDLT
 	Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
 	solver.compute(A_mat);
-	return solver.solve(b_vec);
+	z = solver.solve(b_vec);
+
+	// --- MANUAL ERROR CALCULATION ---
+	// Calculate the residual vector: r = A_mat * z - b_vec
+	Eigen::VectorXd residual = (A_mat * z) - b_vec;
+
+	// Calculate relative residual norm: ||r|| / ||b||
+	double ldlt_error = residual.norm() / b_vec.norm();
+
+	std::cout << "LDLT Direct Solver completed." << std::endl;
+	std::cout << "Calculated Relative Error: " << ldlt_error << std::endl;
 #else
-	Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> solver;
+	A_mat.diagonal().array() += 1e-5;
+	// Use DiagonalPreconditioner (Jacobi) instead of the default IdentityPreconditioner
+	Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper, Eigen::DiagonalPreconditioner<double>> solver;
+	//Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> solver;
 	solver.compute(A_mat);
-	Eigen::VectorXd z = solver.solve(b_vec);
-	cout << "CG direct: iterations=" << solver.iterations() << " error=" << solver.error() << endl;
-	return z;
+	if (solver.info() != Eigen::Success) {
+		throw std::string("Matrix decomposition failed!");
+	}
+
+	z = Eigen::VectorXd::Zero(b_vec.size()); // Initial guess
+
+	double initial_error = 1.0;
+	double tol = solver.tolerance();
+
+	if (tol <= 0.0) tol = 1e-12;
+	double log_tol = std::log10(tol);
+	double log_initial = std::log10(initial_error);
+	double log_range = log_initial - log_tol;
+
+	int total_max_iters = solver.maxIterations();
+	int current_iter = 0;
+	int chunk_iters = 100; // Check progress every 5 iterations
+
+	if (progressed && !progressed("Integrating normals...", 0)) {
+		return false;
+	}
+
+	while (current_iter < total_max_iters) {
+		solver.setMaxIterations(chunk_iters);
+
+		// Run a chunk of iterations and update z
+		z = solver.solveWithGuess(b_vec, z);
+		current_iter += solver.iterations();
+
+		double current_error = solver.error();
+
+		// Calculate logarithmic progress
+		int progress_pct = 0;
+		if (current_error < initial_error && log_range > 0.0) {
+			double log_current = std::log10(std::max(current_error, tol));
+			double fraction = (log_current - log_tol) / log_range;
+			progress_pct = static_cast<int>(100.0 * (1.0 - fraction));
+			progress_pct = std::clamp(progress_pct, 0, 100);
+			std::cout  << "Current: " << current_error << " tol: " << tol << std::endl;
+		}
+
+		if (progressed) {
+			if (!progressed("Integrating normals...", progress_pct))
+				return false;
+		}
+
+		// Check for convergence
+		if (solver.info() == Eigen::Success || current_error <= tol) {
+			break;
+		}
+
+		// If the solver stalled and isn't making progress, break to avoid infinite loop
+		if (solver.iterations() == 0) {
+			break;
+		}
+	}
+
+	if (progressed) {
+		progressed("Integrating normals... Done.", 100);
+	}
 #endif
+	return true;
+
 }
 
 
-void bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int h, std::vector<Eigen::Vector3f> &normalmap, std::vector<float> &heights,
+bool bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int h, std::vector<Eigen::Vector3f> &normalmap, std::vector<float> &heights,
 				   double k,
 				   double tolerance,
 				   double solver_tolerance,
@@ -496,12 +569,15 @@ void bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int 
 
 	Eigen::VectorXd z;
 
-	if(k == 0.0)
-		z = bni_integrate_direct(A, b, W);
-	else
+	if(k == 0.0) {
+		bool proceed = bni_integrate_direct(progressed, A, b, W, z);
+		if(!proceed)
+			return false;
+	} else
 		z = bni_integrate_iterative(progressed, A, b, W, k, tolerance, solver_tolerance, max_iterations, max_solver_iterations);
 
 	heights.resize(w*h);
 	for(int i = 0; i < w*h; i++)
 		heights[i] = z(i);
+	return true;
 }

@@ -250,10 +250,18 @@ void NormalsTask::run() {
 			return;
 
 		vector<float> z;
-		if(parameters.surface_integration == SURFACE_BNI)
-			bni_integrate(callback, width, height, normals, z, parameters.bni_k);
-		else {
+		if(parameters.surface_integration == SURFACE_BNI) {
+			try {
+				bool proceed = bni_integrate(callback, width, height, normals, z, parameters.bni_k);
+				if(!proceed)
+					return;
+			} catch(std::string err) {
+				error = err.c_str();
+				status = FAILED;
+				return;
+			}
 
+		} else {
 			try {
 				fft_integrate(callback, width, height, normals, z);
 			} catch(std::length_error e) {
