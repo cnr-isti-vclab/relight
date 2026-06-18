@@ -10,14 +10,31 @@
 #include <iostream>
 
 #include <tiffio.h>
+#include "../relight_threadpool.h"
+#include <thread>
+#include <mutex>
+#include <algorithm>
+#include <limits>
 
 /* TODO: try this lib:
 https://amgcl.readthedocs.io/en/latest/tutorial/poisson3Db.html
 */
 
-typedef Eigen::Triplet<double> Triple;
-
 using namespace std;
+
+using ProgressCallback = std::function<bool(QString s, int n)>;
+using Triple = Eigen::Triplet<double>;
+using RowMatrixXd = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+
+static Eigen::SparseMatrix<double> BuildDerivativeMatrix(int w, int h, std::function<double(int,int)> nzAt);
+
+bool IntegrateNormalsWithScaffold(
+	const RowMatrixXd &global_nx,
+	const RowMatrixXd &global_ny,
+	const RowMatrixXd &global_nz,
+	const RowMatrixXd &upsampled_scaffold, // Pre-calculated, matches global dimensions
+	RowMatrixXd &global_depth,
+	ProgressCallback progressed);
 
 double sigmoid(const double x, const double k = 1.0) {
 	return 1.0 / (1.0 + exp(-x*k));
@@ -185,7 +202,7 @@ bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &d
 	}
 	return true;
 }
-
+/* old code
 template <class T>
 void bilinear_interpolation(T *data, uint32_t input_width,
 							uint32_t input_height, uint32_t output_width,
@@ -227,11 +244,59 @@ void bilinear_interpolation(T *data, uint32_t input_width,
 			output[i * output_width + j] = pixel;
 		}
 	}
+} */
+
+template <class T>
+void bilinear_interpolation(T *data, uint32_t input_width,
+							uint32_t input_height, uint32_t output_width,
+							uint32_t output_height, T *output) {
+	float x_ratio = (output_width > 1)  ? ((float)input_width - 1.0f) / ((float)output_width - 1.0f) : 0.0f;
+	float y_ratio = (output_height > 1) ? ((float)input_height - 1.0f) / ((float)output_height - 1.0f) : 0.0f;
+
+	for (uint32_t i = 0; i < output_height; i++) {
+		float y_pos = y_ratio * (float)i;
+		int y_l = (int)y_pos;
+		int y_h = std::min(y_l + 1, (int)input_height - 1);
+		float y_weight = y_pos - (float)y_l;
+
+		// Edge case safety check for the absolute bottom edge pixel row
+		if (y_l >= (int)input_height - 1) {
+			y_l = input_height - 1;
+			y_h = input_height - 1;
+			y_weight = 0.0f;
+		}
+
+		for (uint32_t j = 0; j < output_width; j++) {
+			float x_pos = x_ratio * (float)j;
+			int x_l = (int)x_pos;
+			int x_h = std::min(x_l + 1, (int)input_width - 1);
+			float x_weight = x_pos - (float)x_l;
+
+			// Edge case safety check for the absolute right edge pixel column
+			if (x_l >= (int)input_width - 1) {
+				x_l = input_width - 1;
+				x_h = input_width - 1;
+				x_weight = 0.0f;
+			}
+
+			T a = data[y_l * input_width + x_l];
+			T b = data[y_l * input_width + x_h];
+			T c = data[y_h * input_width + x_l];
+			T d = data[y_h * input_width + x_h];
+
+			T pixel = a * (1.0f - x_weight) * (1.0f - y_weight) +
+					  b * x_weight * (1.0f - y_weight) +
+					  c * y_weight * (1.0f - x_weight) +
+					  d * x_weight * y_weight;
+
+			output[i * output_width + j] = pixel;
+		}
+	}
 }
 
 void bilinear_interpolation3f(Eigen::Vector3f *data, uint32_t input_width,
-							uint32_t input_height, uint32_t output_width,
-							uint32_t output_height, Eigen::Vector3f *output) {
+							  uint32_t input_height, uint32_t output_width,
+							  uint32_t output_height, Eigen::Vector3f *output) {
 	return bilinear_interpolation<Eigen::Vector3f>(data, input_width, input_height,
 												   output_width, output_height, output);
 }
@@ -320,9 +385,9 @@ std::vector<float> bni_pyramid(std::function<bool(QString s, int n)> progressed,
 
 
 Eigen::VectorXd bni_integrate_iterative(std::function<bool(QString s, int n)> progressed, Eigen::SparseMatrix<double> &A, Eigen::VectorXd &b, Eigen::SparseMatrix<double> W,
-							 double k,
-							 double tolerance, double solver_tolerance,
-							 int max_iterations, int max_solver_iterations) {
+										double k,
+										double tolerance, double solver_tolerance,
+										int max_iterations, int max_solver_iterations) {
 
 	int n = b.size()/4;
 
@@ -393,100 +458,15 @@ Eigen::VectorXd bni_integrate_iterative(std::function<bool(QString s, int n)> pr
 	return z;
 }
 
-// Define BNI_USE_LDLT to use SimplicialLDLT (exact, but single-threaded).
-// Default: ConjugateGradient (iterative, uses all cores via OpenMP).
-// Note: W == 0.5*I in the direct path (k==0); the factor cancels in the solve,
-// so both implementations work on A^T A z = A^T b directly.
-#define BNI_USE_LDLT
 
-bool bni_integrate_direct(std::function<bool(QString s, int n)> progressed, Eigen::SparseMatrix<double> &A, Eigen::VectorXd &b, Eigen::SparseMatrix<double> &/*W*/, Eigen::VectorXd &z) {
+bool bni_integrate_direct(std::function<bool(QString s, int n)> progressed, Eigen::SparseMatrix<double> &A, Eigen::VectorXd &b, Eigen::VectorXd &z) {
 	Eigen::SparseMatrix<double> A_mat = A.transpose() * A;
 	Eigen::VectorXd b_vec = A.transpose() * b;
 
-
-#ifdef BNI_USE_LDLT
 	Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
 	solver.compute(A_mat);
 	z = solver.solve(b_vec);
-
-	// --- MANUAL ERROR CALCULATION ---
-	// Calculate the residual vector: r = A_mat * z - b_vec
-	Eigen::VectorXd residual = (A_mat * z) - b_vec;
-
-	// Calculate relative residual norm: ||r|| / ||b||
-	double ldlt_error = residual.norm() / b_vec.norm();
-
-	std::cout << "LDLT Direct Solver completed." << std::endl;
-	std::cout << "Calculated Relative Error: " << ldlt_error << std::endl;
-#else
-	A_mat.diagonal().array() += 1e-5;
-	// Use DiagonalPreconditioner (Jacobi) instead of the default IdentityPreconditioner
-	Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper, Eigen::DiagonalPreconditioner<double>> solver;
-	//Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> solver;
-	solver.compute(A_mat);
-	if (solver.info() != Eigen::Success) {
-		throw std::string("Matrix decomposition failed!");
-	}
-
-	z = Eigen::VectorXd::Zero(b_vec.size()); // Initial guess
-
-	double initial_error = 1.0;
-	double tol = solver.tolerance();
-
-	if (tol <= 0.0) tol = 1e-12;
-	double log_tol = std::log10(tol);
-	double log_initial = std::log10(initial_error);
-	double log_range = log_initial - log_tol;
-
-	int total_max_iters = solver.maxIterations();
-	int current_iter = 0;
-	int chunk_iters = 100; // Check progress every 5 iterations
-
-	if (progressed && !progressed("Integrating normals...", 0)) {
-		return false;
-	}
-
-	while (current_iter < total_max_iters) {
-		solver.setMaxIterations(chunk_iters);
-
-		// Run a chunk of iterations and update z
-		z = solver.solveWithGuess(b_vec, z);
-		current_iter += solver.iterations();
-
-		double current_error = solver.error();
-
-		// Calculate logarithmic progress
-		int progress_pct = 0;
-		if (current_error < initial_error && log_range > 0.0) {
-			double log_current = std::log10(std::max(current_error, tol));
-			double fraction = (log_current - log_tol) / log_range;
-			progress_pct = static_cast<int>(100.0 * (1.0 - fraction));
-			progress_pct = std::clamp(progress_pct, 0, 100);
-			std::cout  << "Current: " << current_error << " tol: " << tol << std::endl;
-		}
-
-		if (progressed) {
-			if (!progressed("Integrating normals...", progress_pct))
-				return false;
-		}
-
-		// Check for convergence
-		if (solver.info() == Eigen::Success || current_error <= tol) {
-			break;
-		}
-
-		// If the solver stalled and isn't making progress, break to avoid infinite loop
-		if (solver.iterations() == 0) {
-			break;
-		}
-	}
-
-	if (progressed) {
-		progressed("Integrating normals... Done.", 100);
-	}
-#endif
 	return true;
-
 }
 
 
@@ -512,57 +492,98 @@ bool bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int 
 			nz(y, x) = -normalmap[pos][2];
 		}
 	}
-	//BUILD A maps which encodes half derivatives (positive, negative, dx and dy)
 
-	vector<Triple> triples;
-	int offset =0;
+	/* If the image is large, compute a reduced "scaffold" depth map and
+	   use the scaffold-aware tiled integrator. For small images, fall
+	// through to the original direct-integrator path below which builds
+	// the full A/b system and solves it.
+	*/
+	if (w >= 512 || h >= 512) {
+		int maxDim = std::max(w, h);
+		int scale = std::max(1, maxDim / 512);
+		int sw = std::max(1, w / scale);
+		int sh = std::max(1, h / scale);
 
-	for(int y = 1; y < h; y++) {
-		for(int x = 0; x < w; x++) {
-			int pos = x + y*w;
-			triples.push_back(Triple(offset + pos, pos, -nz(y, x)));
-			triples.push_back(Triple(offset + pos, pos-w, nz(y, x)));
+		// Downsample normals into a small scaffold normal map
+		std::vector<Eigen::Vector3f> smallNormals(sw * sh);
+		bilinear_interpolation3f(normalmap.data(), w, h, sw, sh, smallNormals.data());
+
+		// Build local A/b for the small problem and solve directly to get coarse depths
+		int n_small = sw * sh;
+		Eigen::VectorXd nx_s(n_small);
+		Eigen::VectorXd ny_s(n_small);
+		Eigen::MatrixXd nz_s(sh, sw);
+		for (int y = 0; y < sh; ++y) {
+			for (int x = 0; x < sw; ++x) {
+				int pos = x + y * sw;
+				nx_s(pos) = smallNormals[pos][1];
+				ny_s(pos) = smallNormals[pos][0];
+				nz_s(y, x) = -smallNormals[pos][2];
+			}
 		}
-	}
-	offset += n;
 
-	for(int y = 0; y < h-1; y++) {
-		for(int x = 0; x < w; x++) {
-			int pos = x + y*w;
-			triples.push_back(Triple(offset + pos, pos, nz(y, x)));
-			triples.push_back(Triple(offset + pos, pos+w, -nz(y, x)));
+		Eigen::SparseMatrix<double> A_small = BuildDerivativeMatrix(sw, sh, [&](int yy, int xx){ return nz_s(yy, xx); });
 
+		Eigen::VectorXd b_small(n_small * 4);
+		b_small << -nx_s, -nx_s, -ny_s, -ny_s;
+
+
+
+		Eigen::VectorXd z_small;
+		bool proceed = bni_integrate_direct(progressed, A_small, b_small, z_small);
+		if (!proceed) return false;
+
+		
+
+		// Upsample coarse depth to full resolution to create the scaffold
+		std::vector<float> smallDepth(n_small);
+		for (int i = 0; i < n_small; ++i) smallDepth[i] = static_cast<float>(z_small(i));
+		std::vector<float> upDepth(w * h);
+		bilinear_interpolation<float>(smallDepth.data(), sw, sh, w, h, upDepth.data());
+
+		// Scale depths to account for the coarser grid spacing used when solving
+		// on the downsampled scaffold. Each coarse pixel represents 'scale'
+		// fine pixels, so multiply depth values by that factor.
+		for (size_t i = 0; i < upDepth.size(); ++i)
+			upDepth[i] *= static_cast<float>(scale);
+
+		
+		RowMatrixXd upsampled_scaffold(h, w);
+		for (int y = 0; y < h; ++y)
+			for (int x = 0; x < w; ++x)
+				upsampled_scaffold(y, x) = upDepth[x + y * w];
+		
+		// Prepare full-size normal matrices for the scaffold-aware integrator
+		RowMatrixXd global_nx(h, w), global_ny(h, w), global_nz(h, w);
+		for (int y = 0; y < h; ++y) {
+			for (int x = 0; x < w; ++x) {
+				int pos = x + y * w;
+				global_nx(y, x) = nx(pos);
+				global_ny(y, x) = ny(pos);
+				global_nz(y, x) = nz(y, x);
+			}
 		}
+
+		RowMatrixXd depth;
+		if (!IntegrateNormalsWithScaffold(global_nx, global_ny, global_nz, upsampled_scaffold, depth, progressed))
+			return false;
+
+		heights.resize(w * h);
+		for (int y = 0; y < h; ++y)
+			for (int x = 0; x < w; ++x)
+				heights[x + y * w] = depth(y, x);
+
+		return true;
 	}
-	offset += n;
 
-	for(int y = 0; y < h; y++) {
-		for(int x = 0; x < w-1; x++) {
-			int pos = x + y*w;
-			triples.push_back(Triple(offset + pos, pos, -nz(y, x)));
-			triples.push_back(Triple(offset + pos, pos+1, nz(y, x)));
-		}
-	}
-	offset += n;
-
-	for(int y = 0; y < h; y++) {
-		for(int x = 1; x < w; x++) {
-			int pos = x + y*w;
-			triples.push_back(Triple(offset + pos, pos, nz(y, x)));
-			triples.push_back(Triple(offset + pos, pos-1, -nz(y, x)));
-
-		}
-	}
-	offset += n;
-
-	Eigen::SparseMatrix<double> A(n*4, n);
-	A.setFromTriplets(triples.begin(), triples.end());
+	// Build derivative-only system matrix A
+	Eigen::SparseMatrix<double> A = BuildDerivativeMatrix(w, h, [&](int yy, int xx){ return nz(yy, xx); });
 
 	Eigen::VectorXd b(n*4);
 	b << -nx, -nx, -ny, -ny;
 
 	Eigen::SparseMatrix<double> W(n*4, n*4);
-	triples.clear();
+	std::vector<Triple> triples;
 	for(int i = 0; i < n*4; i++)
 		triples.push_back(Triple(i, i, 0.5));
 	W.setFromTriplets(triples.begin(), triples.end());
@@ -570,7 +591,7 @@ bool bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int 
 	Eigen::VectorXd z;
 
 	if(k == 0.0) {
-		bool proceed = bni_integrate_direct(progressed, A, b, W, z);
+		bool proceed = bni_integrate_direct(progressed, A, b, z);
 		if(!proceed)
 			return false;
 	} else
@@ -579,5 +600,242 @@ bool bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int 
 	heights.resize(w*h);
 	for(int i = 0; i < w*h; i++)
 		heights[i] = z(i);
+	return true;
+}
+
+
+// Helper: append derivative triples (4 blocks) using a value accessor nzAt(y,x).
+static void FillDerivativeTriples(std::vector<Triple> &triples, int w, int h, std::function<double(int,int)> nzAt, int offset = 0) {
+	// Block 1: Backward Y-difference
+	for (int y = 1; y < h; y++) {
+		for (int x = 0; x < w; x++) {
+			int pos = x + y * w;
+			double v = nzAt(y, x);
+			triples.push_back(Triple(offset + pos, pos, -v));
+			triples.push_back(Triple(offset + pos, pos - w, v));
+		}
+	}
+	offset += w * h;
+
+	// Block 2: Forward Y-difference
+	for (int y = 0; y < h - 1; y++) {
+		for (int x = 0; x < w; x++) {
+			int pos = x + y * w;
+			double v = nzAt(y, x);
+			triples.push_back(Triple(offset + pos, pos, v));
+			triples.push_back(Triple(offset + pos, pos + w, -v));
+		}
+	}
+	offset += w * h;
+
+	// Block 3: Forward X-difference
+	for (int y = 0; y < h; y++) {
+		for (int x = 0; x < w - 1; x++) {
+			int pos = x + y * w;
+			double v = nzAt(y, x);
+			triples.push_back(Triple(offset + pos, pos, -v));
+			triples.push_back(Triple(offset + pos, pos + 1, v));
+		}
+	}
+	offset += w * h;
+
+	// Block 4: Backward X-difference
+	for (int y = 0; y < h; y++) {
+		for (int x = 1; x < w; x++) {
+			int pos = x + y * w;
+			double v = nzAt(y, x);
+			triples.push_back(Triple(offset + pos, pos, v));
+			triples.push_back(Triple(offset + pos, pos - 1, -v));
+		}
+	}
+}
+
+// Build derivative-only sparse matrix A (4 blocks)
+static Eigen::SparseMatrix<double> BuildDerivativeMatrix(int w, int h, std::function<double(int,int)> nzAt) {
+	int n = w * h;
+	std::vector<Triple> triples;
+	triples.reserve(n * 8);
+	FillDerivativeTriples(triples, w, h, nzAt, 0);
+	Eigen::SparseMatrix<double> A(n * 4, n);
+	A.setFromTriplets(triples.begin(), triples.end());
+	A.makeCompressed();
+	return A;
+}
+
+// Build derivative matrix with appended lambda identity block (5th block)
+static Eigen::SparseMatrix<double> BuildDerivativeMatrixWithLambda(const RowMatrixXd &tile_nz, int w, int h, double lambda) {
+	int n = w * h;
+	std::vector<Triple> triples;
+	triples.reserve(n * 9);
+	FillDerivativeTriples(triples, w, h, [&](int y, int x) { return tile_nz(y, x); }, 0);
+	int offset = 4 * n;
+	for (int i = 0; i < n; ++i) {
+		triples.push_back(Triple(offset + i, i, lambda));
+	}
+	Eigen::SparseMatrix<double> A(n * 5, n);
+	A.setFromTriplets(triples.begin(), triples.end());
+	A.makeCompressed();
+	return A;
+}
+
+Eigen::SparseMatrix<double> BuildTileMatrixWithScaffold(const RowMatrixXd& tile_nz, int w, int h, double lambda) {
+	return BuildDerivativeMatrixWithLambda(tile_nz, w, h, lambda);
+}
+/**
+ * Tiled integration that uses a pre-calculated global low-res depth scaffold
+ * alongside overlapping alpha-feathered blending to ensure flawless continuity.
+ */
+bool IntegrateNormalsWithScaffold(
+	const RowMatrixXd &global_nx,
+	const RowMatrixXd &global_ny,
+	const RowMatrixXd &global_nz,
+	const RowMatrixXd &upsampled_scaffold,
+	RowMatrixXd &global_depth,
+	ProgressCallback progressed) {
+
+	const int img_w = global_nx.cols();
+	const int img_h = global_nx.rows();
+
+	// Initialize the depth map and a matching matrix to track weight denominators
+	global_depth = RowMatrixXd::Zero(img_h, img_w);
+	RowMatrixXd global_weights = RowMatrixXd::Zero(img_h, img_w);
+
+	const int TILE_SIZE = 512;
+	const int PADDING = 32;                          // Bring padding back as an active overlap buffer
+	const int STEP_SIZE = TILE_SIZE - (2 * PADDING); // 448 pixel step size
+
+	// Soft regularization parameter guiding low-frequency structure without erasing micro-texture
+	const double LAMBDA = 0.1;
+
+	int total_tiles = std::ceil((double)img_h / STEP_SIZE) * std::ceil((double)img_w / STEP_SIZE);
+
+	RelightThreadPool pool;
+	unsigned int n_threads = std::thread::hardware_concurrency();
+	if (n_threads == 0) n_threads = 1;
+	pool.start(n_threads);
+
+	std::vector<std::future<void>> futures;
+	std::mutex write_mutex;
+
+	for (int ty = 0; ty < img_h; ty += STEP_SIZE) {
+		for (int tx = 0; tx < img_w; tx += STEP_SIZE) {
+
+			int x_start = std::max(0, tx - PADDING);
+			int y_start = std::max(0, ty - PADDING);
+			int x_end = std::min(img_w, tx - PADDING + TILE_SIZE);
+			int y_end = std::min(img_h, ty - PADDING + TILE_SIZE);
+
+			int actual_tile_w = x_end - x_start;
+			int actual_tile_h = y_end - y_start;
+
+			if (actual_tile_w <= 0 || actual_tile_h <= 0) continue;
+
+			futures.push_back(pool.queue([=, &global_nx, &global_ny, &global_nz, &upsampled_scaffold, &global_depth, &global_weights, &write_mutex]() {
+				// Use dynamic sizes matching the slice bounds to prevent zero-bleed edge artifacts
+				RowMatrixXd tile_nx = global_nx.block(y_start, x_start, actual_tile_h, actual_tile_w);
+				RowMatrixXd tile_ny = global_ny.block(y_start, x_start, actual_tile_h, actual_tile_w);
+				RowMatrixXd tile_nz = global_nz.block(y_start, x_start, actual_tile_h, actual_tile_w);
+				RowMatrixXd tile_scaffold = upsampled_scaffold.block(y_start, x_start, actual_tile_h, actual_tile_w);
+
+				int n = actual_tile_w * actual_tile_h;
+
+				// 1. Build the local 5-block system matrix
+				Eigen::SparseMatrix<double> A_tile = BuildTileMatrixWithScaffold(tile_nz, actual_tile_w, actual_tile_h, LAMBDA);
+
+				// 2. Build local right hand side 'b' safely maps layout indexes sequentially
+				Eigen::VectorXd b_tile(n * 5);
+				for (int y = 0; y < actual_tile_h; ++y) {
+					for (int x = 0; x < actual_tile_w; ++x) {
+						int idx = x + y * actual_tile_w;
+						b_tile(idx)         = -tile_nx(y, x);
+						b_tile(n + idx)     = -tile_nx(y, x);
+						b_tile(2 * n + idx) = -tile_ny(y, x);
+						b_tile(3 * n + idx) = -tile_ny(y, x);
+						b_tile(4 * n + idx) = LAMBDA * tile_scaffold(y, x);
+					}
+				}
+
+				// 3. Formulate the normal equations
+				Eigen::VectorXd W_diag = Eigen::VectorXd::Ones(n * 5);
+				W_diag.head(n * 4).array() = 0.5;
+				W_diag.tail(n).array() = 1.0;
+
+				Eigen::SparseMatrix<double> At = A_tile.transpose();
+				Eigen::SparseMatrix<double> AtW = At * W_diag.asDiagonal();
+				Eigen::SparseMatrix<double> AtWA = AtW * A_tile;
+				Eigen::VectorXd AtWb = AtW * b_tile;
+
+				AtWA.diagonal().array() += 1e-9;
+
+				// 4. Solve system analytically
+				Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> tile_solver;
+				tile_solver.compute(AtWA);
+				if (tile_solver.info() != Eigen::Success) return;
+
+				Eigen::VectorXd z_tile_flat = tile_solver.solve(AtWb);
+
+				// 5. Accumulate results into global canvas using a linear feathering blend profile
+				std::lock_guard<std::mutex> lg(write_mutex);
+				for (int y = 0; y < actual_tile_h; ++y) {
+					for (int x = 0; x < actual_tile_w; ++x) {
+						int global_x = x_start + x;
+						int global_y = y_start + y;
+
+						// Horizontal ramp calculation
+						double weight_x = 1.0;
+						if (x_start > 0 && x < PADDING) {
+							weight_x = (double)x / PADDING;
+						} else if (x_end < img_w && x >= actual_tile_w - PADDING) {
+							weight_x = (double)(actual_tile_w - 1 - x) / PADDING;
+						}
+
+						// Vertical ramp calculation
+						double weight_y = 1.0;
+						if (y_start > 0 && y < PADDING) {
+							weight_y = (double)y / PADDING;
+						} else if (y_end < img_h && y >= actual_tile_h - PADDING) {
+							weight_y = (double)(actual_tile_h - 1 - y) / PADDING;
+						}
+
+						// Combine ramps into 2D product factor
+						double blend_weight = weight_x * weight_y;
+
+						double z_val = z_tile_flat(x + y * actual_tile_w);
+						global_depth(global_y, global_x)   += z_val * blend_weight;
+						global_weights(global_y, global_x) += blend_weight;
+					}
+				}
+			}));
+		}
+	}
+
+	// Wait for tasks and report progress
+	int completed = 0;
+	for (auto &f : futures) {
+		f.get();
+		++completed;
+		if (progressed) {
+			if (!progressed("Injecting details into scaffold...", (100 * completed) / total_tiles)) {
+				pool.abort();
+				return false;
+			}
+		}
+	}
+
+	pool.finish();
+
+	// =================================================================
+	// 6. NORMALIZATION PASS: Resolve overlapping weights uniformly
+	// =================================================================
+	for (int y = 0; y < img_h; ++y) {
+		for (int x = 0; x < img_w; ++x) {
+			double w = global_weights(y, x);
+			if (w > 1e-5) {
+				global_depth(y, x) /= w;
+			}
+		}
+	}
+
+	if (progressed) progressed("Surface fully integrated via multi-res scaffolding.", 100);
 	return true;
 }

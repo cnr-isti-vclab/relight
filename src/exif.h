@@ -317,8 +317,11 @@ public:
 				case Exiv2::unsignedLong:
 				case Exiv2::signedShort:
 				case Exiv2::signedLong:
+#if EXIV2_TEST_VERSION(0, 28, 0)
+					return QVariant(static_cast<qlonglong>(it->value().toInt()));
+#else
 					return QVariant(static_cast<qlonglong>(it->value().toLong()));
-
+#endif
 				case Exiv2::unsignedRational:
 				case Exiv2::signedRational: {
 					// EXIF floats are fractions (Rationals). Convert to double.
