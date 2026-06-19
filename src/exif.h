@@ -295,6 +295,7 @@ public:
 	static quint16 rotateOrientation(quint16 orientation, bool clockwise);
 	static bool extractApp1Payload(const QString &filename, QByteArray &payload);
 	static bool patchOrientation(QByteArray &payload, quint16 newOrientation);
+	static bool patchOrientationFile(const QString &filename, quint16 newOrientation);
 	static bool injectApp1Payload(const QString &filename, const QByteArray &payload);
 
 	template <typename T>

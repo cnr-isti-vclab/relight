@@ -254,8 +254,7 @@ bool ImageSet::initImages(const char *_path,  Project::ForcedInputColorspace for
 			Exif exif;
 			exif.parse(filepath);
 			lens.readExif(exif);
-			//Exif.Photo.ColorSpace
-			current_is_exif_srgb = exif.value(Exif::ColorSpace, QString()).toString() == "sRGB";
+			current_is_exif_srgb = exif.getValue("Exif.Photo.ColorSpace", 0xFFFF).toUInt() == 1;
 
 		} catch(QString error) {
 			cout << "Failed reading exif." << endl;

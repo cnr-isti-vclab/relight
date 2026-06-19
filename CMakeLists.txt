@@ -99,7 +99,9 @@ elseif(TARGET Exiv2::Exiv2)
 else()
     # Guard against Windows entering this fallback and throwing a confusing PkgConfig error
     if(WIN32)
-        message(FATAL_ERROR "Exiv2 configuration files not found. Ensure it is installed via vcpkg.")
+        message(STATUS "=== VCPKG TROUBLESHOOTING ===")
+        message(STATUS "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}")
+        message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
     endif()
 
     message(STATUS "Exiv2 CMake config not found. Falling back to pkg-config...")

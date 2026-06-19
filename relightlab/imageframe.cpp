@@ -155,7 +155,12 @@ void ImageFrame::rotate(bool clockwise) {
 	for(QListWidgetItem *item: selectedItems) {
 		int id = item->data(Qt::UserRole).toInt();
 		Project &project = qRelightApp->project();
-		project.rotateImage(project.images[id], clockwise);
+		try {
+			project.rotateImage(project.images[id], clockwise);
+		} catch(QString error) {
+			QMessageBox::critical(this, "Cannot rotate", "Relightlab cannot rotate this image. " + error);
+			break;
+		}
 	}
 	showImage(image_list->currentRow());
 	qRelightApp->loadThumbnails();
