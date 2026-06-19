@@ -112,12 +112,13 @@ void Lens::fromJson(const QJsonObject &obj) {
 void Lens::readExif(Exif &exif) {
 	focal35equivalent = true;
 
-	// 1. Get the physical focal length
-	focalLength = exif[Exif::FocalLength].toDouble();
+
+	focalLength = exif.getValue("Exif.Photo.FocalLength", 0.0).toDouble();
 
 	// 1. Get original dimensions from EXIF, not the current image size (it might have been scaled)
-	double originalWidth = exif[Exif::PixelXDimension].toDouble();
-	double originalHeight = exif[Exif::PixelYDimension].toDouble();
+	//
+	double originalWidth = exif.getValue("Exif.Photo.PixelXDimension", 0.0).toDouble();
+	double originalHeight = exif.getValue("Exif.Photo.PixelYDimension", 0.0).toDouble();
 
 	if(!originalWidth) {
 		originalWidth = width;
@@ -125,9 +126,10 @@ void Lens::readExif(Exif &exif) {
 	}
 
 	// 2. Get Focal Plane details
-	double focalPlaneXRes = exif[Exif::FocalPlaneXResolution].toDouble();
-	double focalPlaneYRes = exif[Exif::FocalPlaneYResolution].toDouble();
-	double focalPlaneResUnit = exif[Exif::FocalPlaneResolutionUnit].toDouble();
+	double focalPlaneXRes = exif.getValue("Exif.Photo.FocalPlaneXResolution", 0.0).toDouble();
+	double focalPlaneYRes = exif.getValue("Exif.Photo.FocalPlaneYResolution", 0.0).toDouble();
+	double focalPlaneResUnit = exif.getValue("Exif.Photo.FocalPlaneResolutionUnit", 0.0).toDouble();
+
 
 	double unitToMm = (focalPlaneResUnit == 3) ? 10.0 : 25.4;
 
@@ -139,7 +141,8 @@ void Lens::readExif(Exif &exif) {
 
 		// 3. Calculate 35mm Equivalent Focal Length
 		// This is a property of the lens/sensor combo and does NOT change with resizing
-		focalLength = exif[Exif::FocalLength].toDouble();
+		//Exif.Image.FocalLength
+		focalLength = exif.getValue("Exif.Photo.FocalLength", 0.0).toDouble();
 #ifdef USING_DIAGONAL
 		double cropFactor = 43.27 / sensorDiag;
 #else
@@ -160,13 +163,12 @@ void Lens::readExif(Exif &exif) {
 	} else {
 #ifdef USING_DIAGONAL
 		// Fallback: If EXIF resolution is missing, assume Full Frame
-		focalLength = exif[Exif::FocalLength].toDouble();
+		focalLength = exif.getValue("Exif.Photo.FocalLength", 0.0).toDouble();
 		double currentDiag = sqrt((double)width * width + (double)height * height);
 		pixelSizeX = pixelSizeY = 43.27 / currentDiag;
 #else
-	double focalLength = exif[Exif::FocalLengthIn35mmFilm].toDouble();
-
-	pixelSizeY = pixelSizeX = 36.0 / (double)width;
+		focalLength = exif.getValue("Exif.Photo.FocalLengthIn35mmFilm", 0.0).toDouble();
+		pixelSizeY = pixelSizeX = 36.0 / (double)width;
 #endif
 	}
 }

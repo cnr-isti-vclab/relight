@@ -97,6 +97,30 @@ void IfdHeader::parse(QDataStream &stream, quint32 startPos) {
 }
 
 void Exif::parse(const QString &filename) {
+
+	try {
+		auto image = Exiv2::ImageFactory::open(filename.toStdString());
+		if (!image.get()) {
+			throw QString("Could not open image: " + filename);
+		}
+
+		image->readMetadata();
+		exifData = image->exifData();
+		/* list exif keys.
+		for(auto it = exifData.begin(); it != exifData.end(); it++) {
+			cout << it->key() << endl;
+		}
+		*/
+
+	} catch (const Exiv2::Error& e) {
+	// This catches Exiv2-specific errors (Code 9 is usually "File not found")
+		throw QString(e.what());
+	}catch (const std::exception& e) {
+		throw QString(e.what());
+	}
+
+	return;
+
 	QFile file(filename);
 	if(!file.open(QIODevice::ReadOnly))
 		throw QString("Could not open file: " + filename);
@@ -338,6 +362,29 @@ bool Exif::patchOrientation(QByteArray &payload, quint16 newOrientation) {
 	}
 
 	return false;
+}
+
+bool Exif::patchOrientationFile(const QString &filename, quint16 newOrientation) {
+	try {
+		auto image = Exiv2::ImageFactory::open(filename.toStdString());
+		if (!image.get())
+			return false;
+
+		image->readMetadata();
+		Exiv2::ExifData &ed = image->exifData();
+
+		// Set the Orientation tag. Exiv2 accepts integer assignment for this tag.
+		ed["Exif.Image.Orientation"] = static_cast<int>(newOrientation);
+
+		image->setExifData(ed);
+		image->writeMetadata();
+		return true;
+	} catch (const Exiv2::Error &e) {
+		(void)e;
+		return false;
+	} catch (...) {
+		return false;
+	}
 }
 
 bool Exif::injectApp1Payload(const QString &filename, const QByteArray &payload) {

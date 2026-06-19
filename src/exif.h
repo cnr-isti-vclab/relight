@@ -6,6 +6,9 @@
 #include <QVariant>
 #include <QVector>
 #include <QByteArray>
+
+#include <exiv2/exiv2.hpp>
+
 class IfdHeader {
 public:
 	enum Type {
@@ -27,8 +30,11 @@ public:
 	void parse(QDataStream &stream, quint32 startPos);
 };
 
+
 class Exif: public QMap<quint16, QVariant> {
 public:
+	Exiv2::ExifData exifData;
+
 	enum Tag {
 
 		ExifIfdPointer = 0x8769,
@@ -289,8 +295,53 @@ public:
 	static quint16 rotateOrientation(quint16 orientation, bool clockwise);
 	static bool extractApp1Payload(const QString &filename, QByteArray &payload);
 	static bool patchOrientation(QByteArray &payload, quint16 newOrientation);
+	static bool patchOrientationFile(const QString &filename, quint16 newOrientation);
 	static bool injectApp1Payload(const QString &filename, const QByteArray &payload);
 
+	template <typename T>
+	QVariant getValue(const char* keyStr, const T& defaultValue) {
+		try {
+			Exiv2::ExifKey key(keyStr);
+			auto it = exifData.findKey(key);
+
+			// If the key doesn't exist in the image metadata, return the default value wrapped in a QVariant
+			if (it == exifData.end()) {
+				return QVariant::fromValue(defaultValue);
+			}
+
+			// Inspect the Exiv2 type and pack it correctly into the QVariant
+			switch (it->typeId()) {
+				case Exiv2::asciiString:
+					return QVariant(QString::fromStdString(it->value().toString()));
+
+				case Exiv2::unsignedShort:
+				case Exiv2::unsignedLong:
+				case Exiv2::signedShort:
+				case Exiv2::signedLong:
+#if EXIV2_TEST_VERSION(0, 28, 0)
+					return QVariant(static_cast<qlonglong>(it->value().toInt64()));
+#else
+					return QVariant(static_cast<qlonglong>(it->value().toLong()));
+#endif
+				case Exiv2::unsignedRational:
+				case Exiv2::signedRational: {
+					// EXIF floats are fractions (Rationals). Convert to double.
+					Exiv2::Rational fraction = it->value().toRational();
+					if (fraction.second == 0) return QVariant::fromValue(defaultValue); // Prevent division by zero
+					double decimalValue = static_cast<double>(fraction.first) / fraction.second;
+					return QVariant(decimalValue);
+				}
+
+				default:
+					// Fallback for complex/undefined types: try a generic string conversion
+					return QVariant(QString::fromStdString(it->value().toString()));
+			}
+		}
+		catch (const Exiv2::Error& e) {
+			// If the key string itself was malformed, catch the exception and fall back safely
+			return QVariant::fromValue(defaultValue);
+		}
+	}
 private:
 	void readHeaders(QDataStream &stream, quint32 startPos);
 };

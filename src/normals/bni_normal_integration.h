@@ -9,8 +9,8 @@
  *
  * https://github.com/xucao-42/bilateral_normal_integration
 */
-
-void bni_integrate(std::function<bool(QString s, int n)> progressed,
+//return false to terminate the job
+bool bni_integrate(std::function<bool(QString s, int n)> progressed,
 								  int w, int h, std::vector<Eigen::Vector3f> &normalmap, std::vector<float> &heights,
 								  double k = 2.0,
 								  double tolerance = 1e-5,

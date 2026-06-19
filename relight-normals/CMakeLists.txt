@@ -135,6 +135,8 @@ target_link_libraries(
 		${LCMS2_LIBRARIES}
 )
 
+target_link_libraries(relight-normals PUBLIC project_exiv2)
+
 target_include_directories(relight-normals PRIVATE ${LCMS2_INCLUDE_DIRS})
 target_compile_definitions(relight-normals PUBLIC HAVE_LCMS2)
 

@@ -170,7 +170,8 @@ bool Project::scanDir() {
 			image.readExif(exif);
 			image_lens.readExif(exif);
 			// ColorSpace tag: 1 = sRGB, 0xFFFF = uncalibrated/unspecified
-			if(exif.value(Exif::ColorSpace, 0xFFFF).toUInt() == 1)
+			//Exif.Photo.ColorSpace
+			if(exif.getValue("Exif.Photo.ColorSpace", 0xFFFF).toUInt() == 1)
 				is_exif_srgb = true;
 
 		} catch(QString err) {
@@ -307,8 +308,8 @@ QImage Project::readImage(int i) {
 	dec.finish();
 
 	QImage::Format fmt = (ch == 4) ? QImage::Format_RGBA8888 :
-	                     (ch == 1) ? QImage::Format_Grayscale8 :
-	                                 QImage::Format_RGB888;
+							 (ch == 1) ? QImage::Format_Grayscale8 :
+							 QImage::Format_RGB888;
 	QImage result(w, h, fmt);
 	for(int y = 0; y < h; ++y)
 		memcpy(result.scanLine(y), buf.data() + size_t(y) * rowBytes, rowBytes);
@@ -316,34 +317,41 @@ QImage Project::readImage(int i) {
 }
 
 bool Project::rotateImage(Image &image, bool clockwise) {
-	QByteArray exif_payload;
+	if(!image.filename.toLower().endsWith("jpg") || image.filename.toLower().endsWith("jpeg")) {
+		throw QString("At the moment only jpeg images can be properly rotated in relightlab, do it manually.");
+	}
 	uint16_t new_orientation = 1;
-	bool has_exif = false;
 	try {
 		Exif exif;
 		exif.parse(image.filename);
-		uint16_t old_orientation = uint16_t(exif.value(Exif::Orientation, 1).toUInt());
+		uint16_t old_orientation = uint16_t(exif.getValue<int>("Exif.Image.Orientation", 1).toUInt());
 		new_orientation = Exif::rotateOrientation(old_orientation, clockwise);
-		has_exif = Exif::extractApp1Payload(image.filename, exif_payload);
-		if(has_exif)
-			Exif::patchOrientation(exif_payload, new_orientation);
 	} catch(QString &) {
-		has_exif = false;
+		throw QString("Could not read EXIF data from %1").arg(image.filename);
 	}
 
-	JpegDecoder decoder;
-	decoder.setColorSpace(JCS_RGB);
 	int width = 0;
 	int height = 0;
-	if(!decoder.init(image.filename.toStdString().c_str(), width, height))
-		return false;
-
 	const int channels = 3;
+	JpegDecoder decoder;
+
+	try {
+		decoder.setColorSpace(JCS_RGB);
+
+		if(!decoder.init(image.filename.toStdString().c_str(), width, height))
+			return false;
+
+	} catch(...) {
+		throw QString("Could not read image: " + image.filename);
+	}
+
+
 	uint8_t *source = new uint8_t[width * height * channels];
 	if(decoder.readRows(height, source) != (size_t)height) {
 		delete[] source;
 		return false;
 	}
+
 
 	const int rotated_width = height;
 	const int rotated_height = width;
@@ -369,6 +377,8 @@ bool Project::rotateImage(Image &image, bool clockwise) {
 			rotated[dst_index + 2] = source[src_index + 2];
 		}
 	}
+	delete[] source;
+
 
 	JpegEncoder encoder;
 	encoder.setColorSpace(JCS_RGB, 3);
@@ -380,9 +390,8 @@ bool Project::rotateImage(Image &image, bool clockwise) {
 		encoder.setICCProfile(decoder.getICCProfile());
 
 	const bool saved = encoder.encode(rotated.data(), rotated_width, rotated_height, image.filename.toStdString().c_str());
-	if(saved && has_exif)
-		Exif::injectApp1Payload(image.filename, exif_payload);
-	delete[] source;
+	if(saved)
+		Exif::patchOrientationFile(image.filename, new_orientation);
 	return saved;
 }
 
@@ -453,9 +462,9 @@ void Project::load(QString filename) {
 
 
 	QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-    if(doc.isNull() || doc.isEmpty()) {
-        throw QString("Could not load the project: empty or malformed.");
-    }
+	if(doc.isNull() || doc.isEmpty()) {
+		throw QString("Could not load the project: empty or malformed.");
+	}
 	QJsonObject obj = doc.object();
 
 	if(obj.contains("version"))
@@ -480,7 +489,7 @@ void Project::load(QString filename) {
 		icc_profile_description = obj["iccProfileDescription"].toString();
 	else
 		icc_profile_description = "No profile";
-		
+
 	if(obj.contains("iccProfileIsSRGB"))
 		icc_profile_is_srgb = obj["iccProfileIsSRGB"].toBool();
 	else
@@ -644,7 +653,7 @@ void Project::save(QString filename) {
 	}
 	if(forced_input_colorspace != FORCE_NONE) {
 		project.insert("forcedInputColorspace",
-			forced_input_colorspace == FORCE_LINEAR ? "linear" : "srgb");
+					   forced_input_colorspace == FORCE_LINEAR ? "linear" : "srgb");
 	}
 
 	//as a folder for images compute the relative path to the saving file location!
@@ -690,10 +699,10 @@ void Project::save(QString filename) {
 	for(auto sphere: spheres) {
 		if(!sphere->sphereImg.isNull()) {
 			QString filename = QString("sphere_%1x%2+%3+%4.jpg")
-					.arg(sphere->inner.width())
-					.arg(sphere->inner.height())
-					.arg(sphere->inner.left())
-					.arg(sphere->inner.top());
+								   .arg(sphere->inner.width())
+								   .arg(sphere->inner.height())
+								   .arg(sphere->inner.left())
+								   .arg(sphere->inner.top());
 			sphere->sphereImg.save(resources.filePath(filename));
 		}
 		jspheres.append(sphere->toJson());
@@ -743,10 +752,10 @@ void Project::cleanAlignCache() {
 	for(Align *align: aligns) {
 		QRect inner = align->rect;
 		QString filename = QString("align_%1x%2+%3+%4.jpg")
-				.arg(inner.width())
-				.arg(inner.height())
-				.arg(inner.left())
-				.arg(inner.top());
+							   .arg(inner.width())
+							   .arg(inner.height())
+							   .arg(inner.left())
+							   .arg(inner.top());
 		filenames.push_back(filename);
 	}
 	QDir dir("./");
@@ -768,10 +777,10 @@ void Project::cleanSphereCache() {
 	for(Sphere *sphere: spheres) {
 		QRect &inner = sphere->inner;
 		QString filename = QString("spherecache_%1x%2+%3+%4.jpg")
-				.arg(inner.width())
-				.arg(inner.height())
-				.arg(inner.left())
-				.arg(inner.top());
+							   .arg(inner.width())
+							   .arg(inner.height())
+							   .arg(inner.left())
+							   .arg(inner.top());
 		filenames.push_back(filename);
 	}
 
@@ -1017,6 +1026,6 @@ void Project::validateDome(size_t n_lights) {
 	if(size() != n_lights) {
 		throw QString("The folder contains %1 images, the .lp file specify %2 images.\n"
 					  "You might have some extraneous images, or just loading the wrong .lp file.")
-				.arg(size()).arg(n_lights);
+			.arg(size()).arg(n_lights);
 	}
 }

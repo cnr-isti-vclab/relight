@@ -10,6 +10,7 @@ find_package(
 	REQUIRED)
 find_package(OpenMP)
 
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
@@ -247,6 +248,7 @@ target_link_libraries(
         ${RELIGHT_QT}::Xml
         ${RELIGHT_QT}::Svg
         ${LCMS2_LIBRARIES}
+        project_exiv2
 )
 
 target_include_directories(relightlab PRIVATE ${LCMS2_INCLUDE_DIRS})
