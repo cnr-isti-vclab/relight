@@ -47,6 +47,12 @@ runs:
       run: |
         C:/vcpkg/vcpkg.exe install lcms:x64-windows libpng:x64-windows zlib:x64-windows exiv2:x64-windows
         choco install nsis -y
+
+    - name: Force Install Exiv2 Clean
+      shell: bash
+      run: |
+        C:/vcpkg/vcpkg.exe install exiv2:x64-windows --recurse --clean-after-build
+
     - name: Debug zlib output
       if: runner.os == 'Windows'
       shell: bash
