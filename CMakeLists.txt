@@ -81,33 +81,34 @@ message(STATUS "Using PNG library: ${PNG_LIBRARIES}")
 # LittleCMS2 setup (mandatory)
 find_package(LCMS2 REQUIRED)
 message(STATUS "Using LittleCMS2 include dirs: ${LCMS2_INCLUDE_DIRS}")
-# 1. Try to find the CMake config files (checks lowercase 'exiv2' then uppercase 'Exiv2')
-find_package(exiv2 CONFIG QUIET)
-if(NOT exiv2_FOUND)
-    find_package(Exiv2 CONFIG QUIET)
-endif()
 
-# 2. Map the targets based on what was found
+# 1. Force CMake to accept 'exiv2' as the identity, but look for both filename casings
+find_package(exiv2 CONFIG QUIET NAMES exiv2 Exiv2)
+
+# 2. Map targets based on what succeeded
 if(TARGET exiv2::exiv2)
     set(EXIV2_FOUND_TARGET exiv2::exiv2)
 elseif(TARGET Exiv2::exiv2)
     set(EXIV2_FOUND_TARGET Exiv2::exiv2)
 elseif(TARGET Exiv2::Exiv2)
     set(EXIV2_FOUND_TARGET Exiv2::Exiv2)
-
-# 3. If NO CMake targets were found, fall back to pkg-config (Linux)
 else()
-    # Guard against Windows entering this fallback and throwing a confusing PkgConfig error
-    if(WIN32)
-        message(STATUS "=== VCPKG TROUBLESHOOTING ===")
-        message(STATUS "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}")
-        message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+    # 3. Fall back to pkg-config for traditional Linux packages
+    if(NOT WIN32)
+        message(STATUS "Exiv2 CMake config not found. Falling back to pkg-config...")
+        find_package(PkgConfig REQUIRED)
+        pkg_check_modules(EXIV2_PKG REQUIRED IMPORTED_TARGET exiv2)
+        set(EXIV2_FOUND_TARGET PkgConfig::EXIV2_PKG)
+    else()
+        # Direct fallback for stubborn vcpkg windows deployments
+        message(STATUS "vcpkg config parsing error. Forcing direct target map...")
+        add_library(exiv2::exiv2 UNKNOWN IMPORTED)
+        set_target_properties(exiv2::exiv2 PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES "C:/vcpkg/installed/x64-windows/include"
+            IMPORTED_LOCATION "C:/vcpkg/installed/x64-windows/lib/exiv2.lib"
+        )
+        set(EXIV2_FOUND_TARGET exiv2::exiv2)
     endif()
-
-    message(STATUS "Exiv2 CMake config not found. Falling back to pkg-config...")
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(EXIV2_PKG REQUIRED IMPORTED_TARGET exiv2)
-    set(EXIV2_FOUND_TARGET PkgConfig::EXIV2_PKG)
 endif()
 
 message(STATUS "Selected Exiv2 Target: ${EXIV2_FOUND_TARGET}")
