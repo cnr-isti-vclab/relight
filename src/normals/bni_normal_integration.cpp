@@ -498,7 +498,7 @@ bool bni_integrate(std::function<bool(QString s, int n)> progressed, int w, int 
 	// through to the original direct-integrator path below which builds
 	// the full A/b system and solves it.
 	*/
-	if (w >= 512 || h >= 512) {
+	if (0 || (w >= 512 || h >= 512)) {
 		int maxDim = std::max(w, h);
 		int scale = std::max(1, maxDim / 512);
 		int sw = std::max(1, w / scale);
@@ -705,7 +705,7 @@ bool IntegrateNormalsWithScaffold(
 	const int STEP_SIZE = TILE_SIZE - (2 * PADDING); // 448 pixel step size
 
 	// Soft regularization parameter guiding low-frequency structure without erasing micro-texture
-	const double LAMBDA = 0.1;
+	const double LAMBDA = 0.05;
 
 	int total_tiles = std::ceil((double)img_h / STEP_SIZE) * std::ceil((double)img_w / STEP_SIZE);
 
@@ -781,20 +781,30 @@ bool IntegrateNormalsWithScaffold(
 						int global_x = x_start + x;
 						int global_y = y_start + y;
 
+						auto smooth_quintic = [](double t) {
+							if (t <= 0.0) return 0.0;
+							if (t >= 1.0) return 1.0;
+							return t * t * t * (t * (t * 6.0 - 15.0) + 10.0); // 6t^5 - 15t^4 + 10t^3
+						};
+
 						// Horizontal ramp calculation
 						double weight_x = 1.0;
 						if (x_start > 0 && x < PADDING) {
-							weight_x = (double)x / PADDING;
+							double t = (double)x / (double)PADDING;
+							weight_x = smooth_quintic(t);
 						} else if (x_end < img_w && x >= actual_tile_w - PADDING) {
-							weight_x = (double)(actual_tile_w - 1 - x) / PADDING;
+							double t = (double)(actual_tile_w - 1 - x) / (double)PADDING;
+							weight_x = smooth_quintic(t);
 						}
 
 						// Vertical ramp calculation
 						double weight_y = 1.0;
 						if (y_start > 0 && y < PADDING) {
-							weight_y = (double)y / PADDING;
+							double t = (double)y / (double)PADDING;
+							weight_y = smooth_quintic(t);
 						} else if (y_end < img_h && y >= actual_tile_h - PADDING) {
-							weight_y = (double)(actual_tile_h - 1 - y) / PADDING;
+							double t = (double)(actual_tile_h - 1 - y) / (double)PADDING;
+							weight_y = smooth_quintic(t);
 						}
 
 						// Combine ramps into 2D product factor
