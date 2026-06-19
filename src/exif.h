@@ -318,7 +318,7 @@ public:
 				case Exiv2::signedShort:
 				case Exiv2::signedLong:
 #if EXIV2_TEST_VERSION(0, 28, 0)
-					return QVariant(static_cast<qlonglong>(it->value().toInt()));
+					return QVariant(static_cast<qlonglong>(it->value().toInt64()));
 #else
 					return QVariant(static_cast<qlonglong>(it->value().toLong()));
 #endif
