@@ -31,7 +31,7 @@ enum class PixelType {
 // ──────────────────────────────────────────────────────────────────────────────
 // Abstract per-format backend.
 // Concrete implementations (JpegDecoderImpl, PngDecoderImpl, …) live in
-// image_decoder.cpp and are never exposed publicly.
+// image_decoder.cpp and other .cpp
 // ──────────────────────────────────────────────────────────────────────────────
 struct ImageDecoderImpl {
 	virtual ~ImageDecoderImpl() = default;

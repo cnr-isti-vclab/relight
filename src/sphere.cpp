@@ -405,6 +405,7 @@ void Sphere::computeDirections(Lens &lens) {
 
 		//this is needed for projecting reflection in the dome sphere as the source.
 		reflections[i] = P;
+		reflections[i][1] *= -1; // lights coordinate have y up (image y is down)
 
 		// Surface normal: outward direction from sphere center to reflection point.
 		Eigen::Vector3f n3d = (P - C).normalized();

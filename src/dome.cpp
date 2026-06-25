@@ -181,25 +181,26 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 
 					direction.normalize();
 					//this is in focal ccd width coords.
-					Vector3f origin = lens.viewDirection(sphere->lights[i].x(), sphere->lights[i].y());
+					//Vector3f origin = lens.viewDirection(sphere->lights[i].x(), sphere->lights[i].y());
 					//bring it back to surface plane
-					origin[2] = 0;
+					//origin[2] = 0;
 					//normalize by width
-					origin /= lens.ccdWidth();
+					//origin /= lens.ccdWidth();
 
-					float radius = (domeDiameter/2.0f)/imageWidth;
-					//Here a small error could hide, because of the z of the sphere is not on the plane of the object.
-					//even worse: the starting point should the the reflection point.
+					//computation is performed in mm
+					Vector3f center(0, 0, verticalOffset);
+					//sphere reflections are in pixels -> convert to mm
+					Vector3f reflection = imageWidth * sphere->reflections[i] / lens.width;
 
-					Vector3f center(0, 0, verticalOffset/imageWidth);
-					Vector3f reflection = sphere->reflections[i];
-					reflection /= lens.width;
+					// compute intersection using line-sphere distance (robust: checks discriminant)
+					float distance = lineSphereDistance(reflection, direction, center, domeDiameter/2.0f);
+					if(distance == 0) {
+						throw QString("Failed intesection light direction - dome");
+					}
+					Vector3f position = reflection + direction * distance;
 
-					Vector3f position = findIntersection(origin, direction, center, radius);
-					//float distance = lineSphereDistance(reflection, direction, center, radius);
-					//Vector3f position = origin + direction*distance;
-					//direction = (position - Vector3f(0, 0, verticalOffset/imageWidth))/radius;
-					positionsSphere[count] += position*imageWidth;
+					direction = (position - Vector3f(0, 0, verticalOffset));
+					positionsSphere[count] += position;
 				}
 				count++;
 			}
