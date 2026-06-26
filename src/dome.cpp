@@ -18,33 +18,6 @@ using namespace Eigen;
 //estimate light positions using parallax (image width is the unit).
 void computeParallaxPositions(std::vector<Image> &images, std::vector<Sphere *> &spheres, Lens &lens, std::vector<Eigen::Vector3f> &positions);
 
-//compute the distance of the
-static float lineSphereDistance(const Vector3f &origin, const Vector3f &direction, const Vector3f &center, float radius) {
-	float a = direction.norm();
-	float b = direction.dot(origin - center)*2.0f;
-	float c = center.squaredNorm() + origin.squaredNorm() + center.dot(origin)*2.0f - radius*radius;
-
-	float det = b*b - 4.0f*a*c;
-	if(det <= 0)
-		return 0;
-	float d = (-b + sqrt(det))/(2.0f*a);
-	return d;
-}
-
-Eigen::Vector3f findIntersection(const Eigen::Vector3f& origin,
-								 const Eigen::Vector3f& direction,
-								 const Eigen::Vector3f& center,
-								 double radius) {
-	Eigen::Vector3f L = origin - center;
-	Eigen::Vector3f d = direction.normalized();
-
-	float b = 2.0 * L.dot(d);
-	float c = L.squaredNorm() - (radius * radius);
-	float discriminant = b * b - 4.0 * c;
-
-	float t = (-b + std::sqrt(discriminant)) / 2.0;
-	return origin + t * d;
-}
 
 Dome::Dome() {}
 
@@ -193,9 +166,9 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 					Vector3f reflection = imageWidth * sphere->reflections[i] / lens.width;
 
 					// compute intersection using line-sphere distance (robust: checks discriminant)
-					float distance = lineSphereDistance(reflection, direction, center, domeDiameter/2.0f);
-					if(distance == 0) {
-						throw QString("Failed intesection light direction - dome");
+					float distance = Sphere::lineSphereDistance(reflection, direction, center, domeDiameter/2.0f);
+					if(distance < 0) {
+						weights[i] = 0.0;
 					}
 					Vector3f position = reflection + direction * distance;
 

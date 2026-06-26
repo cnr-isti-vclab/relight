@@ -322,6 +322,30 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 	lights[n] = bari;
 }
 
+// Returns the distance t along `direction` to the nearest positive intersection
+// of the ray (origin + t*direction) with the sphere (center, radius).
+// Returns -1 if there is no intersection.
+float Sphere::lineSphereDistance(const Eigen::Vector3f &origin, const Eigen::Vector3f &direction,
+								  const Eigen::Vector3f &center, float radius) {
+	Eigen::Vector3f oc = origin - center;
+	Eigen::Vector3f d = direction.normalized();
+	float bh  = oc.dot(d);
+	float disc = bh * bh - (oc.squaredNorm() - radius * radius);
+	if (disc < 0.0f)
+		return -1.0f;
+	float t = -bh - std::sqrt(disc); // front face
+	if (t < 0.0f) t = -bh + std::sqrt(disc); // back face fallback (origin inside sphere)
+	return t;
+}
+
+// Returns the intersection point of the ray (origin + t*direction) with the sphere
+// (center, radius). Picks the front face when origin is outside, back face when inside.
+Eigen::Vector3f Sphere::findIntersection(const Eigen::Vector3f &origin, const Eigen::Vector3f &direction,
+										  const Eigen::Vector3f &center, float radius) {
+	float t = Sphere::lineSphereDistance(origin, direction, center, radius);
+	return origin + t * direction.normalized();
+}
+
 float cosHalfAngle(Eigen::Vector3f a, Eigen::Vector3f b) {
 	// Assuming Eigen::Vector3d a, b;
 	a = a.normalized();
@@ -333,8 +357,8 @@ float cosHalfAngle(Eigen::Vector3f a, Eigen::Vector3f b) {
 }
 
 void Sphere::computeDirections(Lens &lens) {
-	// All geometry below is in centred image pixel coordinates
-	Eigen::Vector3f C(center.x() - lens.width / 2.0f, center.y() - lens.height / 2.0f, 0);
+	// All geometry below is in centred image pixel coordinates y is up
+	Eigen::Vector3f C(center.x() - lens.width / 2.0f, -center.y() + lens.height / 2.0f, 0);
 	Eigen::Vector3f V = lens.viewPosition();
 
 	float realRadius = radius;
@@ -347,8 +371,6 @@ void Sphere::computeDirections(Lens &lens) {
 		Eigen::Vector3f radial(C.x(), C.y(), 0);
 		radial.normalize();
 
-		//find true radius (in pixels) (we only see the projection of the sphere on the
-		Eigen::Vector3f traversal(radial[1], -radial[0], 0);
 		Eigen::Vector3f A = C + radial*eWidth;
 		Eigen::Vector3f B = C - radial*eWidth;
 
@@ -377,35 +399,24 @@ void Sphere::computeDirections(Lens &lens) {
 		}
 
 		float x = lights[i].x()- lens.width / 2.0f;
-		float y = lights[i].y() - lens.height / 2.0f;
+		float y = -lights[i].y() + lens.height / 2.0f;
 
 		// Ray from camera (V) through the image-plane projection of the highlight.
-		Eigen::Vector3f rayDir(x , y , -V[2]);
+		Eigen::Vector3f rayDir(x, y, -V[2]);
 		rayDir.normalize();
 
 
-		// Ray–sphere intersection:  |V + t*rayDir – C|² = realRadius²
-		// Expanding and using the half-b substitution (bh = oc·rayDir):
-		Eigen::Vector3f oc = V - C;
-		float bh   = oc.dot(rayDir);
-		float disc = bh * bh - (oc.dot(oc) - realRadius * realRadius);
-
-		if (disc < 0.0f) {
+		// Ray–sphere intersection.
+		float t = Sphere::lineSphereDistance(V, rayDir, C, realRadius);
+		if (t < 0.0f) {
 			// Highlight lies outside the sphere silhouette — skip.
 			directions[i] = Vector3f(0, 0, 0);
 			continue;
 		}
 
-		// Front (camera-facing) surface: smaller t.
-		float t = -bh - sqrt(disc);
-		if (t < 0.0f) t = -bh + sqrt(disc); // back face fallback
+		// Reflection point is needed for projecting reflection in the dome sphere as the source.
+		Eigen::Vector3f P = reflections[i] = V + t * rayDir;
 
-		// Reflection point in centred coords.
-		Eigen::Vector3f P = V + t * rayDir;
-
-		//this is needed for projecting reflection in the dome sphere as the source.
-		reflections[i] = P;
-		reflections[i][1] *= -1; // lights coordinate have y up (image y is down)
 
 		// Surface normal: outward direction from sphere center to reflection point.
 		Eigen::Vector3f n3d = (P - C).normalized();
@@ -415,7 +426,6 @@ void Sphere::computeDirections(Lens &lens) {
 
 		// Reflect the view ray about the surface normal to get the incoming light direction.
 		Eigen::Vector3f light = v3d - 2.0f * (v3d.dot(n3d)) * n3d;
-		light[1] *= -1.0f; // lights coordinate have y up (image y is down)
 		directions[i] = light;
 	}
 }

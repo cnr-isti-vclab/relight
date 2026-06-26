@@ -33,7 +33,7 @@ public:
 
 	/* Ellipse parameters */
 	bool ellipse = false;
-	//height is the smallest axis size of the ellipse (radius, not diameter
+	//eHeight is the smallest axis size of the ellipse (radius, not diameter)
 	float eWidth = 0.0f, eHeight = 0.0f, eAngle = 0.0f;
 	float eFocal; //estimated focal
 
@@ -61,6 +61,13 @@ public:
 	void computeDirections_deprecated(Lens &lens);
 
 	static Eigen::Vector3f intersection(std::vector<Line> &lines);
+
+	// Returns the distance t to the nearest positive intersection of the ray with the sphere, or -1.
+	static float lineSphereDistance(const Eigen::Vector3f &origin, const Eigen::Vector3f &direction,
+									const Eigen::Vector3f &center, float radius);
+	// Returns the intersection point of the ray with the sphere.
+	static Eigen::Vector3f findIntersection(const Eigen::Vector3f &origin, const Eigen::Vector3f &direction,
+											const Eigen::Vector3f &center, float radius);
 
 	void resetHighlight(size_t n); //reset light and direction of the detected highlight, of image n.
 
