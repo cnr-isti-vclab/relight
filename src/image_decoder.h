@@ -6,27 +6,8 @@
 #include <string>
 #include <vector>
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Supported image formats
-// ──────────────────────────────────────────────────────────────────────────────
-enum class ImageFormat {
-	UNKNOWN,
-	JPEG,           // libjpeg / libjpeg-turbo
-	PNG,            // libpng
-	TIFF,           // libtiff
-	EXR,            // OpenEXR / TinyEXR
-	RAW             // camera RAW via libraw
-};
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Pixel element type (valid after init() or decode())
-// ──────────────────────────────────────────────────────────────────────────────
-enum class PixelType {
-	UINT8,          //  8 bits per channel  (JPEG, 8-bit PNG/TIFF, processed RAW)
-	UINT16,         // 16 bits per channel  (16-bit PNG/TIFF, RAW 16-bit linear)
-	FLOAT16,        // half float           (EXR half channels)
-	FLOAT32         // 32-bit float         (EXR float, 32-bit TIFF)
-};
+// Shared image format and pixel type enums
+#include "image_format.h"
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Abstract per-format backend.

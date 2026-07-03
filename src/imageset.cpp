@@ -250,40 +250,33 @@ bool ImageSet::initImages(const char *_path,  Project::ForcedInputColorspace for
 		lens.width = right = image_width = width = w;
 		lens.height = bottom = image_height = height = h;
 		bool current_is_exif_srgb = false;
+		bool current_has_profile = false;
 		try {
 			Exif exif;
 			exif.parse(filepath);
 			lens.readExif(exif);
 			current_is_exif_srgb = exif.getValue("Exif.Photo.ColorSpace", 0xFFFF).toUInt() == 1;
+			current_has_profile = dec->hasICCProfile();
+			if(first) {
+				is_exif_srgb = current_is_exif_srgb;
+				has_profile = current_has_profile;
+				if(has_profile) {
+					icc_profile_data = dec->getICCProfile();
+				} else {
+					icc_profile_data = ICCProfiles::sRGBData();
+				}
+			}
+			if(current_is_exif_srgb != is_exif_srgb)
+				throw QString("Input image %1 has a different colorprofile (sRBG vs. other color profiles").arg(filepath);
+			if(current_has_profile  &&  !has_profile)
+				throw QString("Input image %1 lacks an explicit colorprofile while previous images have it").arg(filepath);
+			if(!current_has_profile  &&  has_profile)
+				throw QString("Input image %1 has an explicit colorprofile while previous images lacks it").arg(filepath);
+			if(has_profile && icc_profile_data != dec->getICCProfile())
+				throw QString("Input images use different ICC profiles. Mismatch detected in %1").arg(filepath);
 
 		} catch(QString error) {
 			cout << "Failed reading exif." << endl;
-		}
-
-		if(first) {
-			has_profile = dec->hasICCProfile();
-			if(has_profile) {
-				const auto &profile = dec->getICCProfile();
-				icc_profile_data = profile;
-				current_is_exif_srgb = is_exif_srgb = false;
-			} else if(current_is_exif_srgb) {
-				icc_profile_data = ICCProfiles::sRGBData();
-			}
-			first = false;
-		}
-
-		//logic here:
-		//Ensure all images have ICCProfile or all have not
-		if(dec->hasICCProfile()) {
-			if(!has_profile || icc_profile_data != dec->getICCProfile()) {
-				throw QString("Input images use different ICC profiles. Mismatch detected in %1")
-						.arg(filepath);
-			}
-		} else {
-			if(has_profile)
-				throw QString("Input images %1 lacks ICC profile while previous have one.").arg(filepath);
-			if(is_exif_srgb != current_is_exif_srgb)
-				throw QString("Input image %1 has a different exif colorspace.").arg(filepath);
 		}
 		decoders.push_back(dec);
 	}
