@@ -109,6 +109,10 @@ void Lens::fromJson(const QJsonObject &obj) {
 	p2 = obj["p2"].toDouble();
 }
 
+//when computing the focal we could use the width or the diagonal of the sensor,
+//the diagonal is more robust to image rotations and messing with the orientation tag.
+#define USING_DIAGONAL
+
 void Lens::readExif(Exif &exif) {
 	focal35equivalent = true;
 
@@ -172,3 +176,4 @@ void Lens::readExif(Exif &exif) {
 #endif
 	}
 }
+#undef USING_DIAGONAL
