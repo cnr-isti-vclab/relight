@@ -7,6 +7,7 @@
 
 #include <QButtonGroup>
 #include <QComboBox>
+#include <QCheckBox>
 #include <QPushButton>
 #include <QLineEdit>
 #include <QLabel>
@@ -20,6 +21,7 @@
 /*
 We are going to add a few functionalities to the normals tab.
 
+	label->label->setText("Output format:");
 for the first row, we show additional options and parameterzs when compute or load button is selected similarly how parameters can be set in the Surface row (downsampline etc).
 
 we have a single compute vs load button.
@@ -46,6 +48,8 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 	{
 		compute_frame = new QFrame;
 		QHBoxLayout *compute_layout = new QHBoxLayout(compute_frame);
+		compute_layout->setContentsMargins(0, 0, 0, 0);
+
 		HelpLabel *algo_label = new HelpLabel("Algorithm:", "normals/normalmap#algorithm");
 		algo_label->setFixedWidth(200);
 		compute_layout->addWidget(algo_label);
@@ -77,7 +81,7 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 		load_layout->addLayout(path_layout);
 
 		QHBoxLayout *format_layout = new QHBoxLayout;
-		HelpLabel *fmt_label = new HelpLabel("Format:", "normals/normalmap#format");
+		HelpLabel *fmt_label = new HelpLabel("Type:", "normals/normalmap#format");
 		fmt_label->setFixedWidth(200);
 		format_layout->addWidget(fmt_label);
 		format_layout->addWidget(format_combo = new QComboBox);
@@ -94,6 +98,30 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 		connect(open, &QPushButton::clicked, this, &NormalsSourceRow::selectOutput);
 		connect(format_combo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int) {
 			setFormat((NormalFormat)format_combo->currentData().toInt());
+		});
+	}
+
+	{
+		QFrame *output_frame = new QFrame;
+		QHBoxLayout *output_layout = new QHBoxLayout(output_frame);
+		output_layout->setContentsMargins(0, 0, 0, 0);
+		HelpLabel *normals_label = new HelpLabel("Output format:", "normals/export#normals");
+		normals_label->setFixedWidth(200);
+		output_layout->addWidget(normals_label);
+		output_layout->addWidget(normalmap_combo = new QComboBox);
+		normalmap_combo->setFixedWidth(200);
+		normalmap_combo->setProperty("class", "large");
+		normalmap_combo->addItem("JPEG",          QVariant(NORMAL_OUT_JPEG));
+		normalmap_combo->addItem("PNG",           QVariant(NORMAL_OUT_PNG));
+		normalmap_combo->addItem("JPEG XL",       QVariant(NORMAL_OUT_JPEGXL));
+		normalmap_combo->addItem("EXR (16-bit)",  QVariant(NORMAL_OUT_EXR));
+		normalmap_combo->addItem("TIFF (16-bit)", QVariant(NORMAL_OUT_TIFF));
+		int idx = normalmap_combo->findData(QVariant(parameters.normalmap_output));
+		if(idx >= 0) normalmap_combo->setCurrentIndex(idx);
+		output_layout->addStretch(1);
+		planLayout->addWidget(output_frame);
+		connect(normalmap_combo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int) {
+			parameters.normalmap_output = (NormalmapOutput)normalmap_combo->currentData().toInt();
 		});
 	}
 
@@ -211,10 +239,10 @@ NormalsFlattenRow::NormalsFlattenRow(NormalsParameters &_parameters, QFrame *par
 	plane   = new QLabelButton("Plane",  "4-point plane flattening.");
 	gaussian = new QLabelButton("Blur",  "Subtract gaussian blur.");
 
-	buttons->addWidget(none,     1, Qt::AlignCenter);
-	buttons->addWidget(radial,   1, Qt::AlignCenter);
-	buttons->addWidget(plane,    1, Qt::AlignCenter);
-	buttons->addWidget(gaussian, 1, Qt::AlignCenter);
+	buttons->addWidget(none);
+	buttons->addWidget(radial);
+	buttons->addWidget(plane);
+	buttons->addWidget(gaussian);
 
 	// ── Plane flattening options ─────────────────────────────────────────────
 	{
@@ -430,6 +458,34 @@ NormalsSurfaceRow::NormalsSurfaceRow(NormalsParameters &_parameters, QFrame *par
 		planLayout->addWidget(assm_frame);
 	}
 
+	{
+		depth_frame = new QFrame;
+		QHBoxLayout *depth_layout = new QHBoxLayout(depth_frame);
+		depth_layout->setContentsMargins(0, 0, 0, 0);
+		HelpLabel *depth_label = new HelpLabel("Depthmap format:", "normals/export#depth");
+		depth_label->setFixedWidth(200);
+		depth_layout->addWidget(depth_label);
+		depth_layout->addWidget(depthmap_combo = new QComboBox);
+		depthmap_combo->setFixedWidth(200);
+		depthmap_combo->setProperty("class", "large");
+		depthmap_combo->addItem("JPEG XL",      QVariant(DEPTH_OUT_JPEGXL));
+		depthmap_combo->addItem("EXR (float)",  QVariant(DEPTH_OUT_EXR));
+		depthmap_combo->addItem("TIFF (float)", QVariant(DEPTH_OUT_TIFF));
+		int idx = depthmap_combo->findData(QVariant(parameters.depthmap_output));
+		if(idx >= 0) depthmap_combo->setCurrentIndex(idx);
+		depth_normalize = new QCheckBox(" Add normalized [0,1] depthmap");
+		depth_normalize->setChecked(parameters.depth_normalize);
+		depth_layout->addWidget(depth_normalize);
+		depth_layout->addStretch(1);
+		planLayout->addWidget(depth_frame);
+		connect(depthmap_combo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int) {
+			parameters.depthmap_output = (DepthmapOutput)depthmap_combo->currentData().toInt();
+		});
+		connect(depth_normalize, &QCheckBox::toggled, this, [this](bool v) {
+			parameters.depth_normalize = v;
+		});
+	}
+
 
 	connect(none, &QAbstractButton::clicked, this, [this](){ setSurfaceMethod(SURFACE_NONE); });
 	connect(fft, &QAbstractButton::clicked, this, [this](){ setSurfaceMethod(SURFACE_FFT); });
@@ -477,6 +533,7 @@ void NormalsSurfaceRow::setSurfaceMethod(SurfaceIntegration surface) {
 	downsample_frame->setVisible(surface == SURFACE_BNI || surface == SURFACE_FFT);
 	bni_frame->setVisible(surface == SURFACE_BNI);
 	assm_frame->setVisible(surface == SURFACE_ASSM);
+	depth_frame->setVisible(surface != SURFACE_NONE);
 }
 
 void NormalsSurfaceRow::updateDimensions(int w, int h) {
@@ -502,6 +559,8 @@ void NormalsSurfaceRow::setDownsample(float down, int w, int h) {
 	parameters.surface_width = w;
 	parameters.surface_height = h;
 }
+
+
 
 NormalsExportRow::NormalsExportRow(NormalsParameters &parameters, QFrame *parent): NormalsPlanRow(parameters, parent) {
 	label->label->setText("Directory/File:");

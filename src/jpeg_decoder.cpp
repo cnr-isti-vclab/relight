@@ -98,6 +98,7 @@ bool JpegDecoder::init(int &width, int &height) {
 		subsampled =  decInfo.comp_info[1].h_samp_factor != 1;
 
 	jpeg_start_decompress(&decInfo);
+	decompress_active = true;
 
 	width = decInfo.image_width;
 	height = decInfo.image_height;
@@ -157,19 +158,41 @@ size_t JpegDecoder::readRows(int nrows, uint8_t *buffer) { //return false on end
 	}
 
 	if(decInfo.output_scanline == decInfo.image_height)
-		jpeg_finish_decompress(&decInfo);
+	{
+		// jpeg_finish_decompress is safe to call multiple times but calling it
+		// when we've already finished can confuse some libjpeg implementations
+		// if the source has already been terminated elsewhere. Guard with our
+		// active flag so finish() only runs once.
+		if(decompress_active) {
+			jpeg_finish_decompress(&decInfo);
+			decompress_active = false;
+		}
+	}
 	return readed;
 }
 
 bool JpegDecoder::finish() {
-	if(file)
+	// Make finish idempotent: only call jpeg_finish_decompress if we started
+	// decompression and haven't finished/aborted yet.
+	bool success = true;
+	if(decompress_active) {
+		success = jpeg_finish_decompress(&decInfo);
+		decompress_active = false;
+	}
+
+	if(file) {
 		fclose(file);
-	return jpeg_finish_decompress(&decInfo);
+		file = nullptr;
+	}
+	return success;
 }
 
 bool JpegDecoder::restart() {
-	//jpeg_finish_decompress(&decInfo);
+	// Abort any ongoing decompression and mark inactive so future finish()
+	// calls are no-ops.
 	jpeg_abort_decompress(&decInfo);
+	decompress_active = false;
+
 	rewind(file);
 	jpeg_stdio_src(&decInfo, file);
 	int w, h;

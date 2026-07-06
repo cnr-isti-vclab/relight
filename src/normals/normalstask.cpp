@@ -1,5 +1,6 @@
 #include "normalstask.h"
 #include "normalsworker.h"
+#include "../image_decoder.h"
 #include "../jpeg_decoder.h"
 #include "../jpeg_encoder.h"
 #include "../imageset.h"
@@ -19,7 +20,6 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QImage>
 #include <QPoint>
 #include <QTextStream>
 #include <vector>
@@ -151,25 +151,52 @@ void NormalsTask::run() {
 		}
 
 	} else {
-		QImage normalmap(parameters.input_path);
-		if(normalmap.isNull()) {
+		ImageDecoder decoder;
+		if(!decoder.init(parameters.input_path.toStdString().c_str(), width, height)) {
 			status = FAILED;
 			error = "Could not load normalmap: " + parameters.input_path;
 			return;
 		}
-		width = normalmap.width();
-		height = normalmap.height();
-		//convert image into normals
+		int channels = decoder.numChannels();
+		if(channels != 3) {
+			status = FAILED;
+			error = "Normalmap (" + parameters.input_path + ") is expected to contain RGB data.";
+			return;
+		}
+		bool isFloat = (decoder.pixelType() == PixelType::FLOAT32 || decoder.pixelType() == PixelType::FLOAT16);
 
 		normals.resize(width * height);
+		std::vector<float> row_buf(width * channels);
 		for(int y = 0; y < height; y++) {
-			for(int x = 0; x < width; x++) {
-				QRgb rgb = normalmap.pixel(x, y);
-				int i = (x + y*width);
-				normals[i][0] = (qRed(rgb) / 255.0f) * 2.0f - 1.0f;
-				normals[i][1] = (qGreen(rgb) / 255.0f) * 2.0f - 1.0f;
-				normals[i][2] = (qBlue(rgb) / 255.0f) * 2.0f - 1.0f;
+			size_t read = decoder.readRows(1, row_buf.data());
+			if(read != 1) {
+				decoder.finish();
+				status = FAILED;
+				error = QString("Failed reading row %1 from %2").arg(y).arg(parameters.input_path);
+				return;
 			}
+			for(int x = 0; x < width; x++) {
+				int i = x + y * width;
+				float r = row_buf[x * channels];
+				float g = (channels > 1) ? row_buf[x * channels + 1] : r;
+				float b = (channels > 2) ? row_buf[x * channels + 2] : 0.0f;
+				if(isFloat) {
+					normals[i][0] = r;
+					normals[i][1] = g;
+					normals[i][2] = b;
+				} else {
+					normals[i][0] = r * 2.0f - 1.0f;
+					normals[i][1] = g * 2.0f - 1.0f;
+					normals[i][2] = b * 2.0f - 1.0f;
+				}
+			}
+		}
+		decoder.finish();
+
+		// DirectX normalmaps have Y flipped relative to OpenGL convention.
+		if(parameters.normalFormat == NORMAL_DIRECTX) {
+			for(auto &n : normals)
+				n[1] = -n[1];
 		}
 	}
 
@@ -322,23 +349,24 @@ void NormalsTask::run() {
 		}
 	}
 
-	// Save the corrected normals at original (full) resolution.
-	vector<uint8_t> normalmap(normals_width * normals_height * 3);
-	for(size_t i = 0; i < full_normals.size(); i++) {
-		normalmap[i*3 + 0] = std::min(std::max(round(((full_normals[i][0] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
-		normalmap[i*3 + 1] = std::min(std::max(round(((full_normals[i][1] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
-		normalmap[i*3 + 2] = std::min(std::max(round(((full_normals[i][2] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+	if(parameters.compute) {
+		// Save the corrected normals at original (full) resolution.
+		vector<uint8_t> normalmap(normals_width * normals_height * 3);
+		for(size_t i = 0; i < full_normals.size(); i++) {
+			normalmap[i*3 + 0] = std::min(std::max(round(((full_normals[i][0] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+			normalmap[i*3 + 1] = std::min(std::max(round(((full_normals[i][1] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+			normalmap[i*3 + 2] = std::min(std::max(round(((full_normals[i][2] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+		}
+		JpegEncoder enc2;
+		enc2.setColorSpace(JCS_RGB, 3);
+		enc2.setJpegColorSpace(JCS_RGB);
+		enc2.setQuality(100);
+		enc2.setOptimize(true);
+		enc2.setChromaSubsampling(false);
+		//TODO save resolution in exif.
+		QString nmfile = destination.filePath(parameters.normalsname + ".jpg");
+		enc2.encode(normalmap.data(), normals_width, normals_height, nmfile.toStdString().c_str());
 	}
-	JpegEncoder enc2;
-	enc2.setColorSpace(JCS_RGB, 3);
-	enc2.setJpegColorSpace(JCS_RGB);
-	enc2.setQuality(100);
-	enc2.setOptimize(true);
-	enc2.setChromaSubsampling(false);
-	//TODO save resolution in exif.
-	QString nmfile = destination.filePath(parameters.normalsname + ".jpg");
-	enc2.encode(normalmap.data(), normals_width, normals_height, nmfile.toStdString().c_str());
-
 	progressed("Done", 100);
 	status = DONE;
 }

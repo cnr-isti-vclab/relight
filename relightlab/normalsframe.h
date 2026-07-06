@@ -2,7 +2,7 @@
 #define NORMALSFRAME_H
 
 #include <QFrame>
-#include "../src/normals/normalstask.h"
+#include "../src/normals/normals_parameters.h"
 
 class QCheckBox;
 class QRadioButton;

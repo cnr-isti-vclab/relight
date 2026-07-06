@@ -36,6 +36,35 @@ QString surfaceIntegrationToString(SurfaceIntegration mode) {
 	}
 }
 
+QString normalmapOutputToString(NormalmapOutput o) {
+	switch(o) {
+	case NORMAL_OUT_JPEG: return QStringLiteral("JPEG");
+	case NORMAL_OUT_PNG: return QStringLiteral("PNG");
+	case NORMAL_OUT_JPEGXL: return QStringLiteral("JPEGXL");
+	case NORMAL_OUT_EXR: return QStringLiteral("EXR");
+	case NORMAL_OUT_TIFF: return QStringLiteral("TIFF");
+	default: return QStringLiteral("UNKNOWN");
+	}
+}
+
+QString depthmapOutputToString(DepthmapOutput o) {
+	switch(o) {
+	case DEPTH_OUT_JPEGXL: return QStringLiteral("JPEGXL");
+	case DEPTH_OUT_EXR: return QStringLiteral("EXR");
+	case DEPTH_OUT_TIFF: return QStringLiteral("TIFF");
+	default: return QStringLiteral("UNKNOWN");
+	}
+}
+
+QString surfaceOutputToString(SurfaceOutput o) {
+	switch(o) {
+	case SURFACE_OUT_PLY: return QStringLiteral("PLY");
+	case SURFACE_OUT_OBJ: return QStringLiteral("OBJ");
+	case SURFACE_OUT_GLTF: return QStringLiteral("GLTF");
+	default: return QStringLiteral("UNKNOWN");
+	}
+}
+
 }
 
 QString NormalsParameters::summary() const {
@@ -74,5 +103,9 @@ QJsonObject NormalsParameters::toJson() const {
 	obj["surfaceWidth"] = surface_width;
 	obj["surfaceHeight"] = surface_height;
 	obj["normalsname"] = normalsname;
+	obj["normalmapOutput"] = normalmapOutputToString(normalmap_output);
+	obj["depthmapOutput"] = depthmapOutputToString(depthmap_output);
+	obj["surfaceOutput"] = surfaceOutputToString(surface_output);
+	obj["depthNormalize"] = depth_normalize;
 	return obj;
 }

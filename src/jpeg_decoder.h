@@ -51,6 +51,8 @@ private:
 	jpeg_error_mgr errMgr;
 
 	bool subsampled = false;
+	// true after successful jpeg_start_decompress(), cleared after finish()/abort
+	bool decompress_active = false;
 	std::vector<uint8_t> icc_profile;
 	J_COLOR_SPACE requested_out_color_space = JCS_UNKNOWN;
 };

@@ -8,6 +8,7 @@ class QLabelButton;
 class QLineEdit;
 class QPushButton;
 class QComboBox;
+class QCheckBox;
 class QSpinBox;
 class QDoubleSpinBox;
 class QGridLayout;
@@ -54,6 +55,10 @@ protected:
 	QComboBox *format_combo = nullptr;
 	QLineEdit *input_path = nullptr;
 	QPushButton *open = nullptr;
+
+	QComboBox *normalmap_combo = nullptr;
+
+	QFrame *output_frame = nullptr;
 };
 
 class NormalsFlattenRow: public NormalsPlanRow {
@@ -107,10 +112,15 @@ private:
 	QFrame *downsample_frame = nullptr;
 	QFrame *bni_frame = nullptr;
 	QFrame *assm_frame = nullptr;
+	QFrame *depth_frame = nullptr;
+
+	QComboBox *depthmap_combo = nullptr;
+	QCheckBox *depth_normalize = nullptr;
 
 	int base_width = 1;
 	int base_height = 1;
 };
+
 
 
 class NormalsExportRow: public NormalsPlanRow {
