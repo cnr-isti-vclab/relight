@@ -102,7 +102,7 @@ NormalsSourceRow::NormalsSourceRow(NormalsParameters &_parameters, QFrame *paren
 	}
 
 	{
-		QFrame *output_frame = new QFrame;
+		output_frame = new QFrame;
 		QHBoxLayout *output_layout = new QHBoxLayout(output_frame);
 		output_layout->setContentsMargins(0, 0, 0, 0);
 		HelpLabel *normals_label = new HelpLabel("Output format:", "normals/export#normals");
@@ -154,6 +154,8 @@ void NormalsSourceRow::setComputeSource(bool build) {
 
 	compute_frame->setVisible(build);
 	load_frame->setVisible(!build);
+	if(output_frame)
+		output_frame->setVisible(build);
 	if(build) {
 		// Suggest output based on project directory.
 		QDir input = qRelightApp->project().dir;
