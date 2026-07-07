@@ -35,8 +35,7 @@ class Sphere;
  *   - Geometry parameters change (imageWidth, domeDiameter, verticalOffset) - updates positions with new geometry
  *   Switching between DIRECTIONAL/SPHERICAL/LIGHTS3D does NOT require recomputation
  *   (just uses different pre-computed arrays from the same fromSpheres() call).
- * 
- * - FROM_LP: Lights loaded from .lp file (only directions are loaded).
+ *
  *   - Skip/unskip: No recomputation needed (only affects image-to-light mapping)
  *   - Geometry parameters change: Must call recomputePositions() for SPHERICAL/LIGHTS3D configs
  *     (directions stay fixed, but positions change based on dome geometry)
@@ -45,7 +44,7 @@ class Sphere;
 
 class Dome {
 public:
-	enum LightSource { UNKNOWN, FROM_SPHERES, FROM_LP };
+	enum LightSource { UNKNOWN, FROM_SPHERES };
 
 	QString label;
 	QString notes;

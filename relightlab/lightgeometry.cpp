@@ -341,8 +341,7 @@ void LightsGeometry::recomputeGeometry() {
 			return;
 		}
 		dome.fromSpheres(project.images, project.spheres, project.lens);
-	} else if(dome.lightSource == Dome::FROM_LP) {
-			dome.recomputePositions();
-	}	
+	} else
+		dome.recomputePositions();
 	init();
 }

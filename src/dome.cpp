@@ -49,7 +49,7 @@ Eigen::Vector3f findIntersection(const Eigen::Vector3f& origin,
 Dome::Dome() {}
 
 static QStringList lightConfigs = { "directional", "spherical", "lights3d" };
-static QStringList lightSources = { "unknown", "from_spheres", "from_lp" };
+static QStringList lightSources = { "unknown", "from_spheres" };
 
 
 void Dome::parseLP(const QString &lp_path) {
@@ -58,7 +58,6 @@ void Dome::parseLP(const QString &lp_path) {
 
 	QFileInfo info(lp_path);
 	label = info.filePath();
-	lightSource = FROM_LP;
 	recomputePositions();
 }
 
@@ -71,9 +70,10 @@ void Dome::recomputePositions() {
 		return;
 	
 	positionsSphere.resize(directions.size(), Vector3f(0, 0, 0));
-	positions3d.resize(directions.size(), Vector3f(0, 0, 0));
-	
+
 	// Compute sphere positions from directions
+	float radius = (domeDiameter/2.0f);
+
 	for(size_t i = 0; i < directions.size(); i++) {
 		Vector3f direction = directions[i];
 		if(direction.isZero())
@@ -81,8 +81,7 @@ void Dome::recomputePositions() {
 			
 		direction.normalize();
 		
-		float radius = (domeDiameter/2.0f);
-		positions3d[i] = positionsSphere[i] = direction*radius + Eigen::Vector3f(0, 0, verticalOffset);
+		positionsSphere[i] = direction*radius + Eigen::Vector3f(0, 0, verticalOffset);
 	}
 }
 
@@ -134,8 +133,6 @@ void Dome::fromSpheres(std::vector<Image> &images, std::vector<Sphere *> &sphere
 	}
 
 	vector<float> weights(valid_count, 0.0f);
-
-	lightSource = FROM_SPHERES;
 
 	for(auto sphere: spheres) {
 		sphere->computeDirections(lens);
@@ -335,7 +332,6 @@ QJsonObject Dome::toJson() {
 	dome.insert("domeDiameter", domeDiameter);
 	dome.insert("verticalOffset", verticalOffset);
 	dome.insert("lightConfiguration", lightConfigs[lightConfiguration]);
-	dome.insert("lightSource", lightSources[lightSource]);
 	dome.insert("directions", ::toJson(directions));
 	dome.insert("positionsSphere", ::toJson(positionsSphere));
 	dome.insert("positions3d", ::toJson(positions3d));
@@ -372,14 +368,7 @@ void Dome::fromJson(const QJsonObject &obj) {
 		if(index >= 0)
 			lightConfiguration = LightConfiguration(index);
 	}
-	if(obj.contains("lightSource")) {
-		lightSource = UNKNOWN;
-		int index = lightSources.indexOf(obj["lightSource"].toString());
-		if(index >= 0)
-			lightSource = LightSource(index);
-	} else {
-		lightSource = FROM_LP;
-	}
+	lightSource = UNKNOWN;
 	::fromJson(obj["directions"].toArray(), directions);
 	::fromJson(obj["positionsSphere"].toArray(), positionsSphere);
 	::fromJson(obj["positions3d"].toArray(), positions3d);

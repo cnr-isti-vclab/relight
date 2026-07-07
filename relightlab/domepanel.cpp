@@ -269,7 +269,7 @@ void DomePanel::loadLP(QString path) {
 	dome.directions = directions;
 	QFileInfo info(path);
 	dome.label = info.filePath();
-	dome.lightSource = Dome::FROM_LP;
+	dome.lightSource = Dome::UNKNOWN;
 	dome.recomputePositions();
 
 	qRelightApp->addDome(path);
@@ -299,8 +299,7 @@ void DomePanel::loadDome(QString path) {
 	if(imageWidth != 0 && qRelightApp->project().measures.size() != 0)
 		dome.imageWidth = imageWidth;
 
-	if(dome.lightSource == Dome::FROM_LP)
-		dome.recomputePositions();
+	dome.recomputePositions();
 
 	updateDomeList(path);
 	setSphereSelected();  // Update highlighting after loading dome
