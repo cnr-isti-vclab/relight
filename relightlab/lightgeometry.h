@@ -15,6 +15,7 @@ class QLabel;
 class QRadioButton;
 class HelpRadio;
 class DirectionsView;
+class QCheckBox;
 
 /* This class display the current dome parameters (see dome.h for details
  *
@@ -39,6 +40,9 @@ public:
 	DirectionsView *directions_view;
 
 	QDoubleSpinBox *focal_length = nullptr;
+
+	QCheckBox *compensate_vignetting = nullptr;
+	QCheckBox *compensate_intensity = nullptr;
 
 	// ICC / colorspace section
 	QLabel         *icc_label    = nullptr;  // shows detected profile name

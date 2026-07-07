@@ -73,6 +73,10 @@ bool ImageSet::initFromProject(Project &project) {
 	initImages(project.dir.absolutePath().toStdString().c_str(), project.forced_input_colorspace);
 	lens = project.lens;
 
+	// replicate project-level compensation settings into this ImageSet
+	compensateVignettingEnabled = project.compensateVignettingEnabled;
+	compensateIntensityEnabled = project.compensateIntensityEnabled;
+
 	initFromDome(project.dome);
 	if(lights1.size() != visibles.size()) {
 		throw QString("Number of lights in dome needs to be equal to the number of images");
@@ -388,6 +392,8 @@ Vector3f ImageSet::relativeLight(const Vector3f &light3d, int x, int y){
 	return l;
 }
 void ImageSet::compensateVignetting(PixelArray &pixels) {
+    if(!compensateVignettingEnabled)
+        return;
 	if(!lens.focalLength) //this should not really happens.
 		return;
 	for(Pixel &pixel: pixels) {
@@ -402,6 +408,8 @@ void ImageSet::compensateVignetting(PixelArray &pixels) {
 }
 
 void ImageSet::compensateIntensity(PixelArray &pixels) {
+	if(!compensateIntensityEnabled)
+		return;
 	assert(pixel_size != 0.0f);
 	assert(lights1.size() == size_t(images.size()));
 	assert(lights1.size() == pixels.nlights);

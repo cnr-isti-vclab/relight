@@ -14,6 +14,7 @@
 #include <QTextEdit>
 #include <QLineEdit>
 #include <QRadioButton>
+#include <QCheckBox>
 #include <QPushButton>
 #include <QButtonGroup>
 #include <QDoubleSpinBox>
@@ -182,6 +183,27 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 			project.needs_saving = true;
 		});
 
+	// Compensation options
+	compensate_vignetting = new QCheckBox("Compensate vignetting");
+	compensate_intensity = new QCheckBox("Compensate intensity");
+
+	// layout them under the lens panel
+	auto *compBox = new QWidget;
+	auto *compRow = new QVBoxLayout(compBox);
+	compRow->setContentsMargins(0,0,0,0);
+	compRow->addWidget(compensate_vignetting);
+	compRow->addWidget(compensate_intensity);
+	lensLayout->addWidget(compBox, 4, 0, 1, 3);
+
+	connect(compensate_vignetting, &QCheckBox::toggled, [=](bool checked){
+		qRelightApp->project().compensateVignettingEnabled = checked;
+		qRelightApp->project().needs_saving = true;
+	});
+	connect(compensate_intensity, &QCheckBox::toggled, [=](bool checked){
+		qRelightApp->project().compensateIntensityEnabled = checked;
+		qRelightApp->project().needs_saving = true;
+	});
+
 	page->addStretch();
 }
 
@@ -240,6 +262,12 @@ void LightsGeometry::init() {
 
 	// Update detected colorspace label
 	Project &project = qRelightApp->project();
+
+	// set compensation checkboxes
+	if (compensate_vignetting)
+		compensate_vignetting->setChecked(project.compensateVignettingEnabled);
+	if (compensate_intensity)
+		compensate_intensity->setChecked(project.compensateIntensityEnabled);
 	if(icc_label) {
 		bool no_profile = (project.icc_profile_description == "No profile" ||
 						   project.icc_profile_description.isEmpty());

@@ -48,6 +48,11 @@ public:
 	bool light3d = false;
 	float idealLightDistance2 = 0.0f; //squared, used when rescaling intensity
 
+	// feature toggles: enable/disable automatic compensation
+	// default true = compensation enabled
+	bool compensateVignettingEnabled = true;
+	bool compensateIntensityEnabled = true;
+
 	int current_line = 0;
 	std::vector<QPoint> offsets; //align offsets
 

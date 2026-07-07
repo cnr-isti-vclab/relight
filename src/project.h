@@ -47,6 +47,10 @@ public:
 	bool icc_profile_is_srgb = false;
 	bool icc_profile_is_display_p3 = false;
 
+	// Replicated toggles for UI to control ImageSet compensation (default enabled)
+	bool compensateVignettingEnabled = true;
+	bool compensateIntensityEnabled = true;
+
 	// When the images carry no ICC profile (e.g. synthetic / Blender renders)
 	// the user can force relight to treat the input as a specific known colorspace.
 	enum ForcedInputColorspace { FORCE_NONE, FORCE_LINEAR, FORCE_SRGB };
