@@ -80,6 +80,23 @@ void invertZ(vector<float> &z) {
 	}
 }
 
+void saveNormalmap(	std::vector<Eigen::Vector3f> normals, int width, int height, QString filename) {
+	// Save the corrected normals at original (full) resolution.
+	vector<uint8_t> normalmap(width * height * 3);
+	for(size_t i = 0; i < normals.size(); i++) {
+		normalmap[i*3 + 0] = std::min(std::max(round(((normals[i][0] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+		normalmap[i*3 + 1] = std::min(std::max(round(((normals[i][1] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+		normalmap[i*3 + 2] = std::min(std::max(round(((normals[i][2] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
+	}
+	JpegEncoder enc2;
+	enc2.setColorSpace(JCS_RGB, 3);
+	enc2.setJpegColorSpace(JCS_RGB);
+	enc2.setQuality(100);
+	enc2.setOptimize(true);
+	enc2.setChromaSubsampling(false);
+	//TODO save resolution in exif.
+	enc2.encode(normalmap.data(), width, height, filename.toStdString().c_str());
+}
 
 void NormalsTask::run() {
 	status = RUNNING;
@@ -211,18 +228,25 @@ void NormalsTask::run() {
 		}
 	}
 
+
+	QString normalmap_path = destination.filePath(parameters.normalsname + ".jpg");
+
+	//Save these values for later, if using flat plane, which needs to integrate the surface to fix the normalmap.
+
 	const int normals_width  = width;
 	const int normals_height = height;
-	std::vector<Eigen::Vector3f> full_normals = normals;
+	std::vector<Eigen::Vector3f> full_normals;
+
+	if(parameters.flatMethod != FLAT_PLANE)
+		saveNormalmap(normals, width, height, normalmap_path);
 
 	if(parameters.surface_width != 0 &&
 		(parameters.surface_width != width || parameters.surface_height != height)) {
-		//scale normals.
-		std::vector<Eigen::Vector3f> tmp(parameters.surface_width*parameters.surface_height);
-
+		//scale normals, use full_normals temporarily
+		full_normals.resize(parameters.surface_width*parameters.surface_height);
 		bilinear_interpolation3f((Eigen::Vector3f *)normals.data(), width, height,
-					   parameters.surface_width, parameters.surface_height, (Eigen::Vector3f *)tmp.data());
-		swap(tmp, normals);
+					   parameters.surface_width, parameters.surface_height, (Eigen::Vector3f *)full_normals.data());
+		swap(full_normals, normals);
 
 		for(Eigen::Vector3f &n: normals) {
 			fixNormal(n);
@@ -295,10 +319,6 @@ void NormalsTask::run() {
 			double s = (double)normals_width/width;
 			applyNormalCorrection(normals_width, normals_height, full_normals, sc.rescaled(s));
 		}
-		//TODO remove extension properly
-		progressed("Saving normals...", 99);
-
-
 
 		progressed("Saving surface...", 99);
 		QString filename = destination.filePath("3D_surface.ply");
@@ -322,22 +342,7 @@ void NormalsTask::run() {
 		}
 	}
 
-	// Save the corrected normals at original (full) resolution.
-	vector<uint8_t> normalmap(normals_width * normals_height * 3);
-	for(size_t i = 0; i < full_normals.size(); i++) {
-		normalmap[i*3 + 0] = std::min(std::max(round(((full_normals[i][0] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
-		normalmap[i*3 + 1] = std::min(std::max(round(((full_normals[i][1] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
-		normalmap[i*3 + 2] = std::min(std::max(round(((full_normals[i][2] + 1.0f) / 2.0f) * 255.0f), 0.0f), 255.0f);
-	}
-	JpegEncoder enc2;
-	enc2.setColorSpace(JCS_RGB, 3);
-	enc2.setJpegColorSpace(JCS_RGB);
-	enc2.setQuality(100);
-	enc2.setOptimize(true);
-	enc2.setChromaSubsampling(false);
-	//TODO save resolution in exif.
-	QString nmfile = destination.filePath(parameters.normalsname + ".jpg");
-	enc2.encode(normalmap.data(), normals_width, normals_height, nmfile.toStdString().c_str());
+
 
 	progressed("Done", 100);
 	status = DONE;
