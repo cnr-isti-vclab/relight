@@ -252,9 +252,9 @@ void NormalsTask::run() {
 			fixNormal(n);
 		}
 
+		downsampling = float(width)/parameters.surface_width;
 		width = parameters.surface_width;
 		height = parameters.surface_height;
-		downsampling = float(width)/parameters.surface_width;
 	}
 
 	if(parameters.surface_integration == SURFACE_ASSM) {
@@ -265,7 +265,7 @@ void NormalsTask::run() {
 		//TODO move to saveply
 		QString filename = destination.filePath("3D_surface.ply");
 
-		assm(filename, normals, width, height, parameters.assm_error, &callback);
+		assm(filename, normals, width, height, downsampling, &callback);
 
 	} else if(parameters.surface_integration == SURFACE_BNI || parameters.surface_integration == SURFACE_FFT) {
 		QString type = parameters.surface_integration == SURFACE_BNI ? "Bilateral" : "Fourier";
@@ -322,20 +322,21 @@ void NormalsTask::run() {
 
 		progressed("Saving surface...", 99);
 		QString filename = destination.filePath("3D_surface.ply");
-		if(!savePly(filename, width, height, z, downsampling, imageset.pixel_size)) {
+		float pixel_size = imageset.pixel_size * downsampling;
+		if(!savePly(filename, width, height, z, downsampling, pixel_size)) {
 			error = "Failed to save .ply to: " + filename;
 			status = FAILED;
 			return;
 		}
 		invertZ(z);
 		filename = destination.filePath("heightmap.tiff");
-		if(!saveTiff(filename, width, height, z, false, imageset.pixel_size)) {
+		if(!saveTiff(filename, width, height, z, false, pixel_size)) {
 			error = "Failed to save depth map to: " + filename;
 			status = FAILED;
 			return;
 		}
 		filename = destination.filePath("heightmap_normalized.tiff");
-		if(!saveTiff(filename, width, height, z, true, imageset.pixel_size)) {
+		if(!saveTiff(filename, width, height, z, true, pixel_size)) {
 			error = "Failed to save depth map to: " + filename;
 			status = FAILED;
 			return;
@@ -471,8 +472,9 @@ bool saveObj(const char *filename, pmp::SurfaceMesh &mesh, int width, int height
 	return true;
 }
 
-void NormalsTask::assm(QString filename, std::vector<Eigen::Vector3f> &_normals, int width, int height, float approx_error,
+void NormalsTask::assm(QString filename, std::vector<Eigen::Vector3f> &_normals, int width, int height, float downsampling,
 					   std::function<bool(QString stage, int percent)> *callback) {
+	float approx_error = parameters.assm_error;
 	Grid<Eigen::Vector3f> normals(width, height, Eigen::Vector3f(0.0f, 0.0f, 0.0f));
 	for(int y = 0; y < height; y++)
 		for(int x = 0; x < width; x++) {
@@ -501,7 +503,8 @@ void NormalsTask::assm(QString filename, std::vector<Eigen::Vector3f> &_normals,
 		p[1] = height -p[1] -1;
 		p[2] *= -1;
 	}
-	savePly(filename.toStdString().c_str(), mesh, width, height, imageset.pixel_size);
+	float pixel_size = imageset.pixel_size * downsampling;
+	savePly(filename.toStdString().c_str(), mesh, width, height, pixel_size);
 }
 
 
