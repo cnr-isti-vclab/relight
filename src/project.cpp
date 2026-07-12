@@ -98,9 +98,17 @@ bool Project::scanDir() {
 			dir.filePath(s).toStdString().c_str());
 		if(fmt == ImageFormat::UNKNOWN) continue;
 		Image image(s);
-		QImageReader reader(dir.filePath(s));
+
+		ImageDecoder dec;
+		int w, h;
+		if(!dec.init(dir.filePath(s).toStdString().c_str(), w, h)) {
+			return false;
+		}
+		image.size.setWidth(w);
+		image.size.setHeight(h);
+		/*QImageReader reader(dir.filePath(s));
 		reader.setAutoTransform(false);
-		image.size = reader.size();
+		image.size = reader.size(); */
 		candidates.push_back({image, fmt});
 	}
 	if(candidates.empty())
