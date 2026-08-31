@@ -12,14 +12,14 @@ DEFINES += HAVE_LCMS2
 
 INCLUDEPATH += ../external/
 
-win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
+win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \b
     ../external/eigen-3.3.9/ \
     ../src/
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
 
 unix:QMAKE_CXXFLAGS = -fopenmp
 unix:INCLUDEPATH += ../external/eigen-3.3.9/ /usr/include/eigen3 ../src/
-unix:LIBS += -ljpeg -ltiff -lpng -llcms2
+unix:LIBS += -ljpeg -ltiff -lpng -llcms2 -lexiv2
 unix:LIBS += -fopenmp
 
 mac:INCLUDEPATH += /usr/local/Cellar/jpeg-turbo/3.1.0/include \

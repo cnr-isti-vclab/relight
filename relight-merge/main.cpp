@@ -7,6 +7,7 @@
 #include "../src/rti.h"
 #include "../src/cli/rtibuilder.h"
 #include "../src/jpeg_encoder.h"
+#include "../src/jpeg_decoder.h"
 
 using namespace std;
 
@@ -19,6 +20,9 @@ int main(int argc, char *argv[]) {
 	std::vector<float> bias;
 	std::vector<float> min;
 	std::vector<float> max;
+	J_COLOR_SPACE output_jpeg_colorspace = JCS_RGB; // color space to use when writing JPEGs
+	bool output_chroma_subsampling = false; // whether to use chroma subsampling
+	std::vector<uint8_t> output_icc_profile; // ICC profile from input
 
 	opterr = 0;
 	char c;
@@ -61,7 +65,23 @@ int main(int argc, char *argv[]) {
 		if(i == 0) {
 			min.resize(rti.nplanes, 1e20f);
 			max.resize(rti.nplanes, -1e20f);
-			continue;
+			// Extract color encoding metadata from first input's plane_0.jpg
+			QDir first_input_dir(path);
+			QString plane_file = first_input_dir.filePath("plane_0.jpg");
+			JpegDecoder decoder;
+			int w, h;
+			if(decoder.init(plane_file.toStdString().c_str(), w, h)) {
+				output_jpeg_colorspace = decoder.getJpegColorSpace();
+				output_chroma_subsampling = decoder.chromaSubsampled();
+				if(decoder.hasICCProfile()) {
+					output_icc_profile = decoder.getICCProfile();
+				}
+				// Note: not calling decoder.finish() to avoid "transferred too few scanlines" error
+				// since we only read metadata, not the actual image data
+			} else {
+				cerr << "Error: could not read plane_0.jpg from first input to extract color metadata\n";
+				return -1;
+			}
 		}
 		if(rti.basis != rtis[0].basis) {
 			cerr << "Rti basis for " << path << " is different." << endl;
@@ -76,11 +96,18 @@ int main(int argc, char *argv[]) {
 			return -1;
 		}
 
+		//value: v = (c - b)*s
+		//coeff:  c = v/s + b
+		//max:   M =(1 - b)*s = s - bs
+		//min:   m = (0 - b)*s = -bs
+		//scale: s= M - m
+		//bias:  b = -m/s
 		for(size_t k = 0; k < rti.nplanes; k++) {
 			float s = rti.material.planes[k].scale;
 			float b = rti.material.planes[k].bias;
 			min[k] = std::min((0 - b)*s, min[k]);
 			max[k] = std::max((1 - b)*s, max[k]);
+
 		}
 	}
 	for(size_t i = 0; i < min.size(); i++) {
@@ -96,6 +123,7 @@ int main(int argc, char *argv[]) {
 		cerr << "The output folder (" << qPrintable(output) << ") already exists! Pick a different name for the output folder, or remove it.";
 		return -1;
 	}
+
 
 
 	QDir here("./");
@@ -143,7 +171,11 @@ int main(int argc, char *argv[]) {
 			JpegEncoder enc;
 			enc.setQuality(rti_quality);
 			enc.setColorSpace(JCS_RGB, 3);
-			enc.setJpegColorSpace(JCS_RGB);
+			enc.setJpegColorSpace(output_jpeg_colorspace);
+			enc.setChromaSubsampling(output_chroma_subsampling);
+			if(!output_icc_profile.empty()) {
+				enc.setICCProfile(output_icc_profile);
+			}
 			enc.init(filename.toStdString().c_str(), width, height);
 
 
