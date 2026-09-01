@@ -16,19 +16,19 @@ jobs:
           include:
             - os: 'ubuntu-22.04'
               label: 'Linux'
-              qt_version: '6.6.*'
+              qt_version: '6.10.*'
 
             - os: 'macos-15-intel'
               label: 'macOS_x86_64'
-              qt_version: '6.8.0'
+              qt_version: '6.10.0'
 
             - os: 'macos-latest'
               label: 'macOS_arm64'
-              qt_version: '6.8.0'
+              qt_version: '6.10.0'
 
             - os: 'windows-latest'
               label: 'Windows'
-              qt_version: '6.6.*'
+              qt_version: '6.10.*'
 
     steps:
     - uses: actions/checkout@v4
