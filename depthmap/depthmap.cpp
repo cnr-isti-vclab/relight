@@ -45,8 +45,8 @@ bool Depthmap::loadTiff(const char *tiff, vector<float> &values, uint32_t &w, ui
 
 	uint16_t bitsPerSample = 32;
 	TIFFGetField(inTiff, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
-	if(bitsPerSample != 32 && bitsPerSample !=1) {
-		cerr << "Samples should be a float 32 bit or 1 bit boolean" << endl;
+	if(bitsPerSample != 32 && bitsPerSample != 8 && bitsPerSample !=1) {
+		cerr << "Samples should be a float 32 bits, 8 bits or 1 bit" << endl;
 		TIFFClose(inTiff);
 		return false;
 	}
@@ -68,7 +68,7 @@ bool Depthmap::loadTiff(const char *tiff, vector<float> &values, uint32_t &w, ui
 	// Check if the TIFF is tiled
 	uint32_t tileWidth, tileLength;
 	if (!TIFFGetField(inTiff, TIFFTAG_TILEWIDTH, &tileWidth) ||
-			!TIFFGetField(inTiff, TIFFTAG_TILELENGTH, &tileLength)) {
+		!TIFFGetField(inTiff, TIFFTAG_TILELENGTH, &tileLength)) {
 		return loadStripedTiff(inTiff, values, w, h, bitsPerSample);
 	} else {
 		return loadTiledTiff(inTiff, values, w, h, tileWidth, tileLength, bitsPerSample);
@@ -127,6 +127,45 @@ bool Depthmap::loadTiledTiff(TIFF* inTiff, vector<float> &values, uint32_t w, ui
 		}
 	}
 
+
+	if(bitsPerSample==8){
+		float scale = 1.0f / 255.0f;
+		std::vector<unsigned char> tileData8(tileSize);
+
+		for (uint32_t y = 0; y < numTilesY; ++y) {
+			for (uint32_t x = 0; x < numTilesX; ++x) {
+				uint32_t tileIndex = TIFFComputeTile(inTiff, x * tileWidth, y * tileLength, 0, 0);
+
+				if (TIFFReadEncodedTile(inTiff, tileIndex, tileData8.data(), tileSize) < 0) {
+					cerr << "Error reading tile " << tileIndex << endl;
+					TIFFClose(inTiff);
+					return 1;
+				}
+
+				for (uint32_t tileY = 0; tileY < tileLength; ++tileY) {
+					uint32_t dstY = y * tileLength + tileY;
+					if(dstY >= height)
+						break;
+					for (uint32_t tileX = 0; tileX < tileWidth; ++tileX) {
+						uint32_t srcIndex = tileY * tileWidth + tileX;
+						uint32_t dstX = x * tileWidth + tileX;
+
+						if (dstX >= width) {
+							continue;
+						}
+
+						uint32_t dstIndex = (dstY * w + dstX);
+						unsigned char v = tileData8[srcIndex];
+						values[dstIndex] = static_cast<float>(v) * scale;
+					}
+				}
+			}
+		}
+	}
+
+	
+	
+
 	if(bitsPerSample==1){
 		unsigned char * tileData= new unsigned char [tileSize];
 
@@ -138,9 +177,7 @@ bool Depthmap::loadTiledTiff(TIFF* inTiff, vector<float> &values, uint32_t w, ui
 					cerr << "Error reading tile " << tileIndex << endl;
 					TIFFClose(inTiff);
 					return 1;
-				}
-
-				for (uint32_t tileY = 0; tileY < tileLength; ++tileY) {
+				}				for (uint32_t tileY = 0; tileY < tileLength; ++tileY) {
 					uint32_t dstY = y * tileLength + tileY;
 					if(dstY >= height)
 						break;
@@ -188,12 +225,34 @@ bool Depthmap::loadStripedTiff(TIFF* inTiff, std::vector<float> &values, uint32_
 				return false;
 			}
 
+
 			for (uint32_t col = 0; col < w; ++col) {
 				uint32_t dstIndex = row * w + col;
 				values[dstIndex] = stripData[col];
 			}
 		}
 	}
+
+	if(bitsPerSample==8) {
+		// 8-bit scanline: scale so that 255 -> 0.1
+		float scale = 1.0f / 255.0f;
+		std::vector<unsigned char> stripData8(scanLineSize);
+
+		for (uint32_t row = 0; row < h; ++row) {
+			// Read the current strip
+			if (TIFFReadScanline(inTiff, stripData8.data(), row, 1) < 0) {
+				cerr << "Error reading strip " << row << endl;
+				TIFFClose(inTiff);
+				return false;
+			}
+
+			for (uint32_t col = 0; col < w; ++col) {
+				uint32_t dstIndex = row * w + col;
+				values[dstIndex] = static_cast<float>(stripData8[col]) * scale;
+			}
+		}
+	}
+
 	if(bitsPerSample==1) {
 		unsigned char * stripData= new unsigned char [scanLineSize];
 
@@ -241,6 +300,12 @@ bool Depthmap::loadMask(const char *tifPath){
 		return false;
 	}
 
+	// Normalize mask values to either 0 or 255 for consistency
+	for (size_t i = 0; i < mask.size(); ++i) {
+		float v = mask[i];
+		// Treat any non-zero as foreground
+		mask[i] = (v != 0.0f) ? 255.0f : 0.0f;
+	}
 
 	return true;
 
@@ -271,10 +336,10 @@ bool Depthmap::loadNormals(const char *normals_path){
 			int i = x + y * width;
 
 			normals[i] = Eigen::Vector3f(
-						(qRed(rgb) / 255.0f) * 2.0f - 1.0f,
-						(qGreen(rgb) / 255.0f) * 2.0f - 1.0f,
-						(qBlue(rgb) / 255.0f) * 2.0f - 1.0f
-						);
+				(qRed(rgb) / 255.0f) * 2.0f - 1.0f,
+				(qGreen(rgb) / 255.0f) * 2.0f - 1.0f,
+				(qBlue(rgb) / 255.0f) * 2.0f - 1.0f
+				);
 		}
 	}
 

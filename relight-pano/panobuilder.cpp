@@ -67,11 +67,56 @@ void PanoBuilder::setRelightNormals(QString path){
 	relight_normals_path = path;
 }
 
+void PanoBuilder::setLight3d(double radius, double verticalOffset){
+	if (radius <= 0.0)
+		throw QString("Invalid dome radius for -3 option: %1").arg(radius);
+
+	hasLight3d = true;
+	domeRadius = radius;
+	domeVerticalOffset = verticalOffset;
+}
+
 void PanoBuilder::ensureExecutable(QString path){
 	QString resolved = QStandardPaths::findExecutable(path);
 	if(resolved.isEmpty())
 		throw QString("File does not exist or is not executable: ") + path;
 }
+
+QString PanoBuilder::light3dArgument() const {
+	assert(hasLight3d);
+	QString radius = QString::number(domeRadius, 'g', 16);
+	if (domeVerticalOffset == 0.0)
+		return radius;
+	return radius + ":" + QString::number(domeVerticalOffset, 'g', 16);
+}
+
+QString PanoBuilder::getBackupPath(const QString &source) {
+	QFileInfo sourceInfo(source);
+	QString dir = sourceInfo.absolutePath();
+	QString baseName = sourceInfo.completeBaseName();
+	QString extension = sourceInfo.suffix();
+	return QDir(dir).filePath(baseName + "_backup." + extension);
+}
+
+void PanoBuilder::makeBackup(const QString &source) {
+	if (!QFile::exists(source))
+		throw QString("Backup source file does not exist: %1").arg(source);
+
+	QFileInfo sourceInfo(source);
+	QString backupPath = getBackupPath(source);
+
+	QFile::remove(backupPath);
+
+	if (!QFile::copy(source, backupPath))
+		throw QString("Failed to copy %1 to %2").arg(source, backupPath);
+
+	QFile backupFile(backupPath);
+	if (backupFile.open(QIODevice::Append)) {
+		backupFile.setFileTime(sourceInfo.lastModified(), QFileDevice::FileModificationTime);
+		backupFile.close();
+	}
+}
+
 QDir PanoBuilder::cd(QString path, bool create){
 	QDir::setCurrent(base_dir.absolutePath());
 	QDir dir(path);
@@ -199,7 +244,7 @@ void PanoBuilder::transplantExif(){
 
 		cout << "Transplant EXIF: " << qPrintable(originalPhoto)
 			 << " → " << qPrintable(dest) << endl;
-		transplantExif(originalPhoto, dest);
+					transplantExif(originalPhoto, dest);
 	}
 }
 
@@ -211,6 +256,14 @@ void PanoBuilder::executeProcess(QString& program, QStringList& arguments) {
 		cout << "Print command: " << qPrintable(command) << endl;
 	}
 	QProcess process;
+	QString currentPath = QDir::currentPath();
+
+	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+	env.insert("PWD", currentPath);
+	env.remove("LD_LIBRARY_PATH");
+
+	process.setProcessEnvironment(env);
+
 	process.start(program, arguments);
 
 	if (!process.waitForStarted()) {
@@ -328,7 +381,7 @@ void PanoBuilder::process(Steps starting_step, bool stop){
 	switch (starting_step) {
 
 	case MEANS:
-		runWithTiming("MEANS", [this]() { means(); });
+		//runWithTiming("MEANS", [this]() { means(); });
 		if (stop) break;
 	case TAPIOCA:
 		runWithTiming("TAPIOCA", [this]() { tapioca(); });
@@ -339,11 +392,11 @@ void PanoBuilder::process(Steps starting_step, bool stop){
 	case TAPAS:
 		runWithTiming("TAPAS", [this]() { tapas(); });
 		if (stop) break;
-	case APERICLOUD:
-		runWithTiming("APERICLOUD", [this]() { apericloud(); });
-		if (stop) break;
 	case ORTHOPLANE:
 		runWithTiming("ORTHOPLANE", [this]() { orthoplane(); });
+		if (stop) break;
+	case APERICLOUD:
+		runWithTiming("APERICLOUD", [this]() { apericloud(); });
 		if (stop) break;
 	case TARAMA:
 		runWithTiming("TARAMA", [this]() { tarama(); });
@@ -355,10 +408,10 @@ void PanoBuilder::process(Steps starting_step, bool stop){
 		runWithTiming("C3DC", [this]() { c3dc(); });
 		if (stop) break;
 	case RTI:
-		runWithTiming("RTI", [this]() { rti(); });
+		//runWithTiming("RTI", [this]() { rti(); });
 		if (stop) break;
 	case NORMALS:
-		runWithTiming("NORMALS", [this]() { normals(); });
+		//runWithTiming("NORMALS", [this]() { normals(); });
 		if (stop) break;
 	case DEPTHMAP:
 		runWithTiming("DEPTHMAP", [this]() { depthmap(); });
@@ -492,7 +545,7 @@ void PanoBuilder::schnaps(){
 
 	QString program = mm3d_path;
 	QStringList arguments;
-	arguments << "Schnaps" << ".*" + format << "MoveBadImgs=1";
+	arguments << "Schnaps" << ".*" + format << "MoveBadImgs=1" << "NbWin=300";
 
 	executeProcess(program, arguments);
 
@@ -553,7 +606,6 @@ void PanoBuilder::apericloud(){
 // Transforms relative camera orientations to absolute coordinate system (Ori-Abs).
 // Applies rotation matrix to align the first camera with world coordinates.
 void PanoBuilder::orthoplane(){
-
 	QDir currentDir = cd("photogrammetry");
 
 	QDir oriRelDir(currentDir.filePath("Ori-Relative"));
@@ -566,13 +618,24 @@ void PanoBuilder::orthoplane(){
 		throw QString("No XML files found in Ori-Relative directory");
 	}
 
+	QStringList datasetSubDirs = datasets_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+
+	QString firstDatasetName = datasetSubDirs.first();
+	QStringList firstDatasetXmlCandidates = oriRelDir.entryList(
+		QStringList() << QString("Orientation-%1.*.xml").arg(firstDatasetName),
+		QDir::Files);
+	if (firstDatasetXmlCandidates.isEmpty()) {
+		throw QString("Missing orientation XML for first dataset: %1").arg(firstDatasetName);
+	}
+	QString firstDatasetXml = firstDatasetXmlCandidates.first();
+
 	QDir oriAbsDir(currentDir.filePath("Ori-Abs"));
 	if (!oriAbsDir.exists()){
 		if (!currentDir.mkdir("Ori-Abs")) {
 			throw QString("Could not create 'Ori-abs' directory");
 		}
 	}
-	OriXml oriXml(oriRelDir.filePath(xmlFiles[0]));
+	OriXml oriXml(oriRelDir.filePath(firstDatasetXml));
 
 	//Rr0 Matrice di rotazione
 	//Cr0 Posizione centro camera.
@@ -592,10 +655,13 @@ void PanoBuilder::orthoplane(){
 	//cout << "Matrice M = (Rr0^-1 * diag(1, -1, -1)): " << M << endl;
 
 	oriXml.setOrientation(Ra0, Ca0);
-	QString savePath = oriAbsDir.filePath(xmlFiles[0]);
+	QString savePath = oriAbsDir.filePath(firstDatasetXml);
 	oriXml.saveOrientation(savePath);
 
-	for (int i = 1; i < xmlFiles.size(); ++i) {
+	for (int i = 0; i < xmlFiles.size(); ++i) {
+		if (xmlFiles[i] == firstDatasetXml)
+			continue;
+
 		OriXml ori(oriRelDir.filePath(xmlFiles[i]));
 		Eigen::Matrix3d Rr1 = ori.rotation;
 		Eigen::Vector3d Cr1 = ori.center;
@@ -615,6 +681,24 @@ void PanoBuilder::orthoplane(){
 		QFile::copy(oriRelDir.absoluteFilePath(s), oriAbsDir.absoluteFilePath(s));
 	}
 
+	/*
+	QString swapTmpName = "Ori-Swap-Tmp";
+	if (currentDir.exists(swapTmpName)) {
+		throw QString("Temporary swap directory already exists: ") + currentDir.filePath(swapTmpName);
+	}
+
+	if (!currentDir.rename("Ori-Relative", swapTmpName)) {
+		throw QString("Failed to rename Ori-Relative to temporary directory during swap");
+	}
+	if (!currentDir.rename("Ori-Abs", "Ori-Relative")) {
+		currentDir.rename(swapTmpName, "Ori-Relative");
+		throw QString("Failed to rename Ori-Abs to Ori-Relative during swap");
+	}
+	if (!currentDir.rename(swapTmpName, "Ori-Abs")) {
+		currentDir.rename("Ori-Relative", "Ori-Abs");
+		currentDir.rename(swapTmpName, "Ori-Relative");
+		throw QString("Failed to rename temporary directory to Ori-Abs during swap");
+	}*/
 }
 
 void PanoBuilder::tarama(){
@@ -651,7 +735,7 @@ void PanoBuilder::malt_mec(){
 	QString program = mm3d_path;
 	QStringList arguments;
 	arguments << "Malt" << "Ortho" << ".*" + format << "Relative" << "DoOrtho=1" << "ZoomF=4" << "DirMEC=Malt"
-			  << "DirTA=TA" << "ImOrtho=.*" + format << "DirOF=Ortho-Lights" << "NbVI=3" << "Purge=true"
+			  << "DirTA=TA" << "ImOrtho=.*" + format << "DirOF=Ortho-Lights" << "NbVI=2" << "Purge=true"
 			  << QString("DefCor=%1").arg(DefCor)
 			  << QString("Regul=%1").arg(Regul);
 	//DefCor 2 is to big
@@ -659,27 +743,13 @@ void PanoBuilder::malt_mec(){
 
 	QString depthmapPath = currentDir.filePath("Malt/Z_Num7_DeZoom4_STD-MALT.tif");
 	QString maskPath     = currentDir.filePath("Malt/Masq_STD-MALT_DeZoom4.tif");
+	//QString depthXml     = currentDir.filePath("Malt/Masq_STD-MALT_DeZoom4.xml");
+	//QString depthTfw = depthmapPath.left(depthmapPath.size() - 4) + ".tfw";
 
-
-	QString depthmapBackup = depthmapPath + "_backup.tif";
-	QFile::remove(depthmapBackup);
-	QFile::copy(depthmapPath, depthmapBackup);
-
-	QString maskBackup = maskPath + "_backup.tif";
-	QFile::remove(maskBackup);
-	QFile::copy(maskPath, maskBackup);
-
-	// Backup XML + TFW (stessa regola nome + "_backup" + estensione)
-	QString depthXml = depthmapPath + ".xml";
-	QString depthXmlBackup = depthXml + "_backup.xml";
-	QFile::remove(depthXmlBackup);
-	QFile::copy(depthXml, depthXmlBackup);
-
-
-	QString depthTfw = depthmapPath.left(depthmapPath.size() - 4) + ".tfw";
-	QString depthTfwBackup = depthTfw + "_backup.tfw";
-	QFile::remove(depthTfwBackup);
-	QFile::copy(depthTfw, depthTfwBackup);
+	makeBackup(depthmapPath);
+	makeBackup(maskPath);
+	//makeBackup(depthXml);
+	//makeBackup(depthTfw);
 }
 
 // Creates dense 3D point cloud using C3DC (MicMac) - currently disabled.
@@ -701,7 +771,7 @@ void PanoBuilder::c3dc(){
 
 // Generates RTI (Reflectance Transformation Imaging) files for each dataset.
 // Uses relight-cli to create PTM files, then merges them using relight-merge.
-void PanoBuilder::rti(){
+void PanoBuilder::rti() {
 	QDir::setCurrent(base_dir.absolutePath());
 
 	QDir rtiDir(base_dir.filePath("rti"));
@@ -735,8 +805,8 @@ void PanoBuilder::rti(){
 		int nPlanes = (base == PTM) ? 18 : 27;
 		arguments << datasets_dir.filePath(subDirName) << rtiDir.filePath(subDir.dirName()) << "-b" << baseName << "-p" << QString::number(nPlanes);
 			// <<"-3" << "2.5:0.21" 3 1.6:0.04 ;
-		if(!light3d.isEmpty())
-			arguments << "-3" << light3d;
+		if(hasLight3d)
+			arguments << "-3" << light3dArgument();
 
 		executeProcess(relight_cli_path, arguments);
 	}
@@ -775,8 +845,8 @@ void PanoBuilder::normals(){
 
 		QStringList arguments;
 		arguments << inputPath << "-i" << "bni" << "--bni-k" << "0" << "--scale-down" << "4" << "-o" << outputPath;
-		if (!light3d.isEmpty())
-			arguments << "-3" << light3d;
+		if (hasLight3d)
+			arguments << "-3" << light3dArgument();
 
 		executeProcess(relight_normals_path, arguments);
 
@@ -801,89 +871,124 @@ void PanoBuilder::depthmap(){
 
 	QString depthmapPath = currentDir.filePath("Malt/Z_Num7_DeZoom4_STD-MALT.tif");
 	QString maskPath     = currentDir.filePath("Malt/Masq_STD-MALT_DeZoom4.tif");
+	QString corrPath     = currentDir.filePath("Malt/Correl_STD-MALT_Num_6.tif");
 	QString plyFile      = currentDir.filePath("AperiCloud_Relative.ply");
 	QString depthXml     = currentDir.filePath("Malt/Z_Num7_DeZoom4_STD-MALT.xml");
 	QString output_points = base_dir.filePath("points_h.txt");
 
 	// Use backup file
-	QString depthmapBackup = depthmapPath + "_backup.tif";
-	QString maskBackup     = maskPath + "_backup.tif";
-	QString depthXmlBackup = depthXml + "_backup.xml";
+	QString depthmapBackup = getBackupPath(depthmapPath);
+	QString maskBackup     = getBackupPath(maskPath);
 
+	bool dodepth = true;
 
-	OrthoDepthmap ortho;
+	//dodepth = false;
 
-	if (!ortho.load(qPrintable(depthmapPath), qPrintable(maskPath))) {
-		cerr << "Failed to load depthmap or mask" << endl;
-		return;
-	}
+	if(true) {
+		OrthoDepthmap ortho;
 
-	QDir depthmapDir(base_dir.filePath("depthmaps"));
-	QDir xmlDir(base_dir.filePath("photogrammetry/Ori-Relative"));
+		QDir depthmapDir(base_dir.filePath("depthmaps"));
+		QDir xmlDir(base_dir.filePath("photogrammetry/Ori-Relative"));
 
-	QStringList extensions = {".tiff", ".tif", ".jpg", ".jpeg"};
-	QStringList tiffFilters = {"*.tiff"};
+		QStringList extensions = {".tiff", ".tif", ".jpg", ".jpeg"};
+		QStringList tiffFilters = {"*.tiff"};
 
-	QFileInfoList tiffFiles = depthmapDir.entryInfoList(tiffFilters, QDir::Files);
-	if (tiffFiles.isEmpty()) {
-		cerr << "No .tiff file find in " << depthmapDir.absolutePath().toStdString() << endl;
-		return;
-	}
+		QFileInfoList tiffFiles = depthmapDir.entryInfoList(tiffFilters, QDir::Files);
+		if (tiffFiles.isEmpty()) {
+			cerr << "No .tiff file find in " << depthmapDir.absolutePath().toStdString() << endl;
+			return;
+		}
 
-	QFileInfoList xmlFiles = xmlDir.entryInfoList({"*.xml"}, QDir::Files);
-	if (xmlFiles.isEmpty()) {
-		cerr << "No .xml file find in " << xmlDir.absolutePath().toStdString() << endl;
-		return;
-	}
+		QFileInfoList xmlFiles = xmlDir.entryInfoList({"*.xml"}, QDir::Files);
+		if (xmlFiles.isEmpty()) {
+			cerr << "No .xml file find in " << xmlDir.absolutePath().toStdString() << endl;
+			return;
+		}
 
-	try {
-		ortho.loadDepth(qPrintable(depthmapBackup));
-		ortho.loadMask(qPrintable(maskBackup));
-		ortho.loadPointCloud(qPrintable(plyFile));
-	} catch (QString e) {
-		cerr << "Error loading depth data: " << qPrintable(e) << endl;
-		return;
-	}
+		try {
+			ortho.loadDepth(qPrintable(depthmapBackup));
+			ortho.loadMask(qPrintable(maskBackup));
+			ortho.loadCorrelation(qPrintable(corrPath));
+			ortho.loadXml(qPrintable(depthXml));
+			ortho.loadPointCloud(qPrintable(plyFile));
+		} catch (QString e) {
+			cerr << "Error loading depth data: " << qPrintable(e) << endl;
+			return;
+		}
 
-	ortho.beginIntegration();
+		if(dodepth) {
+		ortho.beginIntegration();
 
-	for (const QFileInfo &tiffFile : tiffFiles) {
-		CameraDepthmap depthCam;
-		QString cameraName = tiffFile.completeBaseName();
-		QString orientationXmlPath;
+		for (const QFileInfo &tiffFile : tiffFiles) {
+			CameraDepthmap depthCam;
+			QString cameraName = tiffFile.completeBaseName();
+			QString orientationXmlPath;
 
-		for (const QString &ext : extensions) {
-			QString potentialPath = xmlDir.absoluteFilePath("Orientation-" + cameraName + ext + ".xml");
-			if (QFile::exists(potentialPath)) {
-				orientationXmlPath = potentialPath;
-				break;
+			for (const QString &ext : extensions) {
+				QString potentialPath = xmlDir.absoluteFilePath("Orientation-" + cameraName + ext + ".xml");
+				if (QFile::exists(potentialPath)) {
+					orientationXmlPath = potentialPath;
+					break;
+				}
 			}
-		}
-		if(orientationXmlPath.isEmpty())
-			throw(QString("Missing camera parameter xml file for image: %1").arg(cameraName));
+			if(orientationXmlPath.isEmpty())
+				throw(QString("Missing camera parameter xml file for image: %1").arg(cameraName));
 
-		if (!depthCam.camera.loadXml(orientationXmlPath)) {
-			throw QString("Missing or invalid XML: " + orientationXmlPath);
+			if (!depthCam.camera.loadXml(orientationXmlPath)) {
+				throw QString("Missing or invalid XML: " + orientationXmlPath);
+			}
+
+			if (!depthCam.loadDepth(qPrintable(tiffFile.absoluteFilePath()))) {
+				throw QString("Unable to load depth map: " + tiffFile.fileName());
+			}
+
+			if (depthCam.width != depthCam.camera.width || depthCam.height != depthCam.camera.height) {
+				qDebug() << "Resizing rti depthmap: " << tiffFile.fileName();
+				depthCam.camera.scale(depthCam.width, depthCam.height);
+			}
+
+			cout << "Processed: " << tiffFile.fileName().toStdString() << endl;
+			ortho.anchorCamera(depthCam, qPrintable(output_points));
 		}
 
-		if (!depthCam.loadDepth(qPrintable(tiffFile.absoluteFilePath()))) {
-			throw QString("Unable to load depth map: " + tiffFile.fileName());
+		ortho.endIntegration();
 		}
+		ortho.saveDepth(qPrintable(depthmapPath));
+		ortho.saveMask(qPrintable(maskPath));
+		ortho.saveObj("depthmap.obj");
 
-		if (depthCam.width != depthCam.camera.width || depthCam.height != depthCam.camera.height) {
-			qDebug() << "Resizing rti depthmap: " << tiffFile.fileName();
-			depthCam.camera.scale(depthCam.width, depthCam.height);
-		}
+	} else {
+		cout << "NOT DEPTHING!!!!" << endl;
 
-		cout << "Processed: " << tiffFile.fileName().toStdString() << endl;
-		ortho.integratedCamera(depthCam, qPrintable(output_points));
+		QFile::remove(depthmapPath);
+		bool ok = QFile::copy(depthmapBackup, depthmapPath);
+		if(!ok)
+			throw QString("Failed copying depthmap backup: " + depthmapBackup + " to " + depthmapPath);
+		QFile::remove(maskPath);
+		ok = QFile::copy(maskBackup, maskPath);
+		if(!ok)
+			throw QString("Failed copyting mask backup");
 	}
 
-	ortho.endIntegration();
-	ortho.saveDepth(qPrintable(depthmapPath));
-	ortho.saveMask(qPrintable(maskPath));
-	//ortho.saveObj("weightsElev3_0125.obj");
+	// Restore timestamps from backup files
+	if (!QFile::exists(depthmapBackup))
+		throw QString("File: " + depthmapBackup + " missing");
+	QFileInfo backupInfo(depthmapBackup);
+	QFile depthFile(depthmapPath);
+	if (depthFile.open(QIODevice::Append)) {
+		depthFile.setFileTime(backupInfo.lastModified(), QFileDevice::FileModificationTime);
+		depthFile.close();
+	}
 
+	if (!QFile::exists(maskBackup))
+		throw QString("File: " + depthmapBackup + " missing");
+
+	QFileInfo maskInfo(maskBackup);
+	QFile maskFile(maskPath);
+	if (maskFile.open(QIODevice::Append)) {
+		maskFile.setFileTime(maskInfo.lastModified(), QFileDevice::FileModificationTime);
+		maskFile.close();
+	}
 }
 
 // Projects each RTI plane into orthographic views using Malt Ortho (MicMac).
@@ -982,6 +1087,7 @@ void PanoBuilder::malt_ortho() {
 		// keeping depth and mask consistent.  Only ImOrtho is restricted to plane_ images.
 		arguments << "Malt" << "Ortho" << ".*" + format << "Relative" << "ZoomF=4" << "DirMEC=Malt" << "DirTA=TA" << "DoMEC=0"
 				  << "DoOrtho=1" << "Purge=false" << "ImOrtho=plane_.*" + format << "DirOF=" + orthoPlaneDirName;
+		arguments << "NbVI=2";
 
 		try {
 			executeProcess(program, arguments);
@@ -1119,7 +1225,7 @@ void PanoBuilder::jpg()
 
 		if (img.isNull()) {
 			throw QString("Failed to load image: %1 | error: %2")
-			.arg(tifFilePath)
+				.arg(tifFilePath)
 				.arg(reader.errorString());
 		}
 

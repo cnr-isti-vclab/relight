@@ -36,15 +36,15 @@ int main(int argc, char *argv[])
 	QCommandLineOption cliOption(QStringList()         << "C" << "relight-cli",     "Relight-cli path",     "clibin", "relight-cli");
 	QCommandLineOption mergeOption(QStringList()       << "G" << "relight-merge",   "Relight-merge path",   "mergebin", "relight-merge");
 	QCommandLineOption normalsOption(QStringList()     << "N" << "relight-normals", "Relight-normals path", "normalsbin", "relight-normals");
+	QCommandLineOption seamOption(QStringList()        << "R" << "seam", "Relight-seam executable path", "seambin", "relight-seam");
 
 
 	QCommandLineOption interactiveOption(QStringList() << "i" << "interactive",  "Open users interface");
 	QCommandLineOption verboseOption(QStringList()     << "v" << "verbose",      "Enable verbose output");
 	QCommandLineOption debugOption(QStringList()       << "d" << "debug",        "Enable debug output");
 	QCommandLineOption stepOption(QStringList()        << "s" << "step",
-								  "Starting step (means, tapioca, schnaps, tapas, apericloud, orthoplane, tarama, malt_mec, c3dc, rti, depthmap, malt_ortho, jpg)", "step");
+								  "Starting step (means, tapioca, schnaps, tapas, apericloud, orthoplane, tarama, malt_mec, c3dc, rti, depthmap, malt_ortho, tawny, jpg)", "step");
 	QCommandLineOption stopOption(QStringList()        << "S" << "stop",         "Stop after first step");
-	QCommandLineOption seamOption(QStringList()        << "R" << "seam", "Relight-seam executable path", "seambin", "relight-seam");
 
 
 	parser.addOption(micmacOption);
@@ -72,7 +72,9 @@ int main(int argc, char *argv[])
 													"Regul check the amount of smoothing applied during the orthorectification process. Default is 0.05", "0.05");
 	parser.addOption(regulOption);
 
-	QCommandLineOption light3dOption(QStringList()     << "L" << "Light3d", "Sets the regularization parameter", "lights");
+	QCommandLineOption light3dOption(QStringList()     << "3" << "light3d" << "L" << "Light3d",
+		"3d light positions processing, ratio diameter_dome/image_width and optional vertical offset as radius[:offset]",
+		"radius[:offset]");
 	parser.addOption(light3dOption);
 
 	QCommandLineOption baseOption(QStringList()        << "b" << "base", "RTI basis: ptm or hsh (default: hsh)", "base", "hsh");
@@ -107,7 +109,32 @@ int main(int argc, char *argv[])
 	cout << "DefCor value: " << defCor << endl;
 	cout << "Regul value: " << regul << endl;
 
-	QString light3d = parser.value(light3dOption);
+	QString light3d = parser.value(light3dOption).trimmed();
+	double domeRadius = 0.0;
+	double domeVerticalOffset = 0.0;
+	if (!light3d.isEmpty()) {
+		QStringList params = light3d.split(':');
+		if (params.isEmpty() || params.size() > 2) {
+			cerr << "Error: invalid -3 value '" << qPrintable(light3d) << "'. Use radius[:offset]." << endl;
+			return -1;
+		}
+
+		bool radiusOk = false;
+		domeRadius = params[0].toDouble(&radiusOk);
+		if (!radiusOk || domeRadius <= 0.0) {
+			cerr << "Error: invalid dome radius in -3 value '" << qPrintable(light3d) << "'." << endl;
+			return -1;
+		}
+
+		if (params.size() == 2) {
+			bool offsetOk = false;
+			domeVerticalOffset = params[1].toDouble(&offsetOk);
+			if (!offsetOk) {
+				cerr << "Error: invalid dome offset in -3 value '" << qPrintable(light3d) << "'." << endl;
+				return -1;
+			}
+		}
+	}
 
 	bool interactive = parser.isSet(interactiveOption);
 	bool stop        = parser.isSet(stopOption);
@@ -127,9 +154,10 @@ int main(int argc, char *argv[])
 			PanoBuilder builder(datasetsFolder);
 			builder.DefCor= defCor;
 			builder.Regul = regul;
-			builder.light3d = light3d;
 			builder.verbose = verbose;
 			builder.debug = debug;
+			if (!light3d.isEmpty())
+				builder.setLight3d(domeRadius, domeVerticalOffset);
 
 			builder.setMm3d(parser.value(micmacOption));
 			builder.setRelightCli(parser.value(cliOption));

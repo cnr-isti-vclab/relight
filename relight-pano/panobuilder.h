@@ -23,8 +23,8 @@ public:
 		TAPIOCA,
 		SCHNAPS,
 		TAPAS,
-		APERICLOUD,
 		ORTHOPLANE,
+		APERICLOUD,
 		TARAMA,
 		MALT_MEC,
 		C3DC,
@@ -38,7 +38,7 @@ public:
 	};
 
 
-	QStringList steps = {"means", "tapioca", "schnaps", "tapas", "apericloud", "orthoplane", "tarama", "malt_mec", "c3dc", "rti", "normals", "depthmap", "malt_ortho", "tawny", "jpg", "updateJson"};
+	QStringList steps = {"means", "tapioca", "schnaps", "tapas", "orthoplane", "apericloud", "tarama", "malt_mec", "c3dc", "rti", "normals", "depthmap", "malt_ortho", "tawny", "jpg", "updateJson"};
 	QDir base_dir;
 	QDir datasets_dir;
 	QDir additional_dir;
@@ -59,7 +59,9 @@ public:
 	bool verbose = false;
 	bool debug = false;
 	QString format = "jpg";
-	QString light3d;
+	bool hasLight3d = false;
+	double domeRadius = 0.0;
+	double domeVerticalOffset = 0.0;
 	Base base = HSH;
 
 
@@ -67,6 +69,7 @@ public:
 	void setMm3d(QString path);
 	void setRelightCli(QString path);
 	void setRelightMerge(QString path);
+	void setLight3d(double radius, double verticalOffset = 0.0);
 	int findStep(QString step);
 	int findNPlanes(QDir& dir);
 	void exportMeans();
@@ -96,9 +99,12 @@ public:
 signals:
 private:
 	void ensureExecutable(QString path);
+	QString light3dArgument() const;
 	void transplantExif(const QString &src, const QString &dest);
 	QDir cd(QString path, bool create = false);
 	void rmdir(QString path);
+	QString getBackupPath(const QString &source);
+	void makeBackup(const QString &source);
 
 	QElapsedTimer globalTimer;
 	QMap<QString, qint64> stepTimes;
