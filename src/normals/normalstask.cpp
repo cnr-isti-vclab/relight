@@ -420,7 +420,7 @@ bool savePly(const char *filename, pmp::SurfaceMesh &mesh, int width, int height
 		stream << "property float s\n";
 		stream << "property float t\n";
 		stream << "element face " << indices.size()/13 << "\n";
-		stream << "property list uchar int vertex_index\n";
+		stream << "property list uchar int vertex_indices\n";
 		stream << "end_header\n";
 	}
 

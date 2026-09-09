@@ -77,7 +77,7 @@ bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z,
 		stream << "property float s\n";
 		stream << "property float t\n";
 		stream << "element face " << 2*(w-1)*(h-1) << "\n";
-		stream << "property list uchar int vertex_index\n";
+		stream << "property list uchar int vertex_indices\n";
 		stream << "end_header\n";
 	}
 
