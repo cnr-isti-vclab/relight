@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+# Custom AppRun that keeps linuxdeploy's hook chain while ensuring
+# bundled libraries in usr/lib* take precedence.
+
+set -e
+
+APPDIR="$(readlink -f "$(dirname "$0")")"
+export APPDIR
+
+source "$this_dir"/apprun-hooks/linuxdeploy-plugin-qt-hook.sh
+
+prepend_ld_path() {
+    local dir="$1"
+    if [ -d "$dir" ]; then
+        if [ -z "${LD_LIBRARY_PATH:-}" ]; then
+            LD_LIBRARY_PATH="$dir"
+        else
+            LD_LIBRARY_PATH="$dir:$LD_LIBRARY_PATH"
+        fi
+    fi
+}
+
+prepend_ld_path "$APPDIR/usr/lib"
+export LD_LIBRARY_PATH
+
+exec "$APPDIR/AppRun.wrapped" "$@"

@@ -27,7 +27,7 @@ public:
 
 	QString version;
 	QDir dir;                  //image folder, path relative to project
-	//TODO: this is duplicated in lens and it's a problem!
+	//TODO: this is duplicated in lens!
 	QSize imgsize;             //images width and height (must be the same for all).
 	Lens lens;
 	Dome dome;
@@ -100,8 +100,6 @@ public:
 	bool rotateImage(Image &image, bool clockwise);
 	void rotateImages();
 	void rotateImages(bool clockwise);
-	bool updateImgSize(); //use first (valid, checked) image to set project imgsize.
-
 	bool hasDirections() { return dome.directions.size() > 0; }
 	//return number of non skipped images.
 	size_t size() { 

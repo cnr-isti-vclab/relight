@@ -94,9 +94,9 @@ bool Project::scanDir() {
 	};
 	std::vector<CandidateImage> candidates;
 	for(const QString &s: QDir(dir).entryList(img_ext)) {
-		ImageFormat fmt = ImageDecoder::detectFormat(dir.filePath(s).toStdString().c_str());
+		ImageFormat fmt = ImageDecoder::detectFormat(
+			dir.filePath(s).toStdString().c_str());
 		if(fmt == ImageFormat::UNKNOWN) continue;
-
 		Image image(s);
 
 		ImageDecoder dec;
@@ -146,6 +146,13 @@ bool Project::scanDir() {
 			imgsize = resolutions[i];
 		}
 	}
+
+
+	for(Image &image: images) {
+		image.valid = image.size == imgsize;
+		image.skip = !image.valid;
+	}
+
 
 	lens.width = imgsize.width();
 	lens.height = imgsize.height();
@@ -197,10 +204,10 @@ bool Project::scanDir() {
 			lens = alllens[i];
 		}
 	}
-/*	for(uint32_t i = 0; i < images.size(); i++) {
+	for(uint32_t i = 0; i < images.size(); i++) {
 		images[i].valid &= (lens.focal35() == alllens[i].focal35());
 		images[i].skip = !images[i].valid;
-	}*/
+	}
 	
 	// Detect ICC color profile from first valid image
 	icc_profile_description = "No profile";
@@ -415,8 +422,9 @@ void Project::rotateImages(bool clockwise) {
 	needs_saving = true;
 }
 
-//Use find rotated images and use mutual info to select direction
 void Project::rotateImages() {
+	//TODO this does not preserve exif.
+
 	//find first image non rotated.
 	QString target_filename;
 	for(Image &image: images) {
@@ -449,25 +457,11 @@ void Project::rotateImages() {
 			continue;
 
 		image.size = imgsize;
+		image.valid = true;
 		image.skip = false;
 	}
 }
 
-
-bool Project::updateImgSize() {
-	imgsize = QSize();
-	QSize size;
-	for(Image &img: images)	 {
-		if(img.skip)
-			continue;
-		if(size.isNull())
-			size = img.size;
-		if(size != img.size)
-			return false;
-	}
-	imgsize = size;
-	return true;
-}
 
 void Project::load(QString filename) {
 	QFile file(filename);
@@ -624,6 +618,8 @@ void Project::checkImages() {
 		if(!reader.canRead())
 			continue;
 		QSize size = reader.size();
+		image.valid = (size == imgsize);
+		if(!image.valid) image.skip = true;
 	}
 }
 

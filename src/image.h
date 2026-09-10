@@ -13,6 +13,7 @@ class Exif;
 class Image {
 public:
 	QString filename;
+	bool valid = true;
 	bool skip = false;  //not counted for lps or spheres
 	bool visible = true;  //counted with lp but still not used for rti.
 

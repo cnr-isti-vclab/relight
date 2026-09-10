@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<link rel="stylesheet" href="../css/relight.css">
+
+<style>
+html, body { width:100%; height:100%; padding:0px; margin:0px; }
+.relight { width:100%; height:80%; }
+</style>
+
+</head>
+
+<body>
+	<div>
+	<button id="img" data-url="coin10.jpg">img</img>
+	<button id="dem" data-url="dem" data-img="elevation.png">dem</img>
+	<button id="ptm" data-url="ptm">ptm</img>
+	<button id="lptm" data-url="lptm">lptm</img>
+	<button id="hsh" data-url="hsh">hsh</img>
+	<button id="rbf" data-url="rbf27">rbf</img>
+	<button id="bln" data-url="bilinear18">bilinear</img>
+	<button id="ycc" data-url="ycc1044">ycc</img>
+	</div>
+
+	<div class="relight">
+	</div>
+</body>
+
+<script src="../js/hammer.min.js"></script>
+<script src="../js/relight-core.js"></script>
+<script src="../js/relight-shaders.js"></script>
+<script src="../js/relight-canvas.js"></script>
+<script src="../js/relight-interface.js"></script>
+
+<script>
+
+for(let i of ['img','dem', 'ptm', 'lptm', 'hsh', 'rbf', 'bln', 'ycc']) {
+	let button = document.getElementById(i);
+	let url = button.getAttribute('data-url');
+	let img = button.getAttribute('data-img');
+	button.addEventListener("click", () => { setup(i, url, img); } );
+}
+
+setup('img', 'coin10.jpg');
+
+function setup(type, url, img) {
+
+	let layer = { layout:"image" }
+	if(type == 'img') {
+		layer.img = url;
+	} else if(type == 'dem') {
+		layer.dem = img;
+		layer.url = url;
+	} else
+		layer.url = url;
+
+	let options=  { 
+		layers: [ layer ],
+		fit: true,
+		bounded: false,
+		zbounded: true,
+		maxzoom: -4,
+		minzoom: 100,
+		pos: { x:0, y:0, z:0, a:0 },
+		rotation: 0,
+		pagemap: { /*thumb: 'thumb.jpg', */size:200, autohide:1000 },  
+		scale: 1.0,
+		background: [0.7, 0.7, 0.7, 1]
+	};
+
+	var relight = new RelightViewer('.relight', options);
+
+}
+
+
+//relight.removeAction('fullscreen');
+//relight.addAction('info', 'ski/info.svg', function());
+</script>
+
+<script>
+</script>
+</html>
