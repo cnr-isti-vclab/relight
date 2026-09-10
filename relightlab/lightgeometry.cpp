@@ -322,7 +322,7 @@ void LightsGeometry::readFocalLength() {
 	// Find the first valid image
 	const Image *first = nullptr;
 	for (const Image &image : project.images)
-		if (image.valid) { first = &image; break; }
+		if (!image.skip) { first = &image; break; }
 
 	if (!first) {
 		QMessageBox::warning(this, "No images", "No valid images in the project.");

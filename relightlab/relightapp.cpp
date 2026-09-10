@@ -164,12 +164,18 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 	m_project = new Project;
 
 }
-void RelightApp::notify(const QString &title, const QString &msg, int ms) {
+void RelightApp::notifyTray(const QString &title, const QString &msg, int ms) {
 	if(!systemTray)
 		return;
 	QIcon icon(":/relight.png");
 	systemTray->setVisible(true);
 	systemTray->showMessage(title, msg, icon, ms);
+//	systemTray->setVisible(false);
+}
+
+void RelightApp::clearTray() {
+	if(!systemTray)
+		return;
 	systemTray->setVisible(false);
 }
 
@@ -218,6 +224,82 @@ void RelightApp::setProject(Project *_project) {
 	mainwindow->setTabIndex(1);
 	qRelightApp->setLastProjectDir(m_project->dir.path());
 	qRelightApp->clearLastOutputDir();
+}
+
+void RelightApp::showProblemEntry() {
+	// update composed banner
+	QStringList msgs;
+	for(auto it = problemMessages.begin(); it != problemMessages.end(); ++it)
+		msgs << it.value();
+	QString msg = msgs.join("\n");
+	if(msg.isEmpty()) {
+		mainwindow->hideBanner();
+	} else {
+		mainwindow->showBanner(msg);
+	}
+}
+
+void RelightApp::setProblemEntry(const QString &key, const QString &msg) {
+	problemMessages[key] = msg;
+	showProblemEntry();
+}
+
+void RelightApp::clearProblemEntry(const QString &key) {
+	problemMessages.remove(key);
+	showProblemEntry();
+}
+
+// Public per-problem check methods (stubs)
+void RelightApp::checkResolutionProblem() {
+	if(!m_project) return;
+	// TODO: implement actual detection: populate `offending` with indices or filenames
+	bool present = false; // stub result
+	QString offendingList; // example: "img1.jpg, img4.jpg"
+	if(present) {
+		QString msg = "Images do not have the same resolution. (" + offendingList + ")";
+		setProblemEntry("resolution", msg);
+	} else {
+		clearProblemEntry("resolution");
+	}
+}
+
+void RelightApp::checkOrientationProblem() {
+	if(!m_project) return;
+	// TODO: implement actual detection: populate `offending` with indices or filenames
+	bool present = false; // stub result
+	QString offendingList;
+	if(present) {
+		QString msg = "Some images do not have the same orientation. (" + offendingList + ")";
+		setProblemEntry("orientation", msg);
+	} else {
+		clearProblemEntry("orientation");
+	}
+}
+
+void RelightApp::checkLightCountProblem() {
+	if(!m_project) return;
+	// TODO: implement actual detection: determine expected vs actual counts
+	bool present = false; // stub result
+	int expected = 0, actual = 0;
+	if(present) {
+		QString msg = QString("The number of light directions doesn't match (expected %1, got %2).").arg(expected).arg(actual);
+		setProblemEntry("lightcount", msg);
+	} else {
+		clearProblemEntry("lightcount");
+	}
+}
+
+void RelightApp::checkInvalidDirectionsProblem() {
+	if(!m_project) return;
+	// TODO: implement actual detection: identify invalid directions
+	bool present = false; // stub result
+	QString details;
+	if(present) {
+		QString msg = "Invalid light directions detected. (" + details + ")";
+		setProblemEntry("invaliddirs", msg);
+	} else {
+		clearProblemEntry("invaliddirs");
+	}
 }
 
 void RelightApp::newProject() {

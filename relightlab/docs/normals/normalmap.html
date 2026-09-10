@@ -17,7 +17,8 @@ or <b>load</b> an existing normal map image for further processing (flattening, 
   <dt><b>Robust</b></dt>
   <dd>Uses an iteratively re-weighted scheme that down-weights outlier measurements, making it
   less sensitive to specular highlights, inter-reflections, and a small number of badly-lit images.
-  Slower than L2 but produces cleaner normals on partially-shadowed surfaces.</dd>
+  Slower than L2 but produces cleaner normals on partially-shadowed surfaces. If both specular reflections
+and shadows are present, the result might be suboptimal.</dd>
 </dl>
 
 <h3 id="format">Normal map format</h3>

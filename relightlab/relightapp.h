@@ -77,13 +77,26 @@ public slots:
 	void convertRTI();
 
 	void openPreferences();
-	void notify(const QString &title, const QString &msg, int ms = 4000);
+	void notifyTray(const QString &title, const QString &msg, int ms = 4000);
+	void clearTray();
 signals:
 	void updateThumbnail(int pos);
 
 public:
 	void setProject(Project *project);
 	Project &project() { return *m_project; }
+
+
+	// Each method inspects the current `m_project` and updates the banner state.
+	void checkResolutionProblem();
+	void checkOrientationProblem();
+	void checkLightCountProblem();
+	void checkInvalidDirectionsProblem();
+
+	// Internal map of active problem messages keyed by problem id. When
+	// non-empty the combined messages are shown in the banner.
+	QMap<QString, QString> problemMessages;
+
 
 	QMutex thumbails_lock;
 	std::vector<QImage> &thumbnails() { return m_thumbnails; }
@@ -165,6 +178,12 @@ private:
 	QString last_output_dir;
 	QPalette dark_palette;
 	ThumbailLoader *loader = nullptr;
+
+	// Internal helpers to manage individual problem entries
+	void setProblemEntry(const QString &key, const QString &msg);
+	void clearProblemEntry(const QString &key);
+	void showProblemEntry();
+
 };
 
 

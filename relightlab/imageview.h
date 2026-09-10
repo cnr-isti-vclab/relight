@@ -14,6 +14,7 @@ class ImageView: public Canvas {
 	Q_OBJECT
 public:
 	QGraphicsScene scene;
+	QGraphicsPixmapItem *imagePixmap = nullptr;
 	int current_image = -1;
 
 	ImageView(QWidget *parent = nullptr);
@@ -31,9 +32,6 @@ public slots:
 
 signals:
 	void skipChanged(int image);
-
-protected:
-	QGraphicsPixmapItem *imagePixmap = nullptr;
 };
 
 class ImageViewer: public QFrame {

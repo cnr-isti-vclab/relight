@@ -10,7 +10,8 @@ public:
 		setIcon(QIcon());
 		setMinimumWidth(200);
 		setMinimumHeight(60);
-		setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+		// Allow the button to expand vertically so wrapped text is fully visible
+		setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	}
 };
 

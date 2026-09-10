@@ -24,6 +24,9 @@
 #include <QScrollArea>
 #include <QVBoxLayout>
 #include <QCloseEvent>
+#include <QLabel>
+#include <QPushButton>
+#include <QHBoxLayout>
 
 #include <iostream>
 using namespace std;
@@ -66,8 +69,38 @@ MainWindow::MainWindow() {
 	connect(brdf_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
 	connect(normals_frame, SIGNAL(processStarted()), this, SLOT(showQueue()));
 
-	setCentralWidget(tabs);
+	// Create a central container so we can show a top banner above the tabs
+	QWidget *central = new QWidget(this);
+	QVBoxLayout *v = new QVBoxLayout(central);
+	v->setContentsMargins(0,0,0,0);
+
+	bannerWidget = new QWidget(central);
+	QHBoxLayout *bannerLayout = new QHBoxLayout(bannerWidget);
+	bannerLayout->setContentsMargins(8,4,8,4);
+	bannerLabel = new QLabel(bannerWidget);
+	bannerLabel->setWordWrap(true);
+	bannerClose = new QPushButton("x", bannerWidget);
+	bannerClose->setFixedSize(20,20);
+	bannerClose->setToolTip("Dismiss");
+
+	bannerLayout->addWidget(bannerLabel);
+	bannerLayout->addStretch();
+	bannerLayout->addWidget(bannerClose);
+
+	bannerWidget->setStyleSheet("background-color: #b00020; color: white; font-weight: bold;");
+	bannerWidget->setVisible(false);
+
+	v->addWidget(bannerWidget);
+	v->addWidget(tabs);
+
+	setCentralWidget(central);
 	setMinimumSize(1024, 800);
+
+	connect(bannerClose, &QPushButton::clicked, this, [this]() {
+		this->hideBanner();
+		if(qRelightApp)
+			qRelightApp->clearTray();
+	});
 }
 
 void MainWindow::showQueue() {
@@ -192,4 +225,15 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 		event->accept();
 	else
 		event->ignore();
+}
+
+void MainWindow::showBanner(const QString &msg) {
+	if(!bannerWidget || !bannerLabel) return;
+	bannerLabel->setText(msg);
+	bannerWidget->setVisible(true);
+}
+
+void MainWindow::hideBanner() {
+	if(!bannerWidget) return;
+	bannerWidget->setVisible(false);
 }

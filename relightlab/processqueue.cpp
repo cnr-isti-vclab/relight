@@ -29,7 +29,6 @@ ProcessQueue::~ProcessQueue() {
 
 void ProcessQueue::run() {
 	while(true) {
-		Task *currentTask = nullptr;
 		{
 			QMutexLocker locker(&lock);
 			if(quitting)

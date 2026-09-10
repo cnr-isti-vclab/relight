@@ -18,12 +18,18 @@ class RtiFrame;
 class BrdfFrame;
 class NormalsFrame;
 class QueueFrame;
+class QLabel;
+class QPushButton;
 
 
 class MainWindow: public QMainWindow {
 	Q_OBJECT
 public:
 	MainWindow();
+
+	// Banner for showing problems (errors/warnings) at the top of the window
+	void showBanner(const QString &msg);
+	void hideBanner();
 	void createMenu();
 	void updateRecentProjectsMenu();
 	void openRecentProject();
@@ -57,6 +63,11 @@ protected:
 	QueueFrame *queue_frame = nullptr;
 
 	QMenu *recentMenu = nullptr;
+
+	// Banner UI shown at top of window for error/warning messages
+	QWidget *bannerWidget = nullptr;
+	QLabel *bannerLabel = nullptr;
+	QPushButton *bannerClose = nullptr;
 };
 
 #endif // MAINWINDOW_H

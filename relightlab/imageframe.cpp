@@ -184,9 +184,8 @@ void ImageFrame::showImage(int id) {
 	qRelightApp->action("next_image")->setEnabled(id != (int)project.images.size()-1);
 
 	image_view->showImage(id);
-
-	int w = project.imgsize.width();
-	int h = project.imgsize.height();
+	int w = image_view->imagePixmap->pixmap().width();
+	int h = image_view->imagePixmap->pixmap().height();
 	status->showMessage(QString("%1x%2 %3").arg(w).arg(h).arg(QFileInfo(project.images[id].filename).canonicalFilePath()));
 }
 
