@@ -10,7 +10,7 @@
 #include <iostream>
 
 #include <tiffio.h>
-#include "../relight_threadpool.h"
+#include "../threadpool.h"
 #include <thread>
 #include <mutex>
 #include <algorithm>
@@ -709,7 +709,7 @@ bool IntegrateNormalsWithScaffold(
 
 	int total_tiles = std::ceil((double)img_h / STEP_SIZE) * std::ceil((double)img_w / STEP_SIZE);
 
-	RelightThreadPool pool;
+	ThreadPool pool;
 	unsigned int n_threads = std::thread::hardware_concurrency();
 	if (n_threads == 0) n_threads = 1;
 	pool.start(n_threads);

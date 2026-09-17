@@ -1,5 +1,5 @@
 QT += widgets xml concurrent
-CONFIG += c++17
+CONFIG += c++20
 
 DEFINES += QT_DEPRECATED_WARNINGS
 DEFINES += _USE_MATH_DEFINES #WITH_OPENCV not needed now
@@ -159,6 +159,7 @@ HEADERS += \
     ../src/exr_reader.hh \
     ../src/normals/flatnormals.h \
     ../src/streamreader.hh \
+    ../src/threadpool.h \
     ../src/tinyexr.h \
     brdfplan.h \
     imagecropper.h \

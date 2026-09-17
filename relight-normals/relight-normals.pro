@@ -44,7 +44,6 @@ SOURCES += \
         ../src/rti.cpp \
         ../src/legacy_rti.cpp \
         ../src/task.cpp \
-        ../src/threadpool.cpp \
         ../external/assm/SurfaceMesh.cpp \
         ../external/assm/algorithms/DifferentialGeometry.cpp \
         ../external/assm/algorithms/Rasterizer.cpp \
@@ -62,7 +61,7 @@ HEADERS += \
     ../src/normals/pocketfft.h \
     ../src/normals/normals_parameters.h \
     ../src/task.h \
-    ../src/relight_threadpool.h \
+    ../src/threadpool.h \
     ../src/cli/rtibuilder.h \
     ../src/getopt.h \
     ../src/imageset.h \

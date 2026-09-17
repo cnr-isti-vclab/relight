@@ -3,7 +3,7 @@
 #include "../jpeg_decoder.h"
 #include "../jpeg_encoder.h"
 #include "../imageset.h"
-#include "../relight_threadpool.h"
+#include "../threadpool.h"
 #include "bni_normal_integration.h"
 #include "fft_normal_integration.h"
 #include "flatnormals.h"
@@ -126,7 +126,7 @@ void NormalsTask::run() {
 		height = imageset.height;
 
 		normals.resize(width * height);
-		RelightThreadPool pool;
+		ThreadPool pool;
 		PixelArray line;
 		imageset.setCallback(nullptr);
 		pool.start(QThread::idealThreadCount());
@@ -152,8 +152,11 @@ void NormalsTask::run() {
 			pool.waitForSpace();
 
 			bool proceed = progressed("Computing normals...", ((float)i / imageset.height) * 100);
-			if(!proceed)
+			if(!proceed) {
+				pool.abort();
+				status = FAILED;
 				return;
+			}
 		}
 
 		// Wait for the end of all the threads
@@ -260,8 +263,7 @@ void NormalsTask::run() {
 	if(parameters.surface_integration == SURFACE_ASSM) {
 		
 		bool proceed = progressed("Adaptive mesh normal integration...", 50);
-		if(!proceed)
-			return;
+		if(!proceed) { status = FAILED; return; }
 		//TODO move to saveply
 		QString filename = destination.filePath("3D_surface.ply");
 
@@ -270,15 +272,13 @@ void NormalsTask::run() {
 	} else if(parameters.surface_integration == SURFACE_BNI || parameters.surface_integration == SURFACE_FFT) {
 		QString type = parameters.surface_integration == SURFACE_BNI ? "Bilateral" : "Fourier";
 		bool proceed = progressed(type + " normal integration...", 0);
-		if(!proceed)
-			return;
+		if(!proceed) { status = FAILED; return; }
 
 		vector<float> z;
 		if(parameters.surface_integration == SURFACE_BNI) {
 			try {
 				bool proceed = bni_integrate(callback, width, height, normals, z, parameters.bni_k);
-				if(!proceed)
-					return;
+				if(!proceed) { status = FAILED; return; }
 			} catch(std::string err) {
 				error = err.c_str();
 				status = FAILED;
@@ -307,7 +307,7 @@ void NormalsTask::run() {
 		// 4-point plane height flattening.
 		if(parameters.flatMethod == FLAT_PLANE) {
 			bool proceed = progressed("Flattening surface (plane)...", 0);
-			if(!proceed) return;
+			if(!proceed) { status = FAILED; return; }
 			double pa = 0, pb = 0, pd = 0;
 			SurfaceCoeffs sc;
 			flattenPlaneHeights(width, height, z, parameters.plane_points,

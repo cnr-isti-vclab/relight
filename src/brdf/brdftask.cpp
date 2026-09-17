@@ -1,5 +1,5 @@
 #include "brdftask.h"
-#include "../src/relight_threadpool.h"
+#include "../src/threadpool.h"
 #include "../src/jpeg_encoder.h"
 #include "../src/icc_profiles.h"
 
@@ -68,7 +68,7 @@ void BrdfTask::run() {
 		height = imageset.height;
 
 		vector<uint8_t> albedomap(width * height * 3);
-		RelightThreadPool pool;
+		ThreadPool pool;
 		PixelArray line;
 		imageset.setCallback(nullptr);
 		pool.start(QThread::idealThreadCount());
@@ -93,8 +93,11 @@ void BrdfTask::run() {
 			pool.waitForSpace();
 
 			bool proceed = progressed("Computing albedo...", ((float)i / imageset.height) * 100);
-			if(!proceed)
+			if(!proceed) {
+				pool.abort();
+				status = FAILED;
 				return;
+			}
 		}
 		pool.finish();
 

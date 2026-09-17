@@ -23,7 +23,7 @@ SET(HEADERS
 	../src/normals/normalstask.h
 	../src/normals/normalsworker.h
 	../src/task.h
-	../src/relight_threadpool.h
+	../src/threadpool.h
 	../src/cli/rtibuilder.h
 	../src/getopt.h
 	../src/imageset.h
@@ -70,7 +70,6 @@ SET(SOURCES
 	../src/normals/normalstask.cpp
 	../src/normals/normalsworker.cpp
 	../src/task.cpp
-	../src/threadpool.cpp
 	../src/cli/rtibuilder.cpp
 	../src/getopt.cpp
 	../src/imageset.cpp
