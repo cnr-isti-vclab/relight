@@ -7,7 +7,9 @@
 #include <QVector>
 #include <QByteArray>
 
+#ifdef USE_GPL
 #include <exiv2/exiv2.hpp>
+#endif
 
 class IfdHeader {
 public:
@@ -33,7 +35,9 @@ public:
 
 class Exif: public QMap<quint16, QVariant> {
 public:
+#ifdef USE_GPL
 	Exiv2::ExifData exifData;
+#endif
 
 	enum Tag {
 
@@ -300,6 +304,7 @@ public:
 
 	template <typename T>
 	QVariant getValue(const char* keyStr, const T& defaultValue) {
+#ifdef USE_GPL
 		try {
 			Exiv2::ExifKey key(keyStr);
 			auto it = exifData.findKey(key);
@@ -341,6 +346,10 @@ public:
 			// If the key string itself was malformed, catch the exception and fall back safely
 			return QVariant::fromValue(defaultValue);
 		}
+#else
+		// Exiv2 not available in this build; return default value.
+		return QVariant::fromValue(defaultValue);
+#endif
 	}
 private:
 	void readHeaders(QDataStream &stream, quint32 startPos);

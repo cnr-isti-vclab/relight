@@ -338,3 +338,13 @@ cmake ../ -DCMAKE_BUILD_TYPE=Release ^
   -DQt6_DIR=C:\Qt\6.6.0\msvc2019_64\lib\cmake\Qt6
 ```
 
+## Licensing
+
+- **Core code (`src/`)**: licensed under the GNU Lesser General Public License v3 (LGPL-3.0-or-later). See [LICENSE-LGPL-3.0](LICENSE-LGPL-3.0) for details.
+- **GPL components / adapters**: this project includes optional components that depend on GPL-only libraries. When you build or distribute a combined work that links against those GPL components (for example by enabling the GPL adapter or building with `-DENABLE_GPL=ON`), the resulting binary is subject to the GNU General Public License v3 (GPL-3.0-or-later). See [LICENSE-GPL-3.0](LICENSE-GPL-3.0) and the full `LICENSE` file.
+
+Default builds enable GPL-only integrations by default. To opt out and build without GPL functionality set CMake with `-DDISABLE_GPL=ON`.
+
+If you are contributing code intended for the `src/` core, please ensure your contributions are compatible with LGPL licensing (or explicitly grant relicensing permission). Contact the maintainers for contributor-license agreements or questions.
+
+

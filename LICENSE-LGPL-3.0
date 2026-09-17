@@ -1,0 +1,18 @@
+GNU LESSER GENERAL PUBLIC LICENSE
+                       Version 3, 29 June 2007
+
+Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+Everyone is permitted to copy and distribute verbatim copies
+of this license document, but changing it is not allowed.
+
+This repository's core libraries and code may be distributed under the
+GNU Lesser General Public License version 3 (LGPL-3.0) when not linked
+against optional GPL-only components. See the full license text at:
+https://www.gnu.org/licenses/lgpl-3.0.txt
+
+SPDX-License-Identifier: LGPL-3.0-or-later
+
+--
+For the unabridged license text please refer to the link above or
+include the official full text from the Free Software Foundation when
+distributing.

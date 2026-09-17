@@ -97,7 +97,9 @@ void IfdHeader::parse(QDataStream &stream, quint32 startPos) {
 }
 
 void Exif::parse(const QString &filename) {
-
+	// Prefer Exiv2 metadata extraction when available; otherwise fall back
+	// to a conservative manual JPEG APP1 parsing implementation below.
+#ifdef USE_GPL
 	try {
 		auto image = Exiv2::ImageFactory::open(filename.toStdString());
 		if (!image.get()) {
@@ -106,20 +108,18 @@ void Exif::parse(const QString &filename) {
 
 		image->readMetadata();
 		exifData = image->exifData();
-		/* list exif keys.
-		for(auto it = exifData.begin(); it != exifData.end(); it++) {
-			cout << it->key() << endl;
-		}
-		*/
 
 	} catch (const Exiv2::Error& e) {
-	// This catches Exiv2-specific errors (Code 9 is usually "File not found")
+		// This catches Exiv2-specific errors (Code 9 is usually "File not found")
 		throw QString(e.what());
-	}catch (const std::exception& e) {
+	} catch (const std::exception& e) {
 		throw QString(e.what());
 	}
 
 	return;
+#else
+	Q_UNUSED(filename);
+#endif
 
 	QFile file(filename);
 	if(!file.open(QIODevice::ReadOnly))
@@ -365,6 +365,7 @@ bool Exif::patchOrientation(QByteArray &payload, quint16 newOrientation) {
 }
 
 bool Exif::patchOrientationFile(const QString &filename, quint16 newOrientation) {
+#ifdef USE_GPL
 	try {
 		auto image = Exiv2::ImageFactory::open(filename.toStdString());
 		if (!image.get())
@@ -385,6 +386,12 @@ bool Exif::patchOrientationFile(const QString &filename, quint16 newOrientation)
 	} catch (...) {
 		return false;
 	}
+#else
+	// Exiv2 not available in this build; cannot patch orientation via Exiv2.
+	Q_UNUSED(filename);
+	Q_UNUSED(newOrientation);
+	return false;
+#endif
 }
 
 bool Exif::injectApp1Payload(const QString &filename, const QByteArray &payload) {

@@ -21,6 +21,17 @@ message(STATUS "CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
 # Build options
 option(MACOSX_MAKE_BUNDLE "If using macOS, all targets will be placed in a relight macOS app bundle" ON)
 
+# GPL integration control: default is enabled; set `-DDISABLE_GPL=ON` to disable
+# GPL-only integrations (this produces binaries that do not require Exiv2).
+option(DISABLE_GPL "Disable GPL-only integrations (default OFF)" OFF)
+
+if(NOT DISABLE_GPL)
+    message(STATUS "GPL integrations: ENABLED (default) — resulting binaries may include GPL-linked features")
+    add_compile_definitions(USE_GPL=1)
+else()
+    message(STATUS "GPL integrations: DISABLED by user (use -DDISABLE_GPL=ON to opt-out)")
+endif()
+
 # Qt6 detection
 find_package(Qt6 COMPONENTS Core Gui Widgets Concurrent Xml REQUIRED)
 set(RELIGHT_QT Qt6)
@@ -82,40 +93,51 @@ message(STATUS "Using PNG library: ${PNG_LIBRARIES}")
 find_package(LCMS2 REQUIRED)
 message(STATUS "Using LittleCMS2 include dirs: ${LCMS2_INCLUDE_DIRS}")
 
-# 1. Force CMake to accept 'exiv2' as the identity, but look for both filename casings
-find_package(exiv2 CONFIG QUIET NAMES exiv2 Exiv2)
+# Exiv2 setup: only enabled when GPL integrations are enabled.
+if(NOT DISABLE_GPL)
+    # 1. Force CMake to accept 'exiv2' as the identity, but look for both filename casings
+    find_package(exiv2 CONFIG QUIET NAMES exiv2 Exiv2)
 
-# 2. Map targets based on what succeeded
-if(TARGET exiv2::exiv2)
-    set(EXIV2_FOUND_TARGET exiv2::exiv2)
-elseif(TARGET Exiv2::exiv2)
-    set(EXIV2_FOUND_TARGET Exiv2::exiv2)
-elseif(TARGET Exiv2::Exiv2)
-    set(EXIV2_FOUND_TARGET Exiv2::Exiv2)
-else()
-    # 3. Fall back to pkg-config for traditional Linux packages
-    if(NOT WIN32)
-        message(STATUS "Exiv2 CMake config not found. Falling back to pkg-config...")
-        find_package(PkgConfig REQUIRED)
-        pkg_check_modules(EXIV2_PKG REQUIRED IMPORTED_TARGET exiv2)
-        set(EXIV2_FOUND_TARGET PkgConfig::EXIV2_PKG)
-    else()
-        # Direct fallback for stubborn vcpkg windows deployments
-        message(STATUS "vcpkg config parsing error. Forcing direct target map...")
-        add_library(exiv2::exiv2 UNKNOWN IMPORTED)
-        set_target_properties(exiv2::exiv2 PROPERTIES
-            INTERFACE_INCLUDE_DIRECTORIES "C:/vcpkg/installed/x64-windows/include"
-            IMPORTED_LOCATION "C:/vcpkg/installed/x64-windows/lib/exiv2.lib"
-        )
+    # 2. Map targets based on what succeeded
+    if(TARGET exiv2::exiv2)
         set(EXIV2_FOUND_TARGET exiv2::exiv2)
+    elseif(TARGET Exiv2::exiv2)
+        set(EXIV2_FOUND_TARGET Exiv2::exiv2)
+    elseif(TARGET Exiv2::Exiv2)
+        set(EXIV2_FOUND_TARGET Exiv2::Exiv2)
+    else()
+        # 3. Fall back to pkg-config for traditional Linux packages
+        if(NOT WIN32)
+            message(STATUS "Exiv2 CMake config not found. Falling back to pkg-config...")
+            find_package(PkgConfig REQUIRED)
+            pkg_check_modules(EXIV2_PKG REQUIRED IMPORTED_TARGET exiv2)
+            set(EXIV2_FOUND_TARGET PkgConfig::EXIV2_PKG)
+        else()
+            # Direct fallback for stubborn vcpkg windows deployments
+            message(STATUS "vcpkg config parsing error. Forcing direct target map...")
+            add_library(exiv2::exiv2 UNKNOWN IMPORTED)
+            set_target_properties(exiv2::exiv2 PROPERTIES
+                INTERFACE_INCLUDE_DIRECTORIES "C:/vcpkg/installed/x64-windows/include"
+                IMPORTED_LOCATION "C:/vcpkg/installed/x64-windows/lib/exiv2.lib"
+            )
+            set(EXIV2_FOUND_TARGET exiv2::exiv2)
+        endif()
     endif()
+
+    message(STATUS "Selected Exiv2 Target: ${EXIV2_FOUND_TARGET}")
+
+    # Create your global wrapper and link it to the found target (if any)
+    add_library(project_exiv2 INTERFACE)
+    if(EXIV2_FOUND_TARGET)
+        target_link_libraries(project_exiv2 INTERFACE ${EXIV2_FOUND_TARGET})
+    else()
+        message(WARNING "Exiv2 was not found but GPL integrations are enabled; project_exiv2 is empty")
+    endif()
+else()
+    # GPL disabled -> provide empty interface target so consumers can link unconditionally
+    add_library(project_exiv2 INTERFACE)
+    message(STATUS "GPL integrations disabled; project_exiv2 is empty")
 endif()
-
-message(STATUS "Selected Exiv2 Target: ${EXIV2_FOUND_TARGET}")
-
-# Create your global wrapper and link it to the found target
-add_library(project_exiv2 INTERFACE)
-target_link_libraries(project_exiv2 INTERFACE ${EXIV2_FOUND_TARGET})
 
 
 # Version information
