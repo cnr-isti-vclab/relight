@@ -37,7 +37,8 @@ SET(HEADERS
 	../src/miniz.h
 	../src/jpeg_encoder.h
 	../src/icc_profiles.h
-	../src/relight_vector.h
+	../src/pixel.h
+	../src/color.h
 	../src/project.h
 	../src/dome.h
 	../src/sphere.h

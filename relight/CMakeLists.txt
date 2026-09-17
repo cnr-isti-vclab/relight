@@ -42,7 +42,8 @@ set (RELIGHT_HEADERS
 	../src/material.h
 	../src/eigenpca.h
 	../src/lp.h
-	../src/relight_vector.h
+	../src/pixel.h
+	../src/color.h
 	../src/deepzoom.h
 	../src/normals/bni_normal_integration.h
 	../src/normals/normals_parameters.h

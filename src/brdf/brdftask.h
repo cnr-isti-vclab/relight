@@ -4,7 +4,6 @@
 #include "../task.h"
 #include "../project.h"
 #include "../imageset.h"
-#include "../relight_vector.h"
 #include "brdfparameters.h"
 
 //TODO: this is the same as normalstask!

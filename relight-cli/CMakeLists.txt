@@ -29,7 +29,8 @@ SET(HEADERS
 	../src/jpeg_encoder.h
 	../src/icc_profiles.h
 	../src/material.h
-	../src/relight_vector.h
+	../src/pixel.h
+	../src/color.h
 	../src/rti.h
 	../src/legacy_rti.h
 	../src/dome.h

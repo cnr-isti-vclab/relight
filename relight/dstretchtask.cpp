@@ -1,5 +1,4 @@
 #include "dstretchtask.h"
-#include "../src/relight_vector.h"
 #include "../src/jpeg_encoder.h"
 #include "../src/jpeg_decoder.h"
 #include "dstretch.h"

@@ -5,6 +5,7 @@
 #include "../src/jpeg_encoder.h"
 #include "../src/icc_profiles.h"
 #include "../src/eigenpca.h"
+#include "../src/pixel.h"
 
 #include <QDir>
 #include <QFile>

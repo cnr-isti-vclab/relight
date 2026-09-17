@@ -1,7 +1,7 @@
 #ifndef DOME_H
 #define DOME_H
 
-#include "relight_vector.h"
+#include "color.h"
 
 #include <vector>
 #include <Eigen/Core>

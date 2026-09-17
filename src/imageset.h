@@ -2,7 +2,8 @@
 #define IMAGESET_H
 
 #include "project.h"
-#include "relight_vector.h"
+#include "color.h"
+#include "pixel.h"
 #include "dome.h"
 #include "lens.h"
 #include "crop.h"

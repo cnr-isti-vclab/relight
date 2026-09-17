@@ -155,9 +155,11 @@ HEADERS += \
     ../external/assm/algorithms/ScreenRemeshing.h \
     ../external/assm/algorithms/Triangulation.h \
     ../src/cli/rtibuilder.h \
+    ../src/color.h \
     ../src/crop.h \
     ../src/exr_reader.hh \
     ../src/normals/flatnormals.h \
+    ../src/pixel.h \
     ../src/streamreader.hh \
     ../src/threadpool.h \
     ../src/tinyexr.h \

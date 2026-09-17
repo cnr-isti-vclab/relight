@@ -6,7 +6,6 @@
 #include "../src/rti.h"
 #include "../src/imageset.h"
 #include "../src/material.h"
-#include "../src/relight_vector.h"
 #include "../src/colorprofile.h"
 
 #include <Eigen/Core>
@@ -14,6 +13,9 @@
 #include <functional>
 class QDir;
 class Dome;
+
+class Pixel;
+class PixelArray;
 
 //store pair light, coefficients for each resampled light direction.
 typedef std::vector<std::vector<std::pair<int, float>>> Resamplemap;
