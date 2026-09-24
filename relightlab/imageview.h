@@ -8,6 +8,7 @@ class Canvas;
 class QGraphicsPixmapItem;
 
 class QToolBar;
+class QLabel;
 
 
 class ImageView: public Canvas {
@@ -32,6 +33,7 @@ public slots:
 
 signals:
 	void skipChanged(int image);
+	void imageShown(int image);
 };
 
 class ImageViewer: public QFrame {
@@ -53,6 +55,7 @@ public slots:
 
 protected:
 	QToolBar *toolbar;
+	QLabel *imageInfo;
 };
 
 #endif // IMAGEVIEW_H

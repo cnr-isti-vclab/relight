@@ -6,6 +6,8 @@
 #include <QVBoxLayout>
 #include <QMessageBox>
 #include <QToolBar>
+#include <QLabel>
+#include <QFileInfo>
 
 
 ImageView::ImageView(QWidget *parent): Canvas(parent) {
@@ -21,6 +23,7 @@ void ImageView::clear() {
 	//scene.clear();
 	QPixmap p;
 	imagePixmap->setPixmap(p);
+	emit imageShown(-1);
 }
 
 void ImageView::showImage(int id) {
@@ -37,6 +40,7 @@ void ImageView::showImage(int id) {
 	setSceneRect(scene.itemsBoundingRect());
 
 	current_image = id;
+	emit imageShown(id);
 }
 
 void ImageView::setSkipped(int image) {
@@ -74,6 +78,16 @@ ImageViewer::ImageViewer(QWidget *parent): QFrame(parent) {
 	
 	layout->addWidget(toolbar = new QToolBar(), 0, Qt::AlignCenter);
 	layout->addWidget(view = new ImageView());
+	layout->addWidget(imageInfo = new QLabel());
+	imageInfo->setAlignment(Qt::AlignCenter);
+	connect(view, &ImageView::imageShown, this, [this](int id) {
+		Project &project = qRelightApp->project();
+		if(id < 0 || size_t(id) >= project.images.size()) {
+			imageInfo->clear();
+			return;
+		}
+		imageInfo->setText(QString("%1 - %2").arg(id + 1).arg(QFileInfo(project.images[id].filename).fileName()));
+	});
 
 	QAction *fit = qRelightApp->action("zoom_fit");
 	toolbar->addAction(fit->icon(), fit->text(), view, SLOT(fit()));
