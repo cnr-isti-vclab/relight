@@ -38,6 +38,10 @@ HelpedButton::HelpedButton(QString id, QIcon icon, QString text, QWidget *parent
 	connect(button, SIGNAL(clicked(bool)), this, SIGNAL(clicked()));
 }
 
+void HelpedButton::setButtonMinimumSize(const QSize &size) {
+	button->setMinimumSize(size);
+}
+
 void HelpedButton::init(QString id) {
 	QHBoxLayout *layout = new QHBoxLayout(this);
 	layout->setSizeConstraint(QHBoxLayout::SetMinimumSize);

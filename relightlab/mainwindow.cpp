@@ -17,6 +17,7 @@
 #include "rtiframe.h"
 #include "brdfframe.h"
 #include "normalsframe.h"
+#include "sharpenframe.h"
 #include "queueframe.h"
 #include "helpbutton.h"
 
@@ -48,13 +49,15 @@ MainWindow::MainWindow() {
 	tabs->addTab(rti_frame = new RtiFrame, "RTI");
 	tabs->addTab(brdf_frame = new BrdfFrame, "BRDF");
 	tabs->addTab(normals_frame = new NormalsFrame, "Normals");
+	tabs->addTab(sharpen_frame = new SharpenFrame, "Sharpen");
 	tabs->addTab(queue_frame = new QueueFrame, "Queue");
 
 	tabs->setTabsEnabled(false);
 	// Normals tab is usable without a project (load + integrate workflow).
-	// Keep it enabled but restrict to load-only mode.
-	tabs->setTabEnabled(9, true);
-	tabs->setTabEnabled(10, true);
+	// Sharpen can also load and inspect a standalone image.
+	tabs->setPageEnabled(normals_frame, true);
+	tabs->setPageEnabled(sharpen_frame, true);
+	tabs->setPageEnabled(queue_frame, true);
 	normals_frame->setProjectLoaded(false);
 
 	connect(image_frame, SIGNAL(skipChanged()), lights_frame, SLOT(skipChanged()));
@@ -104,7 +107,7 @@ MainWindow::MainWindow() {
 }
 
 void MainWindow::showQueue() {
-	tabs->setCurrentIndex(10);
+	tabs->setCurrentWidget(queue_frame);
 }
 
 void MainWindow::setTabIndex(int index) {

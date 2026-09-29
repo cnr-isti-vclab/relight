@@ -44,6 +44,17 @@ void TabWidget::addTab(QWidget *widget, QString label) {
 	QTabWidget::addTab(scrollArea, label);
 }
 
+bool TabWidget::setPageEnabled(QWidget *page, bool enabled) {
+	for(int i = 0; i < count(); i++) {
+		QScrollArea *scrollArea = qobject_cast<QScrollArea*>(widget(i));
+		if(scrollArea && scrollArea->widget() == page) {
+			setTabEnabled(i, enabled);
+			return true;
+		}
+	}
+	return false;
+}
+
 void TabWidget::setTabsEnabled(bool on) { //all but the first.
 	for(int i = 1; i < count(); i++)
 		setTabEnabled(i, on);

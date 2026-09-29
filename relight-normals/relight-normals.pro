@@ -14,6 +14,8 @@ DEFINES += HAVE_LCMS2
 SOURCES += \
         ../src/normals/bni_normal_integration.cpp \
         ../src/normals/fft_normal_integration.cpp \
+        ../src/normals/fast_gaussian_blur.cpp \
+        ../src/normals/unsharp_mask.cpp \
         ../src/normals/flatnormals.cpp \
         ../src/normals/normals_parameters.cpp \
         ../src/normals/normalstask.cpp \
@@ -49,13 +51,14 @@ SOURCES += \
         ../external/assm/algorithms/Rasterizer.cpp \
         ../external/assm/algorithms/ScreenRemeshing.cpp \
         ../external/assm/algorithms/Triangulation.cpp \
-        main.cpp \
-    ../src/normals/fast_gaussian_blur.cpp
+        main.cpp
 
 HEADERS += \
     ../src/normals/bni_normal_integration.h \
     ../src/normals/fft_normal_integration.h \
     ../src/normals/flatnormals.h \
+    ../src/normals/fast_gaussian_blur.h \
+    ../src/normals/unsharp_mask.h \
     ../src/normals/normalstask.h \
     ../src/normals/normalsworker.h \
     ../src/normals/pocketfft.h \

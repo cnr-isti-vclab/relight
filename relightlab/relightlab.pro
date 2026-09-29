@@ -65,6 +65,7 @@ SOURCES += main.cpp \
     ../src/normals/normals_parameters.cpp \
     ../src/normals/fft_normal_integration.cpp \
     ../src/normals/fast_gaussian_blur.cpp \
+    ../src/normals/unsharp_mask.cpp \
     ../src/rti/rtiparameters.cpp \
     ../src/rti/rtitask.cpp \
     ../src/crop.cpp \
@@ -135,6 +136,7 @@ SOURCES += main.cpp \
     normalsplan.cpp \
     planepicking.cpp \
     brdfframe.cpp \
+    sharpenframe.cpp \
     metadataframe.cpp \
     sphereframe.cpp \
     convertdialog.cpp \
@@ -237,9 +239,11 @@ HEADERS += \
     normalsplan.h \
     planepicking.h \
     brdfframe.h \
+    sharpenframe.h \
     metadataframe.h \
     ../src/normals/fft_normal_integration.h \
     ../src/normals/fast_gaussian_blur.h \
+    ../src/normals/unsharp_mask.h \
     ../src/normals/pocketfft.h \
     ../src/deepzoom.h \
     sphereframe.h \

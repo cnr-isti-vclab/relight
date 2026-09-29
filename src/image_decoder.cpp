@@ -295,7 +295,7 @@ bool ImageDecoder::decode(const char* path, float*& img, int& w, int& h) {
 	size_t nfloats = size_t(w) * size_t(h) * size_t(numChannels());
 	img = new float[nfloats];
 	size_t read = readRows(h, img);
-	finish();
+	//finish();
 	return int(read) == h;
 }
 

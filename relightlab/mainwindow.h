@@ -5,6 +5,7 @@
 class QCloseEvent;
 
 #include "normalsframe.h"
+class SharpenFrame;
 class QStackedWidget;
 class TabWidget;
 class HomeFrame;
@@ -60,6 +61,7 @@ protected:
 	RtiFrame *rti_frame = nullptr;
 	BrdfFrame *brdf_frame = nullptr;
 	NormalsFrame *normals_frame = nullptr;
+	SharpenFrame *sharpen_frame = nullptr;
 	QueueFrame *queue_frame = nullptr;
 
 	QMenu *recentMenu = nullptr;

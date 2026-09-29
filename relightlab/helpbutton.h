@@ -3,6 +3,7 @@
 
 #include <QToolButton>
 #include <QDialog>
+#include <QSize>
 #include "homeframe.h"
 
 class QPushButton;
@@ -16,6 +17,7 @@ class HelpedButton: public QWidget {
 public:
 	HelpedButton(QAction *action, QString url, QWidget *parent = nullptr);
 	HelpedButton(QString id, QIcon icon, QString text, QWidget *parent = nullptr);
+	void setButtonMinimumSize(const QSize &size);
 	//void setDefaultAction(QAction &a);
 signals:
 	void clicked();
