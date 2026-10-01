@@ -91,10 +91,35 @@ runs:
         
         message=$(macdeployqt "$INSTALL_PATH/$APPNAME" -always-overwrite -libpath=/opt/homebrew/lib -libpath=/usr/local/lib 2>&1)
         
+        
         if [[ $message == *"ERROR"* ]]; then
             echo "macdeployqt failed:"
             echo "$message"
             exit 1
+        fi
+
+        # --- Fix for missing libsharpyuv / libwebp dependencies ---
+        if [ "$(uname -m)" = "x86_64" ]; then
+            BREW_LIB="/usr/local/lib"
+        else
+            BREW_LIB="/opt/homebrew/lib"
+        fi
+
+        FRAMEWORKS_DIR="$INSTALL_PATH/$APPNAME/Contents/Frameworks"
+        mkdir -p "$FRAMEWORKS_DIR"
+
+        # 1. Copy libsharpyuv into the bundle
+        if [ -f "$BREW_LIB/libsharpyuv.0.dylib" ]; then
+            cp "$BREW_LIB/libsharpyuv.0.dylib" "$FRAMEWORKS_DIR/"
+            chmod 755 "$FRAMEWORKS_DIR/libsharpyuv.0.dylib"
+
+            # 2. Update its internal ID to use @rpath
+            install_name_tool -id "@rpath/libsharpyuv.0.dylib" "$FRAMEWORKS_DIR/libsharpyuv.0.dylib"
+
+            # 3. Re-link any binary in Frameworks or PlugIns pointing to Homebrew's libsharpyuv path
+            find "$INSTALL_PATH/$APPNAME/Contents" -type f \( -name "*.dylib" -o -name "*.so" \) | while read -r binary; do
+                install_name_tool -change "$BREW_LIB/libsharpyuv.0.dylib" "@rpath/libsharpyuv.0.dylib" "$binary" 2>/dev/null || true
+            done
         fi
         
         ls "$INSTALL_PATH/$APPNAME/Contents/Frameworks"
