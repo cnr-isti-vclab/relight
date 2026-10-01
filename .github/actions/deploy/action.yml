@@ -89,7 +89,7 @@ runs:
         
         echo "======= Creating AppBundle ======="
         
-        message=$(macdeployqt "$INSTALL_PATH/$APPNAME" 2>&1)
+        message=$(macdeployqt "$INSTALL_PATH/$APPNAME" -always-overwrite -libpath=/opt/homebrew/lib -libpath=/usr/local/lib 2>&1)
         
         if [[ $message == *"ERROR"* ]]; then
             echo "macdeployqt failed:"
