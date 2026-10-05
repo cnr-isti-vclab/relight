@@ -24,7 +24,10 @@ public:
 
 
 	void solve(int n) {
-		Eigen::MatrixXd cov = records.adjoint() * records;
+		// rankUpdate: half the work, and Eigen's OpenMP product is ~20x slower here (MSVC and GCC).
+		Eigen::MatrixXd cov = Eigen::MatrixXd::Zero(records.cols(), records.cols());
+		cov.selfadjointView<Eigen::Lower>().rankUpdate(records.adjoint());
+		cov = cov.selfadjointView<Eigen::Lower>();
 		cov = cov / (records.rows() - 1);
 
 		Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eig(cov);
