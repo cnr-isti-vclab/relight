@@ -2102,9 +2102,18 @@ std::vector<float> RtiBuilder::toPrincipal(Pixel &pixel, MaterialBuilder &materi
 			for(size_t k = 0; k < dim; k++)
 				col[k] = v[k] - materialbuilder.mean[k];
 
-			for(size_t p = 0; p < nplanes; p++) {
-				for(size_t k = 0; k < dim; k++) {
-					res[p] += col[k] * materialbuilder.proj[k + p*dim];
+			if(type == RBF || type == BILINEAR) {
+				for(size_t p = 0; p < nplanes; p++) {
+					for(size_t k = 0; k < dim; k++) {
+						res[p] += col[k] * materialbuilder.proj[k + p*dim];
+					}
+				}
+			} else {
+				//PTM, HSH: plane p only uses its own color channel, the other entries are zero.
+				for(size_t p = 0; p < nplanes; p++) {
+					for(size_t k = p%3; k < dim; k += 3) {
+						res[p] += col[k] * materialbuilder.proj[k + p*dim];
+					}
 				}
 			}
 		} else {
