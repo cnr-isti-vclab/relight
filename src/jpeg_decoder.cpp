@@ -162,9 +162,13 @@ size_t JpegDecoder::readRows(int nrows, uint8_t *buffer) { //return false on end
 }
 
 bool JpegDecoder::finish() {
-	if(file)
+	if(file) {
 		fclose(file);
-	return jpeg_finish_decompress(&decInfo);
+		file = nullptr;
+	}
+	//jpeg_finish_decompress fails if not all rows were read, or if readRows already called it.
+	jpeg_abort_decompress(&decInfo);
+	return true;
 }
 
 bool JpegDecoder::restart() {
