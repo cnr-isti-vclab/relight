@@ -24,7 +24,7 @@ public:
 	static QString getProfileDescription(const std::vector<uint8_t> &profile_data);
 
 	static cmsHTRANSFORM createColorTransform(const std::vector<uint8_t> &profile_data,
-		ColorProfileMode mode);
+		ColorProfileMode mode, cmsUInt32Number format = TYPE_RGB_8);
 	static cmsHPROFILE createOutputProfile(ColorProfileMode mode);
 };
 

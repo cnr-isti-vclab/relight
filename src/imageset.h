@@ -60,6 +60,7 @@ public:
 	ColorProfileMode color_profile_mode = COLOR_PROFILE_LINEAR_RGB;
 	std::vector<uint8_t> icc_profile_data;
 	cmsHTRANSFORM color_transform = nullptr;               // read path: input ICC → color_profile_mode (working space)
+	cmsHTRANSFORM color_transform16 = nullptr;             // same, for 16 bit and float images
 	cmsHTRANSFORM output_color_transform = nullptr;       // write path: working space (uint8) → alternate output (uint8)
 	cmsHTRANSFORM output_color_transform_float = nullptr; // write path: working space (float [0,1]) → alternate output (uint8)
 
@@ -151,11 +152,22 @@ public:
 protected:
 	std::function<bool(QString stage, int percent)> *callback;
 	std::vector<ImageDecoder *> decoders;
+	bool high_bit_depth = false; //16 bit or float images are read with 16 bit precision
 	std::vector<std::vector<uint8_t>> row_buffers; //one row per image, filled by readRows()
+	std::vector<std::vector<uint16_t>> row_buffers16;
 
 
 private:
 	void readRows(bool aligned);
+	Color3f rowColor(int image, int x) const {
+		if(high_bit_depth) {
+			const float scale = 255.0f/65535.0f; //16 bit to the 0-255 range used by Pixel
+			const uint16_t *c = row_buffers16[image].data() + x*3;
+			return Color3f(c[0]*scale, c[1]*scale, c[2]*scale);
+		}
+		const uint8_t *c = row_buffers[image].data() + x*3;
+		return Color3f(c[0], c[1], c[2]);
+	}
 	void compensateVignetting(PixelArray &pixels);
 
 	void compensateIntensity(PixelArray &pixels);
