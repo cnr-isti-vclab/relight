@@ -11,98 +11,6 @@
 using namespace std;
 using namespace Eigen;
 
-typedef Matrix<std::complex<double>, Dynamic, Dynamic> ComplexMatrix;
-
-// Helper function to generate meshgrid-like matrices
-void meshgrid(MatrixXd& wx, MatrixXd& wy, int cols, int rows) {
-	wx.resize(rows, cols);
-	wy.resize(rows, cols);
-
-	double colMid = (cols / 2) + 1;
-	double rowMid = (rows / 2) + 1;
-	double colDiv = cols - (cols % 2);
-	double rowDiv = rows - (rows % 2);
-
-	for (int i = 0; i < rows; ++i) {
-		for (int j = 0; j < cols; ++j) {
-			wx(i, j) = (j + 1 - colMid) / colDiv;
-			wy(i, j) = (i + 1 - rowMid) / rowDiv;
-		}
-	}
-}
-
-MatrixXd ifftshift(const MatrixXd& input) {
-	int rows = input.rows();
-	int cols = input.cols();
-	MatrixXd shifted(rows, cols);
-
-	int rowShift = rows / 2;
-	int colShift = cols / 2;
-
-	for (int i = 0; i < rows; ++i) {
-		for (int j = 0; j < cols; ++j) {
-			int newRow = (i + rowShift) % rows;
-			int newCol = (j + colShift) % cols;
-			shifted(newRow, newCol) = input(i, j);
-		}
-	}
-	return shifted;
-}
-void fft2(const MatrixXd& input, ComplexMatrix& output) {
-	int rows = input.rows();
-	int cols = input.cols();
-
-	// Prepare data
-	std::vector<std::complex<double>> data(rows * cols);
-	for (int y = 0; y < rows; ++y) {
-		for (int x = 0; x < cols; ++x) {
-			data[y * cols + x] = input(y, x);
-		}
-	}
-
-	// Perform FFT
-	ptrdiff_t element_size = sizeof(std::complex<double>);
-	pocketfft::shape_t shape = {size_t(cols), size_t(rows)};
-	pocketfft::stride_t stride = { element_size, ptrdiff_t(cols)*element_size };
-	pocketfft::shape_t axes{0, 1};
-
-	pocketfft::c2c(shape, stride, stride, axes, pocketfft::FORWARD, data.data(), data.data(), 1.0);
-
-	// Fill output
-	output.resize(rows, cols);
-	for (int y = 0; y < rows; ++y)
-		for (int x = 0; x < cols; ++x) {
-			output(y, x) = data[y * cols + x];
-		}
-}
-
-// Function to compute 2D IFFT using PocketFFT
-void ifft2(const ComplexMatrix& input, MatrixXd& output) {
-	int rows = input.rows();
-	int cols = input.cols();
-
-	// Prepare data
-	std::vector<std::complex<double>> data(rows * cols);
-	for (int i = 0; i < rows; ++i)
-		for (int j = 0; j < cols; ++j) {
-			data[i * cols + j] = input(i, j);
-		}
-
-	// Perform IFFT
-	ptrdiff_t element_size = sizeof(std::complex<double>);
-	pocketfft::shape_t shape = {size_t(cols), size_t(rows)};
-	pocketfft::stride_t stride = { element_size, ptrdiff_t(cols)*element_size };
-	pocketfft::shape_t axes{0, 1};
-	pocketfft::c2c(shape, stride, stride, axes, pocketfft::BACKWARD, data.data(), data.data(), 1.0/(4*sqrt(2)* rows * cols));
-
-	// Fill output and normalize
-	output.resize(rows, cols);
-	for (int i = 0; i < rows; ++i)
-		for (int j = 0; j < cols; ++j) {
-			output(i, j) = data[i * cols + j].real();
-		}
-}
-
 void pad(int &w, int &h, std::vector<Eigen::Vector3f> &normals, int padding) {
 	int W = w + 2*padding;
 	int H = h + 2*padding;
@@ -160,60 +68,58 @@ void depad(int &w, int &h, std::vector<float> &heights, int padding) {
 }
 
 
+//frequency of FFT bin i, as computed before by meshgrid() + ifftshift().
+static double fftFrequency(int i, int n) {
+	int j = (i + n - n/2) % n;
+	return (j - n/2) / double(n - (n % 2));
+}
+
 bool savePly(const QString &filename, size_t w, size_t h, std::vector<float> &z);
 
 void fft_integrate(std::function<bool(QString s, int n)> progressed,
 				   int cols, int rows, std::vector<Eigen::Vector3f> &normals, std::vector<float> &heights) {
 
-
 	int minsize = std::min(cols, rows);
 	int padding = minsize/2;
 	pad(cols, rows, normals, padding);
 
-
-	MatrixXd dzdx(rows, cols);
-	MatrixXd dzdy(rows, cols);
-	for (int i = 0; i < rows; ++i) {
-		for (int j = 0; j < cols; ++j) {
-			auto &normal = normals[i * cols + j];
-			dzdx(i, j) = normal[0] / normal[2]; // dz/dx = -nx/nz
-			dzdy(i, j) = -normal[1] / normal[2]; // dz/dy = -ny/nz			assert(!isnan(dzdx(i, j)));
-			assert(!isnan(dzdy(i, j)));
-		}
+	std::vector<std::complex<double>> dzdx(size_t(rows) * cols);
+	std::vector<std::complex<double>> dzdy(size_t(rows) * cols);
+	for (size_t i = 0; i < dzdx.size(); ++i) {
+		auto &normal = normals[i];
+		dzdx[i] = normal[0] / normal[2]; // dz/dx = -nx/nz
+		dzdy[i] = -normal[1] / normal[2]; // dz/dy = -ny/nz
+		assert(!isnan(dzdx[i].real()));
+		assert(!isnan(dzdy[i].real()));
 	}
 
-	MatrixXd wx, wy;
-	meshgrid(wx, wy, cols, rows);
+	// Fourier Transforms of gradients, nthreads = 0 uses all cores.
+	ptrdiff_t element_size = sizeof(std::complex<double>);
+	pocketfft::shape_t shape = {size_t(cols), size_t(rows)};
+	pocketfft::stride_t stride = { element_size, ptrdiff_t(cols)*element_size };
+	pocketfft::shape_t axes{0, 1};
+	pocketfft::c2c(shape, stride, stride, axes, pocketfft::FORWARD, dzdx.data(), dzdx.data(), 1.0, 0);
+	pocketfft::c2c(shape, stride, stride, axes, pocketfft::FORWARD, dzdy.data(), dzdy.data(), 1.0, 0);
 
-	wx = ifftshift(wx);
-	wy = ifftshift(wy);
-
-	// Fourier Transforms of gradients
-	ComplexMatrix DZDX, DZDY;
-	fft2(dzdx, DZDX);
-	fft2(dzdy, DZDY);
-
-	// Frequency domain integration
-	ComplexMatrix Z(rows, cols);
+	// Frequency domain integration, result goes in dzdx.
 	std::complex<double> j(0, 1); // Imaginary unit
-
 	for (int y = 0; y < rows; ++y) {
+		double wy = fftFrequency(y, rows);
 		for (int x = 0; x < cols; ++x) {
-			double wx2_wy2 = wx(y, x) * wx(y, x) + wy(y, x) * wy(y, x) + 1e-12; // Avoid division by zero
-			Z(y, x) = (-j * wx(y, x) * DZDX(y, x) - j * wy(y, x) * DZDY(y, x)) / wx2_wy2;
+			double wx = fftFrequency(x, cols);
+			double wx2_wy2 = wx * wx + wy * wy + 1e-12; // Avoid division by zero
+			size_t i = size_t(y) * cols + x;
+			dzdx[i] = (-j * wx * dzdx[i] - j * wy * dzdy[i]) / wx2_wy2;
 		}
 	}
+	dzdy = std::vector<std::complex<double>>();
 
 	// Inverse FFT to reconstruct z
-	MatrixXd z;
-	ifft2(Z, z);
+	pocketfft::c2c(shape, stride, stride, axes, pocketfft::BACKWARD, dzdx.data(), dzdx.data(), 1.0/(4*sqrt(2)* rows * cols), 0);
 
-	heights.resize(rows* cols);
-	for (int i = 0; i < rows; ++i) {
-		for (int j = 0; j < cols; ++j) {
-			heights[i * cols + j] = static_cast<float>(z(i, j));
-		}
-	}
+	heights.resize(size_t(rows) * cols);
+	for (size_t i = 0; i < heights.size(); ++i)
+		heights[i] = static_cast<float>(dzdx[i].real());
 	depad(cols, rows, heights, padding);
 
 	/*
