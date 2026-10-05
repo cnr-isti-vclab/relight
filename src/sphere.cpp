@@ -233,7 +233,9 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 				float cx = X - smallradius;
 				float cy = Y - smallradius;
 				if(ellipse) {
-					if(!inEllipse(cx, cy, eWidth, eHeight, eAngle))
+					//same area as the small ellipse drawn in SpherePicking, eAngle is in degrees.
+					float scale = smallradius/radius;
+					if(!inEllipse(cx, cy, eWidth*scale, eHeight*scale, eAngle*M_PI/180))
 						continue;
 				} else {
 					float d = sqrt(cx*cx + cy*cy);
