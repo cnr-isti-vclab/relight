@@ -99,6 +99,12 @@ size_t TiffDecoderImpl::readRows(int rows, uint8_t* buf) {
 	return size_t(read);
 }
 
+size_t TiffDecoderImpl::skipRows(int rows) {
+	int skipped = std::max(0, std::min(rows, height - current_row));
+	current_row += skipped;
+	return size_t(skipped);
+}
+
 bool TiffDecoderImpl::finish() {
 	if (tif) { TIFFClose(tif); tif = nullptr; }
 	tile_buf.clear();

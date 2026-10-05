@@ -196,14 +196,14 @@ bool inEllipse(double x, double y, double a, double b, double theta) {
 }
 
 //if update_positions is true, this is only building the sphere thumbnail
-void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) {
+void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions, QPoint origin) {
 	if(sphereImg.isNull()) {
 		sphereImg = QImage(inner.width(), inner.height(), QImage::Format_ARGB32);
 		sphereImg.fill(0);
 	}
 
 
-	thumbs[n] =img.copy(inner);
+	thumbs[n] =img.copy(inner.translated(-origin));
 
 	if(skip) {
 		lights[n] = QPointF(0, 0);
@@ -221,41 +221,48 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 	QPointF bari(0, 0); //in image coords
 	int count = 0;
 	int iter = 0;
+
+	//gray values of the pixels inside the sphere, computed once for all thresholds.
+	struct Sample { int x, y, g; };
+	vector<Sample> samples;
+	for(int y = inner.top(); y < inner.bottom(); y++) {
+		for(int x = inner.left(); x < inner.right(); x++) {
+
+			float X = x - inner.left(); //coordinates in outer rect
+			float Y = y - inner.top();
+
+			float cx = X - smallradius;
+			float cy = Y - smallradius;
+			if(ellipse) {
+				//same area as the small ellipse drawn in SpherePicking, eAngle is in degrees.
+				float scale = smallradius/radius;
+				if(!inEllipse(cx, cy, eWidth*scale, eHeight*scale, eAngle*M_PI/180))
+					continue;
+			} else {
+				float d = sqrt(cx*cx + cy*cy);
+				if(d > smallradius) continue;
+			}
+			QRgb c = img.pixel(x - origin.x(), y - origin.y());
+			int g = qGray(c);
+
+			assert(X >= 0 && X < sphereImg.width());
+			assert(Y >= 0 && Y < sphereImg.height());
+			int thumb_g = qGray(sphereImg.pixel(X, Y));
+			if(g > thumb_g) sphereImg.setPixel(X, Y, qRgb(g, g, g));
+
+			max_luma_pixel = std::max(max_luma_pixel, g);
+			samples.push_back({x, y, g});
+		}
+	}
+
 	while(count < highlight_area && threshold > 100) {
 		QPointF new_bari = QPointF(0, 0);
 		count = 0;
-		for(int y = inner.top(); y < inner.bottom(); y++) {
-			for(int x = inner.left(); x < inner.right(); x++) {
+		for(const Sample &s: samples) {
+			if(s.g < threshold) continue;
 
-				float X = x - inner.left(); //coordinates in outer rect
-				float Y = y - inner.top();
-
-				float cx = X - smallradius;
-				float cy = Y - smallradius;
-				if(ellipse) {
-					//same area as the small ellipse drawn in SpherePicking, eAngle is in degrees.
-					float scale = smallradius/radius;
-					if(!inEllipse(cx, cy, eWidth*scale, eHeight*scale, eAngle*M_PI/180))
-						continue;
-				} else {
-					float d = sqrt(cx*cx + cy*cy);
-					if(d > smallradius) continue;
-				}
-				QRgb c = img.pixel(x, y);
-				int g = qGray(c);
-
-				assert(X >= 0 && X < sphereImg.width());
-				assert(Y >= 0 && Y < sphereImg.height());
-				int thumb_g = qGray(sphereImg.pixel(X, Y));
-				if(g > thumb_g) sphereImg.setPixel(X, Y, qRgb(g, g, g));
-
-				max_luma_pixel = std::max(max_luma_pixel, g);
-				if(g < threshold) continue;
-
-				new_bari += QPointF(x, y);
-				count++;
-
-			}
+			new_bari += QPointF(s.x, s.y);
+			count++;
 		}
 		histo.push_back(count);
 
@@ -307,7 +314,7 @@ void Sphere::findHighlight(QImage img, int n, bool skip, bool update_positions) 
 				float d = sqrt(cx*cx + cy*cy);
 				if(d > smallradius) continue;
 
-				QRgb c = img.pixel(x, y);
+				QRgb c = img.pixel(x - origin.x(), y - origin.y());
 				int g = qGray(c);
 				if(g < threshold) continue;
 

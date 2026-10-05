@@ -54,7 +54,8 @@ public:
 
 	bool fit();
 	void ellipseFit();
-	void findHighlight(QImage im, int n, bool skip, bool update_positions = true);
+	//im can be a crop of the image starting at origin (it must contain inner)
+	void findHighlight(QImage im, int n, bool skip, bool update_positions = true, QPoint origin = QPoint(0, 0));
 
 	//compute lights directions relative to the center of the sphere.
 	void computeDirections(Lens &lens);
