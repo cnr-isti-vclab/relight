@@ -292,10 +292,13 @@ double mutualInfo(QImage &a, QImage &b) {
 
 QImage Project::readImage(int i) {
 	assert(i >= 0 && i < images.size());
+	return readImage(images[i].filename);
+}
 
+QImage Project::readImage(const QString &filename) {
 	// Try Qt's built-in reader first (JPEG, PNG, and any installed plugins).
 	// Drop the hardcoded "JPG" hint so Qt auto-detects the real format.
-	QImageReader reader(images[i].filename);
+	QImageReader reader(filename);
 	reader.setAutoTransform(false);
 	QImage img = reader.read();
 	if(!img.isNull())
@@ -305,7 +308,7 @@ QImage Project::readImage(int i) {
 	// (TIFF with unusual compression, EXR, camera RAW, …).
 	ImageDecoder dec;
 	int w = 0, h = 0;
-	if(!dec.init(images[i].filename.toStdString().c_str(), w, h))
+	if(!dec.init(filename.toStdString().c_str(), w, h))
 		return QImage();
 
 	// readRows(uint8_t*) quantises to 8-bit for all pixel depths (UINT16, FLOAT, …).

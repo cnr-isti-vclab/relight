@@ -657,8 +657,7 @@ void ThumbailLoader::run() {
 	for(QString path: paths) {
 		if(stop_request)
 			break;
-		QImage img;
-		img.load(path, "JPG");
+		QImage img = Project::readImage(path);
 		if(img.isNull()) //TODO shoudl actually warn!
 			break;
 		{

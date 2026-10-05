@@ -97,6 +97,7 @@ public:
 	bool setDir(QDir folder);
 	bool scanDir(); //load images from project.dir, and return false if some problems with resolution.
 	QImage readImage(int i);
+	static QImage readImage(const QString &filename);
 	bool rotateImage(Image &image, bool clockwise);
 	void rotateImages();
 	void rotateImages(bool clockwise);
