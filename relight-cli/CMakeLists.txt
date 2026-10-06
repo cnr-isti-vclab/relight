@@ -35,6 +35,7 @@ SET(HEADERS
 	../src/legacy_rti.h
 	../src/dome.h
 	../src/sphere.h
+	../src/spherelocator.h
 	../src/lens.h
 	../src/crop.h
 	../src/brdf/brdftask.h 
@@ -80,6 +81,7 @@ SET(SOURCES
 	../src/dome.cpp
 	../src/lens.cpp
 	../src/sphere.cpp
+	../src/spherelocator.cpp
 	../src/crop.cpp
 	../src/cli/convert_rti.cpp
 	../src/brdf/brdftask.cpp

@@ -43,7 +43,8 @@ public:
 
 	RtiBuilder();
 	~RtiBuilder();
-	bool setupFromFolder(const std::string &folder, Dome &dome);
+	//images: default all .jpg in the folder
+	bool setupFromFolder(const std::string &folder, Dome &dome, const QStringList &images = QStringList());
 	bool setupFromProject(const std::string &filename);
 	bool init(std::function<bool(QString stage, int percent)> *_callback = nullptr);
 

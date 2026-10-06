@@ -41,7 +41,7 @@ Relight new formats provide better accuracy and smaller size.
 ## Usage
 
 ```shell
-relight-cli [-bpqy3PnmMwkrsSRQcCeEv] <input folder> [output folder]
+relight-cli [-bpqy3PnmMwkrsSRQcCeEvAF] <input folder> [output folder]
 relight-cli [-q] <input.ptm|.rti> [output folder]
 relight-cli [-q] <input.json> [output.ptm]
 ```
@@ -69,6 +69,8 @@ relight-cli [-q] <input.json> [output.ptm]
 * `-M`: Extract median image (7/8th quantile)
 * `-w <int>`: Number of worker threads (default: 8)
 * `-k <W>x<H>+<X>+<Y>`: Crop region (width×height+offsetX+offsetY)
+* `-A`: Experimental. No `.lp` needed: finds the reflective spheres in the photos and works out the light directions from their highlights. The directions are saved as `lights.lp` in the output folder.
+* `-F <mm>`: With `-A`, the 35 mm equivalent focal length, if the photos don't record it
 
 ### Advanced Options
 
@@ -125,6 +127,9 @@ relight-cli -k 1024x768+100+50 -q 90 ./photos ./output
 
 # 3D light processing with dome setup
 relight-cli -3 2.5:0.1 -b bilinear ./photos ./output
+
+# No .lp file: find the spheres and the light directions automatically
+relight-cli -A ./photos ./output
 ```
 
 

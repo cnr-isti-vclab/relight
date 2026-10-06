@@ -3,12 +3,18 @@
 #include "markerdialog.h"
 #include "spherepicking.h"
 #include "relightapp.h"
+#include "processqueue.h"
 #include "../src/sphere.h"
+#include "../src/project.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QProgressBar>
 #include <QStackedWidget>
+#include <QImageReader>
+#include <QMessageBox>
+#include <QLineF>
 
 
 #include <assert.h>
@@ -22,12 +28,28 @@ SphereFrame::SphereFrame(QWidget *parent): QGroupBox("Reflective spheres", paren
 		content->addSpacing(10);
 
 		{
+			QHBoxLayout *buttons = new QHBoxLayout;
 			QPushButton *sphere = new QPushButton(QIcon::fromTheme("folder"), "New reflective sphere...");
 			sphere->setProperty("class", "large");
 			sphere->setMinimumWidth(200);
 			sphere->setMaximumWidth(300);
 			connect(sphere, SIGNAL(clicked()), this, SLOT(newSphere()));
-			content->addWidget(sphere, 0, Qt::AlignTop);
+			buttons->addWidget(sphere);
+
+			locate_button = new QPushButton(QIcon::fromTheme("zoom-in"), "Locate spheres");
+			locate_button->setProperty("class", "large");
+			locate_button->setMinimumWidth(200);
+			locate_button->setMaximumWidth(300);
+			locate_button->setToolTip("Find the reflective spheres automatically from the highlights.");
+			connect(locate_button, SIGNAL(clicked()), this, SLOT(locateSpheres()));
+			buttons->addWidget(locate_button);
+
+			locate_progress = new QProgressBar;
+			locate_progress->setMaximumWidth(300);
+			locate_progress->hide();
+			buttons->addWidget(locate_progress);
+			buttons->addStretch();
+			content->addLayout(buttons);
 		}
 		{
 			QFrame *spheres_frame = new QFrame;
@@ -50,7 +72,57 @@ SphereFrame::SphereFrame(QWidget *parent): QGroupBox("Reflective spheres", paren
 	layout->addWidget(stack);
 }
 
+LocateSpheres::LocateSpheres() {
+	visible = false;
+	owned = true;
+	label = "Locating reflective spheres.";
+}
+
+void LocateSpheres::run() {
+	setStatus(RUNNING);
+	circles.clear();
+
+	Project &project = qRelightApp->project();
+	std::vector<int> used;
+	for(size_t i = 0; i < project.images.size(); i++)
+		if(!project.images[i].skip)
+			used.push_back(int(i));
+
+	auto load = [&](int i, QSize size, QRect clip) {
+		QImageReader reader(project.images[used[i]].filename);
+		reader.setAutoTransform(false);
+		if(size.isValid())
+			reader.setScaledSize(size);
+		if(clip.isValid())
+			reader.setClipRect(clip);
+		QImage img = reader.read();
+		if(img.isNull()) {
+			img = project.readImage(used[i]);
+			if(clip.isValid())
+				img = img.copy(clip);
+		}
+		return img;
+	};
+	std::function<bool(QString, int)> callback = [this](QString stage, int percent) { return progressed(stage, percent); };
+	try {
+		SphereLocator locator(project.imgsize);
+		circles = locator.run(int(used.size()), load, &callback);
+	} catch(QString e) {
+		if(status != STOPPED) {
+			error = e;
+			setStatus(FAILED);
+		}
+		return;
+	}
+	progressed("Done.", 100);
+	setStatus(DONE);
+}
+
 void SphereFrame::clear() {
+	if(locate_spheres && locate_spheres->isRunning()) {
+		locate_spheres->stop();
+		locate_spheres->wait();
+	}
 	while(spheres->count() > 0) {
 		QLayoutItem *item = spheres->takeAt(0);
 		SphereRow *row =  dynamic_cast<SphereRow *>(item->widget());
@@ -98,6 +170,63 @@ void SphereFrame::cancelMarker() {
 	stack->setCurrentIndex(0);
 }
 
+
+void SphereFrame::locateSpheres() {
+	if(!locate_spheres) {
+		locate_spheres = new LocateSpheres;
+		connect(locate_spheres, &LocateSpheres::progress, this, &SphereFrame::locateProgress);
+		connect(locate_spheres, &QThread::finished, this, &SphereFrame::locateFinished);
+	}
+	locate_button->setEnabled(false);
+	locate_progress->setValue(0);
+	locate_progress->show();
+
+	ProcessQueue &queue = ProcessQueue::instance();
+	queue.removeTask(locate_spheres);
+	queue.addTask(locate_spheres);
+	queue.start();
+}
+
+void SphereFrame::locateProgress(QString /*msg*/, int percent) {
+	locate_progress->setValue(percent);
+}
+
+void SphereFrame::locateFinished() {
+	locate_button->setEnabled(true);
+	locate_progress->hide();
+	if(locate_spheres->status == Task::FAILED) {
+		QMessageBox::critical(this, "Could not locate spheres!", locate_spheres->error);
+		return;
+	}
+	if(locate_spheres->status != Task::DONE)
+		return;
+
+	Project &project = qRelightApp->project();
+	std::vector<SphereRow *> rows;
+	for(SphereLocator::Circle &circle: locate_spheres->circles) {
+		bool known = false;
+		for(Sphere *sphere: project.spheres)
+			if(QLineF(sphere->center, circle.center).length() < sphere->radius + circle.radius)
+				known = true;
+		if(known)
+			continue;
+
+		Sphere *sphere = new Sphere(project.images.size());
+		sphere->border = circle.points();
+		sphere->fit();
+		project.spheres.push_back(sphere);
+		rows.push_back(addSphere(sphere));
+	}
+	if(rows.empty()) {
+		QMessageBox::information(this, "Locate spheres", locate_spheres->circles.empty() ?
+			"No reflective sphere found, use \"New reflective sphere...\" to mark it." :
+			"No new reflective sphere found.");
+		return;
+	}
+	project.cleanSphereCache();
+	for(SphereRow *row: rows)
+		row->detectHighlights();
+}
 
 /* on user button press */
 void SphereFrame::newSphere() {
