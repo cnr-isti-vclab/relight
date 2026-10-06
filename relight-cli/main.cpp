@@ -39,7 +39,7 @@ void help() {
 	cout << "\t  -m        : extract mean image\n";
 	cout << "\t  -M        : extract median image (7/8th quantile) \n";
 
-	cout << "\t  -w        : number of workers (default 8)\n";
+	cout << "\t  -w <int>  : number of workers (default: number of cores)\n";
 	cout << "\t  -k <int>x<int>+<int>+<int>: Cropping extracts only the widthxheight+offx+offy part\n";
 
 	cout << "\nIgnore exotic parameters below here\n\n";
@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
 
 	opterr = 0;
 	char c;
-	while ((c  = getopt (argc, argv, "hmMn3:r:d:q:p:s:c:reE:b:y:S:R:CD:Q:L:k:P:I:v")) != -1)
+	while ((c  = getopt (argc, argv, "hmMn3:r:d:q:p:s:c:reE:b:y:S:R:CD:Q:L:k:P:I:vw:H")) != -1)
 		switch (c)
 		{
 		case 'h':
@@ -230,7 +230,7 @@ int main(int argc, char *argv[]) {
 		}
 			break;
 		case 'w':
-			builder.nworkers = std::min(atoi(optarg), 1);
+			builder.nworkers = std::max(atoi(optarg), 1);
 			break;
 		case 'e':
 			evaluate_error = true;
