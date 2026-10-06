@@ -73,14 +73,14 @@ static Vector3f fromOcta(int x, int y, int resolution) {
 RtiBuilder::RtiBuilder() {}
 RtiBuilder::~RtiBuilder() {}
 
-bool RtiBuilder::setupFromFolder(const string &folder, Dome &dome) {
+bool RtiBuilder::setupFromFolder(const string &folder, Dome &dome, const QStringList &images) {
 	
 	try {
 		QDir dir(folder.c_str());
 
 		QStringList img_ext;
 		img_ext << "*.jpg" << "*.JPG";
-		imageset.images = dir.entryList(img_ext);
+		imageset.images = images.size() ? images : dir.entryList(img_ext);
 
 		if(skip_image >= 0) {
 			imageset.images.removeAt(skip_image);

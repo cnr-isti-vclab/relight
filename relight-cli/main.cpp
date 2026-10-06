@@ -2,12 +2,20 @@
 #include "../src/normals/normalstask.h"
 #include "../src/brdf/brdftask.h"
 #include "../src/lp.h"
+#include "../src/sphere.h"
+#include "../src/spherelocator.h"
+#include "../src/image.h"
+#include "../src/exif.h"
+#include "../src/image_decoder.h"
 
 #include "../src/getopt.h"
 extern int opterr;
 
 #include <QDir>
 #include <QImage>
+#include <QImageReader>
+#include <QFile>
+#include <QTextStream>
 #include <QElapsedTimer>
 
 #include <Eigen/Core>
@@ -23,7 +31,7 @@ using namespace std;
 void help() {
 	cout << "Create an RTI from a set of images and a set of light directions (.lp) in a folder.\n";
 	cout << "It is also possible to convert from .ptm or .rti to relight format and viceversa.\n\n";
-	cout << "Usage: relight-cli [-bpqy3PnmMwkrsSRQcCeEv]<input folder> [output folder]\n\n";
+	cout << "Usage: relight-cli [-bpqy3PnmMwkrsSRQcCeEvAF]<input folder> [output folder]\n\n";
 	cout << "       relight-cli [-q] <input.ptm|.rti> [output folder]\n\n";
 	cout << "       relight-cli [-q] <input.json> [output.ptm]\n\n";
 	cout << "\tinput folder containing a .lp or .dome with number of photos and light directions\n";
@@ -41,6 +49,9 @@ void help() {
 
 	cout << "\t  -w        : number of workers (default 8)\n";
 	cout << "\t  -k <int>x<int>+<int>+<int>: Cropping extracts only the widthxheight+offx+offy part\n";
+	cout << "\t  -A        : experimental: locate the reflective spheres and compute the light directions,\n";
+	cout << "\t              no .lp needed (jpg, png, tif). The directions are saved in lights.lp in the output folder.\n";
+	cout << "\t  -F <float>: with -A, 35mm equivalent focal length (default: from EXIF)\n";
 
 	cout << "\nIgnore exotic parameters below here\n\n";
 	cout << "\n  -H        : fix overexposure in ptm and hsh due to bad sampling\n";
@@ -86,6 +97,125 @@ void test(std::string input, std::string output,  Eigen::Vector3f light, float t
 	img.save(output.c_str());
 }
 
+//size: downscale, clip: part of the image at full resolution.
+static QImage readImage(const QString &filename, QSize size = QSize(), QRect clip = QRect()) {
+	QImageReader reader(filename);
+	reader.setAutoTransform(false);
+	if(size.isValid())
+		reader.setScaledSize(size);
+	if(clip.isValid())
+		reader.setClipRect(clip);
+	QImage img = reader.read();
+	if(!img.isNull())
+		return img;
+
+	//formats Qt can't read.
+	ImageDecoder dec;
+	int w = 0, h = 0;
+	if(!dec.init(filename.toStdString().c_str(), w, h))
+		return QImage();
+	int ch = dec.numChannels();
+	size_t row_bytes = dec.rowSize();
+	std::vector<uint8_t> buffer(size_t(h)*row_bytes);
+	dec.readRows(h, buffer.data());
+	//no finish(): the destructor releases the decoder.
+	img = QImage(w, h, ch == 4 ? QImage::Format_RGBA8888 : ch == 1 ? QImage::Format_Grayscale8 : QImage::Format_RGB888);
+	for(int y = 0; y < h; y++)
+		memcpy(img.scanLine(y), buffer.data() + size_t(y)*row_bytes, row_bytes);
+	if(clip.isValid())
+		img = img.copy(clip);
+	if(size.isValid())
+		img = img.scaled(size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+	return img;
+}
+
+//experimental: locate the reflective spheres, find the highlights and compute the light directions.
+//Images without highlights are removed from the list. focal: 35mm equivalent, 0 to read it from EXIF.
+static void lightsFromSpheres(const QString &folder, QStringList &images, Dome &dome, float focal, bool verbose, std::function<bool(QString, int)> *callback) {
+	QDir dir(folder);
+	images = dir.entryList(QStringList() << "*.jpg" << "*.JPG" << "*.jpeg" << "*.png" << "*.PNG" << "*.tif" << "*.TIF" << "*.tiff", QDir::Files, QDir::Name);
+	int n = images.size();
+	if(n < 3)
+		throw QString("Not enough images in folder: ") + folder;
+
+	QImage first = readImage(dir.filePath(images[0]));
+	if(first.isNull())
+		throw QString("Failed loading image: ") + images[0];
+	Lens lens;
+	lens.width = first.width();
+	lens.height = first.height();
+	try {
+		Exif exif;
+		exif.parse(dir.filePath(images[0]));
+		lens.readExif(exif);
+	} catch(QString) {}
+	if(!lens.pixelSizeX)
+		lens.pixelSizeX = lens.pixelSizeY = 36.0/lens.width;
+	if(focal)
+		lens.focalLength = focal;
+	if(!lens.focalLength) {
+		cerr << "No focal length in EXIF, assuming a distant camera. Use -F to set it." << endl;
+		lens.focalLength = 1000;
+	}
+
+	SphereLocator locator(first.size());
+	auto load = [&](int i, QSize size, QRect clip) { return readImage(dir.filePath(images[i]), size, clip); };
+	vector<SphereLocator::Circle> circles = locator.run(n, load, callback);
+	if(circles.empty())
+		throw QString("No reflective sphere found.");
+
+	vector<Sphere *> spheres;
+	for(SphereLocator::Circle &circle: circles) {
+		Sphere *sphere = new Sphere(n);
+		sphere->border = circle.points();
+		sphere->fit();
+		spheres.push_back(sphere);
+		if(verbose)
+			cout << "\nSphere center: " << sphere->center.x() << " " << sphere->center.y() << " radius: " << sphere->radius << endl;
+	}
+	for(int i = 0; i < n; i++) {
+		QImage img = readImage(dir.filePath(images[i]));
+		if(img.size() != first.size())
+			throw QString("Image has a different size: ") + images[i];
+		for(Sphere *sphere: spheres)
+			sphere->findHighlight(img, i, false);
+		if(callback && !(*callback)("Detecting highlights", 100*(i + 1)/n))
+			throw QString("Cancelled.");
+	}
+	vector<Image> set;
+	for(QString &image: images)
+		set.push_back(Image(image));
+	dome.fromSpheres(set, spheres, lens);
+	for(Sphere *sphere: spheres)
+		delete sphere;
+
+	QStringList found;
+	vector<Eigen::Vector3f> directions;
+	for(int i = 0; i < n; i++) {
+		if(dome.directions[i].isZero()) {
+			cerr << "\nNo highlight found, skipping: " << qPrintable(images[i]) << endl;
+			continue;
+		}
+		found.push_back(images[i]);
+		directions.push_back(dome.directions[i].normalized());
+	}
+	images = found;
+	dome.directions = directions;
+	dome.positions3d.clear();
+	dome.positionsSphere.clear();
+	dome.lightConfiguration = Dome::DIRECTIONAL;
+}
+
+static void saveLP(const QString &filename, const QStringList &images, const vector<Eigen::Vector3f> &directions) {
+	QFile file(filename);
+	if(!file.open(QFile::WriteOnly))
+		throw QString("Failed saving: ") + filename;
+	QTextStream stream(&file);
+	stream << images.size() << "\n";
+	for(int i = 0; i < images.size(); i++)
+		stream << images[i] << " " << directions[i][0] << " " << directions[i][1] << " " << directions[i][2] << "\n";
+}
+
 bool progress(QString str, int n) {
 	static QString previous = "";
 	if(previous == str) cout << '\r';
@@ -114,10 +244,12 @@ int main(int argc, char *argv[]) {
 	bool relighted = false;
 	Eigen::Vector3f light;
 	bool verbose = false;
+	bool auto_spheres = false;
+	float auto_focal = 0.0f;
 
 	opterr = 0;
 	char c;
-	while ((c  = getopt (argc, argv, "hmMn3:r:d:q:p:s:c:reE:b:y:S:R:CD:Q:L:k:P:I:v")) != -1)
+	while ((c  = getopt (argc, argv, "hmMn3:r:d:q:p:s:c:reE:b:y:S:R:CD:Q:L:k:P:I:vAF:")) != -1)
 		switch (c)
 		{
 		case 'h':
@@ -334,6 +466,12 @@ int main(int argc, char *argv[]) {
 		case 'v':
 			verbose = true;
 			break;
+		case 'A':
+			auto_spheres = true;
+			break;
+		case 'F':
+			auto_focal = atof(optarg);
+			break;
 		case '?':
 			cerr << "Option " << char(optopt) << " requires an argument!\n" << endl;
 			if (isprint (optopt))
@@ -416,6 +554,10 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 
+	if(skip_rti && auto_spheres) {
+		cerr << "Option -A is not supported with -b skip (yet)\n" << endl;
+		return 1;
+	}
 	if(skip_rti) {
 
 		try {
@@ -528,18 +670,31 @@ int main(int argc, char *argv[]) {
 		}
 	} else if(info.isDir()) {
 
-		//look for .lp
-		QDir dir(input.c_str());
-		QStringList lp_ext;
-		lp_ext << "*.lp";
-		QStringList lps = dir.entryList(lp_ext);
-		if(lps.size() == 0)
-			throw QString("Could not find a .lp file in the folder");
+		QStringList auto_images; //found with -A, otherwise all .jpg
+		if(auto_spheres) {
+			try {
+				lightsFromSpheres(input.c_str(), auto_images, dome, auto_focal, verbose, callback);
+				QString out(output);
+				QDir out_dir = (out.endsWith(".ptm") || out.endsWith(".rti")) ? QFileInfo(out).absoluteDir() : QDir(out);
+				out_dir.mkpath(".");
+				saveLP(out_dir.filePath("lights.lp"), auto_images, dome.directions);
+			} catch(QString error) {
+				cerr << qPrintable(error) << endl;
+				return 1;
+			}
+		} else {
+			//look for .lp
+			QDir dir(input.c_str());
+			QStringList lp_ext;
+			lp_ext << "*.lp";
+			QStringList lps = dir.entryList(lp_ext);
+			if(lps.size() == 0)
+				throw QString("Could not find a .lp file in the folder");
 
-		dome.parseLP(dir.filePath(lps[0]));
+			dome.parseLP(dir.filePath(lps[0]));
+		}
 
-
-		if(!builder.setupFromFolder(input, dome)) {
+		if(!builder.setupFromFolder(input, dome, auto_images)) {
 			cerr << builder.error << " !\n" << endl;
 			return 1;
 		}
