@@ -42,6 +42,7 @@ set (RELIGHT_HEADERS
     ../src/measure.h 
     ../src/project.h 
     ../src/sphere.h 
+    ../src/autoalign.h
     ../src/white.h
     ../src/normals/bni_normal_integration.h
     ../src/normals/fft_normal_integration.h
@@ -130,6 +131,7 @@ set (RELIGHTLAB_SOURCES
     ../src/measure.cpp 
     ../src/project.cpp 
     ../src/sphere.cpp 
+    ../src/autoalign.cpp
     ../src/white.cpp 
     ../src/normals/flatnormals.cpp
     ../src/normals/bni_normal_integration.cpp

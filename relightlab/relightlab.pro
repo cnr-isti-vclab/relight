@@ -88,6 +88,7 @@ SOURCES += main.cpp \
     ../src/project.cpp \
     ../src/rti.cpp \
     ../src/sphere.cpp \
+    ../src/autoalign.cpp \
     ../src/white.cpp \
     ../src/task.cpp \
     ../src/deepzoom.cpp \
@@ -185,6 +186,7 @@ HEADERS += \
     ../src/project.h \
     ../src/rti.h \
     ../src/sphere.h \
+    ../src/autoalign.h \
     ../src/white.h \
     alignframe.h \
     alignpicking.h \

@@ -2,12 +2,15 @@
 #include "../src/normals/normalstask.h"
 #include "../src/brdf/brdftask.h"
 #include "../src/lp.h"
+#include "../src/autoalign.h"
+#include "../src/image_decoder.h"
 
 #include "../src/getopt.h"
 extern int opterr;
 
 #include <QDir>
 #include <QImage>
+#include <QImageReader>
 #include <QElapsedTimer>
 
 #include <Eigen/Core>
@@ -23,7 +26,7 @@ using namespace std;
 void help() {
 	cout << "Create an RTI from a set of images and a set of light directions (.lp) in a folder.\n";
 	cout << "It is also possible to convert from .ptm or .rti to relight format and viceversa.\n\n";
-	cout << "Usage: relight-cli [-bpqy3PnmMwkrsSRQcCeEv]<input folder> [output folder]\n\n";
+	cout << "Usage: relight-cli [-bpqy3PnmMwkrsSRQcCeEva]<input folder> [output folder]\n\n";
 	cout << "       relight-cli [-q] <input.ptm|.rti> [output folder]\n\n";
 	cout << "       relight-cli [-q] <input.json> [output.ptm]\n\n";
 	cout << "\tinput folder containing a .lp or .dome with number of photos and light directions\n";
@@ -41,6 +44,7 @@ void help() {
 
 	cout << "\t  -w        : number of workers (default 8)\n";
 	cout << "\t  -k <int>x<int>+<int>+<int>: Cropping extracts only the widthxheight+offx+offy part\n";
+	cout << "\t  -a        : experimental: align the images (translation only) before processing\n";
 
 	cout << "\nIgnore exotic parameters below here\n\n";
 	cout << "\n  -H        : fix overexposure in ptm and hsh due to bad sampling\n";
@@ -86,6 +90,54 @@ void test(std::string input, std::string output,  Eigen::Vector3f light, float t
 	img.save(output.c_str());
 }
 
+//image downscaled to size, Qt or ImageDecoder.
+static QImage readScaled(const QString &filename, QSize size) {
+	QImageReader reader(filename);
+	reader.setAutoTransform(false);
+	reader.setScaledSize(size);
+	QImage img = reader.read();
+	if(!img.isNull())
+		return img;
+
+	ImageDecoder dec;
+	int w = 0, h = 0;
+	if(!dec.init(filename.toStdString().c_str(), w, h))
+		return QImage();
+	int ch = dec.numChannels();
+	size_t row_bytes = dec.rowSize();
+	std::vector<uint8_t> buffer(size_t(h)*row_bytes);
+	dec.readRows(h, buffer.data());
+	//no finish(): the destructor releases the decoder.
+	img = QImage(w, h, ch == 4 ? QImage::Format_RGBA8888 : ch == 1 ? QImage::Format_Grayscale8 : QImage::Format_RGB888);
+	for(int y = 0; y < h; y++)
+		memcpy(img.scanLine(y), buffer.data() + size_t(y)*row_bytes, row_bytes);
+	return img.scaled(size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+}
+
+//experimental: offsets of the jpg images in the folder, relative to the first.
+static std::vector<QPointF> alignFolder(const QString &folder, std::function<bool(QString, int)> *callback) {
+	QDir dir(folder);
+	QStringList images = dir.entryList(QStringList() << "*.jpg" << "*.JPG");
+	if(images.isEmpty())
+		throw QString("No .jpg images in folder: ") + folder;
+	QImageReader first(dir.filePath(images[0]));
+	first.setAutoTransform(false);
+	QSize size = first.size();
+	if(!size.isValid()) {
+		ImageDecoder dec;
+		int w = 0, h = 0;
+		if(!dec.init(dir.filePath(images[0]).toStdString().c_str(), w, h))
+			throw QString("Failed loading image: ") + images[0];
+		size = QSize(w, h);
+	}
+	AutoAlign align(size);
+	auto load = [&](int i, QSize size) { return readScaled(dir.filePath(images[i]), size); };
+	std::vector<QPointF> offsets = align.run(images.size(), load, callback);
+	for(int i = 0; i < images.size(); i++)
+		cout << qPrintable(images[i]) << " offset: " << offsets[i].x() << " " << offsets[i].y() << endl;
+	return offsets;
+}
+
 bool progress(QString str, int n) {
 	static QString previous = "";
 	if(previous == str) cout << '\r';
@@ -114,10 +166,11 @@ int main(int argc, char *argv[]) {
 	bool relighted = false;
 	Eigen::Vector3f light;
 	bool verbose = false;
+	bool auto_align = false;
 
 	opterr = 0;
 	char c;
-	while ((c  = getopt (argc, argv, "hmMn3:r:d:q:p:s:c:reE:b:y:S:R:CD:Q:L:k:P:I:v")) != -1)
+	while ((c  = getopt (argc, argv, "hmMn3:r:d:q:p:s:c:reE:b:y:S:R:CD:Q:L:k:P:I:va")) != -1)
 		switch (c)
 		{
 		case 'h':
@@ -334,6 +387,9 @@ int main(int argc, char *argv[]) {
 		case 'v':
 			verbose = true;
 			break;
+		case 'a':
+			auto_align = true;
+			break;
 		case '?':
 			cerr << "Option " << char(optopt) << " requires an argument!\n" << endl;
 			if (isprint (optopt))
@@ -538,8 +594,16 @@ int main(int argc, char *argv[]) {
 
 		dome.parseLP(dir.filePath(lps[0]));
 
-
-		if(!builder.setupFromFolder(input, dome)) {
+		std::vector<QPointF> offsets;
+		if(auto_align) {
+			try {
+				offsets = alignFolder(input.c_str(), callback);
+			} catch(QString error) {
+				cerr << qPrintable(error) << endl;
+				return 1;
+			}
+		}
+		if(!builder.setupFromFolder(input, dome, offsets)) {
 			cerr << builder.error << " !\n" << endl;
 			return 1;
 		}

@@ -73,7 +73,7 @@ static Vector3f fromOcta(int x, int y, int resolution) {
 RtiBuilder::RtiBuilder() {}
 RtiBuilder::~RtiBuilder() {}
 
-bool RtiBuilder::setupFromFolder(const string &folder, Dome &dome) {
+bool RtiBuilder::setupFromFolder(const string &folder, Dome &dome, const std::vector<QPointF> &offsets) {
 	
 	try {
 		QDir dir(folder.c_str());
@@ -94,7 +94,15 @@ bool RtiBuilder::setupFromFolder(const string &folder, Dome &dome) {
 		error = e.toStdString();
 		return false;
 	}
-	if(crop[2] != 0) //some width specified
+	if(offsets.size()) {
+		std::vector<QPointF> shifts = offsets;
+		if(skip_image >= 0)
+			shifts.erase(shifts.begin() + skip_image);
+		Crop c;
+		if(crop[2] != 0)
+			c.setRect(QRect(crop[0], crop[1], crop[2], crop[3]));
+		imageset.setCrop(c, shifts);
+	} else if(crop[2] != 0) //some width specified
 		imageset.setCrop(crop[0], crop[1], crop[2], crop[3]);
 
 	width = imageset.width;
