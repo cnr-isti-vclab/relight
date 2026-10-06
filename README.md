@@ -41,7 +41,7 @@ Relight new formats provide better accuracy and smaller size.
 ## Usage
 
 ```shell
-relight-cli [-bpqy3PnmMwkrsSRQcCeEv] <input folder> [output folder]
+relight-cli [-bpqy3PnmMwkrsSRQcCeEva] <input folder> [output folder]
 relight-cli [-q] <input.ptm|.rti> [output folder]
 relight-cli [-q] <input.json> [output.ptm]
 ```
@@ -69,6 +69,7 @@ relight-cli [-q] <input.json> [output.ptm]
 * `-M`: Extract median image (7/8th quantile)
 * `-w <int>`: Number of worker threads (default: 8)
 * `-k <W>x<H>+<X>+<Y>`: Crop region (width×height+offsetX+offsetY)
+* `-a`: Experimental. Lines up the photos if the camera moved a little during the capture (shifts only, no rotation). The result is cropped to the area all photos share.
 
 ### Advanced Options
 
@@ -125,6 +126,9 @@ relight-cli -k 1024x768+100+50 -q 90 ./photos ./output
 
 # 3D light processing with dome setup
 relight-cli -3 2.5:0.1 -b bilinear ./photos ./output
+
+# The camera moved during the capture: line up the photos first
+relight-cli -a ./photos ./output
 ```
 
 
