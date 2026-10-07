@@ -149,6 +149,7 @@ LightsGeometry::LightsGeometry(QWidget *parent): QFrame(parent) {
 		qRelightApp->project().lens.focalLength = v;
 		qRelightApp->project().lens.focal35equivalent = true;
 		qRelightApp->project().needs_saving = true;
+		recomputeGeometry();
 	});
 	connect(readBtn, &QPushButton::clicked, this, &LightsGeometry::readFocalLength);
 
