@@ -47,7 +47,7 @@ bool ColorProfile::isDisplayP3Profile(const std::vector<uint8_t> &profile_data) 
 }
 
 cmsHTRANSFORM ColorProfile::createColorTransform(const std::vector<uint8_t> &profile_data,
-		ColorProfileMode mode) {
+		ColorProfileMode mode, cmsUInt32Number format) {
 	cmsHPROFILE input;
 	if(profile_data.empty()) {
 		input = cmsCreate_sRGBProfile();
@@ -61,7 +61,7 @@ cmsHTRANSFORM ColorProfile::createColorTransform(const std::vector<uint8_t> &pro
 		cmsCloseProfile(input);
 		throw QString("Failed creating target ICC profile for color conversion.");
 	}
-	cmsHTRANSFORM transform = cmsCreateTransform(input, TYPE_RGB_8, output, TYPE_RGB_8, INTENT_PERCEPTUAL, cmsFLAGS_COPY_ALPHA | cmsFLAGS_NOCACHE); //NOCACHE: used from multiple threads
+	cmsHTRANSFORM transform = cmsCreateTransform(input, format, output, format, INTENT_PERCEPTUAL, cmsFLAGS_COPY_ALPHA | cmsFLAGS_NOCACHE); //NOCACHE: used from multiple threads
 	cmsCloseProfile(input);
 	cmsCloseProfile(output);
 	if(!transform)

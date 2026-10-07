@@ -262,8 +262,18 @@ size_t ImageDecoder::readRows(int rows, uint8_t* buf) {
 	if (impl->pixelType() == PixelType::UINT8)
 		return impl->readRows(rows, buf);
 
-	// Non-UINT8: go through the float path and quantise each sample to [0, 255].
 	size_t outRowBytes = rowSize(); // w × ch (8-bit equivalent)
+	if (impl->pixelType() == PixelType::UINT16) {
+		native_buf.resize(size_t(rows) * impl->rowSize());
+		size_t read = impl->readRows(rows, native_buf.data());
+		size_t n = read * outRowBytes;
+		const uint16_t* src = reinterpret_cast<const uint16_t*>(native_buf.data());
+		for (size_t i = 0; i < n; ++i)
+			buf[i] = uint8_t((uint32_t(src[i]) * 255 + 32767) / 65535);
+		return read;
+	}
+
+	// Float formats: go through the float path and quantise each sample to [0, 255].
 	std::vector<float> fbuf(size_t(rows) * outRowBytes);
 	size_t read = impl->readRows(rows, fbuf.data());
 	size_t n = read * outRowBytes;
@@ -274,6 +284,29 @@ size_t ImageDecoder::readRows(int rows, uint8_t* buf) {
 
 size_t ImageDecoder::readRows(int rows, float* buf) {
 	return impl ? impl->readRows(rows, buf) : 0;
+}
+
+size_t ImageDecoder::readRows(int rows, uint16_t* buf) {
+	if (!impl) return 0;
+	size_t n = size_t(rows) * rowSize();
+	switch (impl->pixelType()) {
+	case PixelType::UINT16:
+		return impl->readRows(rows, reinterpret_cast<uint8_t*>(buf));
+	case PixelType::UINT8: {
+		uint8_t* bytes = reinterpret_cast<uint8_t*>(buf);
+		size_t read = impl->readRows(rows, bytes);
+		for (size_t i = read * rowSize(); i-- > 0; ) //backwards: expanding in place
+			buf[i] = uint16_t(bytes[i] * 257);
+		return read;
+	}
+	default: {
+		std::vector<float> fbuf(n);
+		size_t read = impl->readRows(rows, fbuf.data());
+		for (size_t i = 0; i < read * rowSize(); ++i)
+			buf[i] = uint16_t(std::min(std::max(fbuf[i], 0.0f), 1.0f) * 65535.0f + 0.5f);
+		return read;
+	}
+	}
 }
 
 bool ImageDecoder::finish()  { return impl ? impl->finish()  : false; }

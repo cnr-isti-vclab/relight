@@ -32,6 +32,8 @@ ImageSet::ImageSet(const char *path) {
 ImageSet::~ImageSet() {
 	if(color_transform)
 		cmsDeleteTransform(color_transform);
+	if(color_transform16)
+		cmsDeleteTransform(color_transform16);
 	if(output_color_transform)
 		cmsDeleteTransform(output_color_transform);
 	if(output_color_transform_float)
@@ -284,6 +286,7 @@ bool ImageSet::initImages(const char *_path,  Project::ForcedInputColorspace for
 		}
 		decoders.push_back(dec);
 	}
+	high_bit_depth = decoders.size() && decoders[0]->pixelType() != PixelType::UINT8;
 
 	if(force_colorspace == Project::FORCE_LINEAR) {
 		icc_profile_data = ICCProfiles::linearRGBData();
@@ -447,8 +450,7 @@ void ImageSet::readLine(PixelArray &pixels) {
 		Pixel &pixel = pixels[x - left];
 		for(int i = 0; i < n; i++) {
 			int x_offset = offsets.size() ? offsets[i].x() : 0;
-			const uint8_t *c = row_buffers[i].data() + (x + x_offset)*3;
-			pixel[i] = Color3f(c[0], c[1], c[2]);
+			pixel[i] = rowColor(i, x + x_offset);
 		}
 	}
 	compensateVignetting(pixels);
@@ -506,10 +508,8 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 			Pixel &pixel = sample[x];
 			pixel.x = columns[x] + left;
 			pixel.y = image_height - 1 - y;
-			for(int i = 0; i < n; i++) {
-				const uint8_t *c = row_buffers[i].data() + (columns[x] + left)*3;
-				pixel[i] = Color3f(c[0], c[1], c[2]);
-			}
+			for(int i = 0; i < n; i++)
+				pixel[i] = rowColor(i, columns[x] + left);
 		}
 		compensateVignetting(sample);
 
@@ -529,6 +529,10 @@ void ImageSet::createColorTransform() {
 	if(color_transform) {
 		cmsDeleteTransform(color_transform);
 		color_transform = nullptr;
+	}
+	if(color_transform16) {
+		cmsDeleteTransform(color_transform16);
+		color_transform16 = nullptr;
 	}
 
 	// Detect identity transforms (input == target) and skip.
@@ -551,6 +555,7 @@ void ImageSet::createColorTransform() {
 	}
 	std::cout << "Color transform: " << src << " -> " << modeNames[color_profile_mode] << std::endl;
 	color_transform = ColorProfile::createColorTransform(icc_profile_data, color_profile_mode);
+	color_transform16 = ColorProfile::createColorTransform(icc_profile_data, color_profile_mode, TYPE_RGB_16);
 }
 
 void ImageSet::applyColorTransform(uint8_t *data, size_t pixel_count) {
@@ -676,14 +681,22 @@ void ImageSet::rotateLights(float a) {
 //read the next row of every image (in parallel) into row_buffers and apply the color transform to the crop.
 void ImageSet::readRows(bool aligned) {
 	row_buffers.resize(decoders.size());
+	row_buffers16.resize(decoders.size());
 	#pragma omp parallel for schedule(dynamic)
 	for(int i = 0; i < int(decoders.size()); i++) {
-		std::vector<uint8_t> &row = row_buffers[i];
-		row.resize(image_width*3);
-		decoders[i]->readRows(1, row.data());
-
 		int x_offset = (aligned && offsets.size()) ? offsets[i].x() : 0;
-		applyColorTransform(row.data() + (left + x_offset)*3, width);
+		if(high_bit_depth) {
+			std::vector<uint16_t> &row = row_buffers16[i];
+			row.resize(image_width*3);
+			decoders[i]->readRows(1, row.data());
+			if(color_transform16)
+				cmsDoTransform(color_transform16, row.data() + (left + x_offset)*3, row.data() + (left + x_offset)*3, width);
+		} else {
+			std::vector<uint8_t> &row = row_buffers[i];
+			row.resize(image_width*3);
+			decoders[i]->readRows(1, row.data());
+			applyColorTransform(row.data() + (left + x_offset)*3, width);
+		}
 	}
 }
 

@@ -82,6 +82,7 @@ public:
 	size_t rowSize() const;
 	size_t readRows(int rows, uint8_t* buffer);
 	size_t readRows(int rows, float*   buffer);
+	size_t readRows(int rows, uint16_t* buffer); // 16 bit per sample, any input type
 	bool   finish();
 	bool   restart();
 
@@ -109,6 +110,7 @@ private:
 	int img_width  = 0;   // stored on init(); used by rowSize()
 	int img_height = 0;
 	std::unique_ptr<ImageDecoderImpl> impl;
+	std::vector<uint8_t> native_buf;   // reused by readRows(uint8_t*) for UINT16 input
 };
 
 #endif // IMAGE_DECODER_H
