@@ -63,7 +63,12 @@ ImageGrid::ImageGrid(QWidget *parent): QScrollArea(parent) {
 }
 
 void ImageGrid::clear() {
-	flowlayout->clear();
+	//FlowLayout::clear() deletes only the layout items, the old thumbnails would stay visible.
+	QLayoutItem *item;
+	while((item = flowlayout->takeAt(0))) {
+		delete item->widget();
+		delete item;
+	}
 }
 
 void ImageGrid::init() {
