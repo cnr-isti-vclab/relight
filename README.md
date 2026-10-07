@@ -67,7 +67,7 @@ relight-cli [-q] <input.json> [output.ptm]
 * `-n`: Extract normal maps
 * `-m`: Extract mean image
 * `-M`: Extract median image (7/8th quantile)
-* `-w <int>`: Number of worker threads (default: 8)
+* `-w <int>`: Number of worker threads (default: number of CPU cores)
 * `-k <W>x<H>+<X>+<Y>`: Crop region (width×height+offsetX+offsetY)
 
 ### Advanced Options
