@@ -61,7 +61,7 @@ cmsHTRANSFORM ColorProfile::createColorTransform(const std::vector<uint8_t> &pro
 		cmsCloseProfile(input);
 		throw QString("Failed creating target ICC profile for color conversion.");
 	}
-	cmsHTRANSFORM transform = cmsCreateTransform(input, TYPE_RGB_8, output, TYPE_RGB_8, INTENT_PERCEPTUAL, cmsFLAGS_COPY_ALPHA);
+	cmsHTRANSFORM transform = cmsCreateTransform(input, TYPE_RGB_8, output, TYPE_RGB_8, INTENT_PERCEPTUAL, cmsFLAGS_COPY_ALPHA | cmsFLAGS_NOCACHE); //NOCACHE: used from multiple threads
 	cmsCloseProfile(input);
 	cmsCloseProfile(output);
 	if(!transform)

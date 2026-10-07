@@ -151,9 +151,11 @@ public:
 protected:
 	std::function<bool(QString stage, int percent)> *callback;
 	std::vector<ImageDecoder *> decoders;
+	std::vector<std::vector<uint8_t>> row_buffers; //one row per image, filled by readRows()
 
 
 private:
+	void readRows(bool aligned);
 	void compensateVignetting(PixelArray &pixels);
 
 	void compensateIntensity(PixelArray &pixels);
