@@ -151,7 +151,7 @@ public:
 protected:
 	std::function<bool(QString stage, int percent)> *callback;
 	std::vector<ImageDecoder *> decoders;
-	std::vector<std::vector<uint8_t>> row_buffers; //one row per image, filled by readRows()
+	std::vector<std::vector<float>> row_buffers; //one row per image, filled by readRows()
 
 
 private:
@@ -159,7 +159,7 @@ private:
 	void compensateVignetting(PixelArray &pixels);
 
 	void compensateIntensity(PixelArray &pixels);
-	void applyColorTransform(uint8_t *data, size_t pixel_count);
+	void applyColorTransform(float *data, size_t pixel_count);
 };
 
 #endif // IMAGESET_H

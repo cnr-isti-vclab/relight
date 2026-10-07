@@ -12,7 +12,7 @@ int TiffDecoderImpl::bytesPerSample() const { return bits / 8; }
 bool TiffDecoderImpl::open(const char* path, int& w, int& h) {
 	path_copy = path;
 	if (tif) { TIFFClose(tif); tif = nullptr; }
-	tif = TIFFOpen(path, "r");
+	tif = TIFFOpen(path, "rm");
 	if (!tif) return false;
 
 	uint32_t uw = 0, uh = 0;
@@ -115,7 +115,7 @@ bool TiffDecoderImpl::restart() {
 	current_row = 0;
 	if (!tif) {
 		// Reopen if finish() was called
-		tif = TIFFOpen(path_copy.c_str(), "r");
+		tif = TIFFOpen(path_copy.c_str(), "rm");
 		if (!tif) return false;
 		if (tiled) bufferTiledImage();
 	}
