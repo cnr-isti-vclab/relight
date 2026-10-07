@@ -33,6 +33,9 @@ struct ImageDecoderImpl {
 	// override this for efficiency and override the uint8_t version to quantise.
 	virtual size_t readRows(int rows, float* buffer);
 
+	// Skip scanlines without returning them. Default implementation decodes and discards.
+	virtual size_t skipRows(int rows);
+
 	// Release I/O resources.  Should be idempotent.
 	virtual bool finish() = 0;
 
@@ -82,6 +85,7 @@ public:
 	size_t rowSize() const;
 	size_t readRows(int rows, uint8_t* buffer);
 	size_t readRows(int rows, float*   buffer);
+	size_t skipRows(int rows);
 	bool   finish();
 	bool   restart();
 

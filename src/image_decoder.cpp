@@ -84,6 +84,14 @@ size_t ImageDecoderImpl::readRows(int rows, float* buffer) {
 	return read;
 }
 
+size_t ImageDecoderImpl::skipRows(int rows) {
+	std::vector<uint8_t> tmp(rowSize());
+	int skipped = 0;
+	while (skipped < rows && readRows(1, tmp.data()) == 1)
+		++skipped;
+	return size_t(skipped);
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // JpegDecoderImpl — wraps the existing JpegDecoder
 // ══════════════════════════════════════════════════════════════════════════════
@@ -274,6 +282,10 @@ size_t ImageDecoder::readRows(int rows, uint8_t* buf) {
 
 size_t ImageDecoder::readRows(int rows, float* buf) {
 	return impl ? impl->readRows(rows, buf) : 0;
+}
+
+size_t ImageDecoder::skipRows(int rows) {
+	return impl ? impl->skipRows(rows) : 0;
 }
 
 bool ImageDecoder::finish()  { return impl ? impl->finish()  : false; }

@@ -34,6 +34,7 @@ struct TiffDecoderImpl : ImageDecoderImpl {
 	void   bufferTiledImage();
 	size_t rowSize()                     const override;
 	size_t readRows(int rows, uint8_t* buf)    override;
+	size_t skipRows(int rows)                  override; // random row access, nothing is read
 	// float readRows: inherits the default conversion from ImageDecoderImpl
 	bool   finish()                            override;
 	bool   restart()                           override;

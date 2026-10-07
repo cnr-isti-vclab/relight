@@ -4,6 +4,7 @@
 #include "reflectionview.h"
 #include "../src/project.h"
 #include "../src/sphere.h"
+#include "../src/image_decoder.h"
 #include "processqueue.h"
 
 #include <QHBoxLayout>
@@ -11,6 +12,34 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QMessageBox>
+#include <future>
+
+//decode only the rows and columns of rect (as 8 bit RGB).
+static QImage readCrop(const QString &filename, QRect rect) {
+	ImageDecoder dec;
+	int w = 0, h = 0;
+	if(!dec.init(filename.toStdString().c_str(), w, h))
+		return QImage();
+	rect = rect.intersected(QRect(0, 0, w, h));
+	if(rect.isEmpty())
+		return QImage();
+
+	int ch = dec.numChannels();
+	std::vector<uint8_t> row(dec.rowSize());
+	QImage img(rect.width(), rect.height(), QImage::Format_RGB888);
+	dec.skipRows(rect.top());
+	for(int y = 0; y < rect.height(); y++) {
+		if(dec.readRows(1, row.data()) != 1)
+			return QImage();
+		uint8_t *dst = img.scanLine(y);
+		for(int x = 0; x < rect.width(); x++) {
+			const uint8_t *src = row.data() + (rect.left() + x)*ch;
+			for(int c = 0; c < 3; c++)
+				dst[x*3 + c] = src[ch >= 3 ? c : 0];
+		}
+	}
+	return img; //no finish(): JPEG would complain about the rows not read, the destructor cleans up
+}
 
 DetectHighlights::DetectHighlights(Sphere *_sphere, bool update) {
 	sphere = _sphere;
@@ -43,15 +72,27 @@ void DetectHighlights::run() {
 	sphere->sphereImg.fill(0);
 
 	Project &project = qRelightApp->project();
+	//decode a few images ahead in parallel, findHighlight stays sequential.
+	//On return the destructors of the futures wait for the decoding still running.
+	size_t ahead = std::min(8, std::max(1, qRelightApp->nThreads()));
+	std::vector<std::future<QImage>> decoded(project.images.size());
+	QRect inner_rect = sphere->inner;
+	QPoint origin = inner_rect.intersected(QRect(QPoint(0, 0), project.imgsize)).topLeft();
+	auto decode = [&project, inner_rect](int i) { return readCrop(project.images[i].filename, inner_rect); };
+	for(size_t i = 0; i < std::min(ahead, decoded.size()); i++)
+		decoded[i] = std::async(std::launch::async, decode, int(i));
+
 	for(size_t i = 0; i < project.images.size(); i++) {
 		Image image = project.images[i];
-		QImage img = project.readImage(i);
+		QImage img = decoded[i].get();
+		if(i + ahead < decoded.size())
+			decoded[i + ahead] = std::async(std::launch::async, decode, int(i + ahead));
 		if(img.isNull()) {
 			setStatus(FAILED);
 			progressed(QString("Failed loading image: %1").arg(image.filename), 100);
 			return;
 		}
-		sphere->findHighlight(img, i, image.skip, update_positions);
+		sphere->findHighlight(img, i, image.skip, update_positions, origin);
 
 		int progress = std::min(99, (int)(100*(i+1) / project.images.size()));
 		if(!progressed(QString("Detecting highlights"), progress))
