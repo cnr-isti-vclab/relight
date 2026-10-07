@@ -58,6 +58,7 @@ public:
 
 protected:
 	MaterialBuilder materialbuilder;
+	std::vector<float> projT; //materialbuilder.proj transposed (dim x nplanes), RBF and bilinear
 
 	//for each resample pos get coeffs from the origina lights.
 	Resamplemap resamplemap;
@@ -109,6 +110,7 @@ protected:
 
 	std::vector<float> toPrincipal(Pixel &pixel, MaterialBuilder &materialbuilder);
 	std::vector<float> toPrincipal(Pixel &pixel);
+	void projectRbf(Pixel **pixels, float **res, int n); //toPrincipal for RBF and bilinear of n <= 4 pixels, res must be zeroed
 
 };
 

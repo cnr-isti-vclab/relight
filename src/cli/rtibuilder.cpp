@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <set>
 #include <iostream>
+#include <future>
 
 #include <assert.h>
 #include <math.h>
@@ -522,6 +523,14 @@ void RtiBuilder::pickBases(PixelArray &sample) {
 		}
 	}
 	
+	if(type == RBF || type == BILINEAR) {
+		uint32_t dim = ndimensions*3;
+		projT.resize(dim*nplanes);
+		for(uint32_t p = 0; p < nplanes; p++)
+			for(uint32_t k = 0; k < dim; k++)
+				projT[k*nplanes + p] = materialbuilder.proj[k + p*dim];
+	}
+
 	// Use histogram-based quantile approach for range computation
 	minmaxMaterial(sample);
 	finalizeMaterial();
@@ -633,33 +642,30 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 	// This clamps outliers and improves resolution for the vast majority of the image
 	std::vector<std::vector<float>> values(nplanes);
 	
-	// Reserve space upfront to avoid reallocations during push_back
-	for(uint32_t p = 0; p < nplanes; p++) {
-		values[p].reserve(sample.npixels());
+	for(uint32_t p = 0; p < nplanes; p++)
+		values[p].resize(sample.npixels());
+
+	// Collect all coefficient values from sampled pixels, in parallel chunks to report progress.
+	int npixels = int(sample.npixels());
+	int chunk = std::max(1, npixels/50);
+	for(int start = 0; start < npixels; start += chunk) {
+		if(callback && !(*callback)("Computing histogram quantiles:", 50*start/npixels))
+			throw QString("Cancelled.");
+
+		int end = std::min(npixels, start + chunk);
+		#pragma omp parallel for
+		for(int i = start; i < end; i++) {
+			vector<float> principal = toPrincipal(sample[i]);
+			for(uint32_t p = 0; p < nplanes; p++)
+				values[p][i] = principal[p];
+		}
 	}
-	
-	// Collect all coefficient values from sampled pixels
-	for(uint32_t i = 0; i < sample.npixels(); i++) {
-		if(callback && ((i % 8000) == 0)) {
-			if(!(*callback)("Computing histogram quantiles:", 50*i/sample.npixels()))
-				throw QString("Cancelled.");
-		}
 
-		vector<float> principal = toPrincipal(sample[i]);
-
-		//collect values for each plane
-		for(uint32_t p = 0; p < nplanes; p++) {
-			values[p].push_back(principal[p]);
-		}
-	}
-
-	// Compute quantile-based min/max for each plane
-	for(uint32_t p = 0; p < nplanes; p++) {
-		if(callback && ((p % 3) == 0)) {
-			if(!(*callback)("Computing histogram quantiles:", 50 + 50*p/nplanes))
-				throw QString("Cancelled.");
-		}
-
+	// Compute quantile-based min/max for each plane, one plane per task.
+	if(callback && !(*callback)("Computing histogram quantiles:", 50))
+		throw QString("Cancelled.");
+	#pragma omp parallel for
+	for(int p = 0; p < int(nplanes); p++) {
 		Material::Plane &plane = material.planes[p];
 		
 		size_t n = values[p].size();
@@ -683,6 +689,8 @@ void RtiBuilder::minmaxMaterial(PixelArray &sample) {
 			plane.max = plane.min + 1e-6f;
 		}
 	}
+	if(callback && !(*callback)("Computing histogram quantiles:", 100))
+		throw QString("Cancelled.");
 
 	//compute common min max for 3 colors
 	if(commonMinMax && colorspace == RGB) {
@@ -1548,6 +1556,24 @@ size_t RtiBuilder::save(const string &output, int quality) {
 	QThreadPool pool;
 	pool.setMaxThreadCount(nworkers);
 
+	//the planes are encoded in the background, in parallel, in batches of rows.
+	const int batch_rows = 64;
+	vector<vector<uint8_t>> batch(njpegs), encoding_batch(njpegs);
+	vector<std::future<void>> encoding(njpegs);
+	int batch_count = 0;
+	auto encodeBatch = [&]() {
+		for(size_t j = 0; j < njpegs; j++) {
+			if(encoding[j].valid())
+				encoding[j].get();
+			swap(batch[j], encoding_batch[j]);
+			batch[j].clear();
+			encoding[j] = std::async(std::launch::async, [&, j, n = batch_count]() {
+				encoders[j]->writeRows(encoding_batch[j].data(), n);
+			});
+		}
+		batch_count = 0;
+	};
+
 	for(uint32_t y = 0; y < height + nworkers; y++) {
 		if(callback && y > 0) {
 			bool keep_going = (*callback)("Saving:", 100*(y)/(height + nworkers-1));
@@ -1569,9 +1595,10 @@ size_t RtiBuilder::save(const string &output, int quality) {
 				if(savemedians)
 					medians.setPixel(x, y- nworkers, qRgb(doneworker->medians[x*3], doneworker->medians[x*3+1], doneworker->medians[x*3+2]));
 			}
-			for(size_t j = 0; j < encoders.size(); j++) {
-				encoders[j]->writeRows(doneworker->line[j].data(), 1);
-			}
+			for(size_t j = 0; j < njpegs; j++)
+				batch[j].insert(batch[j].end(), doneworker->line[j].begin(), doneworker->line[j].end());
+			if(++batch_count == batch_rows)
+				encodeBatch();
 			if(y < height)
 				workers[y] = doneworker;
 			else
@@ -1587,11 +1614,18 @@ size_t RtiBuilder::save(const string &output, int quality) {
 		}
 	}
 
+	if(batch_count)
+		encodeBatch();
+	vector<std::future<size_t>> finishing(njpegs);
+	for(size_t j = 0; j < njpegs; j++)
+		finishing[j] = std::async(std::launch::async, [&, j]() {
+			if(encoding[j].valid())
+				encoding[j].get();
+			return encoders[j]->finish();
+		});
 	size_t total = 0;
-	for(size_t p = 0; p < encoders.size(); p++) {
-		size_t s = encoders[p]->finish();
-		total += s;
-	}
+	for(auto &f: finishing)
+		total += f.get();
 
 	if(savenormals)
 		normals.save(dir.filePath("normals.png"));
@@ -1612,8 +1646,11 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 							 std::vector<uchar> &normals, std::vector<uchar> &means, std::vector<uchar> &medians,
 							 cmsHTRANSFORM output_color_transform_float) {
 
-	for(uint32_t x = 0; x < width; x++)
-		resamplePixel(sample[x], resample[x]);
+	//resamplePixel only copies the pixel unless bilinear or YCC.
+	bool resampled = type == BILINEAR || colorspace == MYCC;
+	if(resampled)
+		for(uint32_t x = 0; x < width; x++)
+			resamplePixel(sample[x], resample[x]);
 
 
 	if (savenormals) {
@@ -1640,8 +1677,27 @@ void RtiBuilder::processLine(PixelArray &sample, PixelArray &resample, std::vect
 	}
 
 
+	bool rbf = (type == RBF || type == BILINEAR) && !materialbuilder.useEigen && projT.size();
+	vector<float> projected;
+	if(rbf) { //project 4 pixels at a time
+		projected.assign(size_t(width)*nplanes, 0.0f);
+		for(uint32_t x = 0; x < width; x += 4) {
+			int n = std::min(4, int(width - x));
+			Pixel *p[4];
+			float *r[4];
+			for(int j = 0; j < n; j++) {
+				p[j] = resampled ? &resample[x + j] : &sample[x + j];
+				r[j] = projected.data() + size_t(x + j)*nplanes;
+			}
+			projectRbf(p, r, n);
+		}
+	}
+	vector<float> pri(nplanes);
 	for(uint32_t x = 0; x < width; x++) {
-		vector<float> pri = toPrincipal(resample[x]);
+		if(rbf)
+			std::copy_n(projected.data() + size_t(x)*nplanes, nplanes, pri.begin());
+		else
+			pri = toPrincipal(resampled ? resample[x] : sample[x]);
 
 		if(savemeans) {
 			Vector3f n = extractMean(sample[x]);
@@ -2017,6 +2073,37 @@ void RtiBuilder::buildResampleMap(std::vector<Vector3f> &lights, std::vector<std
 	return;
 }
 
+void RtiBuilder::projectRbf(Pixel **pixels, float **res, int n) {
+	//planes in the inner loop: same summation order for each plane as the plain loop, but vectorized.
+	//Up to 4 pixels share the loads of projT.
+	const float *v[4];
+	float *r[4];
+	std::vector<float> spare;
+	for(int j = 0; j < 4; j++) {
+		v[j] = (const float *)pixels[std::min(j, n - 1)]->data();
+		r[j] = res[std::min(j, n - 1)];
+	}
+	if(n < 4) { //extra lanes write in a scratch buffer
+		spare.assign(nplanes, 0.0f);
+		for(int j = n; j < 4; j++)
+			r[j] = spare.data();
+	}
+	const float *mean = materialbuilder.mean.data();
+	uint32_t dim = ndimensions*3;
+	for(size_t k = 0; k < dim; k++) {
+		float c0 = v[0][k] - mean[k], c1 = v[1][k] - mean[k], c2 = v[2][k] - mean[k], c3 = v[3][k] - mean[k];
+		const float *t = projT.data() + k*nplanes;
+		float *r0 = r[0], *r1 = r[1], *r2 = r[2], *r3 = r[3];
+		for(size_t p = 0; p < nplanes; p++) {
+			float tp = t[p];
+			r0[p] += c0*tp;
+			r1[p] += c1*tp;
+			r2[p] += c2*tp;
+			r3[p] += c3*tp;
+		}
+	}
+}
+
 std::vector<float> RtiBuilder::toPrincipal(Pixel &pixel) {
 	if(!imageset.light3d || type == RBF || type == BILINEAR)
 		return toPrincipal(pixel, materialbuilder);
@@ -2096,15 +2183,28 @@ std::vector<float> RtiBuilder::toPrincipal(Pixel &pixel, MaterialBuilder &materi
 		
 
 	} else { //RGB, YCC
-		if(!materialbuilder.useEigen) { //not rank deficient.
+		if(!materialbuilder.useEigen && projT.size() && &materialbuilder == &this->materialbuilder) {
+			Pixel *p = &pixel;
+			float *r = res.data();
+			projectRbf(&p, &r, 1);
+		} else if(!materialbuilder.useEigen) { //not rank deficient.
 			vector<float> col(dim);
 
 			for(size_t k = 0; k < dim; k++)
 				col[k] = v[k] - materialbuilder.mean[k];
 
-			for(size_t p = 0; p < nplanes; p++) {
-				for(size_t k = 0; k < dim; k++) {
-					res[p] += col[k] * materialbuilder.proj[k + p*dim];
+			if(type == RBF || type == BILINEAR) {
+				for(size_t p = 0; p < nplanes; p++) {
+					for(size_t k = 0; k < dim; k++) {
+						res[p] += col[k] * materialbuilder.proj[k + p*dim];
+					}
+				}
+			} else {
+				//PTM, HSH: plane p only uses its own color channel, the other entries are zero.
+				for(size_t p = 0; p < nplanes; p++) {
+					for(size_t k = p%3; k < dim; k += 3) {
+						res[p] += col[k] * materialbuilder.proj[k + p*dim];
+					}
 				}
 			}
 		} else {
