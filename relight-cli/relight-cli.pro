@@ -12,7 +12,7 @@ DEFINES += HAVE_LCMS2
 
 INCLUDEPATH += ../external/
 
-win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \b
+win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
     ../external/eigen-3.3.9/ \
     ../src/
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib

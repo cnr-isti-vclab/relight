@@ -5,6 +5,7 @@
 #include <QPointF>
 #include <QRect>
 #include <vector>
+#include "../src/autoalign.h"
 #include "../src/task.h"
 
 class ImageViewer;
@@ -19,8 +20,10 @@ class QProgressBar;
 
 class AutoAlignTask: public Task {
 public:
-	std::vector<QPointF> offsets; //for all the images, 0 for the skipped ones
-	QRect region;
+	QRect selected_region;
+	std::vector<int> image_indices;
+	std::vector<AutoAlignCorrespondence> correspondences;
+	std::vector<QPointF> translations;
 
 	AutoAlignTask();
 	virtual void run() override;
@@ -50,12 +53,14 @@ private:
 	MarkerDialog *marker_dialog = nullptr;
 
 	Align *provisional_align = nullptr;
+	bool selecting_assisted_region = false;
 	QVBoxLayout *aligns = nullptr;
 	QPushButton *auto_button = nullptr;
 	QProgressBar *auto_progress = nullptr;
 	AutoAlignTask *auto_align = nullptr;
 
 	AlignRow *findRow(Align *align);
+	void startAutoAlign(QRect region);
 };
 
 #endif // ALIGNFRAME_H

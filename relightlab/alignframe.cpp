@@ -39,11 +39,11 @@ AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
 			connect(new_align, SIGNAL(clicked()), this, SLOT(newAlign()));
 			buttons->addWidget(new_align);
 
-			auto_button = new QPushButton("Align automatically");
+			auto_button = new QPushButton("Find alignment candidates...");
 			auto_button->setProperty("class", "large");
 			auto_button->setMinimumWidth(200);
 			auto_button->setMaximumWidth(300);
-			auto_button->setToolTip("Experimental: find the translation of each image.");
+			auto_button->setToolTip("Select a region, then find phase-correlation candidates between image pairs.");
 			connect(auto_button, SIGNAL(clicked()), this, SLOT(autoAlign()));
 			buttons->addWidget(auto_button);
 
@@ -79,7 +79,7 @@ AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
 AutoAlignTask::AutoAlignTask() {
 	visible = false;
 	owned = true;
-	label = "Aligning images.";
+	label = "Finding alignment candidates.";
 }
 
 void AutoAlignTask::run() {
@@ -90,24 +90,30 @@ void AutoAlignTask::run() {
 	for(size_t i = 0; i < project.images.size(); i++)
 		if(!project.images[i].skip)
 			used.push_back(int(i));
+	image_indices = used;
 
-	auto load = [&](int i, QSize size) {
+	auto load = [&](int i, QRect region) {
 		QImageReader reader(project.images[used[i]].filename);
 		reader.setAutoTransform(false);
-		reader.setScaledSize(size);
+		reader.setClipRect(region);
 		QImage img = reader.read();
-		if(img.isNull())
-			img = project.readImage(used[i]).scaled(size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+		if(img.size() != region.size())
+			img = project.readImage(used[i]).copy(region);
 		return img;
 	};
 	std::function<bool(QString, int)> callback = [this](QString stage, int percent) { return progressed(stage, percent); };
 	try {
 		AutoAlign align(project.imgsize);
-		std::vector<QPointF> found = align.run(int(used.size()), load, &callback);
-		offsets.assign(project.images.size(), QPointF(0, 0));
-		for(size_t k = 0; k < used.size(); k++)
-			offsets[used[k]] = found[k];
-		region = align.region;
+		correspondences = align.runRegion(selected_region, int(used.size()), load, &callback);
+		translations = align.solveTranslations(int(used.size()), correspondences);
+		cout << "Assisted alignment translations (image, dx, dy in pixels):" << endl;
+		for(size_t i = 0; i < translations.size(); i++)
+			cout << image_indices[i] + 1 << '\t'
+				 << translations[i].x() << '\t' << translations[i].y() << endl;
+		for(AutoAlignCorrespondence &edge: correspondences) {
+			edge.first = used[size_t(edge.first)];
+			edge.second = used[size_t(edge.second)];
+		}
 	} catch(QString e) {
 		if(status != STOPPED) {
 			error = e;
@@ -124,6 +130,10 @@ void AlignFrame::clear() {
 		auto_align->stop();
 		auto_align->wait();
 	}
+	if(provisional_align && !findRow(provisional_align))
+		delete provisional_align;
+	provisional_align = nullptr;
+	selecting_assisted_region = false;
 	while(aligns->count() > 0) {
 		QLayoutItem *item = aligns->takeAt(0);
 		AlignRow *row =  dynamic_cast<AlignRow *>(item->widget());
@@ -140,6 +150,15 @@ void AlignFrame::init() {
 }
 
 void AlignFrame::okMarker() {
+	if(selecting_assisted_region) {
+		QRect selected_region = marker_dialog->getAlign().toRect();
+		delete provisional_align;
+		provisional_align = nullptr;
+		selecting_assisted_region = false;
+		stack->setCurrentIndex(0);
+		startAutoAlign(selected_region);
+		return;
+	}
 
 	AlignRow *row = findRow(provisional_align);
 
@@ -165,10 +184,12 @@ void AlignFrame::cancelMarker() {
 		delete provisional_align;
 
 	provisional_align = nullptr;
+	selecting_assisted_region = false;
 	stack->setCurrentIndex(0);
 }
 
 void AlignFrame::newAlign() {
+	selecting_assisted_region = false;
 	stack->setCurrentIndex(1);
 	provisional_align = new Align(qRelightApp->project().images.size());
 	marker_dialog->setAlign(provisional_align);
@@ -176,11 +197,28 @@ void AlignFrame::newAlign() {
 
 
 void AlignFrame::autoAlign() {
+	Project &project = qRelightApp->project();
+	int side = std::min(400, std::min(project.imgsize.width(), project.imgsize.height()));
+	provisional_align = new Align(project.images.size());
+	provisional_align->rect = QRect(
+		(project.imgsize.width() - side)/2,
+		(project.imgsize.height() - side)/2,
+		side,
+		side
+	);
+	selecting_assisted_region = true;
+	marker_dialog->setAlign(provisional_align);
+	stack->setCurrentIndex(1);
+}
+
+void AlignFrame::startAutoAlign(QRect region) {
 	if(!auto_align) {
 		auto_align = new AutoAlignTask;
 		connect(auto_align, &AutoAlignTask::progress, this, &AlignFrame::autoAlignProgress);
 		connect(auto_align, &QThread::finished, this, &AlignFrame::autoAlignFinished);
 	}
+	auto_align->selected_region = region;
+	auto_align->correspondences.clear();
 	auto_button->setEnabled(false);
 	auto_progress->setValue(0);
 	auto_progress->show();
@@ -199,27 +237,36 @@ void AlignFrame::autoAlignFinished() {
 	auto_button->setEnabled(true);
 	auto_progress->hide();
 	if(auto_align->status == Task::FAILED) {
-		QMessageBox::critical(this, "Could not align the images!", auto_align->error);
+		QMessageBox::critical(this, "Could not find alignment candidates!", auto_align->error);
 		return;
 	}
 	if(auto_align->status != Task::DONE)
 		return;
 
-	//the alignment is shown on a part of the area used, to check it with "Verify...".
+	size_t candidate_count = 0;
+	for(const AutoAlignCorrespondence &edge: auto_align->correspondences)
+		candidate_count += edge.peaks.size();
 	Project &project = qRelightApp->project();
-	Align *align = new Align(project.images.size());
-	QPoint center = auto_align->region.center();
-	int side = std::min(400, auto_align->region.width());
-	align->rect = QRect(center.x() - side/2, center.y() - side/2, side, side);
-	align->offsets = auto_align->offsets;
-	project.aligns.push_back(align);
-	AlignRow *row = addAlign(align);
+	Align *alignment = new Align(int(project.images.size()));
+	alignment->rect = auto_align->selected_region;
+	for(size_t i = 0; i < auto_align->translations.size(); i++)
+		alignment->offsets[size_t(auto_align->image_indices[i])] = auto_align->translations[i];
+	project.aligns.push_back(alignment);
+	AlignRow *row = addAlign(alignment);
 	project.cleanAlignCache();
 	row->findAlignment();
-	projectUpdate();
+	QMessageBox::information(
+		this,
+		"Alignment estimated",
+		QString("Estimated translations from %1 image-pair correspondences and %2 peak candidates. "
+				"Review the new alignment before relying on it.")
+			.arg(auto_align->correspondences.size())
+			.arg(candidate_count)
+	);
 }
 
 void AlignFrame::editAlign(AlignRow *row) {
+	selecting_assisted_region = false;
 	stack->setCurrentIndex(1); //needs to be called before setAlign, for correct resize.
 	provisional_align = row->align;
 	marker_dialog->setAlign(provisional_align);

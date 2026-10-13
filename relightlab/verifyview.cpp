@@ -22,7 +22,7 @@ VerifyMarker::VerifyMarker(VerifyView *_view, Marker _marker, QGraphicsItem *par
 QPainterPath VerifyMarker::shape() const {
 	QPainterPath path;
 	if(marker == ALIGN)
-		path.addRect(-4, -4, 8, 8);
+		path.addRect(-radius, -radius, 2*radius, 2*radius);
 	else
 		path.addRect(-radius-2, -radius-2, 2*(radius+2), 2*(radius+2));
 	return path;
@@ -30,16 +30,16 @@ QPainterPath VerifyMarker::shape() const {
 
 QRectF VerifyMarker::boundingRect() const {
 	if(marker == ALIGN)
-		return QRectF(-8, -8, 16, 16);
+		return QRectF(-radius-radius/8, -radius-radius/8, 2*(radius+radius/8), 2*(radius+radius/8));
 	return QRectF(-radius, -radius, 2*radius, 2*radius);
 }
 
 void VerifyMarker::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*) {
-	QPen pen(active ? Qt::green : Qt::red, marker == ALIGN? 0.2 : 2);
+	QPen pen(active ? Qt::green : Qt::red, marker == ALIGN? radius/4 : 2);
 	painter->setPen(pen);
 	if(marker == ALIGN) {
-		painter->drawLine(QPointF(-2, 0), QPointF(2, 0));
-		painter->drawLine(QPointF(0, -2), QPointF(0, 2));
+		painter->drawLine(QPointF(-radius, 0), QPointF(radius, 0));
+		painter->drawLine(QPointF(0, -radius), QPointF(0, radius));
 	} else {
 		painter->drawEllipse(QPointF(0, 0), radius, radius);
 	}
@@ -136,4 +136,3 @@ void VerifyView::keyPressEvent(QKeyEvent *event) {
 	}
 	QWidget::keyPressEvent(event);
 }
-
