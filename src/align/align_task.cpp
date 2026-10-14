@@ -41,11 +41,11 @@ void AlignTask::run() {
 		translations = align.solveTranslations(int(used.size()), correspondences);
 		vector<double> max_difference(translations.size(), 0.0);
 		for(const AutoAlignCorrespondence &edge: correspondences) {
-			if(edge.peaks.empty())
+			if(!edge.peak)
 				continue;
-			QPointF residual =
-				translations[size_t(edge.second)] - translations[size_t(edge.first)] - edge.peaks.front().offset;
-			double difference = hypot(residual.x(), residual.y());
+			Eigen::Vector2f residual =
+				translations[size_t(edge.second)] - translations[size_t(edge.first)] - edge.peak->offset;
+			double difference = residual.norm();
 			max_difference[size_t(edge.first)] = max(max_difference[size_t(edge.first)], difference);
 			max_difference[size_t(edge.second)] = max(max_difference[size_t(edge.second)], difference);
 		}

@@ -3,7 +3,9 @@
 
 #include <vector>
 #include <functional>
+#include <optional>
 
+#include <Eigen/Core>
 #include <QPointF>
 #include <QRect>
 #include <QSize>
@@ -12,14 +14,14 @@
 class QImage;
 
 struct AutoAlignPeak {
-	QPointF offset; //relative position of the second image with respect to the first
+	Eigen::Vector2f offset; //relative position of the second image with respect to the first
 	float response; //phase-correlation peak value
 };
 
 struct AutoAlignCorrespondence {
 	int first; //loader index
 	int second; //loader index, greater than first
-	std::vector<AutoAlignPeak> peaks;
+	std::optional<AutoAlignPeak> peak; //Keeping multiple peaks might help resolve ambiguities.
 };
 
 /* run() retains the legacy automatic tile consensus. runRegion() analyzes an even square region
@@ -37,7 +39,7 @@ public:
 	//pixel (x, y) of the first image is at (x, y) + offset in image i. Throws QString on failure or cancel.
 	std::vector<QPointF> run(int n, Loader load, std::function<bool(QString stage, int percent)> *callback = nullptr);
 	
-	//Returns up to four phase-correlation peaks for each edge i -> i + 2^k.
+	//Returns the strongest phase-correlation peak for each edge i -> i + 2^k.
 	//The graph indices refer to loader indices; peak offsets are full-resolution.
 	std::vector<AutoAlignCorrespondence> runRegion(
 		QRect region,
@@ -46,7 +48,7 @@ public:
 		std::function<bool(QString stage, int percent)> *callback = nullptr
 	);
 	//Solves image translations from the strongest candidate on each edge, anchoring image 0 at zero.
-	std::vector<QPointF> solveTranslations(
+	std::vector<Eigen::Vector2f> solveTranslations(
 		int n,
 		const std::vector<AutoAlignCorrespondence> &correspondences
 	) const;

@@ -85,7 +85,7 @@ static vector<float> correlationSurface(const vector<Complex> &a, const vector<C
 	return surface;
 }
 
-static QPointF peakShift(const vector<float> &surface, int x, int y, int side) {
+static Eigen::Vector2f peakShift(const vector<float> &surface, int x, int y, int side) {
 	auto at = [&](int px, int py) { return surface[size_t((py + side) % side)*side + (px + side) % side]; };
 	auto peak = [](float m, float z, float p) {
 		float d = m - 2*z + p;
@@ -93,11 +93,11 @@ static QPointF peakShift(const vector<float> &surface, int x, int y, int side) {
 	};
 	float dx = peak(at(x - 1, y), at(x, y), at(x + 1, y));
 	float dy = peak(at(x, y - 1), at(x, y), at(x, y + 1));
-	return QPointF((x < side/2 ? x : x - side) + dx, (y < side/2 ? y : y - side) + dy);
+	return Eigen::Vector2f((x < side/2 ? x : x - side) + dx, (y < side/2 ? y : y - side) + dy);
 }
 
 //phase correlation: shift to apply to b to match a, with subpixel peak.
-static QPointF correlate(const vector<Complex> &a, const vector<Complex> &b, int side) {
+static Eigen::Vector2f correlate(const vector<Complex> &a, const vector<Complex> &b, int side) {
 	vector<float> surface = correlationSurface(a, b, side);
 	size_t best = 0;
 	for(size_t i = 0; i < surface.size(); i++)
@@ -139,17 +139,17 @@ static void saveCorrelationSurface(const vector<float> &surface, int side, int f
 		throw QString("Could not save correlation surface to %1.").arg(filename);
 }
 
-static vector<AutoAlignPeak> correlatePeaks(
+static optional<AutoAlignPeak> correlatePeak(
 	const vector<Complex> &a,
 	const vector<Complex> &b,
 	int side,
-	int max_peaks,
 	int first_image,
 	int second_image
 ) {
 	vector<float> surface = correlationSurface(a, b, side);
 	saveCorrelationSurface(surface, side, first_image, second_image);
-	vector<size_t> maxima;
+	size_t best = 0;
+	bool found = false;
 	for(int y = 0; y < side; y++) {
 		for(int x = 0; x < side; x++) {
 			float value = surface[size_t(y)*side + x];
@@ -166,24 +166,16 @@ static vector<AutoAlignPeak> correlatePeaks(
 					}
 				}
 			}
-			if(local_maximum)
-				maxima.push_back(size_t(y)*side + x);
+			if(local_maximum && (!found || value > surface[best])) {
+				best = size_t(y)*side + x;
+				found = true;
+			}
 		}
 	}
-	sort(maxima.begin(), maxima.end(), [&](size_t a_idx, size_t b_idx) {
-		if(surface[a_idx] != surface[b_idx])
-			return surface[a_idx] > surface[b_idx];
-		return a_idx < b_idx;
-	});
-
-	vector<AutoAlignPeak> peaks;
-	peaks.reserve(std::min<size_t>(max_peaks, maxima.size()));
-	for(size_t i = 0; i < std::min<size_t>(max_peaks, maxima.size()); i++) {
-		size_t index = maxima[i];
-		int x = int(index % side), y = int(index / side);
-		peaks.push_back({-peakShift(surface, x, y, side), surface[index]});
-	}
-	return peaks;
+	if(!found)
+		return std::nullopt;
+	int x = int(best % side), y = int(best / side);
+	return AutoAlignPeak{-peakShift(surface, x, y, side), surface[best]};
 }
 
 static float median(vector<float> v) {
@@ -222,8 +214,10 @@ vector<QPointF> AutoAlign::run(int n, Loader load, std::function<bool(QString st
 	vector<vector<QPointF>> shifts(n, vector<QPointF>(tiles.size(), QPointF(0, 0)));
 	for(int i = 1; i < n; i++) {
 		grad = loadGradient(i);
-		for(size_t j = 0; j < tiles.size(); j++)
-			shifts[i][j] = correlate(reference[j], tileSpectrum(grad, w, tiles[j].x(), tiles[j].y(), side, window), side);
+		for(size_t j = 0; j < tiles.size(); j++) {
+			Eigen::Vector2f shift = correlate(reference[j], tileSpectrum(grad, w, tiles[j].x(), tiles[j].y(), side, window), side);
+			shifts[i][j] = QPointF(shift.x(), shift.y());
+		}
 		if(callback && !(*callback)("Aligning images", 100*(i + 1)/n))
 			throw QString("Cancelled.");
 	}
@@ -310,11 +304,10 @@ vector<AutoAlignCorrespondence> AutoAlign::runRegion(
 			correspondences.push_back({
 				int(first),
 				int(second),
-				correlatePeaks(
+				correlatePeak(
 					spectra[first],
 					spectra[second],
 					region_side,
-					4,
 					int(first + 1),
 					int(second + 1)
 				)
@@ -330,18 +323,18 @@ vector<AutoAlignCorrespondence> AutoAlign::runRegion(
 	return correspondences;
 }
 
-vector<QPointF> AutoAlign::solveTranslations(
+vector<Eigen::Vector2f> AutoAlign::solveTranslations(
 	int n,
 	const vector<AutoAlignCorrespondence> &correspondences
 ) const {
 	if(n < 2)
 		throw QString("At least two images are required to solve translations.");
-	vector<QPointF> translations(size_t(n), QPointF(0, 0));
+	vector<Eigen::Vector2f> translations(size_t(n), Eigen::Vector2f::Zero());
 
 	struct Edge {
 		int first;
 		int second;
-		QPointF offset;
+		Eigen::Vector2f offset;
 	};
 	vector<Edge> edges;
 	edges.reserve(correspondences.size());
@@ -349,8 +342,8 @@ vector<QPointF> AutoAlign::solveTranslations(
 		if(correspondence.first < 0 || correspondence.second >= n ||
 			correspondence.first >= correspondence.second)
 			throw QString("Invalid image-pair correspondence.");
-		if(!correspondence.peaks.empty())
-			edges.push_back({correspondence.first, correspondence.second, correspondence.peaks.front().offset});
+		if(correspondence.peak)
+			edges.push_back({correspondence.first, correspondence.second, correspondence.peak->offset});
 	}
 	if(edges.empty())
 		throw QString("No valid phase-correlation peaks to solve translations.");
@@ -444,6 +437,6 @@ vector<QPointF> AutoAlign::solveTranslations(
 	}
 
 	for(int i = 1; i < n; i++)
-		translations[size_t(i)] = QPointF(x[i - 1], y[i - 1]);
+		translations[size_t(i)] = Eigen::Vector2f(float(x[i - 1]), float(y[i - 1]));
 	return translations;
 }

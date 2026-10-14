@@ -4,7 +4,7 @@
 #include "autoalign.h"
 #include "../task.h"
 
-#include <QPointF>
+#include <Eigen/Core>
 #include <QRect>
 #include <vector>
 
@@ -15,7 +15,7 @@ public:
 	QRect selected_region;
 	std::vector<int> image_indices;
 	std::vector<AutoAlignCorrespondence> correspondences;
-	std::vector<QPointF> translations;
+	std::vector<Eigen::Vector2f> translations;
 
 	explicit AlignTask(Project &project);
 	void run() override;

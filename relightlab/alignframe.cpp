@@ -192,26 +192,17 @@ void AlignFrame::autoAlignFinished() {
 	if(auto_align->status != Task::DONE)
 		return;
 
-	size_t candidate_count = 0;
-	for(const AutoAlignCorrespondence &edge: auto_align->correspondences)
-		candidate_count += edge.peaks.size();
 	Project &project = qRelightApp->project();
 	Align *alignment = new Align(int(project.images.size()));
 	alignment->rect = auto_align->selected_region;
-	for(size_t i = 0; i < auto_align->translations.size(); i++)
-		alignment->offsets[size_t(auto_align->image_indices[i])] = auto_align->translations[i];
+	for(size_t i = 0; i < auto_align->translations.size(); i++) {
+		auto t = auto_align->translations[i];
+		alignment->offsets[size_t(auto_align->image_indices[i])] = QPointF(t.x(), t.y());
+	}
 	project.aligns.push_back(alignment);
 	AlignRow *row = addAlign(alignment);
 	project.cleanAlignCache();
 	row->findAlignment();
-	QMessageBox::information(
-		this,
-		"Alignment estimated",
-		QString("Estimated translations from %1 image-pair correspondences and %2 peak candidates. "
-				"Review the new alignment before relying on it.")
-			.arg(auto_align->correspondences.size())
-			.arg(candidate_count)
-	);
 }
 
 void AlignFrame::editAlign(AlignRow *row) {
