@@ -280,6 +280,94 @@ size_t ImageDecoder::readRows(int rows, float* buf) {
 	return impl ? impl->readRows(rows, buf) : 0;
 }
 
+size_t ImageDecoder::readRegion(int x, int y, int w, int h, uint8_t* buf) {
+	if (!impl || x < 0 || y < 0 || w <= 0 || h <= 0
+	    || x > img_width || w > img_width - x || y >= img_height)
+		return 0;
+	if (!restart() || skipRows(y) != size_t(y))
+		return 0;
+
+	size_t channels = size_t(numChannels());
+	std::vector<uint8_t> row(size_t(img_width) * channels);
+	size_t read = 0;
+	for (; read < size_t(h); ++read) {
+		if (readRows(1, row.data()) != 1)
+			break;
+		std::memcpy(buf + read * size_t(w) * channels,
+		            row.data() + size_t(x) * channels,
+		            size_t(w) * channels);
+	}
+	return read;
+}
+
+size_t ImageDecoder::readRegion(int x, int y, int w, int h, float* buf) {
+	if (!impl || x < 0 || y < 0 || w <= 0 || h <= 0
+	    || x > img_width || w > img_width - x || y >= img_height)
+		return 0;
+	if (!restart() || skipRows(y) != size_t(y))
+		return 0;
+
+	size_t channels = size_t(numChannels());
+	std::vector<float> row(size_t(img_width) * channels);
+	size_t read = 0;
+	for (; read < size_t(h); ++read) {
+		if (readRows(1, row.data()) != 1)
+			break;
+		std::memcpy(buf + read * size_t(w) * channels,
+		            row.data() + size_t(x) * channels,
+		            size_t(w) * channels * sizeof(float));
+	}
+	return read;
+}
+
+size_t ImageDecoder::readRegion(const char* path, int x, int y, int w, int h,
+                                std::vector<uint8_t>& buffer, int& channels) {
+	ImageDecoder decoder;
+	int width = 0, height = 0;
+	if (!decoder.init(path, width, height)) {
+		buffer.clear();
+		channels = 0;
+		return 0;
+	}
+
+	channels = decoder.numChannels();
+	if (x < 0 || y < 0 || w <= 0 || h <= 0
+	    || x > width || w > width - x || y >= height) {
+		buffer.clear();
+		return 0;
+	}
+
+	buffer.resize(size_t(w) * size_t(h) * size_t(channels));
+	size_t read = decoder.readRegion(x, y, w, h, buffer.data());
+	decoder.finish();
+	buffer.resize(read * size_t(w) * size_t(channels));
+	return read;
+}
+
+size_t ImageDecoder::readRegion(const char* path, int x, int y, int w, int h,
+                                std::vector<float>& buffer, int& channels) {
+	ImageDecoder decoder;
+	int width = 0, height = 0;
+	if (!decoder.init(path, width, height)) {
+		buffer.clear();
+		channels = 0;
+		return 0;
+	}
+
+	channels = decoder.numChannels();
+	if (x < 0 || y < 0 || w <= 0 || h <= 0
+	    || x > width || w > width - x || y >= height) {
+		buffer.clear();
+		return 0;
+	}
+
+	buffer.resize(size_t(w) * size_t(h) * size_t(channels));
+	size_t read = decoder.readRegion(x, y, w, h, buffer.data());
+	decoder.finish();
+	buffer.resize(read * size_t(w) * size_t(channels));
+	return read;
+}
+
 size_t ImageDecoder::skipRows(int rows) {
 	return impl ? impl->skipRows(rows) : 0;
 }

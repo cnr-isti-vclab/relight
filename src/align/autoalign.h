@@ -5,6 +5,7 @@
 #include <functional>
 #include <optional>
 #include <complex>
+#include <cstdint>
 
 #include <Eigen/Core>
 #include <QPointF>
@@ -42,7 +43,7 @@ public:
 	//Returns the strongest phase-correlation peak for each edge i -> i + 2^k.
 	//Images can be provided in any order and must match the selected region's size.
 	void beginRegion(QSize region_size, int image_count);
-	void provideImage(int image_index, const QImage &image);
+	void provideImage(int image_index, const uint8_t *image, int channels);
 	std::vector<AutoAlignCorrespondence> findCandidates(
 		std::function<bool(QString stage, int percent)> *callback = nullptr
 	);

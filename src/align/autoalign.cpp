@@ -43,6 +43,26 @@ static vector<float> gradient(const QImage &image, int w, int h) {
 	return grad;
 }
 
+static vector<float> gradient(const uint8_t *image, int channels, int w, int h) {
+	vector<float> grad(size_t(w)*h, 0.0f);
+	auto gray = [channels](const uint8_t *pixel) {
+		if(channels <= 2)
+			return float(pixel[0]);
+		return 0.299f*pixel[0] + 0.587f*pixel[1] + 0.114f*pixel[2];
+	};
+	for(int y = 1; y < h - 1; y++) {
+		const uint8_t *up = image + size_t(y - 1)*w*channels;
+		const uint8_t *down = image + size_t(y + 1)*w*channels;
+		const uint8_t *line = image + size_t(y)*w*channels;
+		for(int x = 1; x < w - 1; x++) {
+			float dx = gray(line + size_t(x + 1)*channels) - gray(line + size_t(x - 1)*channels);
+			float dy = gray(down + size_t(x)*channels) - gray(up + size_t(x)*channels);
+			grad[size_t(y)*w + x] = sqrt(dx*dx + dy*dy);
+		}
+	}
+	return grad;
+}
+
 static void fft(vector<Complex> &data, int side, bool forward) {
 	pocketfft::shape_t shape = { size_t(side), size_t(side) };
 	pocketfft::stride_t stride = { ptrdiff_t(sizeof(Complex)), ptrdiff_t(side*sizeof(Complex)) };
@@ -277,17 +297,16 @@ void AutoAlign::beginRegion(QSize region_size, int image_count) {
 	region_spectra.resize(size_t(region_image_count));
 }
 
-void AutoAlign::provideImage(int image_index, const QImage &image) {
+void AutoAlign::provideImage(int image_index, const uint8_t *image, int channels) {
 	if(region_side == 0)
 		throw QString("Begin an alignment region before providing images.");
 	if(image_index < 0 || image_index >= region_image_count)
 		throw QString("Image index is outside the selected alignment set.");
-	if(image.isNull() || image.size() != QSize(region_side, region_side))
-		throw QString("Failed loading selected region from image %1").arg(image_index);
+	if(channels < 1 || channels > 4)
+		throw QString("Unsupported number of channels in selected region.");
 
-	vector<float> grad = gradient(image, region_side, region_side);
-	region_spectra[size_t(image_index)] =
-		tileSpectrum(grad, region_side, 0, 0, region_side, region_window);
+	vector<float> grad = gradient(image, channels, region_side, region_side);
+	region_spectra[size_t(image_index)] = tileSpectrum(grad, region_side, 0, 0, region_side, region_window);
 }
 
 vector<AutoAlignCorrespondence> AutoAlign::findCandidates(

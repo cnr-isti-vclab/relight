@@ -1,5 +1,6 @@
 #include "align_task.h"
 
+#include "../image_decoder.h"
 #include "../project.h"
 #include "align.h"
 #include "autoalign.h"
@@ -7,6 +8,7 @@
 #include <QImage>
 
 #include <algorithm>
+#include <mutex>
 
 AlignTask::AlignTask(Project &project, Align *align): align(align), project(project) {
 	visible = false;
@@ -38,19 +40,56 @@ void AlignTask::run() {
 		}
 
 		if(!cache_hit || update_positions) {
-			for(size_t i = 0; i < used.size(); i++) {
-				int index = used[i];
-				QImage image = project.readImage(index);
-				if(image.isNull())
-					throw QString("Failed loading image: %1").arg(project.images[size_t(index)].filename);
-				QImage tile = image.copy(align->rect);
-				if(!cache_hit)
-					align->readThumb(tile, index);
+			const int batch_size = 8;
+			const int count = int(used.size());
+			std::mutex thumbnail_mutex;
+			std::vector<QString> errors(used.size());
+			for(int start = 0; start < count; start += batch_size) {
+				int end = std::min(count, start + batch_size);
+				#pragma omp parallel for schedule(dynamic)
+				for(int i = start; i < end; i++) {
+					try {
+						int index = used[size_t(i)];
+						std::string filename =
+							project.images[size_t(index)].filename.toStdString();
+						int channels = 0;
+						std::vector<uint8_t> tile_data;
+						if(ImageDecoder::readRegion(filename.c_str(),
+						                            align->rect.x(), align->rect.y(),
+						                            align->rect.width(), align->rect.height(),
+						                            tile_data, channels) != size_t(align->rect.height()))
+							throw QString("Failed loading selected region from image: %1")
+								.arg(project.images[size_t(index)].filename);
+						if(channels != 1 && channels != 3 && channels != 4)
+							throw QString("Unsupported number of channels in image: %1")
+								.arg(channels);
+
+						if(!cache_hit) {
+							size_t tile_row_size =
+								size_t(align->rect.width()) * size_t(channels);
+							QImage::Format format = channels == 1
+								? QImage::Format_Grayscale8
+								: channels == 3 ? QImage::Format_RGB888
+								                : QImage::Format_RGBA8888;
+							QImage tile(tile_data.data(), align->rect.width(),
+							            align->rect.height(), int(tile_row_size), format);
+							std::lock_guard<std::mutex> lock(thumbnail_mutex);
+							align->readThumb(tile, index);
+						}
+						if(update_positions)
+							auto_align.provideImage(i, tile_data.data(), channels);
+					} catch(QString e) {
+						errors[size_t(i)] = e;
+					}
+				}
+
+				for(int i = start; i < end; i++)
+					if(!errors[size_t(i)].isEmpty())
+						throw errors[size_t(i)];
 				if(update_positions) {
-					auto_align.provideImage(int(i), tile);
-					if(!progressed("Preparing selected regions", 50*int(i + 1)/int(used.size())))
+					if(!progressed("Preparing selected regions", 50*end/count))
 						return;
-				} else if(!progressed("Loading alignment tiles", int(99*(i + 1)/used.size()))) {
+				} else if(!progressed("Loading alignment tiles", 99*end/count)) {
 					return;
 				}
 			}

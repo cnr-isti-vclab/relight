@@ -78,6 +78,15 @@ public:
 	size_t rowSize() const;
 	size_t readRows(int rows, uint8_t* buffer);
 	size_t readRows(int rows, float*   buffer);
+	// Read a horizontal region, restarting at row y; returns rows actually read.
+	size_t readRegion(int x, int y, int w, int h, uint8_t* buffer);
+	size_t readRegion(int x, int y, int w, int h, float*   buffer);
+	// Open, read, and close an image region into a tightly packed vector.
+	// Returns rows read and reports the channel count through `channels`.
+	static size_t readRegion(const char* path, int x, int y, int w, int h,
+	                         std::vector<uint8_t>& buffer, int& channels);
+	static size_t readRegion(const char* path, int x, int y, int w, int h,
+	                         std::vector<float>& buffer, int& channels);
 	size_t skipRows(int rows);
 	bool   finish();
 	bool   restart();
