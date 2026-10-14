@@ -15,9 +15,7 @@
 #include <string>
 #include <vector>
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Half-float (IEEE 754-2008) → float helper
-// ──────────────────────────────────────────────────────────────────────────────
 static float half_to_float(uint16_t h) {
 	uint32_t sign     = uint32_t(h >> 15) << 31;
 	uint32_t exponent = (h >> 10) & 0x1fu;
@@ -44,11 +42,9 @@ static float half_to_float(uint16_t h) {
 	return f;
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
 // ImageDecoderImpl — default float readRows
 // Reads native bytes, converts to [0,1] float (or copies for float formats).
 // Format backends that produce float natively should override this method.
-// ──────────────────────────────────────────────────────────────────────────────
 size_t ImageDecoderImpl::readRows(int rows, float* buffer) {
 	std::vector<uint8_t> tmp(size_t(rows) * rowSize());
 	size_t read        = readRows(rows, tmp.data());

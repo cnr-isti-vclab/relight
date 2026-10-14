@@ -254,59 +254,70 @@ vector<QPointF> AutoAlign::run(int n, Loader load, std::function<bool(QString st
 	return offsets;
 }
 
-vector<AutoAlignCorrespondence> AutoAlign::runRegion(
-	QRect selected_region,
-	int n,
-	RegionLoader load,
+void AutoAlign::beginRegion(QSize region_size, int image_count) {
+	if(region_size.isEmpty())
+		throw QString("Selected alignment region must not be empty.");
+	if(region_size.width() != region_size.height())
+		throw QString("Selected alignment region must be square.");
+	if(region_size.width() % 2 != 0 || region_size.height() % 2 != 0)
+		throw QString("Selected alignment region dimensions must be even.");
+	if(region_size.width() < 40)
+		throw QString("Selected alignment region must be at least 40 pixels wide.");
+	if(region_size.width() > image_size.width() || region_size.height() > image_size.height())
+		throw QString("Selected alignment region is larger than the image.");
+	if(image_count < 2)
+		throw QString("At least two images are required to align.");
+
+	region_side = region_size.width();
+	region_image_count = image_count;
+	region_window.resize(size_t(region_side));
+	for(int i = 0; i < region_side; i++)
+		region_window[size_t(i)] = 0.5f - 0.5f*cos(2*M_PI*i/(region_side - 1));
+
+	region_spectra.resize(size_t(region_image_count));
+}
+
+void AutoAlign::provideImage(int image_index, const QImage &image) {
+	if(region_side == 0)
+		throw QString("Begin an alignment region before providing images.");
+	if(image_index < 0 || image_index >= region_image_count)
+		throw QString("Image index is outside the selected alignment set.");
+	if(image.isNull() || image.size() != QSize(region_side, region_side))
+		throw QString("Failed loading selected region from image %1").arg(image_index);
+
+	vector<float> grad = gradient(image, region_side, region_side);
+	region_spectra[size_t(image_index)] =
+		tileSpectrum(grad, region_side, 0, 0, region_side, region_window);
+}
+
+vector<AutoAlignCorrespondence> AutoAlign::findCandidates(
 	std::function<bool(QString stage, int percent)> *callback
 ) {
-	QRect image_bounds(QPoint(0, 0), image_size);
-	if(selected_region.isEmpty() || !image_bounds.contains(selected_region))
-		throw QString("Selected alignment region is outside the image.");
-	if(selected_region.width() != selected_region.height())
-		throw QString("Selected alignment region must be square.");
-	if(selected_region.width() % 2 != 0 || selected_region.height() % 2 != 0)
-		throw QString("Selected alignment region dimensions must be even.");
-	if(selected_region.width() < 40)
-		throw QString("Selected alignment region must be at least 40 pixels wide.");
-
-	if(n < 2)
-		return {};
-
-	int region_side = selected_region.width();
-	vector<float> window(region_side);
-	for(int i = 0; i < region_side; i++)
-		window[i] = 0.5f - 0.5f*cos(2*M_PI*i/(region_side - 1));
-
-	vector<vector<Complex>> spectra;
-	spectra.reserve(size_t(n));
-	for(int i = 0; i < n; i++) {
-		QImage image = load(i, selected_region);
-		if(image.isNull() || image.size() != selected_region.size())
-			throw QString("Failed loading selected region from image %1").arg(i);
-		vector<float> grad = gradient(image, region_side, region_side);
-		spectra.push_back(tileSpectrum(grad, region_side, 0, 0, region_side, window));
-		if(callback && !(*callback)("Preparing selected regions", 50*(i + 1)/n))
-			throw QString("Cancelled.");
-	}
+	if(region_side == 0)
+		throw QString("Begin an alignment region before finding candidates.");
+	if(region_spectra.size() != size_t(region_image_count) ||
+		any_of(region_spectra.begin(), region_spectra.end(), [](const vector<Complex> &spectrum) {
+			return spectrum.empty();
+		}))
+		throw QString("Not all images were provided for the selected alignment region.");
 
 	size_t edge_count = 0;
-	for(size_t first = 0; first < size_t(n); first++)
-		for(size_t step = 1; first + step < size_t(n); step *= 2)
+	for(size_t first = 0; first < size_t(region_image_count); first++)
+		for(size_t step = 1; first + step < size_t(region_image_count); step *= 2)
 			edge_count++;
 
 	vector<AutoAlignCorrespondence> correspondences;
 	correspondences.reserve(edge_count);
 	size_t completed = 0;
-	for(size_t first = 0; first < size_t(n); first++) {
-		for(size_t step = 1; first + step < size_t(n); step *= 2) {
+	for(size_t first = 0; first < size_t(region_image_count); first++) {
+		for(size_t step = 1; first + step < size_t(region_image_count); step *= 2) {
 			size_t second = first + step;
 			correspondences.push_back({
 				int(first),
 				int(second),
 				correlatePeak(
-					spectra[first],
-					spectra[second],
+					region_spectra[first],
+					region_spectra[second],
 					region_side,
 					int(first + 1),
 					int(second + 1)

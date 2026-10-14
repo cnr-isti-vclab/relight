@@ -761,13 +761,7 @@ void Project::save(QString filename) {
 void Project::cleanAlignCache() {
 	QStringList filenames;
 	for(Align *align: aligns) {
-		QRect inner = align->rect;
-		QString filename = QString("align_%1x%2+%3+%4.jpg")
-							   .arg(inner.width())
-							   .arg(inner.height())
-							   .arg(inner.left())
-							   .arg(inner.top());
-		filenames.push_back(filename);
+		filenames.push_back(QFileInfo(align->cacheFilename()).fileName());
 	}
 	QDir dir("./");
 	if(!dir.exists("resources"))

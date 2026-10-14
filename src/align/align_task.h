@@ -1,23 +1,17 @@
 #ifndef ALIGN_TASK_H
 #define ALIGN_TASK_H
 
-#include "autoalign.h"
 #include "../task.h"
 
-#include <Eigen/Core>
-#include <QRect>
-#include <vector>
-
 class Project;
+class Align;
 
 class AlignTask: public Task {
 public:
-	QRect selected_region;
-	std::vector<int> image_indices;
-	std::vector<AutoAlignCorrespondence> correspondences;
-	std::vector<Eigen::Vector2f> translations;
+	Align *align;
+	bool update_positions = true;
 
-	explicit AlignTask(Project &project);
+	AlignTask(Project &project, Align *align);
 	void run() override;
 
 private:

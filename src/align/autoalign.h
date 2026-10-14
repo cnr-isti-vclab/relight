@@ -4,6 +4,7 @@
 #include <vector>
 #include <functional>
 #include <optional>
+#include <complex>
 
 #include <Eigen/Core>
 #include <QPointF>
@@ -19,13 +20,13 @@ struct AutoAlignPeak {
 };
 
 struct AutoAlignCorrespondence {
-	int first; //loader index
-	int second; //loader index, greater than first
+	int first; //provided-image index
+	int second; //provided-image index, greater than first
 	std::optional<AutoAlignPeak> peak; //Keeping multiple peaks might help resolve ambiguities.
 };
 
-/* run() retains the legacy automatic tile consensus. runRegion() analyzes an even square region
-   of at least 40 pixels and returns candidate correspondences without selecting a final alignment. */
+/* run() retains the legacy automatic tile consensus. beginRegion()/provideImage()/findCandidates()
+   analyze an even square region of at least 40 pixels. */
 
 class AutoAlign {
 public:
@@ -33,18 +34,16 @@ public:
 
 	//returns image i downscaled to size.
 	typedef std::function<QImage(int i, QSize size)> Loader;
-	typedef std::function<QImage(int i, QRect region)> RegionLoader;
 
 	AutoAlign(QSize image_size);
 	//pixel (x, y) of the first image is at (x, y) + offset in image i. Throws QString on failure or cancel.
 	std::vector<QPointF> run(int n, Loader load, std::function<bool(QString stage, int percent)> *callback = nullptr);
-	
+
 	//Returns the strongest phase-correlation peak for each edge i -> i + 2^k.
-	//The graph indices refer to loader indices; peak offsets are full-resolution.
-	std::vector<AutoAlignCorrespondence> runRegion(
-		QRect region,
-		int n,
-		RegionLoader load,
+	//Images can be provided in any order and must match the selected region's size.
+	void beginRegion(QSize region_size, int image_count);
+	void provideImage(int image_index, const QImage &image);
+	std::vector<AutoAlignCorrespondence> findCandidates(
 		std::function<bool(QString stage, int percent)> *callback = nullptr
 	);
 	//Solves image translations from the strongest candidate on each edge, anchoring image 0 at zero.
@@ -60,6 +59,10 @@ private:
 	int w = 0, h = 0; //downscaled size
 	float scale = 1.0f; //full size / downscaled size
 	int side = 256; //tile size, in downscaled pixels
+	int region_side = 0;
+	int region_image_count = 0;
+	std::vector<float> region_window;
+	std::vector<std::vector<std::complex<float>>> region_spectra;
 };
 
 #endif // RELIGHT_AUTOALIGN_H

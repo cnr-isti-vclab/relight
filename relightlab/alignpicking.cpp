@@ -5,7 +5,6 @@
 
 #include <QGraphicsRectItem>
 #include <QPen>
-#include <QKeyEvent>
 #include <algorithm>
 
 
@@ -108,18 +107,3 @@ void AlignPicking::click(QPoint p) {
 /*void AlignPicking::updateAlignPoint() {
 	align->rect = rect->getRect();
 }*/
-
-void AlignPicking::keyPressEvent(QKeyEvent *event) {
-	QSize imgsize = qRelightApp->project().imgsize;
-	if(event->key() == Qt::Key_Plus)
-		marker_side = std::min(marker_side + 5, std::min(imgsize.width(), imgsize.height()));
-	if(event->key() == Qt::Key_Minus)
-		marker_side = std::max(3, marker_side - 5);
-	QPointF center = rect->rect.center();
-
-	QRectF r(center - QPointF(marker_side/2.0, marker_side/2.0),
-			center + QPointF(marker_side/2.0, marker_side/2.0));
-	rect->setRect(r);
-	rect->update();
-//	updateAlignPoint();
-}
