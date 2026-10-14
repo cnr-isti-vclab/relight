@@ -5,7 +5,7 @@
 
 #include <QVBoxLayout>
 #include <QDialogButtonBox>
-#include "../src/align.h"
+#include "../src/align/align.h"
 
 MarkerDialog::MarkerDialog(Marker marker, QWidget *parent): QDialog(parent) {
 

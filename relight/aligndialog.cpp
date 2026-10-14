@@ -3,7 +3,7 @@
 
 #include "../src/project.h"
 #include "qalignmarker.h"
-#include "../src/align.h"
+#include "../src/align/align.h"
 
 #include <QDebug>
 #include <QLabel>

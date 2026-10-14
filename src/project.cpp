@@ -2,7 +2,7 @@
 #include "exif.h"
 #include "sphere.h"
 #include "measure.h"
-#include "align.h"
+#include "align/align.h"
 #include "white.h"
 #include "lp.h"
 #include "colorprofile.h"

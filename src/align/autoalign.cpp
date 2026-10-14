@@ -1,10 +1,11 @@
-#include "autoalign.h"
+#include "align/autoalign.h"
 #include "normals/pocketfft.h"
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <Eigen/SparseCholesky>
 
+#include <QColor>
 #include <QImage>
 #include <QLineF>
 
@@ -106,13 +107,48 @@ static QPointF correlate(const vector<Complex> &a, const vector<Complex> &b, int
 	return peakShift(surface, x, y, side);
 }
 
+static void saveCorrelationSurface(const vector<float> &surface, int side, int first, int second) {
+	const int crop_side = 40;
+	int crop_start = side/2 - crop_side/2;
+	vector<float> centered(size_t(crop_side)*crop_side);
+	// Adding half a side performs the quadrant swap, placing zero displacement at the crop center.
+	for(int y = 0; y < crop_side; y++) {
+		int source_y = (crop_start + y + side/2) % side;
+		for(int x = 0; x < crop_side; x++) {
+			int source_x = (crop_start + x + side/2) % side;
+			centered[size_t(y)*crop_side + x] = surface[size_t(source_y)*side + source_x];
+		}
+	}
+
+	auto range = minmax_element(centered.begin(), centered.end());
+	float minimum = *range.first;
+	float value_range = *range.second - minimum;
+	QImage image(crop_side, crop_side, QImage::Format_RGB32);
+	for(int y = 0; y < crop_side; y++) {
+		for(int x = 0; x < crop_side; x++) {
+			float value = value_range > 0
+				? (centered[size_t(y)*crop_side + x] - minimum)/value_range
+				: 0.5f;
+			int hue = int((1.0f - value)*240.0f);
+			image.setPixel(x, y, QColor::fromHsv(hue, 255, 255).rgb());
+		}
+	}
+
+	QString filename = QString("correlation_%1_%2.png").arg(first).arg(second);
+	if(!image.save(filename, "PNG"))
+		throw QString("Could not save correlation surface to %1.").arg(filename);
+}
+
 static vector<AutoAlignPeak> correlatePeaks(
 	const vector<Complex> &a,
 	const vector<Complex> &b,
 	int side,
-	int max_peaks
+	int max_peaks,
+	int first_image,
+	int second_image
 ) {
 	vector<float> surface = correlationSurface(a, b, side);
+	saveCorrelationSurface(surface, side, first_image, second_image);
 	vector<size_t> maxima;
 	for(int y = 0; y < side; y++) {
 		for(int x = 0; x < side; x++) {
@@ -235,8 +271,10 @@ vector<AutoAlignCorrespondence> AutoAlign::runRegion(
 		throw QString("Selected alignment region is outside the image.");
 	if(selected_region.width() != selected_region.height())
 		throw QString("Selected alignment region must be square.");
-	if(selected_region.width() < 3)
-		throw QString("Selected alignment region is too small.");
+	if(selected_region.width() % 2 != 0 || selected_region.height() % 2 != 0)
+		throw QString("Selected alignment region dimensions must be even.");
+	if(selected_region.width() < 40)
+		throw QString("Selected alignment region must be at least 40 pixels wide.");
 
 	if(n < 2)
 		return {};
@@ -272,7 +310,14 @@ vector<AutoAlignCorrespondence> AutoAlign::runRegion(
 			correspondences.push_back({
 				int(first),
 				int(second),
-				correlatePeaks(spectra[first], spectra[second], region_side, 4)
+				correlatePeaks(
+					spectra[first],
+					spectra[second],
+					region_side,
+					4,
+					int(first + 1),
+					int(second + 1)
+				)
 			});
 			completed++;
 			if(callback && !(*callback)(

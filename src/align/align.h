@@ -1,5 +1,5 @@
-#ifndef ALIGN_H
-#define ALIGN_H
+#ifndef RELIGHT_ALIGN_H
+#define RELIGHT_ALIGN_H
 
 #include <QImage>
 #include <QPoint>
@@ -28,4 +28,4 @@ public:
 	void saveCacheThumbs(QString filename);
 };
 
-#endif // ALIGN_H
+#endif // RELIGHT_ALIGN_H

@@ -1,5 +1,5 @@
-#ifndef AUTOALIGN_H
-#define AUTOALIGN_H
+#ifndef RELIGHT_AUTOALIGN_H
+#define RELIGHT_AUTOALIGN_H
 
 #include <vector>
 #include <functional>
@@ -22,8 +22,8 @@ struct AutoAlignCorrespondence {
 	std::vector<AutoAlignPeak> peaks;
 };
 
-/* run() retains the legacy automatic tile consensus. runRegion() analyzes a user-selected region
-   and returns candidate correspondences without selecting a final alignment. */
+/* run() retains the legacy automatic tile consensus. runRegion() analyzes an even square region
+   of at least 40 pixels and returns candidate correspondences without selecting a final alignment. */
 
 class AutoAlign {
 public:
@@ -36,6 +36,7 @@ public:
 	AutoAlign(QSize image_size);
 	//pixel (x, y) of the first image is at (x, y) + offset in image i. Throws QString on failure or cancel.
 	std::vector<QPointF> run(int n, Loader load, std::function<bool(QString stage, int percent)> *callback = nullptr);
+	
 	//Returns up to four phase-correlation peaks for each edge i -> i + 2^k.
 	//The graph indices refer to loader indices; peak offsets are full-resolution.
 	std::vector<AutoAlignCorrespondence> runRegion(
@@ -59,4 +60,4 @@ private:
 	int side = 256; //tile size, in downscaled pixels
 };
 
-#endif // AUTOALIGN_H
+#endif // RELIGHT_AUTOALIGN_H

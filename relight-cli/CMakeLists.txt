@@ -35,7 +35,7 @@ SET(HEADERS
 	../src/legacy_rti.h
 	../src/dome.h
 	../src/sphere.h
-	../src/autoalign.h
+	../src/align/autoalign.h
 	../src/lens.h
 	../src/crop.h
 	../src/brdf/brdftask.h 
@@ -81,7 +81,7 @@ SET(SOURCES
 	../src/dome.cpp
 	../src/lens.cpp
 	../src/sphere.cpp
-	../src/autoalign.cpp
+	../src/align/autoalign.cpp
 	../src/crop.cpp
 	../src/cli/convert_rti.cpp
 	../src/brdf/brdftask.cpp

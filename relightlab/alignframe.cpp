@@ -5,8 +5,8 @@
 #include "relightapp.h"
 #include "markerdialog.h"
 #include "alignrow.h"
-#include "../src/align.h"
-#include "../src/autoalign.h"
+#include "../src/align/align.h"
+#include "../src/align/autoalign.h"
 #include "../src/project.h"
 #include "processqueue.h"
 
@@ -15,12 +15,10 @@
 //#include <QGraphicsRectItem>
 #include <QPushButton>
 #include <QProgressBar>
-#include <QImageReader>
 #include <QMessageBox>
 #include <QStackedWidget>
 
-#include <iostream>
-using namespace std;
+#include <algorithm>
 
 AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
 
@@ -74,55 +72,6 @@ AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
 
 	QVBoxLayout *layout = new QVBoxLayout(this);
 	layout->addWidget(stack);
-}
-
-AutoAlignTask::AutoAlignTask() {
-	visible = false;
-	owned = true;
-	label = "Finding alignment candidates.";
-}
-
-void AutoAlignTask::run() {
-	setStatus(RUNNING);
-
-	Project &project = qRelightApp->project();
-	std::vector<int> used;
-	for(size_t i = 0; i < project.images.size(); i++)
-		if(!project.images[i].skip)
-			used.push_back(int(i));
-	image_indices = used;
-
-	auto load = [&](int i, QRect region) {
-		QImageReader reader(project.images[used[i]].filename);
-		reader.setAutoTransform(false);
-		reader.setClipRect(region);
-		QImage img = reader.read();
-		if(img.size() != region.size())
-			img = project.readImage(used[i]).copy(region);
-		return img;
-	};
-	std::function<bool(QString, int)> callback = [this](QString stage, int percent) { return progressed(stage, percent); };
-	try {
-		AutoAlign align(project.imgsize);
-		correspondences = align.runRegion(selected_region, int(used.size()), load, &callback);
-		translations = align.solveTranslations(int(used.size()), correspondences);
-		cout << "Assisted alignment translations (image, dx, dy in pixels):" << endl;
-		for(size_t i = 0; i < translations.size(); i++)
-			cout << image_indices[i] + 1 << '\t'
-				 << translations[i].x() << '\t' << translations[i].y() << endl;
-		for(AutoAlignCorrespondence &edge: correspondences) {
-			edge.first = used[size_t(edge.first)];
-			edge.second = used[size_t(edge.second)];
-		}
-	} catch(QString e) {
-		if(status != STOPPED) {
-			error = e;
-			setStatus(FAILED);
-		}
-		return;
-	}
-	progressed("Done.", 100);
-	setStatus(DONE);
 }
 
 void AlignFrame::clear() {
@@ -213,8 +162,8 @@ void AlignFrame::autoAlign() {
 
 void AlignFrame::startAutoAlign(QRect region) {
 	if(!auto_align) {
-		auto_align = new AutoAlignTask;
-		connect(auto_align, &AutoAlignTask::progress, this, &AlignFrame::autoAlignProgress);
+		auto_align = new AlignTask(qRelightApp->project());
+		connect(auto_align, &AlignTask::progress, this, &AlignFrame::autoAlignProgress);
 		connect(auto_align, &QThread::finished, this, &AlignFrame::autoAlignFinished);
 	}
 	auto_align->selected_region = region;

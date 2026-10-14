@@ -1,4 +1,4 @@
-#include "align.h"
+#include "align/align.h"
 
 #include <QJsonObject>
 #include <QJsonArray>

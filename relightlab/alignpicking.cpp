@@ -1,6 +1,6 @@
 #include "alignpicking.h"
 #include "canvas.h"
-#include "../src/align.h"
+#include "../src/align/align.h"
 #include "relightapp.h"
 
 #include <QGraphicsRectItem>

@@ -72,7 +72,7 @@ SOURCES += main.cpp \
     ../src/rti.cpp \
     ../src/legacy_rti.cpp \
 	../src/sphere.cpp \
-	../src/autoalign.cpp \
+	../src/align/autoalign.cpp \
     ../src/cli/rtibuilder.cpp \
     ../src/cli/convert_rti.cpp \
     ../src/lp.cpp \
@@ -119,7 +119,7 @@ HEADERS += \
     ../src/legacy_rti.h \
     ../src/eigenpca.h \
 	../src/sphere.h \
-	../src/autoalign.h \
+	../src/align/autoalign.h \
     ../src/cli/rtibuilder.h \
     ../src/lp.h \
     ../src/crop.h \
@@ -128,4 +128,3 @@ HEADERS += \
 
 DISTFILES += \
     plan.txt
-

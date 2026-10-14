@@ -2,7 +2,7 @@
 #include "../src/normals/normalstask.h"
 #include "../src/brdf/brdftask.h"
 #include "../src/lp.h"
-#include "../src/autoalign.h"
+#include "../src/align/autoalign.h"
 #include "../src/image_decoder.h"
 
 #include "../src/getopt.h"

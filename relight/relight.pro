@@ -160,7 +160,7 @@ HEADERS += \
     qmeasuremarker.h \
     ../src/sphere.h \
     qspheremarker.h \
-    ../src/align.h \
+    ../src/align/align.h \
     qalignmarker.h \
     qwhitemarker.h \
     ../src/white.h \
@@ -189,4 +189,3 @@ RESOURCES += \
 DISTFILES += \
     README.txt \
     docs/help.html
-

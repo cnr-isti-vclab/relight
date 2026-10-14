@@ -2,11 +2,8 @@
 #define ALIGNFRAME_H
 
 #include <QFrame>
-#include <QPointF>
 #include <QRect>
-#include <vector>
-#include "../src/autoalign.h"
-#include "../src/task.h"
+#include "../src/align/align_task.h"
 
 class ImageViewer;
 class QGraphicsRectItem;
@@ -17,17 +14,6 @@ class QVBoxLayout;
 class QStackedWidget;
 class QPushButton;
 class QProgressBar;
-
-class AutoAlignTask: public Task {
-public:
-	QRect selected_region;
-	std::vector<int> image_indices;
-	std::vector<AutoAlignCorrespondence> correspondences;
-	std::vector<QPointF> translations;
-
-	AutoAlignTask();
-	virtual void run() override;
-};
 
 class AlignFrame: public QFrame {
 Q_OBJECT
@@ -57,7 +43,7 @@ private:
 	QVBoxLayout *aligns = nullptr;
 	QPushButton *auto_button = nullptr;
 	QProgressBar *auto_progress = nullptr;
-	AutoAlignTask *auto_align = nullptr;
+	AlignTask *auto_align = nullptr;
 
 	AlignRow *findRow(Align *align);
 	void startAutoAlign(QRect region);

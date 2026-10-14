@@ -5,7 +5,7 @@
 #include "verifydialog.h"
 #include "reflectionview.h"
 #include "../src/project.h"
-#include "../src/align.h"
+#include "../src/align/align.h"
 #include "processqueue.h"
 
 #include <QHBoxLayout>
