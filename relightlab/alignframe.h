@@ -6,8 +6,11 @@
 class Align;
 class AlignRow;
 class MarkerDialog;
+class QGraphicsScene;
+class QGraphicsView;
 class QVBoxLayout;
 class QStackedWidget;
+class QResizeEvent;
 
 class AlignFrame: public QFrame {
 Q_OBJECT
@@ -16,6 +19,7 @@ public:
 	void clear();
 	void init();
 	AlignRow *addAlign(Align *align);
+	void resizeEvent(QResizeEvent *event) override;
 
 public slots:
 	void projectUpdate();
@@ -25,8 +29,12 @@ public slots:
 	void cancelMarker();
 
 private:
+	void updateSummary();
+
 	QStackedWidget *stack = nullptr;
 	MarkerDialog *marker_dialog = nullptr;
+	QGraphicsScene *summary_scene = nullptr;
+	QGraphicsView *summary_view = nullptr;
 
 	Align *provisional_align = nullptr;
 	QVBoxLayout *aligns = nullptr;

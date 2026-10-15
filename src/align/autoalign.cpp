@@ -168,7 +168,8 @@ static optional<AutoAlignPeak> correlatePeak(
 	int second_image
 ) {
 	vector<float> surface = correlationSurface(a, b, side);
-	saveCorrelationSurface(surface, side, first_image, second_image);
+// For debug purposes
+//	saveCorrelationSurface(surface, side, first_image, second_image);
 	size_t best = 0;
 	bool found = false;
 	for(int y = 0; y < side; y++) {
