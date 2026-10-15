@@ -10,6 +10,7 @@
 #include <QLineF>
 
 #include <algorithm>
+#include <atomic>
 #include <complex>
 #include <cmath>
 
@@ -314,42 +315,71 @@ vector<AutoAlignCorrespondence> AutoAlign::findCandidates(
 ) {
 	if(region_side == 0)
 		throw QString("Begin an alignment region before finding candidates.");
-	if(region_spectra.size() != size_t(region_image_count) ||
-		any_of(region_spectra.begin(), region_spectra.end(), [](const vector<Complex> &spectrum) {
-			return spectrum.empty();
-		}))
-		throw QString("Not all images were provided for the selected alignment region.");
-
-	size_t edge_count = 0;
-	for(size_t first = 0; first < size_t(region_image_count); first++)
-		for(size_t step = 1; first + step < size_t(region_image_count); step *= 2)
+	
+	int edge_count = 0;
+	vector<int> first_offsets(region_image_count + 1);
+	for(int first = 0; first < region_image_count; first++) {
+		first_offsets[first] = edge_count;
+		for(int step = 1; step < region_image_count - first;) {
 			edge_count++;
-
-	vector<AutoAlignCorrespondence> correspondences;
-	correspondences.reserve(edge_count);
-	size_t completed = 0;
-	for(size_t first = 0; first < size_t(region_image_count); first++) {
-		for(size_t step = 1; first + step < size_t(region_image_count); step *= 2) {
-			size_t second = first + step;
-			correspondences.push_back({
-				int(first),
-				int(second),
-				correlatePeak(
-					region_spectra[first],
-					region_spectra[second],
-					region_side,
-					int(first + 1),
-					int(second + 1)
-				)
-			});
-			completed++;
-			if(callback && !(*callback)(
-				"Finding pair candidates",
-				50 + int(50*completed/edge_count)
-			))
-				throw QString("Cancelled.");
+			if(step > (region_image_count - first - 1)/2)
+				break;
+			step *= 2;
 		}
 	}
+	first_offsets[static_cast<size_t>(region_image_count)] = edge_count;
+
+	vector<AutoAlignCorrespondence> correspondences(static_cast<size_t>(edge_count));
+	atomic<bool> cancelled(false);
+	atomic<bool> error_occurred(false);
+	int completed = 0;
+	#pragma omp parallel for
+	for(int first = 0; first < region_image_count; first++) {
+		int index = first_offsets[static_cast<size_t>(first)];
+		for(int step = 1; step < region_image_count - first;) {
+			if(cancelled.load())
+				break;
+			const int second = first + step;
+			try {
+				correspondences[static_cast<size_t>(index)] = {
+					first,
+					second,
+					correlatePeak(
+						region_spectra[static_cast<size_t>(first)],
+						region_spectra[static_cast<size_t>(second)],
+						region_side,
+						first + 1,
+						second + 1
+					)
+				};
+			} catch(...) {
+				error_occurred.store(true);
+				cancelled.store(true);
+				break;
+			}
+			index++;
+			if(callback) {
+				#pragma omp critical(autoalign_progress)
+				{
+					if(!cancelled.load()) {
+						completed++;
+						if(!(*callback)(
+							"Finding pair candidates",
+							50 + static_cast<int>(50LL*completed/edge_count)
+						))
+							cancelled.store(true);
+					}
+				}
+			}
+			if(step > (region_image_count - first - 1)/2)
+				break;
+			step *= 2;
+		}
+	}
+	if(error_occurred.load())
+		throw QString("An error occurred while finding pair candidates.");
+	if(cancelled.load())
+		throw QString("Cancelled.");
 	return correspondences;
 }
 
