@@ -91,14 +91,7 @@ void test(std::string input, std::string output,  Eigen::Vector3f light, float t
 }
 
 //image downscaled to size, Qt or ImageDecoder.
-static QImage readScaled(const QString &filename, QSize size) {
-	QImageReader reader(filename);
-	reader.setAutoTransform(false);
-	reader.setScaledSize(size);
-	QImage img = reader.read();
-	if(!img.isNull())
-		return img;
-
+static QImage readImage(const QString &filename) {
 	ImageDecoder dec;
 	int w = 0, h = 0;
 	if(!dec.init(filename.toStdString().c_str(), w, h))
@@ -108,10 +101,10 @@ static QImage readScaled(const QString &filename, QSize size) {
 	std::vector<uint8_t> buffer(size_t(h)*row_bytes);
 	dec.readRows(h, buffer.data());
 	//no finish(): the destructor releases the decoder.
-	img = QImage(w, h, ch == 4 ? QImage::Format_RGBA8888 : ch == 1 ? QImage::Format_Grayscale8 : QImage::Format_RGB888);
+	QImage img = QImage(w, h, ch == 4 ? QImage::Format_RGBA8888 : ch == 1 ? QImage::Format_Grayscale8 : QImage::Format_RGB888);
 	for(int y = 0; y < h; y++)
 		memcpy(img.scanLine(y), buffer.data() + size_t(y)*row_bytes, row_bytes);
-	return img.scaled(size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+	return img;
 }
 
 //experimental: offsets of the jpg images in the folder, relative to the first.
@@ -120,18 +113,14 @@ static std::vector<QPointF> alignFolder(const QString &folder, std::function<boo
 	QStringList images = dir.entryList(QStringList() << "*.jpg" << "*.JPG");
 	if(images.isEmpty())
 		throw QString("No .jpg images in folder: ") + folder;
-	QImageReader first(dir.filePath(images[0]));
-	first.setAutoTransform(false);
-	QSize size = first.size();
-	if(!size.isValid()) {
-		ImageDecoder dec;
-		int w = 0, h = 0;
-		if(!dec.init(dir.filePath(images[0]).toStdString().c_str(), w, h))
-			throw QString("Failed loading image: ") + images[0];
-		size = QSize(w, h);
-	}
+	ImageDecoder dec;
+	int w = 0, h = 0;
+	if(!dec.init(dir.filePath(images[0]).toStdString().c_str(), w, h))
+		throw QString("Failed loading image: ") + images[0];
+	QSize size = QSize(w, h);
+
 	AutoAlign align(size);
-	auto load = [&](int i, QSize size) { return readScaled(dir.filePath(images[i]), size); };
+	auto load = [&](int i) { return readImage(dir.filePath(images[i])); };
 	std::vector<QPointF> offsets = align.run(images.size(), load, callback);
 	for(int i = 0; i < images.size(); i++)
 		cout << qPrintable(images[i]) << " offset: " << offsets[i].x() << " " << offsets[i].y() << endl;
