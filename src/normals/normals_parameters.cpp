@@ -46,6 +46,8 @@ QString NormalsParameters::summary() const {
 		ret += ", 4-point plane flattening";
 	if(flatMethod == FLAT_FOURIER)
 		ret += ", frequencies based flattening";
+	if(filter_sigma > 0)
+		ret += ", heightmap high-pass filter";
 
 	if(surface_integration == SURFACE_ASSM)
 		ret += ", adaptive surface reconstruction";
@@ -61,6 +63,7 @@ QJsonObject NormalsParameters::toJson() const {
 	QJsonObject obj = baseJson();
 	obj["taskType"] = "NORMALS";
 	obj["compute"] = compute;
+	obj["heightmapInput"] = heightmap_input;
 	obj["inputPath"] = input_path;
 	obj["solver"] = solverToString(solver);
 	obj["robustThresholdHigh"] = robust_threshold_high;
@@ -68,6 +71,8 @@ QJsonObject NormalsParameters::toJson() const {
 	obj["flatMethod"] = flatMethodToString(flatMethod);
 	obj["flatPercentage"] = fourierPercentage;
 	obj["blurPercentage"] = blurPercentage;
+	obj["filterSigma"] = filter_sigma;
+	obj["lowPercentile"] = low_percentile;
 	obj["surfaceIntegration"] = surfaceIntegrationToString(surface_integration);
 	obj["bniK"] = bni_k;
 	obj["assmError"] = assm_error;

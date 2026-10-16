@@ -13,7 +13,9 @@
 #include "../src/imageset.h"
 #include "../src/getopt.h"
 
+#include <cmath>
 #include <iostream>
+#include <limits>
 
 extern int opterr;
 
@@ -43,6 +45,8 @@ struct CLINormalsParameters : public NormalsParameters {
 	QString output_normalmap;
 	QString output_heightmap;
 	double scale_down = 0.0;
+	bool low_percentile_provided = false;
+	bool output_provided = false;
 };
 
 void help() {
@@ -53,6 +57,7 @@ void help() {
 	cout << "  <folder>              : Process folder with .lp file\n";
 	cout << "  <project.relight>     : Process .relight project file\n";
 	cout << "  <normalmap.png/jpg>   : Process existing normal map\n\n";
+	cout << "  <image.tif/.tiff>     : Heightmap with no -i; normal map when -i is specified\n\n";
 	
 	cout << "Normal generation options (for folder/project input):\n";
 	cout << "  -s <solver>           : Normal solver: l2 (default), sbl*, rpca* (*not implemented yet)\n";
@@ -68,9 +73,11 @@ void help() {
 	cout << "  -i <method>           : Integration method: bni, fft, assm (default: none)\n";
 	cout << "  --bni-k <float>       : BNI discontinuity parameter (default: 2.0)\n";
 	cout << "  --assm-error <float>  : ASSM target error (default: 0.1)\n\n";
+	cout << "  --filter-sigma <float>: Heightmap Gaussian high-pass sigma (>= 0.5)\n";
+	cout << "  --low-percentile <p>  : Lower contrast percentile (0-100, default: 0.1)\n\n";
 	
 	cout << "Output options:\n";
-	cout << "  -o <output>           : Output file (without extension)\n";
+	cout << "  -o <output>           : Output directory (required)\n";
 	cout << "  --save-normals <file> : Save normal map\n";
 	cout << "  --scale-down <float>  : Scale down by factor\n";
 	cout << "  -q <int>              : JPEG quality (default: 95)\n\n";
@@ -97,6 +104,8 @@ bool parseArgs(int argc, char *argv[], CLINormalsParameters &config) {
 		{(char*)"assm-error", required_argument, 0, 1006},
 		{(char*)"save-normals", required_argument, 0, 1007},
 		{(char*)"scale-down", required_argument, 0, 1009},
+		{(char*)"filter-sigma", required_argument, 0, 1010},
+		{(char*)"low-percentile", required_argument, 0, 1011},
 		{(char*)"help", no_argument, 0, 'h'},
 		{0, 0, 0, 0}
 	};
@@ -166,6 +175,7 @@ bool parseArgs(int argc, char *argv[], CLINormalsParameters &config) {
 		}
 		case 'o':
 			config.path = QString(optarg);
+			config.output_provided = true;
 			break;
 		case 'q':
 			config.quality = QString(optarg).toInt();
@@ -193,10 +203,37 @@ bool parseArgs(int argc, char *argv[], CLINormalsParameters &config) {
 		case 1009: // --scale-down
 			config.scale_down = QString(optarg).toDouble();
 			break;
+		case 1010: { // --filter-sigma
+			bool valid = false;
+			config.filter_sigma = QString(optarg).toDouble(&valid);
+			if (!valid || !std::isfinite(config.filter_sigma) ||
+				config.filter_sigma < 0.5 ||
+				config.filter_sigma > std::numeric_limits<float>::max()) {
+				cerr << "Filter sigma must be a finite number >= 0.5" << endl;
+				return false;
+			}
+			break;
+		}
+		case 1011: { // --low-percentile
+			bool valid = false;
+			config.low_percentile = QString(optarg).toDouble(&valid);
+			if (!valid || !std::isfinite(config.low_percentile) ||
+				config.low_percentile < 0.0 || config.low_percentile > 100.0) {
+				cerr << "Low percentile must be a number between 0 and 100" << endl;
+				return false;
+			}
+			config.low_percentile_provided = true;
+			break;
+		}
 		case '?':
 			cerr << "Unknown option: " << char(optopt) << endl;
 			return false;
 		}
+	}
+
+	if (!config.output_provided || config.path.isEmpty()) {
+		cerr << "No output specified; use -o <output>" << endl;
+		return false;
 	}
 	
 	// Get input path
@@ -204,6 +241,20 @@ bool parseArgs(int argc, char *argv[], CLINormalsParameters &config) {
 		config.input_path = QString(argv[optind]);
 	} else {
 		cerr << "No input specified" << endl;
+		return false;
+	}
+
+	const QString suffix = QFileInfo(config.input_path).suffix().toLower();
+	const bool tiff_input = suffix == "tif" || suffix == "tiff";
+	if (config.filter_sigma > 0.0 &&
+		config.surface_integration != SURFACE_BNI &&
+		config.surface_integration != SURFACE_FFT &&
+		!(tiff_input && config.surface_integration == SURFACE_NONE)) {
+		cerr << "--filter-sigma requires -i bni or -i fft, or a TIFF heightmap input" << endl;
+		return false;
+	}
+	if (config.low_percentile_provided && config.filter_sigma == 0.0) {
+		cerr << "--low-percentile requires --filter-sigma" << endl;
 		return false;
 	}
 	
@@ -223,34 +274,20 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 	
-	// Set up default output path if not specified
-	if (config.path.isEmpty()) {
-		QFileInfo info(config.input_path);
-		if (info.suffix().toLower() == "relight") {
-			config.path = info.absolutePath() + "/" + info.baseName() + "_normals.png";
-		} else if (info.suffix().toLower() == "png" || info.suffix().toLower() == "jpg" || info.suffix().toLower() == "jpeg") {
-			config.path = info.absolutePath() + "/" + info.baseName() + "_processed.png";
-		} else if (info.isDir()) {
-			// It's a directory
-			QDir dir(config.input_path);
-			config.path = dir.absolutePath() + "/normals.png";
-		} else {
-			cerr << "Unknown input type: " << qPrintable(config.input_path) << endl;
-			return 1;
-		}
-	}
-	
 	// Create and configure the task
 	NormalsTask task;
 	
 	// Set parameters based on input type
 	QFileInfo info(config.input_path);
 	NormalsParameters params = config;
+	const QString suffix = info.suffix().toLower();
+	const bool tiff_input = suffix == "tif" || suffix == "tiff";
 	
-	if (info.suffix().toLower() == "png" || info.suffix().toLower() == "jpg" || info.suffix().toLower() == "jpeg") {
+	if (suffix == "png" || suffix == "jpg" || suffix == "jpeg" || tiff_input) {
 		// Processing existing normal map
 		params.compute = false;
 		params.input_path = config.input_path;
+		params.heightmap_input = tiff_input && config.surface_integration == SURFACE_NONE;
 	} else {
 		// Generating normals from folder or project
 		params.compute = true;
@@ -281,8 +318,8 @@ int main(int argc, char *argv[]) {
 			
 			task.initFromProject(project);
 			
-		} else if (info.suffix().toLower() == "png" || info.suffix().toLower() == "jpg" || info.suffix().toLower() == "jpeg") {
-			// Processing existing normal map - no initialization needed
+		} else if (suffix == "png" || suffix == "jpg" || suffix == "jpeg" || tiff_input) {
+			// Processing an existing image - no initialization needed
 			
 		} else if (info.isDir()) {
 			// Load from directory

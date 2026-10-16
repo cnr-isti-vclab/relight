@@ -16,6 +16,7 @@ class NormalsParameters : public TaskParameters {
 public:
 	NormalsParameters() { path = "./"; }
 	bool compute = true;
+	bool heightmap_input = false;
 	QString input_path;
 
 	NormalSolver solver = NORMALS_L2;
@@ -33,6 +34,8 @@ public:
 	FlatMethod flatMethod = FLAT_NONE;
 	double fourierPercentage = 20;
 	double blurPercentage = 10;
+	double filter_sigma = 0;
+	double low_percentile = 0.1;
 
 	SurfaceIntegration surface_integration = SURFACE_NONE;
 	float bni_k = 0.0;

@@ -177,7 +177,7 @@ bool saveTiff(const QString &filename, size_t w, size_t h, std::vector<float> &d
 					if(x < w && y < h) {
 						float d = depthmap[x + y*w];
 						if(normalize) {
-							d = (d - min)/(max - min);
+							d = max > min ? (d - min)/(max - min) : 0.0f;
 						}
 						data[dx + dy*tileWidth] = d;
 					}

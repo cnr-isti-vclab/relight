@@ -2,11 +2,13 @@
 #include "normalsworker.h"
 #include "../jpeg_decoder.h"
 #include "../jpeg_encoder.h"
+#include "../image_decoder.h"
 #include "../imageset.h"
 #include "../threadpool.h"
 #include "bni_normal_integration.h"
 #include "fft_normal_integration.h"
 #include "flatnormals.h"
+#include "fast_gaussian_blur.h"
 
 #include <assm/Grid.h>
 #include <assm/algorithms/PhotometricRemeshing.h>
@@ -27,6 +29,7 @@
 #include <iostream>
 #include <time.h>
 #include <cmath>
+#include <string>
 
 using namespace std;
 using namespace Eigen;
@@ -98,6 +101,57 @@ void saveNormalmap(	std::vector<Eigen::Vector3f> normals, int width, int height,
 	enc2.encode(normalmap.data(), width, height, filename.toStdString().c_str());
 }
 
+static bool saveHighpassHeightmap(const vector<float> &heightmap, int width, int height,
+								  double sigma, double low_percentile, int quality, QString filename) {
+	vector<float> filtered = heightmap;
+	vector<float> blurred = heightmap;
+	fast_gaussian_blur(blurred, unsigned(width), unsigned(height), float(sigma));
+	for(size_t i = 0; i < filtered.size(); i++)
+		filtered[i] -= blurred[i];
+
+	auto minmax = minmax_element(filtered.begin(), filtered.end());
+	const float min_value = *minmax.first;
+	const float max_value = *minmax.second;
+	float low_value = min_value;
+	if(low_percentile > 0.0 && max_value > min_value) {
+		const size_t bin_count = 1000;
+		const double bin_width = (max_value - min_value) / bin_count;
+		vector<size_t> histogram(bin_count, 0);
+		for(float value: filtered) {
+			size_t bin = min(size_t((value - min_value) / bin_width), bin_count - 1);
+			histogram[bin]++;
+		}
+		const size_t target_count = size_t(ceil(low_percentile * filtered.size() / 100.0));
+		size_t cumulative_count = 0;
+		for(size_t bin = 0; bin < bin_count; bin++) {
+			cumulative_count += histogram[bin];
+			if(cumulative_count >= max(size_t(1), target_count)) {
+				const size_t preceding_count = cumulative_count - histogram[bin];
+				const double fraction =
+					double(max(size_t(1), target_count) - preceding_count) / histogram[bin];
+				low_value = float(min_value + (bin + fraction) * bin_width);
+				break;
+			}
+		}
+	}
+
+	const float high_value = min_value + 0.85f * (max_value - min_value);
+	const float contrast_range = high_value - low_value;
+	QImage highpass(width, height, QImage::Format_Grayscale8);
+	for(int y = 0; y < height; y++) {
+		uchar *row = highpass.scanLine(y);
+		for(int x = 0; x < width; x++) {
+			const float value = filtered[size_t(x) + size_t(y) * size_t(width)];
+			const float mapped = contrast_range > 0.0f
+				? std::clamp(2.0f * (value - low_value) / contrast_range, 0.0f, 1.0f)
+				: 0.0f;
+			row[x] = uchar(lround(mapped * 255.0f));
+		}
+	}
+
+	return highpass.save(filename, "JPG", quality);
+}
+
 void NormalsTask::run() {
 	status = RUNNING;
 	startedAt = QDateTime::currentDateTimeUtc();
@@ -113,6 +167,46 @@ void NormalsTask::run() {
 		}
 	}
 
+	if(parameters.heightmap_input) {
+		ImageDecoder decoder;
+		const std::string input_path = parameters.input_path.toStdString();
+		int width = 0;
+		int height = 0;
+		if(!decoder.init(input_path.c_str(), width, height)) {
+			error = "Could not load heightmap: " + parameters.input_path;
+			status = FAILED;
+			return;
+		}
+		if(decoder.numChannels() != 1) {
+			decoder.finish();
+			error = "Heightmap TIFF must have one channel: " + parameters.input_path;
+			status = FAILED;
+			return;
+		}
+
+		vector<float> z(size_t(width) * size_t(height));
+		const size_t rows_read = decoder.readRows(height, z.data());
+		const bool decoder_finished = decoder.finish();
+		if(rows_read != size_t(height) || !decoder_finished) {
+			error = "Failed to read heightmap: " + parameters.input_path;
+			status = FAILED;
+			return;
+		}
+
+		QString filename = destination.filePath(QString("heightmap_highpass_sigma_%1_low_%2.jpg")
+			.arg(parameters.filter_sigma, 0, 'g', 6)
+			.arg(parameters.low_percentile, 0, 'g', 6));
+		if(!saveHighpassHeightmap(z, width, height, parameters.filter_sigma,
+								  parameters.low_percentile, parameters.quality, filename)) {
+			error = "Failed to save high-pass map to: " + filename;
+			status = FAILED;
+			return;
+		}
+
+		progressed("Done", 100);
+		status = DONE;
+		return;
+	}
 
 	function<bool(QString s, int d)> callback = [this](QString s, int n)->bool { return this->progressed(s, n); };
 
@@ -171,24 +265,55 @@ void NormalsTask::run() {
 		}
 
 	} else {
-		QImage normalmap(parameters.input_path);
-		if(normalmap.isNull()) {
-			status = FAILED;
-			error = "Could not load normalmap: " + parameters.input_path;
-			return;
-		}
-		width = normalmap.width();
-		height = normalmap.height();
-		//convert image into normals
-
-		normals.resize(width * height);
-		for(int y = 0; y < height; y++) {
-			for(int x = 0; x < width; x++) {
-				QRgb rgb = normalmap.pixel(x, y);
-				int i = (x + y*width);
-				normals[i][0] = (qRed(rgb) / 255.0f) * 2.0f - 1.0f;
-				normals[i][1] = (qGreen(rgb) / 255.0f) * 2.0f - 1.0f;
-				normals[i][2] = (qBlue(rgb) / 255.0f) * 2.0f - 1.0f;
+		const QString suffix = QFileInfo(parameters.input_path).suffix().toLower();
+		if(suffix == "tif" || suffix == "tiff") {
+			ImageDecoder decoder;
+			const std::string input_path = parameters.input_path.toStdString();
+			if(!decoder.init(input_path.c_str(), width, height)) {
+				status = FAILED;
+				error = "Could not load normalmap: " + parameters.input_path;
+				return;
+			}
+			const int channels = decoder.numChannels();
+			if(channels != 1 && channels != 3 && channels != 4) {
+				decoder.finish();
+				status = FAILED;
+				error = "Unsupported normalmap channel count: " + parameters.input_path;
+				return;
+			}
+			vector<float> pixels(size_t(width) * size_t(height) * size_t(channels));
+			const size_t rows_read = decoder.readRows(height, pixels.data());
+			const bool decoder_finished = decoder.finish();
+			if(rows_read != size_t(height) || !decoder_finished) {
+				status = FAILED;
+				error = "Failed to read normalmap: " + parameters.input_path;
+				return;
+			}
+			normals.resize(size_t(width) * size_t(height));
+			for(size_t i = 0; i < normals.size(); i++) {
+				const float *pixel = pixels.data() + i * size_t(channels);
+				normals[i][0] = 2.0f * pixel[0] - 1.0f;
+				normals[i][1] = 2.0f * pixel[channels > 1 ? 1 : 0] - 1.0f;
+				normals[i][2] = 2.0f * pixel[channels > 2 ? 2 : 0] - 1.0f;
+			}
+		} else {
+			QImage normalmap(parameters.input_path);
+			if(normalmap.isNull()) {
+				status = FAILED;
+				error = "Could not load normalmap: " + parameters.input_path;
+				return;
+			}
+			width = normalmap.width();
+			height = normalmap.height();
+			normals.resize(size_t(width) * size_t(height));
+			for(int y = 0; y < height; y++) {
+				for(int x = 0; x < width; x++) {
+					QRgb rgb = normalmap.pixel(x, y);
+					int i = x + y*width;
+					normals[size_t(i)][0] = (qRed(rgb) / 255.0f) * 2.0f - 1.0f;
+					normals[size_t(i)][1] = (qGreen(rgb) / 255.0f) * 2.0f - 1.0f;
+					normals[size_t(i)][2] = (qBlue(rgb) / 255.0f) * 2.0f - 1.0f;
+				}
 			}
 		}
 	}
@@ -340,6 +465,18 @@ void NormalsTask::run() {
 			error = "Failed to save depth map to: " + filename;
 			status = FAILED;
 			return;
+		}
+
+		if(parameters.filter_sigma > 0.0) {
+			filename = destination.filePath(QString("heightmap_highpass_sigma_%1_low_%2.jpg")
+				.arg(parameters.filter_sigma, 0, 'g', 6)
+				.arg(parameters.low_percentile, 0, 'g', 6));
+			if(!saveHighpassHeightmap(z, width, height, parameters.filter_sigma,
+									  parameters.low_percentile, parameters.quality, filename)) {
+				error = "Failed to save high-pass map to: " + filename;
+				status = FAILED;
+				return;
+			}
 		}
 	}
 
@@ -506,7 +643,3 @@ void NormalsTask::assm(QString filename, std::vector<Eigen::Vector3f> &_normals,
 	float pixel_size = imageset.pixel_size * downsampling;
 	savePly(filename.toStdString().c_str(), mesh, width, height, pixel_size);
 }
-
-
-
-
