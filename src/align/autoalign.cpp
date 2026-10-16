@@ -7,38 +7,98 @@
 
 #include <QColor>
 #include <QImage>
-#include <QLineF>
+#include <QSaveFile>
+#include <QTextStream>
 
 #include <algorithm>
 #include <atomic>
 #include <complex>
 #include <cmath>
+#include <exception>
+#include <limits>
+#include <utility>
 
 using namespace std;
 typedef complex<float> Complex;
 
-AutoAlign::AutoAlign(QSize size) {
-	image_size = size;
-	scale = std::max(1.0f, std::max(size.width(), size.height())/(float)max_side);
-	w = std::max(1, (int)round(size.width()/scale));
-	h = std::max(1, (int)round(size.height()/scale));
-	side = std::max(32, std::min(max_side/6, std::min(w, h)));
+static void saveRegionSvg(
+	const vector<QPoint> &candidates,
+	const vector<int> &selected,
+	int side,
+	int width, int height
+) {
+	static const char *colors[] = {
+		"#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00",
+		"#a65628", "#f781bf", "#17becf", "#bcbd22", "#7f7f7f"
+	};
+	QSaveFile file("autoalign_regions.svg");
+	if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
+		throw QString("Could not write autoalign_regions.svg: %1").arg(file.errorString());
+
+	QTextStream svg(&file);
+	svg << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+		<< "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" << width
+		<< "\" height=\"" << height << "\" viewBox=\"0 0 "
+		<< width<< " " << height << "\">\n"
+		<< "<title>Automatic alignment candidate regions</title>\n"
+		<< "<desc>Dashed gray squares show all candidate regions; numbered colored squares show the ten highest-energy regions selected for alignment.</desc>\n"
+		<< "<rect x=\"0\" y=\"0\" width=\"100%\" height=\"100%\" fill=\"white\"/>\n"
+		<< "<g fill=\"none\" stroke=\"#666666\" stroke-width=\"" << 1.0f
+		<< "\" stroke-dasharray=\"" << 4.0f << " "
+		<< 3.0f << "\" opacity=\"0.45\">\n";
+	for(const QPoint &point: candidates) {
+		svg << "<rect x=\"" << point.x() << "\" y=\"" << point.y()
+			<< "\" width=\"" << side << "\" height=\"" << side << "\"/>\n";
+	}
+	svg << "</g>\n";
+	const float stroke_width = std::max(2.0f, 2.0f);
+	const float font_size = std::max(14.0f, 12.0f);
+	for(size_t rank = 0; rank < selected.size(); ++rank) {
+		const QPoint &point = candidates[size_t(selected[rank])];
+		const float x = point.x();
+		const float y = point.y();
+		const float tile_side = side;
+		svg << "<g fill=\"" << colors[rank % (sizeof(colors) / sizeof(colors[0]))]
+			<< "\" fill-opacity=\"0.12\" stroke=\""
+			<< colors[rank % (sizeof(colors) / sizeof(colors[0]))]
+			<< "\" stroke-width=\"" << stroke_width << "\">\n"
+			<< "<rect x=\"" << x << "\" y=\"" << y << "\" width=\"" << tile_side
+			<< "\" height=\"" << tile_side << "\"/>\n"
+			<< "</g>\n"
+			<< "<text x=\"" << x + stroke_width << "\" y=\"" << y + font_size + stroke_width
+			<< "\" font-family=\"sans-serif\" font-size=\"" << font_size
+			<< "\" font-weight=\"bold\" fill=\"" << colors[rank % (sizeof(colors) / sizeof(colors[0]))]
+			<< "\" stroke=\"white\" stroke-width=\"" << 1.0f
+			<< "\" paint-order=\"stroke\">" << (rank + 1) << "</text>\n";
+	}
+	svg << "</svg>\n";
+	if(!file.commit())
+		throw QString("Could not save autoalign_regions.svg: %1").arg(file.errorString());
 }
 
-//gradient magnitude of the gray image.
-static vector<float> gradient(const QImage &image, int w, int h) {
-	QImage img = image.convertToFormat(QImage::Format_Grayscale8);
-	if(img.width() != w || img.height() != h)
-		img = img.scaled(w, h, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-	vector<float> grad(size_t(w)*h, 0.0f);
-	for(int y = 1; y < h - 1; y++) {
-		const uchar *up = img.constScanLine(y - 1);
-		const uchar *down = img.constScanLine(y + 1);
-		const uchar *line = img.constScanLine(y);
-		for(int x = 1; x < w - 1; x++) {
-			float dx = float(line[x + 1]) - float(line[x - 1]);
-			float dy = float(down[x]) - float(up[x]);
-			grad[size_t(y)*w + x] = sqrt(dx*dx + dy*dy);
+AutoAlign::AutoAlign(QSize size) {
+	w = size.width();
+	h = size.height();
+}
+
+// Compute gradient values only inside a candidate patch. Neighbor pixels just
+// outside the patch are sampled for the central-difference stencil.
+static vector<float> gradientPatch(const QImage &gray, int x0, int y0, int side) {
+	vector<float> grad(size_t(side)*side, 0.0f);
+	for(int y = 0; y < side; ++y) {
+		const int image_y = y0 + y;
+		if(image_y <= 0 || image_y >= gray.height() - 1)
+			continue;
+		const uchar *up = gray.constScanLine(image_y - 1);
+		const uchar *down = gray.constScanLine(image_y + 1);
+		const uchar *line = gray.constScanLine(image_y);
+		for(int x = 0; x < side; ++x) {
+			const int image_x = x0 + x;
+			if(image_x <= 0 || image_x >= gray.width() - 1)
+				continue;
+			const float dx = float(line[image_x + 1]) - float(line[image_x - 1]);
+			const float dy = float(down[image_x]) - float(up[image_x]);
+			grad[size_t(y)*side + x] = sqrt(dx*dx + dy*dy);
 		}
 	}
 	return grad;
@@ -117,17 +177,6 @@ static Eigen::Vector2f peakShift(const vector<float> &surface, int x, int y, int
 	return Eigen::Vector2f((x < side/2 ? x : x - side) + dx, (y < side/2 ? y : y - side) + dy);
 }
 
-//phase correlation: shift to apply to b to match a, with subpixel peak.
-static Eigen::Vector2f correlate(const vector<Complex> &a, const vector<Complex> &b, int side) {
-	vector<float> surface = correlationSurface(a, b, side);
-	size_t best = 0;
-	for(size_t i = 0; i < surface.size(); i++)
-		if(surface[i] > surface[best])
-			best = i;
-	int x = int(best % side), y = int(best / side);
-	return peakShift(surface, x, y, side);
-}
-
 static void saveCorrelationSurface(const vector<float> &surface, int side, int first, int second) {
 	const int crop_side = 40;
 	int crop_start = side/2 - crop_side/2;
@@ -165,11 +214,11 @@ static optional<AutoAlignPeak> correlatePeak(
 	const vector<Complex> &b,
 	int side,
 	int first_image,
-	int second_image
-) {
+	int second_image) {
 	vector<float> surface = correlationSurface(a, b, side);
-// For debug purposes
+//for debug purposes
 //	saveCorrelationSurface(surface, side, first_image, second_image);
+
 	size_t best = 0;
 	bool found = false;
 	for(int y = 0; y < side; y++) {
@@ -200,79 +249,192 @@ static optional<AutoAlignPeak> correlatePeak(
 	return AutoAlignPeak{-peakShift(surface, x, y, side), surface[best]};
 }
 
-static float median(vector<float> v) {
-	nth_element(v.begin(), v.begin() + v.size()/2, v.end());
-	return v[v.size()/2];
-}
-
 vector<QPointF> AutoAlign::run(int n, Loader load, std::function<bool(QString stage, int percent)> *callback) {
-	if(n < 2)
-		return vector<QPointF>(n, QPointF(0, 0));
+	// Handle empty/single-image input and validate that image loading is available.
+	if(n <= 0)
+		return {};
+	if(n == 1)
+		return vector<QPointF>(1, QPointF(0, 0));
+	if(!load)
+		throw QString("No image loader was provided for alignment.");
 
-	vector<float> window(side);
-	for(int i = 0; i < side; i++)
-		window[i] = 0.5f - 0.5f*cos(2*M_PI*i/(side - 1));
-
-	vector<QPoint> tiles;
-	for(int y = 0; y + side <= h; y += side/2)
-		for(int x = 0; x + side <= w; x += side/2)
-			tiles.push_back(QPoint(x, y));
-	if(tiles.empty())
+	// Choose an even patch size that fits comfortably within every input image.
+	const int minimum_dimension = std::min(w, h);
+	const int patch_side = std::min(side, (minimum_dimension / 3) & ~1);
+	if(patch_side < 40 || w < patch_side || h < patch_side)
 		throw QString("Images too small to align.");
-
-	auto loadGradient = [&](int i) {
-		QImage img = load(i, QSize(w, h));
-		if(img.isNull())
-			throw QString("Failed loading image %1").arg(i);
-		return gradient(img, w, h);
+	auto report = [&](QString stage, int percent) {
+		return !callback || (*callback)(stage, std::clamp(percent, 0, 100));
 	};
 
-	vector<float> grad = loadGradient(0);
-	vector<vector<Complex>> reference;
-	for(QPoint &t: tiles)
-		reference.push_back(tileSpectrum(grad, w, t.x(), t.y(), side, window));
+	// Generate 32 center-biased candidate patch locations using a golden-angle spiral.
+	constexpr int candidate_count = 32;
+	constexpr int selected_count = 10;
+	const int max_x = w - patch_side;
+	const int max_y = h - patch_side;
+	const double center_x = max_x * 0.5;
+	const double center_y = max_y * 0.5;
+	const double golden_angle = M_PI * (3.0 - sqrt(5.0));
+	vector<QPoint> candidates;
+	candidates.reserve(candidate_count);
+	for(int i = 0; i < candidate_count; ++i) {
+		const double fraction = (i + 0.5) / candidate_count;
+		const double radius = pow(fraction, 1.5);
+		const double angle = i * golden_angle;
+		QPoint point(
+			int(lround(center_x + cos(angle) * center_x * radius)),
+			int(lround(center_y + sin(angle) * center_y * radius))
+		);
+		if(std::find(candidates.begin(), candidates.end(), point) == candidates.end())
+			candidates.push_back(point);
+	}
+	if(candidates.empty())
+		throw QString("Could not select alignment regions.");
 
-	//shifts[i][j]: shift of tile j of image i.
-	vector<vector<QPointF>> shifts(n, vector<QPointF>(tiles.size(), QPointF(0, 0)));
-	for(int i = 1; i < n; i++) {
-		grad = loadGradient(i);
-		for(size_t j = 0; j < tiles.size(); j++) {
-			Eigen::Vector2f shift = correlate(reference[j], tileSpectrum(grad, w, tiles[j].x(), tiles[j].y(), side, window), side);
-			shifts[i][j] = QPointF(shift.x(), shift.y());
+	// In parallel, load each image once and compute/cache gradients only for its
+	// candidate patches; also record each patch's gradient energy for ranking.
+	vector<vector<vector<float>>> candidate_gradients(candidates.size());
+	for(auto &per_image: candidate_gradients)
+		per_image.resize(size_t(n));
+	vector<double> image_energy(size_t(n)*candidates.size(), 0.0);
+	vector<QString> load_errors(static_cast<size_t>(n));
+	atomic<bool> cancelled(false);
+	int completed_images = 0;
+	#pragma omp parallel for schedule(dynamic)
+	for(int image_index = 0; image_index < n; ++image_index) {
+		if(cancelled.load())
+			continue;
+		try {
+			QImage image = load(image_index);
+			if(image.isNull())
+				throw QString("Failed loading image %1").arg(image_index);
+			QImage gray = image.convertToFormat(QImage::Format_Grayscale8);
+
+			for(size_t candidate_index = 0; candidate_index < candidates.size(); ++candidate_index) {
+				const QPoint &point = candidates[candidate_index];
+				vector<float> patch_gradient = gradientPatch(gray, point.x(), point.y(), patch_side);
+				double energy = 0.0;
+				for(float value: patch_gradient)
+					energy += value;
+				candidate_gradients[candidate_index][size_t(image_index)] = std::move(patch_gradient);
+				image_energy[size_t(image_index)*candidates.size() + candidate_index] = energy;
+			}
+		} catch(const QString &message) {
+			load_errors[size_t(image_index)] = message;
+			cancelled.store(true);
+		} catch(...) {
+			load_errors[size_t(image_index)] = QString("Unknown error loading image %1").arg(image_index);
+			cancelled.store(true);
 		}
-		if(callback && !(*callback)("Aligning images", 100*(i + 1)/n))
+		#pragma omp critical(autoalign_progress)
+		{
+			++completed_images;
+			if(!cancelled.load() && !report("Scoring candidate regions",
+				15 * completed_images / n))
+				cancelled.store(true);
+		}
+	}
+	for(const QString &error: load_errors)
+		if(!error.isEmpty())
+			throw error;
+	if(cancelled.load())
+		throw QString("Cancelled.");
+
+	// Score a candidate by its weakest gradient energy across all images, so every
+	// selected patch has useful texture throughout the image set.
+	vector<double> minimum_energy(candidates.size(), numeric_limits<double>::infinity());
+	for(size_t candidate_index = 0; candidate_index < candidates.size(); ++candidate_index)
+		for(int image_index = 0; image_index < n; ++image_index)
+			minimum_energy[candidate_index] = std::min(
+				minimum_energy[candidate_index],
+				image_energy[size_t(image_index)*candidates.size() + candidate_index]);
+
+	vector<int> order(candidates.size());
+	for(size_t i = 0; i < order.size(); ++i)
+		order[i] = int(i);
+	stable_sort(order.begin(), order.end(), [&](int a, int b) {
+		return minimum_energy[size_t(a)] > minimum_energy[size_t(b)];
+	});
+	
+	// Greedily keep the strongest candidates while excluding overlapping patches.
+	vector<int> selected;
+	selected.reserve(selected_count);
+	for(int candidate: order) {
+		const QPoint &point = candidates[size_t(candidate)];
+		const bool overlaps = std::any_of(selected.begin(), selected.end(), [&](int other) {
+			const QPoint &chosen = candidates[size_t(other)];
+			return std::abs(point.x() - chosen.x()) < patch_side &&
+				std::abs(point.y() - chosen.y()) < patch_side;
+		});
+		if(!overlaps)
+			selected.push_back(candidate);
+		if(selected.size() == selected_count)
+			break;
+	}
+	order = std::move(selected);
+	if(order.empty() || !std::isfinite(minimum_energy[size_t(order.front())]) ||
+		minimum_energy[size_t(order.front())] <= 0.0)
+		throw QString("Could not find textured regions suitable for alignment.");
+
+	//for debug purposes
+	//saveRegionSvg(candidates, order, patch_side, w, h);
+
+	// Keep gradients only for selected patches and release all unselected candidates.
+	vector<vector<vector<float>>> selected_gradients;
+	selected_gradients.reserve(order.size());
+	for(int candidate_index: order)
+		selected_gradients.push_back(std::move(candidate_gradients[size_t(candidate_index)]));
+	candidate_gradients.clear();
+	candidate_gradients.shrink_to_fit();
+
+	// Build spectra for each selected patch, correlate image pairs, and collect all
+	// correspondences so the final image translations are solved jointly.
+	vector<AutoAlignCorrespondence> all_correspondences;
+	for(size_t selected_index = 0; selected_index < order.size(); ++selected_index) {
+		const int selected_number = int(selected_index + 1);
+		const int selected_total = int(order.size());
+		beginRegion(QSize(patch_side, patch_side), n);
+		vector<QString> spectrum_errors(static_cast<size_t>(n));
+		#pragma omp parallel for
+		for(int image_index = 0; image_index < n; ++image_index) {
+			try {
+				region_spectra[size_t(image_index)] =
+					tileSpectrum(selected_gradients[selected_index][size_t(image_index)],
+						patch_side, 0, 0, patch_side, region_window);
+			} catch(const QString &message) {
+				spectrum_errors[size_t(image_index)] = message;
+			} catch(const std::exception &exception) {
+				spectrum_errors[size_t(image_index)] = QString::fromUtf8(exception.what());
+			} catch(...) {
+				spectrum_errors[size_t(image_index)] =
+					QString("Unknown error preparing region %1 for image %2")
+						.arg(selected_number).arg(image_index);
+			}
+		}
+		for(const QString &error: spectrum_errors)
+			if(!error.isEmpty())
+				throw error;
+
+		vector<AutoAlignCorrespondence> correspondences = findCandidates();
+		all_correspondences.insert(all_correspondences.end(),
+			correspondences.begin(), correspondences.end());
+		const int progress = 15 + int(75.0 * selected_number / selected_total);
+		if(!report(QString("Selected region %1/%2")
+			.arg(selected_number).arg(selected_total), progress))
 			throw QString("Cancelled.");
 	}
 
-	//distance of each tile from the median shift of its image, the most consistent tiles are used.
-	vector<float> distance(tiles.size(), 0.0f);
-	for(int i = 1; i < n; i++) {
-		vector<float> xs, ys;
-		for(QPointF &s: shifts[i]) {
-			xs.push_back(s.x());
-			ys.push_back(s.y());
-		}
-		QPointF m(median(xs), median(ys));
-		for(size_t j = 0; j < tiles.size(); j++)
-			distance[j] += QLineF(shifts[i][j], m).length();
+	// Robustly solve the combined correspondence graph with image 0 fixed at zero.
+	if(!report("Solving combined region translations", 95))
+		throw QString("Cancelled.");
+	vector<Eigen::Vector2f> translations = solveTranslations(n, all_correspondences);
+	vector<QPointF> offsets(size_t(n), QPointF(0, 0));
+	for(int i = 1; i < n; ++i) {
+		const Eigen::Vector2f &translation = translations[size_t(i)];
+		offsets[size_t(i)] = QPointF(translation.x(), translation.y());
 	}
-	vector<int> order(tiles.size());
-	for(size_t j = 0; j < order.size(); j++)
-		order[j] = int(j);
-	sort(order.begin(), order.end(), [&](int a, int b) { return distance[a] < distance[b]; });
-	order.resize(std::min<size_t>(3, order.size()));
-
-	vector<QPointF> offsets(n, QPointF(0, 0));
-	for(int i = 1; i < n; i++) {
-		vector<float> xs, ys;
-		for(int j: order) {
-			xs.push_back(shifts[i][j].x());
-			ys.push_back(shifts[i][j].y());
-		}
-		offsets[i] = -QPointF(median(xs), median(ys))*scale;
-	}
-	QPoint t = tiles[order[0]];
-	region = QRect(int(t.x()*scale), int(t.y()*scale), int(side*scale), int(side*scale)).intersected(QRect(QPoint(0, 0), image_size));
+	if(!report("Alignment complete", 100))
+		throw QString("Cancelled.");
 	return offsets;
 }
 
@@ -283,10 +445,6 @@ void AutoAlign::beginRegion(QSize region_size, int image_count) {
 		throw QString("Selected alignment region must be square.");
 	if(region_size.width() % 2 != 0 || region_size.height() % 2 != 0)
 		throw QString("Selected alignment region dimensions must be even.");
-	if(region_size.width() < 40)
-		throw QString("Selected alignment region must be at least 40 pixels wide.");
-	if(region_size.width() > image_size.width() || region_size.height() > image_size.height())
-		throw QString("Selected alignment region is larger than the image.");
 	if(image_count < 2)
 		throw QString("At least two images are required to align.");
 
@@ -312,11 +470,10 @@ void AutoAlign::provideImage(int image_index, const uint8_t *image, int channels
 }
 
 vector<AutoAlignCorrespondence> AutoAlign::findCandidates(
-	std::function<bool(QString stage, int percent)> *callback
-) {
+	std::function<bool(QString stage, int percent)> *callback) {
 	if(region_side == 0)
 		throw QString("Begin an alignment region before finding candidates.");
-	
+
 	int edge_count = 0;
 	vector<int> first_offsets(region_image_count + 1);
 	for(int first = 0; first < region_image_count; first++) {
@@ -328,7 +485,7 @@ vector<AutoAlignCorrespondence> AutoAlign::findCandidates(
 			step *= 2;
 		}
 	}
-	first_offsets[static_cast<size_t>(region_image_count)] = edge_count;
+	first_offsets[region_image_count] = edge_count;
 
 	vector<AutoAlignCorrespondence> correspondences(static_cast<size_t>(edge_count));
 	atomic<bool> cancelled(false);
@@ -336,7 +493,7 @@ vector<AutoAlignCorrespondence> AutoAlign::findCandidates(
 	int completed = 0;
 	#pragma omp parallel for
 	for(int first = 0; first < region_image_count; first++) {
-		int index = first_offsets[static_cast<size_t>(first)];
+		int index = first_offsets[first];
 		for(int step = 1; step < region_image_count - first;) {
 			if(cancelled.load())
 				break;
@@ -350,8 +507,7 @@ vector<AutoAlignCorrespondence> AutoAlign::findCandidates(
 						region_spectra[static_cast<size_t>(second)],
 						region_side,
 						first + 1,
-						second + 1
-					)
+						second + 1)
 				};
 			} catch(...) {
 				error_occurred.store(true);

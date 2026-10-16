@@ -26,24 +26,24 @@ struct AutoAlignCorrespondence {
 	std::optional<AutoAlignPeak> peak; //Keeping multiple peaks might help resolve ambiguities.
 };
 
-/* run() retains the legacy automatic tile consensus. beginRegion()/provideImage()/findCandidates()
-   analyze an even square region of at least 40 pixels. */
+/* run() automatically chooses textured regions and jointly solves their correlations.
+	beginRegion()/provideImage()/findCandidates() analyze an even square region of at least 40 pixels. */
 
 class AutoAlign {
 public:
 	const int max_side = 1536; //images are downscaled to this size.
 
-	//returns image i downscaled to size.
-	typedef std::function<QImage(int i, QSize size)> Loader;
+	// run() calls the loader concurrently; implementations must be thread-safe.
+	typedef std::function<QImage(int i)> Loader;
 
 	AutoAlign(QSize image_size);
 	//pixel (x, y) of the first image is at (x, y) + offset in image i. Throws QString on failure or cancel.
 	std::vector<QPointF> run(int n, Loader load, std::function<bool(QString stage, int percent)> *callback = nullptr);
 
 	//Returns the strongest phase-correlation peak for each edge i -> i + 2^k.
-	//Images can be provided in any order and must match the selected region's size.
 	void beginRegion(QSize region_size, int image_count);
 	void provideImage(int image_index, const uint8_t *image, int channels);
+
 	std::vector<AutoAlignCorrespondence> findCandidates(
 		std::function<bool(QString stage, int percent)> *callback = nullptr
 	);
@@ -53,13 +53,10 @@ public:
 		const std::vector<AutoAlignCorrespondence> &correspondences
 	) const;
 
-	QRect region; //full resolution area of the tile that matched best, after run().
 
 private:
-	QSize image_size;
 	int w = 0, h = 0; //downscaled size
-	float scale = 1.0f; //full size / downscaled size
-	int side = 256; //tile size, in downscaled pixels
+	int side = 400; //tile size, in downscaled pixels
 	int region_side = 0;
 	int region_image_count = 0;
 	std::vector<float> region_window;

@@ -298,18 +298,19 @@ QImage Project::readImage(int i) {
 QImage Project::readImage(const QString &filename) {
 	// Try Qt's built-in reader first (JPEG, PNG, and any installed plugins).
 	// Drop the hardcoded "JPG" hint so Qt auto-detects the real format.
-	QImageReader reader(filename);
+/*	QImageReader reader(filename);
 	reader.setAutoTransform(false);
 	QImage img = reader.read();
 	if(!img.isNull())
-		return img;
+		return img; */
 
 	// Fallback: use ImageDecoder for formats Qt doesn't support natively
 	// (TIFF with unusual compression, EXR, camera RAW, …).
 	ImageDecoder dec;
 	int w = 0, h = 0;
-	if(!dec.init(filename.toStdString().c_str(), w, h))
-		return QImage();
+	if(!dec.init(filename.toStdString().c_str(), w, h)) {
+		throw QString("Could not load image: " + filename);
+	}
 
 	// readRows(uint8_t*) quantises to 8-bit for all pixel depths (UINT16, FLOAT, …).
 	int ch = dec.numChannels();
