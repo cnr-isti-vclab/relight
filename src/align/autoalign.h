@@ -13,8 +13,6 @@
 #include <QSize>
 #include <QString>
 
-class QImage;
-
 struct AutoAlignPeak {
 	Eigen::Vector2f offset; //relative position of the second image with respect to the first
 	float response; //phase-correlation peak value
@@ -26,23 +24,20 @@ struct AutoAlignCorrespondence {
 	std::optional<AutoAlignPeak> peak; //Keeping multiple peaks might help resolve ambiguities.
 };
 
-/* run() automatically chooses textured regions and jointly solves their correlations.
-	beginRegion()/provideImage()/findCandidates() analyze an even square region of at least 40 pixels. */
+/* run() reads the images, automatically chooses textured regions, and jointly
+	solves their correlations. beginRegion()/provideImage()/findCandidates()
+	analyze an even square region of at least 40 pixels. */
 
 class AutoAlign {
 public:
-	const int max_side = 1536; //images are downscaled to this size.
-
-	// run() calls the loader concurrently; implementations must be thread-safe.
-	typedef std::function<QImage(int i)> Loader;
-
 	AutoAlign(QSize image_size);
 	//pixel (x, y) of the first image is at (x, y) + offset in image i. Throws QString on failure or cancel.
-	std::vector<QPointF> run(int n, Loader load, std::function<bool(QString stage, int percent)> *callback = nullptr);
+	std::vector<QPointF> run(const std::vector<QString> &image_paths,
+		std::function<bool(QString stage, int percent)> *callback = nullptr);
 
 	//Returns the strongest phase-correlation peak for each edge i -> i + 2^k.
 	void beginRegion(QSize region_size, int image_count);
-	void provideImage(int image_index, const uint8_t *image, int channels);
+	void provideImage(int image_index, const uint8_t *greyscale_image);
 
 	std::vector<AutoAlignCorrespondence> findCandidates(
 		std::function<bool(QString stage, int percent)> *callback = nullptr

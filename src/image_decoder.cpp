@@ -47,7 +47,7 @@ static float half_to_float(uint16_t h) {
 // Format backends that produce float natively should override this method.
 size_t ImageDecoderImpl::readRows(int rows, float* buffer) {
 	std::vector<uint8_t> tmp(size_t(rows) * rowSize());
-	size_t read        = readRows(rows, tmp.data());
+	size_t read        = readRowsRaw(rows, tmp.data());
 	size_t total_bytes = read * rowSize();
 
 	switch (pixelType()) {
@@ -80,10 +80,50 @@ size_t ImageDecoderImpl::readRows(int rows, float* buffer) {
 	return read;
 }
 
+size_t ImageDecoderImpl::readRows(int rows, uint8_t* buffer) {
+	if (pixelType() == PixelType::UINT8)
+		return readRowsRaw(rows, buffer);
+
+	std::vector<uint8_t> tmp(size_t(rows) * rowSize());
+	size_t read = readRowsRaw(rows, tmp.data());
+	size_t total_bytes = read * rowSize();
+
+	switch (pixelType()) {
+	case PixelType::UINT8:
+		break;
+	case PixelType::UINT16: {
+		size_t n = total_bytes / 2;
+		const uint16_t* src = reinterpret_cast<const uint16_t*>(tmp.data());
+		for (size_t i = 0; i < n; ++i)
+			buffer[i] = uint8_t((uint32_t(src[i]) * 255u + 32767u) / 65535u);
+		break;
+	}
+	case PixelType::FLOAT16: {
+		size_t n = total_bytes / 2;
+		const uint16_t* src = reinterpret_cast<const uint16_t*>(tmp.data());
+		for (size_t i = 0; i < n; ++i) {
+			float value = std::min(std::max(half_to_float(src[i]), 0.0f), 1.0f);
+			buffer[i] = uint8_t(value * 255.0f + 0.5f);
+		}
+		break;
+	}
+	case PixelType::FLOAT32: {
+		size_t n = total_bytes / 4;
+		const float* src = reinterpret_cast<const float*>(tmp.data());
+		for (size_t i = 0; i < n; ++i) {
+			float value = std::min(std::max(src[i], 0.0f), 1.0f);
+			buffer[i] = uint8_t(value * 255.0f + 0.5f);
+		}
+		break;
+	}
+	}
+	return read;
+}
+
 size_t ImageDecoderImpl::skipRows(int rows) {
 	std::vector<uint8_t> tmp(rowSize());
 	int skipped = 0;
-	while (skipped < rows && readRows(1, tmp.data()) == 1)
+	while (skipped < rows && readRowsRaw(1, tmp.data()) == 1)
 		++skipped;
 	return size_t(skipped);
 }
@@ -105,7 +145,7 @@ struct JpegDecoderImpl : ImageDecoderImpl {
 		return dec.rowSize();
 	}
 
-	size_t readRows(int rows, uint8_t* buf) override {
+	size_t readRowsRaw(int rows, uint8_t* buf) override {
 		return dec.readRows(rows, buf);
 	}
 	// float readRows: inherits the default uint8→float conversion from ImageDecoderImpl
@@ -140,7 +180,7 @@ struct RawDecoderImpl : ImageDecoderImpl {
 
 	bool   open(const char*, int&, int&) override { return false; /* TODO */ }
 	size_t rowSize()             const override { return 0; }
-	size_t readRows(int, uint8_t*) override    { return 0; }
+	size_t readRowsRaw(int, uint8_t*) override { return 0; }
 	bool   finish()                    override { return false; }
 	bool   restart()                   override { return false; }
 	int       numChannels() const override { return 3; }   // always RGB after demosaicing
@@ -257,41 +297,62 @@ bool ImageDecoder::init(const char* path, int& w, int& h) {
 // Returns the number of samples per row: width × channels.
 // This is independent of the native bit depth; multiply by bytesPerChannel()
 // if you need the byte count for the native representation.
-size_t ImageDecoder::rowSize() const {
-	return size_t(img_width) * size_t(numChannels());
+size_t ImageDecoder::rowSize(bool greyscale) const {
+	return size_t(img_width) * size_t(greyscale ? 1 : numChannels());
 }
 
-size_t ImageDecoder::readRows(int rows, uint8_t* buf) {
+size_t ImageDecoder::readRows(int rows, uint8_t* buf, bool greyscale) {
 	if (!impl) return 0;
-	if (impl->pixelType() == PixelType::UINT8)
-		return impl->readRows(rows, buf);
+	const int channels = numChannels();
+	const size_t source_row_size = rowSize();
+	std::vector<uint8_t> source;
+	uint8_t *decoded = buf;
 
-	// Non-UINT8: go through the float path and quantise each sample to [0, 255].
-	size_t outRowBytes = rowSize(); // w × ch (8-bit equivalent)
-	std::vector<float> fbuf(size_t(rows) * outRowBytes);
-	size_t read = impl->readRows(rows, fbuf.data());
-	size_t n = read * outRowBytes;
-	for (size_t i = 0; i < n; ++i)
-		buf[i] = uint8_t(std::min(std::max(fbuf[i], 0.0f), 1.0f) * 255.0f + 0.5f);
+	if (greyscale && channels > 1) {
+		source.resize(size_t(rows) * source_row_size);
+		decoded = source.data();
+	}
+
+	const size_t read = impl->readRows(rows, decoded);
+	if (!greyscale || channels == 1)
+		return read;
+
+	for(size_t i = 0; i < read * size_t(img_width); ++i) {
+		const uint8_t *pixel = decoded + i * size_t(channels);
+		buf[i] = uint8_t((77u * pixel[0] + 150u * pixel[1] +
+		                  29u * pixel[2] + 128u) >> 8);
+	}
 	return read;
 }
 
-size_t ImageDecoder::readRows(int rows, float* buf) {
-	return impl ? impl->readRows(rows, buf) : 0;
+size_t ImageDecoder::readRows(int rows, float* buf, bool greyscale) {
+	if (!impl) return 0;
+	const int channels = numChannels();
+	if (!greyscale || channels == 1)
+		return impl->readRows(rows, buf);
+
+	const size_t source_row_size = rowSize();
+	std::vector<float> source(size_t(rows) * source_row_size);
+	const size_t read = impl->readRows(rows, source.data());
+	for(size_t i = 0; i < read * size_t(img_width); ++i) {
+		const float *pixel = source.data() + i * size_t(channels);
+		buf[i] = 0.299f * pixel[0] + 0.587f * pixel[1] + 0.114f * pixel[2];
+	}
+	return read;
 }
 
-size_t ImageDecoder::readRegion(int x, int y, int w, int h, uint8_t* buf) {
+size_t ImageDecoder::readRegion(int x, int y, int w, int h, uint8_t* buf, bool greyscale) {
 	if (!impl || x < 0 || y < 0 || w <= 0 || h <= 0
 	    || x > img_width || w > img_width - x || y >= img_height)
 		return 0;
 	if (!restart() || skipRows(y) != size_t(y))
 		return 0;
 
-	size_t channels = size_t(numChannels());
+	const size_t channels = size_t(greyscale ? 1 : numChannels());
 	std::vector<uint8_t> row(size_t(img_width) * channels);
 	size_t read = 0;
 	for (; read < size_t(h); ++read) {
-		if (readRows(1, row.data()) != 1)
+		if (readRows(1, row.data(), greyscale) != 1)
 			break;
 		std::memcpy(buf + read * size_t(w) * channels,
 		            row.data() + size_t(x) * channels,
@@ -300,18 +361,18 @@ size_t ImageDecoder::readRegion(int x, int y, int w, int h, uint8_t* buf) {
 	return read;
 }
 
-size_t ImageDecoder::readRegion(int x, int y, int w, int h, float* buf) {
+size_t ImageDecoder::readRegion(int x, int y, int w, int h, float* buf, bool greyscale) {
 	if (!impl || x < 0 || y < 0 || w <= 0 || h <= 0
 	    || x > img_width || w > img_width - x || y >= img_height)
 		return 0;
 	if (!restart() || skipRows(y) != size_t(y))
 		return 0;
 
-	size_t channels = size_t(numChannels());
+	const size_t channels = size_t(greyscale ? 1 : numChannels());
 	std::vector<float> row(size_t(img_width) * channels);
 	size_t read = 0;
 	for (; read < size_t(h); ++read) {
-		if (readRows(1, row.data()) != 1)
+		if (readRows(1, row.data(), greyscale) != 1)
 			break;
 		std::memcpy(buf + read * size_t(w) * channels,
 		            row.data() + size_t(x) * channels,
@@ -321,7 +382,7 @@ size_t ImageDecoder::readRegion(int x, int y, int w, int h, float* buf) {
 }
 
 size_t ImageDecoder::readRegion(const char* path, int x, int y, int w, int h,
-                                std::vector<uint8_t>& buffer, int& channels) {
+                                std::vector<uint8_t>& buffer, int& channels, bool greyscale) {
 	ImageDecoder decoder;
 	int width = 0, height = 0;
 	if (!decoder.init(path, width, height)) {
@@ -330,7 +391,7 @@ size_t ImageDecoder::readRegion(const char* path, int x, int y, int w, int h,
 		return 0;
 	}
 
-	channels = decoder.numChannels();
+	channels = greyscale ? 1 : decoder.numChannels();
 	if (x < 0 || y < 0 || w <= 0 || h <= 0
 	    || x > width || w > width - x || y >= height) {
 		buffer.clear();
@@ -338,14 +399,14 @@ size_t ImageDecoder::readRegion(const char* path, int x, int y, int w, int h,
 	}
 
 	buffer.resize(size_t(w) * size_t(h) * size_t(channels));
-	size_t read = decoder.readRegion(x, y, w, h, buffer.data());
+	size_t read = decoder.readRegion(x, y, w, h, buffer.data(), greyscale);
 	decoder.finish();
 	buffer.resize(read * size_t(w) * size_t(channels));
 	return read;
 }
 
 size_t ImageDecoder::readRegion(const char* path, int x, int y, int w, int h,
-                                std::vector<float>& buffer, int& channels) {
+                                std::vector<float>& buffer, int& channels, bool greyscale) {
 	ImageDecoder decoder;
 	int width = 0, height = 0;
 	if (!decoder.init(path, width, height)) {
@@ -354,7 +415,7 @@ size_t ImageDecoder::readRegion(const char* path, int x, int y, int w, int h,
 		return 0;
 	}
 
-	channels = decoder.numChannels();
+	channels = greyscale ? 1 : decoder.numChannels();
 	if (x < 0 || y < 0 || w <= 0 || h <= 0
 	    || x > width || w > width - x || y >= height) {
 		buffer.clear();
@@ -362,7 +423,7 @@ size_t ImageDecoder::readRegion(const char* path, int x, int y, int w, int h,
 	}
 
 	buffer.resize(size_t(w) * size_t(h) * size_t(channels));
-	size_t read = decoder.readRegion(x, y, w, h, buffer.data());
+	size_t read = decoder.readRegion(x, y, w, h, buffer.data(), greyscale);
 	decoder.finish();
 	buffer.resize(read * size_t(w) * size_t(channels));
 	return read;

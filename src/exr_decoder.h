@@ -38,9 +38,8 @@ struct ExrDecoderImpl : ImageDecoderImpl {
 
 	bool   open(const char* path, int& w, int& h) override;
 	size_t rowSize()                       const override;
-	// uint8_t path: never called directly — ImageDecoder::readRows(uint8_t*)
-	// handles quantisation via the float path below.
-	size_t readRows(int rows, uint8_t* buf)      override;
+	// Raw path returns the interleaved native float samples as bytes.
+	size_t readRowsRaw(int rows, uint8_t* buf)   override;
 	// Float path reads directly from the interleaved buffer (no conversion needed).
 	size_t readRows(int rows, float*   buf)      override;
 	bool   finish()                              override;

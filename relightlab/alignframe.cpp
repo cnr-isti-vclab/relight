@@ -52,17 +52,14 @@ public:
 				throw QString("At least two non-skipped images are required for automatic alignment.");
 
 			AutoAlign aligner(project.imgsize);
-			AutoAlign::Loader load = [this, &used](int image_index) {
-				const QString filename = project.dir.filePath(
-					project.images[size_t(used[size_t(image_index)])].filename);
-				QImage image = Project::readImage(filename);
-				if(image.isNull())
-					return QImage();
-				return image;
-			};
+			std::vector<QString> image_paths;
+			image_paths.reserve(used.size());
+			for(int index: used)
+				image_paths.push_back(project.dir.filePath(
+					project.images[size_t(index)].filename));
 			std::function<bool(QString, int)> callback =
 				[this](QString stage, int percent) { return progressed(stage, percent); };
-			const std::vector<QPointF> results = aligner.run(int(used.size()), load, &callback);
+			const std::vector<QPointF> results = aligner.run(image_paths, &callback);
 			if(status == STOPPED)
 				return;
 

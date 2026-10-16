@@ -17,8 +17,6 @@ public:
 	bool skip = false;  //not counted for lps or spheres
 	bool visible = true;  //counted with lp but still not used for rti.
 
-	/*Eigen::Vector3f direction = Eigen::Vector3f(0, 0, 0);  //light direction (infinite distance assumed)
-	Eigen::Vector3f position = Eigen::Vector3f(0, 0, 0);   //3d light position */
 	double exposureTime = 0;
 	double isoSpeedRatings = 0;
 	QString colorSpace;
@@ -27,15 +25,8 @@ public:
 	Image(QString s = ""): filename(s) {}
 
 	QJsonObject toJson();
-	/*bool hasLightDirection() {
-		return !direction.isZero() || !position.isZero();
-	}*/
 	void fromJson(const QJsonObject &obj);
 	void readExif(Exif &exif);
-	/*bool matchSize(QSize &imgsize) {
-		size == imgsize;
-		return int(width) == imgsize.width() && int(height) == imgsize.height();
-	}*/
 	bool isRotated(QSize &imgsize) {
 		if(size.width() == imgsize.width())  //square images are problematic :P
 			return false;

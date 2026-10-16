@@ -124,10 +124,19 @@ size_t ExrDecoderImpl::rowSize() const {
 	return size_t(width) * size_t(channels) * sizeof(float);
 }
 
-// This overload is never called in practice: ImageDecoder::readRows(uint8_t*)
-// detects non-UINT8 pixel type and routes through the float path instead.
-size_t ExrDecoderImpl::readRows(int /*rows*/, uint8_t* /*buf*/) {
-	return 0;
+size_t ExrDecoderImpl::readRowsRaw(int rows, uint8_t* buf) {
+	if (img_buf.empty() || current_row >= height) return 0;
+	size_t row_floats = size_t(width) * size_t(channels);
+	size_t row_bytes = row_floats * sizeof(float);
+	int read = 0;
+	while (read < rows && current_row < height) {
+		std::memcpy(buf + size_t(read) * row_bytes,
+		            img_buf.data() + size_t(current_row) * row_floats,
+		            row_bytes);
+		++read;
+		++current_row;
+	}
+	return size_t(read);
 }
 
 size_t ExrDecoderImpl::readRows(int rows, float* buf) {

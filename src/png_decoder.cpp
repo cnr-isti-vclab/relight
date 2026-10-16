@@ -120,7 +120,7 @@ size_t PngDecoderImpl::rowSize() const {
 	return size_t(width) * size_t(channels) * (size_t(bit_depth) / 8u);
 }
 
-size_t PngDecoderImpl::readRows(int rows, uint8_t* buf) {
+size_t PngDecoderImpl::readRowsRaw(int rows, uint8_t* buf) {
 	if (!png || current_row >= height) return 0;
 	size_t rs = rowSize();
 

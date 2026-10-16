@@ -106,9 +106,6 @@ bool Project::scanDir() {
 		}
 		image.size.setWidth(w);
 		image.size.setHeight(h);
-		/*QImageReader reader(dir.filePath(s));
-		reader.setAutoTransform(false);
-		image.size = reader.size(); */
 		candidates.push_back({image, fmt});
 	}
 	if(candidates.empty())

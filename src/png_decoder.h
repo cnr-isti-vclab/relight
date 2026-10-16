@@ -33,7 +33,7 @@ struct PngDecoderImpl : ImageDecoderImpl {
 
 	bool   open(const char* path, int& w, int& h) override;
 	size_t rowSize()                       const override;
-	size_t readRows(int rows, uint8_t* buf)      override;
+	size_t readRowsRaw(int rows, uint8_t* buf)   override;
 	// float readRows: inherits the default conversion from ImageDecoderImpl
 	bool   finish()                              override;
 	bool   restart()                             override;

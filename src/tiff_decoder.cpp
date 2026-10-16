@@ -78,7 +78,7 @@ size_t TiffDecoderImpl::rowSize() const {
 	return size_t(width) * size_t(channels) * size_t(bytesPerSample());
 }
 
-size_t TiffDecoderImpl::readRows(int rows, uint8_t* buf) {
+size_t TiffDecoderImpl::readRowsRaw(int rows, uint8_t* buf) {
 	if (!tif || current_row >= height) return 0;
 	size_t rs   = rowSize();
 	int    read = 0;

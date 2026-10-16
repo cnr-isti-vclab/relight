@@ -90,38 +90,24 @@ void test(std::string input, std::string output,  Eigen::Vector3f light, float t
 	img.save(output.c_str());
 }
 
-//image downscaled to size, Qt or ImageDecoder.
-static QImage readImage(const QString &filename) {
-	ImageDecoder dec;
-	int w = 0, h = 0;
-	if(!dec.init(filename.toStdString().c_str(), w, h))
-		return QImage();
-	int ch = dec.numChannels();
-	size_t row_bytes = dec.rowSize();
-	std::vector<uint8_t> buffer(size_t(h)*row_bytes);
-	dec.readRows(h, buffer.data());
-	//no finish(): the destructor releases the decoder.
-	QImage img = QImage(w, h, ch == 4 ? QImage::Format_RGBA8888 : ch == 1 ? QImage::Format_Grayscale8 : QImage::Format_RGB888);
-	for(int y = 0; y < h; y++)
-		memcpy(img.scanLine(y), buffer.data() + size_t(y)*row_bytes, row_bytes);
-	return img;
-}
-
 //experimental: offsets of the jpg images in the folder, relative to the first.
 static std::vector<QPointF> alignFolder(const QString &folder, std::function<bool(QString, int)> *callback) {
 	QDir dir(folder);
 	QStringList images = dir.entryList(QStringList() << "*.jpg" << "*.JPG");
 	if(images.isEmpty())
 		throw QString("No .jpg images in folder: ") + folder;
+	std::vector<QString> image_paths;
+	image_paths.reserve(size_t(images.size()));
+	for(const QString &image: images)
+		image_paths.push_back(dir.filePath(image));
 	ImageDecoder dec;
 	int w = 0, h = 0;
-	if(!dec.init(dir.filePath(images[0]).toStdString().c_str(), w, h))
+	if(!dec.init(image_paths[0].toStdString().c_str(), w, h))
 		throw QString("Failed loading image: ") + images[0];
 	QSize size = QSize(w, h);
 
 	AutoAlign align(size);
-	auto load = [&](int i) { return readImage(dir.filePath(images[i])); };
-	std::vector<QPointF> offsets = align.run(images.size(), load, callback);
+	std::vector<QPointF> offsets = align.run(image_paths, callback);
 	for(int i = 0; i < images.size(); i++)
 		cout << qPrintable(images[i]) << " offset: " << offsets[i].x() << " " << offsets[i].y() << endl;
 	return offsets;

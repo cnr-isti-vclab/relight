@@ -442,7 +442,7 @@ void ImageSet::readLine(PixelArray &pixels) {
 		pixel.y = image_height - 1 - current_line;
 	}
 
-	readRows(true);
+	readOneRow(true);
 
 	//copy per pixel: threads writing the same pixel would share cache lines.
 	int n = int(decoders.size());
@@ -501,7 +501,7 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 		//read one row per image at a time
 		auto &selection = sampler.result(samplexrow, width);
 
-		readRows(false);
+		readOneRow(false);
 
 		vector<int> columns(selection.begin(), selection.end());
 		int n = int(decoders.size());
@@ -678,7 +678,7 @@ void ImageSet::rotateLights(float a) {
 }
 
 //read the next row of every image (in parallel) into row_buffers and apply the color transform to the crop.
-void ImageSet::readRows(bool aligned) {
+void ImageSet::readOneRow(bool aligned) {
 	row_buffers.resize(decoders.size());
 	#pragma omp parallel for schedule(dynamic)
 	for(int i = 0; i < int(decoders.size()); i++) {

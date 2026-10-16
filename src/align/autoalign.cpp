@@ -1,5 +1,6 @@
 #include "align/autoalign.h"
 #include "normals/pocketfft.h"
+#include "../image_decoder.h"
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
@@ -21,61 +22,6 @@
 using namespace std;
 typedef complex<float> Complex;
 
-static void saveRegionSvg(
-	const vector<QPoint> &candidates,
-	const vector<int> &selected,
-	int side,
-	int width, int height
-) {
-	static const char *colors[] = {
-		"#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00",
-		"#a65628", "#f781bf", "#17becf", "#bcbd22", "#7f7f7f"
-	};
-	QSaveFile file("autoalign_regions.svg");
-	if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
-		throw QString("Could not write autoalign_regions.svg: %1").arg(file.errorString());
-
-	QTextStream svg(&file);
-	svg << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-		<< "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" << width
-		<< "\" height=\"" << height << "\" viewBox=\"0 0 "
-		<< width<< " " << height << "\">\n"
-		<< "<title>Automatic alignment candidate regions</title>\n"
-		<< "<desc>Dashed gray squares show all candidate regions; numbered colored squares show the ten highest-energy regions selected for alignment.</desc>\n"
-		<< "<rect x=\"0\" y=\"0\" width=\"100%\" height=\"100%\" fill=\"white\"/>\n"
-		<< "<g fill=\"none\" stroke=\"#666666\" stroke-width=\"" << 1.0f
-		<< "\" stroke-dasharray=\"" << 4.0f << " "
-		<< 3.0f << "\" opacity=\"0.45\">\n";
-	for(const QPoint &point: candidates) {
-		svg << "<rect x=\"" << point.x() << "\" y=\"" << point.y()
-			<< "\" width=\"" << side << "\" height=\"" << side << "\"/>\n";
-	}
-	svg << "</g>\n";
-	const float stroke_width = std::max(2.0f, 2.0f);
-	const float font_size = std::max(14.0f, 12.0f);
-	for(size_t rank = 0; rank < selected.size(); ++rank) {
-		const QPoint &point = candidates[size_t(selected[rank])];
-		const float x = point.x();
-		const float y = point.y();
-		const float tile_side = side;
-		svg << "<g fill=\"" << colors[rank % (sizeof(colors) / sizeof(colors[0]))]
-			<< "\" fill-opacity=\"0.12\" stroke=\""
-			<< colors[rank % (sizeof(colors) / sizeof(colors[0]))]
-			<< "\" stroke-width=\"" << stroke_width << "\">\n"
-			<< "<rect x=\"" << x << "\" y=\"" << y << "\" width=\"" << tile_side
-			<< "\" height=\"" << tile_side << "\"/>\n"
-			<< "</g>\n"
-			<< "<text x=\"" << x + stroke_width << "\" y=\"" << y + font_size + stroke_width
-			<< "\" font-family=\"sans-serif\" font-size=\"" << font_size
-			<< "\" font-weight=\"bold\" fill=\"" << colors[rank % (sizeof(colors) / sizeof(colors[0]))]
-			<< "\" stroke=\"white\" stroke-width=\"" << 1.0f
-			<< "\" paint-order=\"stroke\">" << (rank + 1) << "</text>\n";
-	}
-	svg << "</svg>\n";
-	if(!file.commit())
-		throw QString("Could not save autoalign_regions.svg: %1").arg(file.errorString());
-}
-
 AutoAlign::AutoAlign(QSize size) {
 	w = size.width();
 	h = size.height();
@@ -83,18 +29,19 @@ AutoAlign::AutoAlign(QSize size) {
 
 // Compute gradient values only inside a candidate patch. Neighbor pixels just
 // outside the patch are sampled for the central-difference stencil.
-static vector<float> gradientPatch(const QImage &gray, int x0, int y0, int side) {
+static vector<float> gradientPatch(const uint8_t *gray, int width, int height,
+	int x0, int y0, int side) {
 	vector<float> grad(size_t(side)*side, 0.0f);
 	for(int y = 0; y < side; ++y) {
 		const int image_y = y0 + y;
-		if(image_y <= 0 || image_y >= gray.height() - 1)
+		if(image_y <= 0 || image_y >= height - 1)
 			continue;
-		const uchar *up = gray.constScanLine(image_y - 1);
-		const uchar *down = gray.constScanLine(image_y + 1);
-		const uchar *line = gray.constScanLine(image_y);
+		const uint8_t *up = gray + size_t(image_y - 1) * size_t(width);
+		const uint8_t *down = gray + size_t(image_y + 1) * size_t(width);
+		const uint8_t *line = gray + size_t(image_y) * size_t(width);
 		for(int x = 0; x < side; ++x) {
 			const int image_x = x0 + x;
-			if(image_x <= 0 || image_x >= gray.width() - 1)
+			if(image_x <= 0 || image_x >= width - 1)
 				continue;
 			const float dx = float(line[image_x + 1]) - float(line[image_x - 1]);
 			const float dy = float(down[image_x]) - float(up[image_x]);
@@ -104,20 +51,15 @@ static vector<float> gradientPatch(const QImage &gray, int x0, int y0, int side)
 	return grad;
 }
 
-static vector<float> gradient(const uint8_t *image, int channels, int w, int h) {
+static vector<float> gradient(const uint8_t *image, int w, int h) {
 	vector<float> grad(size_t(w)*h, 0.0f);
-	auto gray = [channels](const uint8_t *pixel) {
-		if(channels <= 2)
-			return float(pixel[0]);
-		return 0.299f*pixel[0] + 0.587f*pixel[1] + 0.114f*pixel[2];
-	};
 	for(int y = 1; y < h - 1; y++) {
-		const uint8_t *up = image + size_t(y - 1)*w*channels;
-		const uint8_t *down = image + size_t(y + 1)*w*channels;
-		const uint8_t *line = image + size_t(y)*w*channels;
+		const uint8_t *up = image + size_t(y - 1)*w;
+		const uint8_t *down = image + size_t(y + 1)*w;
+		const uint8_t *line = image + size_t(y)*w;
 		for(int x = 1; x < w - 1; x++) {
-			float dx = gray(line + size_t(x + 1)*channels) - gray(line + size_t(x - 1)*channels);
-			float dy = gray(down + size_t(x)*channels) - gray(up + size_t(x)*channels);
+			float dx = float(line[x + 1]) - float(line[x - 1]);
+			float dy = float(down[x]) - float(up[x]);
 			grad[size_t(y)*w + x] = sqrt(dx*dx + dy*dy);
 		}
 	}
@@ -177,37 +119,6 @@ static Eigen::Vector2f peakShift(const vector<float> &surface, int x, int y, int
 	return Eigen::Vector2f((x < side/2 ? x : x - side) + dx, (y < side/2 ? y : y - side) + dy);
 }
 
-static void saveCorrelationSurface(const vector<float> &surface, int side, int first, int second) {
-	const int crop_side = 40;
-	int crop_start = side/2 - crop_side/2;
-	vector<float> centered(size_t(crop_side)*crop_side);
-	// Adding half a side performs the quadrant swap, placing zero displacement at the crop center.
-	for(int y = 0; y < crop_side; y++) {
-		int source_y = (crop_start + y + side/2) % side;
-		for(int x = 0; x < crop_side; x++) {
-			int source_x = (crop_start + x + side/2) % side;
-			centered[size_t(y)*crop_side + x] = surface[size_t(source_y)*side + source_x];
-		}
-	}
-
-	auto range = minmax_element(centered.begin(), centered.end());
-	float minimum = *range.first;
-	float value_range = *range.second - minimum;
-	QImage image(crop_side, crop_side, QImage::Format_RGB32);
-	for(int y = 0; y < crop_side; y++) {
-		for(int x = 0; x < crop_side; x++) {
-			float value = value_range > 0
-				? (centered[size_t(y)*crop_side + x] - minimum)/value_range
-				: 0.5f;
-			int hue = int((1.0f - value)*240.0f);
-			image.setPixel(x, y, QColor::fromHsv(hue, 255, 255).rgb());
-		}
-	}
-
-	QString filename = QString("correlation_%1_%2.png").arg(first).arg(second);
-	if(!image.save(filename, "PNG"))
-		throw QString("Could not save correlation surface to %1.").arg(filename);
-}
 
 static optional<AutoAlignPeak> correlatePeak(
 	const vector<Complex> &a,
@@ -249,14 +160,13 @@ static optional<AutoAlignPeak> correlatePeak(
 	return AutoAlignPeak{-peakShift(surface, x, y, side), surface[best]};
 }
 
-vector<QPointF> AutoAlign::run(int n, Loader load, std::function<bool(QString stage, int percent)> *callback) {
-	// Handle empty/single-image input and validate that image loading is available.
+vector<QPointF> AutoAlign::run(const vector<QString> &image_paths,
+	std::function<bool(QString stage, int percent)> *callback) {
+	const int n = int(image_paths.size());
 	if(n <= 0)
 		return {};
 	if(n == 1)
 		return vector<QPointF>(1, QPointF(0, 0));
-	if(!load)
-		throw QString("No image loader was provided for alignment.");
 
 	// Choose an even patch size that fits comfortably within every input image.
 	const int minimum_dimension = std::min(w, h);
@@ -305,14 +215,24 @@ vector<QPointF> AutoAlign::run(int n, Loader load, std::function<bool(QString st
 		if(cancelled.load())
 			continue;
 		try {
-			QImage image = load(image_index);
-			if(image.isNull())
-				throw QString("Failed loading image %1").arg(image_index);
-			QImage gray = image.convertToFormat(QImage::Format_Grayscale8);
+			const QString &path = image_paths[size_t(image_index)];
+			const string filename = path.toStdString();
+
+			ImageDecoder decoder;
+			int image_width = 0, image_height = 0;
+			if(!decoder.init(filename.c_str(), image_width, image_height))
+				throw QString("Failed loading image: %1").arg(path);
+			if(image_width != w || image_height != h)
+				throw QString("Image dimensions do not match: %1").arg(path);
+			vector<uint8_t> pixels(size_t(image_height) * decoder.rowSize(true));
+			if(decoder.readRows(image_height, pixels.data(), true) != size_t(image_height))
+				throw QString("Failed reading image: %1").arg(path);
 
 			for(size_t candidate_index = 0; candidate_index < candidates.size(); ++candidate_index) {
 				const QPoint &point = candidates[candidate_index];
-				vector<float> patch_gradient = gradientPatch(gray, point.x(), point.y(), patch_side);
+				vector<float> patch_gradient = gradientPatch(
+					pixels.data(), image_width, image_height,
+					point.x(), point.y(), patch_side);
 				double energy = 0.0;
 				for(float value: patch_gradient)
 					energy += value;
@@ -457,15 +377,13 @@ void AutoAlign::beginRegion(QSize region_size, int image_count) {
 	region_spectra.resize(size_t(region_image_count));
 }
 
-void AutoAlign::provideImage(int image_index, const uint8_t *image, int channels) {
+void AutoAlign::provideImage(int image_index, const uint8_t *greyscale_image) {
 	if(region_side == 0)
 		throw QString("Begin an alignment region before providing images.");
 	if(image_index < 0 || image_index >= region_image_count)
 		throw QString("Image index is outside the selected alignment set.");
-	if(channels < 1 || channels > 4)
-		throw QString("Unsupported number of channels in selected region.");
 
-	vector<float> grad = gradient(image, channels, region_side, region_side);
+	vector<float> grad = gradient(greyscale_image, region_side, region_side);
 	region_spectra[size_t(image_index)] = tileSpectrum(grad, region_side, 0, 0, region_side, region_window);
 }
 
@@ -656,4 +574,91 @@ vector<Eigen::Vector2f> AutoAlign::solveTranslations(
 	for(int i = 1; i < n; i++)
 		translations[size_t(i)] = Eigen::Vector2f(float(x[i - 1]), float(y[i - 1]));
 	return translations;
+}
+
+static void saveCorrelationSurface(const vector<float> &surface, int side, int first, int second) {
+	const int crop_side = 40;
+	int crop_start = side/2 - crop_side/2;
+	vector<float> centered(size_t(crop_side)*crop_side);
+	// Adding half a side performs the quadrant swap, placing zero displacement at the crop center.
+	for(int y = 0; y < crop_side; y++) {
+		int source_y = (crop_start + y + side/2) % side;
+		for(int x = 0; x < crop_side; x++) {
+			int source_x = (crop_start + x + side/2) % side;
+			centered[size_t(y)*crop_side + x] = surface[size_t(source_y)*side + source_x];
+		}
+	}
+
+	auto range = minmax_element(centered.begin(), centered.end());
+	float minimum = *range.first;
+	float value_range = *range.second - minimum;
+	QImage image(crop_side, crop_side, QImage::Format_RGB32);
+	for(int y = 0; y < crop_side; y++) {
+		for(int x = 0; x < crop_side; x++) {
+			float value = value_range > 0
+				? (centered[size_t(y)*crop_side + x] - minimum)/value_range
+				: 0.5f;
+			int hue = int((1.0f - value)*240.0f);
+			image.setPixel(x, y, QColor::fromHsv(hue, 255, 255).rgb());
+		}
+	}
+
+	QString filename = QString("correlation_%1_%2.png").arg(first).arg(second);
+	if(!image.save(filename, "PNG"))
+		throw QString("Could not save correlation surface to %1.").arg(filename);
+}
+
+static void saveRegionSvg(
+	const vector<QPoint> &candidates,
+	const vector<int> &selected,
+	int side,
+	int width, int height
+) {
+	static const char *colors[] = {
+		"#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00",
+		"#a65628", "#f781bf", "#17becf", "#bcbd22", "#7f7f7f"
+	};
+	QSaveFile file("autoalign_regions.svg");
+	if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
+		throw QString("Could not write autoalign_regions.svg: %1").arg(file.errorString());
+
+	QTextStream svg(&file);
+	svg << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+		<< "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" << width
+		<< "\" height=\"" << height << "\" viewBox=\"0 0 "
+		<< width<< " " << height << "\">\n"
+		<< "<title>Automatic alignment candidate regions</title>\n"
+		<< "<desc>Dashed gray squares show all candidate regions; numbered colored squares show the ten highest-energy regions selected for alignment.</desc>\n"
+		<< "<rect x=\"0\" y=\"0\" width=\"100%\" height=\"100%\" fill=\"white\"/>\n"
+		<< "<g fill=\"none\" stroke=\"#666666\" stroke-width=\"" << 1.0f
+		<< "\" stroke-dasharray=\"" << 4.0f << " "
+		<< 3.0f << "\" opacity=\"0.45\">\n";
+	for(const QPoint &point: candidates) {
+		svg << "<rect x=\"" << point.x() << "\" y=\"" << point.y()
+			<< "\" width=\"" << side << "\" height=\"" << side << "\"/>\n";
+	}
+	svg << "</g>\n";
+	const float stroke_width = std::max(2.0f, 2.0f);
+	const float font_size = std::max(14.0f, 12.0f);
+	for(size_t rank = 0; rank < selected.size(); ++rank) {
+		const QPoint &point = candidates[size_t(selected[rank])];
+		const float x = point.x();
+		const float y = point.y();
+		const float tile_side = side;
+		svg << "<g fill=\"" << colors[rank % (sizeof(colors) / sizeof(colors[0]))]
+			<< "\" fill-opacity=\"0.12\" stroke=\""
+			<< colors[rank % (sizeof(colors) / sizeof(colors[0]))]
+			<< "\" stroke-width=\"" << stroke_width << "\">\n"
+			<< "<rect x=\"" << x << "\" y=\"" << y << "\" width=\"" << tile_side
+			<< "\" height=\"" << tile_side << "\"/>\n"
+			<< "</g>\n"
+			<< "<text x=\"" << x + stroke_width << "\" y=\"" << y + font_size + stroke_width
+			<< "\" font-family=\"sans-serif\" font-size=\"" << font_size
+			<< "\" font-weight=\"bold\" fill=\"" << colors[rank % (sizeof(colors) / sizeof(colors[0]))]
+			<< "\" stroke=\"white\" stroke-width=\"" << 1.0f
+			<< "\" paint-order=\"stroke\">" << (rank + 1) << "</text>\n";
+	}
+	svg << "</svg>\n";
+	if(!file.commit())
+		throw QString("Could not save autoalign_regions.svg: %1").arg(file.errorString());
 }

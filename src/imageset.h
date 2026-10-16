@@ -138,7 +138,7 @@ public:
 	QSize imageSize() { return QSize(image_width, image_height); }
 
 	void setCallback(std::function<bool(QString stage, int percent)> *_callback = nullptr) { callback = _callback; }
-	//call AFTER initImages and BEFORE breadline, decode or sample.
+	//call AFTER initImages and BEFORE readline, decode or sample.
 
 	void decode(size_t img, unsigned char *buffer);
 	void readLine(PixelArray &line);
@@ -155,7 +155,8 @@ protected:
 
 
 private:
-	void readRows(bool aligned);
+	//ignore align offsets if not aligned
+	void readOneRow(bool aligned);
 	void compensateVignetting(PixelArray &pixels);
 
 	void compensateIntensity(PixelArray &pixels);

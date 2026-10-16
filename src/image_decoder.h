@@ -20,14 +20,16 @@ struct ImageDecoderImpl {
 	// Bytes per complete scanline: width * numChannels() * bytesPerChannel().
 	virtual size_t rowSize() const = 0;
 
-	// Read up to `rows` scanlines into `buffer` (uint8_t* raw bytes).
-	// Returns the number of rows actually read.
-	virtual size_t readRows(int rows, uint8_t* buffer) = 0;
+	// Read native-format bytes. `rowSize()` includes bytes per sample.
+	virtual size_t readRowsRaw(int rows, uint8_t* buffer) = 0;
+
+	// Read 8-bit interleaved samples, converting non-UINT8 formats to [0, 255].
+	virtual size_t readRows(int rows, uint8_t* buffer);
 
 	// Float variant: normalises to [0, 1] for integer formats; copies directly
-	// for float formats.  Default implementation converts from the uint8_t path.
+	// for float formats. Default implementation converts from the raw path.
 	// Format backends that natively produce float (EXR, 32-bit TIFF) should
-	// override this for efficiency and override the uint8_t version to quantise.
+	// override this for efficiency.
 	virtual size_t readRows(int rows, float* buffer);
 
 	// Skip scanlines without returning them. Default implementation decodes and discards.
@@ -75,18 +77,20 @@ public:
 
 	// Streaming row-by-row API
 	bool   init(const char* path, int& width, int& height);
-	size_t rowSize() const;
-	size_t readRows(int rows, uint8_t* buffer);
-	size_t readRows(int rows, float*   buffer);
+	// rowSize() returns samples per row. uint8_t output is converted to [0, 255].
+	// greyscale=true outputs one luminance sample per pixel.
+	size_t rowSize(bool greyscale = false) const;
+	size_t readRows(int rows, uint8_t* buffer, bool greyscale = false);
+	size_t readRows(int rows, float*   buffer, bool greyscale = false);
 	// Read a horizontal region, restarting at row y; returns rows actually read.
-	size_t readRegion(int x, int y, int w, int h, uint8_t* buffer);
-	size_t readRegion(int x, int y, int w, int h, float*   buffer);
+	size_t readRegion(int x, int y, int w, int h, uint8_t* buffer, bool greyscale = false);
+	size_t readRegion(int x, int y, int w, int h, float*   buffer, bool greyscale = false);
 	// Open, read, and close an image region into a tightly packed vector.
-	// Returns rows read and reports the channel count through `channels`.
+	// Returns rows read and reports the output channel count through `channels`.
 	static size_t readRegion(const char* path, int x, int y, int w, int h,
-	                         std::vector<uint8_t>& buffer, int& channels);
+	                         std::vector<uint8_t>& buffer, int& channels, bool greyscale = false);
 	static size_t readRegion(const char* path, int x, int y, int w, int h,
-	                         std::vector<float>& buffer, int& channels);
+	                         std::vector<float>& buffer, int& channels, bool greyscale = false);
 	size_t skipRows(int rows);
 	bool   finish();
 	bool   restart();

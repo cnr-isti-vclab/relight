@@ -4,6 +4,7 @@
 #include "qlabelbutton.h"
 #include "helpbutton.h"
 #include "relightapp.h"
+#include "../src/image_decoder.h"
 
 #include <QButtonGroup>
 #include <QComboBox>
@@ -15,7 +16,6 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QFileInfo>
-#include <QImageReader>
 #include <cmath>
 /*
 We are going to add a few functionalities to the normals tab.
@@ -162,12 +162,8 @@ void NormalsSourceRow::updateSize() {
 		w = p.crop.width();
 		h = p.crop.height();
 	} else {
-		QImageReader reader(parameters.input_path);
-		QSize size = reader.size();
-		if (size.isValid()) {
-			w = size.width();
-			h = size.height();
-		}
+		ImageDecoder decoder;
+		decoder.init(parameters.input_path.toStdString().c_str(), w, h);
 	}
 	if(w > 0 && h > 0) {
 		emit sourceSizeChanged(w, h);
@@ -553,4 +549,3 @@ void NormalsExportRow::suggestPath() {
 	QString filename = input.filePath("normals");
 	setPath(filename);
 }
-

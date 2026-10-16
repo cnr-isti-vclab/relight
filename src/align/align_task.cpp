@@ -57,27 +57,36 @@ void AlignTask::run() {
 						if(ImageDecoder::readRegion(filename.c_str(),
 						                            align->rect.x(), align->rect.y(),
 						                            align->rect.width(), align->rect.height(),
-						                            tile_data, channels) != size_t(align->rect.height()))
+													tile_data, channels) != size_t(align->rect.height()))
 							throw QString("Failed loading selected region from image: %1")
 								.arg(project.images[size_t(index)].filename);
-						if(channels != 1 && channels != 3 && channels != 4)
-							throw QString("Unsupported number of channels in image: %1")
-								.arg(channels);
 
 						if(!cache_hit) {
-							size_t tile_row_size =
-								size_t(align->rect.width()) * size_t(channels);
+							size_t tile_row_size = size_t(align->rect.width()) * size_t(channels);
 							QImage::Format format = channels == 1
 								? QImage::Format_Grayscale8
-								: channels == 3 ? QImage::Format_RGB888
-								                : QImage::Format_RGBA8888;
+								: channels == 3 ? QImage::Format_RGB888 : QImage::Format_RGBA8888;
 							QImage tile(tile_data.data(), align->rect.width(),
-							            align->rect.height(), int(tile_row_size), format);
+										align->rect.height(), int(tile_row_size), format);
 							std::lock_guard<std::mutex> lock(thumbnail_mutex);
 							align->readThumb(tile, index);
 						}
-						if(update_positions)
-							auto_align.provideImage(i, tile_data.data(), channels);
+						if(update_positions) {
+							if(channels != 1) {
+								const size_t pixels =
+									size_t(align->rect.width()) * size_t(align->rect.height());
+								for(size_t pixel_index = 0; pixel_index < pixels; ++pixel_index) {
+									const uint8_t *pixel =
+										tile_data.data() + pixel_index * size_t(channels);
+									tile_data[pixel_index] = uint8_t(
+										(77u * pixel[0] + 150u * pixel[1] +
+										 29u * pixel[2] + 128u) >> 8);
+								}
+								tile_data.resize(pixels);
+								channels = 1;
+							}
+							auto_align.provideImage(i, tile_data.data());
+						}
 					} catch(QString e) {
 						errors[size_t(i)] = e;
 					}
