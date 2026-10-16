@@ -9,11 +9,8 @@
 // Shared image format and pixel type enums
 #include "image_format.h"
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Abstract per-format backend.
-// Concrete implementations (JpegDecoderImpl, PngDecoderImpl, …) live in
-// image_decoder.cpp and are never exposed publicly.
-// ──────────────────────────────────────────────────────────────────────────────
+
 struct ImageDecoderImpl {
 	virtual ~ImageDecoderImpl() = default;
 
@@ -51,12 +48,8 @@ struct ImageDecoderImpl {
 	virtual const std::vector<uint8_t>& getICCProfile() const = 0;
 };
 
-// ──────────────────────────────────────────────────────────────────────────────
 // ImageDecoder — public API, mirrors JpegDecoder but format-agnostic.
-//
-// JPEG-specific concepts (colour space, chroma subsampling) are intentionally
-// absent; use JpegDecoder directly when you need those details.
-// ──────────────────────────────────────────────────────────────────────────────
+
 class ImageDecoder {
 public:
 	ImageDecoder();
@@ -72,7 +65,7 @@ public:
 	void        setFormat(ImageFormat fmt);
 	ImageFormat getFormat() const { return format; }
 
-	// ── Full-image decode ─────────────────────────────────────────────────────
+	// Full-image decode
 	// Allocates *img with new[]; caller must delete[].
 	bool decode(const char* path,         uint8_t*& img, int& width, int& height);
 	bool decode(const char* path,         float*&   img, int& width, int& height);
@@ -80,22 +73,30 @@ public:
 	// In-memory source (JPEG only for now; others will be added with their impls).
 	bool decode(uint8_t* buf, size_t len, uint8_t*& img, int& width, int& height);
 
-	// ── Streaming row-by-row API ──────────────────────────────────────────────
+	// Streaming row-by-row API
 	bool   init(const char* path, int& width, int& height);
 	size_t rowSize() const;
 	size_t readRows(int rows, uint8_t* buffer);
 	size_t readRows(int rows, float*   buffer);
+	// Read a horizontal region, restarting at row y; returns rows actually read.
+	size_t readRegion(int x, int y, int w, int h, uint8_t* buffer);
+	size_t readRegion(int x, int y, int w, int h, float*   buffer);
+	// Open, read, and close an image region into a tightly packed vector.
+	// Returns rows read and reports the channel count through `channels`.
+	static size_t readRegion(const char* path, int x, int y, int w, int h,
+	                         std::vector<uint8_t>& buffer, int& channels);
+	static size_t readRegion(const char* path, int x, int y, int w, int h,
+	                         std::vector<float>& buffer, int& channels);
 	size_t skipRows(int rows);
 	bool   finish();
 	bool   restart();
 
-	// ── Pixel format (valid after init() or decode()) ─────────────────────────
+	// Pixel format (valid after init() or decode())
 	int       numChannels()     const;   // 1, 3, or 4
 	PixelType pixelType()       const;
 	int       bitsPerChannel()  const;   // 8, 16, or 32
 	int       bytesPerChannel() const;   // 1, 2, or 4
 
-	// ── ICC colour profile ────────────────────────────────────────────────────
 	bool hasICCProfile() const;
 	const std::vector<uint8_t>& getICCProfile() const;
 

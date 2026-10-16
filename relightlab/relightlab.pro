@@ -68,7 +68,9 @@ SOURCES += main.cpp \
     ../src/rti/rtiparameters.cpp \
     ../src/rti/rtitask.cpp \
     ../src/crop.cpp \
-    ../src/align.cpp \
+    ../src/align/align.cpp \
+    ../src/align/align_task.cpp \
+    ../src/align/autoalign.cpp \
     ../src/dome.cpp \
     ../src/exif.cpp \
     ../src/lp.cpp \
@@ -166,7 +168,6 @@ HEADERS += \
     brdfplan.h \
     imagecropper.h \
     processqueue.h \
-    ../src/align.h \
     ../src/dome.h \
     ../src/exif.h \
     ../src/image.h \
@@ -185,6 +186,9 @@ HEADERS += \
     ../src/project.h \
     ../src/rti.h \
     ../src/sphere.h \
+    ../src/align/align.h \
+    ../src/align/autoalign.h \
+    ../src/align/align_task.h \
     ../src/white.h \
     alignframe.h \
     alignpicking.h \
@@ -256,5 +260,4 @@ DISTFILES += \
     css/style.qss \
     roadmap.md \
     ../deploy/relight.png
-
 

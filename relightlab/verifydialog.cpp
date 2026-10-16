@@ -23,8 +23,7 @@ VerifyDialog::VerifyDialog(std::vector<QImage> &_thumbs, std::vector<QPointF> &_
 	QDialog(parent), thumbs(_thumbs), positions(_positions) {
 	setModal(true);
 
-	//showMaximized() before the layout exists leaves the dialog tiny on Windows.
-	setWindowState(Qt::WindowMaximized);
+	showMaximized();
 	QVBoxLayout *layout = new QVBoxLayout(this);
 	if(marker == ALIGN) {
 		QHBoxLayout *operations_layout = new QHBoxLayout;

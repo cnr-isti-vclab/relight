@@ -1,11 +1,11 @@
 #include "alignpicking.h"
 #include "canvas.h"
-#include "../src/align.h"
+#include "../src/align/align.h"
 #include "relightapp.h"
 
 #include <QGraphicsRectItem>
 #include <QPen>
-#include <QKeyEvent>
+#include <algorithm>
 
 
 QRectF AlignRect::boundingRect() const {
@@ -67,9 +67,17 @@ void AlignPicking::clear() {
 
 void AlignPicking::setAlign(QRectF align_rect) {
 	clear();
-//	align = a;
+	marker_side = align_rect.isEmpty()
+		? 40
+		: std::max(3, std::min(int(align_rect.width()), int(align_rect.height())));
+	rect->side = marker_side;
+	rect->setRect(QRectF(
+		-marker_side/2.0,
+		-marker_side/2.0,
+		marker_side,
+		marker_side
+	));
 	rect->setPos(align_rect.center());
-	rect->side = align_rect.width();
 
 	scene().addItem(rect);
 
@@ -99,17 +107,3 @@ void AlignPicking::click(QPoint p) {
 /*void AlignPicking::updateAlignPoint() {
 	align->rect = rect->getRect();
 }*/
-
-void AlignPicking::keyPressEvent(QKeyEvent *event) {
-	if(event->key() == Qt::Key_Plus)
-		marker_side += 5;
-	if(event->key() == Qt::Key_Minus)
-		marker_side -= 5;
-	QPointF center = rect->rect.center();
-
-	QRectF r(center - QPointF(marker_side/2.0, marker_side/2.0),
-			center + QPointF(marker_side/2.0, marker_side/2.0));
-	rect->setRect(r);
-	rect->update();
-//	updateAlignPoint();
-}

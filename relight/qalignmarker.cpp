@@ -1,5 +1,5 @@
 #include "qalignmarker.h"
-#include "../src/align.h"
+#include "../src/align/align.h"
 #include <QGraphicsRectItem>
 #include <QPen>
 #include <QLabel>

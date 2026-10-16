@@ -1,9 +1,10 @@
-#ifndef ALIGN_H
-#define ALIGN_H
+#ifndef RELIGHT_ALIGN_H
+#define RELIGHT_ALIGN_H
 
 #include <QImage>
 #include <QPoint>
 #include <QRect>
+#include <QString>
 #include <vector>
 
 
@@ -11,6 +12,8 @@ class QJsonObject;
 
 class Align {
 public:
+	static constexpr int thumbnail_side = 40;
+
 	Align(int n_lights) {
 		offsets.resize(n_lights, QPointF(0, 0));
 		thumbs.resize(n_lights);
@@ -22,10 +25,11 @@ public:
 
 	QJsonObject toJson();
 	void fromJson(QJsonObject obj);
-	void readThumb(QImage img, int n);
+	QString cacheFilename() const;
+	void readThumb(QImage tile, int n);
 
-	void readCacheThumbs(QImage img);
+	bool readCacheThumbs(QImage img);
 	void saveCacheThumbs(QString filename);
 };
 
-#endif // ALIGN_H
+#endif // RELIGHT_ALIGN_H

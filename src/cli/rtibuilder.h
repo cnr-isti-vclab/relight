@@ -43,7 +43,8 @@ public:
 
 	RtiBuilder();
 	~RtiBuilder();
-	bool setupFromFolder(const std::string &folder, Dome &dome);
+	//offsets: align the images, see ImageSet::setCrop.
+	bool setupFromFolder(const std::string &folder, Dome &dome, const std::vector<QPointF> &offsets = std::vector<QPointF>());
 	bool setupFromProject(const std::string &filename);
 	bool init(std::function<bool(QString stage, int percent)> *_callback = nullptr);
 

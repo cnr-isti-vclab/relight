@@ -64,7 +64,7 @@ set (RELIGHT_HEADERS
 	qmeasuremarker.h
 	../src/sphere.h
 	qspheremarker.h
-	../src/align.h
+	../src/align/align.h
 	qalignmarker.h
 	aligndialog.h
 	qwhitemarker.h

@@ -39,7 +39,7 @@ SOURCES += \
         ../src/lp.cpp \
         ../src/exif.cpp \
         ../src/measure.cpp \
-        ../src/align.cpp \
+        ../src/align/align.cpp \
         ../src/white.cpp \
         ../src/rti.cpp \
         ../src/legacy_rti.cpp \
@@ -85,7 +85,7 @@ HEADERS += \
     ../src/lp.h \
     ../src/exif.h \
     ../src/measure.h \
-    ../src/align.h \
+    ../src/align/align.h \
     ../src/white.h \
     ../src/rti.h \
     ../src/legacy_rti.h \
@@ -131,4 +131,3 @@ win32:!isEmpty(LCMS2_HOME) {
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-

@@ -33,7 +33,6 @@ endif()
 
 set (RELIGHT_HEADERS
     processqueue.h 
-    ../src/align.h 
     ../src/dome.h 
     ../src/exif.h 
     ../src/image.h 
@@ -43,6 +42,9 @@ set (RELIGHT_HEADERS
     ../src/project.h 
     ../src/sphere.h 
     ../src/white.h
+    ../src/align/align.h
+    ../src/align/autoalign.h
+    ../src/align/align_task.h
     ../src/normals/bni_normal_integration.h
     ../src/normals/fft_normal_integration.h
     ../src/normals/fast_gaussian_blur.cpp
@@ -121,7 +123,6 @@ set (RELIGHTLAB_SOURCES
 	main.cpp 
     zoom.cpp 
     processqueue.cpp 
-    ../src/align.cpp 
     ../src/dome.cpp 
     ../src/exif.cpp 
     ../src/image.cpp 
@@ -131,6 +132,9 @@ set (RELIGHTLAB_SOURCES
     ../src/project.cpp 
     ../src/sphere.cpp 
     ../src/white.cpp 
+    ../src/align/align.cpp 
+    ../src/align/align_task.cpp
+    ../src/align/autoalign.cpp
     ../src/normals/flatnormals.cpp
     ../src/normals/bni_normal_integration.cpp
     ../src/normals/fft_normal_integration.cpp

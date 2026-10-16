@@ -159,6 +159,8 @@ runs:
             
             xcrun notarytool submit "$INSTALL_PATH/notarization.zip" --keychain-profile "notarytool-profile" --wait
             
+            sleep 15
+
             xcrun stapler staple "$INSTALL_PATH/$APPNAME"
             
             rm -rf "$INSTALL_PATH/notarization.zip"

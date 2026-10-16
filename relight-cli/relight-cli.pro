@@ -12,7 +12,7 @@ DEFINES += HAVE_LCMS2
 
 INCLUDEPATH += ../external/
 
-win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \b
+win32:INCLUDEPATH += ../external/libjpeg-turbo-2.0.6/include \
     ../external/eigen-3.3.9/ \
     ../src/
 win32:LIBS += ../external/libjpeg-turbo-2.0.6/lib/jpeg-static.lib
@@ -72,6 +72,7 @@ SOURCES += main.cpp \
     ../src/rti.cpp \
     ../src/legacy_rti.cpp \
 	../src/sphere.cpp \
+	../src/align/autoalign.cpp \
     ../src/cli/rtibuilder.cpp \
     ../src/cli/convert_rti.cpp \
     ../src/lp.cpp \
@@ -118,6 +119,7 @@ HEADERS += \
     ../src/legacy_rti.h \
     ../src/eigenpca.h \
 	../src/sphere.h \
+	../src/align/autoalign.h \
     ../src/cli/rtibuilder.h \
     ../src/lp.h \
     ../src/crop.h \
@@ -126,4 +128,3 @@ HEADERS += \
 
 DISTFILES += \
     plan.txt
-
