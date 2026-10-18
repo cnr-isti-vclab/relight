@@ -89,7 +89,11 @@ runs:
         
         echo "======= Creating AppBundle ======="
         
-        message=$(macdeployqt "$INSTALL_PATH/$APPNAME" 2>&1)
+        message=$(macdeployqt "$INSTALL_PATH/$APPNAME" \
+          -executable="$INSTALL_PATH/$APPNAME/Contents/MacOS/relight-cli" \
+          -executable="$INSTALL_PATH/$APPNAME/Contents/MacOS/relight-normals" \
+          -executable="$INSTALL_PATH/$APPNAME/Contents/MacOS/relight-merge" \
+          -executable="$INSTALL_PATH/$APPNAME/Contents/MacOS/relight-deepzoom" 2>&1)
         
         if [[ $message == *"ERROR"* ]]; then
             echo "macdeployqt failed:"
@@ -124,16 +128,22 @@ runs:
         ls "$INSTALL_PATH/$APPNAME/Contents/Frameworks"
 
         echo "======= Verifying AppBundle Dependencies ======="
-        BINARY="$INSTALL_PATH/$APPNAME/Contents/MacOS/relightlab"
         MISSING=0
-        while IFS= read -r line; do
+        for BINARY in \
+          "$INSTALL_PATH/$APPNAME/Contents/MacOS/relightlab" \
+          "$INSTALL_PATH/$APPNAME/Contents/MacOS/relight-cli" \
+          "$INSTALL_PATH/$APPNAME/Contents/MacOS/relight-normals" \
+          "$INSTALL_PATH/$APPNAME/Contents/MacOS/relight-merge" \
+          "$INSTALL_PATH/$APPNAME/Contents/MacOS/relight-deepzoom"; do
+          while IFS= read -r line; do
             lib=$(echo "$line" | awk '{print $1}')
             [[ "$lib" == /System/* ]] && continue
             [[ "$lib" == /usr/lib/* ]] && continue
             [[ "$lib" == @* ]] && continue
-            echo "ERROR: External dependency not bundled: $lib"
+            echo "ERROR: External dependency in $(basename "$BINARY"): $lib"
             MISSING=$((MISSING + 1))
-        done < <(otool -L "$BINARY" | tail -n +2)
+          done < <(otool -L "$BINARY" | tail -n +2)
+        done
         [ $MISSING -gt 0 ] && exit 1 || echo "All dependencies bundled"
         
         # Remove everything from install path except the appbundle
