@@ -1,0 +1,199 @@
+#include "mainwindow.h"
+#include <QDir>
+#include <QApplication>
+#include <QCommandLineParser>
+#include <QCommandLineOption>
+#include <iostream>
+#include <QtXml>
+#include <QImageReader>
+#include "panobuilder.h"
+
+using namespace std;
+
+
+void help(){
+	cout << R"(relight-pano
+
+usage: relight-pano <folder> [-i]
+
+	folder: folder containing a set of rti photo datasets
+	-i: open user interface
+)";
+}
+int main(int argc, char *argv[])
+{
+	QCoreApplication app(argc, argv);
+	QCoreApplication::setApplicationName("relight-pano");
+
+	QImageReader::setAllocationLimit(4096);
+
+	QCommandLineParser parser;
+	parser.setApplicationDescription("relight-pano: builds an RTI panorama");
+	parser.addHelpOption();
+	parser.addPositionalArgument("folder", "path folder containing rti datasets");
+
+	QCommandLineOption micmacOption(QStringList()      << "M" << "micmac",          "Micmac mm3d path",     "micbin", "mm3d");
+	QCommandLineOption cliOption(QStringList()         << "C" << "relight-cli",     "Relight-cli path",     "clibin", "relight-cli");
+	QCommandLineOption mergeOption(QStringList()       << "G" << "relight-merge",   "Relight-merge path",   "mergebin", "relight-merge");
+	QCommandLineOption normalsOption(QStringList()     << "N" << "relight-normals", "Relight-normals path", "normalsbin", "relight-normals");
+	QCommandLineOption seamOption(QStringList()        << "R" << "seam", "Relight-seam executable path", "seambin", "relight-seam");
+
+
+	QCommandLineOption interactiveOption(QStringList() << "i" << "interactive",  "Open users interface");
+	QCommandLineOption verboseOption(QStringList()     << "v" << "verbose",      "Enable verbose output");
+	QCommandLineOption debugOption(QStringList()       << "d" << "debug",        "Enable debug output");
+	QCommandLineOption stepOption(QStringList()        << "s" << "step",
+								  "Starting step (means, tapioca, schnaps, tapas, apericloud, orthoplane, tarama, malt_mec, c3dc, rti, depthmap, malt_ortho, tawny, jpg)", "step");
+	QCommandLineOption stopOption(QStringList()        << "S" << "stop",         "Stop after first step");
+
+
+	parser.addOption(micmacOption);
+	parser.addOption(cliOption);
+	parser.addOption(mergeOption);
+	parser.addOption(normalsOption);
+	parser.addOption(seamOption);
+
+	parser.addOption(interactiveOption);
+	parser.addOption(verboseOption);
+	parser.addOption(debugOption);
+	parser.addOption(stepOption);
+	parser.addOption(stopOption);
+
+
+	//Using DefCor for malt_mec function, which indicates the level of correlation between pixels
+	//higher values ​​of DefCor force a stronger correlation between adjacent pixels, which might improve spatial coherence in reconstructed images, but reduce detail.
+	//Too high a value could cause excessive smoothness between pixels.
+	QCommandLineOption defCorOption(QStringList()      << "c" << "DefCor", "Specifies the correlation between pixels (DefCor parameter)",
+									"Higher values increase pixel correlation. Default is 0.2", "0.2");
+	parser.addOption(defCorOption);
+	//A higher value for Regul might impose greater smoothing or stability,
+	//while lower values ​​would allow for more variability and detail, but might result in greater sensitivity to noise.
+	QCommandLineOption regulOption(QStringList()       << "r" << "Regul", "Sets the regularization parameter (Regul)",
+													"Regul check the amount of smoothing applied during the orthorectification process. Default is 0.05", "0.05");
+	parser.addOption(regulOption);
+
+	QCommandLineOption light3dOption(QStringList()     << "3" << "light3d" << "L" << "Light3d",
+		"3d light positions processing, ratio diameter_dome/image_width and optional vertical offset as radius[:offset]",
+		"radius[:offset]");
+	parser.addOption(light3dOption);
+
+	QCommandLineOption baseOption(QStringList()        << "b" << "base", "RTI basis: ptm or hsh (default: hsh)", "base", "hsh");
+	parser.addOption(baseOption);
+
+	// Process the actual command line arguments given by the user
+	parser.process(app);
+
+	const QStringList args = parser.positionalArguments();
+	if (args.size() < 1) {
+		cerr << "Missing command line Rti folder parameter." << endl;
+		return -1;
+	}
+
+	QString datasetsFolder = args[0];
+	QDir dir(datasetsFolder);
+	if (!dir.exists()) {
+		cerr << "Error: folder '"<< qPrintable(datasetsFolder) << "' does not exist" << endl;
+		return -1;
+	}
+
+	double defCor = parser.value(defCorOption).toDouble();
+	double regul = parser.value(regulOption).toDouble();
+	if (defCor < 0) {
+		cerr << "Error: DefCor must be between 0 and 1. Value provided: " << defCor << endl;
+		return -1;
+	}
+	if(regul < 0) {
+		cerr << "Error: Regul must be between 0 and 1. Value provided: " << regul << endl;
+		return -1;
+	}
+	cout << "DefCor value: " << defCor << endl;
+	cout << "Regul value: " << regul << endl;
+
+	QString light3d = parser.value(light3dOption).trimmed();
+	double domeRadius = 0.0;
+	double domeVerticalOffset = 0.0;
+	if (!light3d.isEmpty()) {
+		QStringList params = light3d.split(':');
+		if (params.isEmpty() || params.size() > 2) {
+			cerr << "Error: invalid -3 value '" << qPrintable(light3d) << "'. Use radius[:offset]." << endl;
+			return -1;
+		}
+
+		bool radiusOk = false;
+		domeRadius = params[0].toDouble(&radiusOk);
+		if (!radiusOk || domeRadius <= 0.0) {
+			cerr << "Error: invalid dome radius in -3 value '" << qPrintable(light3d) << "'." << endl;
+			return -1;
+		}
+
+		if (params.size() == 2) {
+			bool offsetOk = false;
+			domeVerticalOffset = params[1].toDouble(&offsetOk);
+			if (!offsetOk) {
+				cerr << "Error: invalid dome offset in -3 value '" << qPrintable(light3d) << "'." << endl;
+				return -1;
+			}
+		}
+	}
+
+	bool interactive = parser.isSet(interactiveOption);
+	bool stop        = parser.isSet(stopOption);
+	bool verbose     = parser.isSet(verboseOption);
+	bool debug       = parser.isSet(debugOption);
+
+
+
+	bool steps = parser.isSet(stepOption);
+	if (interactive && steps) {
+		cout << "Run in interactive mode" << endl;
+		MainWindow w;
+		w.show();
+		return app.exec();
+	} else {
+		try{
+			PanoBuilder builder(datasetsFolder);
+			builder.DefCor= defCor;
+			builder.Regul = regul;
+			builder.verbose = verbose;
+			builder.debug = debug;
+			if (!light3d.isEmpty())
+				builder.setLight3d(domeRadius, domeVerticalOffset);
+
+			builder.setMm3d(parser.value(micmacOption));
+			builder.setRelightCli(parser.value(cliOption));
+			builder.setRelightMerge(parser.value(mergeOption));
+			builder.setRelightNormals(parser.value(normalsOption));
+			builder.setSeam(parser.value(seamOption));
+
+			{
+				QString baseVal = parser.value(baseOption).toLower();
+				if (baseVal == "ptm")
+					builder.base = PanoBuilder::PTM;
+				else if (baseVal == "hsh")
+					builder.base = PanoBuilder::HSH;
+				else {
+					cerr << "Error: unknown base '" << qPrintable(baseVal) << "'. Use ptm or hsh." << endl;
+					return -1;
+				}
+			}
+
+			PanoBuilder::Steps  startingStep = PanoBuilder::MEANS;
+			if(steps) {
+				QString step_name = parser.value(stepOption);
+				int s = builder.findStep(step_name);
+				if(s == -1){
+					cerr << "Unknown step: " << qPrintable(step_name) << endl;
+					return -1;
+				}
+				startingStep = (PanoBuilder::Steps) s;
+			}
+
+			builder.process(startingStep, stop);
+		}
+		catch(QString error){
+			cerr << qPrintable(error) << endl;
+		}
+
+	}
+	return 0;
+}
