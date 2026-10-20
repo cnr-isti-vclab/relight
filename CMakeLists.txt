@@ -58,26 +58,12 @@ else()
     message(STATUS "Using system Eigen3")
 endif()
 
-# JPEG setup
-if(MSVC)
-    set(JPEGTURBO_HOME ${CMAKE_CURRENT_SOURCE_DIR}/external/libjpeg-turbo-2.0.6)
-    set(JPEG_INCLUDE_DIR ${JPEGTURBO_HOME}/include)
-    set(JPEG_LIBRARIES ${JPEGTURBO_HOME}/lib/jpeg.lib)
-    message(STATUS "Using bundled libjpeg-turbo for MSVC")
-else()
-    find_package(JPEG REQUIRED)
-    message(STATUS "Using system JPEG")
-endif()
+# JPEG and TIFF are supplied by the platform package manager on every OS.
+find_package(JPEG REQUIRED)
+message(STATUS "Found platform JPEG package")
 
-# TIFF setup
-find_package(TIFF QUIET)
-if(NOT TIFF_FOUND)
-    message(STATUS "Using bundled TIFF library")
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/tiff-4.7.0)
-    add_library(TIFF::TIFF ALIAS tiff)
-else()
-    message(STATUS "Using system TIFF library")
-endif()
+find_package(TIFF REQUIRED)
+message(STATUS "Found platform TIFF package")
 
 # PNG setup
 find_package(PNG REQUIRED)

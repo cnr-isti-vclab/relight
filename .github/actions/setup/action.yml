@@ -30,7 +30,7 @@ runs:
       run: |
         sudo apt-get update
         sudo apt-get install -y mesa-common-dev libglu1-mesa-dev 
-        sudo apt-get install -y cmake ninja-build patchelf fuse libjpeg-dev libeigen3-dev
+        sudo apt-get install -y cmake ninja-build patchelf fuse libjpeg-dev libtiff-dev libeigen3-dev
         sudo apt-get install -y libxcb-cursor0
         sudo apt-get install -y liblcms2-dev libpng-dev libexiv2-dev
         sudo apt-get install -y --no-install-recommends libopencv-dev
@@ -39,14 +39,14 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        brew install coreutils libomp eigen libjpeg libpng exiv2 opencv
+        brew install coreutils libomp eigen jpeg-turbo libtiff libpng exiv2 opencv
         npm install -g appdmg
 
     - name: Install Windows dependencies
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        C:/vcpkg/vcpkg.exe install opencv:x64-windows lcms:x64-windows libpng:x64-windows zlib:x64-windows exiv2:x64-windows
+        C:/vcpkg/vcpkg.exe install opencv:x64-windows libjpeg-turbo:x64-windows tiff:x64-windows lcms:x64-windows libpng:x64-windows zlib:x64-windows exiv2:x64-windows
         choco install nsis -y
 
     - name: Debug zlib output

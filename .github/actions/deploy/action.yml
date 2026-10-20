@@ -239,6 +239,8 @@ runs:
         cp C:/vcpkg/installed/x64-windows/bin/lcms2-2.dll "$INSTALL_PATH/"
         cp C:/vcpkg/installed/x64-windows/bin/libpng16.dll "$INSTALL_PATH/"
         cp C:/vcpkg/packages/zlib_x64-windows/bin/z.dll "$INSTALL_PATH/"
+        # Stage runtime DLLs for package-managed JPEG, TIFF, and OpenCV.
+        find C:/vcpkg/installed/x64-windows/bin -maxdepth 1 -type f \( -iname 'jpeg*.dll' -o -iname 'tiff*.dll' -o -iname 'opencv_*.dll' \) -exec cp {} "$INSTALL_PATH/" \;
         # Copy exiv2 DLL(s) from vcpkg (if present)
         cp C:/vcpkg/installed/x64-windows/bin/exiv2*.dll "$INSTALL_PATH/" || true
 
