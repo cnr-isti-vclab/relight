@@ -42,6 +42,29 @@ runs:
         brew install coreutils libomp eigen jpeg-turbo libtiff libpng exiv2 opencv
         npm install -g appdmg
 
+    - name: Configure vcpkg binary cache
+      if: runner.os == 'Windows'
+      id: vcpkg-cache-key
+      shell: bash
+      run: |
+        echo 'VCPKG_ROOT=C:/vcpkg' >> "$GITHUB_ENV"
+        echo 'VCPKG_DEFAULT_BINARY_CACHE=C:/vcpkg/binary-cache' >> "$GITHUB_ENV"
+        echo 'VCPKG_BINARY_SOURCES=clear;files,C:/vcpkg/binary-cache,readwrite' >> "$GITHUB_ENV"
+
+        VCPKG_REV=$(git -C C:/vcpkg rev-parse HEAD)
+        MSVC_VERSION=$(cl 2>&1 | sed -n '1p' | sha256sum | cut -c1-12)
+        SETUP_HASH=$(sha256sum .github/actions/setup/action.yml | cut -c1-12)
+        echo "key=vcpkg-bin-Windows-x64-windows-${VCPKG_REV}-${MSVC_VERSION}-${SETUP_HASH}" >> "$GITHUB_OUTPUT"
+
+    - name: Restore vcpkg binary cache
+      if: runner.os == 'Windows'
+      uses: actions/cache@v4
+      with:
+        path: C:/vcpkg/binary-cache
+        key: ${{ steps.vcpkg-cache-key.outputs.key }}
+        restore-keys: |
+          vcpkg-bin-Windows-x64-windows-
+
     - name: Install Windows dependencies
       if: runner.os == 'Windows'
       shell: bash
