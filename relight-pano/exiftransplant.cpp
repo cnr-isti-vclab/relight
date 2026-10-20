@@ -1,6 +1,10 @@
 #include "exiftransplant.h"
 #include <stdio.h>
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
 #include <string>
 #include <stdint.h>
 using namespace std;
@@ -30,10 +34,26 @@ bool ExifTransplant::transplant(const char *src_path, const char *dst_path) {
 		return false;
 	}
 	unsigned int size = insertExif(dst, exif_size, exif);
-	if(size == 0)
+	if(size == 0) {
+		fclose(dst);
 		return false;
+	}
+	if (fflush(dst) != 0) {
+		error = "Could not flush destination file";
+		fclose(dst);
+		return false;
+	}
+#ifdef _WIN32
+	int truncate_result = _chsize_s(_fileno(dst), static_cast<__int64>(size));
+#else
+	int truncate_result = ftruncate(fileno(dst), static_cast<off_t>(size));
+#endif
+	if (truncate_result != 0) {
+		error = "Could not truncate destination file";
+		fclose(dst);
+		return false;
+	}
 	fclose(dst);
-	truncate(dst_path, size);
 	return true;
 }
 
