@@ -47,6 +47,7 @@ runs:
       id: vcpkg-cache-key
       shell: bash
       run: |
+        mkdir -p C:/vcpkg/binary-cache
         echo 'VCPKG_ROOT=C:/vcpkg' >> "$GITHUB_ENV"
         echo 'VCPKG_DEFAULT_BINARY_CACHE=C:/vcpkg/binary-cache' >> "$GITHUB_ENV"
         echo 'VCPKG_BINARY_SOURCES=clear;files,C:/vcpkg/binary-cache,readwrite' >> "$GITHUB_ENV"
