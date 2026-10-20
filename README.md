@@ -272,7 +272,7 @@ Install dependencies:
 ```shell
 sudo apt-get update
 sudo apt-get install -y mesa-common-dev libglu1-mesa-dev 
-sudo apt-get install -y cmake ninja-build patchelf fuse libjpeg-dev libeigen3-dev
+sudo apt-get install -y cmake ninja-build patchelf fuse libjpeg-dev libtiff-dev libeigen3-dev
 sudo apt-get install -y libxcb-cursor0 liblcms2-dev
 sudo apt-get install -y qt6-base-dev
 
@@ -292,7 +292,7 @@ make -j 8
 Install dependencies via Homebrew:
 
 ```shell
-brew install coreutils libomp eigen libjpeg cmake ninja qt@6
+brew install coreutils libomp eigen jpeg-turbo libtiff cmake ninja qt@6
 ```
 
 Build:
@@ -323,7 +323,7 @@ Install dependencies:
 Install vcpkg dependencies:
 
 ```shell
-C:\vcpkg\vcpkg.exe install lcms:x64-windows
+C:\vcpkg\vcpkg.exe install libjpeg-turbo:x64-windows tiff:x64-windows lcms:x64-windows
 ```
 
 Build (from Developer Command Prompt):

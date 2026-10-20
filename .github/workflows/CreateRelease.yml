@@ -142,6 +142,9 @@ jobs:
         chmod +x relightlab_macos_x86_64_portable/RelightLab*.app/Contents/MacOS/relight-merge
         chmod +x relightlab_macos_x86_64_portable/RelightLab*.app/Contents/MacOS/relight-normals
         chmod +x relightlab_macos_x86_64_portable/RelightLab*.app/Contents/MacOS/relight-deepzoom
+        chmod +x relightlab_macos_x86_64_portable/RelightLab*.app/Contents/MacOS/relight-depthmap
+        chmod +x relightlab_macos_x86_64_portable/RelightLab*.app/Contents/MacOS/relight-seam
+        chmod +x relightlab_macos_x86_64_portable/RelightLab*.app/Contents/MacOS/relight-pano
     - name: Create RelightLab Portable MacOS x86_64
       run: |
         cd relightlab_macos_x86_64_portable
@@ -166,6 +169,9 @@ jobs:
         chmod +x relightlab_macos_arm64_portable/RelightLab*.app/Contents/MacOS/relight-merge
         chmod +x relightlab_macos_arm64_portable/RelightLab*.app/Contents/MacOS/relight-normals
         chmod +x relightlab_macos_arm64_portable/RelightLab*.app/Contents/MacOS/relight-deepzoom
+        chmod +x relightlab_macos_arm64_portable/RelightLab*.app/Contents/MacOS/relight-depthmap
+        chmod +x relightlab_macos_arm64_portable/RelightLab*.app/Contents/MacOS/relight-seam
+        chmod +x relightlab_macos_arm64_portable/RelightLab*.app/Contents/MacOS/relight-pano
     - name: Create RelightLab Portable MacOS arm64
       run: |
         cd relightlab_macos_arm64_portable

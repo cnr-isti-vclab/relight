@@ -289,6 +289,3 @@ endif()
 
 install (TARGETS relightlab DESTINATION ${RELIGHT_INSTALL_BIN_DIR})
 
-if (WIN32)
-	install(FILES ${JPEGTURBO_HOME}/bin/jpeg62.dll DESTINATION .)
-endif()
