@@ -65,6 +65,7 @@ public:
 	RelightApp(int &argc, char **argv);
 	virtual ~RelightApp() { delete m_project; }
 	void run();
+	void applyTheme(const QString &theme);
 
 public slots:
 	void newProject();
@@ -176,6 +177,7 @@ private:
 	//keep memory of current project filename for quick saving.
 	QString project_filename;
 	QString last_output_dir;
+	QPalette light_palette;
 	QPalette dark_palette;
 	ThumbailLoader *loader = nullptr;
 

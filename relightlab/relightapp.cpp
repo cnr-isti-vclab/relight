@@ -20,6 +20,7 @@
 #include <QGuiApplication>
 #include <QStyleHints>
 #include <QPalette>
+#include <QWidget>
 
 #include <iostream>
 using namespace std;
@@ -112,6 +113,7 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 #endif
 
 	this->setStyle(new ProxyStyle(QStyleFactory::create("Fusion")));
+	light_palette = palette();
 
 	setAttribute(Qt::AA_DontShowIconsInMenus);
 	QIcon::setThemeSearchPaths(QStringList() << ":/icons");
@@ -179,35 +181,50 @@ void RelightApp::clearTray() {
 	systemTray->setVisible(false);
 }
 
-inline bool isDarkMode() {
+inline bool isDarkMode(const QPalette &fallbackPalette) {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
   const auto scheme = QGuiApplication::styleHints()->colorScheme();
-  return scheme == Qt::ColorScheme::Dark;
-#else
-  const QPalette defaultPalette = qRelightApp->palette();
-  const auto text = defaultPalette.color(QPalette::WindowText);
-  const auto window = defaultPalette.color(QPalette::Window);
-  return text.lightness() > window.lightness();
+  if(scheme != Qt::ColorScheme::Unknown)
+    return scheme == Qt::ColorScheme::Dark;
 #endif // QT_VERSION
+  const auto text = fallbackPalette.color(QPalette::WindowText);
+  const auto window = fallbackPalette.color(QPalette::Window);
+  return text.lightness() > window.lightness();
 }
 
 void RelightApp::run() {
-	QString theme = QSettings().value("theme", "user").toString();
-
-	if(theme == "user") {
-		darkTheme = isDarkMode();
-	} else if(theme == "dark") {
-		darkTheme = true;
-	}
-	if(darkTheme) {
-		QIcon::setThemeName("dark");
-		setPalette(dark_palette);
-	} else {
-		QIcon::setThemeName("light");
-	}
+	applyTheme(QSettings().value("theme", "user").toString());
 
 	mainwindow = new MainWindow;
 	mainwindow->showMaximized();
+}
+
+void RelightApp::applyTheme(const QString &theme) {
+	if(theme == "user")
+		darkTheme = isDarkMode(light_palette);
+	else
+		darkTheme = theme == "dark";
+
+	QIcon::setThemeName(darkTheme ? "dark" : "light");
+	setPalette(darkTheme ? dark_palette : light_palette);
+
+	QFile styleFile(":/css/style.qss");
+	if(styleFile.open(QFile::ReadOnly)) {
+		QString styleSheet = QString::fromUtf8(styleFile.readAll());
+		if(!darkTheme)
+			styleSheet.replace(":/icons/dark/", ":/icons/light/");
+		setStyleSheet(styleSheet);
+	}
+
+	// Refresh style-sheet palette references and theme assets on widgets that
+	// already exist, not only on widgets created after the preference change.
+	for(QWidget *widget: allWidgets()) {
+		if(QStyle *widgetStyle = widget->style()) {
+			widgetStyle->unpolish(widget);
+			widgetStyle->polish(widget);
+		}
+		widget->update();
+	}
 }
 
 void RelightApp::setProject(Project *_project) {

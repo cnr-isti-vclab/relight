@@ -86,7 +86,7 @@ QWidget *Preferences::buildAppearance() {
 	QWidget *widget = new QWidget;
 	QVBoxLayout *content = new QVBoxLayout(widget);
 	{
-		QGroupBox *box = new QGroupBox("Set theme (requires restart)");
+		QGroupBox *box = new QGroupBox("Set theme");
 
 		{
 			QRadioButton *light = new QRadioButton("Light");
@@ -105,9 +105,24 @@ QWidget *Preferences::buildAppearance() {
 			dark->setChecked(theme == "dark");
 			user->setChecked(theme == "user");
 
-			connect(dark, &QRadioButton::toggled, [](bool on) { if(on) QSettings().setValue("theme", "dark"); });
-			connect(light, &QRadioButton::toggled, [](bool on) { if(on) QSettings().setValue("theme", "light"); });
-			connect(user, &QRadioButton::toggled, [](bool on) { if(on) QSettings().setValue("theme", "user"); });
+			connect(dark, &QRadioButton::toggled, [](bool on) {
+				if(on) {
+					QSettings().setValue("theme", "dark");
+					qRelightApp->applyTheme("dark");
+				}
+			});
+			connect(light, &QRadioButton::toggled, [](bool on) {
+				if(on) {
+					QSettings().setValue("theme", "light");
+					qRelightApp->applyTheme("light");
+				}
+			});
+			connect(user, &QRadioButton::toggled, [](bool on) {
+				if(on) {
+					QSettings().setValue("theme", "user");
+					qRelightApp->applyTheme("user");
+				}
+			});
 
 			QVBoxLayout *buttons = new QVBoxLayout(box);
 			buttons->addWidget(light);

@@ -142,7 +142,7 @@ QString formatTaskInfoHtml(const Task *task) {
 
 QueueItem::QueueItem(Task *_task, QListWidget *parent, bool history): QObject(parent), QListWidgetItem(parent), historyEntry(history) {
 	task = _task;
-	style[Task::ON_QUEUE] = "background-color:#323232; color:#b1b1b1";
+	style[Task::ON_QUEUE] = "background-color:palette(base); color:palette(text)";
 	style[Task::RUNNING]  = "background-color:#328232; color:#b1b1b1";
 	style[Task::PAUSED]   = "background-color:#828232; color:#b1b1b1";
 	style[Task::STOPPED]  = "background-color:#823232; color:#b1b1b1";

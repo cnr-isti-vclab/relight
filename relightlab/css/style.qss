@@ -15,7 +15,7 @@ QComboBox.large {
 }
 
 QPushButton:checked {
-    background-color: rgba(42, 130, 218, 255);
+	background-color: palette(highlight);
 }
 
 QCommandLinkButton {
@@ -55,7 +55,7 @@ QSpinBox::up-button, QSpinBox::down-button, QDoubleSpinBox::up-button, QDoubleSp
 }
 
 QSpinBox::up-button, QDoubleSpinBox::up-button {
-    image: url(:/icons/dark/scalable/plus.svg);
+	image: url(:/icons/dark/scalable/plus.svg);
 }
 
 QSpinBox::down-button, QDoubleSpinBox::down-button {
