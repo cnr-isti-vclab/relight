@@ -120,7 +120,9 @@ RelightApp::RelightApp(int &argc, char **argv): QApplication(argc, argv) {
 
 
 	ProcessQueue &queue = ProcessQueue::instance();
-	connect(&queue, SIGNAL(finished(QString, QString)), this, SLOT(notify(QString, QString)));
+	connect(&queue, qOverload<QString, QString>(&ProcessQueue::finished), this, [this](const QString &title, const QString &message) {
+		notifyTray(title, message);
+	});
 	queue.start();
 
 

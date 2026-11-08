@@ -31,7 +31,6 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 
 	connect(source_row, &NormalsSourceRow::sourceSizeChanged, surface_row, &NormalsSurfaceRow::updateDimensions);
 	connect(source_row, &NormalsSourceRow::pathSuggestion, export_row, [this](const QString &path){ export_row->setPath(path); });
-	connect(source_row, &NormalsSourceRow::normalmapSelected, zoom_view, &ZoomOverview::showNormalmap);
 
 
 	{
@@ -53,6 +52,7 @@ NormalsFrame::NormalsFrame(QWidget *parent): QFrame(parent) {
 
 				zoom_view = new ZoomOverview(qRelightApp->project().crop, 200);
 				buttons_layout->addWidget(zoom_view);
+				connect(source_row, &NormalsSourceRow::normalmapSelected, zoom_view, &ZoomOverview::showNormalmap);
 
 				buttons_layout->addStretch(1);
 				QPushButton *save = new QPushButton("Export", this);

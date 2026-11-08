@@ -2,6 +2,7 @@
 #include "relightapp.h"
 #include "markerdialog.h"
 #include "alignrow.h"
+#include "helpbutton.h"
 #include "../src/align/align.h"
 #include "../src/align/autoalign.h"
 #include "../src/task.h"
@@ -95,12 +96,10 @@ AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
 		content->addSpacing(10);
 		{
 			QHBoxLayout *buttons = new QHBoxLayout;
-			automatic_align_button = new QPushButton("Auto align");
-			automatic_align_button->setProperty("class", "large");
-			automatic_align_button->setMinimumWidth(200);
-			automatic_align_button->setMaximumWidth(300);
-			automatic_align_button->setToolTip("Automatically select textured regions and solve image translations.");
-			connect(automatic_align_button, SIGNAL(clicked()), this, SLOT(automaticAlign()));
+			automatic_align_button = new HelpedButton(
+				"interface/align", QIcon(), "Auto align", align_rows);
+			connect(automatic_align_button, &HelpedButton::clicked,
+				this, &AlignFrame::automaticAlign);
 			buttons->addWidget(automatic_align_button);
 			QPushButton *new_align = new QPushButton("New alignment region...");
 			new_align->setProperty("class", "large");

@@ -17,6 +17,7 @@ class QResizeEvent;
 class QLabel;
 class QProgressBar;
 class QPushButton;
+class HelpedButton;
 class AutoAlignTask;
 
 class AlignFrame: public QFrame {
@@ -47,7 +48,7 @@ private:
 	MarkerDialog *marker_dialog = nullptr;
 	QGraphicsScene *summary_scene = nullptr;
 	QGraphicsView *summary_view = nullptr;
-	QPushButton *automatic_align_button = nullptr;
+	HelpedButton *automatic_align_button = nullptr;
 	QLabel *automatic_align_status = nullptr;
 	QProgressBar *automatic_align_progress = nullptr;
 	AutoAlignTask *automatic_align_task = nullptr;

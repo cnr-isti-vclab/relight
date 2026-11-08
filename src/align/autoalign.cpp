@@ -24,6 +24,9 @@
 using namespace std;
 typedef complex<float> Complex;
 
+static void saveCorrelationSurface(const vector<float> &surface, int side, int first, int second);
+
+
 AutoAlign::AutoAlign(QSize size) {
 	w = size.width();
 	h = size.height();
