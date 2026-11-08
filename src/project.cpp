@@ -3,6 +3,7 @@
 #include "sphere.h"
 #include "measure.h"
 #include "align/align.h"
+#include "align/autoalign.h"
 #include "white.h"
 #include "lp.h"
 #include "colorprofile.h"
@@ -52,6 +53,8 @@ void Project::clear() {
 	for(auto align: aligns)
 		delete align;
 	aligns.clear();
+	align_offsets.clear();
+	align_angles.clear();
 
 	for(auto m: measures)
 		delete m;
@@ -543,6 +546,19 @@ void Project::load(QString filename) {
 		images.push_back(image);
 	}
 
+	align_offsets.assign(images.size(), QPointF(0, 0));
+	const bool legacy_alignment_format = !obj.contains("align_offsets");
+	const QJsonArray saved_align_offsets = obj["align_offsets"].toArray();
+	for(int i = 0; i < saved_align_offsets.size() && size_t(i) < align_offsets.size(); ++i) {
+		const QJsonArray offset = saved_align_offsets[i].toArray();
+		if(offset.size() == 2)
+			align_offsets[size_t(i)] = QPointF(offset[0].toDouble(), offset[1].toDouble());
+	}
+	align_angles.assign(images.size(), 0.0f);
+	const QJsonArray saved_align_angles = obj["align_angles"].toArray();
+	for(int i = 0; i < saved_align_angles.size() && size_t(i) < align_angles.size(); ++i)
+		align_angles[size_t(i)] = float(saved_align_angles[i].toDouble());
+
 	checkMissingImages();
 	checkImages();
 
@@ -580,11 +596,15 @@ void Project::load(QString filename) {
 	}
 	if(obj.contains("aligns")) {
 		for(auto align: obj["aligns"].toArray()) {
-			Align *_align = new Align(0);
-			_align->fromJson(align.toObject());
+			const QJsonObject align_object = align.toObject();
+			Align *_align = new Align(int(images.size()));
+			_align->fromJson(align_object);
+			// Old projects stored offsets per alignment, but no correspondence
+			// evidence. Discard those offsets and let AlignFrame rebuild each row.
+			if(legacy_alignment_format)
+				_align->correspondences.clear();
 			aligns.push_back(_align);
 		}
-		computeOffsets();
 	}
 	if(obj.contains("whites")) {
 		for(auto white: obj["whites"].toArray()) {
@@ -600,7 +620,7 @@ void Project::load(QString filename) {
 			taskHistoryEntries.append(entry.toObject());
 		}
 	}
-	needs_saving = false;
+	needs_saving = legacy_alignment_format;
 }
 
 void Project::checkMissingImages() {
@@ -675,6 +695,15 @@ void Project::save(QString filename) {
 		jimages.push_back(img.toJson());
 
 	project.insert("images", jimages);
+
+	QJsonArray jalign_offsets;
+	for(const QPointF &offset: align_offsets)
+		jalign_offsets.append(QJsonArray{offset.x(), offset.y()});
+	project.insert("align_offsets", jalign_offsets);
+	QJsonArray jalign_angles;
+	for(float angle: align_angles)
+		jalign_angles.append(angle);
+	project.insert("align_angles", jalign_angles);
 
 
 	QJsonObject jlens = lens.toJson();
@@ -759,6 +788,8 @@ void Project::save(QString filename) {
 void Project::cleanAlignCache() {
 	QStringList filenames;
 	for(Align *align: aligns) {
+		if(align->regions.empty())
+			continue;
 		filenames.push_back(QFileInfo(align->cacheFilename()).fileName());
 	}
 	QDir dir("./");
@@ -917,19 +948,42 @@ static float lineSphereDistance(const Vector3f &origin, const Vector3f &directio
 	return d;
 }
 void Project::computeOffsets() {
-	offsets.clear();
-	offsets.resize(images.size(), QPointF(0,0));
-	std::vector<float> weights(offsets.size(), 0);
-	for(Align *align: aligns) {
-		for(size_t i = 0; i < align->offsets.size(); i++) {
-			offsets[i] += align->offsets[i];
-			weights[i] += 1.0f;
+	if(align_angles.size() != images.size())
+		align_angles.resize(images.size(), 0.0f);
+	std::vector<int> used_images;
+	std::vector<int> active_index(images.size(), -1);
+	for(size_t i = 0; i < images.size(); ++i)
+		if(!images[i].skip) {
+			active_index[i] = int(used_images.size());
+			used_images.push_back(int(i));
+		}
+	if(used_images.size() < 2)
+		return;
+
+	std::vector<AutoAlignCorrespondence> correspondences;
+	for(const Align *align: aligns) {
+		for(const AutoAlignCorrespondence &stored: align->correspondences) {
+			if(stored.first < 0 || stored.second < 0 ||
+				size_t(stored.first) >= images.size() || size_t(stored.second) >= images.size())
+				throw QString("Alignment correspondence references an invalid project image.");
+			if(active_index[size_t(stored.first)] < 0 || active_index[size_t(stored.second)] < 0)
+				continue;
+			AutoAlignCorrespondence active = stored;
+			active.first = active_index[size_t(stored.first)];
+			active.second = active_index[size_t(stored.second)];
+			correspondences.push_back(active);
 		}
 	}
-	for(size_t i = 0; i < offsets.size(); i++) {
-		if(weights[i] > 0)
-			offsets[i] /= weights[i];
-	}
+	if(correspondences.empty())
+		return;
+
+	::AutoAlign solver(imgsize);
+	const auto translations = solver.solveTranslations(int(used_images.size()), correspondences);
+	std::vector<QPointF> solved_offsets(images.size(), QPointF(0, 0));
+	for(size_t i = 0; i < used_images.size(); ++i)
+		solved_offsets[size_t(used_images[i])] = QPointF(translations[i].x(), translations[i].y());
+	align_offsets = std::move(solved_offsets);
+	needs_saving = true;
 }
 
 

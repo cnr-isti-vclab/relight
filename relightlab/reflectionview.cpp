@@ -56,21 +56,29 @@ void SphereOverview::update() {
 }
 
 AlignOverview::AlignOverview(QRectF _rect, int height, QWidget *parent):
-	MarkerOverview(height, parent), rect(_rect) {
-	item = scene.addRect(QRectF(), Qt::NoPen, Qt::green);
+	MarkerOverview(height, parent), rect(_rect), rects{_rect} {
+	items.push_back(scene.addRect(QRectF(), Qt::NoPen, Qt::green));
+	update();
+}
+
+AlignOverview::AlignOverview(const std::vector<QRectF> &_rects, int height, QWidget *parent):
+	MarkerOverview(height, parent), rects(_rects) {
+	for(size_t i = 0; i < rects.size(); ++i)
+		items.push_back(scene.addRect(QRectF(), Qt::NoPen, Qt::green));
 	update();
 }
 
 void AlignOverview::update() {
-
-
 	QSizeF size = img_item->boundingRect().size();
 	/*img_item->setTransformOriginPoint(size.width() / 2, size.height() / 2);
 	img_item->setRotation(angle); */
 
 	double scale = size.width()/(double)qRelightApp->project().imgsize.width();
-	QRectF r = QRectF(rect.x()*scale, rect.y()*scale, rect.width()*scale, rect.height()*scale);
-	item->setRect(r);
+	for(size_t i = 0; i < rects.size(); ++i) {
+		const QRectF &rect = rects[i];
+		QRectF r(rect.x()*scale, rect.y()*scale, rect.width()*scale, rect.height()*scale);
+		items[i]->setRect(r);
+	}
 }
 
 

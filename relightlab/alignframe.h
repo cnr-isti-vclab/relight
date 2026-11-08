@@ -49,7 +49,6 @@ private:
 	QLabel *automatic_align_status = nullptr;
 	QProgressBar *automatic_align_progress = nullptr;
 	AutoAlignTask *automatic_align_task = nullptr;
-	std::vector<QPointF> automatic_offsets;
 
 	Align *provisional_align = nullptr;
 	QVBoxLayout *aligns = nullptr;

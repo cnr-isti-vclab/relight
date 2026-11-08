@@ -16,7 +16,9 @@
 #include <complex>
 #include <cmath>
 #include <exception>
+#include <iostream>
 #include <limits>
+#include <optional>
 #include <utility>
 
 using namespace std;
@@ -161,7 +163,9 @@ static optional<AutoAlignPeak> correlatePeak(
 }
 
 vector<QPointF> AutoAlign::run(const vector<QString> &image_paths,
-	std::function<bool(QString stage, int percent)> *callback) {
+	std::function<bool(QString stage, int percent)> *callback,
+	vector<QRect> *selected_regions,
+	vector<AutoAlignCorrespondence> *correspondences) {
 	const int n = int(image_paths.size());
 	if(n <= 0)
 		return {};
@@ -295,6 +299,13 @@ vector<QPointF> AutoAlign::run(const vector<QString> &image_paths,
 	if(order.empty() || !std::isfinite(minimum_energy[size_t(order.front())]) ||
 		minimum_energy[size_t(order.front())] <= 0.0)
 		throw QString("Could not find textured regions suitable for alignment.");
+	if(selected_regions) {
+		selected_regions->clear();
+		selected_regions->reserve(order.size());
+		for(int candidate_index: order)
+			selected_regions->emplace_back(candidates[size_t(candidate_index)],
+				QSize(patch_side, patch_side));
+	}
 
 	//for debug purposes
 	//saveRegionSvg(candidates, order, patch_side, w, h);
@@ -313,7 +324,11 @@ vector<QPointF> AutoAlign::run(const vector<QString> &image_paths,
 	for(size_t selected_index = 0; selected_index < order.size(); ++selected_index) {
 		const int selected_number = int(selected_index + 1);
 		const int selected_total = int(order.size());
-		beginRegion(QSize(patch_side, patch_side), n);
+		const QPoint &patch_origin = candidates[size_t(order[selected_index])];
+		const QPointF patch_center(
+			patch_origin.x() + patch_side*0.5,
+			patch_origin.y() + patch_side*0.5);
+		beginRegion(QSize(patch_side, patch_side), n, patch_center);
 		vector<QString> spectrum_errors(static_cast<size_t>(n));
 		#pragma omp parallel for
 		for(int image_index = 0; image_index < n; ++image_index) {
@@ -344,21 +359,30 @@ vector<QPointF> AutoAlign::run(const vector<QString> &image_paths,
 			throw QString("Cancelled.");
 	}
 
-	// Robustly solve the combined correspondence graph with image 0 fixed at zero.
-	if(!report("Solving combined region translations", 95))
+	// Solve both models against the same combined correspondences for comparison.
+	if(!report("Solving combined region translations and rototranslations", 95))
 		throw QString("Cancelled.");
 	vector<Eigen::Vector2f> translations = solveTranslations(n, all_correspondences);
+	AutoAlignRotoTranslation roto = solveRotoTranslation(n, all_correspondences);
+	if(correspondences)
+		*correspondences = all_correspondences;
 	vector<QPointF> offsets(size_t(n), QPointF(0, 0));
-	for(int i = 1; i < n; ++i) {
+	for(int i = 0; i < n; ++i) {
 		const Eigen::Vector2f &translation = translations[size_t(i)];
+		const Eigen::Vector2f &roto_offset = roto.offsets[size_t(i)];
 		offsets[size_t(i)] = QPointF(translation.x(), translation.y());
+		cout << image_paths[size_t(i)].toStdString()
+			<< " translation: (" << translation.x() << ", " << translation.y() << ")"
+			<< " rototranslation: (" << roto_offset.x() << ", " << roto_offset.y()
+			<< ", " << roto.angles[size_t(i)] << " rad)"
+			<< endl;
 	}
 	if(!report("Alignment complete", 100))
 		throw QString("Cancelled.");
 	return offsets;
 }
 
-void AutoAlign::beginRegion(QSize region_size, int image_count) {
+void AutoAlign::beginRegion(QSize region_size, int image_count, QPointF region_center) {
 	if(region_size.isEmpty())
 		throw QString("Selected alignment region must not be empty.");
 	if(region_size.width() != region_size.height())
@@ -370,6 +394,9 @@ void AutoAlign::beginRegion(QSize region_size, int image_count) {
 
 	region_side = region_size.width();
 	region_image_count = image_count;
+	region_position = Eigen::Vector2f(
+		float(region_center.x() - w*0.5),
+		float(region_center.y() - h*0.5));
 	region_window.resize(size_t(region_side));
 	for(int i = 0; i < region_side; i++)
 		region_window[size_t(i)] = 0.5f - 0.5f*cos(2*M_PI*i/(region_side - 1));
@@ -405,34 +432,36 @@ vector<AutoAlignCorrespondence> AutoAlign::findCandidates(
 	}
 	first_offsets[region_image_count] = edge_count;
 
-	vector<AutoAlignCorrespondence> correspondences(static_cast<size_t>(edge_count));
+	vector<vector<AutoAlignCorrespondence>> correspondences_by_first(
+		static_cast<size_t>(region_image_count));
+	for(int first = 0; first < region_image_count; ++first)
+		correspondences_by_first[size_t(first)].reserve(
+			static_cast<size_t>(first_offsets[first + 1] - first_offsets[first]));
 	atomic<bool> cancelled(false);
 	atomic<bool> error_occurred(false);
 	int completed = 0;
 	#pragma omp parallel for
 	for(int first = 0; first < region_image_count; first++) {
-		int index = first_offsets[first];
 		for(int step = 1; step < region_image_count - first;) {
 			if(cancelled.load())
 				break;
 			const int second = first + step;
 			try {
-				correspondences[static_cast<size_t>(index)] = {
-					first,
-					second,
-					correlatePeak(
+				auto peak = correlatePeak(
 						region_spectra[static_cast<size_t>(first)],
 						region_spectra[static_cast<size_t>(second)],
 						region_side,
 						first + 1,
-						second + 1)
-				};
+						second + 1);
+				if(peak)
+					correspondences_by_first[size_t(first)].push_back({
+						first, second, region_position, *peak
+					});
 			} catch(...) {
 				error_occurred.store(true);
 				cancelled.store(true);
 				break;
 			}
-			index++;
 			if(callback) {
 				#pragma omp critical(autoalign_progress)
 				{
@@ -455,6 +484,9 @@ vector<AutoAlignCorrespondence> AutoAlign::findCandidates(
 		throw QString("An error occurred while finding pair candidates.");
 	if(cancelled.load())
 		throw QString("Cancelled.");
+	vector<AutoAlignCorrespondence> correspondences;
+	for(const auto &per_first: correspondences_by_first)
+		correspondences.insert(correspondences.end(), per_first.begin(), per_first.end());
 	return correspondences;
 }
 
@@ -465,56 +497,46 @@ vector<Eigen::Vector2f> AutoAlign::solveTranslations(
 	if(n < 2)
 		throw QString("At least two images are required to solve translations.");
 	vector<Eigen::Vector2f> translations(size_t(n), Eigen::Vector2f::Zero());
-
-	struct Edge {
-		int first;
-		int second;
-		Eigen::Vector2f offset;
-	};
-	vector<Edge> edges;
-	edges.reserve(correspondences.size());
 	for(const AutoAlignCorrespondence &correspondence: correspondences) {
 		if(correspondence.first < 0 || correspondence.second >= n ||
 			correspondence.first >= correspondence.second)
 			throw QString("Invalid image-pair correspondence.");
-		if(correspondence.peak)
-			edges.push_back({correspondence.first, correspondence.second, correspondence.peak->offset});
 	}
-	if(edges.empty())
+	if(correspondences.empty())
 		throw QString("No valid phase-correlation peaks to solve translations.");
 
 	const int unknowns = n - 1;
-	vector<double> weights(edges.size(), 1.0);
+	vector<double> weights(correspondences.size(), 1.0);
 	Eigen::VectorXd x = Eigen::VectorXd::Zero(unknowns);
 	Eigen::VectorXd y = Eigen::VectorXd::Zero(unknowns);
 
 	auto solveWeighted = [&]() {
 		vector<Eigen::Triplet<double>> coefficients;
-		coefficients.reserve(edges.size()*4);
+		coefficients.reserve(correspondences.size()*4);
 		Eigen::VectorXd rhs_x = Eigen::VectorXd::Zero(unknowns);
 		Eigen::VectorXd rhs_y = Eigen::VectorXd::Zero(unknowns);
 		auto addDiagonal = [&](int image, double weight) {
 			if(image > 0)
 				coefficients.emplace_back(image - 1, image - 1, weight);
 		};
-		auto addRhs = [&](int image, double sign, const Edge &edge, double weight) {
-			if(image > 0) {
-				rhs_x[image - 1] += sign*weight*edge.offset.x();
-				rhs_y[image - 1] += sign*weight*edge.offset.y();
-			}
-		};
 
-		for(size_t k = 0; k < edges.size(); k++) {
-			const Edge &edge = edges[k];
+		for(size_t k = 0; k < correspondences.size(); k++) {
+			const AutoAlignCorrespondence &correspondence = correspondences[k];
 			double weight = weights[k];
-			addDiagonal(edge.first, weight);
-			addDiagonal(edge.second, weight);
-			if(edge.first > 0 && edge.second > 0) {
-				coefficients.emplace_back(edge.first - 1, edge.second - 1, -weight);
-				coefficients.emplace_back(edge.second - 1, edge.first - 1, -weight);
+			addDiagonal(correspondence.first, weight);
+			addDiagonal(correspondence.second, weight);
+			if(correspondence.first > 0 && correspondence.second > 0) {
+				coefficients.emplace_back(correspondence.first - 1, correspondence.second - 1, -weight);
+				coefficients.emplace_back(correspondence.second - 1, correspondence.first - 1, -weight);
 			}
-			addRhs(edge.first, -1.0, edge, weight);
-			addRhs(edge.second, 1.0, edge, weight);
+			if(correspondence.first > 0) {
+				rhs_x[correspondence.first - 1] -= weight*correspondence.peak.offset.x();
+				rhs_y[correspondence.first - 1] -= weight*correspondence.peak.offset.y();
+			}
+			if(correspondence.second > 0) {
+				rhs_x[correspondence.second - 1] += weight*correspondence.peak.offset.x();
+				rhs_y[correspondence.second - 1] += weight*correspondence.peak.offset.y();
+			}
 		}
 
 		Eigen::SparseMatrix<double> normal(unknowns, unknowns);
@@ -543,28 +565,28 @@ vector<Eigen::Vector2f> AutoAlign::solveTranslations(
 		if(iteration == 4)
 			break;
 
-		vector<double> residual_x(edges.size());
-		vector<double> residual_y(edges.size());
-		for(size_t k = 0; k < edges.size(); k++) {
-			const Edge &edge = edges[k];
-			double first_x = edge.first > 0 ? x[edge.first - 1] : 0.0;
-			double first_y = edge.first > 0 ? y[edge.first - 1] : 0.0;
-			double second_x = edge.second > 0 ? x[edge.second - 1] : 0.0;
-			double second_y = edge.second > 0 ? y[edge.second - 1] : 0.0;
-			residual_x[k] = second_x - first_x - edge.offset.x();
-			residual_y[k] = second_y - first_y - edge.offset.y();
+		vector<double> residual_x(correspondences.size());
+		vector<double> residual_y(correspondences.size());
+		for(size_t k = 0; k < correspondences.size(); k++) {
+			const AutoAlignCorrespondence &correspondence = correspondences[k];
+			double first_x = correspondence.first > 0 ? x[correspondence.first - 1] : 0.0;
+			double first_y = correspondence.first > 0 ? y[correspondence.first - 1] : 0.0;
+			double second_x = correspondence.second > 0 ? x[correspondence.second - 1] : 0.0;
+			double second_y = correspondence.second > 0 ? y[correspondence.second - 1] : 0.0;
+			residual_x[k] = second_x - first_x - correspondence.peak.offset.x();
+			residual_y[k] = second_y - first_y - correspondence.peak.offset.y();
 		}
 
 		double center_x = median(residual_x);
 		double center_y = median(residual_y);
 		vector<double> deviations;
-		deviations.reserve(edges.size()*2);
-		for(size_t k = 0; k < edges.size(); k++) {
+		deviations.reserve(correspondences.size()*2);
+		for(size_t k = 0; k < correspondences.size(); k++) {
 			deviations.push_back(abs(residual_x[k] - center_x));
 			deviations.push_back(abs(residual_y[k] - center_y));
 		}
 		double scale = std::max(1.0, 2.3849*1.4826*median(deviations));
-		for(size_t k = 0; k < edges.size(); k++) {
+		for(size_t k = 0; k < correspondences.size(); k++) {
 			double residual = hypot(residual_x[k], residual_y[k]);
 			double normalized = residual/scale;
 			weights[k] = 1.0/(1.0 + normalized*normalized);
@@ -574,6 +596,131 @@ vector<Eigen::Vector2f> AutoAlign::solveTranslations(
 	for(int i = 1; i < n; i++)
 		translations[size_t(i)] = Eigen::Vector2f(float(x[i - 1]), float(y[i - 1]));
 	return translations;
+}
+
+AutoAlignRotoTranslation AutoAlign::solveRotoTranslation(
+	int n,
+	const vector<AutoAlignCorrespondence> &correspondences
+) const {
+	if(n < 2)
+		throw QString("At least two images are required to solve rototranslation.");
+
+	if(correspondences.empty())
+		throw QString("No valid phase-correlation peaks to solve rototranslation.");
+
+	const int unknowns = 3*(n - 1);
+	vector<double> weights(correspondences.size(), 1.0);
+	Eigen::VectorXd pose = Eigen::VectorXd::Zero(unknowns);
+	auto variable = [](int image, int component) {
+		return image > 0 ? 3*(image - 1) + component : -1;
+	};
+
+	auto solveWeighted = [&]() {
+		vector<Eigen::Triplet<double>> coefficients;
+		coefficients.reserve(correspondences.size()*16);
+		Eigen::VectorXd rhs = Eigen::VectorXd::Zero(unknowns);
+		for(size_t k = 0; k < correspondences.size(); ++k) {
+			const AutoAlignCorrespondence &correspondence = correspondences[k];
+			const double x = correspondence.position.x();
+			const double y = correspondence.position.y();
+			const double weight = weights[k];
+			// Each observation is linear in (tx, ty, angle), with image 0 fixed.
+			vector<pair<int, double>> row_x;
+			vector<pair<int, double>> row_y;
+			int first_tx = variable(correspondence.first, 0);
+			int first_ty = variable(correspondence.first, 1);
+			int first_angle = variable(correspondence.first, 2);
+			int second_tx = variable(correspondence.second, 0);
+			int second_ty = variable(correspondence.second, 1);
+			int second_angle = variable(correspondence.second, 2);
+			if(first_tx >= 0) {
+				row_x.emplace_back(first_tx, -1.0);
+				row_x.emplace_back(first_angle, y);
+				row_y.emplace_back(first_ty, -1.0);
+				row_y.emplace_back(first_angle, -x);
+			}
+			if(second_tx >= 0) {
+				row_x.emplace_back(second_tx, 1.0);
+				row_x.emplace_back(second_angle, -y);
+				row_y.emplace_back(second_ty, 1.0);
+				row_y.emplace_back(second_angle, x);
+			}
+			auto accumulate = [&](const vector<pair<int, double>> &row, double measurement) {
+				for(const auto &a: row) {
+					rhs[a.first] += weight*a.second*measurement;
+					for(const auto &b: row)
+						coefficients.emplace_back(a.first, b.first, weight*a.second*b.second);
+				}
+			};
+			accumulate(row_x, correspondence.peak.offset.x());
+			accumulate(row_y, correspondence.peak.offset.y());
+		}
+
+		Eigen::SparseMatrix<double> normal(unknowns, unknowns);
+		normal.setFromTriplets(coefficients.begin(), coefficients.end());
+		Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
+		solver.compute(normal);
+		if(solver.info() != Eigen::Success)
+			throw QString("Could not factor the rototranslation system.");
+		Eigen::VectorXd diagonal = solver.vectorD();
+		if(diagonal.minCoeff() <= diagonal.maxCoeff()*1e-12)
+			throw QString("The correspondence graph or patch positions do not constrain every pose.");
+		pose = solver.solve(rhs);
+		if(solver.info() != Eigen::Success || !pose.allFinite())
+			throw QString("Could not solve the rototranslation system.");
+	};
+
+	auto median = [](vector<double> values) {
+		size_t middle = values.size()/2;
+		nth_element(values.begin(), values.begin() + middle, values.end());
+		return values[middle];
+	};
+	for(int iteration = 0; iteration < 5; ++iteration) {
+		solveWeighted();
+		if(iteration == 4)
+			break;
+
+		vector<double> residual_x(correspondences.size());
+		vector<double> residual_y(correspondences.size());
+		for(size_t k = 0; k < correspondences.size(); ++k) {
+			const AutoAlignCorrespondence &correspondence = correspondences[k];
+			auto value = [&](int image, int component) {
+				int index = variable(image, component);
+				return index < 0 ? 0.0 : pose[index];
+			};
+			double delta_angle = value(correspondence.second, 2) - value(correspondence.first, 2);
+			double predicted_x = value(correspondence.second, 0) - value(correspondence.first, 0) -
+				delta_angle*correspondence.position.y();
+			double predicted_y = value(correspondence.second, 1) - value(correspondence.first, 1) +
+				delta_angle*correspondence.position.x();
+			residual_x[k] = predicted_x - correspondence.peak.offset.x();
+			residual_y[k] = predicted_y - correspondence.peak.offset.y();
+		}
+		double center_x = median(residual_x);
+		double center_y = median(residual_y);
+		vector<double> deviations;
+		deviations.reserve(correspondences.size()*2);
+		for(size_t k = 0; k < correspondences.size(); ++k) {
+			deviations.push_back(abs(residual_x[k] - center_x));
+			deviations.push_back(abs(residual_y[k] - center_y));
+		}
+		double scale = std::max(1.0, 2.3849*1.4826*median(deviations));
+		for(size_t k = 0; k < correspondences.size(); ++k) {
+			double normalized = hypot(residual_x[k], residual_y[k])/scale;
+			weights[k] = 1.0/(1.0 + normalized*normalized);
+		}
+	}
+
+	AutoAlignRotoTranslation result;
+	result.offsets.resize(size_t(n), Eigen::Vector2f::Zero());
+	result.angles.resize(size_t(n), 0.0f);
+	for(int image = 1; image < n; ++image) {
+		int index = 3*(image - 1);
+		result.offsets[size_t(image)] = Eigen::Vector2f(
+			float(pose[index]), float(pose[index + 1]));
+		result.angles[size_t(image)] = float(pose[index + 2]);
+	}
+	return result;
 }
 
 static void saveCorrelationSurface(const vector<float> &surface, int side, int first, int second) {

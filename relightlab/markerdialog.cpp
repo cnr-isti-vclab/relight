@@ -35,7 +35,10 @@ MarkerDialog::MarkerDialog(Marker marker, QWidget *parent): QDialog(parent) {
 
 
 void MarkerDialog::setAlign(Align *align) {
-	align_picking->setAlign(align->rect);
+	QRectF region;
+	if(!align->regions.empty())
+		region = align->regions.front();
+	align_picking->setAlign(region);
 }
 
 QRectF MarkerDialog::getAlign() {

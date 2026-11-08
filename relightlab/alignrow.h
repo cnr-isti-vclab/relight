@@ -35,6 +35,7 @@ public:
 signals:
 	void removeme(AlignRow *row);
 	void updated(); //emit when status changes
+	void offsetsEdited(); //verification changed project-level alignment offsets
 
 public slots:
 	void remove();

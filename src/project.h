@@ -39,7 +39,12 @@ public:
 	std::vector<Align *> aligns;
 	std::vector<White *> whites;
 	Crop crop;
-	std::vector<QPointF> offsets;
+
+	std::vector<QPointF> align_offsets;
+	// Apply each pose to pixel p about image center c: p' = c + R(angle)*(p - c) + offset. In radians.
+	std::vector<float> align_angles;
+
+
 	float pixelSize() { return dome.imageWidth / lens.width; } //if computed from measures in mm
 
 	// ICC color profile information (detected from images)

@@ -7,6 +7,8 @@
 #include <QString>
 #include <vector>
 
+#include "autoalign.h"
+
 
 class QJsonObject;
 
@@ -14,14 +16,13 @@ class Align {
 public:
 	static constexpr int thumbnail_side = 40;
 
+	std::vector<QRect> regions;
+	std::vector<AutoAlignCorrespondence> correspondences;
+	std::vector<QImage> thumbs;
+
 	Align(int n_lights) {
-		offsets.resize(n_lights, QPointF(0, 0));
 		thumbs.resize(n_lights);
 	}
-
-	QRect rect;
-	std::vector<QPointF> offsets; //from the center of the rect, [0,0] is not used.
-	std::vector<QImage> thumbs;
 
 	QJsonObject toJson();
 	void fromJson(QJsonObject obj);

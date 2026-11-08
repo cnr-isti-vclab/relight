@@ -40,8 +40,8 @@ void RtiTask::setProject(Project &project) {
 
 	ImageSet &imageset = builder->imageset;
 	imageset.initFromProject(project);
-
-	imageset.setCrop(parameters.crop, project.offsets);
+	
+	imageset.setCrop(parameters.crop, project.align_offsets);
 	imageset.rotateLights(-parameters.crop.angle);
 	imageset.pixel_size = project.pixelSize();
 	builder->sigma = 0.125*100/imageset.images.size();

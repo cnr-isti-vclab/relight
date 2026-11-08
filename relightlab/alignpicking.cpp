@@ -101,9 +101,4 @@ void AlignPicking::click(QPoint p) {
 
 	rect->setPos(pos);
 	rect->update();
-//	updateAlignPoint();
 }
-
-/*void AlignPicking::updateAlignPoint() {
-	align->rect = rect->getRect();
-}*/

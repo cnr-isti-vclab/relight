@@ -33,7 +33,8 @@
 class AutoAlignTask: public Task {
 public:
 	Project &project;
-	std::vector<QPointF> offsets;
+	std::vector<QRect> regions;
+	std::vector<AutoAlignCorrespondence> correspondences;
 
 	explicit AutoAlignTask(Project &project): project(project) {
 		label = "Automatically aligning images.";
@@ -49,7 +50,7 @@ public:
 				if(!project.images[i].skip)
 					used.push_back(int(i));
 			if(used.size() < 2)
-				throw QString("At least two non-skipped images are required for automatic alignment.");
+				throw QString("At least two images are required for automatic alignment.");
 
 			AutoAlign aligner(project.imgsize);
 			std::vector<QString> image_paths;
@@ -59,13 +60,13 @@ public:
 					project.images[size_t(index)].filename));
 			std::function<bool(QString, int)> callback =
 				[this](QString stage, int percent) { return progressed(stage, percent); };
-			const std::vector<QPointF> results = aligner.run(image_paths, &callback);
+			aligner.run(image_paths, &callback, &regions, &correspondences);
 			if(status == STOPPED)
 				return;
-
-			offsets.assign(project.images.size(), QPointF(0, 0));
-			for(size_t i = 0; i < used.size(); ++i)
-				offsets[size_t(used[i])] = results[i];
+			for(AutoAlignCorrespondence &correspondence: correspondences) {
+				correspondence.first = used[size_t(correspondence.first)];
+				correspondence.second = used[size_t(correspondence.second)];
+			}
 			setStatus(DONE);
 	} catch(const QString &message) {
 		if(status != STOPPED) {
@@ -91,17 +92,17 @@ AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
 		content->addSpacing(10);
 		{
 			QHBoxLayout *buttons = new QHBoxLayout;
-			QPushButton *new_align = new QPushButton("New alignment...");
-			new_align->setProperty("class", "large");
-			new_align->setMinimumWidth(200);
-			new_align->setMaximumWidth(300);
-			new_align->setToolTip("Select a square region up to 400 px; its centered 40x40 patch is shown for verification.");
-			connect(new_align, SIGNAL(clicked()), this, SLOT(newAlign()));
-			buttons->addWidget(new_align);
 			automatic_align_button = new QPushButton("Auto align");
+			automatic_align_button->setProperty("class", "large");
+			automatic_align_button->setMinimumWidth(200);
+			automatic_align_button->setMaximumWidth(300);
 			automatic_align_button->setToolTip("Automatically select textured regions and solve image translations.");
 			connect(automatic_align_button, SIGNAL(clicked()), this, SLOT(automaticAlign()));
 			buttons->addWidget(automatic_align_button);
+			QPushButton *new_align = new QPushButton("New alignment...");
+			new_align->setToolTip("Select a square region up to 400 px; its centered 40x40 patch is shown for verification.");
+			connect(new_align, SIGNAL(clicked()), this, SLOT(newAlign()));
+			buttons->addWidget(new_align);
 			automatic_align_status = new QLabel;
 			buttons->addWidget(automatic_align_status, 1);
 			automatic_align_progress = new QProgressBar;
@@ -119,7 +120,7 @@ AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
 		summary_view->setRenderHint(QPainter::Antialiasing);
 		summary_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 		summary_view->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-		summary_view->setToolTip("Each 40x40 cell is an image; colored dots show its translation for each alignment region, and a dark dot shows automatic alignment.");
+		summary_view->setToolTip("Each 40x40 cell is an image; colored dots show the translation estimated from each alignment row.");
 		content->addWidget(summary_view);
 		{
 			QFrame *aligns_frame = new QFrame;
@@ -145,7 +146,6 @@ AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
 
 void AlignFrame::clear() {
 	stopAutomaticAlign();
-	automatic_offsets.clear();
 	if(automatic_align_status)
 		automatic_align_status->clear();
 	if(provisional_align)
@@ -167,7 +167,6 @@ void AlignFrame::automaticAlign() {
 	if(!qRelightApp || !qRelightApp->m_project || automatic_align_task)
 		return;
 
-	automatic_offsets.clear();
 	updateSummary();
 	automatic_align_button->setEnabled(false);
 	automatic_align_status->setText("Starting automatic alignment...");
@@ -193,12 +192,16 @@ void AlignFrame::finishAutomaticAlign(AutoAlignTask *task) {
 		return;
 	task->wait();
 	if(task->status == Task::DONE) {
-		automatic_offsets = task->offsets;
+		Align *align = new Align(int(qRelightApp->project().images.size()));
+		align->regions = task->regions;
+		align->correspondences = task->correspondences;
+		qRelightApp->project().aligns.push_back(align);
+		AlignRow *row = addAlign(align);
+		row->findAlignment(false);
 		automatic_align_status->setText("Automatic alignment complete.");
-		updateSummary();
+		projectUpdate();
 	} else if(task->status == Task::FAILED) {
 		automatic_align_status->setText(task->error);
-		automatic_offsets.clear();
 		updateSummary();
 	} else {
 		automatic_align_status->setText("Automatic alignment cancelled.");
@@ -227,12 +230,13 @@ void AlignFrame::stopAutomaticAlign() {
 void AlignFrame::init() {
 	for(Align *align: qRelightApp->project().aligns) {
 		AlignRow *row = addAlign(align);
-		row->findAlignment(false);
+		// Rebuild matches only for older projects that did not save correspondences.
+		row->findAlignment(align->correspondences.empty());
 	}
 }
 
 void AlignFrame::okMarker() {
-	provisional_align->rect = marker_dialog->getAlign().toRect();
+	provisional_align->regions = {marker_dialog->getAlign().toRect()};
 	Project &project = qRelightApp->project();
 	project.aligns.push_back(provisional_align);
 	AlignRow *row = addAlign(provisional_align);
@@ -254,7 +258,7 @@ void AlignFrame::newAlign() {
 	Project &project = qRelightApp->project();
 	int side = std::min(400, std::min(project.imgsize.width(), project.imgsize.height()));
 	provisional_align = new Align(int(project.images.size()));
-	provisional_align->rect = QRect(
+	provisional_align->regions.emplace_back(
 		(project.imgsize.width() - side)/2,
 		(project.imgsize.height() - side)/2,
 		side,
@@ -276,16 +280,23 @@ AlignRow *AlignFrame::addAlign(Align *align) {
 
 	connect(row, SIGNAL(removeme(AlignRow *)), this, SLOT(removeAlign(AlignRow *)));
 	connect(row, SIGNAL(updated()),            this, SLOT(projectUpdate()));
+	connect(row, &AlignRow::offsetsEdited, this, [this]() { updateSummary(); });
 	updateSummary();
 	return row;
 }
 
 void AlignFrame::removeAlign(AlignRow *row) {
-
 	layout()->removeWidget(row);
 	delete row;
 
-	projectUpdate();
+	Project &project = qRelightApp->project();
+	if(project.aligns.empty()) {
+		project.align_offsets.assign(project.images.size(), QPointF(0, 0));
+		project.needs_saving = true;
+		updateSummary();
+	} else {
+		projectUpdate();
+	}
 }
 
 void AlignFrame::resizeEvent(QResizeEvent *event) {
@@ -298,7 +309,7 @@ void AlignFrame::updateSummary() {
 		return;
 
 	const Project &project = qRelightApp->project();
-	const qreal cellSize = 40.0;
+	const qreal cellSize = 80.0;
 	const int imageCount = int(project.images.size());
 	const int columns = std::max(1, summary_view->viewport()->width() / int(cellSize));
 	const int rows = imageCount == 0 ? 0 : (imageCount + columns - 1) / columns;
@@ -308,27 +319,12 @@ void AlignFrame::updateSummary() {
 	if(imageCount == 0)
 		return;
 
-	static const QColor palette[] = {
-		QColor("#4E79A7"), QColor("#F28E2B"), QColor("#E15759"),
-		QColor("#76B7B2"), QColor("#59A14F"), QColor("#EDC948"),
-		QColor("#B07AA1"), QColor("#9C755F"), QColor("#FF9DA7"),
-		QColor("#79706E")
-	};
-	constexpr int paletteSize = int(sizeof(palette) / sizeof(palette[0]));
-
 	qreal maxTranslation = 0.0;
-	for(const Align *align: project.aligns) {
-		for(size_t i = 0; i < align->offsets.size() && i < project.images.size(); ++i) {
-			if(project.images[i].skip)
-				continue;
-			maxTranslation = std::max(maxTranslation,
-				std::max(std::abs(align->offsets[i].x()), std::abs(align->offsets[i].y())));
-		}
-	}
-	for(size_t i = 0; i < automatic_offsets.size() && i < project.images.size(); ++i) {
-		if(!project.images[i].skip)
-			maxTranslation = std::max(maxTranslation,
-				std::max(std::abs(automatic_offsets[i].x()), std::abs(automatic_offsets[i].y())));
+	for(size_t i = 0; i < project.align_offsets.size() && i < project.images.size(); ++i) {
+		if(project.images[i].skip)
+			continue;
+		maxTranslation = std::max(maxTranslation,
+			std::max(std::abs(project.align_offsets[i].x()), std::abs(project.align_offsets[i].y())));
 	}
 	const qreal translationScale = maxTranslation > 0.0 ? 14.0 / maxTranslation : 0.0;
 
@@ -349,20 +345,9 @@ void AlignFrame::updateSummary() {
 			.arg(project.images[size_t(i)].filename)
 			.arg(skipped ? " (skipped)" : "");
 		if(!skipped) {
-			tooltip += "\nTranslations:";
-			for(size_t alignmentIndex = 0; alignmentIndex < project.aligns.size(); ++alignmentIndex) {
-				const Align *align = project.aligns[alignmentIndex];
-				if(size_t(i) >= align->offsets.size())
-					continue;
-				const QPointF translation = align->offsets[size_t(i)];
-				tooltip += QString("\nAlignment %1: dx %2 px, dy %3 px")
-					.arg(alignmentIndex + 1)
-					.arg(translation.x(), 0, 'f', 2)
-					.arg(translation.y(), 0, 'f', 2);
-			}
-			if(size_t(i) < automatic_offsets.size()) {
-				const QPointF translation = automatic_offsets[size_t(i)];
-				tooltip += QString("\nAutomatic alignment: dx %1 px, dy %2 px")
+			if(size_t(i) < project.align_offsets.size()) {
+				const QPointF translation = project.align_offsets[size_t(i)];
+				tooltip += QString("\nCombined alignment: dx %1 px, dy %2 px")
 					.arg(translation.x(), 0, 'f', 2)
 					.arg(translation.y(), 0, 'f', 2);
 			}
@@ -377,28 +362,14 @@ void AlignFrame::updateSummary() {
 
 		if(skipped)
 			continue;
-		for(size_t a = 0; a < project.aligns.size(); ++a) {
-			const Align *align = project.aligns[a];
-			if(size_t(i) >= align->offsets.size())
-				continue;
-
-			const QPointF translation = align->offsets[size_t(i)];
-			const qreal x = left + cellSize / 2.0 + translation.x() * translationScale;
-			const qreal y = top	+ cellSize / 2.0  + translation.y() * translationScale;
-			const QColor color = palette[a % paletteSize];
-			QGraphicsEllipseItem *dot = summary_scene->addEllipse(
-				x - 1.5, y - 1.5, 3.0, 3.0,
-				QPen(color.darker(140), 0.6), QBrush(color));
-			dot->setZValue(2.0 + a * 0.001);
-		}
-		if(size_t(i) < automatic_offsets.size()) {
-			const QPointF translation = automatic_offsets[size_t(i)];
+		if(size_t(i) < project.align_offsets.size()) {
+			const QPointF translation = project.align_offsets[size_t(i)];
 			const qreal x = left + cellSize / 2.0 + translation.x() * translationScale;
 			const qreal y = top + cellSize / 2.0 + translation.y() * translationScale;
 			QGraphicsEllipseItem *dot = summary_scene->addEllipse(
-				x - 2.5, y - 2.5, 5.0, 5.0,
-				QPen(Qt::white, 1.0), QBrush(QColor("#202124")));
-			dot->setZValue(10.0);
+				x - 2.0, y - 2.0, 4.0, 4.0,
+				QPen(QColor("#202124"), 0.7), QBrush(QColor("#202124")));
+			dot->setZValue(2.0);
 		}
 	}
 }

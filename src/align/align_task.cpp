@@ -18,6 +18,13 @@ AlignTask::AlignTask(Project &project, Align *align): align(align), project(proj
 
 void AlignTask::run() {
 	setStatus(RUNNING);
+	if(align->regions.empty()) {
+		error = "Alignment has no selected region.";
+		setStatus(FAILED);
+		progressed(error, 0);
+		return;
+	}
+	const QRect &region = align->regions.front();
 
 	align->thumbs.resize(project.images.size());
 	QImage cached_thumbnails;
@@ -36,9 +43,9 @@ void AlignTask::run() {
 		if(update_positions) {
 			if(used.size() < 2)
 				throw QString("At least two images are required to align.");
-			auto_align.beginRegion(align->rect.size(), int(used.size()));
+			auto_align.beginRegion(region.size(), int(used.size()), region.center());
 		}
-
+		//if we have no thumbnail or we need to recompute the alignment we need to process the images
 		if(!cache_hit || update_positions) {
 			const int batch_size = 8;
 			const int count = int(used.size());
@@ -55,26 +62,26 @@ void AlignTask::run() {
 						int channels = 0;
 						std::vector<uint8_t> tile_data;
 						if(ImageDecoder::readRegion(filename.c_str(),
-						                            align->rect.x(), align->rect.y(),
-						                            align->rect.width(), align->rect.height(),
-													tile_data, channels) != size_t(align->rect.height()))
+						                            region.x(), region.y(),
+						                            region.width(), region.height(),
+												tile_data, channels) != size_t(region.height()))
 							throw QString("Failed loading selected region from image: %1")
 								.arg(project.images[size_t(index)].filename);
 
 						if(!cache_hit) {
-							size_t tile_row_size = size_t(align->rect.width()) * size_t(channels);
+							size_t tile_row_size = size_t(region.width()) * size_t(channels);
 							QImage::Format format = channels == 1
 								? QImage::Format_Grayscale8
 								: channels == 3 ? QImage::Format_RGB888 : QImage::Format_RGBA8888;
-							QImage tile(tile_data.data(), align->rect.width(),
-										align->rect.height(), int(tile_row_size), format);
+							QImage tile(tile_data.data(), region.width(),
+										region.height(), int(tile_row_size), format);
 							std::lock_guard<std::mutex> lock(thumbnail_mutex);
 							align->readThumb(tile, index);
 						}
 						if(update_positions) {
 							if(channels != 1) {
 								const size_t pixels =
-									size_t(align->rect.width()) * size_t(align->rect.height());
+									size_t(region.width()) * size_t(region.height());
 								for(size_t pixel_index = 0; pixel_index < pixels; ++pixel_index) {
 									const uint8_t *pixel =
 										tile_data.data() + pixel_index * size_t(channels);
@@ -121,12 +128,13 @@ void AlignTask::run() {
 
 		if(!progressed("Solving image translations", 99))
 			return;
-		std::vector<Eigen::Vector2f> translations =
-			auto_align.solveTranslations(int(used.size()), correspondences);
-		for(size_t i = 0; i < used.size(); i++) {
-			const Eigen::Vector2f &translation = translations[i];
-			align->offsets[size_t(used[i])] = QPointF(translation.x(), translation.y());
+		// Validate this region's graph before storing its project-indexed matches.
+		auto_align.solveTranslations(int(used.size()), correspondences);
+		for(AutoAlignCorrespondence &correspondence: correspondences) {
+			correspondence.first = used[size_t(correspondence.first)];
+			correspondence.second = used[size_t(correspondence.second)];
 		}
+		align->correspondences = std::move(correspondences);
 	} catch(QString e) {
 		if(status != STOPPED) {
 			error = e;

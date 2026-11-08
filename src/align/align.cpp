@@ -9,52 +9,78 @@
 
 QJsonObject Align::toJson() {
 	QJsonObject align;
-
-	QJsonObject jrec;
-	jrec.insert("left", rect.left());
-	jrec.insert("top", rect.top());
-	jrec.insert("width", rect.width());
-	jrec.insert("height", rect.height());
-	align["rect"] = jrec;
-
-	QJsonArray joffsets;
-	for(QPointF l: offsets) {
-		QJsonArray joffset = { l.x(), l.y() };
-		joffsets.append(joffset);
+	QJsonArray jregions;
+	for(const QRect &region: regions) {
+		QJsonArray jregion = { region.left(), region.top(), region.width(), region.height() };
+		jregions.append(jregion);
 	}
-	align["offsets"] = joffsets;
+	align["regions"] = jregions;
+
+	QJsonArray jcorrespondences;
+	for(const AutoAlignCorrespondence &correspondence: correspondences) {
+		QJsonObject jcorrespondence;
+		jcorrespondence["first"] = correspondence.first;
+		jcorrespondence["second"] = correspondence.second;
+		jcorrespondence["position"] = QJsonArray{
+			correspondence.position.x(), correspondence.position.y()};
+		jcorrespondence["offset"] = QJsonArray{
+			correspondence.peak.offset.x(), correspondence.peak.offset.y()};
+		jcorrespondence["response"] = correspondence.peak.response;
+		jcorrespondences.append(jcorrespondence);
+	}
+	align["correspondences"] = jcorrespondences;
 
 	return align;
 }
 
 void Align::fromJson(QJsonObject obj) {
-
-
-	auto jrect = obj["rect"].toObject();
-	rect.setLeft(jrect["left"].toInt());
-	rect.setTop(jrect["top"].toInt());
-	rect.setWidth(jrect["width"].toInt());
-	rect.setHeight(jrect["height"].toInt());
-
-	offsets.clear();
-	for(auto joffsets: obj["offsets"].toArray()) {
-		auto j = joffsets.toArray();
-		offsets.push_back(QPointF(j[0].toDouble(), j[1].toDouble()));
+	regions.clear();
+	for(const QJsonValue &value: obj["regions"].toArray()) {
+		const QJsonArray region = value.toArray();
+		if(region.size() != 4)
+			continue;
+		regions.emplace_back(region[0].toInt(), region[1].toInt(),
+			region[2].toInt(), region[3].toInt());
 	}
-	thumbs.resize(offsets.size());
+	// Migrate projects that stored one manually selected rectangle.
+	if(regions.empty() && obj.contains("rect")) {
+		const QJsonObject legacy_rect = obj["rect"].toObject();
+		regions.emplace_back(legacy_rect["left"].toInt(), legacy_rect["top"].toInt(),
+			legacy_rect["width"].toInt(), legacy_rect["height"].toInt());
+	}
+	correspondences.clear();
+	for(const QJsonValue &value: obj["correspondences"].toArray()) {
+		const QJsonObject jcorrespondence = value.toObject();
+		const QJsonArray position = jcorrespondence["position"].toArray();
+		const QJsonArray offset = jcorrespondence["offset"].toArray();
+		if(position.size() != 2 || offset.size() != 2)
+			continue;
+		AutoAlignCorrespondence correspondence;
+		correspondence.first = jcorrespondence["first"].toInt(-1);
+		correspondence.second = jcorrespondence["second"].toInt(-1);
+		correspondence.position = Eigen::Vector2f(
+			float(position[0].toDouble()), float(position[1].toDouble()));
+		correspondence.peak.offset = Eigen::Vector2f(
+			float(offset[0].toDouble()), float(offset[1].toDouble()));
+		correspondence.peak.response = float(jcorrespondence["response"].toDouble());
+		correspondences.push_back(correspondence);
+	}
 }
 
 QString Align::cacheFilename() const {
+	assert(!regions.empty());
+	const QRect &region = regions.front();
 	return QString("resources/align_%1x%2+%3+%4.jpg")
-		.arg(rect.width())
-		.arg(rect.height())
-		.arg(rect.left())
-		.arg(rect.top());
+		.arg(region.width())
+		.arg(region.height())
+		.arg(region.left())
+		.arg(region.top());
 }
 
 void Align::readThumb(QImage tile, int n) {
-	int x = (rect.width() - thumbnail_side)/2;
-	int y = (rect.height() - thumbnail_side)/2;
+	assert(!regions.empty());
+	int x = (regions.front().width() - thumbnail_side)/2;
+	int y = (regions.front().height() - thumbnail_side)/2;
 	thumbs[size_t(n)] = tile.copy(x, y, thumbnail_side, thumbnail_side);
 }
 

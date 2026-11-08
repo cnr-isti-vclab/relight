@@ -51,7 +51,7 @@ void NormalsTask::initFromProject(Project &project) {
 	imageset.initFromProject(project);
 
 	parameters.crop = project.crop;
-	imageset.setCrop(parameters.crop, project.offsets);
+	imageset.setCrop(parameters.crop, project.align_offsets);
 	imageset.rotateLights(-parameters.crop.angle);
 
 	imageset.pixel_size = project.pixelSize();

@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <functional>
-#include <optional>
 #include <complex>
 #include <cstdint>
 
@@ -21,7 +20,13 @@ struct AutoAlignPeak {
 struct AutoAlignCorrespondence {
 	int first; //provided-image index
 	int second; //provided-image index, greater than first
-	std::optional<AutoAlignPeak> peak; //Keeping multiple peaks might help resolve ambiguities.
+	Eigen::Vector2f position = Eigen::Vector2f::Zero(); //patch center relative to image center, in pixels
+	AutoAlignPeak peak;
+};
+
+struct AutoAlignRotoTranslation {
+	std::vector<Eigen::Vector2f> offsets;
+	std::vector<float> angles; //radians
 };
 
 /* run() reads the images, automatically chooses textured regions, and jointly
@@ -33,10 +38,12 @@ public:
 	AutoAlign(QSize image_size);
 	//pixel (x, y) of the first image is at (x, y) + offset in image i. Throws QString on failure or cancel.
 	std::vector<QPointF> run(const std::vector<QString> &image_paths,
-		std::function<bool(QString stage, int percent)> *callback = nullptr);
+		std::function<bool(QString stage, int percent)> *callback = nullptr,
+		std::vector<QRect> *selected_regions = nullptr,
+		std::vector<AutoAlignCorrespondence> *correspondences = nullptr);
 
 	//Returns the strongest phase-correlation peak for each edge i -> i + 2^k.
-	void beginRegion(QSize region_size, int image_count);
+	void beginRegion(QSize region_size, int image_count, QPointF region_center = QPointF());
 	void provideImage(int image_index, const uint8_t *greyscale_image);
 
 	std::vector<AutoAlignCorrespondence> findCandidates(
@@ -47,6 +54,11 @@ public:
 		int n,
 		const std::vector<AutoAlignCorrespondence> &correspondences
 	) const;
+	// Jointly solves per-image offsets and small angles from patch-positioned pair matches.
+	AutoAlignRotoTranslation solveRotoTranslation(
+		int n,
+		const std::vector<AutoAlignCorrespondence> &correspondences
+	) const;
 
 
 private:
@@ -54,6 +66,7 @@ private:
 	int side = 400; //tile size, in downscaled pixels
 	int region_side = 0;
 	int region_image_count = 0;
+	Eigen::Vector2f region_position = Eigen::Vector2f::Zero();
 	std::vector<float> region_window;
 	std::vector<std::vector<std::complex<float>>> region_spectra;
 };

@@ -46,11 +46,13 @@ class AlignOverview: public MarkerOverview {
 	Q_OBJECT
 public:
 	AlignOverview(QRectF rect, int height, QWidget *parent = nullptr);
+	AlignOverview(const std::vector<QRectF> &rects, int height, QWidget *parent = nullptr);
 	virtual void update();
 	QRectF rect;
 	float angle = 0.0f;
 protected:
-	QGraphicsRectItem *item = nullptr;
+	std::vector<QRectF> rects;
+	std::vector<QGraphicsRectItem *> items;
 };
 
 class ReflectionOverview: public QGraphicsView {

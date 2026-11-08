@@ -21,7 +21,10 @@ AlignRow::AlignRow(Align *_align, QWidget *parent): QWidget(parent) {
 	columns->setSpacing(20);
 
 	columns->addWidget(thumb = new QLabel());
-	position = new AlignOverview(align->rect, rowHeight);
+	std::vector<QRectF> rects;
+	for(const QRect &region: align->regions)
+		rects.push_back(region);
+	position = new AlignOverview(rects, rowHeight);
 	position->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	columns->addWidget(position);
 
@@ -35,6 +38,8 @@ AlignRow::AlignRow(Align *_align, QWidget *parent): QWidget(parent) {
 	progress->setValue(0);
 	status_layout->addWidget(progress);
 	status_layout->addStretch();
+	if(align->regions.size() > 1)
+		status->setText(QString("Alignment using %1 regions").arg(align->regions.size()));
 
 	QGridLayout *edit_layout = new QGridLayout;
 	columns->addLayout(edit_layout, 2);
@@ -66,10 +71,12 @@ AlignRow::~AlignRow() {
 }
 
 void AlignRow::verify() {
-	VerifyDialog *verify_dialog = new VerifyDialog(align->thumbs, align->offsets, VerifyDialog::ALIGN, this);
+	Project &project = qRelightApp->project();
+	VerifyDialog *verify_dialog = new VerifyDialog(
+		align->thumbs, project.align_offsets, VerifyDialog::ALIGN, this);
 	verify_dialog->exec();
-
-	emit updated();
+	project.needs_saving = true;
+	emit offsetsEdited();
 }
 
 void AlignRow::remove() {
@@ -87,8 +94,17 @@ void AlignRow::remove() {
 }
 
 void AlignRow::updateRegion() {
-	QRectF r = align->rect;
-	region->setText(QString("Sample region: %1x%2+%3+%4").arg(r.width()).arg(r.height()).arg(r.left()).arg(r.top()));
+	if(align->regions.empty()) {
+		region->setText("No selected regions");
+		return;
+	}
+	if(align->regions.size() > 1) {
+		region->setText(QString("Sample regions: %1").arg(align->regions.size()));
+		return;
+	}
+	QRectF r = align->regions.front();
+	region->setText(QString("Sample region: %1x%2+%3+%4")
+		.arg(r.width()).arg(r.height()).arg(r.left()).arg(r.top()));
 }
 
 void AlignRow::updateStatus(QString msg, int percent) {
@@ -101,7 +117,8 @@ void AlignRow::updateStatus(QString msg, int percent) {
 	status->setText(msg);
 	progress->setValue(percent);
 	if(percent == 100) {
-		emit updated();
+		if(find_alignment->update_positions)
+			emit updated();
 		verify_button->setEnabled(true);
 	}
 }

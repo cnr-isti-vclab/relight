@@ -43,7 +43,7 @@ void AlignMarker::onEdit() {
 void AlignMarker::click(QPointF pos) {
 	rect->setRect(QRectF(-32, -32, 64, 64).translated(pos));
 	rect->setVisible(true);
-	align->rect = rect->rect().toRect();
+	align->regions = {rect->rect().toRect()};
 	setEditing(false);
 	emit showTable(this);
 }

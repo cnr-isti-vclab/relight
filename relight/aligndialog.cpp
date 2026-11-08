@@ -11,6 +11,7 @@
 #include <QGraphicsEllipseItem>
 #include <QGraphicsView>
 #include <QGraphicsScene>
+#include <cassert>
 
 
 AlignDialog::AlignDialog(AlignMarker *a, Project *p, QWidget *parent) :
@@ -29,7 +30,8 @@ AlignDialog::AlignDialog(AlignMarker *a, Project *p, QWidget *parent) :
 		if(img.size() != project->imgsize) {
 			close();
 		}
-		QRect rect = align->align->rect;
+		assert(!align->align->regions.empty());
+		QRect rect = align->align->regions.front();
 		rect = rect.intersected(QRect(QPoint(0, 0), img.size()));
 		QImage cropped = img.copy(rect);
 		QPixmap pix;
@@ -42,7 +44,7 @@ AlignDialog::AlignDialog(AlignMarker *a, Project *p, QWidget *parent) :
 	}
 	QPen pen(Qt::green);
 	pen.setWidth(1);
-	for(auto offset: align->align->offsets) {
+	for(auto offset: project->align_offsets) {
 		QGraphicsEllipseItem *item = new QGraphicsEllipseItem(0, 0, 2, 2);
 		item->setBrush(Qt::green);
 		item->setPen(pen);
@@ -59,7 +61,7 @@ void AlignDialog::resized() {
 	if(thumbs.size() == 0)
 		return;
 
-	QSize size = align->align->rect.size()*scale;
+	QSize size = align->align->regions.front().size()*scale;
 	int cx = size.width()/2;
 	int cy = size.height()/2;
 	int sx = size.width() + margin;
