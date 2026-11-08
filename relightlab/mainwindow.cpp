@@ -27,6 +27,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QHBoxLayout>
+#include <QTimer>
 
 #include <iostream>
 using namespace std;
@@ -49,6 +50,10 @@ MainWindow::MainWindow() {
 	tabs->addTab(brdf_frame = new BrdfFrame, "BRDF");
 	tabs->addTab(normals_frame = new NormalsFrame, "Normals");
 	tabs->addTab(queue_frame = new QueueFrame, "Queue");
+	connect(tabs, &QTabWidget::currentChanged, this, [this](int index) {
+		if(index == 2)
+			QTimer::singleShot(0, align_frame, [this]() { align_frame->refreshSummary(); });
+	});
 
 	tabs->setTabsEnabled(false);
 	// Normals tab is usable without a project (load + integrate workflow).

@@ -26,7 +26,9 @@ public:
 	void clear();
 	void init();
 	AlignRow *addAlign(Align *align);
+	void refreshSummary();
 	void resizeEvent(QResizeEvent *event) override;
+	bool eventFilter(QObject *watched, QEvent *event) override;
 
 public slots:
 	void projectUpdate();

@@ -3,8 +3,7 @@
 <p>RTI and normal computations require all the images to be taken from the same view-point. All the 
 images needs to be perfectly aligned for good results: ghosting or blurring will be generated otherwise.</p>
 
-<p>You can verify and eventually correct the alignment of the images but first create a new alignment by clicking the button
-and then select a small rectangle by clicking on the image.</p>
+<p>You can verify and eventually correct the alignment of the images but first create a new region alignment by clicking the button and then select a small rectangle by clicking on the image.</p>
 
 <p>The application will collect the same patch from all the images and you can inspect the alignment using the verify
 button. You can also change the alignent of an image dragging the cross and make sure that the cross has the same position
@@ -14,6 +13,9 @@ relative to the content of the thumbnails.</p>
 placing a small printed marker on the edge of the image before capturing the dataset is advised and is a perfect target
 for verifying the alignment. In general avoid regions with shadows or reflections.</p>
 
-<p><b>Align automatically</b> (experimental) does this for you: it compares every photo with the first one and finds
-how far it moved. It works best when a flat, printed object (a ruler, a label) is in view. The result appears as a new
-alignment: open <i>Verify...</i> to check it and drag any thumbnail that is still off.</p>
+<p><b>Align automatically</b> selects several well-textured, non-overlapping regions that have useful
+detail across the image set. It matches image pairs in each region, using overlapping pair links so the estimates are
+redundant rather than relying only on comparisons with the first photo. A robust combined least-squares adjustment
+uses these matches to estimate the image translations while reducing the influence of inconsistent matches. The
+regions you add manually contribute their matches to this same combined alignment. Open <i>Verify...</i> to inspect
+the result and drag any cross (representing the translation) that is still off.</p>

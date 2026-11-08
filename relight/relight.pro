@@ -95,6 +95,7 @@ SOURCES += main.cpp \
     ../src/sphere.cpp \
     qspheremarker.cpp \
     ../src/align.cpp \
+    ../src/align/autoalign.cpp \
     qalignmarker.cpp \
     qwhitemarker.cpp \
     ../src/white.cpp \
@@ -133,6 +134,7 @@ HEADERS += \
     ../src/cli/rtibuilder.h \
     ../src/relight_threadpool.h \
     ../src/project.h \
+    ../src/align/autoalign.h \
     ../src/measure.h \
     focaldialog.h \
     ../src/lens.h \

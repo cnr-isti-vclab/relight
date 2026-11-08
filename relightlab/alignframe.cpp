@@ -18,6 +18,7 @@
 #include <QGraphicsRectItem>
 #include <QGraphicsEllipseItem>
 #include <QGraphicsTextItem>
+#include <QPainterPath>
 #include <QResizeEvent>
 #include <QFont>
 #include <QColor>
@@ -25,6 +26,8 @@
 #include <QBrush>
 #include <QPainter>
 #include <QThread>
+#include <QTimer>
+#include <QEvent>
 
 #include <algorithm>
 #include <cmath>
@@ -99,7 +102,8 @@ AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
 			automatic_align_button->setToolTip("Automatically select textured regions and solve image translations.");
 			connect(automatic_align_button, SIGNAL(clicked()), this, SLOT(automaticAlign()));
 			buttons->addWidget(automatic_align_button);
-			QPushButton *new_align = new QPushButton("New alignment...");
+			QPushButton *new_align = new QPushButton("New alignment region...");
+			new_align->setProperty("class", "large");
 			new_align->setToolTip("Select a square region up to 400 px; its centered 40x40 patch is shown for verification.");
 			connect(new_align, SIGNAL(clicked()), this, SLOT(newAlign()));
 			buttons->addWidget(new_align);
@@ -115,12 +119,12 @@ AlignFrame::AlignFrame(QWidget *parent): QFrame(parent) {
 		}
 		summary_scene = new QGraphicsScene(this);
 		summary_view = new QGraphicsView(summary_scene, align_rows);
-		summary_view->setFixedHeight(200);
 		summary_view->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 		summary_view->setRenderHint(QPainter::Antialiasing);
 		summary_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 		summary_view->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 		summary_view->setToolTip("Each 40x40 cell is an image; colored dots show the translation estimated from each alignment row.");
+		summary_view->viewport()->installEventFilter(this);
 		content->addWidget(summary_view);
 		{
 			QFrame *aligns_frame = new QFrame;
@@ -168,7 +172,7 @@ void AlignFrame::automaticAlign() {
 		return;
 
 	updateSummary();
-	automatic_align_button->setEnabled(false);
+		automatic_align_button->setEnabled(false);
 	automatic_align_status->setText("Starting automatic alignment...");
 	automatic_align_progress->setValue(0);
 	automatic_align_progress->show();
@@ -301,7 +305,17 @@ void AlignFrame::removeAlign(AlignRow *row) {
 
 void AlignFrame::resizeEvent(QResizeEvent *event) {
 	QFrame::resizeEvent(event);
-	updateSummary();
+	refreshSummary();
+}
+
+bool AlignFrame::eventFilter(QObject *watched, QEvent *event) {
+	if(watched == summary_view->viewport() && event->type() == QEvent::Resize)
+		refreshSummary();
+	return QFrame::eventFilter(watched, event);
+}
+
+void AlignFrame::refreshSummary() {
+	QTimer::singleShot(0, this, [this]() { updateSummary(); });
 }
 
 void AlignFrame::updateSummary() {
@@ -310,10 +324,14 @@ void AlignFrame::updateSummary() {
 
 	const Project &project = qRelightApp->project();
 	const qreal cellSize = 80.0;
+	const qreal axisInset = 7.0;
 	const int imageCount = int(project.images.size());
 	const int columns = std::max(1, summary_view->viewport()->width() / int(cellSize));
 	const int rows = imageCount == 0 ? 0 : (imageCount + columns - 1) / columns;
 	const int usedColumns = std::min(columns, imageCount);
+	const int visibleRows = std::max(1, rows);
+	summary_view->setFixedHeight(int(visibleRows * cellSize) +
+		2 * summary_view->frameWidth());
 	summary_scene->clear();
 	summary_scene->setSceneRect(0, 0, usedColumns * cellSize, rows * cellSize);
 	if(imageCount == 0)
@@ -326,7 +344,10 @@ void AlignFrame::updateSummary() {
 		maxTranslation = std::max(maxTranslation,
 			std::max(std::abs(project.align_offsets[i].x()), std::abs(project.align_offsets[i].y())));
 	}
-	const qreal translationScale = maxTranslation > 0.0 ? 14.0 / maxTranslation : 0.0;
+	const qreal maxTranslationScale = (cellSize - 2.0 * axisInset) / 3.0;
+	const qreal translationScale = maxTranslation > 0.0
+		? std::min(maxTranslationScale, (cellSize/2 - 4) / maxTranslation)
+		: 0.0;
 
 	QFont numberFont;
 	numberFont.setPixelSize(10);
@@ -340,6 +361,29 @@ void AlignFrame::updateSummary() {
 		QGraphicsRectItem *cellItem = summary_scene->addRect(
 			cellRect, QPen(QColor("#B8C1CC"), 0.7),
 			QBrush(skipped ? QColor("#E7E9EC") : QColor("#FFFFFF")));
+		const qreal centerX = left + cellSize / 2.0;
+		const qreal centerY = top + cellSize / 2.0;
+		QPainterPath axes;
+		axes.moveTo(left + axisInset, centerY);
+		axes.lineTo(left + cellSize - axisInset, centerY);
+		axes.moveTo(centerX, top + axisInset);
+		axes.lineTo(centerX, top + cellSize - axisInset);
+		if(translationScale > 0.0) {
+			const int tickCount = int(std::ceil(maxTranslation));
+			for(int pixel = -tickCount; pixel <= tickCount; ++pixel) {
+				const qreal x = centerX + pixel * translationScale;
+				const qreal y = centerY + pixel * translationScale;
+				if(x >= left + axisInset && x <= left + cellSize - axisInset) {
+					axes.moveTo(x, centerY - 2.0);
+					axes.lineTo(x, centerY + 2.0);
+				}
+				if(y >= top + axisInset && y <= top + cellSize - axisInset) {
+					axes.moveTo(centerX - 2.0, y);
+					axes.lineTo(centerX + 2.0, y);
+				}
+			}
+		}
+		summary_scene->addPath(axes, QPen(QColor("#9AA3AD"), 0.45));
 		QString tooltip = QString("Image %1: %2%3")
 			.arg(i + 1)
 			.arg(project.images[size_t(i)].filename)
@@ -364,8 +408,8 @@ void AlignFrame::updateSummary() {
 			continue;
 		if(size_t(i) < project.align_offsets.size()) {
 			const QPointF translation = project.align_offsets[size_t(i)];
-			const qreal x = left + cellSize / 2.0 + translation.x() * translationScale;
-			const qreal y = top + cellSize / 2.0 + translation.y() * translationScale;
+			const qreal x = centerX + translation.x() * translationScale;
+			const qreal y = centerY + translation.y() * translationScale;
 			QGraphicsEllipseItem *dot = summary_scene->addEllipse(
 				x - 2.0, y - 2.0, 4.0, 4.0,
 				QPen(QColor("#202124"), 0.7), QBrush(QColor("#202124")));

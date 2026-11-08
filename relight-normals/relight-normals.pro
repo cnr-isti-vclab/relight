@@ -40,6 +40,7 @@ SOURCES += \
         ../src/exif.cpp \
         ../src/measure.cpp \
         ../src/align/align.cpp \
+        ../src/align/autoalign.cpp \
         ../src/white.cpp \
         ../src/rti.cpp \
         ../src/legacy_rti.cpp \
@@ -86,6 +87,7 @@ HEADERS += \
     ../src/exif.h \
     ../src/measure.h \
     ../src/align/align.h \
+    ../src/align/autoalign.h \
     ../src/white.h \
     ../src/rti.h \
     ../src/legacy_rti.h \

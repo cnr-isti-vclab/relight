@@ -65,6 +65,7 @@ set (RELIGHT_HEADERS
 	../src/sphere.h
 	qspheremarker.h
 	../src/align/align.h
+	../src/align/autoalign.h
 	qalignmarker.h
 	aligndialog.h
 	qwhitemarker.h
@@ -133,6 +134,7 @@ set (RELIGHT_SOURCES
 	../src/sphere.cpp
 	qspheremarker.cpp
 	../src/align.cpp
+	../src/align/autoalign.cpp
 	qalignmarker.cpp
 	qwhitemarker.cpp
 	../src/white.cpp

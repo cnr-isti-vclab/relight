@@ -947,6 +947,7 @@ static float lineSphereDistance(const Vector3f &origin, const Vector3f &directio
 	float d = (-b + sqrt(det))/(2.0f*a);
 	return d;
 }
+
 void Project::computeOffsets() {
 	if(align_angles.size() != images.size())
 		align_angles.resize(images.size(), 0.0f);
