@@ -17,7 +17,7 @@
 
 #include <Eigen/Core>
 #include <QStringList>
-#include <QPoint>
+#include <QPointF>
 #include <QSize>
 
 class QJsonObject;
@@ -55,7 +55,7 @@ public:
 	bool compensateIntensityEnabled = true;
 
 	int current_line = 0;
-	std::vector<QPoint> offsets; //align offsets
+	std::vector<QPointF> offsets; //align offsets
 
 	ColorProfileMode color_profile_mode = COLOR_PROFILE_LINEAR_RGB;
 	std::vector<uint8_t> icc_profile_data;
@@ -90,7 +90,7 @@ public:
 
 	void setCrop(int _left, int _top, int _right, int _bottom);
 	void setCrop(const Crop &crop);
-	void setCrop(Crop &crop, const std::vector<QPointF> &offsets);
+	void setCrop(const Crop &crop, const std::vector<QPointF> &offsets);
 	void rotateLights(float angle);
 
 
@@ -151,12 +151,19 @@ public:
 protected:
 	std::function<bool(QString stage, int percent)> *callback;
 	std::vector<ImageDecoder *> decoders;
-	std::vector<std::vector<float>> row_buffers; //one row per image, filled by readRows()
+	std::vector<std::vector<float>> row_buffers; //next source row per image
+	std::vector<std::vector<float>> previous_row_buffers; //cached preceding row per image for vertical interpolation
+	bool row_cache_initialized = false;
 
 
 private:
-	//ignore align offsets if not aligned
-	void readOneRow(bool aligned);
+	struct SamplingBounds {
+		int first_x, width, first_y, height;
+	};
+	std::vector<SamplingBounds> sampling_bounds;
+	std::vector<QPointF> sampling_deltas;
+	void updateSamplingBounds();
+	void readOneRow(std::vector<std::vector<float>> &rows, bool fractional_y_only = false);
 	void compensateVignetting(PixelArray &pixels);
 
 	void compensateIntensity(PixelArray &pixels);

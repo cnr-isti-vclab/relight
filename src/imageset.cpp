@@ -18,6 +18,7 @@
 #include <string>
 #include <set>
 #include <iostream>
+#include <cmath>
 
 
 #include <assert.h>
@@ -292,6 +293,7 @@ bool ImageSet::initImages(const char *_path,  Project::ForcedInputColorspace for
 	}
 
 	createColorTransform();
+	updateSamplingBounds();
 	return true;
 }
 
@@ -316,6 +318,7 @@ void ImageSet::setColorProfileMode(ColorProfileMode mode) {
 
 
 void ImageSet::setCrop(int _left, int _top, int _width, int _height) {
+	row_cache_initialized = false;
 	crop.setRect(QPoint(_left, _top), QSize(_width, _height));
 	left = _left;
 	top = _top;
@@ -330,6 +333,7 @@ void ImageSet::setCrop(int _left, int _top, int _width, int _height) {
 		cout << "left: " << left << " top: " << top << " right: " << right << " bottom: " << bottom << " width: " << width << " height: " << height << endl;
 		throw "Invalid crop parameters";
 	}
+	updateSamplingBounds();
 }
 
 QImage ImageSet::maxImage(std::function<bool(std::string stage, int percent)> *callback) {
@@ -433,8 +437,11 @@ void ImageSet::compensateIntensity(PixelArray &pixels) {
 }
 
 void ImageSet::readLine(PixelArray &pixels) {
-	if(current_line == 0)
+	const int n = int(decoders.size());
+	if(!row_cache_initialized)
 		skipToTop();
+	readOneRow(row_buffers);
+
 	pixels.resize(width, images.size());
 	for(uint32_t x = 0; x < pixels.size(); x++) {
 		Pixel &pixel = pixels[x];
@@ -442,23 +449,45 @@ void ImageSet::readLine(PixelArray &pixels) {
 		pixel.y = image_height - 1 - current_line;
 	}
 
-	readOneRow(true);
-
-	//copy per pixel: threads writing the same pixel would share cache lines.
-	int n = int(decoders.size());
+	//Keep writes to the result contiguous by assigning one complete pixel per worker.
 	#pragma omp parallel for
 	for(int x = left; x < right; x++) {
 		Pixel &pixel = pixels[x - left];
 		for(int i = 0; i < n; i++) {
-			int x_offset = offsets.size() ? offsets[i].x() : 0;
-			const float *c = row_buffers[i].data() + (x + x_offset)*3;
-			pixel[i] = Color3f(c[0]*255.0f, c[1]*255.0f, c[2]*255.0f);
+			const SamplingBounds &bounds = sampling_bounds[size_t(i)];
+			const QPointF &delta = sampling_deltas[size_t(i)];
+			const int x0 = bounds.first_x + x - left;
+			const int x1 = delta.x() == 0.0 ? x0 : x0 + 1;
+			const int y0 = bounds.first_y + current_line - top;
+			assert(x0 < bounds.first_x + bounds.width);
+			assert(x1 < bounds.first_x + bounds.width);
+			assert(y0 < bounds.first_y + bounds.height);
+			if(delta.y() != 0.0)
+				assert(y0 + 1 < bounds.first_y + bounds.height);
+			const float *row0 = delta.y() == 0.0
+				? row_buffers[size_t(i)].data()
+				: previous_row_buffers[size_t(i)].data();
+			const float *row1 = delta.y() == 0.0
+				? row0
+				: row_buffers[size_t(i)].data();
+			const float *p00 = row0 + x0 * 3;
+			const float *p10 = row0 + x1 * 3;
+			const float *p01 = row1 + x0 * 3;
+			const float *p11 = row1 + x1 * 3;
+			float color[3];
+			for(int c = 0; c < 3; c++) {
+				const float top_color = p00[c] * (1.0f - float(delta.x())) + p10[c] * float(delta.x());
+				const float bottom_color = p01[c] * (1.0f - float(delta.x())) + p11[c] * float(delta.x());
+				color[c] = top_color * (1.0f - float(delta.y())) + bottom_color * float(delta.y());
+			}
+			pixel[i] = Color3f(color[0]*255.0f, color[1]*255.0f, color[2]*255.0f);
 		}
 	}
 	compensateVignetting(pixels);
 	if(light3d) {
 		compensateIntensity(pixels);
 	}
+	previous_row_buffers.swap(row_buffers);
 	current_line++;
 }
 
@@ -477,9 +506,6 @@ public:
 };
 
 uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::function<void(Pixel &, Pixel &)> resampler, uint32_t samplingram) {
-	if(current_line == 0)
-		skipToTop();
-
 	uint32_t bytes_per_sample = ndimensions*12;
 	uint32_t nsamples = samplingram*((1<<20)/bytes_per_sample);
 	
@@ -492,6 +518,7 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 
 	StupidSampler sampler;
 	PixelArray sample(samplexrow, images.size());
+	PixelArray line;
 
 	uint32_t offset = 0;
 	for(int y = top; y < bottom; y++) {
@@ -500,25 +527,11 @@ uint32_t ImageSet::sample(PixelArray &resample, uint32_t ndimensions, std::funct
 
 		//read one row per image at a time
 		auto &selection = sampler.result(samplexrow, width);
-
-		readOneRow(false);
+		readLine(line);
 
 		vector<int> columns(selection.begin(), selection.end());
-		int n = int(decoders.size());
-		#pragma omp parallel for
 		for(int x = 0; x < int(columns.size()); x++) {
-			Pixel &pixel = sample[x];
-			pixel.x = columns[x] + left;
-			pixel.y = image_height - 1 - y;
-			for(int i = 0; i < n; i++) {
-				const float *c = row_buffers[i].data() + (columns[x] + left)*3;
-				pixel[i] = Color3f(c[0]*255.0f, c[1]*255.0f, c[2]*255.0f);
-			}
-		}
-		compensateVignetting(sample);
-
-		if(light3d) {
-			compensateIntensity(sample);
+			sample[x] = line[size_t(columns[x])];
 		}
 
 		for(uint32_t x = 0; x < selection.size(); x++)
@@ -534,7 +547,6 @@ void ImageSet::createColorTransform() {
 		cmsDeleteTransform(color_transform);
 		color_transform = nullptr;
 	}
-
 	// Detect identity transforms (input == target) and skip.
 	if(color_profile_mode == COLOR_PROFILE_LINEAR_RGB && icc_profile_data == ICCProfiles::linearRGBData()) {
 		std::cout << "Color transform: linear RGB -> linear RGB (no-op)" << std::endl;
@@ -621,6 +633,7 @@ void ImageSet::restart() {
 		decoders[i]->restart();
 	
 	current_line = 0;
+	row_cache_initialized = false;
 }
 
 void ImageSet::setCrop(const Crop &_crop) {
@@ -631,36 +644,54 @@ void ImageSet::setCrop(const Crop &_crop) {
 	crop = _crop; //setCrop overwrites this.crop
 }
 
-void ImageSet::setCrop(Crop &_crop, const std::vector<QPointF> &_offsets) {
-	QRect c = _crop.boundingRect(imageSize());
-
-	std::vector<QPoint> int_offsets;
-	for(const QPointF &p: _offsets)
-		int_offsets.push_back(p.toPoint());
+void ImageSet::setCrop(const Crop &_crop, const std::vector<QPointF> &_offsets) {
+	//an empty crop means the whole image
+	QRect c = (_crop.width() > 0 && _crop.height() > 0) ? _crop.boundingRect(imageSize()) : QRect();
 
 	//find min and max of offsets to adjust the maxCrop;
 	int l = 0;
 	int r = image_width;;
 	int t = 0;
 	int b = image_height;
-	for(QPoint &o: int_offsets) {
-		l = std::max(l, -o.x());
-		r = std::min(r, image_width-o.x());
-		t = std::max(t, -o.y());
-		b = std::min(b, image_height-o.y());
+	for(const QPointF &offset: _offsets) {
+		//For bilinear sampling, x + offset must stay in [0, image_width - 1].
+		l = std::max(l, int(std::ceil(-offset.x())));
+		r = std::min(r, int(std::floor(image_width - 1 - offset.x())) + 1);
+		t = std::max(t, int(std::ceil(-offset.y())));
+		b = std::min(b, int(std::floor(image_height - 1 - offset.y())) + 1);
 	}
-	//TODO check +1 problem
+	//The exclusive right and bottom bounds account for both bilinear neighbors.
 	QRect max_crop(l, t, r - l, b - t);
+	if(max_crop.width() <= 0 || max_crop.height() <= 0)
+		throw "Images are too misaligned: no common area";
 	if(c.isNull())
 		c = max_crop;
 	else
 		c = max_crop.intersected(c);
 
 	setCrop(c.left(), c.top(), c.width(), c.height());
-	offsets = int_offsets;
+	offsets = _offsets;
+	updateSamplingBounds();
 
 	rotateLights(-_crop.angle);
 	crop = _crop;
+}
+
+void ImageSet::updateSamplingBounds() {
+	sampling_bounds.resize(decoders.size());
+	sampling_deltas.resize(decoders.size());
+	row_cache_initialized = false;
+	for(size_t i = 0; i < decoders.size(); i++) {
+		const QPointF offset = i < offsets.size() ? offsets[i] : QPointF();
+		const double source_x = left + offset.x();
+		const double source_y = top + offset.y();
+		SamplingBounds &bounds = sampling_bounds[i];
+		bounds.first_x = int(std::floor(source_x));
+		bounds.first_y = int(std::floor(source_y));
+		bounds.width = int(std::ceil(right - 1 + offset.x())) - bounds.first_x + 1;
+		bounds.height = int(std::ceil(bottom - 1 + offset.y())) - bounds.first_y + 1;
+		sampling_deltas[i] = QPointF(source_x - bounds.first_x, source_y - bounds.first_y);
+	}
 }
 
 void ImageSet::rotateLights(float a) {
@@ -677,17 +708,20 @@ void ImageSet::rotateLights(float a) {
 	}
 }
 
-//read the next row of every image (in parallel) into row_buffers and apply the color transform to the crop.
-void ImageSet::readOneRow(bool aligned) {
-	row_buffers.resize(decoders.size());
+//Read the next source row and transform only the columns needed by the crop.
+void ImageSet::readOneRow(std::vector<std::vector<float>> &rows, bool fractional_y_only) {
+	rows.resize(decoders.size());
 	#pragma omp parallel for schedule(dynamic)
 	for(int i = 0; i < int(decoders.size()); i++) {
-		std::vector<float> &row = row_buffers[i];
+		if(fractional_y_only && sampling_deltas[size_t(i)].y() == 0.0)
+			continue;
+		std::vector<float> &row = rows[size_t(i)];
 		row.resize(size_t(image_width)*3);
 		decoders[i]->readRows(1, row.data());
 
-		int x_offset = (aligned && offsets.size()) ? offsets[i].x() : 0;
-		applyColorTransform(row.data() + (left + x_offset)*3, width);
+		const SamplingBounds &bounds = sampling_bounds[size_t(i)];
+		const int first_x = bounds.first_x;
+		applyColorTransform(row.data() + size_t(first_x) * 3, size_t(bounds.width));
 	}
 }
 
@@ -700,12 +734,14 @@ void ImageSet::skipToTop() {
 		#pragma omp parallel for
 		for(int i = start; i < end; i++) {
 			std::vector<float> row(size_t(image_width)*3);
-			int y_offset = offsets.size() ? offsets[i].y() : 0;
-			for(int y = 0; y < top + y_offset; y++)
+			const int first_row = sampling_bounds[size_t(i)].first_y;
+			for(int y = 0; y < first_row; y++)
 				decoders[i]->readRows(1, row.data());
 		}
 		if(callback && !(*callback)("Skipping cropped lines...", 100*end/n))
 			throw std::string("Cancelled");
 	}
+	readOneRow(previous_row_buffers, true);
 	current_line += top;
+	row_cache_initialized = true;
 }

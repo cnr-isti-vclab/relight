@@ -44,7 +44,7 @@ void help() {
 
 	cout << "\t  -w <int>  : number of workers (default: number of cores)\n";
 	cout << "\t  -k <int>x<int>+<int>+<int>: Cropping extracts only the widthxheight+offx+offy part\n";
-	cout << "\t  -a        : experimental: align the images (translation only) before processing\n";
+	cout << "\t  -a        : align the images (translation only) before processing\n";
 
 	cout << "\nIgnore exotic parameters below here\n\n";
 	cout << "\n  -H        : fix overexposure in ptm and hsh due to bad sampling\n";

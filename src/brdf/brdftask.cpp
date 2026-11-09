@@ -27,13 +27,16 @@ void BrdfTask::initFromProject(Project &project) {
 }
 
 
-void BrdfTask::initFromFolder(const char *folder, Dome &dome, const Crop &folderCrop) {
+void BrdfTask::initFromFolder(const char *folder, Dome &dome, const Crop &folderCrop, const std::vector<QPointF> &offsets) {
 	imageset.initFromFolder(folder);
 	imageset.initFromDome(dome);
 	parameters.crop = folderCrop;
-	if(folderCrop.width() > 0)
+	if(offsets.size()) {
+		imageset.setCrop(folderCrop, offsets);
+	} else {
 		imageset.setCrop(folderCrop);
-	imageset.rotateLights(-folderCrop.angle);
+		imageset.rotateLights(-folderCrop.angle);
+	}
 	imageset.setColorProfileMode(COLOR_PROFILE_LINEAR_RGB);
 	imageset.createOutputColorTransform(COLOR_PROFILE_SRGB);
 }

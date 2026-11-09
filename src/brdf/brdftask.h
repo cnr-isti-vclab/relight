@@ -19,7 +19,7 @@ public:
 
 	void setParameters(BrdfParameters &param);
 	void initFromProject(Project &project);
-	void initFromFolder(const char *folder, Dome &dome, const Crop &crop);
+	void initFromFolder(const char *folder, Dome &dome, const Crop &crop, const std::vector<QPointF> &offsets = std::vector<QPointF>());
 
 };
 

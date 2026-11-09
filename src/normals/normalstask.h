@@ -31,7 +31,7 @@ public:
 
 	void setParameters(NormalsParameters &param);
 	void initFromProject(Project &project);
-	void initFromFolder(const char *folder, Dome &dome, const Crop &crop);
+	void initFromFolder(const char *folder, Dome &dome, const Crop &crop, const std::vector<QPointF> &offsets = std::vector<QPointF>());
 
 	void assm(QString filename, std::vector<Eigen::Vector3f> &normals, int width, int height, float downsampling,
 			  std::function<bool(QString, int)> *_callback);

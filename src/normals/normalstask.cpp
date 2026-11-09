@@ -57,13 +57,16 @@ void NormalsTask::initFromProject(Project &project) {
 	imageset.pixel_size = project.pixelSize();
 }
 
-void NormalsTask::initFromFolder(const char *folder, Dome &dome, const Crop &folderCrop) {
+void NormalsTask::initFromFolder(const char *folder, Dome &dome, const Crop &folderCrop, const std::vector<QPointF> &offsets) {
 	imageset.initFromFolder(folder);
 	imageset.initFromDome(dome);
 	parameters.crop = folderCrop;
-	if(folderCrop.width() > 0)
+	if(offsets.size()) {
+		imageset.setCrop(folderCrop, offsets);
+	} else {
 		imageset.setCrop(folderCrop);
-	imageset.rotateLights(-folderCrop.angle);
+		imageset.rotateLights(-folderCrop.angle);
+	}
 }
 
 void NormalsTask::setParameters(NormalsParameters &param) {
